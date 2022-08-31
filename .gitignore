@@ -1,0 +1,20 @@
+*.log
+.DS_Store
+node_modules
+dist
+
+### VisualStudioCode template
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## code coverage files
+coverage.json
+.nyc_output/
+coverage/
+
+.env
+
+*.tgz

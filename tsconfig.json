@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+     "module": "commonjs",
+     "target": "es2017",
+     "declaration": true,
+     "declarationMap": true,
+     "strict": true,
+     "esModuleInterop": true,
+     "outDir": "./dist",
+     "sourceMap": true,
+     "experimentalDecorators": true,
+     "preserveWatchOutput": true
+  },
+  "include": ["src/**/*"]
+}
