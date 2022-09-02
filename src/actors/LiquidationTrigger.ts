@@ -1,4 +1,4 @@
-import { MintingExecuted } from "fasset/typechain-truffle/AssetManager";
+import { MintingExecuted } from "../../typechain-truffle/AssetManager";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { EvmEventArgs } from "../utils/events/IEvmEvents";

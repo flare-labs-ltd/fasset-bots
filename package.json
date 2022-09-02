@@ -47,11 +47,9 @@
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
-      "@flarenetwork/mcc": "^1.2.1",
-      "attestation-client": "link:../attestation-client",
       "simple-wallet": "link:../simple-wallet",
-      "fasset": "link:../fasset",
-      "bn.js": "^4.12.0"
+      "bn.js": "^4.12.0",
+      "glob": "^7.2.3"
    },
    "devDependencies": {
       "@istanbuljs/nyc-config-typescript": "1.0.2",
@@ -60,6 +58,7 @@
       "@types/mocha": "9.1.1",
       "@types/node": "18.6.3",
       "@types/bn.js": "^4.11.0",
+      "@types/glob": "7.2.0",
       "chai": "4.3.6",
       "chai-as-promised": "7.1.1",
       "dotenv": "16.0.1",

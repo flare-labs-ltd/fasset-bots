@@ -62,7 +62,6 @@ import { AddressUpdaterContract } from "./AddressUpdater";
 import { CheckPointableContract } from "./CheckPointable";
 import { DelegatableContract } from "./Delegatable";
 import { DelegationHistoryContract } from "./DelegationHistory";
-import { ERC20Contract } from "./ERC20";
 import { PercentageDelegationContract } from "./PercentageDelegation";
 import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
@@ -133,7 +132,6 @@ declare global {
       require(name: "CheckPointable"): CheckPointableContract;
       require(name: "Delegatable"): DelegatableContract;
       require(name: "DelegationHistory"): DelegationHistoryContract;
-      require(name: "ERC20"): ERC20Contract;
       require(name: "PercentageDelegation"): PercentageDelegationContract;
       require(name: "VPContract"): VPContractContract;
       require(name: "VPToken"): VPTokenContract;
@@ -292,7 +290,6 @@ export {
   DelegationHistoryContract,
   DelegationHistoryInstance,
 } from "./DelegationHistory";
-export { ERC20Contract, ERC20Instance } from "./ERC20";
 export {
   PercentageDelegationContract,
   PercentageDelegationInstance,

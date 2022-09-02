@@ -8,7 +8,7 @@ import { ILogger } from "../utils/logging";
 import {
     AgentAvailable, AvailableAgentExited, CollateralReservationDeleted, CollateralReserved, DustChanged, DustConvertedToTicket, LiquidationPerformed, MintingExecuted, MintingPaymentDefault,
     RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed
-} from "fasset/typechain-truffle/AssetManager";
+} from "../../typechain-truffle/AssetManager";
 import { TrackedState } from "./TrackedState";
 
 // status as returned from getAgentInfo
