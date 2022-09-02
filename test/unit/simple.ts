@@ -1,14 +1,7 @@
+import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp, web3 } from "../../src/utils/helpers";
-import { WNatContract } from "../../typechain-truffle";
 
-const contract = require("@truffle/contract");
-
-const wnatAbi = require("../../artifacts/flattened/WNat.json");
-const WNatRaw = contract(wnatAbi);
-console.log(web3.currentProvider?.constructor.name);
-console.log((web3.currentProvider as any).host, (web3.currentProvider as any).connected);
-WNatRaw.setProvider(web3.currentProvider);
-const WNat = WNatRaw as WNatContract;
+const WNat = artifacts.require('WNat');
 
 describe("test initial", async () => {
     let accounts: string[];
@@ -27,8 +20,4 @@ describe("test initial", async () => {
         const balance = await wnat.balanceOf(accounts[1]);
         console.log(`Balance = ${balance}`);
     });
-    
-    it("finish", async () => {
-        console.log("done");
-    })
 });
