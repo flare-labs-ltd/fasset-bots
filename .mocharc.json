@@ -1,0 +1,6 @@
+{
+  "spec": "test/**/*.ts",
+  "require": ["ts-node/register", "dotenv/config", "source-map-support/register"],
+  "exit": "true",
+  "timeout": 0
+}

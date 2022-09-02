@@ -42,8 +42,8 @@
       "publish": "echo npm publish",
       "pack": "npm pack",
       "build": "tsc --allowJs",
-      "test": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --exit -t 0",
-      "test_all": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --exit --recursive -t 500000 test/**/*.ts ",
+      "test": "mocha",
+      "test_all": "mocha --recursive -t 500000 test/**/*.ts ",
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
