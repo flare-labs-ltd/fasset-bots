@@ -17,7 +17,7 @@ export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
 
 // should be used throughout the code
-export const web3 = new Web3();
+export const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 
 /**
  * Asynchronously wait `ms` milliseconds.

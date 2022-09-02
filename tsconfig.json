@@ -1,19 +1,24 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2018",
-    "declaration": true,
-    "declarationMap": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "outDir": "./dist",
-    "sourceMap": true,
-    "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
-    "preserveWatchOutput": true
-  },
-  "include": [
-    "src/**/*",
-    "./typechain-truffle"
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2018",
+        "declaration": true,
+        "declarationMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "outDir": "./dist",
+        "sourceMap": true,
+        "forceConsistentCasingInFileNames": true,
+        "experimentalDecorators": true,
+        "preserveWatchOutput": true
+    },
+    "include": [
+        "src/**/*",
+        "test/**/*",
+        "./typechain-truffle",
+        "./typechain-truffle/types.d.ts"
+    ],
+    "ts-node": {
+        "files": true
+    }
 }

@@ -42,14 +42,15 @@
       "publish": "echo npm publish",
       "pack": "npm pack",
       "build": "tsc --allowJs",
-      "test": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register -t 0",
-      "test_all": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --recursive -t 500000 test/**/*.ts ",
+      "test": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --exit -t 0",
+      "test_all": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --exit --recursive -t 500000 test/**/*.ts ",
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
-      "simple-wallet": "link:../simple-wallet",
       "bn.js": "^4.12.0",
-      "glob": "^7.2.3"
+      "glob": "^7.2.3",
+      "@truffle/contract": "^4.5.23",
+      "simple-wallet": "link:../simple-wallet"
    },
    "devDependencies": {
       "@istanbuljs/nyc-config-typescript": "1.0.2",
