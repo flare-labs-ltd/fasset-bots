@@ -1,0 +1,3558 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "AssetManager",
+  "sourceName": "contracts/fasset/implementation/AssetManager.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "assetManagerController",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IAgentVaultFactory",
+              "name": "agentVaultFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IWhitelist",
+              "name": "whitelist",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IAttestationClient",
+              "name": "attestationClient",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IWNat",
+              "name": "wNat",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IFtsoRegistry",
+              "name": "ftsoRegistry",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "natFtsoIndex",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "assetFtsoIndex",
+              "type": "uint32"
+            },
+            {
+              "internalType": "string",
+              "name": "natFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "assetFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "address payable",
+              "name": "burnAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "chainId",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint16",
+              "name": "collateralReservationFeeBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint64",
+              "name": "assetUnitUBA",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "assetMintingGranularityUBA",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lotSizeAMG",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "maxTrustedPriceAgeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "requireEOAAddressProof",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint32",
+              "name": "minCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "ccbMinCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "safetyMinCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "underlyingBlocksForPayment",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "underlyingSecondsForPayment",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint16",
+              "name": "redemptionFeeBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint32",
+              "name": "redemptionDefaultFactorBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "confirmationByOthersAfterSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint128",
+              "name": "confirmationByOthersRewardNATWei",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint16",
+              "name": "maxRedeemedTickets",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint16",
+              "name": "paymentChallengeRewardBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint128",
+              "name": "paymentChallengeRewardNATWei",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint64",
+              "name": "withdrawalWaitMinSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint32[]",
+              "name": "liquidationCollateralFactorBIPS",
+              "type": "uint32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "ccbTimeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "liquidationStepSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "attestationWindowSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "timelockSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "minUpdateRepeatTimeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "buybackCollateralFactorBIPS",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "announcedUnderlyingConfirmationMinSeconds",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct AssetManagerSettings.Settings",
+          "name": "_settings",
+          "type": "tuple"
+        },
+        {
+          "internalType": "contract IFAsset",
+          "name": "_fAsset",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "agentMinCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "freeCollateralLots",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentAvailable",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "agentType",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "underlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "AgentCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentDestroyAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "AgentDestroyed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentInCCB",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "AvailableAgentExited",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "reservedAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralReservationDeleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lastUnderlyingBlock",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lastUnderlyingTimestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "paymentAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CollateralReserved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueNATWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralWithdrawalAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "value",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "validAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "ContractChangeScheduled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "value",
+          "type": "address"
+        }
+      ],
+      "name": "ContractChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash1",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash2",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DuplicatePaymentConfirmed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "dustUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "DustChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "DustConvertedToTicket",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "FullLiquidationStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "IllegalPaymentConfirmed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "LiquidationEnded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "liquidator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "LiquidationPerformed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "LiquidationStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintedAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "receivedFeeUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "MintingExecuted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "reservedAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "MintingPaymentDefault",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redemptionAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redeemedCollateralWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionDefault",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "freedUnderlyingBalanceUBA",
+          "type": "int256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionFinished",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redemptionAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionPaymentBlocked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "failureReason",
+          "type": "string"
+        }
+      ],
+      "name": "RedemptionPaymentFailed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionPerformed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "remainingLots",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionRequestIncomplete",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "paymentAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lastUnderlyingBlock",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lastUnderlyingTimestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RedemptionRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "SelfClose",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256[]",
+          "name": "value",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "SettingArrayChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "validAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "SettingChangeScheduled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "SettingChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "freeBalanceChangeUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "UnderlyingBalanceToppedUp",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "freeBalance",
+          "type": "int256"
+        }
+      ],
+      "name": "UnderlyingFreeBalanceNegative",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "announcementId",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "paymentReference",
+          "type": "bytes32"
+        }
+      ],
+      "name": "UnderlyingWithdrawalAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "announcementId",
+          "type": "uint64"
+        }
+      ],
+      "name": "UnderlyingWithdrawalCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "spentUBA",
+          "type": "int256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "announcementId",
+          "type": "uint64"
+        }
+      ],
+      "name": "UnderlyingWithdrawalConfirmed",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_valueNATWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "announceCollateralWithdrawal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "announceDestroyAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "announceUnderlyingWithdrawal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "assetManagerController",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "attached",
+          "type": "bool"
+        }
+      ],
+      "name": "attachController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "buybackAgentCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "cancelUnderlyingWithdrawal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_lots",
+          "type": "uint256"
+        }
+      ],
+      "name": "collateralReservationFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_reservationFeeNATWei",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "confirmRedemptionPayment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "confirmTopupPayment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "confirmUnderlyingWithdrawal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "controllerAttached",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "convertDustToTicket",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_underlyingAddressString",
+          "type": "string"
+        }
+      ],
+      "name": "createAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentUnderlyingBlock",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_blockTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_valueNATWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "destroyAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "name": "_payment1",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "name": "_payment2",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "doublePaymentChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "endLiquidation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "executeMinting",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "exitAvailableAgentList",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fAsset",
+      "outputs": [
+        {
+          "internalType": "contract IFAsset",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint8",
+              "name": "numberOfConfirmations",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64",
+              "name": "averageBlockProductionTimeMs",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockTimestamp",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "name": "_proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "finishRedemptionWithoutPayment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction[]",
+          "name": "_payments",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "freeBalanceNegativeChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "getAgentInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "enum FullAgentInfo.AgentStatusInfo",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "ownerAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "underlyingAddressString",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "publiclyAvailable",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "agentMinCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalCollateralNATWei",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "freeCollateralNATWei",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "freeCollateralLots",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintedUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reservedUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "redeemingUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "dustUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ccbStartTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationStartTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockedUnderlyingBalanceUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "freeUnderlyingBalanceUBA",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "announcedUnderlyingWithdrawalId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct FullAgentInfo.AgentInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_start",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_end",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAvailableAgentsDetailedList",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "agentVault",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "agentMinCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "freeCollateralLots",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct AvailableAgents.AgentInfo[]",
+          "name": "_agents",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalLength",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_start",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_end",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAvailableAgentsList",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "_agents",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalLength",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getSettings",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "assetManagerController",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IAgentVaultFactory",
+              "name": "agentVaultFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IWhitelist",
+              "name": "whitelist",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IAttestationClient",
+              "name": "attestationClient",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IWNat",
+              "name": "wNat",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IFtsoRegistry",
+              "name": "ftsoRegistry",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "natFtsoIndex",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "assetFtsoIndex",
+              "type": "uint32"
+            },
+            {
+              "internalType": "string",
+              "name": "natFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "assetFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "address payable",
+              "name": "burnAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "chainId",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint16",
+              "name": "collateralReservationFeeBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint64",
+              "name": "assetUnitUBA",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "assetMintingGranularityUBA",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lotSizeAMG",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "maxTrustedPriceAgeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "requireEOAAddressProof",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint32",
+              "name": "minCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "ccbMinCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "safetyMinCollateralRatioBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "underlyingBlocksForPayment",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "underlyingSecondsForPayment",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint16",
+              "name": "redemptionFeeBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint32",
+              "name": "redemptionDefaultFactorBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "confirmationByOthersAfterSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint128",
+              "name": "confirmationByOthersRewardNATWei",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint16",
+              "name": "maxRedeemedTickets",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint16",
+              "name": "paymentChallengeRewardBIPS",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint128",
+              "name": "paymentChallengeRewardNATWei",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint64",
+              "name": "withdrawalWaitMinSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint32[]",
+              "name": "liquidationCollateralFactorBIPS",
+              "type": "uint32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "ccbTimeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "liquidationStepSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "attestationWindowSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "timelockSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "minUpdateRepeatTimeSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "buybackCollateralFactorBIPS",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "announcedUnderlyingConfirmationMinSeconds",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct AssetManagerSettings.Settings",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getWNat",
+      "outputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "name": "_transaction",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "illegalPaymentChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "liquidate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_liquidatedAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountPaid",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_feeBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_agentMinCollateralRatioBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "makeAgentAvailable",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "deadlineBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "deadlineTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "destinationAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowerBoundaryBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowerBoundaryBlockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "firstOverflowBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "firstOverflowBlockTimestamp",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct IAttestationClient.ReferencedPaymentNonexistence",
+          "name": "_proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "mintingPaymentDefault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        }
+      ],
+      "name": "proveUnderlyingAddressEOA",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_lots",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_redeemerUnderlyingAddressString",
+          "type": "string"
+        }
+      ],
+      "name": "redeem",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "deadlineBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "deadlineTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "destinationAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowerBoundaryBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowerBoundaryBlockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "firstOverflowBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "firstOverflowBlockTimestamp",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct IAttestationClient.ReferencedPaymentNonexistence",
+          "name": "_proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "redemptionPaymentDefault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lots",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxMintingFeeBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "reserveCollateral",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "selfClose",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "inUtxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utxo",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "sourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "int256",
+              "name": "spentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "paymentReference",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "oneToOne",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IAttestationClient.Payment",
+          "name": "_payment",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lots",
+          "type": "uint256"
+        }
+      ],
+      "name": "selfMint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_agentMinCollateralRatioBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "setAgentMinCollateralRatioBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "startLiquidation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "terminate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint8",
+              "name": "numberOfConfirmations",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64",
+              "name": "averageBlockProductionTimeMs",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockTimestamp",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "name": "_proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "unstickMinting",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "blockTimestamp",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint8",
+              "name": "numberOfConfirmations",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64",
+              "name": "averageBlockProductionTimeMs",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockNumber",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "lowestQueryWindowBlockTimestamp",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateCurrentBlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_method",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_params",
+          "type": "bytes"
+        }
+      ],
+      "name": "updateSettings",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_valueNATWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a06040523480156200001157600080fd5b5060405162004bd338038062004bd38339810160408190526200003491620002ef565b600160008190556001600160a01b03821660805260405163eedbfc7d60e01b815273__$498fae630e5f9e2b0d2f5a14b70bbf8a29$__9163eedbfc7d91620000829190869060040162000714565b60006040518083038186803b1580156200009b57600080fd5b505af4158015620000b0573d6000803e3d6000fd5b50505050505062000b59565b634e487b7160e01b600052604160045260246000fd5b6040516104e081016001600160401b0381118282101715620000f857620000f8620000bc565b60405290565b604051601f8201601f191681016001600160401b0381118282101715620001295762000129620000bc565b604052919050565b80516001600160a01b03811681146200014957600080fd5b919050565b805163ffffffff811681146200014957600080fd5b60005b838110156200018057818101518382015260200162000166565b8381111562000190576000848401525b50505050565b600082601f830112620001a857600080fd5b81516001600160401b03811115620001c457620001c4620000bc565b620001d9601f8201601f1916602001620000fe565b818152846020838601011115620001ef57600080fd5b6200020282602083016020870162000163565b949350505050565b805161ffff811681146200014957600080fd5b80516001600160401b03811681146200014957600080fd5b805180151581146200014957600080fd5b80516001600160801b03811681146200014957600080fd5b600082601f8301126200027057600080fd5b815160206001600160401b038211156200028e576200028e620000bc565b8160051b6200029f828201620000fe565b9283528481018201928281019087851115620002ba57600080fd5b83870192505b84831015620002e457620002d4836200014e565b82529183019190830190620002c0565b979650505050505050565b600080604083850312156200030357600080fd5b82516001600160401b03808211156200031b57600080fd5b908401906104e082870312156200033157600080fd5b6200033b620000d2565b620003468362000131565b8152620003566020840162000131565b6020820152620003696040840162000131565b60408201526200037c6060840162000131565b60608201526200038f6080840162000131565b6080820152620003a260a0840162000131565b60a0820152620003b560c084016200014e565b60c0820152620003c860e084016200014e565b60e08201526101008084015183811115620003e257600080fd5b620003f08982870162000196565b82840152505061012080840151838111156200040b57600080fd5b620004198982870162000196565b8284015250506101406200042f81850162000131565b90820152610160620004438482016200014e565b90820152610180620004578482016200020a565b908201526101a06200046b8482016200021d565b908201526101c06200047f8482016200021d565b908201526101e0620004938482016200021d565b90820152610200620004a78482016200021d565b90820152610220620004bb84820162000235565b90820152610240620004cf8482016200014e565b90820152610260620004e38482016200014e565b90820152610280620004f78482016200014e565b908201526102a06200050b8482016200021d565b908201526102c06200051f8482016200021d565b908201526102e0620005338482016200020a565b90820152610300620005478482016200014e565b908201526103206200055b8482016200021d565b908201526103406200056f84820162000246565b90820152610360620005838482016200020a565b90820152610380620005978482016200020a565b908201526103a0620005ab84820162000246565b908201526103c0620005bf8482016200021d565b908201526103e08381015183811115620005d857600080fd5b620005e6898287016200025e565b8284015250506104009150620005fe8284016200021d565b828201526104209150620006148284016200021d565b8282015261044091506200062a8284016200021d565b828201526104609150620006408284016200021d565b828201526104809150620006568284016200021d565b828201526104a091506200066c8284016200021d565b828201526104c09150620006828284016200021d565b828201528094505050506200069a6020840162000131565b90509250929050565b60008151808452620006bd81602086016020860162000163565b601f01601f19169290920160200192915050565b600081518084526020808501945080840160005b838110156200070957815163ffffffff1687529582019590820190600101620006e5565b509495945050505050565b82815260406020820152620007356040820183516001600160a01b03169052565b600060208301516200075260608401826001600160a01b03169052565b5060408301516001600160a01b03811660808401525060608301516001600160a01b03811660a08401525060808301516001600160a01b03811660c08401525060a08301516001600160a01b03811660e08401525060c0830151610100620007c18185018363ffffffff169052565b60e08501519150610120620007dd8186018463ffffffff169052565b8186015192506104e09150610140828187015262000800610520870185620006a3565b9350818701519150603f19610160818887030181890152620008238685620006a3565b9550828901519350610180925062000845838901856001600160a01b03169052565b88015192506101a06200085f8882018563ffffffff169052565b9188015192506101c091620008798884018561ffff169052565b88015192506101e062000896888201856001600160401b03169052565b91880151925061020091620008b5888401856001600160401b03169052565b8801519250610220620008d2888201856001600160401b03169052565b91880151925061024091620008f1888401856001600160401b03169052565b8801519250610260620009078882018515159052565b91880151925061028091620009238884018563ffffffff169052565b88015192506102a06200093d8882018563ffffffff169052565b9188015192506102c091620009598884018563ffffffff169052565b88015192506102e062000976888201856001600160401b03169052565b9188015192506103009162000995888401856001600160401b03169052565b8801519250610320620009ad8882018561ffff169052565b91880151925061034091620009c98884018563ffffffff169052565b8801519250610360620009e6888201856001600160401b03169052565b9188015192506103809162000a05888401856001600160801b03169052565b88015192506103a062000a1d8882018561ffff169052565b9188015192506103c09162000a378884018561ffff169052565b88015192506103e062000a54888201856001600160801b03169052565b9188015192506104009162000a73888401856001600160401b03169052565b8089015193505061042081888703018189015262000a928685620006d1565b9550828901519350610440925062000ab4838901856001600160401b03169052565b8801519250610460905062000ad3878201846001600160401b03169052565b9087015191506104809062000af2878301846001600160401b03169052565b87015191506104a062000b0f878201846001600160401b03169052565b9087015191506104c09062000b2e878301846001600160401b03169052565b8701516001600160401b03908116938701939093528601519182166105008601525050949350505050565b60805161402d62000ba6600039600081816105c001528181610a8301528181610d4c01528181610fbf01528181611a7c01528181611bb001528181611e2f0152612029015261402d6000f3fe6080604052600436106102ae5760003560e01c806383c57d1411610175578063bad4a01f116100dc578063e1c5010011610095578063eb5abafc1161006f578063eb5abafc146108be578063ee80a230146108de578063f0c0b725146108fe578063f19d3c061461091c57600080fd5b8063e1c5010014610850578063e405148414610870578063e415339c1461089057600080fd5b8063bad4a01f1461079d578063bcbaf487146107bd578063bd603535146107dd578063bfead887146107f0578063c0674b4614610810578063dda492131461083057600080fd5b8063a07ea7af1161012e578063a07ea7af146106df578063b046cd17146106ff578063b5a488a61461071f578063b68af97e1461073d578063b7f658ab1461075d578063b928b5331461077d57600080fd5b806383c57d14146106285780638456cb591461064857806385b4bb531461065d5780638ad2a9501461067f5780638bf113261461069f5780639584da2a146106bf57600080fd5b806353777730116102195780636112fe2e116101d25780636112fe2e1461052e57806365454f941461054e5780636cf5d6751461056e578063753923f01461058e5780637c7db1a5146105ae5780638003314d146105fa57600080fd5b8063537777301461045c57806353ed178e146104875780635c975abb146104a75780635cdf04b3146104ce5780635e71055c146104ee5780635fa5fd701461050e57600080fd5b806324b76fd51161026b57806324b76fd514610399578063268b2ec1146103b9578063283f2e24146103d95780632a4c48a8146103f9578063368a3593146104195780633f4ba83a1461044757600080fd5b806304203930146102b35780630782fdc4146102d55780630877acff146102f55780630c08bf8814610337578063152052b01461034c5780631f81949014610379575b600080fd5b3480156102bf57600080fd5b506102d36102ce366004612708565b61093c565b005b3480156102e157600080fd5b506102d36102f036600461272c565b6109b2565b34801561030157600080fd5b50601c54601d546001600160401b03600160c01b909204821691165b604080519283526020830191909152015b60405180910390f35b34801561034357600080fd5b506102d36109c2565b34801561035857600080fd5b5061036c610367366004612708565b610af6565b60405161032e91906127da565b34801561038557600080fd5b506102d361039436600461291a565b610c24565b3480156103a557600080fd5b506102d36103b4366004612a6c565b610c9c565b3480156103c557600080fd5b506102d36103d4366004612ab2565b610db5565b3480156103e557600080fd5b506102d36103f4366004612708565b610df9565b34801561040557600080fd5b506102d3610414366004612b01565b610ec4565b34801561042557600080fd5b50610439610434366004612b3d565b610efe565b60405190815260200161032e565b34801561045357600080fd5b506102d3610f93565b34801561046857600080fd5b50601d54600160c01b900460ff165b604051901515815260200161032e565b34801561049357600080fd5b506102d36104a2366004612b56565b611097565b3480156104b357600080fd5b50601d54600160801b90046001600160401b03161515610477565b3480156104da57600080fd5b506102d36104e9366004612b9e565b6110db565b3480156104fa57600080fd5b506102d3610509366004612708565b61111f565b34801561051a57600080fd5b506102d361052936600461272c565b611166565b34801561053a57600080fd5b506102d3610549366004612b3d565b6111a2565b34801561055a57600080fd5b506102d3610569366004612708565b6111de565b34801561057a57600080fd5b506102d3610589366004612bef565b611225565b34801561059a57600080fd5b506102d36105a9366004612ab2565b6112a2565b3480156105ba57600080fd5b506105e27f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161032e565b34801561060657600080fd5b5061061a610615366004612c24565b6112c8565b60405161032e929190612c46565b34801561063457600080fd5b506102d3610643366004612cb9565b611360565b34801561065457600080fd5b506102d36113a6565b34801561066957600080fd5b5061067261141f565b60405161032e9190612d7f565b34801561068b57600080fd5b506102d361069a366004613184565b611941565b3480156106ab57600080fd5b506102d36106ba3660046131b8565b611983565b3480156106cb57600080fd5b506102d36106da36600461272c565b611aec565b3480156106eb57600080fd5b506102d36106fa366004612708565b611b2b565b34801561070b57600080fd5b506102d361071a366004613211565b611b72565b34801561072b57600080fd5b506005546001600160a01b03166105e2565b34801561074957600080fd5b506102d3610758366004612708565b611bae565b34801561076957600080fd5b506102d3610778366004612708565b611cbc565b34801561078957600080fd5b506102d3610798366004613264565b611d03565b3480156107a957600080fd5b506102d36107b8366004612b3d565b611d4b565b3480156107c957600080fd5b5061031d6107d836600461272c565b611d87565b6102d36107eb366004612bef565b611e9a565b3480156107fc57600080fd5b506102d361080b36600461291a565b611f4e565b34801561081c57600080fd5b506102d361082b366004612708565b61205a565b34801561083c57600080fd5b506102d361084b366004612b56565b6120a1565b34801561085c57600080fd5b506102d361086b366004612708565b612146565b34801561087c57600080fd5b506102d361088b366004613281565b612195565b34801561089c57600080fd5b506108b06108ab366004612c24565b612204565b60405161032e9291906132b5565b3480156108ca57600080fd5b506102d36108d9366004613306565b612290565b3480156108ea57600080fd5b506102d36108f9366004613211565b6122d6565b34801561090a57600080fd5b506001546001600160a01b03166105e2565b34801561092857600080fd5b506102d3610937366004613372565b612312565b604051634b8a7cbd60e01b8152600160048201526001600160a01b038216602482015273__$4054b81dd018f00b16b0262e280b71bd3d$__90634b8a7cbd906044015b60006040518083038186803b15801561099757600080fd5b505af41580156109ab573d6000803e3d6000fd5b5050505050565b6109be6001838361237d565b5050565b6001546001600160a01b031633146109f55760405162461bcd60e51b81526004016109ec906133ed565b60405180910390fd5b601d54600160801b90046001600160401b031615801590610a355750601d54610a329062278d0090600160801b90046001600160401b0316613424565b42115b610a815760405162461bcd60e51b815260206004820152601f60248201527f6173736574206d616e61676572206e6f742070617573656420656e6f7567680060448201526064016109ec565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316630c08bf886040518163ffffffff1660e01b8152600401600060405180830381600087803b158015610adc57600080fd5b505af1158015610af0573d6000803e3d6000fd5b50505050565b610b97604080516102608101909152806000815260200160006001600160a01b03168152602001606081526020016000151581526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081525090565b60405163ef80498360e01b8152600160048201526001600160a01b038316602482015273__$ec55c6bae1638b00bbedb6b751f1f84e77$__9063ef80498390604401600060405180830381865af4158015610bf6573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f19168201604052610c1e91908101906134b4565b92915050565b73__$0c2f2ef91ef2879f18d56852f00951250a$__6387a6d4fd600184610c4a85612424565b6040518463ffffffff1660e01b8152600401610c6893929190613795565b60006040518083038186803b158015610c8057600080fd5b505af4158015610c94573d6000803e3d6000fd5b505050505050565b610ca4612490565b600073__$0c2f2ef91ef2879f18d56852f00951250a$__63c1885d85600133610ccc87612424565b866040518563ffffffff1660e01b8152600401610cec94939291906137c7565b602060405180830381865af4158015610d09573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d2d919061380a565b604051632770a7eb60e21b8152336004820152602481018290529091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690639dc29fac90604401600060405180830381600087803b158015610d9857600080fd5b505af1158015610dac573d6000803e3d6000fd5b50505050505050565b73__$0c2f2ef91ef2879f18d56852f00951250a$__6386d2be59600184610ddb85612424565b6040518463ffffffff1660e01b8152600401610c689392919061383a565b60405163284e7f5d60e21b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__9063a139fd749060440160006040518083038186803b158015610e5357600080fd5b505af4158015610e67573d6000803e3d6000fd5b505060055460405162f55d9d60e01b81526001600160a01b039182166004820152908416925062f55d9d9150602401600060405180830381600087803b158015610eb057600080fd5b505af11580156109ab573d6000803e3d6000fd5b604051631aa4566960e01b815273__$722590fcf677171437eb48cf082465d6d7$__90631aa456699061097f906001908590600401613a46565b600073__$f7c9c0d01068167c22df35ff5943b62148$__63cbf6fa1b6001610f2585612424565b6040516001600160e01b031960e085901b16815260048101929092526001600160401b03166024820152604401602060405180830381865af4158015610f6f573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c1e919061380a565b6001546001600160a01b03163314610fbd5760405162461bcd60e51b81526004016109ec906133ed565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663194307bf6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561101b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061103f9190613a5f565b156110815760405162461bcd60e51b8152602060048201526012602482015271198b585cdcd95d081d195c9b5a5b985d195960721b60448201526064016109ec565b601d805467ffffffffffffffff60801b19169055565b73__$0c2f2ef91ef2879f18d56852f00951250a$__639718f9a66001846110bd85612424565b6040518463ffffffff1660e01b8152600401610c6893929190613a7c565b6110e3612490565b60405163146bdef960e21b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__906351af7be490610c689060019086908690600401613b3b565b604051636d9164d960e11b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__9063db22c9b29060440161097f565b604051634d19559960e01b815273__$5043f477f00c00941421735f02528d968e$__90634d19559990610c689060019086908690600401613b6c565b604051634f7a1f9160e01b815273__$5043f477f00c00941421735f02528d968e$__90634f7a1f919061097f9060019033908690600401613b6c565b604051638365b32760e01b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__90638365b3279060440161097f565b604051632cf5ac0560e11b8152600160048201526001600160a01b0384166024820152604481018390526064810182905273__$4054b81dd018f00b16b0262e280b71bd3d$__906359eb580a906084015b60006040518083038186803b15801561128e57600080fd5b505af4158015610dac573d6000803e3d6000fd5b73__$f7c9c0d01068167c22df35ff5943b62148$__63cf0ce815600184610ddb85612424565b604051630d6b422b60e11b815260016004820152602481018390526044810182905260609060009073__$4054b81dd018f00b16b0262e280b71bd3d$__90631ad6845690606401600060405180830381865af415801561132c573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f191682016040526113549190810190613bae565b915091505b9250929050565b611368612490565b60405163fb80fd7b60e01b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__9063fb80fd7b9061127690600190879087908790600401613c88565b6001546001600160a01b031633146113d05760405162461bcd60e51b81526004016109ec906133ed565b601d54600160801b90046001600160401b031661141d576113f042612424565b601d80546001600160401b0392909216600160801b0267ffffffffffffffff60801b199092169190911790555b565b604080516104e08101825260008082526020820181905291810182905260608082018390526080820183905260a0820183905260c0820183905260e08201839052610100820181905261012082018190526101408201839052610160820183905261018082018390526101a082018390526101c082018390526101e08201839052610200820183905261022082018390526102408201839052610260820183905261028082018390526102a082018390526102c082018390526102e08201839052610300820183905261032082018390526103408201839052610360820183905261038082018390526103a082018390526103c082018390526103e0820152610400810182905261042081018290526104408101829052610460810182905261048081018290526104a081018290526104c0810191909152604080516104e081018252600180546001600160a01b03908116835260025481166020840152600354811693830193909352600454831660608301526005548316608083015260065492831660a083015263ffffffff600160a01b8404811660c0840152600160c01b90930490921660e082015260078054919291610100840191906115e290613d17565b80601f016020809104026020016040519081016040528092919081815260200182805461160e90613d17565b801561165b5780601f106116305761010080835404028352916020019161165b565b820191906000526020600020905b81548152906001019060200180831161163e57829003601f168201915b5050505050815260200160078201805461167490613d17565b80601f01602080910402602001604051908101604052809291908181526020018280546116a090613d17565b80156116ed5780601f106116c2576101008083540402835291602001916116ed565b820191906000526020600020905b8154815290600101906020018083116116d057829003601f168201915b505050918352505060088201546001600160a01b03811660208084019190915263ffffffff600160a01b8304811660408086019190915261ffff600160c01b948590048116606087015260098701546001600160401b038082166080890152600160401b8204811660a0890152600160801b808304821660c08a015296909104811660e0880152600a88015460ff81161515610100808a0191909152810485166101208901526501000000000081048516610140890152690100000000000000000081048516610160890152600160681b81048216610180890152600160a81b810482166101a0890152600160e81b900482166101c0880152600b8801549384166101e0880152640100000000840481166102008801526001600160801b03600160601b85048116610220890152600160e01b85048316610240890152600160f01b909404909116610260870152600c870154928316610280870152939091049092166102a0840152600d840180548351818402810184019094528084526102c09094019390918301828280156118cf57602002820191906000526020600020906000905b82829054906101000a900463ffffffff1663ffffffff16815260200190600401906020826003010492830192600103820291508084116118925790505b5050509183525050600e8201546001600160401b038082166020840152600160401b80830482166040850152600160801b80840483166060860152600160c01b90930482166080850152600f9094015480821660a0850152938404811660c0840152920490911660e090910152919050565b611949612490565b6040516349ddda8360e01b815273__$5043f477f00c00941421735f02528d968e$__906349ddda839061097f906001908590600401613d4c565b601d54600160c01b900460ff166119ac5760405162461bcd60e51b81526004016109ec90613d65565b600260005414156119cf5760405162461bcd60e51b81526004016109ec90613d8b565b6002600090815573__$db99a4b0b1a8936beb7122d8143ea3b698$__631b2c7e5e600186866119fd87612424565b6040518563ffffffff1660e01b8152600401611a1c9493929190613dc2565b602060405180830381865af4158015611a39573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611a5d919061380a565b6040516340c10f1960e01b8152336004820152602481018290529091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906340c10f19906044015b600060405180830381600087803b158015611ac957600080fd5b505af1158015611add573d6000803e3d6000fd5b50506001600055505050505050565b604051632d947d4f60e21b815260009073__$0c2f2ef91ef2879f18d56852f00951250a$__9063b651f53c90610cec9060019087908790600401613b6c565b604051637d3dca4d60e01b8152600160048201526001600160a01b038216602482015273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90637d3dca4d9060440161097f565b604051634edf542760e01b815273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90634edf542790610c689060019086908690600401613e05565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663194307bf6040518163ffffffff1660e01b8152600401602060405180830381865afa158015611c0c573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c309190613a5f565b611c755760405162461bcd60e51b8152602060048201526016602482015275198b585cdcd95d081b9bdd081d195c9b5a5b985d195960521b60448201526064016109ec565b6040516338b683c360e01b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__906338b683c39060440161097f565b6040516308318cbd60e11b8152600160048201526001600160a01b038216602482015273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__90631063197a9060440161097f565b6001546001600160a01b03163314611d2d5760405162461bcd60e51b81526004016109ec906133ed565b601d8054911515600160c01b0260ff60c01b19909216919091179055565b60405163d040987160e01b815273__$5043f477f00c00941421735f02528d968e$__9063d04098719061097f9060019033908690600401613b6c565b600080611d92612490565b60405163070e550560e41b815273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__906370e5505090611dce9060019088908890600401613b6c565b6040805180830381865af4158015611dea573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611e0e9190613e1e565b604051632770a7eb60e21b81523360048201526024810183905291935091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690639dc29fac90604401600060405180830381600087803b158015611e7b57600080fd5b505af1158015611e8f573d6000803e3d6000fd5b505050509250929050565b601d54600160c01b900460ff16611ec35760405162461bcd60e51b81526004016109ec90613d65565b611ecb612490565b73__$f7c9c0d01068167c22df35ff5943b62148$__6329ced63360013386611ef287612424565b611efb87612424565b6040516001600160e01b031960e088901b16815260048101959095526001600160a01b0393841660248601529290911660448401526001600160401b03908116606484015216608482015260a401611276565b60026000541415611f715760405162461bcd60e51b81526004016109ec90613d8b565b600260009081558073__$db99a4b0b1a8936beb7122d8143ea3b698$__6317592390600186611f9f87612424565b6040518463ffffffff1660e01b8152600401611fbd93929190613795565b6040805180830381865af4158015611fd9573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ffd9190613e42565b6040516340c10f1960e01b81526001600160a01b038084166004830152602482018390529294509092507f0000000000000000000000000000000000000000000000000000000000000000909116906340c10f1990604401611aaf565b60405163130da85f60e21b8152600160048201526001600160a01b038216602482015273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90634c36a17c9060440161097f565b600260005414156120c45760405162461bcd60e51b81526004016109ec90613d8b565b600260005573__$f7c9c0d01068167c22df35ff5943b62148$__63dd8f976b6001846120ef85612424565b6040518463ffffffff1660e01b815260040161210d93929190613a7c565b60006040518083038186803b15801561212557600080fd5b505af4158015612139573d6000803e3d6000fd5b5050600160005550505050565b61214e612490565b6040516362b2d31760e01b8152600160048201526001600160a01b038216602482015273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__906362b2d3179060440161097f565b601d54600160c01b900460ff166121be5760405162461bcd60e51b81526004016109ec90613d65565b6121c6612490565b60405163386eaa7b60e01b815273__$5043f477f00c00941421735f02528d968e$__9063386eaa7b9061097f90600190819030908790600401613e70565b60405163c20210bb60e01b815260016004820152602481018390526044810182905260609060009073__$4054b81dd018f00b16b0262e280b71bd3d$__9063c20210bb90606401600060405180830381865af4158015612268573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f191682016040526113549190810190613eb0565b612298612490565b60405163c079a5dd60e01b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__9063c079a5dd9061127690600190879087908790600401613f51565b60405163cb0ca48b60e01b815273__$4d3bb9bf0a42acf2b0f8f3ab5f4c1ad39c$__9063cb0ca48b90610c689060019086908690600401613e05565b6001546001600160a01b0316331461233c5760405162461bcd60e51b81526004016109ec906133ed565b604051632c80af4560e01b815273__$498fae630e5f9e2b0d2f5a14b70bbf8a29$__90632c80af459061127690600190601e90889088908890600401613f96565b6000612389848461254b565b9050612394836125d4565b600a840154610100900463ffffffff168210156123f35760405162461bcd60e51b815260206004820152601a60248201527f636f6c6c61746572616c20726174696f20746f6f20736d616c6c00000000000060448201526064016109ec565b6123fc8261268b565b81600301600a6101000a81548163ffffffff021916908363ffffffff16021790555050505050565b60006001600160401b0382111561248c5760405162461bcd60e51b815260206004820152602660248201527f53616665436173743a2076616c756520646f65736e27742066697420696e203660448201526534206269747360d01b60648201526084016109ec565b5090565b6003546001600160a01b03161561141d57600354604051633af32abf60e01b81523360048201526001600160a01b0390911690633af32abf90602401602060405180830381865afa1580156124e9573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061250d9190613a5f565b61141d5760405162461bcd60e51b815260206004820152600f60248201526e1b9bdd081dda1a5d195b1a5cdd1959608a1b60448201526064016109ec565b6001600160a01b03811660009081526010830160205260408120906003820154600160b01b900460ff16600281111561258657612586612758565b1415610c1e5760405162461bcd60e51b815260206004820152601b60248201527f696e76616c6964206167656e74207661756c742061646472657373000000000060448201526064016109ec565b6000816001600160a01b0316638da5cb5b6040518163ffffffff1660e01b8152600401602060405180830381865afa158015612614573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906126389190613fda565b9050336001600160a01b038216146109be5760405162461bcd60e51b815260206004820152601660248201527537b7363c9030b3b2b73a103b30bab63a1037bbb732b960511b60448201526064016109ec565b600063ffffffff82111561248c5760405162461bcd60e51b815260206004820152602660248201527f53616665436173743a2076616c756520646f65736e27742066697420696e203360448201526532206269747360d01b60648201526084016109ec565b6001600160a01b038116811461270557600080fd5b50565b60006020828403121561271a57600080fd5b8135612725816126f0565b9392505050565b6000806040838503121561273f57600080fd5b823561274a816126f0565b946020939093013593505050565b634e487b7160e01b600052602160045260246000fd5b6005811061277e5761277e612758565b9052565b60005b8381101561279d578181015183820152602001612785565b83811115610af05750506000910152565b600081518084526127c6816020860160208601612782565b601f01601f19169290920160200192915050565b602081526127ec60208201835161276e565b6000602083015161280860408401826001600160a01b03169052565b5060408301516102608060608501526128256102808501836127ae565b9150606085015161283a608086018215159052565b50608085015160a08581019190915285015160c08086019190915285015160e08086019190915285015161010080860191909152850151610120808601919091528501516101408086019190915285015161016080860191909152850151610180808601919091528501516101a0808601919091528501516101c0808601919091528501516101e080860191909152850151610200808601919091528501516102208086019190915285015161024080860191909152909401519390920192909252919050565b60006101c0828403121561291457600080fd5b50919050565b6000806040838503121561292d57600080fd5b82356001600160401b0381111561294357600080fd5b61294f85828601612901565b95602094909401359450505050565b634e487b7160e01b600052604160045260246000fd5b60405161026081016001600160401b03811182821017156129975761299761295e565b60405290565b604051608081016001600160401b03811182821017156129975761299761295e565b604051601f8201601f191681016001600160401b03811182821017156129e7576129e761295e565b604052919050565b60006001600160401b03821115612a0857612a0861295e565b50601f01601f191660200190565b600082601f830112612a2757600080fd5b8135612a3a612a35826129ef565b6129bf565b818152846020838601011115612a4f57600080fd5b816020850160208301376000918101602001919091529392505050565b60008060408385031215612a7f57600080fd5b8235915060208301356001600160401b03811115612a9c57600080fd5b612aa885828601612a16565b9150509250929050565b60008060408385031215612ac557600080fd5b82356001600160401b03811115612adb57600080fd5b8301610160818603121561274a57600080fd5b6000610100828403121561291457600080fd5b600060208284031215612b1357600080fd5b81356001600160401b03811115612b2957600080fd5b612b3584828501612aee565b949350505050565b600060208284031215612b4f57600080fd5b5035919050565b60008060408385031215612b6957600080fd5b82356001600160401b03811115612b7f57600080fd5b61294f85828601612aee565b6000610120828403121561291457600080fd5b60008060408385031215612bb157600080fd5b82356001600160401b03811115612bc757600080fd5b612bd385828601612b8b565b9250506020830135612be4816126f0565b809150509250929050565b600080600060608486031215612c0457600080fd5b8335612c0f816126f0565b95602085013595506040909401359392505050565b60008060408385031215612c3757600080fd5b50508035926020909101359150565b6040808252835182820181905260009190606090818501906020808901865b83811015612ca557815180516001600160a01b03168652838101518487015287810151888701528601518686015260809094019390820190600101612c65565b505095909501959095525092949350505050565b600080600060408486031215612cce57600080fd5b83356001600160401b0380821115612ce557600080fd5b818601915086601f830112612cf957600080fd5b813581811115612d0857600080fd5b8760208260051b8501011115612d1d57600080fd5b60209283019550935050840135612d33816126f0565b809150509250925092565b600081518084526020808501945080840160005b83811015612d7457815163ffffffff1687529582019590820190600101612d52565b509495945050505050565b60208152612d996020820183516001600160a01b03169052565b60006020830151612db560408401826001600160a01b03169052565b5060408301516001600160a01b03811660608401525060608301516001600160a01b03811660808401525060808301516001600160a01b03811660a08401525060a08301516001600160a01b03811660c08401525060c083015163ffffffff811660e08401525060e0830151610100612e358185018363ffffffff169052565b808501519150506104e06101208181860152612e556105008601846127ae565b9250808601519050601f19610140818786030181880152612e7685846127ae565b945080880151925050610160612e96818801846001600160a01b03169052565b8701519150610180612eaf8782018463ffffffff169052565b87015191506101a0612ec68782018461ffff169052565b87015191506101c0612ee2878201846001600160401b03169052565b87015191506101e0612efe878201846001600160401b03169052565b8701519150610200612f1a878201846001600160401b03169052565b8701519150610220612f36878201846001600160401b03169052565b8701519150610240612f4b8782018415159052565b8701519150610260612f648782018463ffffffff169052565b8701519150610280612f7d8782018463ffffffff169052565b87015191506102a0612f968782018463ffffffff169052565b87015191506102c0612fb2878201846001600160401b03169052565b87015191506102e0612fce878201846001600160401b03169052565b8701519150610300612fe58782018461ffff169052565b8701519150610320612ffe8782018463ffffffff169052565b870151915061034061301a878201846001600160401b03169052565b8701519150610360613036878201846001600160801b03169052565b870151915061038061304d8782018461ffff169052565b87015191506103a06130648782018461ffff169052565b87015191506103c0613080878201846001600160801b03169052565b87015191506103e061309c878201846001600160401b03169052565b808801519250506104008187860301818801526130b98584612d3e565b945080880151925050506104206130da818701836001600160401b03169052565b86015190506104406130f6868201836001600160401b03169052565b8601519050610460613112868201836001600160401b03169052565b860151905061048061312e868201836001600160401b03169052565b86015190506104a061314a868201836001600160401b03169052565b86015190506104c0613166868201836001600160401b03169052565b8601516001600160401b0381168387015290505b5090949350505050565b60006020828403121561319657600080fd5b81356001600160401b038111156131ac57600080fd5b612b3584828501612901565b6000806000606084860312156131cd57600080fd5b83356001600160401b038111156131e357600080fd5b6131ef86828701612901565b9350506020840135613200816126f0565b929592945050506040919091013590565b6000806040838503121561322457600080fd5b82356001600160401b0381111561323a57600080fd5b612bd385828601612901565b801515811461270557600080fd5b803561325f81613246565b919050565b60006020828403121561327657600080fd5b813561272581613246565b60006020828403121561329357600080fd5b81356001600160401b038111156132a957600080fd5b612b3584828501612a16565b604080825283519082018190526000906020906060840190828701845b828110156132f75781516001600160a01b0316845292840192908401906001016132d2565b50505092019290925292915050565b60008060006060848603121561331b57600080fd5b83356001600160401b038082111561333257600080fd5b61333e87838801612b8b565b9450602086013591508082111561335457600080fd5b5061336186828701612b8b565b9250506040840135612d33816126f0565b60008060006040848603121561338757600080fd5b8335925060208401356001600160401b03808211156133a557600080fd5b818601915086601f8301126133b957600080fd5b8135818111156133c857600080fd5b8760208285010111156133da57600080fd5b6020830194508093505050509250925092565b6020808252601d908201527f6f6e6c79206173736574206d616e6167657220636f6e74726f6c6c6572000000604082015260600190565b6000821982111561344557634e487b7160e01b600052601160045260246000fd5b500190565b80516005811061325f57600080fd5b805161325f816126f0565b600082601f83011261347557600080fd5b8151613483612a35826129ef565b81815284602083860101111561349857600080fd5b612b35826020830160208701612782565b805161325f81613246565b6000602082840312156134c657600080fd5b81516001600160401b03808211156134dd57600080fd5b9083019061026082860312156134f257600080fd5b6134fa612974565b6135038361344a565b815261351160208401613459565b602082015260408301518281111561352857600080fd5b61353487828601613464565b604083015250613546606084016134a9565b60608201526080838101519082015260a0808401519082015260c0808401519082015260e08084015190820152610100808401519082015261012080840151908201526101408084015190820152610160808401519082015261018080840151908201526101a080840151908201526101c080840151908201526101e08084015190820152610200808401519082015261022080840151908201526102409283015192810192909252509392505050565b6000808335601e1984360301811261360e57600080fd5b83016020810192503590506001600160401b0381111561362d57600080fd5b8060051b360383131561135957600080fd5b81835260006001600160fb1b0383111561365857600080fd5b8260051b8083602087013760009401602001938452509192915050565b80356001600160401b038116811461325f57600080fd5b803560ff8116811461325f57600080fd5b60006101c0823584526136b360208401846135f7565b8260208701526136c6838701828461363f565b925050506136d660408401613675565b6001600160401b031660408501526136f060608401613675565b6001600160401b031660608501526080838101359085015261371460a0840161368c565b60ff1660a085015261372860c0840161368c565b60ff1660c085015260e083810135908501526101008084013590850152610120808401359085015261014080840135908501526101608084013590850152610180613774818501613254565b1515908501526101a061378884820161368c565b60ff81168683015261317a565b8381526060602082015260006137ae606083018561369d565b90506001600160401b0383166040830152949350505050565b8481526001600160a01b03841660208201526001600160401b0383166040820152608060608201819052600090613800908301846127ae565b9695505050505050565b60006020828403121561381c57600080fd5b5051919050565b80356001600160801b038116811461325f57600080fd5b8381526060602082015282356060820152600061385a60208501856135f7565b6101608060808601526138726101c08601838561363f565b925061388060408801613675565b6001600160401b03811660a0870152915061389d60608801613675565b6001600160401b03811660c08701529150608087013560e0860152610100915060a0870135828601526138d260c08801613823565b6101206138e9818801836001600160801b03169052565b6138f560e08a01613675565b915061014061390e818901846001600160401b03169052565b613919858b01613675565b6001600160401b038116898601529450613934828b01613675565b6001600160401b0381166101808a01529450613951818b01613675565b94505050505061396d6101a08501826001600160401b03169052565b506001600160401b03841660408401529050612b35565b60006101008235845261399a60208401846135f7565b8260208701526139ad838701828461363f565b925050506139bd60408401613675565b6001600160401b038082166040870152806139da60608701613675565b16606087015260ff6139ee6080870161368c565b16608087015280613a0160a08701613675565b1660a08701525050613a1560c08401613675565b6001600160401b031660c0850152613a2f60e08401613675565b6001600160401b03811660e0860152509392505050565b828152604060208201526000612b356040830184613984565b600060208284031215613a7157600080fd5b815161272581613246565b8381526060602082015260006137ae6060830185613984565b600061012082358452613aab60208401846135f7565b826020870152613abe838701828461363f565b925050506001600160401b03613ad660408501613675565b166040850152613ae860608401613675565b6001600160401b0316606085015260808381013590850152613b0c60a0840161368c565b60ff1660a085015260c0838101359085015260e080840135908501526101009283013592909301919091525090565b838152606060208201526000613b546060830185613a95565b905060018060a01b0383166040830152949350505050565b9283526001600160a01b03919091166020830152604082015260600190565b60006001600160401b03821115613ba457613ba461295e565b5060051b60200190565b6000806040808486031215613bc257600080fd5b83516001600160401b03811115613bd857600080fd5b8401601f81018613613be957600080fd5b80516020613bf9612a3583613b8b565b82815260079290921b83018101918181019089841115613c1857600080fd5b938201935b83851015613c76576080858b031215613c365760008081fd5b613c3e61299d565b8551613c49816126f0565b81528584015184820152868601518782015260608087015190820152825260809094019390820190613c1d565b97909101519698969750505050505050565b60006060820186835260206060818501528186835260808501905060808760051b8601019250876000805b89811015613cf857878603607f190184528235368c900361011e19018112613cd9578283fd5b613ce5878d8301613a95565b9650509284019291840191600101613cb3565b505050506001600160a01b038516604085015250905095945050505050565b600181811c90821680613d2b57607f821691505b6020821081141561291457634e487b7160e01b600052602260045260246000fd5b828152604060208201526000612b35604083018461369d565b6020808252600c908201526b1b9bdd08185d1d1858da195960a21b604082015260600190565b6020808252601f908201527f5265656e7472616e637947756172643a207265656e7472616e742063616c6c00604082015260600190565b848152608060208201526000613ddb608083018661369d565b6001600160a01b03949094166040830152506001600160401b039190911660609091015292915050565b838152606060208201526000613b54606083018561369d565b60008060408385031215613e3157600080fd5b505080516020909101519092909150565b60008060408385031215613e5557600080fd5b8251613e60816126f0565b6020939093015192949293505050565b848152600060038510613e8557613e85612758565b602082018590526001600160a01b0384166040830152608060608301819052613800908301846127ae565b60008060408385031215613ec357600080fd5b82516001600160401b03811115613ed957600080fd5b8301601f81018513613eea57600080fd5b80516020613efa612a3583613b8b565b82815260059290921b83018101918181019088841115613f1957600080fd5b938201935b83851015613f40578451613f31816126f0565b82529382019390820190613f1e565b969091015195979596505050505050565b848152608060208201526000613f6a6080830186613a95565b8281036040840152613f7c8186613a95565b91505060018060a01b038316606083015295945050505050565b85815284602082015283604082015260806060820152816080820152818360a0830137600081830160a090810191909152601f909201601f19160101949350505050565b600060208284031215613fec57600080fd5b8151612725816126f056fea264697066735822122052136c2149e9bdcdbd1f49753e52f52954da0f1bbcd54b3ad99ad51b396a84b264736f6c634300080b0033",
+  "deployedBytecode": "0x6080604052600436106102ae5760003560e01c806383c57d1411610175578063bad4a01f116100dc578063e1c5010011610095578063eb5abafc1161006f578063eb5abafc146108be578063ee80a230146108de578063f0c0b725146108fe578063f19d3c061461091c57600080fd5b8063e1c5010014610850578063e405148414610870578063e415339c1461089057600080fd5b8063bad4a01f1461079d578063bcbaf487146107bd578063bd603535146107dd578063bfead887146107f0578063c0674b4614610810578063dda492131461083057600080fd5b8063a07ea7af1161012e578063a07ea7af146106df578063b046cd17146106ff578063b5a488a61461071f578063b68af97e1461073d578063b7f658ab1461075d578063b928b5331461077d57600080fd5b806383c57d14146106285780638456cb591461064857806385b4bb531461065d5780638ad2a9501461067f5780638bf113261461069f5780639584da2a146106bf57600080fd5b806353777730116102195780636112fe2e116101d25780636112fe2e1461052e57806365454f941461054e5780636cf5d6751461056e578063753923f01461058e5780637c7db1a5146105ae5780638003314d146105fa57600080fd5b8063537777301461045c57806353ed178e146104875780635c975abb146104a75780635cdf04b3146104ce5780635e71055c146104ee5780635fa5fd701461050e57600080fd5b806324b76fd51161026b57806324b76fd514610399578063268b2ec1146103b9578063283f2e24146103d95780632a4c48a8146103f9578063368a3593146104195780633f4ba83a1461044757600080fd5b806304203930146102b35780630782fdc4146102d55780630877acff146102f55780630c08bf8814610337578063152052b01461034c5780631f81949014610379575b600080fd5b3480156102bf57600080fd5b506102d36102ce366004612708565b61093c565b005b3480156102e157600080fd5b506102d36102f036600461272c565b6109b2565b34801561030157600080fd5b50601c54601d546001600160401b03600160c01b909204821691165b604080519283526020830191909152015b60405180910390f35b34801561034357600080fd5b506102d36109c2565b34801561035857600080fd5b5061036c610367366004612708565b610af6565b60405161032e91906127da565b34801561038557600080fd5b506102d361039436600461291a565b610c24565b3480156103a557600080fd5b506102d36103b4366004612a6c565b610c9c565b3480156103c557600080fd5b506102d36103d4366004612ab2565b610db5565b3480156103e557600080fd5b506102d36103f4366004612708565b610df9565b34801561040557600080fd5b506102d3610414366004612b01565b610ec4565b34801561042557600080fd5b50610439610434366004612b3d565b610efe565b60405190815260200161032e565b34801561045357600080fd5b506102d3610f93565b34801561046857600080fd5b50601d54600160c01b900460ff165b604051901515815260200161032e565b34801561049357600080fd5b506102d36104a2366004612b56565b611097565b3480156104b357600080fd5b50601d54600160801b90046001600160401b03161515610477565b3480156104da57600080fd5b506102d36104e9366004612b9e565b6110db565b3480156104fa57600080fd5b506102d3610509366004612708565b61111f565b34801561051a57600080fd5b506102d361052936600461272c565b611166565b34801561053a57600080fd5b506102d3610549366004612b3d565b6111a2565b34801561055a57600080fd5b506102d3610569366004612708565b6111de565b34801561057a57600080fd5b506102d3610589366004612bef565b611225565b34801561059a57600080fd5b506102d36105a9366004612ab2565b6112a2565b3480156105ba57600080fd5b506105e27f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161032e565b34801561060657600080fd5b5061061a610615366004612c24565b6112c8565b60405161032e929190612c46565b34801561063457600080fd5b506102d3610643366004612cb9565b611360565b34801561065457600080fd5b506102d36113a6565b34801561066957600080fd5b5061067261141f565b60405161032e9190612d7f565b34801561068b57600080fd5b506102d361069a366004613184565b611941565b3480156106ab57600080fd5b506102d36106ba3660046131b8565b611983565b3480156106cb57600080fd5b506102d36106da36600461272c565b611aec565b3480156106eb57600080fd5b506102d36106fa366004612708565b611b2b565b34801561070b57600080fd5b506102d361071a366004613211565b611b72565b34801561072b57600080fd5b506005546001600160a01b03166105e2565b34801561074957600080fd5b506102d3610758366004612708565b611bae565b34801561076957600080fd5b506102d3610778366004612708565b611cbc565b34801561078957600080fd5b506102d3610798366004613264565b611d03565b3480156107a957600080fd5b506102d36107b8366004612b3d565b611d4b565b3480156107c957600080fd5b5061031d6107d836600461272c565b611d87565b6102d36107eb366004612bef565b611e9a565b3480156107fc57600080fd5b506102d361080b36600461291a565b611f4e565b34801561081c57600080fd5b506102d361082b366004612708565b61205a565b34801561083c57600080fd5b506102d361084b366004612b56565b6120a1565b34801561085c57600080fd5b506102d361086b366004612708565b612146565b34801561087c57600080fd5b506102d361088b366004613281565b612195565b34801561089c57600080fd5b506108b06108ab366004612c24565b612204565b60405161032e9291906132b5565b3480156108ca57600080fd5b506102d36108d9366004613306565b612290565b3480156108ea57600080fd5b506102d36108f9366004613211565b6122d6565b34801561090a57600080fd5b506001546001600160a01b03166105e2565b34801561092857600080fd5b506102d3610937366004613372565b612312565b604051634b8a7cbd60e01b8152600160048201526001600160a01b038216602482015273__$4054b81dd018f00b16b0262e280b71bd3d$__90634b8a7cbd906044015b60006040518083038186803b15801561099757600080fd5b505af41580156109ab573d6000803e3d6000fd5b5050505050565b6109be6001838361237d565b5050565b6001546001600160a01b031633146109f55760405162461bcd60e51b81526004016109ec906133ed565b60405180910390fd5b601d54600160801b90046001600160401b031615801590610a355750601d54610a329062278d0090600160801b90046001600160401b0316613424565b42115b610a815760405162461bcd60e51b815260206004820152601f60248201527f6173736574206d616e61676572206e6f742070617573656420656e6f7567680060448201526064016109ec565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316630c08bf886040518163ffffffff1660e01b8152600401600060405180830381600087803b158015610adc57600080fd5b505af1158015610af0573d6000803e3d6000fd5b50505050565b610b97604080516102608101909152806000815260200160006001600160a01b03168152602001606081526020016000151581526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081525090565b60405163ef80498360e01b8152600160048201526001600160a01b038316602482015273__$ec55c6bae1638b00bbedb6b751f1f84e77$__9063ef80498390604401600060405180830381865af4158015610bf6573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f19168201604052610c1e91908101906134b4565b92915050565b73__$0c2f2ef91ef2879f18d56852f00951250a$__6387a6d4fd600184610c4a85612424565b6040518463ffffffff1660e01b8152600401610c6893929190613795565b60006040518083038186803b158015610c8057600080fd5b505af4158015610c94573d6000803e3d6000fd5b505050505050565b610ca4612490565b600073__$0c2f2ef91ef2879f18d56852f00951250a$__63c1885d85600133610ccc87612424565b866040518563ffffffff1660e01b8152600401610cec94939291906137c7565b602060405180830381865af4158015610d09573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d2d919061380a565b604051632770a7eb60e21b8152336004820152602481018290529091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690639dc29fac90604401600060405180830381600087803b158015610d9857600080fd5b505af1158015610dac573d6000803e3d6000fd5b50505050505050565b73__$0c2f2ef91ef2879f18d56852f00951250a$__6386d2be59600184610ddb85612424565b6040518463ffffffff1660e01b8152600401610c689392919061383a565b60405163284e7f5d60e21b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__9063a139fd749060440160006040518083038186803b158015610e5357600080fd5b505af4158015610e67573d6000803e3d6000fd5b505060055460405162f55d9d60e01b81526001600160a01b039182166004820152908416925062f55d9d9150602401600060405180830381600087803b158015610eb057600080fd5b505af11580156109ab573d6000803e3d6000fd5b604051631aa4566960e01b815273__$722590fcf677171437eb48cf082465d6d7$__90631aa456699061097f906001908590600401613a46565b600073__$f7c9c0d01068167c22df35ff5943b62148$__63cbf6fa1b6001610f2585612424565b6040516001600160e01b031960e085901b16815260048101929092526001600160401b03166024820152604401602060405180830381865af4158015610f6f573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c1e919061380a565b6001546001600160a01b03163314610fbd5760405162461bcd60e51b81526004016109ec906133ed565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663194307bf6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561101b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061103f9190613a5f565b156110815760405162461bcd60e51b8152602060048201526012602482015271198b585cdcd95d081d195c9b5a5b985d195960721b60448201526064016109ec565b601d805467ffffffffffffffff60801b19169055565b73__$0c2f2ef91ef2879f18d56852f00951250a$__639718f9a66001846110bd85612424565b6040518463ffffffff1660e01b8152600401610c6893929190613a7c565b6110e3612490565b60405163146bdef960e21b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__906351af7be490610c689060019086908690600401613b3b565b604051636d9164d960e11b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__9063db22c9b29060440161097f565b604051634d19559960e01b815273__$5043f477f00c00941421735f02528d968e$__90634d19559990610c689060019086908690600401613b6c565b604051634f7a1f9160e01b815273__$5043f477f00c00941421735f02528d968e$__90634f7a1f919061097f9060019033908690600401613b6c565b604051638365b32760e01b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__90638365b3279060440161097f565b604051632cf5ac0560e11b8152600160048201526001600160a01b0384166024820152604481018390526064810182905273__$4054b81dd018f00b16b0262e280b71bd3d$__906359eb580a906084015b60006040518083038186803b15801561128e57600080fd5b505af4158015610dac573d6000803e3d6000fd5b73__$f7c9c0d01068167c22df35ff5943b62148$__63cf0ce815600184610ddb85612424565b604051630d6b422b60e11b815260016004820152602481018390526044810182905260609060009073__$4054b81dd018f00b16b0262e280b71bd3d$__90631ad6845690606401600060405180830381865af415801561132c573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f191682016040526113549190810190613bae565b915091505b9250929050565b611368612490565b60405163fb80fd7b60e01b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__9063fb80fd7b9061127690600190879087908790600401613c88565b6001546001600160a01b031633146113d05760405162461bcd60e51b81526004016109ec906133ed565b601d54600160801b90046001600160401b031661141d576113f042612424565b601d80546001600160401b0392909216600160801b0267ffffffffffffffff60801b199092169190911790555b565b604080516104e08101825260008082526020820181905291810182905260608082018390526080820183905260a0820183905260c0820183905260e08201839052610100820181905261012082018190526101408201839052610160820183905261018082018390526101a082018390526101c082018390526101e08201839052610200820183905261022082018390526102408201839052610260820183905261028082018390526102a082018390526102c082018390526102e08201839052610300820183905261032082018390526103408201839052610360820183905261038082018390526103a082018390526103c082018390526103e0820152610400810182905261042081018290526104408101829052610460810182905261048081018290526104a081018290526104c0810191909152604080516104e081018252600180546001600160a01b03908116835260025481166020840152600354811693830193909352600454831660608301526005548316608083015260065492831660a083015263ffffffff600160a01b8404811660c0840152600160c01b90930490921660e082015260078054919291610100840191906115e290613d17565b80601f016020809104026020016040519081016040528092919081815260200182805461160e90613d17565b801561165b5780601f106116305761010080835404028352916020019161165b565b820191906000526020600020905b81548152906001019060200180831161163e57829003601f168201915b5050505050815260200160078201805461167490613d17565b80601f01602080910402602001604051908101604052809291908181526020018280546116a090613d17565b80156116ed5780601f106116c2576101008083540402835291602001916116ed565b820191906000526020600020905b8154815290600101906020018083116116d057829003601f168201915b505050918352505060088201546001600160a01b03811660208084019190915263ffffffff600160a01b8304811660408086019190915261ffff600160c01b948590048116606087015260098701546001600160401b038082166080890152600160401b8204811660a0890152600160801b808304821660c08a015296909104811660e0880152600a88015460ff81161515610100808a0191909152810485166101208901526501000000000081048516610140890152690100000000000000000081048516610160890152600160681b81048216610180890152600160a81b810482166101a0890152600160e81b900482166101c0880152600b8801549384166101e0880152640100000000840481166102008801526001600160801b03600160601b85048116610220890152600160e01b85048316610240890152600160f01b909404909116610260870152600c870154928316610280870152939091049092166102a0840152600d840180548351818402810184019094528084526102c09094019390918301828280156118cf57602002820191906000526020600020906000905b82829054906101000a900463ffffffff1663ffffffff16815260200190600401906020826003010492830192600103820291508084116118925790505b5050509183525050600e8201546001600160401b038082166020840152600160401b80830482166040850152600160801b80840483166060860152600160c01b90930482166080850152600f9094015480821660a0850152938404811660c0840152920490911660e090910152919050565b611949612490565b6040516349ddda8360e01b815273__$5043f477f00c00941421735f02528d968e$__906349ddda839061097f906001908590600401613d4c565b601d54600160c01b900460ff166119ac5760405162461bcd60e51b81526004016109ec90613d65565b600260005414156119cf5760405162461bcd60e51b81526004016109ec90613d8b565b6002600090815573__$db99a4b0b1a8936beb7122d8143ea3b698$__631b2c7e5e600186866119fd87612424565b6040518563ffffffff1660e01b8152600401611a1c9493929190613dc2565b602060405180830381865af4158015611a39573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611a5d919061380a565b6040516340c10f1960e01b8152336004820152602481018290529091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906340c10f19906044015b600060405180830381600087803b158015611ac957600080fd5b505af1158015611add573d6000803e3d6000fd5b50506001600055505050505050565b604051632d947d4f60e21b815260009073__$0c2f2ef91ef2879f18d56852f00951250a$__9063b651f53c90610cec9060019087908790600401613b6c565b604051637d3dca4d60e01b8152600160048201526001600160a01b038216602482015273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90637d3dca4d9060440161097f565b604051634edf542760e01b815273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90634edf542790610c689060019086908690600401613e05565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663194307bf6040518163ffffffff1660e01b8152600401602060405180830381865afa158015611c0c573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c309190613a5f565b611c755760405162461bcd60e51b8152602060048201526016602482015275198b585cdcd95d081b9bdd081d195c9b5a5b985d195960521b60448201526064016109ec565b6040516338b683c360e01b8152600160048201526001600160a01b038216602482015273__$5043f477f00c00941421735f02528d968e$__906338b683c39060440161097f565b6040516308318cbd60e11b8152600160048201526001600160a01b038216602482015273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__90631063197a9060440161097f565b6001546001600160a01b03163314611d2d5760405162461bcd60e51b81526004016109ec906133ed565b601d8054911515600160c01b0260ff60c01b19909216919091179055565b60405163d040987160e01b815273__$5043f477f00c00941421735f02528d968e$__9063d04098719061097f9060019033908690600401613b6c565b600080611d92612490565b60405163070e550560e41b815273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__906370e5505090611dce9060019088908890600401613b6c565b6040805180830381865af4158015611dea573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611e0e9190613e1e565b604051632770a7eb60e21b81523360048201526024810183905291935091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690639dc29fac90604401600060405180830381600087803b158015611e7b57600080fd5b505af1158015611e8f573d6000803e3d6000fd5b505050509250929050565b601d54600160c01b900460ff16611ec35760405162461bcd60e51b81526004016109ec90613d65565b611ecb612490565b73__$f7c9c0d01068167c22df35ff5943b62148$__6329ced63360013386611ef287612424565b611efb87612424565b6040516001600160e01b031960e088901b16815260048101959095526001600160a01b0393841660248601529290911660448401526001600160401b03908116606484015216608482015260a401611276565b60026000541415611f715760405162461bcd60e51b81526004016109ec90613d8b565b600260009081558073__$db99a4b0b1a8936beb7122d8143ea3b698$__6317592390600186611f9f87612424565b6040518463ffffffff1660e01b8152600401611fbd93929190613795565b6040805180830381865af4158015611fd9573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ffd9190613e42565b6040516340c10f1960e01b81526001600160a01b038084166004830152602482018390529294509092507f0000000000000000000000000000000000000000000000000000000000000000909116906340c10f1990604401611aaf565b60405163130da85f60e21b8152600160048201526001600160a01b038216602482015273__$900ca2dd89aa7bd7c22612e1484fcfb277$__90634c36a17c9060440161097f565b600260005414156120c45760405162461bcd60e51b81526004016109ec90613d8b565b600260005573__$f7c9c0d01068167c22df35ff5943b62148$__63dd8f976b6001846120ef85612424565b6040518463ffffffff1660e01b815260040161210d93929190613a7c565b60006040518083038186803b15801561212557600080fd5b505af4158015612139573d6000803e3d6000fd5b5050600160005550505050565b61214e612490565b6040516362b2d31760e01b8152600160048201526001600160a01b038216602482015273__$55e854ab37cd1bbaf9fa5a4f99ff154ced$__906362b2d3179060440161097f565b601d54600160c01b900460ff166121be5760405162461bcd60e51b81526004016109ec90613d65565b6121c6612490565b60405163386eaa7b60e01b815273__$5043f477f00c00941421735f02528d968e$__9063386eaa7b9061097f90600190819030908790600401613e70565b60405163c20210bb60e01b815260016004820152602481018390526044810182905260609060009073__$4054b81dd018f00b16b0262e280b71bd3d$__9063c20210bb90606401600060405180830381865af4158015612268573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f191682016040526113549190810190613eb0565b612298612490565b60405163c079a5dd60e01b815273__$d15fd82c1987b4adc4c1dba5cf0be762b0$__9063c079a5dd9061127690600190879087908790600401613f51565b60405163cb0ca48b60e01b815273__$4d3bb9bf0a42acf2b0f8f3ab5f4c1ad39c$__9063cb0ca48b90610c689060019086908690600401613e05565b6001546001600160a01b0316331461233c5760405162461bcd60e51b81526004016109ec906133ed565b604051632c80af4560e01b815273__$498fae630e5f9e2b0d2f5a14b70bbf8a29$__90632c80af459061127690600190601e90889088908890600401613f96565b6000612389848461254b565b9050612394836125d4565b600a840154610100900463ffffffff168210156123f35760405162461bcd60e51b815260206004820152601a60248201527f636f6c6c61746572616c20726174696f20746f6f20736d616c6c00000000000060448201526064016109ec565b6123fc8261268b565b81600301600a6101000a81548163ffffffff021916908363ffffffff16021790555050505050565b60006001600160401b0382111561248c5760405162461bcd60e51b815260206004820152602660248201527f53616665436173743a2076616c756520646f65736e27742066697420696e203660448201526534206269747360d01b60648201526084016109ec565b5090565b6003546001600160a01b03161561141d57600354604051633af32abf60e01b81523360048201526001600160a01b0390911690633af32abf90602401602060405180830381865afa1580156124e9573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061250d9190613a5f565b61141d5760405162461bcd60e51b815260206004820152600f60248201526e1b9bdd081dda1a5d195b1a5cdd1959608a1b60448201526064016109ec565b6001600160a01b03811660009081526010830160205260408120906003820154600160b01b900460ff16600281111561258657612586612758565b1415610c1e5760405162461bcd60e51b815260206004820152601b60248201527f696e76616c6964206167656e74207661756c742061646472657373000000000060448201526064016109ec565b6000816001600160a01b0316638da5cb5b6040518163ffffffff1660e01b8152600401602060405180830381865afa158015612614573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906126389190613fda565b9050336001600160a01b038216146109be5760405162461bcd60e51b815260206004820152601660248201527537b7363c9030b3b2b73a103b30bab63a1037bbb732b960511b60448201526064016109ec565b600063ffffffff82111561248c5760405162461bcd60e51b815260206004820152602660248201527f53616665436173743a2076616c756520646f65736e27742066697420696e203360448201526532206269747360d01b60648201526084016109ec565b6001600160a01b038116811461270557600080fd5b50565b60006020828403121561271a57600080fd5b8135612725816126f0565b9392505050565b6000806040838503121561273f57600080fd5b823561274a816126f0565b946020939093013593505050565b634e487b7160e01b600052602160045260246000fd5b6005811061277e5761277e612758565b9052565b60005b8381101561279d578181015183820152602001612785565b83811115610af05750506000910152565b600081518084526127c6816020860160208601612782565b601f01601f19169290920160200192915050565b602081526127ec60208201835161276e565b6000602083015161280860408401826001600160a01b03169052565b5060408301516102608060608501526128256102808501836127ae565b9150606085015161283a608086018215159052565b50608085015160a08581019190915285015160c08086019190915285015160e08086019190915285015161010080860191909152850151610120808601919091528501516101408086019190915285015161016080860191909152850151610180808601919091528501516101a0808601919091528501516101c0808601919091528501516101e080860191909152850151610200808601919091528501516102208086019190915285015161024080860191909152909401519390920192909252919050565b60006101c0828403121561291457600080fd5b50919050565b6000806040838503121561292d57600080fd5b82356001600160401b0381111561294357600080fd5b61294f85828601612901565b95602094909401359450505050565b634e487b7160e01b600052604160045260246000fd5b60405161026081016001600160401b03811182821017156129975761299761295e565b60405290565b604051608081016001600160401b03811182821017156129975761299761295e565b604051601f8201601f191681016001600160401b03811182821017156129e7576129e761295e565b604052919050565b60006001600160401b03821115612a0857612a0861295e565b50601f01601f191660200190565b600082601f830112612a2757600080fd5b8135612a3a612a35826129ef565b6129bf565b818152846020838601011115612a4f57600080fd5b816020850160208301376000918101602001919091529392505050565b60008060408385031215612a7f57600080fd5b8235915060208301356001600160401b03811115612a9c57600080fd5b612aa885828601612a16565b9150509250929050565b60008060408385031215612ac557600080fd5b82356001600160401b03811115612adb57600080fd5b8301610160818603121561274a57600080fd5b6000610100828403121561291457600080fd5b600060208284031215612b1357600080fd5b81356001600160401b03811115612b2957600080fd5b612b3584828501612aee565b949350505050565b600060208284031215612b4f57600080fd5b5035919050565b60008060408385031215612b6957600080fd5b82356001600160401b03811115612b7f57600080fd5b61294f85828601612aee565b6000610120828403121561291457600080fd5b60008060408385031215612bb157600080fd5b82356001600160401b03811115612bc757600080fd5b612bd385828601612b8b565b9250506020830135612be4816126f0565b809150509250929050565b600080600060608486031215612c0457600080fd5b8335612c0f816126f0565b95602085013595506040909401359392505050565b60008060408385031215612c3757600080fd5b50508035926020909101359150565b6040808252835182820181905260009190606090818501906020808901865b83811015612ca557815180516001600160a01b03168652838101518487015287810151888701528601518686015260809094019390820190600101612c65565b505095909501959095525092949350505050565b600080600060408486031215612cce57600080fd5b83356001600160401b0380821115612ce557600080fd5b818601915086601f830112612cf957600080fd5b813581811115612d0857600080fd5b8760208260051b8501011115612d1d57600080fd5b60209283019550935050840135612d33816126f0565b809150509250925092565b600081518084526020808501945080840160005b83811015612d7457815163ffffffff1687529582019590820190600101612d52565b509495945050505050565b60208152612d996020820183516001600160a01b03169052565b60006020830151612db560408401826001600160a01b03169052565b5060408301516001600160a01b03811660608401525060608301516001600160a01b03811660808401525060808301516001600160a01b03811660a08401525060a08301516001600160a01b03811660c08401525060c083015163ffffffff811660e08401525060e0830151610100612e358185018363ffffffff169052565b808501519150506104e06101208181860152612e556105008601846127ae565b9250808601519050601f19610140818786030181880152612e7685846127ae565b945080880151925050610160612e96818801846001600160a01b03169052565b8701519150610180612eaf8782018463ffffffff169052565b87015191506101a0612ec68782018461ffff169052565b87015191506101c0612ee2878201846001600160401b03169052565b87015191506101e0612efe878201846001600160401b03169052565b8701519150610200612f1a878201846001600160401b03169052565b8701519150610220612f36878201846001600160401b03169052565b8701519150610240612f4b8782018415159052565b8701519150610260612f648782018463ffffffff169052565b8701519150610280612f7d8782018463ffffffff169052565b87015191506102a0612f968782018463ffffffff169052565b87015191506102c0612fb2878201846001600160401b03169052565b87015191506102e0612fce878201846001600160401b03169052565b8701519150610300612fe58782018461ffff169052565b8701519150610320612ffe8782018463ffffffff169052565b870151915061034061301a878201846001600160401b03169052565b8701519150610360613036878201846001600160801b03169052565b870151915061038061304d8782018461ffff169052565b87015191506103a06130648782018461ffff169052565b87015191506103c0613080878201846001600160801b03169052565b87015191506103e061309c878201846001600160401b03169052565b808801519250506104008187860301818801526130b98584612d3e565b945080880151925050506104206130da818701836001600160401b03169052565b86015190506104406130f6868201836001600160401b03169052565b8601519050610460613112868201836001600160401b03169052565b860151905061048061312e868201836001600160401b03169052565b86015190506104a061314a868201836001600160401b03169052565b86015190506104c0613166868201836001600160401b03169052565b8601516001600160401b0381168387015290505b5090949350505050565b60006020828403121561319657600080fd5b81356001600160401b038111156131ac57600080fd5b612b3584828501612901565b6000806000606084860312156131cd57600080fd5b83356001600160401b038111156131e357600080fd5b6131ef86828701612901565b9350506020840135613200816126f0565b929592945050506040919091013590565b6000806040838503121561322457600080fd5b82356001600160401b0381111561323a57600080fd5b612bd385828601612901565b801515811461270557600080fd5b803561325f81613246565b919050565b60006020828403121561327657600080fd5b813561272581613246565b60006020828403121561329357600080fd5b81356001600160401b038111156132a957600080fd5b612b3584828501612a16565b604080825283519082018190526000906020906060840190828701845b828110156132f75781516001600160a01b0316845292840192908401906001016132d2565b50505092019290925292915050565b60008060006060848603121561331b57600080fd5b83356001600160401b038082111561333257600080fd5b61333e87838801612b8b565b9450602086013591508082111561335457600080fd5b5061336186828701612b8b565b9250506040840135612d33816126f0565b60008060006040848603121561338757600080fd5b8335925060208401356001600160401b03808211156133a557600080fd5b818601915086601f8301126133b957600080fd5b8135818111156133c857600080fd5b8760208285010111156133da57600080fd5b6020830194508093505050509250925092565b6020808252601d908201527f6f6e6c79206173736574206d616e6167657220636f6e74726f6c6c6572000000604082015260600190565b6000821982111561344557634e487b7160e01b600052601160045260246000fd5b500190565b80516005811061325f57600080fd5b805161325f816126f0565b600082601f83011261347557600080fd5b8151613483612a35826129ef565b81815284602083860101111561349857600080fd5b612b35826020830160208701612782565b805161325f81613246565b6000602082840312156134c657600080fd5b81516001600160401b03808211156134dd57600080fd5b9083019061026082860312156134f257600080fd5b6134fa612974565b6135038361344a565b815261351160208401613459565b602082015260408301518281111561352857600080fd5b61353487828601613464565b604083015250613546606084016134a9565b60608201526080838101519082015260a0808401519082015260c0808401519082015260e08084015190820152610100808401519082015261012080840151908201526101408084015190820152610160808401519082015261018080840151908201526101a080840151908201526101c080840151908201526101e08084015190820152610200808401519082015261022080840151908201526102409283015192810192909252509392505050565b6000808335601e1984360301811261360e57600080fd5b83016020810192503590506001600160401b0381111561362d57600080fd5b8060051b360383131561135957600080fd5b81835260006001600160fb1b0383111561365857600080fd5b8260051b8083602087013760009401602001938452509192915050565b80356001600160401b038116811461325f57600080fd5b803560ff8116811461325f57600080fd5b60006101c0823584526136b360208401846135f7565b8260208701526136c6838701828461363f565b925050506136d660408401613675565b6001600160401b031660408501526136f060608401613675565b6001600160401b031660608501526080838101359085015261371460a0840161368c565b60ff1660a085015261372860c0840161368c565b60ff1660c085015260e083810135908501526101008084013590850152610120808401359085015261014080840135908501526101608084013590850152610180613774818501613254565b1515908501526101a061378884820161368c565b60ff81168683015261317a565b8381526060602082015260006137ae606083018561369d565b90506001600160401b0383166040830152949350505050565b8481526001600160a01b03841660208201526001600160401b0383166040820152608060608201819052600090613800908301846127ae565b9695505050505050565b60006020828403121561381c57600080fd5b5051919050565b80356001600160801b038116811461325f57600080fd5b8381526060602082015282356060820152600061385a60208501856135f7565b6101608060808601526138726101c08601838561363f565b925061388060408801613675565b6001600160401b03811660a0870152915061389d60608801613675565b6001600160401b03811660c08701529150608087013560e0860152610100915060a0870135828601526138d260c08801613823565b6101206138e9818801836001600160801b03169052565b6138f560e08a01613675565b915061014061390e818901846001600160401b03169052565b613919858b01613675565b6001600160401b038116898601529450613934828b01613675565b6001600160401b0381166101808a01529450613951818b01613675565b94505050505061396d6101a08501826001600160401b03169052565b506001600160401b03841660408401529050612b35565b60006101008235845261399a60208401846135f7565b8260208701526139ad838701828461363f565b925050506139bd60408401613675565b6001600160401b038082166040870152806139da60608701613675565b16606087015260ff6139ee6080870161368c565b16608087015280613a0160a08701613675565b1660a08701525050613a1560c08401613675565b6001600160401b031660c0850152613a2f60e08401613675565b6001600160401b03811660e0860152509392505050565b828152604060208201526000612b356040830184613984565b600060208284031215613a7157600080fd5b815161272581613246565b8381526060602082015260006137ae6060830185613984565b600061012082358452613aab60208401846135f7565b826020870152613abe838701828461363f565b925050506001600160401b03613ad660408501613675565b166040850152613ae860608401613675565b6001600160401b0316606085015260808381013590850152613b0c60a0840161368c565b60ff1660a085015260c0838101359085015260e080840135908501526101009283013592909301919091525090565b838152606060208201526000613b546060830185613a95565b905060018060a01b0383166040830152949350505050565b9283526001600160a01b03919091166020830152604082015260600190565b60006001600160401b03821115613ba457613ba461295e565b5060051b60200190565b6000806040808486031215613bc257600080fd5b83516001600160401b03811115613bd857600080fd5b8401601f81018613613be957600080fd5b80516020613bf9612a3583613b8b565b82815260079290921b83018101918181019089841115613c1857600080fd5b938201935b83851015613c76576080858b031215613c365760008081fd5b613c3e61299d565b8551613c49816126f0565b81528584015184820152868601518782015260608087015190820152825260809094019390820190613c1d565b97909101519698969750505050505050565b60006060820186835260206060818501528186835260808501905060808760051b8601019250876000805b89811015613cf857878603607f190184528235368c900361011e19018112613cd9578283fd5b613ce5878d8301613a95565b9650509284019291840191600101613cb3565b505050506001600160a01b038516604085015250905095945050505050565b600181811c90821680613d2b57607f821691505b6020821081141561291457634e487b7160e01b600052602260045260246000fd5b828152604060208201526000612b35604083018461369d565b6020808252600c908201526b1b9bdd08185d1d1858da195960a21b604082015260600190565b6020808252601f908201527f5265656e7472616e637947756172643a207265656e7472616e742063616c6c00604082015260600190565b848152608060208201526000613ddb608083018661369d565b6001600160a01b03949094166040830152506001600160401b039190911660609091015292915050565b838152606060208201526000613b54606083018561369d565b60008060408385031215613e3157600080fd5b505080516020909101519092909150565b60008060408385031215613e5557600080fd5b8251613e60816126f0565b6020939093015192949293505050565b848152600060038510613e8557613e85612758565b602082018590526001600160a01b0384166040830152608060608301819052613800908301846127ae565b60008060408385031215613ec357600080fd5b82516001600160401b03811115613ed957600080fd5b8301601f81018513613eea57600080fd5b80516020613efa612a3583613b8b565b82815260059290921b83018101918181019088841115613f1957600080fd5b938201935b83851015613f40578451613f31816126f0565b82529382019390820190613f1e565b969091015195979596505050505050565b848152608060208201526000613f6a6080830186613a95565b8281036040840152613f7c8186613a95565b91505060018060a01b038316606083015295945050505050565b85815284602082015283604082015260806060820152816080820152818360a0830137600081830160a090810191909152601f909201601f19160101949350505050565b600060208284031215613fec57600080fd5b8151612725816126f056fea264697066735822122052136c2149e9bdcdbd1f49753e52f52954da0f1bbcd54b3ad99ad51b396a84b264736f6c634300080b0033",
+  "linkReferences": {
+    "contracts/fasset/library/Agents.sol": {
+      "Agents": [
+        {
+          "length": 20,
+          "start": 6596
+        },
+        {
+          "length": 20,
+          "start": 7402
+        },
+        {
+          "length": 20,
+          "start": 7451
+        },
+        {
+          "length": 20,
+          "start": 7511
+        },
+        {
+          "length": 20,
+          "start": 7593
+        },
+        {
+          "length": 20,
+          "start": 9470
+        },
+        {
+          "length": 20,
+          "start": 10304
+        },
+        {
+          "length": 20,
+          "start": 10496
+        },
+        {
+          "length": 20,
+          "start": 11643
+        }
+      ]
+    },
+    "contracts/fasset/library/AvailableAgents.sol": {
+      "AvailableAgents": [
+        {
+          "length": 20,
+          "start": 5383
+        },
+        {
+          "length": 20,
+          "start": 7678
+        },
+        {
+          "length": 20,
+          "start": 7832
+        },
+        {
+          "length": 20,
+          "start": 11732
+        }
+      ]
+    },
+    "contracts/fasset/library/Challenges.sol": {
+      "Challenges": [
+        {
+          "length": 20,
+          "start": 7320
+        },
+        {
+          "length": 20,
+          "start": 7965
+        },
+        {
+          "length": 20,
+          "start": 11853
+        }
+      ]
+    },
+    "contracts/fasset/library/CollateralReservations.sol": {
+      "CollateralReservations": [
+        {
+          "length": 20,
+          "start": 6824
+        },
+        {
+          "length": 20,
+          "start": 7754
+        },
+        {
+          "length": 20,
+          "start": 10867
+        },
+        {
+          "length": 20,
+          "start": 11377
+        }
+      ]
+    },
+    "contracts/fasset/library/FullAgentInfo.sol": {
+      "FullAgentInfo": [
+        {
+          "length": 20,
+          "start": 5986
+        }
+      ]
+    },
+    "contracts/fasset/library/Liquidation.sol": {
+      "Liquidation": [
+        {
+          "length": 20,
+          "start": 10375
+        },
+        {
+          "length": 20,
+          "start": 10567
+        },
+        {
+          "length": 20,
+          "start": 11545
+        }
+      ]
+    },
+    "contracts/fasset/library/Minting.sol": {
+      "Minting": [
+        {
+          "length": 20,
+          "start": 9598
+        },
+        {
+          "length": 20,
+          "start": 11041
+        }
+      ]
+    },
+    "contracts/fasset/library/Redemption.sol": {
+      "Redemption": [
+        {
+          "length": 20,
+          "start": 6092
+        },
+        {
+          "length": 20,
+          "start": 6222
+        },
+        {
+          "length": 20,
+          "start": 6493
+        },
+        {
+          "length": 20,
+          "start": 7231
+        },
+        {
+          "length": 20,
+          "start": 9892
+        }
+      ]
+    },
+    "contracts/fasset/library/SettingsUpdater.sol": {
+      "SettingsUpdater": [
+        {
+          "length": 20,
+          "start": 87
+        },
+        {
+          "length": 20,
+          "start": 12017
+        }
+      ]
+    },
+    "contracts/fasset/library/StateUpdater.sol": {
+      "StateUpdater": [
+        {
+          "length": 20,
+          "start": 6777
+        }
+      ]
+    },
+    "contracts/fasset/library/UnderlyingFreeBalance.sol": {
+      "UnderlyingFreeBalance": [
+        {
+          "length": 20,
+          "start": 11915
+        }
+      ]
+    },
+    "contracts/fasset/library/UnderlyingWithdrawalAnnouncements.sol": {
+      "UnderlyingWithdrawalAnnouncements": [
+        {
+          "length": 20,
+          "start": 9974
+        },
+        {
+          "length": 20,
+          "start": 10023
+        },
+        {
+          "length": 20,
+          "start": 11301
+        }
+      ]
+    }
+  },
+  "deployedLinkReferences": {
+    "contracts/fasset/library/Agents.sol": {
+      "Agents": [
+        {
+          "length": 20,
+          "start": 3614
+        },
+        {
+          "length": 20,
+          "start": 4420
+        },
+        {
+          "length": 20,
+          "start": 4469
+        },
+        {
+          "length": 20,
+          "start": 4529
+        },
+        {
+          "length": 20,
+          "start": 4611
+        },
+        {
+          "length": 20,
+          "start": 6488
+        },
+        {
+          "length": 20,
+          "start": 7322
+        },
+        {
+          "length": 20,
+          "start": 7514
+        },
+        {
+          "length": 20,
+          "start": 8661
+        }
+      ]
+    },
+    "contracts/fasset/library/AvailableAgents.sol": {
+      "AvailableAgents": [
+        {
+          "length": 20,
+          "start": 2401
+        },
+        {
+          "length": 20,
+          "start": 4696
+        },
+        {
+          "length": 20,
+          "start": 4850
+        },
+        {
+          "length": 20,
+          "start": 8750
+        }
+      ]
+    },
+    "contracts/fasset/library/Challenges.sol": {
+      "Challenges": [
+        {
+          "length": 20,
+          "start": 4338
+        },
+        {
+          "length": 20,
+          "start": 4983
+        },
+        {
+          "length": 20,
+          "start": 8871
+        }
+      ]
+    },
+    "contracts/fasset/library/CollateralReservations.sol": {
+      "CollateralReservations": [
+        {
+          "length": 20,
+          "start": 3842
+        },
+        {
+          "length": 20,
+          "start": 4772
+        },
+        {
+          "length": 20,
+          "start": 7885
+        },
+        {
+          "length": 20,
+          "start": 8395
+        }
+      ]
+    },
+    "contracts/fasset/library/FullAgentInfo.sol": {
+      "FullAgentInfo": [
+        {
+          "length": 20,
+          "start": 3004
+        }
+      ]
+    },
+    "contracts/fasset/library/Liquidation.sol": {
+      "Liquidation": [
+        {
+          "length": 20,
+          "start": 7393
+        },
+        {
+          "length": 20,
+          "start": 7585
+        },
+        {
+          "length": 20,
+          "start": 8563
+        }
+      ]
+    },
+    "contracts/fasset/library/Minting.sol": {
+      "Minting": [
+        {
+          "length": 20,
+          "start": 6616
+        },
+        {
+          "length": 20,
+          "start": 8059
+        }
+      ]
+    },
+    "contracts/fasset/library/Redemption.sol": {
+      "Redemption": [
+        {
+          "length": 20,
+          "start": 3110
+        },
+        {
+          "length": 20,
+          "start": 3240
+        },
+        {
+          "length": 20,
+          "start": 3511
+        },
+        {
+          "length": 20,
+          "start": 4249
+        },
+        {
+          "length": 20,
+          "start": 6910
+        }
+      ]
+    },
+    "contracts/fasset/library/SettingsUpdater.sol": {
+      "SettingsUpdater": [
+        {
+          "length": 20,
+          "start": 9035
+        }
+      ]
+    },
+    "contracts/fasset/library/StateUpdater.sol": {
+      "StateUpdater": [
+        {
+          "length": 20,
+          "start": 3795
+        }
+      ]
+    },
+    "contracts/fasset/library/UnderlyingFreeBalance.sol": {
+      "UnderlyingFreeBalance": [
+        {
+          "length": 20,
+          "start": 8933
+        }
+      ]
+    },
+    "contracts/fasset/library/UnderlyingWithdrawalAnnouncements.sol": {
+      "UnderlyingWithdrawalAnnouncements": [
+        {
+          "length": 20,
+          "start": 6992
+        },
+        {
+          "length": 20,
+          "start": 7041
+        },
+        {
+          "length": 20,
+          "start": 8319
+        }
+      ]
+    }
+  }
+}
