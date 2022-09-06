@@ -55,9 +55,9 @@ export function checkEventNotEmited<E extends EventSelector, N extends E['name']
     }
 }
 
-export function eventArgs<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> {
+export function eventArgs<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> | undefined {
     // TODO: the '!' shouldn't be here, but somehow worked before silently passing undefined and now too much code relies on this
-    return findEvent(response, name)?.args!;
+    return findEvent(response, name)?.args;
 }
 
 export function requiredEventArgs<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> {
