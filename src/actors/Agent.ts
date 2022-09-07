@@ -20,11 +20,13 @@ export class Agent {
     ) {
     }
     
-    protected assetManager = this.context.assetManager;
-    protected chain = this.context.chain;
-    protected attestationProvider = this.context.attestationProvider;
-    protected wnat = this.context.wnat;
-    protected fAsset = this.context.fAsset;
+    get assetManager() {
+        return this.context.assetManager;
+    }
+    
+    get attestationProvider() {
+        return this.context.attestationProvider;
+    }
     
     get vaultAddress() {
         return this.agentVault.address;
@@ -57,7 +59,7 @@ export class Agent {
         const event = findRequiredEvent(response, 'AgentCreated');
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
-        // creater object
+        // create object
         return new Agent(ctx, ownerAddress, agentVault, underlyingAddress, wallet);
     }
     
@@ -182,7 +184,7 @@ export class Agent {
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string, minterSourceAddress?: string) {
         if (!minterSourceAddress) {
-            const tx = await this.chain.getTransaction(transactionHash);
+            const tx = await this.context.chain.getTransaction(transactionHash);
             minterSourceAddress = tx?.inputs[0][0]!;
         }
         const proof = await this.attestationProvider.provePayment(transactionHash, minterSourceAddress, this.underlyingAddress);
