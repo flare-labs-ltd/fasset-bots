@@ -16,7 +16,6 @@ export class Agent {
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
         public underlyingAddress: string,
-        public wallet: IBlockChainWallet,
     ) {
     }
     
@@ -32,6 +31,10 @@ export class Agent {
         return this.agentVault.address;
     }
     
+    get wallet() {
+        return this.context.wallet;
+    }
+    
     // static async createTest(ctx: AssetContext, ownerAddress: string, underlyingAddress: string) {
     //     if (!(ctx.chain instanceof MockChain)) assert.fail("only for mock chains");
     //     // mint some funds on underlying address (just enough to make EOA proof)
@@ -43,16 +46,19 @@ export class Agent {
     //     return await Agent.create(ctx, ownerAddress, underlyingAddress, wallet);
     // }
     
-    static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string, wallet: IBlockChainWallet) {
+    static async proveAddressEOA(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create and prove transaction from underlyingAddress if EOA required
         if (ctx.chainInfo.requireEOAProof) {
-            const txHash = await wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
+            const txHash = await ctx.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
             if (ctx.chain.finalizationBlocks > 0) {
                 await ctx.chainEvents.waitForUnderlyingTransactionFinalization(undefined, txHash);
             }
             const proof = await ctx.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
             await ctx.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
         }
+    }
+    
+    static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create agent
         const response = await ctx.assetManager.createAgent(underlyingAddress, { from: ownerAddress });
         // extract agent vault address from AgentCreated event
@@ -60,7 +66,7 @@ export class Agent {
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, underlyingAddress, wallet);
+        return new Agent(ctx, ownerAddress, agentVault, underlyingAddress);
     }
     
     async depositCollateral(amountNATWei: BNish) {

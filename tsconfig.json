@@ -10,6 +10,7 @@
         "sourceMap": true,
         "forceConsistentCasingInFileNames": true,
         "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "preserveWatchOutput": true
     },
     "include": [

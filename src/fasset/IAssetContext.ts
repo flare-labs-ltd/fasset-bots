@@ -1,6 +1,7 @@
 import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance, WNatInstance } from "../../typechain-truffle";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
+import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { ChainInfo } from "./ChainInfo";
@@ -20,6 +21,7 @@ export type FAssetEvents = import('../../typechain-truffle/FAsset').AllEvents;
 export interface IAssetContext {
     chainInfo: ChainInfo;
     chain: IBlockChain;
+    wallet: IBlockChainWallet;
     chainEvents: UnderlyingChainEvents;
     attestationProvider: AttestationHelper;
     // contracts
@@ -31,4 +33,6 @@ export interface IAssetContext {
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetFtso: ContractWithEvents<FtsoMockInstance, FtsoMockEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
+    // others
+    
 }
