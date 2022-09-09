@@ -1,5 +1,14 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 
+@Entity()
+export class WalletAddress {
+    @PrimaryKey()
+    address!: string;
+    
+    @Property()
+    encryptedPrivateKey!: string;
+}
+
 @Entity({ schema: 'Agent' })
 export class AgentEntity {
     // vaultAddress is unique accross chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)

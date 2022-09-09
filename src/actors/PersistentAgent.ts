@@ -1,6 +1,6 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { PersistenceContext } from "../PersistenceContext";
 import { IAssetContext } from "../fasset/IAssetContext";
-import { DI } from "../run-agent";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
@@ -13,14 +13,14 @@ const AgentVault = artifacts.require('AgentVault');
 
 export class PersistentAgent {
     constructor(
-        public agent: Agent
+        public agent: Agent,
+        public pc: PersistenceContext
     ) { }
 
     context = this.agent.context;
 
-    static async create(context: IAssetContext, ownerAddress: string) {
+    static async create(pc: PersistenceContext, context: IAssetContext, ownerAddress: string) {
         const underlyingAddress = await context.wallet.createAccount();
-        await context.wallet.saveAccounts(`${DI.config.walletsPath}/wallet-${context.chainInfo.chainId}.json`);
         // TODO: add EOA proof when needed
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const agentEntity = new AgentEntity();
@@ -29,15 +29,15 @@ export class PersistentAgent {
         agentEntity.vaultAddress = agent.agentVault.address;
         agentEntity.underlyingAddress = agent.underlyingAddress;
         agentEntity.active = true;
-        DI.em.persist(agentEntity);
-        return new PersistentAgent(agent);
+        pc.em.persist(agentEntity);
+        return new PersistentAgent(agent, pc);
     }
 
-    static async load(contextMap: Map<number, IAssetContext>, agentEntity: AgentEntity) {
+    static async load(pc: PersistenceContext, contextMap: Map<number, IAssetContext>, agentEntity: AgentEntity) {
         const context = contextMap.get(agentEntity.chainId) ?? fail("Invalid chain id");
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new PersistentAgent(agent);
+        return new PersistentAgent(agent, pc);
     }
 
     startRedemption(request: EventArgs<RedemptionRequested>) {
@@ -49,7 +49,7 @@ export class PersistentAgent {
         redemption.valueUBA = toBN(request.valueUBA);
         redemption.feeUBA = toBN(request.feeUBA);
         redemption.paymentReference = request.paymentReference;
-        DI.em.persist(redemption);
+        this.pc.em.persist(redemption);
     }
 
     async nextRedemptionStep(redemption: Redemption) {
@@ -62,7 +62,7 @@ export class PersistentAgent {
     }
 
     async payForRedemption(id: BN) {
-        const redemption = await DI.em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
+        const redemption = await this.pc.em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
         const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
         // !!! TODO: what if there are too little funds on underlying address to pay for fee?
         const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);

@@ -1,4 +1,4 @@
-import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance, WNatInstance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IFtsoManagerInstance, IFtsoInstance, IFtsoRegistryInstance, WNatInstance } from "../../typechain-truffle";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -9,12 +9,12 @@ import { ChainInfo } from "./ChainInfo";
 export type AddressUpdaterEvents = import('../../typechain-truffle/AddressUpdater').AllEvents;
 export type AssetManagerControllerEvents = import('../../typechain-truffle/AssetManagerController').AllEvents;
 export type WNatEvents = import('../../typechain-truffle/WNat').AllEvents;
-export type StateConnectorMockEvents = import('../../typechain-truffle/StateConnectorMock').AllEvents;
+export type IStateConnectorEvents = import('../../typechain-truffle/IStateConnector').AllEvents;
 export type AgentVaultFactoryEvents = import('../../typechain-truffle/AgentVaultFactory').AllEvents;
 export type AttestationClientSCEvents = import('../../typechain-truffle/AttestationClientSC').AllEvents;
-export type FtsoRegistryMockEvents = import('../../typechain-truffle/FtsoRegistryMock').AllEvents;
-export type FtsoMockEvents = import('../../typechain-truffle/FtsoMock').AllEvents;
-export type FtsoManagerMockEvents = import('../../typechain-truffle/FtsoManagerMock').AllEvents;
+export type IFtsoRegistryEvents = import('../../typechain-truffle/IFtsoRegistry').AllEvents;
+export type IFtsoEvents = import('../../typechain-truffle/IFtso').AllEvents;
+export type IFtsoManagerEvents = import('../../typechain-truffle/IFtsoManager').AllEvents;
 export type AssetManagerEvents = import('../../typechain-truffle/AssetManager').AllEvents;
 export type FAssetEvents = import('../../typechain-truffle/FAsset').AllEvents;
 
@@ -26,12 +26,12 @@ export interface IAssetContext {
     attestationProvider: AttestationHelper;
     // contracts
     assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;
-    ftsoRegistry: ContractWithEvents<FtsoRegistryMockInstance, FtsoRegistryMockEvents>;
-    ftsoManager: ContractWithEvents<FtsoManagerMockInstance, FtsoManagerMockEvents>;
+    ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>;
+    ftsoManager: ContractWithEvents<IFtsoManagerInstance, IFtsoManagerEvents>;
     wnat: ContractWithEvents<WNatInstance, WNatEvents>;
-    natFtso: ContractWithEvents<FtsoMockInstance, FtsoMockEvents>;
+    natFtso: ContractWithEvents<IFtsoInstance, IFtsoEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
-    assetFtso: ContractWithEvents<FtsoMockInstance, FtsoMockEvents>;
+    assetFtso: ContractWithEvents<IFtsoInstance, IFtsoEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     // others
     

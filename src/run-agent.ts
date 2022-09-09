@@ -1,24 +1,83 @@
-import { MikroORM } from '@mikro-orm/core';
-import type { SqlEntityManager, SqliteDriver } from '@mikro-orm/sqlite';
-import { mkdirSync } from 'fs';
-import { programConfig } from './config';
+import Web3 from "web3";
+import { BotConfig, BotConfigChain } from './BotConfig';
+import { IAssetContext } from './fasset/IAssetContext';
+import { PersistenceContext } from './PersistenceContext';
+import { AttestationHelper } from './underlying-chain/AttestationHelper';
+import { UnderlyingChainEvents } from './underlying-chain/UnderlyingChainEvents';
+import { artifacts } from './utils/artifacts';
+import { web3 } from './utils/helpers';
 
-export let DI!: {
-    orm: MikroORM;
-    em: SqlEntityManager;
-    config: typeof programConfig;
-};
+const AssetManager = artifacts.require('AssetManager');
+const AssetManagerController = artifacts.require('AssetManagerController');
+const AddressUpdater = artifacts.require('AddressUpdater');
+const WNat = artifacts.require('WNat');
+const IFtso = artifacts.require('IFtso');
+const IFtsoRegistry = artifacts.require('IFtsoRegistry');
+const IFtsoManager = artifacts.require('IFtsoManager');
+const FAsset = artifacts.require('FAsset');
+
+class PersistentAgentRunner {
+    constructor(
+        public context: IAssetContext,
+        public pc: PersistenceContext,
+    ) { }
+
+    async run() {
+        while (true) {
+            await this.pc.orm.em.transactional(async em => {
+                this.pc.em = em;
+                await this.runStep();
+            }).catch(error => {
+                console.error(error);
+            });
+        }
+    }
+
+    async runStep() {
+
+    }
+
+}
+
+async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigChain): Promise<IAssetContext> {
+    const assetManager = await AssetManager.at(chainConfig.assetManager);
+    const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
+    const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+    const settings = await assetManager.getSettings();
+    return {
+        chainInfo: chainConfig.chainInfo,
+        chain: chainConfig.chain,
+        chainEvents: new UnderlyingChainEvents(chainConfig.chain, chainConfig.chainEvents, null),
+        wallet: chainConfig.wallet,
+        attestationProvider: new AttestationHelper(botConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        assetManager: assetManager,
+        assetManagerController: await AssetManagerController.at(await addressUpdater.getContractAddress('AssetManagerController')),
+        ftsoRegistry: ftsoRegistry,
+        ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
+        wnat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
+        fAsset: await FAsset.at(await assetManager.fAsset()),
+        natFtso: await IFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.natFtsoSymbol)),
+        assetFtso: await IFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol)),
+    };
+}
 
 const main = async () => {
-    const orm = await MikroORM.init<SqliteDriver>();
-    const em = orm.em.fork();
-    mkdirSync(programConfig.dbPath);
-    mkdirSync(programConfig.walletsPath);
-    DI = { orm, em, config: programConfig };
+    const botConfig = await import(process.argv[2]).then(m => m.default) as BotConfig;
+    web3.setProvider(new Web3.providers.HttpProvider(botConfig.rpcUrl));
+    const rootPc = await PersistenceContext.create();
+    const runners: Promise<void>[] = [];
+    for (const chainConfig of botConfig.chains) {
+        const assetContext = await createAssetContext(botConfig, chainConfig);
+        const pc = rootPc.clone();
+        const chainRunner = new PersistentAgentRunner(assetContext, pc);
+        runners.push(chainRunner.run());
+    }
+    await Promise.all(runners);
 }
 
 main().catch((error) => {
     console.error(error);
+    process.exit(1);
 }).finally(() => {
     process.exit(0);
 })
