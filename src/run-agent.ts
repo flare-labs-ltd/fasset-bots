@@ -1,4 +1,6 @@
 import Web3 from "web3";
+import { AgentEntity } from "./actors/entities";
+import { PersistentAgent } from "./actors/PersistentAgent";
 import { BotConfig, BotConfigChain } from './BotConfig';
 import { IAssetContext } from './fasset/IAssetContext';
 import { PersistenceContext } from './PersistenceContext';
@@ -24,17 +26,22 @@ class PersistentAgentRunner {
 
     async run() {
         while (true) {
-            await this.pc.orm.em.transactional(async em => {
-                this.pc.em = em;
-                await this.runStep();
-            }).catch(error => {
-                console.error(error);
-            });
+            this.pc.em = this.pc.orm.em.fork();
+            await this.runStep();
         }
     }
 
     async runStep() {
-
+        const agentEntities = await this.pc.em.find(AgentEntity, { active: true });
+        for (const agentEntity of agentEntities) {
+            try {
+                const agent = await PersistentAgent.load(this.pc, this.context, agentEntity);
+                await agent.handleEvents();
+                await agent.handleOpenRedemptions();
+            } catch (error) {
+                console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
+            }
+        }
     }
 
 }

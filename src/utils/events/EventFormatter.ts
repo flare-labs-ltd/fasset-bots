@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import Web3 from "web3";
-import { BaseEvent } from "./events/common";
-import { formatBN } from "./helpers";
+import { BaseEvent } from "./common";
+import { formatBN } from "../helpers";
 
 
 export class EventFormatter {

@@ -1,10 +1,12 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { PersistenceContext } from "../PersistenceContext";
 import { IAssetContext } from "../fasset/IAssetContext";
+import { PersistenceContext } from "../PersistenceContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
-import { fail, toBN } from "../utils/helpers";
+import { eventIs } from "../utils/events/truffle";
+import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
+import { isNotNull, toBN, web3 } from "../utils/helpers";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { Agent } from "./Agent";
 import { AgentEntity, Redemption } from "./entities";
@@ -18,6 +20,7 @@ export class PersistentAgent {
     ) { }
 
     context = this.agent.context;
+    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
     static async create(pc: PersistenceContext, context: IAssetContext, ownerAddress: string) {
         const underlyingAddress = await context.wallet.createAccount();
@@ -33,11 +36,36 @@ export class PersistentAgent {
         return new PersistentAgent(agent, pc);
     }
 
-    static async load(pc: PersistenceContext, contextMap: Map<number, IAssetContext>, agentEntity: AgentEntity) {
-        const context = contextMap.get(agentEntity.chainId) ?? fail("Invalid chain id");
+    static async load(pc: PersistenceContext, context: IAssetContext, agentEntity: AgentEntity) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
         return new PersistentAgent(agent, pc);
+    }
+
+    async handleEvents() {
+        await this.pc.em.transactional(async em => {
+            const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress });
+            // get all logs for this agent
+            const lastBlock = await web3.eth.getBlockNumber() - 1;  // TODO: should put finalization blocks here?
+            const rawLogs = await web3.eth.getPastLogs({
+                address: this.agent.assetManager.address,
+                fromBlock: agentEnt.lastEventBlockHandled ?? lastBlock,
+                toBlock: lastBlock,
+                topics: [null, this.agent.vaultAddress]
+            });
+            const events = rawLogs.map(log => this.eventDecoder.decodeEvent(log)).filter(isNotNull);
+            // handle events
+            // Note: only update db here, so that error won't retry on-chain operations.
+            for (const event of events) {
+                if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
+                    this.startRedemption(event.args);
+                }
+            }
+            // mark as handled
+            agentEnt.lastEventBlockHandled = lastBlock;
+        }).catch(error => {
+            console.error(`Error handling events for agent ${this.agent.vaultAddress}`);
+        });;
     }
 
     startRedemption(request: EventArgs<RedemptionRequested>) {
@@ -52,17 +80,33 @@ export class PersistentAgent {
         this.pc.em.persist(redemption);
     }
 
-    async nextRedemptionStep(redemption: Redemption) {
-        // TODO: what id there is error during payment (state=start) - check!!!
-        if (redemption.state === 'paid') {
-            await this.checkPaymentProofAvailable(redemption);
-        } else if (redemption.state === 'requestedProof') {
-            await this.checkConfirmPayment(redemption);
+    async handleOpenRedemptions() {
+        const openRedemptions = await this.pc.em.createQueryBuilder(Redemption)
+            .select('id')
+            .where({ agentAddress: this.agent.vaultAddress })
+            .andWhere({ $not: { state: 'done' } })
+            .getResultList();
+        for (const rd of openRedemptions) {
+            await this.nextRedemptionStep(rd.id);
         }
     }
 
-    async payForRedemption(id: BN) {
-        const redemption = await this.pc.em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
+    async nextRedemptionStep(id: number) {
+        await this.pc.em.transactional(async em => {
+            const redemption = await this.pc.em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
+            if (redemption.state === 'start') {
+                await this.payForRedemption(redemption);
+            } if (redemption.state === 'paid') {
+                await this.checkPaymentProofAvailable(redemption);
+            } else if (redemption.state === 'requestedProof') {
+                await this.checkConfirmPayment(redemption);
+            }
+        }).catch(error => {
+            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
+        });
+    }
+
+    async payForRedemption(redemption: Redemption) {
         const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
         // !!! TODO: what if there are too little funds on underlying address to pay for fee?
         const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
