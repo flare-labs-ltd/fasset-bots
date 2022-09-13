@@ -33,6 +33,4 @@ export interface IAssetContext {
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetFtso: ContractWithEvents<IIFtsoInstance, IIFtsoEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
-    // others
-    
 }

@@ -1,13 +1,6 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 
 @Entity()
-export class RunnerData {
-    @PrimaryKey({ autoincrement: true })
-    id!: string;
-}
-
-
-@Entity()
 export class WalletAddress {
     @PrimaryKey()
     address!: string;

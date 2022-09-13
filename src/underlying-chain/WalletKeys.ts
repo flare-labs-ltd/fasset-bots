@@ -1,5 +1,5 @@
 import { WalletAddress } from "../actors/entities";
-import { PersistenceContext } from "../PersistenceContext";
+import { PersistenceContext } from "../config/PersistenceContext";
 import { decryptText, encryptText } from "../utils/encryption";
 import { fail } from "../utils/helpers";
 

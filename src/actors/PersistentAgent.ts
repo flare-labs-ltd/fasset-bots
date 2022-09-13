@@ -1,6 +1,6 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { IAssetContext } from "../fasset/IAssetContext";
-import { PersistenceContext } from "../PersistenceContext";
+import { PersistenceContext } from "../config/PersistenceContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";

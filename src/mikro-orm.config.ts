@@ -1,8 +1,8 @@
 import { Options } from "@mikro-orm/core";
-import { Redemption } from "./actors/entities";
+import { AgentEntity, Redemption, WalletAddress } from "./actors/entities";
 
 const options: Options = {
-    entities: [Redemption],
+    entities: [WalletAddress, AgentEntity, Redemption],
     type: 'sqlite',
     dbName: 'fasset-bots.db',
     debug: true,

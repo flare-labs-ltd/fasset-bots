@@ -292,6 +292,16 @@ export function promiseValue<T>(promise: Promise<T>): PromiseValue<T> {
     return result;
 }
 
+// toplevel async function runner for node.js
+export function toplevelRun(main: () => Promise<void>) {
+    main().catch((error) => {
+        console.error(error);
+        process.exit(1);
+    }).finally(() => {
+        process.exit(0);
+    });
+}
+
 // Error handling
 
 export function fail(messageOrError: string | Error): never {

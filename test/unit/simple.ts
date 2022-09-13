@@ -9,10 +9,9 @@ describe("test initial", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         web3.eth.defaultAccount = accounts[0];
-        // console.log(accounts);
     });
     
-    it("create WNat", async () => {
+    it("create persistent agent", async () => {
         const wnat = await WNat.new(accounts[0], "Native", "NAT", { from: accounts[0] });
         // const wnat = await WNat.at("0x8858eeb3dfffa017d4bce9801d340d36cf895ccf");
         await wnat.deposit({ from: accounts[1], value: toBNExp(15, 18) });
