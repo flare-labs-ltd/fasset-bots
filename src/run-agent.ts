@@ -13,7 +13,7 @@ const AssetManager = artifacts.require('AssetManager');
 const AssetManagerController = artifacts.require('AssetManagerController');
 const AddressUpdater = artifacts.require('AddressUpdater');
 const WNat = artifacts.require('WNat');
-const IFtso = artifacts.require('IFtso');
+const IIFtso = artifacts.require('IIFtso');
 const IFtsoRegistry = artifacts.require('IFtsoRegistry');
 const IFtsoManager = artifacts.require('IFtsoManager');
 const FAsset = artifacts.require('FAsset');
@@ -63,8 +63,8 @@ async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigCh
         ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
         wnat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: await IFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.natFtsoSymbol)),
-        assetFtso: await IFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol)),
+        natFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.natFtsoSymbol)),
+        assetFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol)),
     };
 }
 

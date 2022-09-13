@@ -111,7 +111,6 @@ export class PersistentAgent {
         // !!! TODO: what if there are too little funds on underlying address to pay for fee?
         const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
         redemption.txHash = txHash;
-        // this.saveRedemption(redemption);
     }
 
     async checkPaymentProofAvailable(redemption: Redemption) {
@@ -127,7 +126,6 @@ export class PersistentAgent {
         redemption.state = 'requestedProof';
         redemption.proofRequestRound = request.round;
         redemption.proofRequestData = request.data;
-        // this.saveRedemption(redemption);
     }
 
     async checkConfirmPayment(redemption: Redemption) {
@@ -137,9 +135,8 @@ export class PersistentAgent {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = 'done';
-            // this.saveRedemption(redemption);
         } else {
-            // TODO: payment happened but we cannot obtain proof... retry or alert?!!
+            // TODO: payment happened but we cannot obtain proof... ALERT!!!
         }
     }
 

@@ -8,6 +8,8 @@ export type Nullable<T> = T | null | undefined;
 export type Dict<T> = { [key: string]: T };
 
 export const BN_ZERO = new BN(0);
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export const MAX_BIPS = 10_000;
 

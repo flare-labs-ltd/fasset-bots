@@ -1,4 +1,4 @@
-import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IFtsoManagerInstance, IFtsoInstance, IFtsoRegistryInstance, WNatInstance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IFtsoManagerInstance, IFtsoRegistryInstance, IIFtsoInstance, WNatInstance } from "../../typechain-truffle";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -13,7 +13,7 @@ export type IStateConnectorEvents = import('../../typechain-truffle/IStateConnec
 export type AgentVaultFactoryEvents = import('../../typechain-truffle/AgentVaultFactory').AllEvents;
 export type AttestationClientSCEvents = import('../../typechain-truffle/AttestationClientSC').AllEvents;
 export type IFtsoRegistryEvents = import('../../typechain-truffle/IFtsoRegistry').AllEvents;
-export type IFtsoEvents = import('../../typechain-truffle/IFtso').AllEvents;
+export type IIFtsoEvents = import('../../typechain-truffle/IIFtso').AllEvents;
 export type IFtsoManagerEvents = import('../../typechain-truffle/IFtsoManager').AllEvents;
 export type AssetManagerEvents = import('../../typechain-truffle/AssetManager').AllEvents;
 export type FAssetEvents = import('../../typechain-truffle/FAsset').AllEvents;
@@ -29,9 +29,9 @@ export interface IAssetContext {
     ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>;
     ftsoManager: ContractWithEvents<IFtsoManagerInstance, IFtsoManagerEvents>;
     wnat: ContractWithEvents<WNatInstance, WNatEvents>;
-    natFtso: ContractWithEvents<IFtsoInstance, IFtsoEvents>;
+    natFtso: ContractWithEvents<IIFtsoInstance, IIFtsoEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
-    assetFtso: ContractWithEvents<IFtsoInstance, IFtsoEvents>;
+    assetFtso: ContractWithEvents<IIFtsoInstance, IIFtsoEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     // others
     
