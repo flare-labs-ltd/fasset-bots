@@ -8,7 +8,6 @@ import { DBWalletKeys } from "./WalletKeys";
 export class WalletHelper implements IBlockChainWallet {
     constructor(
         public chain: IBlockChain,
-        public wallet: IBlockChainWallet,
         public chainId: SourceId,
         public wClient: any,
         private pc: PersistenceContext
@@ -24,13 +23,14 @@ export class WalletHelper implements IBlockChainWallet {
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
         const value = amount as number;
+        //TODO add custom fee
         const fee = undefined;
         const note = reference ? reference : undefined;
         const tr = await this.wClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note)
         const privateKey = await walletKeys.getKey(sourceAddress);
         const txSigned = await this.wClient.signTransaction(tr, privateKey);
         const submit = await this.wClient.submitTransaction(txSigned);
-        return submit.result.tx_blob;
+        return submit.txId;
     }
 
     addMultiTransaction(spend: { [address: string]: string | number | import("bn.js"); }, receive: { [address: string]: string | number | import("bn.js"); }, reference: string | null, options?: TransactionOptions): Promise<string> {
@@ -40,7 +40,7 @@ export class WalletHelper implements IBlockChainWallet {
     async createAccount(): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
         const account = await this.wClient.createWallet();
-        walletKeys.addKey(account.address, account.privateKey);
+        await walletKeys.addKey(account.address, account.privateKey);
         return account.address;
     }
 
