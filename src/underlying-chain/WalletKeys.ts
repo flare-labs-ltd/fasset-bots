@@ -8,7 +8,7 @@ export interface IWalletKeys {
     addKey(address: string, privateKey: string): Promise<void>;
 }
 
-export abstract class DBWalletKeys implements IWalletKeys {
+export  class DBWalletKeys implements IWalletKeys {
     private password = process.env['WALLET_ENCRIPTION_PASSWORD'] ?? fail("Missing wallet password");
     
     private privateKeyCache = new Map<string, string>();
