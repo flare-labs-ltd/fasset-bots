@@ -9,15 +9,9 @@ export class WalletHelper implements IBlockChainWallet {
     constructor(
         public chain: IBlockChain,
         public chainId: SourceId,
-        public wClient: any,
+        public wClient: any, // should be defined as WALLET.<chain> aka WALLET.BTC = new WALLET.BTC(connection);
         private pc: PersistenceContext
     ) {
-        if(chainId === SourceId.ALGO) this.wClient = WALLET.ALGO;
-        else if(chainId === SourceId.BTC) this.wClient = WALLET.BTC;
-        else if(chainId === SourceId.DOGE) this.wClient = WALLET.DOGE;
-        else if(chainId === SourceId.LTC) this.wClient = WALLET.LTC;
-        else if(chainId === SourceId.XRP) this.wClient = WALLET.XRP;
-        else this.wClient = null;
     }
 
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee): Promise<string> {
