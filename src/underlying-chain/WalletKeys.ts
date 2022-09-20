@@ -1,3 +1,4 @@
+import { FilterQuery } from "@mikro-orm/core";
 import { WalletAddress } from "../actors/entities";
 import { PersistenceContext } from "../config/PersistenceContext";
 import { decryptText, encryptText } from "../utils/encryption";
@@ -8,7 +9,7 @@ export interface IWalletKeys {
     addKey(address: string, privateKey: string): Promise<void>;
 }
 
-export  class DBWalletKeys implements IWalletKeys {
+export class DBWalletKeys implements IWalletKeys {
     private password = process.env['WALLET_ENCRIPTION_PASSWORD'] ?? fail("Missing wallet password");
     
     private privateKeyCache = new Map<string, string>();
@@ -17,7 +18,7 @@ export  class DBWalletKeys implements IWalletKeys {
     
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {
-            const wa = await this.pc.em.findOne(WalletAddress, { address });
+            const wa = await this.pc.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
             if (wa != null) {
                 const privateKey = decryptText(this.password, wa.encryptedPrivateKey);
                 this.privateKeyCache.set(address, privateKey);
