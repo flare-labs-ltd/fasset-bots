@@ -7,31 +7,53 @@ export class BlockChainHelper implements IBlockChain {
     constructor(
         public walletClient: WalletClient,
         public mccClient: MccClient,
-    ) {}
+    ) { }
 
     finalizationBlocks: number = 0;
     secondsPerBlock: number = 0;
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
-        const transaction = await this.mccClient.getTransaction(txHash);
-        if (transaction) {
-            const inputs: TxInputOutput[] = [];
-            const outputs: TxInputOutput[] = [];
-            for (let input of transaction.spentAmounts) {
-                inputs.push([input.address ? input.address : "", input.amount]);
+        let transaction = null;
+        if (this.mccClient instanceof MCC.ALGO) {
+            transaction = await this.mccClient.getIndexerTransaction(txHash);
+            if (transaction) {
+                const inputs: TxInputOutput[] = [];
+                const outputs: TxInputOutput[] = [];
+                for (let input of transaction.spentAmounts) {
+                    inputs.push([input.address ? input.address : "", input.amount]);
+                }
+                for (let output of transaction.spentAmounts) {
+                    outputs.push([output.address ? output.address : "", output.amount]);
+                }
+                return {
+                    hash: transaction.hash,
+                    inputs: inputs,
+                    outputs: outputs,
+                    reference: transaction.stdPaymentReference,
+                    status: transaction.successStatus
+                };
             }
-            for (let output of transaction.spentAmounts) {
-                outputs.push([output.address ? output.address : "", output.amount]);
+        } else {
+            transaction = await this.mccClient.getTransaction(txHash);
+            if (transaction) {
+                const inputs: TxInputOutput[] = [];
+                const outputs: TxInputOutput[] = [];
+                for (let input of transaction.spentAmounts) {
+                    inputs.push([input.address ? input.address : "", input.amount]);
+                }
+                for (let output of transaction.spentAmounts) {
+                    outputs.push([output.address ? output.address : "", output.amount]);
+                }
+                return {
+                    hash: transaction.hash,
+                    inputs: inputs,
+                    outputs: outputs,
+                    reference: transaction.stdPaymentReference,
+                    status: transaction.successStatus
+                };
             }
-            return {
-                hash: transaction.hash,
-                inputs: inputs,
-                outputs: outputs,
-                reference: transaction.stdPaymentReference,
-                status: transaction.successStatus
-            };
         }
-        return null;
+        return transaction;
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {

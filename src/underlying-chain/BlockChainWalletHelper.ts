@@ -11,7 +11,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         public chain: IBlockChain
     ) {}
 
-    async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee): Promise<string> {
+    async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
         const value = amount as number;
         //TODO add custom fee
@@ -21,7 +21,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         const privateKey = await walletKeys.getKey(sourceAddress);
         if (privateKey) {
             const txSigned = await this.walletClient.signTransaction(tr, privateKey);
-            const submit = await this.walletClient.submitTransaction(txSigned);
+            const submit = awaitForTransaction ? await this.walletClient.submitTransactionAndWait(txSigned) : await this.walletClient.submitTransaction(txSigned);
             return submit.txId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
