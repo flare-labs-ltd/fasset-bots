@@ -10,10 +10,12 @@ export class PersistenceContext {
     
     static async create() {
         const orm = await MikroORM.init<AbstractSqlDriver>(options as any);
-        return new PersistenceContext(orm, orm.em);
+        //https://stackoverflow.com/questions/71117269/validation-error-using-global-entity-manager-instance-methods-for-context-speci
+        const emFork = orm.em.fork();
+        return new PersistenceContext(orm, emFork);
     }
     
     clone() {
-        return new PersistenceContext(this.orm, this.orm.em);
+        return new PersistenceContext(this.orm, this.em);
     }
 };

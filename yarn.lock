@@ -767,46 +767,46 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@mikro-orm/cli@^5.4.0":
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/cli/-/cli-5.4.0.tgz#67d1ad0f65ea1e97d2bdb3c0124f00ee939c682f"
-  integrity sha512-Su0woOTMeaJkMSjHExwk/IOB1VPU7uWpwMxY58HEFJmeCm82brm04HxfWOlFLIhFrUWYJsJPRDERgUAldJ1tyg==
+"@mikro-orm/cli@^5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/cli/-/cli-5.4.2.tgz#c7e51c247aa4d1e89b3d6188c0dc0310004452c0"
+  integrity sha512-/y1zeV2Q72eMEP3VfcQhon7HJ1I6sHsWWhAR1gwpCIrQ10hgcsgMk6r6VObMYfqPxSSMU9+S9WRG6mp1L7UMAQ==
   dependencies:
-    "@mikro-orm/core" "^5.4.0"
-    "@mikro-orm/knex" "^5.4.0"
+    "@mikro-orm/core" "~5.4.2"
+    "@mikro-orm/knex" "~5.4.2"
     fs-extra "10.1.0"
     tsconfig-paths "4.1.0"
     yargonaut "1.1.4"
     yargs "15.4.1"
 
-"@mikro-orm/core@^5.4.0":
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/core/-/core-5.4.0.tgz#29432927e6b8462a5ed00e638e523e5c6dd9e895"
-  integrity sha512-x7H7X3EOxyiEuW0kqujTDTGPQsF0iUNHKMh7xxEhzj+4BlYebiAsmTtekoFJ500kcXqt7ICbcOu3RmfLcUSC4w==
+"@mikro-orm/core@^5.4.2", "@mikro-orm/core@~5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/core/-/core-5.4.2.tgz#62793e90237f06a8a88ffb92426eb382c3a87922"
+  integrity sha512-4JZfkUQNSvLh2RKNPl+2qy3RXmWdWOy8e++Owsb2qzmsL0T6CjIOz2kd+yPqZVvFH+unF5R1eQit/xnP3biM+A==
   dependencies:
     acorn-loose "8.3.0"
     acorn-walk "8.2.0"
     dotenv "16.0.2"
     fs-extra "10.1.0"
     globby "11.0.4"
-    mikro-orm "^5.3.1"
+    mikro-orm "~5.4.2"
     reflect-metadata "0.1.13"
 
-"@mikro-orm/knex@^5.4.0":
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/knex/-/knex-5.4.0.tgz#e9e28c527dfed48b4e01504f143fb38fba618d00"
-  integrity sha512-bRETy4JeFaDG6AaSIPJTqCJa2Z1ybVKSfDbGT7SjN3NBgz3icJlBBDngQIj3qwsTdyco7/YliV45Ieirv5K/aw==
+"@mikro-orm/knex@~5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/knex/-/knex-5.4.2.tgz#3f9e0a2d23767d73a872d52f3d9bcdebb275ddf5"
+  integrity sha512-KOasr9arBAwIyv+MkczA43uS0yu0HoC1axzqwgC1ua+Sw4xMtzospPxeWQyjA2qjqkPnkSST7Wya+CS0NZmc2g==
   dependencies:
     fs-extra "10.1.0"
     knex "2.3.0"
     sqlstring "2.3.3"
 
-"@mikro-orm/sqlite@^5.4.0":
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/sqlite/-/sqlite-5.4.0.tgz#c6b72f8e76c64df7a847371b7e91de00a2eaaa02"
-  integrity sha512-y7Yn5Xo+LiswFOEfSggxIehH/rs4Gy0YLYm+ISINSmOIBgQKixBl96D2lmBxjjyp2hQLsV2jXfxUJCrHAGr6Tw==
+"@mikro-orm/sqlite@^5.4.2":
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/sqlite/-/sqlite-5.4.2.tgz#4b16e60f34cc7f20b1a392da9b38c31e3d397f4b"
+  integrity sha512-fXlYv/XzslTyVpFKryFASfa/ci6848jz56YrADliA9yNFTeYIhj/z5K1+BLRXcqd/Ei4mFFaeloo2U6cGfRMhQ==
   dependencies:
-    "@mikro-orm/knex" "^5.4.0"
+    "@mikro-orm/knex" "~5.4.2"
     fs-extra "10.1.0"
     sqlite3 "5.0.11"
     sqlstring-sqlite "0.1.1"
@@ -4917,10 +4917,10 @@ micromatch@^4.0.4:
     braces "^3.0.2"
     picomatch "^2.3.1"
 
-mikro-orm@^5.3.1:
-  version "5.4.0"
-  resolved "https://registry.yarnpkg.com/mikro-orm/-/mikro-orm-5.4.0.tgz#09d23a27ab726e5f99439e1c4a75abc409e998a7"
-  integrity sha512-BqKNYzP1DWskNCNiYjnAkxB9r3dsRSRlmzHraX4tkGdjj6Qx6z1cd/G0f4uooVHHaAJ0VxFHDpqdpWFnSKWmuw==
+mikro-orm@~5.4.2:
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/mikro-orm/-/mikro-orm-5.4.2.tgz#affe273b60dcf9d22be4309455c0284a788accc3"
+  integrity sha512-V2vE9SFjhLx1wYtgVH9ZE1rk4F5ECajA1LI6+/rGt7IsShyPKfXi1KF6yQK73JQ5E+ypf+bVNFne4j7CmN81XA==
 
 miller-rabin@^4.0.0:
   version "4.0.1"
