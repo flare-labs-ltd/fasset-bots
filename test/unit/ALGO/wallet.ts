@@ -20,11 +20,22 @@ const fundedPrivateKey = "UvwtoiKaq8lbnS7EFJilRLDJrP5CxALEFX33OkPEq3qfrVez9lmfsa
 const targetAddress = "O2GT7KTTT7ESYYR6CJ23QQHXCVNV5W3MGYOYA2MGBPND5MB2BOPGVKFTLE";
 const targetPrivateKey = "9BgYnNJDoyja61qVaEkoiKB41dD6XGCi7cKADtpq/tt2jT+qc5/JLGI+EnW4QPcVW17bbDYdgGmGC9o+sDoLng==";
 
-const ALGOMccConnectionTest = {
+const ALGOWalletConnectionTest = {
     algod: {
         url: process.env.ALGO_ALGOD_URL_TESTNET || "",
         token: process.env.ALGO_ALGOD_TOKEN_TESTNET || ""
      },
+};
+
+const ALGOMccConnectionTest = {
+    algod: {
+        url: process.env.ALGO_ALGOD_URL_TESTNET_MCC || "",
+        token: "",
+    },
+    indexer: {
+        url: process.env.ALGO_INDEXER_URL_TESTNET_MCC || "",
+        token: "",
+    },
 };
 
 const amountToSendALGO = 1;
@@ -35,7 +46,7 @@ describe("ALGO wallet tests", async () => {
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         dbWallet = new DBWalletKeys(pc);
-        walletClient = new WALLET.ALGO(ALGOMccConnectionTest);
+        walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
         mccClient = new MCC.ALGO(ALGOMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
