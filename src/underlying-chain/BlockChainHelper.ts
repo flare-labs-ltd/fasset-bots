@@ -1,4 +1,4 @@
-import { MCC, MccClient } from "@flarenetwork/mcc";
+import { MCC, MccClient } from "@flarenetwork/mcc/src";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput } from "./interfaces/IBlockChain";
 import { WalletClient } from "simple-wallet/src/types";
 import { toBN } from "../utils/helpers";

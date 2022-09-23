@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { WALLET } from "simple-wallet/src";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { MCC } from "@flarenetwork/mcc/src";
 
 let blockChainHelper: BlockChainHelper;
 let mccClient: MCC.XRP;
@@ -44,9 +44,9 @@ describe("XRP blockchain tests", async () => {
         expect(balance.toNumber()).to.be.greaterThanOrEqual(0);
     });
 
-    it.skip("Should retrieve block (hash)", async () => {
-        //skip until mcc get block is fixed
+    it("Should retrieve block (hash)", async () => {
         const retrievedBlock = await blockChainHelper.getBlock(blockHash);
+        expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should retrieve block (number)", async () => {

@@ -5,7 +5,7 @@ import { WALLET } from "simple-wallet/src";
 import { ICreateWalletResponse } from "simple-wallet/src/interfaces/WriteWalletRpcInterface";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { MCC } from "@flarenetwork/mcc/src";
 
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;

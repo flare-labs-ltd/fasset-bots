@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { WALLET } from "simple-wallet/src";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { MCC } from "@flarenetwork/mcc/src";
 
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;

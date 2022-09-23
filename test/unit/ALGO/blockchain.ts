@@ -3,7 +3,7 @@ chai.use(require('chai-as-promised'));
 import { expect } from "chai";
 import { WALLET } from "simple-wallet/src";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { MCC } from "@flarenetwork/mcc/src";
 
 let blockChainHelper: BlockChainHelper;
 let mccClient: MCC.ALGO;
