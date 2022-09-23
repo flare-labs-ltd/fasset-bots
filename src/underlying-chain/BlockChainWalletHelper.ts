@@ -2,7 +2,7 @@ import { PersistenceContext } from "../config/PersistenceContext";
 import { IBlockChain } from "./interfaces/IBlockChain";
 import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
-import { WalletClient } from "simple-wallet/src/types";
+import { WalletClient } from "simple-wallet";
 
 export class BlockChainWalletHelper implements IBlockChainWallet {
     constructor(
@@ -11,7 +11,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         public chain: IBlockChain
     ) {}
 
-    async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
+    async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
         const value = amount as number;
         //TODO add custom fee
@@ -28,13 +28,13 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         }
     }
 
-    addMultiTransaction(spend: { [address: string]: string | number | import("bn.js"); }, receive: { [address: string]: string | number | import("bn.js"); }, reference: string | null, options?: TransactionOptions): Promise<string> {
+    addMultiTransaction(spend: { [address: string]: string | number | BN; }, receive: { [address: string]: string | number | BN; }, reference: string | null, options?: TransactionOptions): Promise<string> {
         throw new Error("Method not implemented.");
     }
 
     async createAccount(): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
-        const account = await this.walletClient.createWallet();
+        const account = this.walletClient.createWallet();
         await walletKeys.addKey(account.address, account.privateKey);
         return account.address;
     }
