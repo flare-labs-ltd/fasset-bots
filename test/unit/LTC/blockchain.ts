@@ -1,41 +1,35 @@
-const chai = require('chai');
-chai.use(require('chai-as-promised'));
 import { expect } from "chai";
 import { WALLET } from "simple-wallet/src";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { MCC } from "@flarenetwork/mcc/src";
 
 let blockChainHelper: BlockChainHelper;
-let mccClient: MCC.ALGO;
-let walletClient: WALLET.ALGO;
+let mccClient: MCC.LTC;
+let walletClient: WALLET.LTC;
 
-const ALGOWalletConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_WALLET || "",
-        token: ""
-     },
+const LTCWalletConnectionTest = {
+    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
+    username: "",
+    password: ""
 };
 
-const ALGOMccConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_MCC || "",
-        token: "",
-    },
-    indexer: {
-        url: process.env.ALGO_INDEXER_URL_TESTNET_MCC || "",
-        token: "",
-    },
+const LTCMccConnectionTest = {
+    url: process.env.LTC_URL_TESTNET_MCC || "",
+    username: process.env.LTC_USERNAME_TESTNET_MCC || "",
+    password: process.env.LTC_PASSWORD_TESTNET_MCC || "",
+    inTestnet: true
 };
 
-const txHash = "RGEUIORIOM6PTCP2EXZDKQRWPI6SJ4CBTH5LRYO7CLEQNYGIZS6A";
-const blockId = 23614509;//24277222;
-const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
+const txHash = "28872e7d2268343c96d80c56962c9650a6796119835136be9f002215f438dca6";
+const blockId = 2538180;
+const blockHash = "257edc6d99359f37ca84fb5edabd9c4651f5db852555243ac48fbedfcc3aecf6";
+const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 
-describe("ALGO blockchain tests", async () => {
+describe("LTC blockchain tests", async () => {
 
     before(async () => {
-        walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
-        mccClient = new MCC.ALGO(ALGOMccConnectionTest);
+        walletClient = new WALLET.LTC(LTCWalletConnectionTest);
+        mccClient = new MCC.LTC(LTCMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
     })
 
@@ -50,7 +44,8 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve block (hash)", async () => {
-        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejected; 
+        const retrievedBlock = await blockChainHelper.getBlock(blockHash);
+        expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should retrieve block (number)", async () => {

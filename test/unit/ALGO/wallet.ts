@@ -22,8 +22,8 @@ const targetPrivateKey = "9BgYnNJDoyja61qVaEkoiKB41dD6XGCi7cKADtpq/tt2jT+qc5/JLG
 
 const ALGOWalletConnectionTest = {
     algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET || "",
-        token: process.env.ALGO_ALGOD_TOKEN_TESTNET || ""
+        url: process.env.ALGO_ALGOD_URL_TESTNET_WALLET || "",
+        token: ""
      },
 };
 

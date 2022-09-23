@@ -9,42 +9,41 @@ import { MCC } from "@flarenetwork/mcc/src";
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;
 let dbWallet: DBWalletKeys;
-// let stateConnectorClient: MockStateConnectorClient;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
 
-let walletClient: WALLET.DOGE;
-let mccClient: MCC.DOGE;
+let walletClient: WALLET.BTC;
+let mccClient: MCC.BTC;
 
-const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
-const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
-const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
-const targetPrivateKey = "ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9";
+const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
+const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
+const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
+const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
 
-const DOGEWalletConnectionTest = {
+const BTCWalletConnectionTest = {
     url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
     username: "",
     password: "",
     inTestnet: true
 };
 
-const DOGEMccConnectionTest = {
-    url: process.env.DOGE_URL_TESTNET_MCC || "",
-    username: process.env.DOGE_URL_USER_NAME_TESTNET_MCC || "",
-    password: process.env.DOGE_URL_PASSWORD_TESTNET_MCC || "",
+const BTCMCCConnectionTest = {
+    url: process.env.BTC_URL_TESTNET_MCC || "",
+    username: process.env.BTC_URL_USER_NAME_TESTNET_MCC || "",
+    password: process.env.BTC_URL_PASSWORD_TESTNET_MCC || "",
     inTestnet: true
 };
 
-const amountToSendDOGE = 1;
+const amountToSendBTC = 0.00001;
 
-describe("DOGE wallet tests", async () => {
+describe("BTC wallet tests", async () => {
 
     before(async () => {
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         dbWallet = new DBWalletKeys(pc);
-        walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
-        mccClient = new MCC.DOGE(DOGEMccConnectionTest);
+        walletClient = new WALLET.BTC(BTCWalletConnectionTest);
+        mccClient = new MCC.BTC(BTCMCCConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
     })
@@ -58,9 +57,9 @@ describe("DOGE wallet tests", async () => {
         expect(fundedPrivateKeyFromDb).to.equal(fundedPrivateKey);
     });
 
-    it("Should send funds and retrieve transaction", async () => {
+    it.skip("Should send funds and retrieve transaction", async () => {
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDOGE, "TestNote", undefined, true);
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, true);
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);

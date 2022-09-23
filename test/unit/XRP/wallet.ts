@@ -21,7 +21,7 @@ const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
 const XRPMccConnectionTest = {
-    url: process.env.XRP_URL_TESTNET || "",
+    url: process.env.XRP_URL_TESTNET_MCC || "",
     username: "",
     password: "",
     inTestnet: true

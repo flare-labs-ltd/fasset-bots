@@ -8,14 +8,14 @@ let mccClient: MCC.XRP;
 let walletClient: WALLET.XRP;
 
 const XRPWalletConnectionTest = {
-    url: process.env.XRP_URL_TESTNET || "",
+    url: process.env.XRP_URL_TESTNET_WALLET || "",
     username: "",
     password: "",
     inTestnet: true
 };
 
 const XRPMccConnectionTest = {
-    url: process.env.XRP_URL_TESTNET || "",
+    url: process.env.XRP_URL_TESTNET_MCC || "",
     username: "",
     password: "",
     inTestnet: true
