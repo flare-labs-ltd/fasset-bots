@@ -1,6 +1,6 @@
-import { MCC, MccClient } from "@flarenetwork/mcc/src";
+import { MCC, MccClient } from "@flarenetwork/mcc";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput } from "./interfaces/IBlockChain";
-import { WalletClient } from "simple-wallet/src/types";
+import { WalletClient } from "simple-wallet";
 import { toBN } from "../utils/helpers";
 
 export class BlockChainHelper implements IBlockChain {
@@ -60,7 +60,7 @@ export class BlockChainHelper implements IBlockChain {
         throw new Error("Method not implemented.");
     }
 
-    async getBalance(address: string): Promise<import("bn.js")> {
+    async getBalance(address: string): Promise<BN> {
         const balance = await this.walletClient.getAccountBalance(address);
         return toBN(balance);
     }
