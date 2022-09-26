@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import { WALLET } from "simple-wallet/src";
+import { WALLET } from "simple-wallet";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc/src";
+import { MCC } from "@flarenetwork/mcc";
 
 let blockChainHelper: BlockChainHelper;
 let mccClient: MCC.BTC;

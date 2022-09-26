@@ -1,10 +1,10 @@
 import { PersistenceContext } from "../../../src/config/PersistenceContext";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { expect } from "chai";
-import { WALLET } from "simple-wallet/src";
+import { WALLET } from "simple-wallet";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc/src";
+import { MCC } from "@flarenetwork/mcc";
 
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;
