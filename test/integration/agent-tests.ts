@@ -1,12 +1,10 @@
-import { web3 } from "../../src/utils/helpers";
+import { initWeb3 } from "../../src/utils/web3";
 
 describe("Persistent agent tests", async () => {
     let accounts: string[];
 
     before(async () => {
-        accounts = await web3.eth.getAccounts();
-        web3.eth.defaultAccount = accounts[0];
-        // console.log(accounts);
+        accounts = await initWeb3('local');
     });
     
     

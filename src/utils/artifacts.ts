@@ -1,16 +1,8 @@
 import { readFileSync } from "fs";
 import { glob } from "glob";
 import { basename, extname } from "path";
-import { web3 } from "./helpers";
 
 const createContract = require("@truffle/contract");
-
-export function loadContract<T>(path: string): T {
-    const abi = JSON.parse(readFileSync(path).toString());
-    const contract = createContract(abi);
-    contract.setProvider(web3.currentProvider);
-    return contract;
-}
 
 interface ArtifactData {
     name: string;
@@ -20,7 +12,8 @@ interface ArtifactData {
 
 class ArtifactsImpl {
     artifactMap?: Map<string, ArtifactData>;
-    
+    web3?: Web3;
+
     loadArtifactMap() {
         this.artifactMap = new Map();
         const paths = glob.sync("artifacts/**/*.json");
@@ -31,7 +24,14 @@ class ArtifactsImpl {
             this.artifactMap.set(path, data);
         }
     }
-    
+
+    loadContract<T>(path: string): T {
+        const abi = JSON.parse(readFileSync(path).toString());
+        const contract = createContract(abi);
+        this.updateContractWeb3(contract);
+        return contract;
+    }
+
     require(name: string) {
         if (this.artifactMap == null) {
             this.loadArtifactMap();
@@ -41,10 +41,34 @@ class ArtifactsImpl {
             throw new Error(`Unknown artifact ${name}`);
         }
         if (artifactData.contract == null) {
-            artifactData.contract = loadContract(artifactData.path);
+            artifactData.contract = this.loadContract(artifactData.path);
         }
         return artifactData.contract;
     }
+    
+    updateWeb3(web3: Web3) {
+        this.web3 = web3;
+        if (this.artifactMap) {
+            for (const artifact of this.artifactMap.values()) {
+                if (artifact.contract) {
+                    this.updateContractWeb3(artifact.contract);
+                }
+            }
+        }
+    }
+    
+    private updateContractWeb3(contract: any) {
+        if (this.web3?.currentProvider != null) {
+            contract.setProvider(this.web3.currentProvider);
+        }
+        if (this.web3?.eth.defaultAccount != null) {
+            contract.defaults({ from: this.web3.eth.defaultAccount });
+        }
+    }
 }
 
-export const artifacts: Truffle.Artifacts = new ArtifactsImpl();
+interface ArtifactsWithUpdate extends Truffle.Artifacts {
+    updateWeb3(web3: Web3): void;
+}
+
+export const artifacts: ArtifactsWithUpdate = new ArtifactsImpl();

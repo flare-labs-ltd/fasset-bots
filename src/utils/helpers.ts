@@ -1,5 +1,6 @@
 import BN from "bn.js";
 import Web3 from "web3";
+import { web3 } from "./web3";
 
 export type BNish = BN | number | string;
 
@@ -17,9 +18,6 @@ export const MINUTES = 60;
 export const HOURS = 60 * MINUTES;
 export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
-
-// should be used throughout the code
-export const web3 = new Web3();
 
 /**
  * Asynchronously wait `ms` milliseconds.

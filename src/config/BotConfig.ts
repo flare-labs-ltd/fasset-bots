@@ -9,14 +9,14 @@ export interface BotConfigChain {
     chain: IBlockChain;
     chainEvents: IBlockChainEvents,
     wallet: IBlockChainWallet;
-    assetManager: string;
+    assetManager?: string;
     fAssetSymbol?: string;
 }
 
 export interface BotConfig {
     rpcUrl: string;
     // either one most be set
-    addressUpdater: string;
+    addressUpdater?: string;
     constractsJsonFile?: string;
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
