@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import { WALLET } from "simple-wallet/src";
+import { WALLET } from "simple-wallet";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc/src";
+import { MCC } from "@flarenetwork/mcc";
 
 let blockChainHelper: BlockChainHelper;
 let mccClient: MCC.LTC;
@@ -56,6 +56,12 @@ describe("LTC blockchain tests", async () => {
     it("Should retrieve block height", async () => {
         const retrievedHeight = await blockChainHelper.getBlockHeight();
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+    });
+
+    it("Should retrieve transaction block", async () => {
+        const transactionBlock = await blockChainHelper.getTransactionBlock(txHash);
+        expect(transactionBlock?.number).to.be.eq(blockId);
+        expect(transactionBlock?.hash).to.be.eq(blockHash);
     });
 
 });

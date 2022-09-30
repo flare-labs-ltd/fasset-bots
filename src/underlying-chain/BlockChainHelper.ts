@@ -22,7 +22,7 @@ export class BlockChainHelper implements IBlockChain {
                 for (let input of transaction.spentAmounts) {
                     inputs.push([input.address ? input.address : "", input.amount]);
                 }
-                for (let output of transaction.spentAmounts) {
+                for (let output of transaction.receivedAmounts) {
                     outputs.push([output.address ? output.address : "", output.amount]);
                 }
                 return {
@@ -41,7 +41,7 @@ export class BlockChainHelper implements IBlockChain {
                 for (let input of transaction.spentAmounts) {
                     inputs.push([input.address ? input.address : "", input.amount]);
                 }
-                for (let output of transaction.spentAmounts) {
+                for (let output of transaction.receivedAmounts) {
                     outputs.push([output.address ? output.address : "", output.amount]);
                 }
                 return {
@@ -57,7 +57,46 @@ export class BlockChainHelper implements IBlockChain {
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
-        throw new Error("Method not implemented.");
+        if (this.mccClient instanceof MCC.ALGO) {
+            const transaction = await this.mccClient.getIndexerTransaction(txHash);
+            if (transaction) {
+                const transactionBlock = transaction.transactionBlock;
+                if (transactionBlock.id) {
+                    const block = await this.getBlockAt(transactionBlock.id);
+                    console.log("BLOCK", block)
+                    if (block) {
+                        return {
+                            hash: block.hash,
+                            number: transactionBlock.id
+                        }
+                    }
+                }
+            }
+        } else {
+            const transaction = await this.mccClient.getTransaction(txHash);
+            if (transaction) {
+                const transactionBlock = transaction.transactionBlock;
+                if (transactionBlock.id) {
+                    const block = await this.getBlockAt(transactionBlock.id);
+                    if (block) {
+                        return {
+                            hash: block.hash,
+                            number: transactionBlock.id
+                        }
+                    }
+                }
+                if (transactionBlock.hash) {
+                    const block = await this.getBlock(transactionBlock.hash);
+                    if (block) {
+                        return {
+                            hash: transactionBlock.hash,
+                            number: block.number
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     async getBalance(address: string): Promise<BN> {

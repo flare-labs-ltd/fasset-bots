@@ -59,4 +59,10 @@ describe("XRP blockchain tests", async () => {
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
+    it("Should retrieve transaction block", async () => {
+        const transactionBlock = await blockChainHelper.getTransactionBlock(txHash);
+        expect(transactionBlock?.number).to.be.eq(blockId);
+        expect(transactionBlock?.hash).to.be.eq(blockHash);
+    });
+
 });

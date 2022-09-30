@@ -27,8 +27,12 @@ const ALGOMccConnectionTest = {
     },
 };
 
-const txHash = "RGEUIORIOM6PTCP2EXZDKQRWPI6SJ4CBTH5LRYO7CLEQNYGIZS6A";
-const blockId = 23614509;//24277222;
+const txHash0 = "RGEUIORIOM6PTCP2EXZDKQRWPI6SJ4CBTH5LRYO7CLEQNYGIZS6A";
+const blockId0 = 24277222;
+const blockHash0 = "OI7ROABGHA6CALUY7G2QKNCCM6QF537TEOSNVBWXCY4JBLNMAKDQ";
+const txHash1 = "B2WZXYL7B6QTXVZ7KKI37OYBPYW57ASSGKOEENWVEBFPG6VAHYMQ";
+const blockId1 = 23614509;
+const blockHash1 = "OWKKEXEU2EWD6BTDRBKO5XKGYNUP5HLTTJ2YIIDZD3O4GFBKCT6A";
 const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 
 describe("ALGO blockchain tests", async () => {
@@ -40,8 +44,8 @@ describe("ALGO blockchain tests", async () => {
     })
 
     it("Should retrieve transaction", async () => {
-        const retrievedTransaction = await blockChainHelper.getTransaction(txHash);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        const retrievedTransaction = await blockChainHelper.getTransaction(txHash0);
+        expect(txHash0).to.be.eq(retrievedTransaction?.hash);
     });
 
     it("Should retrieve balance", async () => {
@@ -54,13 +58,20 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve block (number)", async () => {
-        const retrievedBlock = await blockChainHelper.getBlockAt(blockId);
-        expect(blockId).to.be.eq(retrievedBlock?.number);
+        const retrievedBlock = await blockChainHelper.getBlockAt(blockId1);
+        expect(blockId1).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should retrieve block height", async () => {
         const retrievedHeight = await blockChainHelper.getBlockHeight();
-        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId1);
+    });
+
+    it("Should retrieve transaction block", async () => {
+        const transactionBlock = await blockChainHelper.getTransactionBlock(txHash1);
+        // console.log(transactionBlock)
+        expect(transactionBlock?.number).to.be.eq(blockId1);
+        expect(transactionBlock?.hash).to.be.eq(blockHash1);
     });
 
 });
