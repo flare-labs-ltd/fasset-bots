@@ -1,6 +1,6 @@
 import Web3 from "web3";
-import { createAssetContext } from "../../test/integration/test-config";
 import { BotConfig } from "../config/BotConfig";
+import { createAssetContext } from "../config/create-asset-context";
 import { PersistenceContext } from "../config/PersistenceContext";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { web3 } from "../utils/web3";
