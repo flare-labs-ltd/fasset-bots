@@ -1,5 +1,6 @@
 import BN from "bn.js";
 import Web3 from "web3";
+import { artifacts } from "./artifacts";
 
 export type BNish = BN | number | string;
 
@@ -20,6 +21,18 @@ export const WEEKS = 7 * DAYS;
 
 // should be used throughout the code
 export const web3 = new Web3();
+
+/**
+ * Initialize web3 and truffle contracts and return accounts.
+ */
+export async function testInitWeb3() {
+    const provider = new Web3.providers.HttpProvider('http://127.0.0.1:8545');
+    web3.setProvider(provider);
+    const accounts = await web3.eth.getAccounts();
+    web3.eth.defaultAccount = accounts[0];
+    artifacts.updateWeb3(web3);
+    return accounts;
+}
 
 /**
  * Asynchronously wait `ms` milliseconds.
