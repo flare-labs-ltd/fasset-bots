@@ -3,7 +3,7 @@ import { createAssetContext } from "../../test/integration/test-config";
 import { BotConfig } from "../config/BotConfig";
 import { PersistenceContext } from "../config/PersistenceContext";
 import { IAssetContext } from "../fasset/IAssetContext";
-import { web3 } from "../utils/helpers";
+import { web3 } from "../utils/web3";
 import { AgentEntity } from "./entities";
 import { PersistentAgent } from "./PersistentAgent";
 

@@ -1,9 +1,10 @@
-import { BNish, BN_ZERO, Dict, fail, formatBN, systemTimestamp, toBN, web3 } from "../utils/helpers";
+import { BNish, BN_ZERO, Dict, fail, formatBN, systemTimestamp, toBN } from "../utils/helpers";
 import { ILogger } from "../utils/logging";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { BlockHandler, IBlockChainEvents, TransactionHandler } from "../underlying-chain/interfaces/IBlockChainEvents";
 import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { stringifyJson } from "../utils/json-bn";
+import { web3 } from "../utils/web3";
 
 export type MockTransactionOptions = TransactionOptions & { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };

@@ -1,6 +1,7 @@
-import { isNotNull, toBN, web3 } from "../helpers";
+import { isNotNull, toBN } from "../helpers";
 import { EventFormatter } from "./EventFormatter";
 import { EvmEvent } from "./common";
+import { web3 } from "../web3";
 
 export declare type RawEvent = import("web3-core").Log;
 

@@ -1,5 +1,6 @@
 import { artifacts } from "../../src/utils/artifacts";
-import { testInitWeb3, toBNExp, web3 } from "../../src/utils/helpers";
+import { toBNExp } from "../../src/utils/helpers";
+import { initWeb3 } from "../../src/utils/web3";
 
 const WNat = artifacts.require('WNat');
 
@@ -7,7 +8,7 @@ describe("test initial", async () => {
     let accounts: string[];
     
     before(async () => {
-        accounts = await testInitWeb3();
+        accounts = await initWeb3('local');
     });
     
     it("create persistent agent", async () => {

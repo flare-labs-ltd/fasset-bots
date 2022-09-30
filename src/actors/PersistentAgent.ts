@@ -6,10 +6,11 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { isNotNull, toBN, web3 } from "../utils/helpers";
+import { isNotNull, toBN } from "../utils/helpers";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { Agent } from "./Agent";
 import { AgentEntity, Redemption } from "./entities";
+import { web3 } from "../utils/web3";
 
 const AgentVault = artifacts.require('AgentVault');
 

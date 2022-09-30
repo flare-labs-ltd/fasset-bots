@@ -1,5 +1,6 @@
 import { TxInputOutput, TX_FAILED } from "../underlying-chain/interfaces/IBlockChain";
-import { BN_ZERO, toBN, web3, ZERO_BYTES32 } from "../utils/helpers";
+import { BN_ZERO, toBN, ZERO_BYTES32 } from "../utils/helpers";
+import { web3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { MockChain, MockChainTransaction } from "./MockChain";
