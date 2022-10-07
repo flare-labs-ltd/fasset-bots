@@ -57,14 +57,14 @@
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
+      "@flarenetwork/mcc": "link:../multi-chain-client",
       "@mikro-orm/cli": "^5.4.2",
       "@mikro-orm/core": "^5.4.2",
       "@mikro-orm/sqlite": "^5.4.2",
       "@truffle/contract": "^4.5.23",
       "bn.js": "^4.12.0",
       "glob": "^7.2.3",
-      "simple-wallet": "link:../simple-wallet",
-      "@flarenetwork/mcc": "link:../multi-chain-client"
+      "simple-wallet": "link:../simple-wallet"
    },
    "devDependencies": {
       "@istanbuljs/nyc-config-typescript": "1.0.2",

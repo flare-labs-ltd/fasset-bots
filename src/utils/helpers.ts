@@ -339,3 +339,11 @@ export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefin
     if (errorIncluded(error, expectedErrors)) return;
     throw error;    // unexpected error
 }
+
+// calculate roundId when submitting attestation request 
+export function timestampToRoundId(timestamp: number): number {
+    //TODO check if values are valid for all networks
+    const firstEpochStartTime = 1636070400; //coston
+    const roundDurationSec = 90; //coston
+   return Math.floor((timestamp - firstEpochStartTime) / roundDurationSec);
+}
