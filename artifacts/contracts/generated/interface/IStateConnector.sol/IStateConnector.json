@@ -4,8 +4,52 @@
   "sourceName": "contracts/generated/interface/IStateConnector.sol",
   "abi": [
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "AttestationRequest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "roundId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoundFinalised",
+      "type": "event"
+    },
+    {
       "inputs": [],
-      "name": "TOTAL_STORED_PROOFS",
+      "name": "BUFFER_TIMESTAMP_OFFSET",
       "outputs": [
         {
           "internalType": "uint256",
@@ -17,14 +61,40 @@
       "type": "function"
     },
     {
-      "inputs": [
+      "inputs": [],
+      "name": "BUFFER_WINDOW",
+      "outputs": [
         {
           "internalType": "uint256",
-          "name": "_index",
+          "name": "",
           "type": "uint256"
         }
       ],
-      "name": "merkleRoots",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastFinalizedRoundId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_roundId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_roundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "merkleRoot",
       "outputs": [
         {
           "internalType": "bytes32",
@@ -33,6 +103,19 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "requestAttestations",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],
