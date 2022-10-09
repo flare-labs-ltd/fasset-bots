@@ -7,7 +7,7 @@ import { hexlifyBN } from "../verification/attestation-types/attestation-types-h
 import { AttestationType } from "../verification/generated/attestation-types-enum";
 import { timestampToRoundId, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/artifacts";
-import { AttestationClientSCInstance, StateConnectorInstance } from "../../typechain-truffle";
+import { AttestationClientSCInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { web3 } from "../utils/web3";
 import Web3 from "web3";
 
@@ -64,8 +64,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async submitRequest(data: string): Promise<AttestationRequest> {
-        const StateConnector = artifacts.require("StateConnector");
-        const stateConnector: StateConnectorInstance = await StateConnector.at(this.stateConnectorAddress || "");
+        const StateConnector = artifacts.require("IStateConnector");
+        const stateConnector: IStateConnectorInstance = await StateConnector.at(this.stateConnectorAddress || "");
 
         let txres: any;
         let confirmed_timestamp = 0;
