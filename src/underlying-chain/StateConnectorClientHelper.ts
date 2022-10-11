@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { AttestationClientSCInstance, IStateConnectorInstance } from "../../typechain-truffle";
-import { MerkleTree } from "../mock/MerkleTree";
-import { artifacts } from "../utils/artifacts";
+import { MerkleTree } from "../utils/MerkleTree";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { sleep, toBN, toNumber } from "../utils/helpers";
 import { hexlifyBN } from "../verification/attestation-types/attestation-types-helpers";
@@ -15,46 +14,40 @@ const DEFAULT_TIMEOUT = 15000;
 export class StateConnectorClientHelper implements IStateConnectorClient {
 
     client: AxiosInstance;
-    attestationClientAddress: string;
-    stateConnectorAddress: string;
-    account: string;
 
-    // all initialized at initStateConnector()
+    // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
 
     constructor(
-        url: string,
-        attestationClientAddress: string,
-        stateConnectorAddress: string,
-        account: string
+        public artifacts: Truffle.Artifacts,
+        public attestationProviderUrl: string,
+        public attestationClientAddress: string,
+        public stateConnectorAddress: string,
+        public account: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: url,
+            baseURL: attestationProviderUrl,
             timeout: DEFAULT_TIMEOUT,
             headers: { "Content-Type": "application/json" },
             validateStatus: function (status: number) {
                 return (status >= 200 && status < 300) || status == 500;
             },
         };
-        //set client
+        // set client
         this.client = axios.create(createAxiosConfig);
-        //set addresses
-        this.attestationClientAddress = attestationClientAddress;
-        this.stateConnectorAddress = stateConnectorAddress;
-        this.account = account;
     }
 
     async initStateConnector() {
-        const IStateConnector = artifacts.require("IStateConnector");
+        const IStateConnector = this.artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
         this.firstEpochStartTime = toNumber(await this.stateConnector.BUFFER_TIMESTAMP_OFFSET());
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
     
-    static async create(url: string, attestationClientAddress: string, stateConnectorAddress: string, account: string) {
-        const helper = new StateConnectorClientHelper(url, attestationClientAddress, stateConnectorAddress, account);
+    static async create(artifacts: Truffle.Artifacts, url: string, attestationClientAddress: string, stateConnectorAddress: string, account: string) {
+        const helper = new StateConnectorClientHelper(artifacts, url, attestationClientAddress, stateConnectorAddress, account);
         await helper.initStateConnector();
         return helper;
     }
@@ -95,7 +88,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
-        const AttestationClientSC = artifacts.require("AttestationClientSC");
+        const AttestationClientSC = this.artifacts.require("AttestationClientSC");
         const attestationClient: AttestationClientSCInstance = await AttestationClientSC.at(this.attestationClientAddress);
 
         const resp = await this.client.get(`/api/proof/votes-for-round/${round}`);

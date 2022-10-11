@@ -9,7 +9,7 @@ import { parseRequest } from "../verification/generated/attestation-request-pars
 import { ARBalanceDecreasingTransaction, ARConfirmedBlockHeightExists, ARPayment, ARReferencedPaymentNonexistence, ARType } from "../verification/generated/attestation-request-types";
 import { AttestationType } from "../verification/generated/attestation-types-enum";
 import { SourceId } from "../verification/sources/sources";
-import { MerkleTree } from "./MerkleTree";
+import { MerkleTree } from "../utils/MerkleTree";
 import { MockAttestationProver, MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
 
