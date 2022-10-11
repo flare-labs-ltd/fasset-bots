@@ -16,7 +16,7 @@ const requestDataBytesC2 = "0x000100000003b4c8cd83c70ef7c9e7d38bc8de67be914a1840
 
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
-        initWeb3(costonRPCUrl, [accountPrivateKey], null);
+        await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await StateConnectorClientHelper.create(attestationUrl, attestationClientAddress, stateConnectorAddress, account);
     })
 
