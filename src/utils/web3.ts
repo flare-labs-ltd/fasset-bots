@@ -12,18 +12,45 @@ export const web3 = new Web3();
 let currentProvider: provider;
 
 /**
- * Initialize web3 and truffle contracts and return accounts.
+ * Initialize web3 and truffle contracts.
  */
-export async function initWeb3(provider: provider, defaultAccount: string | number | null = 0) {
+export async function initWeb3(provider: provider, walletKeys: string[] | 'network' | null, defaultAccount: string | number | null) {
     if (provider !== currentProvider) {
         currentProvider = provider;
-        if (typeof provider === 'string') {
-            provider = predefinedProviders[provider]();
-        }
-        web3.setProvider(provider);
+        web3.setProvider(createProvider(provider));
     }
-    const accounts = await web3.eth.getAccounts();
+    const accounts = walletKeys === 'network' ? await web3.eth.getAccounts() : createWalletAccounts(walletKeys);
     web3.eth.defaultAccount = typeof defaultAccount === 'number' ? accounts[defaultAccount] : defaultAccount;
     artifacts.updateWeb3(web3);
     return accounts;
+}
+
+/**
+ * Initialize web3 and truffle contracts and return accounts (for test networks).
+ */
+export async function initTestWeb3(provider: provider, defaultAccount: string | number | null = 0) {
+    return await initWeb3(provider, 'network', defaultAccount);
+}
+
+function createProvider(provider: provider) {
+    if (typeof provider === 'string') {
+        if (provider in predefinedProviders) {
+            return predefinedProviders[provider]();
+        } else if (/^https?:\/\//.test(provider)) {
+            return new Web3.providers.HttpProvider(provider);
+        } else {
+            throw new Error("Invalid provider url");
+        }
+    }
+    return provider;
+}
+
+function createWalletAccounts(walletPrivateKeys: string[] | null) {
+    if (walletPrivateKeys) {
+        web3.eth.accounts.wallet.clear();
+        for (const pk of walletPrivateKeys) {
+            web3.eth.accounts.wallet.add(pk);
+        }
+    }
+    return Array.from(web3.eth.accounts.wallet).map(acc => acc.address);
 }

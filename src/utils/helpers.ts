@@ -1,6 +1,5 @@
 import BN from "bn.js";
 import Web3 from "web3";
-import { web3 } from "./web3";
 
 export type BNish = BN | number | string;
 
@@ -31,22 +30,6 @@ export function sleep(ms: number) {
  */
 export function systemTimestamp() {
     return Math.round(new Date().getTime() / 1000);
-}
-
-/**
- * Return latest block timestamp as number (seconds since 1.1.1970).
- */
-export async function latestBlockTimestamp() {
-    const block = await web3.eth.getBlock('latest');
-    return Number(block.timestamp);
-}
-
-/**
- * Return latest block timestamp as BN (seconds since 1.1.1970).
- */
-export async function latestBlockTimestampBN() {
-    const block = await web3.eth.getBlock('latest');
-    return Web3.utils.toBN(block.timestamp);
 }
 
 /**
@@ -309,6 +292,12 @@ export function fail(messageOrError: string | Error): never {
     throw messageOrError;
 }
 
+export function requireEnv(name: string) {
+    const value = process.env[name];
+    if (value != null) return value;
+    throw new Error(`Environment value ${name} not defined`);
+}
+
 export function filterStackTrace(error: any) {
     const stack = String(error.stack || error);
     let lines = stack.split('\n');
@@ -338,12 +327,4 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
     if (errorIncluded(error, expectedErrors)) return;
     throw error;    // unexpected error
-}
-
-// calculate roundId when submitting attestation request 
-export function timestampToRoundId(timestamp: number): number {
-    //TODO check if values are valid for all networks
-    const firstEpochStartTime = 1636070400; //coston
-    const roundDurationSec = 90; //coston
-   return Math.floor((timestamp - firstEpochStartTime) / roundDurationSec);
 }

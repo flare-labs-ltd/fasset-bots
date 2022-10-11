@@ -60,6 +60,7 @@ class ArtifactsImpl {
     private updateContractWeb3(contract: any) {
         if (this.web3?.currentProvider != null) {
             contract.setProvider(this.web3.currentProvider);
+            contract.setWallet(this.web3.eth.accounts.wallet);
         }
         if (this.web3?.eth.defaultAccount != null) {
             contract.defaults({ from: this.web3.eth.defaultAccount });
