@@ -1,4 +1,5 @@
 import Web3 from "web3";
+import { prefix0x } from "../verification/attestation-types/attestation-types-helpers";
 import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence, DHType } from "../verification/generated/attestation-hash-types";
 import { encodeBalanceDecreasingTransaction, encodeConfirmedBlockHeightExists, encodePayment, encodeReferencedPaymentNonexistence } from "../verification/generated/attestation-request-encode";
 import { ARBalanceDecreasingTransaction, ARConfirmedBlockHeightExists, ARPayment, ARReferencedPaymentNonexistence } from "../verification/generated/attestation-request-types";
@@ -54,8 +55,8 @@ export class AttestationHelper {
             sourceId: this.chainId,
             inUtxo: findAddressIndex(transaction.inputs, sourceAddress, 0),
             utxo: findAddressIndex(transaction.outputs, receivingAddress, 0),
-            id: transactionHash,
-            upperBoundProof: finalizationBlock.hash,
+            id: prefix0x(transactionHash),
+            upperBoundProof: prefix0x(finalizationBlock.hash),
         };
         const data = encodePayment(request);
         return await this.client.submitRequest(data);
@@ -75,8 +76,8 @@ export class AttestationHelper {
             attestationType: AttestationType.BalanceDecreasingTransaction,
             sourceId: this.chainId,
             inUtxo: findAddressIndex(transaction.inputs, sourceAddress, 0),
-            id: transactionHash,
-            upperBoundProof: finalizationBlock.hash,
+            id: prefix0x(transactionHash),
+            upperBoundProof: prefix0x(finalizationBlock.hash),
         };
         const data = encodeBalanceDecreasingTransaction(request);
         return await this.client.submitRequest(data);
@@ -102,7 +103,7 @@ export class AttestationHelper {
             destinationAddressHash: Web3.utils.keccak256(destinationAddress),
             amount: amount,
             paymentReference: paymentReference,
-            upperBoundProof: finalizationBlock.hash,
+            upperBoundProof: prefix0x(finalizationBlock.hash),
         };
         const data = encodeReferencedPaymentNonexistence(request);
         return await this.client.submitRequest(data);
@@ -117,7 +118,7 @@ export class AttestationHelper {
         const request: ARConfirmedBlockHeightExists = {
             attestationType: AttestationType.ConfirmedBlockHeightExists,
             sourceId: this.chainId,
-            upperBoundProof: finalizationBlock.hash,
+            upperBoundProof: prefix0x(finalizationBlock.hash),
         };
         const data = encodeConfirmedBlockHeightExists(request);
         return await this.client.submitRequest(data);
