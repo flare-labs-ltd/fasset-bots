@@ -111,7 +111,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             let matchedResponse: any = null;
             for (let item of data) {
                 let encoded = encodeRequest(item.request);
-                if (encoded === requestData) {
+                if (encoded.toUpperCase() === requestData.toUpperCase()) {
                     matchedResponse = item;
                 }
             }
@@ -139,8 +139,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             }
 
             // convert the proof
-            const proofData = this.decodeProof(matchedResponse, proof);
-            
+            const proofData = this.decodeProof(matchedResponse.response, proof);
+
             // extra verification - should never fail, since Merkle root matches
             const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
             if (!verified) {

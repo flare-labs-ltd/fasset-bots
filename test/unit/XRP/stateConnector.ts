@@ -34,7 +34,7 @@ describe("XRP attestation/state connector tests", async () => {
 
     it("Should submit request", async () => {
         const resp = await stateConnectorClient.submitRequest(requestDataBytesC2);
-        console.log(resp);
+        expect(resp.round).to.be.greaterThan(0);
     });
 
     it("Should obtain proof", async () => {
