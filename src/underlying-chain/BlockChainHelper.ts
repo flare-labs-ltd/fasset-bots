@@ -63,7 +63,6 @@ export class BlockChainHelper implements IBlockChain {
                 const transactionBlock = transaction.transactionBlock;
                 if (transactionBlock.id) {
                     const block = await this.getBlockAt(transactionBlock.id);
-                    console.log("BLOCK", block)
                     if (block) {
                         return {
                             hash: block.hash,
@@ -109,23 +108,37 @@ export class BlockChainHelper implements IBlockChain {
             throw new Error("Method not implemented in ALGO.");
         } else {
             const block = await this.mccClient.getBlock(blockHash);
-            return {
-                hash: block.blockHash,
-                number: block.number,
-                timestamp: block.unixTimestamp,
-                transactions: block.transactionIds
-            };
+            if (block) {
+                return {
+                    hash: block.blockHash,
+                    number: block.number,
+                    timestamp: block.unixTimestamp,
+                    transactions: block.transactionIds
+                };
+            } 
         }
+        return null;
     }
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
-        const block = await this.mccClient.getBlock(blockNumber);
-        return {
-            hash: block.blockHash,
-            number: block.number,
-            timestamp: block.unixTimestamp,
-            transactions: block.transactionIds
-        };
+        let block = null;
+        let hash = "";
+        if (this.mccClient instanceof MCC.ALGO) {
+            block = await this.mccClient.getBlock(blockNumber);
+            hash = block.blockHashBase32;
+        } else {
+            block = await this.mccClient.getBlock(blockNumber);
+            hash = block.blockHash;
+        }
+        if (block) {
+            return {
+                hash: hash,
+                number: block.number,
+                timestamp: block.unixTimestamp,
+                transactions: block.transactionIds
+            }
+        }
+        return null;
     }
 
     async getBlockHeight(): Promise<number> {
