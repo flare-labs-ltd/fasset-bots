@@ -44,6 +44,7 @@ const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const amountToSendXRP = 10;
+const sourceId = SourceId.XRP;
 
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
@@ -53,7 +54,7 @@ describe("XRP attestation/state connector tests", async () => {
         walletClient = new WALLET.XRP(XRPWalletConnectionTest);
         mccClient = new MCC.XRP(XRPMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, SourceId.XRP);
+        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);

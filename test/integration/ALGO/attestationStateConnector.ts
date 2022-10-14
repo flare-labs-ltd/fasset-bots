@@ -48,6 +48,7 @@ const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 const targetAddress = "O2GT7KTTT7ESYYR6CJ23QQHXCVNV5W3MGYOYA2MGBPND5MB2BOPGVKFTLE";
 const amountToSendALGO = 1;
+const sourceId = SourceId.ALGO;
 
 describe("ALGO attestation/state connector tests", async () => {
     before(async () => {
@@ -57,7 +58,7 @@ describe("ALGO attestation/state connector tests", async () => {
         walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
         mccClient = new MCC.ALGO(ALGOMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, SourceId.XRP);
+        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);

@@ -45,6 +45,7 @@ const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
 const amountToSendDOGE = 1;
+const sourceId = SourceId.DOGE;
 
 describe("DOGE attestation/state connector tests", async () => {
     before(async () => {
@@ -54,7 +55,7 @@ describe("DOGE attestation/state connector tests", async () => {
         walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
         mccClient = new MCC.DOGE(DOGEMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, SourceId.XRP);
+        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
@@ -80,7 +81,6 @@ describe("DOGE attestation/state connector tests", async () => {
     //CONFIRMED BLOCK HEIGHT
     it("Should retrieve block height, send request for confirmed block height existence to attestations and retrieve proof from state connector", async () => {
         const requestConfirmedBlockHeight = await attestationHelper.requestConfirmedBlockHeightExistsProof();
-        console.log(requestConfirmedBlockHeight)
         await stateConnectorClient.waitForRoundFinalization(requestConfirmedBlockHeight.round);
         const proof = await stateConnectorClient.obtainProof(requestConfirmedBlockHeight.round, requestConfirmedBlockHeight.data);
         expect(proof.finalized).to.be.true;

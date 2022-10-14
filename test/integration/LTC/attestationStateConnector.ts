@@ -44,6 +44,7 @@ const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 const amountToSendLTC = 0.00001;
+const sourceId = SourceId.LTC;
 
 describe("LTC attestation/state connector tests", async () => {
     before(async () => {
@@ -53,7 +54,7 @@ describe("LTC attestation/state connector tests", async () => {
         walletClient = new WALLET.LTC(LTCWalletConnectionTest);
         mccClient = new MCC.LTC(LTCMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, SourceId.XRP);
+        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
