@@ -9,7 +9,6 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;
 let dbWallet: DBWalletKeys;
-// let stateConnectorClient: MockStateConnectorClient;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
 
