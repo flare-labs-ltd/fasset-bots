@@ -89,7 +89,7 @@ describe("XRP attestation/state connector tests", async () => {
     it("Should create payment, send request to attestations for referenced payment nonexistence proof and retrieve proof from state connector", async () => {
         const transactionHash = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, "TestPaymentNonExistence", undefined, true);
         const transactionBlock = await blockChainHelper.getTransactionBlock(transactionHash);
-        const transaction =  await blockChainHelper.getTransaction(transactionHash);
+        const transaction = await blockChainHelper.getTransaction(transactionHash);
         await sleep(10000);
         const upperBoundBlock = await blockChainHelper.getBlockAt(transactionBlock!.number + 1);
         if (upperBoundBlock && transaction) {

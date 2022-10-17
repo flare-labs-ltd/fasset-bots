@@ -139,7 +139,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             }
 
             // convert the proof
-            const proofData = this.decodeProof(matchedResponse.response, proof);
+            const proofData = this.decodeProof(matchedResponse.response, matchedResponse.request.attestationType, proof);
 
             // extra verification - should never fail, since Merkle root matches
             const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
@@ -171,8 +171,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
     }
 
-    private decodeProof(matchedResponse: any, proof: string[]): DHType {
-        switch (matchedResponse.request.attestationType) {
+    private decodeProof(matchedResponse: any, type: AttestationType, proof: string[]): DHType {
+        switch (type) {
             case AttestationType.Payment:
                 console.log('Payment');
                 return this.decodePayment(matchedResponse, proof);
