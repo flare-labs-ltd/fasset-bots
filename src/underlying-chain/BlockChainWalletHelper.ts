@@ -14,10 +14,10 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
         const walletKeys = new DBWalletKeys(this.pc);
         const value = amount as number;
-        //TODO add custom fee
         const fee = undefined;
+        const maxFee = options?.maxFee ? Number(options.maxFee) : undefined;
         const note = reference ? reference : undefined;
-        const tr = await this.walletClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note);
+        const tr = await this.walletClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee);
         const privateKey = await walletKeys.getKey(sourceAddress);
         if (privateKey) {
             const txSigned = await this.walletClient.signTransaction(tr, privateKey);

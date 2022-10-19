@@ -29,8 +29,8 @@ const DOGEWalletConnectionTest = {
 
 const DOGEMccConnectionTest = {
     url: process.env.DOGE_URL_TESTNET_MCC || "",
-    username: process.env.DOGE_URL_USER_NAME_TESTNET_MCC || "",
-    password: process.env.DOGE_URL_PASSWORD_TESTNET_MCC || "",
+    username: process.env.DOGE_USERNAME_TESTNET_MCC || "",
+    password: process.env.DOGE_PASSWORD_TESTNET_MCC || "",
     inTestnet: true
 };
 

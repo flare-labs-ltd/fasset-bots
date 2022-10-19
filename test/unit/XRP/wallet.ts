@@ -5,6 +5,8 @@ import { WALLET } from "simple-wallet";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { MCC } from "@flarenetwork/mcc";
+const chai = require('chai');
+chai.use(require('chai-as-promised'));
 
 let rootPc: PersistenceContext;
 let pc: PersistenceContext;
@@ -26,6 +28,12 @@ const XRPMccConnectionTest = {
     password: "",
     inTestnet: true
 };
+const XRPWalletConnectionTest = {
+    url: process.env.XRP_URL_TESTNET_WALLET || "",
+    username: "",
+    password: "",
+    inTestnet: true
+};
 
 const amountToSendXRP = 10;
 
@@ -35,7 +43,7 @@ describe("XRP wallet tests", async () => {
         rootPc = await PersistenceContext.create();
         pc = rootPc.clone();
         dbWallet = new DBWalletKeys(pc);
-        walletClient = new WALLET.XRP(XRPMccConnectionTest);
+        walletClient = new WALLET.XRP(XRPWalletConnectionTest);
         mccClient = new MCC.XRP(XRPMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
         walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
@@ -51,12 +59,20 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should send funds and retrieve transaction", async () => {
+        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, "TestNote", undefined, true);
+        const options = { maxFee: 12 }; // maxFee in Drops
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true);
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.toNumber()).to.be.greaterThan(balanceBefore.toNumber());
+    });
+
+    it("Should not send funds: fee > maxFee", async () => {
+        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+        const options = { maxFee: 8 }; // maxFee in Drops
+        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejected; 
     });
 
 });

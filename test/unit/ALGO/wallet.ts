@@ -63,7 +63,8 @@ describe("ALGO wallet tests", async () => {
 
     it("Should send funds and retrieve transaction", async () => {
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendALGO, "TestNote", undefined, true);
+        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab"
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendALGO, note, undefined, true);
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
