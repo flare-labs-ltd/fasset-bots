@@ -57,7 +57,7 @@
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
-      "@flarenetwork/mcc": "link:../multi-chain-client",
+      "@flarenetwork/mcc": "^2.0.5",
       "@mikro-orm/cli": "^5.4.2",
       "@mikro-orm/core": "^5.4.2",
       "@mikro-orm/sqlite": "^5.4.2",
