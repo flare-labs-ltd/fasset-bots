@@ -9,7 +9,7 @@ export class WalletAddress {
     encryptedPrivateKey!: string;
 }
 
-@Entity({ schema: 'Agent' })
+@Entity({ tableName: 'agent' })
 export class AgentEntity {
     // vaultAddress is unique accross chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)
     @PrimaryKey()

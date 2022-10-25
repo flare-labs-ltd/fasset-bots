@@ -32,9 +32,11 @@ export interface MockChainBlock {
  */
 export class MockChain implements IBlockChain, IBlockChainEvents {
     constructor(
-        currentTime: BN
+        currentTime?: BN
     ) {
-        this.skipTimeTo(currentTime.toNumber());
+        if (currentTime) {
+            this.skipTimeTo(currentTime.toNumber());
+        }
     }
 
     blocks: MockChainBlock[] = [];

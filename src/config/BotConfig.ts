@@ -17,7 +17,7 @@ export interface BotConfig {
     rpcUrl: string;
     // either one most be set
     addressUpdater?: string;
-    constractsJsonFile?: string;
+    contractsJsonFile?: string;
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
 }
