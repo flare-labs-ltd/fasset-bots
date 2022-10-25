@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ImportContractMock",
+  "sourceName": "contracts/fasset/mock/ImportContractsMock.sol",
+  "abi": [],
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220b07811e643845432a9587de5c0788c3f0be36b880f4cc5822b89bfb036dc43a564736f6c63430007060033",
+  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220b07811e643845432a9587de5c0788c3f0be36b880f4cc5822b89bfb036dc43a564736f6c63430007060033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

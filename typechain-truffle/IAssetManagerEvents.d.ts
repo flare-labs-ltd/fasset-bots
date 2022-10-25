@@ -126,18 +126,6 @@ export interface CollateralWithdrawalAnnounced {
   };
 }
 
-export interface ContractChangeScheduled {
-  name: "ContractChangeScheduled";
-  args: {
-    name: string;
-    value: string;
-    validAt: BN;
-    0: string;
-    1: string;
-    2: BN;
-  };
-}
-
 export interface ContractChanged {
   name: "ContractChanged";
   args: {
@@ -390,18 +378,6 @@ export interface SettingArrayChanged {
   };
 }
 
-export interface SettingChangeScheduled {
-  name: "SettingChangeScheduled";
-  args: {
-    name: string;
-    value: BN;
-    validAt: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface SettingChanged {
   name: "SettingChanged";
   args: {
@@ -478,7 +454,6 @@ type AllEvents =
   | CollateralReservationDeleted
   | CollateralReserved
   | CollateralWithdrawalAnnounced
-  | ContractChangeScheduled
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
@@ -499,7 +474,6 @@ type AllEvents =
   | RedemptionRequested
   | SelfClose
   | SettingArrayChanged
-  | SettingChangeScheduled
   | SettingChanged
   | UnderlyingBalanceToppedUp
   | UnderlyingFreeBalanceNegative

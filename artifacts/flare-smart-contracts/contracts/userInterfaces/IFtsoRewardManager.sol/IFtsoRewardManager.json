@@ -7,6 +7,44 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "address",
+          "name": "rewardOwner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "recipients",
+          "type": "address[]"
+        }
+      ],
+      "name": "AllowedClaimRecipientsChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "rewardOwner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "executors",
+          "type": "address[]"
+        }
+      ],
+      "name": "ClaimExecutorsChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "dataProvider",
@@ -63,6 +101,19 @@
         }
       ],
       "name": "RewardClaimed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rewardEpochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardClaimsEnabled",
       "type": "event"
     },
     {
@@ -145,13 +196,19 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_executor",
+          "name": "_rewardOwner",
           "type": "address"
         }
       ],
-      "name": "addClaimExecutor",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "allowedClaimRecipients",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -168,6 +225,35 @@
         }
       ],
       "name": "claimAndWrapReward",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardAmount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "_rewardEpochs",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "claimAndWrapRewardByExecutor",
       "outputs": [
         {
           "internalType": "uint256",
@@ -210,8 +296,13 @@
     {
       "inputs": [
         {
-          "internalType": "address payable",
+          "internalType": "address",
           "name": "_rewardOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
           "type": "address"
         },
         {
@@ -225,7 +316,7 @@
           "type": "address[]"
         }
       ],
-      "name": "claimAndWrapRewardFromDataProvidersToOwner",
+      "name": "claimAndWrapRewardFromDataProvidersByExecutor",
       "outputs": [
         {
           "internalType": "uint256",
@@ -239,25 +330,20 @@
     {
       "inputs": [
         {
-          "internalType": "address payable",
+          "internalType": "address",
           "name": "_rewardOwner",
           "type": "address"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "_rewardEpochs",
-          "type": "uint256[]"
         }
       ],
-      "name": "claimAndWrapRewardToOwner",
+      "name": "claimExecutors",
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "_rewardAmount",
-          "type": "uint256"
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -397,6 +483,35 @@
         {
           "internalType": "uint256",
           "name": "_feePercentageBIPS",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardEpoch",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_dataProvider",
+          "type": "address"
+        }
+      ],
+      "name": "getDataProviderPerformanceInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_votePowerIgnoringRevocation",
           "type": "uint256"
         }
       ],
@@ -619,12 +734,25 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_executor",
-          "type": "address"
+          "internalType": "address[]",
+          "name": "_recipients",
+          "type": "address[]"
         }
       ],
-      "name": "removeClaimExecutor",
+      "name": "setAllowedClaimRecipients",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_executors",
+          "type": "address[]"
+        }
+      ],
+      "name": "setClaimExecutors",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

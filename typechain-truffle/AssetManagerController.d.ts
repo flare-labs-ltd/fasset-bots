@@ -8,7 +8,8 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 export interface AssetManagerControllerContract
   extends Truffle.Contract<AssetManagerControllerInstance> {
   "new"(
-    _governance: string,
+    _governanceSettings: string,
+    _initialGovernance: string,
     _addressUpdater: string,
     meta?: Truffle.TransactionDetails
   ): Promise<AssetManagerControllerInstance>;
@@ -128,18 +129,6 @@ export interface CollateralWithdrawalAnnounced {
   };
 }
 
-export interface ContractChangeScheduled {
-  name: "ContractChangeScheduled";
-  args: {
-    name: string;
-    value: string;
-    validAt: BN;
-    0: string;
-    1: string;
-    2: BN;
-  };
-}
-
 export interface ContractChanged {
   name: "ContractChanged";
   args: {
@@ -194,21 +183,31 @@ export interface FullLiquidationStarted {
   };
 }
 
-export interface GovernanceProposed {
-  name: "GovernanceProposed";
+export interface GovernanceCallTimelocked {
+  name: "GovernanceCallTimelocked";
   args: {
-    proposedGovernance: string;
+    selector: string;
+    allowedAfterTimestamp: BN;
+    encodedCall: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
+export interface GovernanceInitialised {
+  name: "GovernanceInitialised";
+  args: {
+    initialGovernance: string;
     0: string;
   };
 }
 
-export interface GovernanceUpdated {
-  name: "GovernanceUpdated";
+export interface GovernedProductionModeEntered {
+  name: "GovernedProductionModeEntered";
   args: {
-    oldGovernance: string;
-    newGoveranance: string;
+    governanceSettings: string;
     0: string;
-    1: string;
   };
 }
 
@@ -410,23 +409,31 @@ export interface SettingArrayChanged {
   };
 }
 
-export interface SettingChangeScheduled {
-  name: "SettingChangeScheduled";
-  args: {
-    name: string;
-    value: BN;
-    validAt: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface SettingChanged {
   name: "SettingChanged";
   args: {
     name: string;
     value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface TimelockedGovernanceCallCanceled {
+  name: "TimelockedGovernanceCallCanceled";
+  args: {
+    selector: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface TimelockedGovernanceCallExecuted {
+  name: "TimelockedGovernanceCallExecuted";
+  args: {
+    selector: string;
+    timestamp: BN;
     0: string;
     1: BN;
   };
@@ -498,14 +505,14 @@ type AllEvents =
   | CollateralReservationDeleted
   | CollateralReserved
   | CollateralWithdrawalAnnounced
-  | ContractChangeScheduled
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
   | DustConvertedToTicket
   | FullLiquidationStarted
-  | GovernanceProposed
-  | GovernanceUpdated
+  | GovernanceCallTimelocked
+  | GovernanceInitialised
+  | GovernedProductionModeEntered
   | IllegalPaymentConfirmed
   | LiquidationEnded
   | LiquidationPerformed
@@ -521,8 +528,9 @@ type AllEvents =
   | RedemptionRequested
   | SelfClose
   | SettingArrayChanged
-  | SettingChangeScheduled
   | SettingChanged
+  | TimelockedGovernanceCallCanceled
+  | TimelockedGovernanceCallExecuted
   | UnderlyingBalanceToppedUp
   | UnderlyingFreeBalanceNegative
   | UnderlyingWithdrawalAnnounced
@@ -554,65 +562,38 @@ export interface AssetManagerControllerInstance
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
-  claimGovernance: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  executeSetCollateralRatios: {
-    (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
+  cancelGovernanceCall: {
+    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
     call(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  executeSetTimeForPayment: {
-    (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
+  executeGovernanceCall: {
+    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
     call(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  executeSetWhitelist: {
-    (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
+      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -623,26 +604,33 @@ export interface AssetManagerControllerInstance
 
   governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   initialise: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
+    (
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _governance: string,
+      _governanceSettings: string,
+      _initialGovernance: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _governance: string,
+      _governanceSettings: string,
+      _initialGovernance: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _governance: string,
+      _governanceSettings: string,
+      _initialGovernance: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  isUpdateExecutor(
-    arg0: string,
+  isExecutor(
+    _address: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
@@ -664,25 +652,7 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  proposeGovernance: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  proposedGovernance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   refreshFtsoIndexes: {
     (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
@@ -1106,24 +1076,6 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  setUpdateExecutors: {
-    (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   setWhitelist: {
     (
       _assetManagers: string[],
@@ -1170,6 +1122,15 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  switchToProductionMode: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   terminate: {
     (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -1188,23 +1149,10 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  transferGovernance: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
+  timelockedCalls(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: string }>;
 
   unpause: {
     (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
@@ -1271,68 +1219,38 @@ export interface AssetManagerControllerInstance
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
-    claimGovernance: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
+    cancelGovernanceCall: {
+      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    executeSetCollateralRatios: {
-      (
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    executeSetTimeForPayment: {
-      (
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    executeGovernanceCall: {
+      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
       call(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    executeSetWhitelist: {
-      (
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
+        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1343,26 +1261,33 @@ export interface AssetManagerControllerInstance
 
     governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     initialise: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
+      (
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _governance: string,
+        _governanceSettings: string,
+        _initialGovernance: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _governance: string,
+        _governanceSettings: string,
+        _initialGovernance: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _governance: string,
+        _governanceSettings: string,
+        _initialGovernance: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    isUpdateExecutor(
-      arg0: string,
+    isExecutor(
+      _address: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
@@ -1385,25 +1310,7 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    proposeGovernance: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    proposedGovernance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     refreshFtsoIndexes: {
       (
@@ -1828,24 +1735,6 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    setUpdateExecutors: {
-      (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     setWhitelist: {
       (
         _assetManagers: string[],
@@ -1892,6 +1781,15 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    switchToProductionMode: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
     terminate: {
       (
         _assetManagers: string[],
@@ -1911,23 +1809,10 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    transferGovernance: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
+    timelockedCalls(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: string }>;
 
     unpause: {
       (

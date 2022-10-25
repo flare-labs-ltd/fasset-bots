@@ -61,6 +61,8 @@ export interface VPContractInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN[]>;
 
+  cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   cleanupBlockNumber(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   delegate: {
@@ -290,24 +292,6 @@ export interface VPContractInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setCleanupBlockNumberManager: {
-    (_cbnManager: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _cbnManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _cbnManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _cbnManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   undelegateAll: {
     (
       _from: string,
@@ -509,6 +493,8 @@ export interface VPContractInstance extends Truffle.ContractInstance {
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN[]>;
+
+    cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     cleanupBlockNumber(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -736,24 +722,6 @@ export interface VPContractInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setCleanupBlockNumberManager: {
-      (_cbnManager: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _cbnManager: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _cbnManager: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _cbnManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

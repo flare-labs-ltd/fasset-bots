@@ -50,6 +50,8 @@ export interface CheckPointableInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   totalSupplyAt(
     _blockNumber: number | BN | string,
     txDetails?: Truffle.TransactionDetails
@@ -122,6 +124,8 @@ export interface CheckPointableInstance extends Truffle.ContractInstance {
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     totalSupplyAt(
       _blockNumber: number | BN | string,

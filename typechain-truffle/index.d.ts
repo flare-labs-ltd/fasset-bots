@@ -39,6 +39,7 @@ import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
+import { NativeTokenBurnerContract } from "./NativeTokenBurner";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
@@ -55,6 +56,7 @@ import { IFtsoContract } from "./IFtso";
 import { IFtsoManagerContract } from "./IFtsoManager";
 import { IFtsoRegistryContract } from "./IFtsoRegistry";
 import { IFtsoRewardManagerContract } from "./IFtsoRewardManager";
+import { IGovernanceSettingsContract } from "./IGovernanceSettings";
 import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
 import { IVPContractEventsContract } from "./IVPContractEvents";
 import { IVPTokenContract } from "./IVPToken";
@@ -62,7 +64,9 @@ import { AddressUpdaterContract } from "./AddressUpdater";
 import { CheckPointableContract } from "./CheckPointable";
 import { DelegatableContract } from "./Delegatable";
 import { DelegationHistoryContract } from "./DelegationHistory";
+import { GovernanceSettingsContract } from "./GovernanceSettings";
 import { PercentageDelegationContract } from "./PercentageDelegation";
+import { SuicidalMockContract } from "./SuicidalMock";
 import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
 import { WNatContract } from "./WNat";
@@ -107,6 +111,7 @@ declare global {
       require(name: "GovernedBase"): GovernedBaseContract;
       require(name: "AddressUpdatableMock"): AddressUpdatableMockContract;
       require(name: "GovernedMock"): GovernedMockContract;
+      require(name: "NativeTokenBurner"): NativeTokenBurnerContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
@@ -125,6 +130,7 @@ declare global {
       require(name: "IFtsoManager"): IFtsoManagerContract;
       require(name: "IFtsoRegistry"): IFtsoRegistryContract;
       require(name: "IFtsoRewardManager"): IFtsoRewardManagerContract;
+      require(name: "IGovernanceSettings"): IGovernanceSettingsContract;
       require(name: "IGovernanceVotePower"): IGovernanceVotePowerContract;
       require(name: "IVPContractEvents"): IVPContractEventsContract;
       require(name: "IVPToken"): IVPTokenContract;
@@ -132,7 +138,9 @@ declare global {
       require(name: "CheckPointable"): CheckPointableContract;
       require(name: "Delegatable"): DelegatableContract;
       require(name: "DelegationHistory"): DelegationHistoryContract;
+      require(name: "GovernanceSettings"): GovernanceSettingsContract;
       require(name: "PercentageDelegation"): PercentageDelegationContract;
+      require(name: "SuicidalMock"): SuicidalMockContract;
       require(name: "VPContract"): VPContractContract;
       require(name: "VPToken"): VPTokenContract;
       require(name: "WNat"): WNatContract;
@@ -232,6 +240,10 @@ export {
 } from "./AddressUpdatableMock";
 export { GovernedMockContract, GovernedMockInstance } from "./GovernedMock";
 export {
+  NativeTokenBurnerContract,
+  NativeTokenBurnerInstance,
+} from "./NativeTokenBurner";
+export {
   SafeMath64MockContract,
   SafeMath64MockInstance,
 } from "./SafeMath64Mock";
@@ -269,6 +281,10 @@ export {
   IFtsoRewardManagerInstance,
 } from "./IFtsoRewardManager";
 export {
+  IGovernanceSettingsContract,
+  IGovernanceSettingsInstance,
+} from "./IGovernanceSettings";
+export {
   IGovernanceVotePowerContract,
   IGovernanceVotePowerInstance,
 } from "./IGovernanceVotePower";
@@ -291,9 +307,14 @@ export {
   DelegationHistoryInstance,
 } from "./DelegationHistory";
 export {
+  GovernanceSettingsContract,
+  GovernanceSettingsInstance,
+} from "./GovernanceSettings";
+export {
   PercentageDelegationContract,
   PercentageDelegationInstance,
 } from "./PercentageDelegation";
+export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
 export { VPContractContract, VPContractInstance } from "./VPContract";
 export { VPTokenContract, VPTokenInstance } from "./VPToken";
 export { WNatContract, WNatInstance } from "./WNat";

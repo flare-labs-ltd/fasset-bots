@@ -20,6 +20,7 @@ export interface AssetManagerContract
       natFtsoSymbol: string;
       assetFtsoSymbol: string;
       burnAddress: string;
+      burnWithSelfDestruct: boolean;
       chainId: number | BN | string;
       collateralReservationFeeBIPS: number | BN | string;
       assetUnitUBA: number | BN | string;
@@ -44,7 +45,6 @@ export interface AssetManagerContract
       ccbTimeSeconds: number | BN | string;
       liquidationStepSeconds: number | BN | string;
       attestationWindowSeconds: number | BN | string;
-      timelockSeconds: number | BN | string;
       minUpdateRepeatTimeSeconds: number | BN | string;
       buybackCollateralFactorBIPS: number | BN | string;
       announcedUnderlyingConfirmationMinSeconds: number | BN | string;
@@ -164,18 +164,6 @@ export interface CollateralWithdrawalAnnounced {
     timestamp: BN;
     0: string;
     1: BN;
-    2: BN;
-  };
-}
-
-export interface ContractChangeScheduled {
-  name: "ContractChangeScheduled";
-  args: {
-    name: string;
-    value: string;
-    validAt: BN;
-    0: string;
-    1: string;
     2: BN;
   };
 }
@@ -432,18 +420,6 @@ export interface SettingArrayChanged {
   };
 }
 
-export interface SettingChangeScheduled {
-  name: "SettingChangeScheduled";
-  args: {
-    name: string;
-    value: BN;
-    validAt: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface SettingChanged {
   name: "SettingChanged";
   args: {
@@ -520,7 +496,6 @@ type AllEvents =
   | CollateralReservationDeleted
   | CollateralReserved
   | CollateralWithdrawalAnnounced
-  | ContractChangeScheduled
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
@@ -541,7 +516,6 @@ type AllEvents =
   | RedemptionRequested
   | SelfClose
   | SettingArrayChanged
-  | SettingChangeScheduled
   | SettingChanged
   | UnderlyingBalanceToppedUp
   | UnderlyingFreeBalanceNegative
@@ -1410,6 +1384,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     natFtsoSymbol: string;
     assetFtsoSymbol: string;
     burnAddress: string;
+    burnWithSelfDestruct: boolean;
     chainId: BN;
     collateralReservationFeeBIPS: BN;
     assetUnitUBA: BN;
@@ -1434,7 +1409,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ccbTimeSeconds: BN;
     liquidationStepSeconds: BN;
     attestationWindowSeconds: BN;
-    timelockSeconds: BN;
     minUpdateRepeatTimeSeconds: BN;
     buybackCollateralFactorBIPS: BN;
     announcedUnderlyingConfirmationMinSeconds: BN;
@@ -3025,6 +2999,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       natFtsoSymbol: string;
       assetFtsoSymbol: string;
       burnAddress: string;
+      burnWithSelfDestruct: boolean;
       chainId: BN;
       collateralReservationFeeBIPS: BN;
       assetUnitUBA: BN;
@@ -3049,7 +3024,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ccbTimeSeconds: BN;
       liquidationStepSeconds: BN;
       attestationWindowSeconds: BN;
-      timelockSeconds: BN;
       minUpdateRepeatTimeSeconds: BN;
       buybackCollateralFactorBIPS: BN;
       announcedUnderlyingConfirmationMinSeconds: BN;

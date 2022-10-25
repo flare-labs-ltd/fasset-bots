@@ -334,19 +334,6 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_cleanupBlockNumberManager",
-          "type": "address"
-        }
-      ],
-      "name": "setCleanupBlockNumberManager",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
           "name": "_from",
           "type": "address"
         },

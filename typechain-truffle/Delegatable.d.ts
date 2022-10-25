@@ -51,6 +51,8 @@ export interface Revoke {
 type AllEvents = CreatedVotePowerCache | Delegate | Revoke;
 
 export interface DelegatableInstance extends Truffle.ContractInstance {
+  cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   explicitDelegationHistoryCleanup: {
     (
       _from: string,
@@ -175,6 +177,8 @@ export interface DelegatableInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    cleanerContract(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     explicitDelegationHistoryCleanup: {
       (
         _from: string,
