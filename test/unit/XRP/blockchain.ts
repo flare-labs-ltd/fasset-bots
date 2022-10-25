@@ -1,3 +1,5 @@
+const chai = require('chai');
+chai.use(require('chai-as-promised'));
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
@@ -60,9 +62,7 @@ describe("XRP blockchain tests", async () => {
     });
 
     it("Should retrieve transaction block", async () => {
-        const transactionBlock = await blockChainHelper.getTransactionBlock(txHash);
-        expect(transactionBlock?.number).to.be.eq(blockId);
-        expect(transactionBlock?.hash).to.be.eq(blockHash);
+        await expect(blockChainHelper.getTransactionBlock(txHash)).to.eventually.be.rejected;
     });
 
 });

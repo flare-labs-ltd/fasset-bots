@@ -68,10 +68,7 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve transaction block", async () => {
-        const transactionBlock = await blockChainHelper.getTransactionBlock(txHash1);
-        // console.log(transactionBlock)
-        expect(transactionBlock?.number).to.be.eq(blockId1);
-        expect(transactionBlock?.hash).to.be.eq(blockHash1);
+        await expect(blockChainHelper.getTransactionBlock(txHash1)).to.eventually.be.rejected;
     });
 
 });
