@@ -11,6 +11,7 @@ import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { Agent } from "./Agent";
 import { AgentEntity, Redemption } from "./entities";
 import { web3 } from "../utils/web3";
+import { SqlEntityManager } from "@mikro-orm/sqlite";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -24,20 +25,22 @@ export class PersistentAgent {
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
     static async create(pc: PersistenceContext, context: IAssetContext, ownerAddress: string) {
-        const underlyingAddress = await context.wallet.createAccount();
-        // TODO: add EOA proof when needed
-        const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const agentEntity = new AgentEntity();
-        agentEntity.chainId = context.chainInfo.chainId;
-        agentEntity.ownerAddress = agent.ownerAddress;
-        agentEntity.vaultAddress = agent.agentVault.address;
-        agentEntity.underlyingAddress = agent.underlyingAddress;
-        agentEntity.active = true;
-        pc.em.persist(agentEntity);
-        return new PersistentAgent(agent, pc);
+        await pc.em.transactional(async em => {
+            const underlyingAddress = await context.wallet.createAccount();
+            // TODO: add EOA proof when needed
+            const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+            const agentEntity = new AgentEntity();
+            agentEntity.chainId = context.chainInfo.chainId;
+            agentEntity.ownerAddress = agent.ownerAddress;
+            agentEntity.vaultAddress = agent.agentVault.address;
+            agentEntity.underlyingAddress = agent.underlyingAddress;
+            agentEntity.active = true;
+            em.persist(agentEntity);
+            return new PersistentAgent(agent, pc);
+        });
     }
 
-    static async load(pc: PersistenceContext, context: IAssetContext, agentEntity: AgentEntity) {
+    static async fromEntity(pc: PersistenceContext, context: IAssetContext, agentEntity: AgentEntity) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
         return new PersistentAgent(agent, pc);
@@ -59,7 +62,7 @@ export class PersistentAgent {
             // Note: only update db here, so that error won't retry on-chain operations.
             for (const event of events) {
                 if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
-                    this.startRedemption(event.args);
+                    this.startRedemption(em, event.args);
                 }
             }
             // mark as handled
@@ -69,7 +72,7 @@ export class PersistentAgent {
         });;
     }
 
-    startRedemption(request: EventArgs<RedemptionRequested>) {
+    startRedemption(em: SqlEntityManager, request: EventArgs<RedemptionRequested>) {
         const redemption = new Redemption();
         redemption.state = 'start';
         redemption.agentAddress = this.agent.agentVault.address;
@@ -78,7 +81,7 @@ export class PersistentAgent {
         redemption.valueUBA = toBN(request.valueUBA);
         redemption.feeUBA = toBN(request.feeUBA);
         redemption.paymentReference = request.paymentReference;
-        this.pc.em.persist(redemption);
+        em.persist(redemption);
     }
 
     async handleOpenRedemptions() {
