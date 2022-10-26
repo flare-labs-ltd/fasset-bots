@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
-import { BTC_MDU, hexToBase32, MccClient, UtxoTransaction } from "@flarenetwork/mcc";
+import { BTC_MDU, hexToBase32, MccClient, TransactionSuccessStatus, UtxoTransaction } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
 
@@ -43,7 +43,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
                     inputs: await this.handleInputs(data),
                     outputs: await this.handleOutputs(data),
                     reference: data.paymentReference,
-                    status: 0 //TODO
+                    status: this.successStatus(data)
                 };
             }
         }
@@ -249,6 +249,34 @@ export class BlockChainIndexerHelper implements IBlockChain {
             }
             return [["", toBN(0)]];
         }
+    }
+
+    private successStatus(data: any): TransactionSuccessStatus {
+        if (this.isUTXOchain || getSourceName(this.sourceId) === "ALGO") {
+            return TransactionSuccessStatus.SUCCESS;
+        }
+        // https://xrpl.org/transaction-results.html
+        const response = data.response.data.result;
+        let metaData = response.meta || (response as any).metaData;
+        let result = metaData.TransactionResult;
+        if (result === "tesSUCCESS") {
+            // https://xrpl.org/tes-success.html
+            return TransactionSuccessStatus.SUCCESS;
+        }
+        if (result.startsWith("tec")) {
+            // https://xrpl.org/tec-codes.html
+            switch (result) {
+                case "tecDST_TAG_NEEDED":
+                case "tecNO_DST":
+                case "tecNO_DST_INSUF_XRP":
+                case "tecNO_PERMISSION":
+                    return TransactionSuccessStatus.RECEIVER_FAILURE;
+                default:
+                    return TransactionSuccessStatus.SENDER_FAILURE;
+            }
+        }
+        // Other codes: tef, tel, tem, ter are not applied to ledgers
+        return TransactionSuccessStatus.SENDER_FAILURE;
     }
 
 }
