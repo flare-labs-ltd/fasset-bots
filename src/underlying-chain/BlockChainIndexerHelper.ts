@@ -232,23 +232,30 @@ export class BlockChainIndexerHelper implements IBlockChain {
 
     private ALGOInputsOutputs(type: string, data: any, input: boolean): TxInputOutput[] {
         if (input) {
-            if (type === "pay") {
-                if (data.amt) {
-                    let amount = data.amt.toString();
-                    return [[hexToBase32(data.snd), toBN(data.fee || 0).add(toBN(amount))]];
-                }
+            if ((type === "pay" || type === "pay_close") && data.amt) {
+                let amount = data.amt.toString();
+                return [[hexToBase32(data.snd.data), toBN(data.fee || 0).add(toBN(amount))]];
             }
-            return [[hexToBase32(data.snd), toBN(data.fee || 0)]];
+            return [[hexToBase32(data.snd.data), toBN(data.fee || 0)]];
         } else {
-            if (type === "pay_close") {
-                return [["", toBN(0)]];
-            }
             if (data.amt) {
                 let amount = data.amt.toString();
-                return [[hexToBase32(data.snd), toBN(data.fee || 0).add(toBN(amount))]];
+                return [[this.ALGOReceivingAddress(type, data), toBN(amount)]];
             }
             return [["", toBN(0)]];
         }
+    }
+
+    private ALGOReceivingAddress(type: string, data: any): string {
+        if (type === "pay" || type === "pay_close") {
+            if (data.rcv) {
+                return hexToBase32(data.rcv.data);
+            }
+            if (data.close) {
+                return hexToBase32(data.close.data);
+            }
+        }
+        return "";
     }
 
     private successStatus(data: any): TransactionSuccessStatus {

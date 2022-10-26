@@ -31,9 +31,9 @@ const ALGOMccConnectionTest = {
     },
 };
 
-const txHash = "9825a32eae8cd6bdee5dbf6a6447793f2375155c34bd78ee782676db4f086a51";
-const blockId = 24078316;
-const blockHash = "c6e59c61584b193701a0b880a6575bed9e8e434f33da8493a4eb1ff6d27fc064";
+const txHash = "2117898bd891d3191b616492e027999052e35dc0e023131adfb296412986e7bc";
+const blockId = 24044383;
+const blockHash = "648764971e7918177935ab1689f0e62a348df4c156060eabd054b787dcc7e79d";
 const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 
 describe("ALGO blockchain tests via indexer", async () => {
