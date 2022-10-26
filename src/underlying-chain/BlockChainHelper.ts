@@ -20,10 +20,10 @@ export class BlockChainHelper implements IBlockChain {
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
                 for (let input of transaction.spentAmounts) {
-                    inputs.push([input.address ? input.address : "", input.amount]);
+                    inputs.push([input.address ? input.address : "", input.amount ? input.amount : toBN(0)]);
                 }
                 for (let output of transaction.receivedAmounts) {
-                    outputs.push([output.address ? output.address : "", output.amount]);
+                    outputs.push([output.address ? output.address : "", output.amount ? output.amount : toBN(0)]);
                 }
                 return {
                     hash: transaction.hash,
@@ -39,10 +39,10 @@ export class BlockChainHelper implements IBlockChain {
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
                 for (let input of transaction.spentAmounts) {
-                    inputs.push([input.address ? input.address : "", input.amount]);
+                    inputs.push([input.address ? input.address : "", input.amount ? input.amount : toBN(0)]);
                 }
                 for (let output of transaction.receivedAmounts) {
-                    outputs.push([output.address ? output.address : "", output.amount]);
+                    outputs.push([output.address ? output.address : "", output.amount ? output.amount : toBN(0)]);
                 }
                 return {
                     hash: transaction.hash,

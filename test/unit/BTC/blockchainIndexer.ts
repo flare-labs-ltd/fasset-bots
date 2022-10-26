@@ -1,3 +1,4 @@
+import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
@@ -8,11 +9,19 @@ let blockChainIndexerClient: BlockChainIndexerHelper;
 const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.BTC;
 let walletClient: WALLET.BTC;
+let mccClient: MCC.BTC;
 
 const BTCWalletConnectionTest = {
     url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
     username: "",
     password: ""
+};
+
+const BTCMccConnectionTest = {
+    url: process.env.BTC_URL_TESTNET_MCC || "",
+    username: process.env.BTC_USERNAME_TESTNET_MCC || "",
+    password: process.env.BTC_PASSWORD_TESTNET_MCC || "",
+    inTestnet: true
 };
 
 const txHash = "686161d6e320c1d3237116b1204e7bba0f017e098e7e20eccacc6f3378523d93";
@@ -24,7 +33,8 @@ describe("BTC blockchain tests via indexer", async () => {
 
     before(async () => {
         walletClient = new WALLET.BTC(BTCWalletConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
+        mccClient = new MCC.BTC(BTCMccConnectionTest);
+        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient, mccClient);
     })
 
     it("Should retrieve transaction", async () => {

@@ -1,3 +1,4 @@
+import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
@@ -8,9 +9,17 @@ let blockChainIndexerClient: BlockChainIndexerHelper;
 const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.XRP;
 let walletClient: WALLET.XRP;
+let mccClient:  MCC.XRP;
 
 const XRPWalletConnectionTest = {
     url: process.env.XRP_URL_TESTNET_WALLET || "",
+    username: "",
+    password: "",
+    inTestnet: true
+};
+
+const XRPMccConnectionTest = {
+    url: process.env.XRP_URL_TESTNET_MCC || "",
     username: "",
     password: "",
     inTestnet: true
@@ -25,7 +34,8 @@ describe("XRP blockchain tests via indexer", async () => {
 
     before(async () => {
         walletClient = new WALLET.XRP(XRPWalletConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
+        mccClient = new MCC.XRP(XRPMccConnectionTest);
+        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient, mccClient);
     })
 
     it("Should retrieve transaction", async () => {
