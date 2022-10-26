@@ -17,17 +17,17 @@ const IFtsoManager = artifacts.require('IFtsoManager');
 const FAsset = artifacts.require('FAsset');
 
 export async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigChain): Promise<IAssetContext> {
-    if (botConfig.constractsJsonFile) {
-        return await createAssetContextFromContracts(botConfig as BotConfig & { constractsJsonFile: string }, chainConfig);
+    if (botConfig.contractsJsonFile) {
+        return await createAssetContextFromContracts(botConfig as BotConfig & { contractsJsonFile: string }, chainConfig);
     } else if (botConfig.addressUpdater) {
         return await createAssetContextFromAddressUpdater(botConfig as BotConfig & { addressUpdater: string }, chainConfig);
     } else {
-        throw new Error('Either constractsJsonFile or addressUpdater must be defined');
+        throw new Error('Either contractsJsonFile or addressUpdater must be defined');
     }
 }
 
-async function createAssetContextFromContracts(botConfig: BotConfig & { constractsJsonFile: string }, chainConfig: BotConfigChain): Promise<IAssetContext> {
-    const contracts = loadContracts(botConfig.constractsJsonFile);
+async function createAssetContextFromContracts(botConfig: BotConfig & { contractsJsonFile: string }, chainConfig: BotConfigChain): Promise<IAssetContext> {
+    const contracts = loadContracts(botConfig.contractsJsonFile);
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
     const settings = await assetManager.getSettings();

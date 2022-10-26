@@ -1,0 +1,176 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "StateConnectorMock",
+  "sourceName": "contracts/generated/contracts/StateConnectorMock.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "AttestationRequest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "roundId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoundFinalised",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "BUFFER_TIMESTAMP_OFFSET",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BUFFER_WINDOW",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "TOTAL_STORED_PROOFS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastFinalizedRoundId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_roundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "merkleRoot",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "merkleRoots",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "requestAttestations",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_stateConnectorRound",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "setMerkleRoot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60806040526000611a405534801561001657600080fd5b5061039c806100266000396000f3fe608060405234801561001057600080fd5b50600436106100885760003560e01c8063dd8621571161005b578063dd862157146100e5578063f417c9d8146100ef578063f5f59a4a146100f7578063f64b6fda146100ff57600080fd5b806318712c211461008d5780633c70b357146100a25780634b8a125f146100c757806371c5ecb1146100d2575b600080fd5b6100a061009b36600461021d565b610112565b005b6100b56100b036600461023f565b61017f565b60405190815260200160405180910390f35b6100b5636184740081565b6100b56100e036600461023f565b6101b3565b6100b5611a405481565b6100b56101cb565b6100b5605a81565b6100a061010d366004610258565b6101dc565b806000610123605a62093a806102e0565b61012d90856102f4565b611a40811061013e5761013e610308565b0155611a4082905560405181815282907f8ffd19aa79a62d0764e560d21b1245698310783be781d7d80b38233d4d7d288c9060200160405180910390a25050565b600080610190605a62093a806102e0565b61019a90846102f4565b611a4081106101ab576101ab610308565b015492915050565b600081611a4081106101c457600080fd5b0154905081565b6101d9605a62093a806102e0565b81565b7f7cbc6812801238dea8eb58356bb62b95dbce8dc28498aa30e7d2c6873ed36cc733428484604051610211949392919061031e565b60405180910390a15050565b6000806040838503121561023057600080fd5b50508035926020909101359150565b60006020828403121561025157600080fd5b5035919050565b6000806020838503121561026b57600080fd5b823567ffffffffffffffff8082111561028357600080fd5b818501915085601f83011261029757600080fd5b8135818111156102a657600080fd5b8660208285010111156102b857600080fd5b60209290920196919550909350505050565b634e487b7160e01b600052601260045260246000fd5b6000826102ef576102ef6102ca565b500490565b600082610303576103036102ca565b500690565b634e487b7160e01b600052603260045260246000fd5b6001600160a01b0385168152602081018490526060604082018190528101829052818360808301376000818301608090810191909152601f909201601f19160101939250505056fea2646970667358221220471faac747d282ea70eb46e07f37671e64d0f35fa2adfdee94d9fcc2f1b0cb4f64736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100885760003560e01c8063dd8621571161005b578063dd862157146100e5578063f417c9d8146100ef578063f5f59a4a146100f7578063f64b6fda146100ff57600080fd5b806318712c211461008d5780633c70b357146100a25780634b8a125f146100c757806371c5ecb1146100d2575b600080fd5b6100a061009b36600461021d565b610112565b005b6100b56100b036600461023f565b61017f565b60405190815260200160405180910390f35b6100b5636184740081565b6100b56100e036600461023f565b6101b3565b6100b5611a405481565b6100b56101cb565b6100b5605a81565b6100a061010d366004610258565b6101dc565b806000610123605a62093a806102e0565b61012d90856102f4565b611a40811061013e5761013e610308565b0155611a4082905560405181815282907f8ffd19aa79a62d0764e560d21b1245698310783be781d7d80b38233d4d7d288c9060200160405180910390a25050565b600080610190605a62093a806102e0565b61019a90846102f4565b611a4081106101ab576101ab610308565b015492915050565b600081611a4081106101c457600080fd5b0154905081565b6101d9605a62093a806102e0565b81565b7f7cbc6812801238dea8eb58356bb62b95dbce8dc28498aa30e7d2c6873ed36cc733428484604051610211949392919061031e565b60405180910390a15050565b6000806040838503121561023057600080fd5b50508035926020909101359150565b60006020828403121561025157600080fd5b5035919050565b6000806020838503121561026b57600080fd5b823567ffffffffffffffff8082111561028357600080fd5b818501915085601f83011261029757600080fd5b8135818111156102a657600080fd5b8660208285010111156102b857600080fd5b60209290920196919550909350505050565b634e487b7160e01b600052601260045260246000fd5b6000826102ef576102ef6102ca565b500490565b600082610303576103036102ca565b500690565b634e487b7160e01b600052603260045260246000fd5b6001600160a01b0385168152602081018490526060604082018190528101829052818360808301376000818301608090810191909152601f909201601f19160101939250505056fea2646970667358221220471faac747d282ea70eb46e07f37671e64d0f35fa2adfdee94d9fcc2f1b0cb4f64736f6c634300080b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

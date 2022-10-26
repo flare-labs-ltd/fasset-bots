@@ -40,11 +40,11 @@ export type AutoFinalizationType = 'auto' | 'on_wait' | 'timed' | 'manual';
 export class MockStateConnectorClient implements IStateConnectorClient {
     constructor(
         public stateConnector: StateConnectorMockInstance,
-        public supportedChains: { [chainId: number]: MockChain },
         public finalizationType: AutoFinalizationType,
     ) {
     }
     
+    supportedChains: { [chainId: number]: MockChain } = {};
     rounds: string[][] = [];
     finalizedRounds: FinalizedRound[] = [];
     logger?: ILogger;

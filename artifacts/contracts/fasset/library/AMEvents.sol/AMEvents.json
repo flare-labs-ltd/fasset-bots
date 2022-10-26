@@ -260,31 +260,6 @@
           "internalType": "address",
           "name": "value",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "validAt",
-          "type": "uint256"
-        }
-      ],
-      "name": "ContractChangeScheduled",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "value",
-          "type": "address"
         }
       ],
       "name": "ContractChanged",
@@ -821,31 +796,6 @@
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "validAt",
-          "type": "uint256"
-        }
-      ],
-      "name": "SettingChangeScheduled",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
         }
       ],
       "name": "SettingChanged",
@@ -965,8 +915,8 @@
       "type": "event"
     }
   ],
-  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212202aa0593966184a254e49123faba14651b143a55f55363b7b758bfd296bf5adec64736f6c634300080b0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212202aa0593966184a254e49123faba14651b143a55f55363b7b758bfd296bf5adec64736f6c634300080b0033",
+  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122026ff1ec4aca9b839fe97f53a6438a1c759fee9503d152005ce12dbccab28fd1464736f6c634300080b0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122026ff1ec4aca9b839fe97f53a6438a1c759fee9503d152005ce12dbccab28fd1464736f6c634300080b0033",
   "linkReferences": {},
   "deployedLinkReferences": {}
 }

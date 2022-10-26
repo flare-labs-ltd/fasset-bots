@@ -52,25 +52,6 @@ export interface IICleanableInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setCleanupBlockNumberManager: {
-    (
-      _cleanupBlockNumberManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _cleanupBlockNumberManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _cleanupBlockNumberManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _cleanupBlockNumberManager: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
     cleanupBlockNumber(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -108,25 +89,6 @@ export interface IICleanableInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setCleanupBlockNumberManager: {
-      (
-        _cleanupBlockNumberManager: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _cleanupBlockNumberManager: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _cleanupBlockNumberManager: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _cleanupBlockNumberManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

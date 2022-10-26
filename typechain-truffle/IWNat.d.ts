@@ -76,6 +76,29 @@ export interface IWNatInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  batchDelegate: {
+    (
+      _delegatees: string[],
+      _bips: (number | BN | string)[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _delegatees: string[],
+      _bips: (number | BN | string)[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _delegatees: string[],
+      _bips: (number | BN | string)[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _delegatees: string[],
+      _bips: (number | BN | string)[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   delegate: {
@@ -419,6 +442,29 @@ export interface IWNatInstance extends Truffle.ContractInstance {
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    batchDelegate: {
+      (
+        _delegatees: string[],
+        _bips: (number | BN | string)[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _delegatees: string[],
+        _bips: (number | BN | string)[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _delegatees: string[],
+        _bips: (number | BN | string)[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _delegatees: string[],
+        _bips: (number | BN | string)[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 

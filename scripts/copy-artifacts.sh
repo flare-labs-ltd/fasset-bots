@@ -16,7 +16,7 @@ yarn c
 
 # copy artifacts
 cd ${fassetsdir}/artifacts
-find -name '*.json' -not -name '*.dbg.json' -not -name '*Mock*' -not -path './build-info/*' -not -path './cache/*' | xargs cp -t ${projdir}/artifacts --parents
+find -name '*.json' -not -name '*.dbg.json' -not -path './build-info/*' -not -path './cache/*' | xargs cp -t ${projdir}/artifacts --parents
 
 # copy typechain
 cd ${fassetsdir}

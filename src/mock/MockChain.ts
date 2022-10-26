@@ -32,9 +32,11 @@ export interface MockChainBlock {
  */
 export class MockChain implements IBlockChain, IBlockChainEvents {
     constructor(
-        currentTime: BN
+        currentTime?: BN
     ) {
-        this.skipTimeTo(currentTime.toNumber());
+        if (currentTime) {
+            this.skipTimeTo(currentTime.toNumber());
+        }
     }
 
     blocks: MockChainBlock[] = [];
@@ -274,6 +276,7 @@ export class MockChainWallet implements IBlockChainWallet {
     constructor(
         public chain: MockChain,
     ) {}
+    
     async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);
@@ -313,8 +316,10 @@ export class MockChainWallet implements IBlockChainWallet {
         return { hash, inputs, outputs, reference, status };
     }
 
-    createAccount(): Promise<string> {
-        throw new Error("Method not implemented.");
+    lastAccountId = 0;
+    
+    async createAccount(): Promise<string> {
+        return `UNDERLYING_ACCOUNT_${++this.lastAccountId}`;
     }
 
     private calculateMaxFee(options: TransactionOptionsWithFee) {

@@ -260,31 +260,6 @@
           "internalType": "address",
           "name": "value",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "validAt",
-          "type": "uint256"
-        }
-      ],
-      "name": "ContractChangeScheduled",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "value",
-          "type": "address"
         }
       ],
       "name": "ContractChanged",
@@ -805,31 +780,6 @@
         }
       ],
       "name": "SettingArrayChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "validAt",
-          "type": "uint256"
-        }
-      ],
-      "name": "SettingChangeScheduled",
       "type": "event"
     },
     {

@@ -24,7 +24,7 @@ export class PersistentAgentRunner {
         const agentEntities = await this.pc.em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             try {
-                const agent = await PersistentAgent.load(this.pc, this.context, agentEntity);
+                const agent = await PersistentAgent.fromEntity(this.pc, this.context, agentEntity);
                 await agent.handleEvents();
                 await agent.handleOpenRedemptions();
             } catch (error) {

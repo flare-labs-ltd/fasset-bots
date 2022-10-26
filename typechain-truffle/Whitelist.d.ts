@@ -7,26 +7,57 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 
 export interface WhitelistContract extends Truffle.Contract<WhitelistInstance> {
   "new"(
-    _governance: string,
+    _governanceSettings: string,
+    _initialGovernance: string,
     meta?: Truffle.TransactionDetails
   ): Promise<WhitelistInstance>;
 }
 
-export interface GovernanceProposed {
-  name: "GovernanceProposed";
+export interface GovernanceCallTimelocked {
+  name: "GovernanceCallTimelocked";
   args: {
-    proposedGovernance: string;
+    selector: string;
+    allowedAfterTimestamp: BN;
+    encodedCall: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
+export interface GovernanceInitialised {
+  name: "GovernanceInitialised";
+  args: {
+    initialGovernance: string;
     0: string;
   };
 }
 
-export interface GovernanceUpdated {
-  name: "GovernanceUpdated";
+export interface GovernedProductionModeEntered {
+  name: "GovernedProductionModeEntered";
   args: {
-    oldGovernance: string;
-    newGoveranance: string;
+    governanceSettings: string;
     0: string;
-    1: string;
+  };
+}
+
+export interface TimelockedGovernanceCallCanceled {
+  name: "TimelockedGovernanceCallCanceled";
+  args: {
+    selector: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface TimelockedGovernanceCallExecuted {
+  name: "TimelockedGovernanceCallExecuted";
+  args: {
+    selector: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
   };
 }
 
@@ -38,7 +69,13 @@ export interface Whitelisted {
   };
 }
 
-type AllEvents = GovernanceProposed | GovernanceUpdated | Whitelisted;
+type AllEvents =
+  | GovernanceCallTimelocked
+  | GovernanceInitialised
+  | GovernedProductionModeEntered
+  | TimelockedGovernanceCallCanceled
+  | TimelockedGovernanceCallExecuted
+  | Whitelisted;
 
 export interface WhitelistInstance extends Truffle.ContractInstance {
   addAddressToWhitelist: {
@@ -77,7 +114,82 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  claimGovernance: {
+  cancelGovernanceCall: {
+    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  executeGovernanceCall: {
+    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _selector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  initialise: {
+    (
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  isExecutor(
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  isWhitelisted(
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -86,68 +198,10 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  initialise: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  isWhitelisted(
-    _address: string,
+  timelockedCalls(
+    arg0: string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
-
-  proposeGovernance: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  proposedGovernance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  transferGovernance: {
-    (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
+  ): Promise<{ 0: BN; 1: string }>;
 
   whitelist(
     arg0: string,
@@ -191,7 +245,82 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    claimGovernance: {
+    cancelGovernanceCall: {
+      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    executeGovernanceCall: {
+      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _selector: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    initialise: {
+      (
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    isExecutor(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    isWhitelisted(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    switchToProductionMode: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -200,68 +329,10 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
-    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    initialise: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    isWhitelisted(
-      _address: string,
+    timelockedCalls(
+      arg0: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
-
-    proposeGovernance: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    proposedGovernance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    transferGovernance: {
-      (_governance: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
+    ): Promise<{ 0: BN; 1: string }>;
 
     whitelist(
       arg0: string,
