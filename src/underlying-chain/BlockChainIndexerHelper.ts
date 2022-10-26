@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
-import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
+import { BTC_MDU, hexToBase32, MccClient, UtxoTransaction } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
 
@@ -16,7 +16,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public walletClient: WalletClient
+        public walletClient: WalletClient,
+        public mccClient: MccClient //backup for UTXO chains 
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: indexerWebServerUrl,
@@ -35,12 +36,12 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status == "OK") {
+        if (status === "OK") {
             if (data) {
                 return {
                     hash: data.transactionId,
-                    inputs: this.handleInputs(data),
-                    outputs: this.handleOutputs(data),
+                    inputs: await this.handleInputs(data),
+                    outputs: await this.handleOutputs(data),
                     reference: data.paymentReference,
                     status: 0 //TODO
                 };
@@ -54,7 +55,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction-block/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status == "OK") {
+        if (status === "OK") {
             if (data) {
                 return {
                     hash: data.blockHash,
@@ -75,7 +76,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/block/${blockHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status == "OK") {
+        if (status === "OK") {
             if (data) {
                 return {
                     hash: data.blockHash,
@@ -93,7 +94,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/block-at/${blockNumber}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status == "OK") {
+        if (status === "OK") {
             if (data) {
                 return {
                     hash: data.blockHash,
@@ -117,11 +118,11 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return 0;
     }
 
-    private handleInputs(data: any): TxInputOutput[] {
+    private async handleInputs(data: any): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response.data;
         if (this.isUTXOchain) {
-            return this.UTXOInputsOutputs(type, res, true);
+            return await this.UTXOInputsOutputs(type, res, true);
         }
         if (getSourceName(this.sourceId) === "ALGO") {
             return this.ALGOInputsOutputs(type, res, true);
@@ -132,11 +133,11 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return [];
     }
 
-    private handleOutputs(data: any): TxInputOutput[] {
+    private async handleOutputs(data: any): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response.data;
         if (this.isUTXOchain) {
-            return this.UTXOInputsOutputs(type, res, false);
+            return await this.UTXOInputsOutputs(type, res, false);
         }
         if (getSourceName(this.sourceId) === "ALGO") {
             return this.ALGOInputsOutputs(type, res, false);
@@ -169,12 +170,37 @@ export class BlockChainIndexerHelper implements IBlockChain {
             getSourceName(this.sourceId) === "LTC";
     }
 
-    private UTXOInputsOutputs(type: string, data: any, input: boolean): TxInputOutput[] {
+    private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {
         if (input) {
             if (type === "coinbase") {
                 return [["", toBN(0)]];
             } else {
-                throw Error("Not yet implemented.")
+                const chain = getSourceName(this.sourceId);
+                const inputs: TxInputOutput[] = [];
+                for (let item of data.vin) {
+                    if (item.txid && item.vout) {
+                        const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${item.txid}`);
+                        const status = resp.data.status;
+                        const data = resp.data.data;
+                        if (status === "OK" && data) {
+                            const vout = data.response.data.vout;
+                            const elt = vout[item.vout];
+                            inputs.push([
+                                elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
+                                toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
+                            ])
+                        } else { // Indexer does not have stored this tx anymore. Check via mcc
+                            const tx = await this.mccClient.getTransaction(item.txid) as UtxoTransaction;
+                            const vout = tx.data.vout;
+                            const elt = vout[item.vout];
+                            inputs.push([
+                                elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
+                                toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
+                            ])
+                        }
+                    }
+                }
+                return inputs;
             }
         } else {
             const outputs: TxInputOutput[] = [];
