@@ -40,8 +40,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
             if (data) {
                 return {
                     hash: data.transactionId,
-                    inputs: await this.handleInputs(data),
-                    outputs: await this.handleOutputs(data),
+                    inputs: await this.handleInputsOutputs(data, true),
+                    outputs: await this.handleInputsOutputs(data, false),
                     reference: data.paymentReference,
                     status: this.successStatus(data)
                 };
@@ -118,34 +118,21 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return 0;
     }
 
-    private async handleInputs(data: any): Promise<TxInputOutput[]> {
+    private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response.data;
-        if (this.isUTXOchain) {
-            return await this.UTXOInputsOutputs(type, res, true);
+        switch (this.sourceId) {
+            case SourceId.ALGO:
+                return this.ALGOInputsOutputs(type, res, input);
+            case SourceId.BTC:
+            case SourceId.DOGE:
+            case SourceId.LTC:
+                return await this.UTXOInputsOutputs(type, res, input);
+            case SourceId.XRP:
+                return this.XRPInputsOutputs(data, input);
+            default:
+                throw new Error(`Invalid SourceId: ${this.sourceId}`)
         }
-        if (getSourceName(this.sourceId) === "ALGO") {
-            return this.ALGOInputsOutputs(type, res, true);
-        }
-        if (getSourceName(this.sourceId) === "XRP") {
-            return this.XRPInputsOutputs(data, true);
-        }
-        return [];
-    }
-
-    private async handleOutputs(data: any): Promise<TxInputOutput[]> {
-        const type = data.transactionType;
-        const res = data.response.data;
-        if (this.isUTXOchain) {
-            return await this.UTXOInputsOutputs(type, res, false);
-        }
-        if (getSourceName(this.sourceId) === "ALGO") {
-            return this.ALGOInputsOutputs(type, res, false);
-        }
-        if (getSourceName(this.sourceId) === "XRP") {
-            return this.XRPInputsOutputs(data, false);
-        }
-        return [];
     }
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
@@ -178,7 +165,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
                 const chain = getSourceName(this.sourceId);
                 const inputs: TxInputOutput[] = [];
                 for (let item of data.vin) {
-                    if (item.txid && item.vout) {
+                    if (item.txid && item.vout >= 0) {
+                        // https://github.com/flare-foundation/attestation-client/blob/main/lib/indexer/chain-collector-helpers/readTransaction.ts#L6-L10
                         const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${item.txid}`);
                         const status = resp.data.status;
                         const data = resp.data.data;
@@ -189,7 +177,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
                                 elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
                                 toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
                             ])
-                        } else { // Indexer does not have stored this tx anymore. Check via mcc
+                        } else { // Indexer does not have stored this tx anymore. Check via mcc.
                             const tx = await this.mccClient.getTransaction(item.txid) as UtxoTransaction;
                             const vout = tx.data.vout;
                             const elt = vout[item.vout];

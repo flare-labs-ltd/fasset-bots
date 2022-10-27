@@ -24,9 +24,9 @@ const BTCMccConnectionTest = {
     inTestnet: true
 };
 
-const txHash = "686161d6e320c1d3237116b1204e7bba0f017e098e7e20eccacc6f3378523d93";
-const blockId = 2378092;
-const blockHash = "0000000000000020e04485e7ac9f61aaea2dbe51fd64154eec2f8f7d68cf176a";
+const txHash = "a8427e200fa1074bb6b5696560b3a764c8fbcea1af3ded526766f5c696fdecf5";
+const blockId = 2378222;
+const blockHash = "000000000000001db67a27cca93221398c1948e65bcdf65a26004619f5e9e810";
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 
 describe("BTC blockchain tests via indexer", async () => {
