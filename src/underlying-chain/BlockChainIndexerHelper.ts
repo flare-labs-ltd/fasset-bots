@@ -1,9 +1,9 @@
-import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput } from "./interfaces/IBlockChain";
+import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
-import { BTC_MDU, hexToBase32, MccClient, TransactionSuccessStatus, UtxoTransaction } from "@flarenetwork/mcc";
+import { BTC_MDU, hexToBase32, MccClient, UtxoTransaction } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
 
@@ -166,6 +166,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
                 const inputs: TxInputOutput[] = [];
                 for (let item of data.vin) {
                     if (item.txid && item.vout >= 0) {
+                        // Given a UTXO transaction indexer does additional processing on UTXO inputs.
+                        // The processing is done only if the transaction contains some kind of a payment reference (OP_RETURN).
                         // https://github.com/flare-foundation/attestation-client/blob/main/lib/indexer/chain-collector-helpers/readTransaction.ts#L6-L10
                         const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${item.txid}`);
                         const status = resp.data.status;
@@ -206,7 +208,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const response = data.response.data.result;
         if (input) {
             if (data.isNativePayment) {
-                return [[response.Account, toBN(response.Amount as any).add(toBN(response.Fee))]];
+                return [[response.Account, toBN(response.Amount as any).add(toBN(response.Fee ? response.Fee : 0))]];
             }
             return [[response.Account, response.Fee ? toBN(response.Fee) : toBN(0)]];
         } else {
@@ -246,9 +248,9 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return "";
     }
 
-    private successStatus(data: any): TransactionSuccessStatus {
+    private successStatus(data: any): number {
         if (this.isUTXOchain || getSourceName(this.sourceId) === "ALGO") {
-            return TransactionSuccessStatus.SUCCESS;
+            return TX_SUCCESS;
         }
         // https://xrpl.org/transaction-results.html
         const response = data.response.data.result;
@@ -256,7 +258,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         let result = metaData.TransactionResult;
         if (result === "tesSUCCESS") {
             // https://xrpl.org/tes-success.html
-            return TransactionSuccessStatus.SUCCESS;
+            return TX_SUCCESS;
         }
         if (result.startsWith("tec")) {
             // https://xrpl.org/tec-codes.html
@@ -265,13 +267,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
                 case "tecNO_DST":
                 case "tecNO_DST_INSUF_XRP":
                 case "tecNO_PERMISSION":
-                    return TransactionSuccessStatus.RECEIVER_FAILURE;
+                    return TX_BLOCKED;
                 default:
-                    return TransactionSuccessStatus.SENDER_FAILURE;
+                    return TX_FAILED;
             }
         }
         // Other codes: tef, tel, tem, ter are not applied to ledgers
-        return TransactionSuccessStatus.SENDER_FAILURE;
+        return TX_FAILED;
     }
 
 }
