@@ -1,6 +1,5 @@
-import { FilterQuery } from "@mikro-orm/core";
+import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { WalletAddress } from "../actors/entities";
-import { PersistenceContext } from "../config/PersistenceContext";
 import { decryptText, encryptText } from "../utils/encryption";
 import { fail } from "../utils/helpers";
 
@@ -14,11 +13,11 @@ export class DBWalletKeys implements IWalletKeys {
     
     private privateKeyCache = new Map<string, string>();
     
-    constructor (private pc: PersistenceContext) {}
+    constructor (private em: EntityManager) {}
     
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {
-            const wa = await this.pc.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
+            const wa = await this.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
             if (wa != null) {
                 const privateKey = decryptText(this.password, wa.encryptedPrivateKey);
                 this.privateKeyCache.set(address, privateKey);
@@ -35,6 +34,6 @@ export class DBWalletKeys implements IWalletKeys {
         const wa = new WalletAddress();
         wa.address = address;
         wa.encryptedPrivateKey = encryptText(this.password, privateKey);
-        await this.pc.em.persist(wa).flush();
+        await this.em.persist(wa).flush();
     }
 }

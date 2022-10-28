@@ -1,13 +1,13 @@
-import { PersistenceContext } from "../../../src/config/PersistenceContext";
-import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
-import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
+import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { createTestOrm } from "../../test.mikro-orm.config";
 
-let rootPc: PersistenceContext;
-let pc: PersistenceContext;
+let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
@@ -39,13 +39,12 @@ const amountToSendBTC = 0.00001;
 describe("BTC wallet tests", async () => {
 
     before(async () => {
-        rootPc = await PersistenceContext.create();
-        pc = rootPc.clone();
-        dbWallet = new DBWalletKeys(pc);
+        orm = await createTestOrm();
+        dbWallet = new DBWalletKeys(orm.em);
         walletClient = new WALLET.BTC(BTCWalletConnectionTest);
         mccClient = new MCC.BTC(BTCMCCConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
+        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
     })
 
     it("Should insert address and private key into db", async () => {

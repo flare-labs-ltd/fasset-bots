@@ -1,31 +1,29 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { EM } from "../config/orm";
 import { IAssetContext } from "../fasset/IAssetContext";
-import { PersistenceContext } from "../config/PersistenceContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { isNotNull, toBN } from "../utils/helpers";
+import { web3 } from "../utils/web3";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { Agent } from "./Agent";
 import { AgentEntity, Redemption } from "./entities";
-import { web3 } from "../utils/web3";
-import { SqlEntityManager } from "@mikro-orm/sqlite";
 
 const AgentVault = artifacts.require('AgentVault');
 
 export class PersistentAgent {
     constructor(
-        public agent: Agent,
-        public pc: PersistenceContext
+        public agent: Agent
     ) { }
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
-    static async create(pc: PersistenceContext, context: IAssetContext, ownerAddress: string) {
-        await pc.em.transactional(async em => {
+    static async create(rootEm: EM, context: IAssetContext, ownerAddress: string) {
+        await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
             // TODO: add EOA proof when needed
             const agent = await Agent.create(context, ownerAddress, underlyingAddress);
@@ -36,18 +34,18 @@ export class PersistentAgent {
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
             em.persist(agentEntity);
-            return new PersistentAgent(agent, pc);
+            return new PersistentAgent(agent);
         });
     }
 
-    static async fromEntity(pc: PersistenceContext, context: IAssetContext, agentEntity: AgentEntity) {
+    static async fromEntity(context: IAssetContext, agentEntity: AgentEntity) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new PersistentAgent(agent, pc);
+        return new PersistentAgent(agent);
     }
 
-    async handleEvents() {
-        await this.pc.em.transactional(async em => {
+    async handleEvents(rootEm: EM) {
+        await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress });
             // get all logs for this agent
             const lastBlock = await web3.eth.getBlockNumber() - 1;  // TODO: should put finalization blocks here?
@@ -72,7 +70,7 @@ export class PersistentAgent {
         });;
     }
 
-    startRedemption(em: SqlEntityManager, request: EventArgs<RedemptionRequested>) {
+    startRedemption(em: EM, request: EventArgs<RedemptionRequested>) {
         const redemption = new Redemption();
         redemption.state = 'start';
         redemption.agentAddress = this.agent.agentVault.address;
@@ -84,20 +82,20 @@ export class PersistentAgent {
         em.persist(redemption);
     }
 
-    async handleOpenRedemptions() {
-        const openRedemptions = await this.pc.em.createQueryBuilder(Redemption)
+    async handleOpenRedemptions(rootEm: EM) {
+        const openRedemptions = await rootEm.createQueryBuilder(Redemption)
             .select('id')
             .where({ agentAddress: this.agent.vaultAddress })
             .andWhere({ $not: { state: 'done' } })
             .getResultList();
         for (const rd of openRedemptions) {
-            await this.nextRedemptionStep(rd.id);
+            await this.nextRedemptionStep(rootEm, rd.id);
         }
     }
 
-    async nextRedemptionStep(id: number) {
-        await this.pc.em.transactional(async em => {
-            const redemption = await this.pc.em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
+    async nextRedemptionStep(rootEm: EM, id: number) {
+        await rootEm.transactional(async em => {
+            const redemption = await em.getRepository(Redemption).findOneOrFail({ id: Number(id) });
             if (redemption.state === 'start') {
                 await this.payForRedemption(redemption);
             } if (redemption.state === 'paid') {

@@ -1,18 +1,18 @@
-import { PersistenceContext } from "../config/PersistenceContext";
+import { EntityManager } from "@mikro-orm/core";
+import { WalletClient } from "simple-wallet";
 import { IBlockChain } from "./interfaces/IBlockChain";
 import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
-import { WalletClient } from "simple-wallet";
 
 export class BlockChainWalletHelper implements IBlockChainWallet {
     constructor(
         public walletClient: WalletClient,
-        private pc: PersistenceContext,
+        private em: EntityManager,
         public chain: IBlockChain
     ) {}
 
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
-        const walletKeys = new DBWalletKeys(this.pc);
+        const walletKeys = new DBWalletKeys(this.em);
         const value = amount as number;
         const fee = undefined;
         const maxFee = options?.maxFee ? Number(options.maxFee) : undefined;
@@ -33,7 +33,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
     }
 
     async createAccount(): Promise<string> {
-        const walletKeys = new DBWalletKeys(this.pc);
+        const walletKeys = new DBWalletKeys(this.em);
         const account = this.walletClient.createWallet();
         await walletKeys.addKey(account.address, account.privateKey);
         return account.address;

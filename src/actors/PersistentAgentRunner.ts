@@ -1,7 +1,8 @@
+import { UseRequestContext } from "@mikro-orm/core";
 import Web3 from "web3";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
-import { PersistenceContext } from "../config/PersistenceContext";
+import { ORM } from "../config/orm";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { web3 } from "../utils/web3";
 import { AgentEntity } from "./entities";
@@ -10,37 +11,36 @@ import { PersistentAgent } from "./PersistentAgent";
 export class PersistentAgentRunner {
     constructor(
         public context: IAssetContext,
-        public pc: PersistenceContext,
+        public orm: ORM,
     ) { }
 
     async run() {
         while (true) {
-            this.pc.em = this.pc.orm.em.fork();
             await this.runStep();
         }
     }
 
+    @UseRequestContext()
     async runStep() {
-        const agentEntities = await this.pc.em.find(AgentEntity, { active: true });
+        const em = this.orm.em;
+        const agentEntities = await em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             try {
-                const agent = await PersistentAgent.fromEntity(this.pc, this.context, agentEntity);
-                await agent.handleEvents();
-                await agent.handleOpenRedemptions();
+                const agent = await PersistentAgent.fromEntity(this.context, agentEntity);
+                await agent.handleEvents(em);
+                await agent.handleOpenRedemptions(em);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
             }
         }
     }
     
-    static async createAndRun(botConfig: BotConfig) {
+    static async createAndRun(orm: ORM, botConfig: BotConfig) {
         web3.setProvider(new Web3.providers.HttpProvider(botConfig.rpcUrl));
-        const rootPc = await PersistenceContext.create();
         const runners: Promise<void>[] = [];
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
-            const pc = rootPc.clone();
-            const chainRunner = new PersistentAgentRunner(assetContext, pc);
+            const chainRunner = new PersistentAgentRunner(assetContext, orm);
             runners.push(chainRunner.run());
         }
         await Promise.all(runners);

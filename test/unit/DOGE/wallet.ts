@@ -1,13 +1,13 @@
 import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
-import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { WALLET } from "simple-wallet";
-import { PersistenceContext } from "../../../src/config/PersistenceContext";
+import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
+import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { createTestOrm } from "../../test.mikro-orm.config";
 
-let rootPc: PersistenceContext;
-let pc: PersistenceContext;
+let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
@@ -39,13 +39,12 @@ const amountToSendDOGE = 1;
 describe("DOGE wallet tests", async () => {
 
     before(async () => {
-        rootPc = await PersistenceContext.create();
-        pc = rootPc.clone();
-        dbWallet = new DBWalletKeys(pc);
+        orm = await createTestOrm();
+        dbWallet = new DBWalletKeys(orm.em);
         walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
         mccClient = new MCC.DOGE(DOGEMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
+        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
     })
 
     it("Should insert address and private key into db", async () => {

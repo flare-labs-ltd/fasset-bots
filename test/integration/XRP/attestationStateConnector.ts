@@ -1,7 +1,7 @@
 import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
-import { PersistenceContext } from "../../../src/config/PersistenceContext";
+import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
@@ -10,14 +10,14 @@ import { artifacts } from "../../../src/utils/artifacts";
 import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestOrm } from "../../test.mikro-orm.config";
 
 let blockChainHelper: BlockChainHelper;
 let mccClient: MCC.XRP;
 let walletClient: WALLET.XRP;
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;
-let rootPc: PersistenceContext;
-let pc: PersistenceContext;
+let orm: ORM;
 
 const XRPWalletConnectionTest = {
     url: process.env.XRP_URL_TESTNET_WALLET || "",
@@ -55,9 +55,8 @@ describe("XRP attestation/state connector tests", async () => {
         mccClient = new MCC.XRP(XRPMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);
         attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
-        rootPc = await PersistenceContext.create();
-        pc = rootPc.clone();
-        walletHelper = new BlockChainWalletHelper(walletClient, pc, blockChainHelper);
+        orm = await createTestOrm();
+        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
     })
     //PAYMENT
     it("Should create payment, send request for payment proof to attestations and retrieve proof from state connector", async () => {

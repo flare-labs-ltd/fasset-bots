@@ -20,4 +20,4 @@ coverage/
 *.tgz
 
 # local db
-fasset-bots.db
+/*.db
