@@ -1,11 +1,14 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
+
+export const ADDRESS_LENGTH = 42;
+export const BYTES32_LENGTH = 66;
 
 @Entity()
 export class WalletAddress {
     @PrimaryKey()
     address!: string;
-    
+
     @Property()
     encryptedPrivateKey!: string;
 }
@@ -18,7 +21,7 @@ export class AgentEntity {
 
     @Property()
     chainId!: number;
-    
+
     @Property()
     ownerAddress!: string;
 
@@ -32,43 +35,59 @@ export class AgentEntity {
     lastEventBlockHandled!: number;
 }
 
+// For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
+// paid but the proof wasn't presented.
 @Entity()
+@Unique({ properties: ['agentAddress', 'requestId'] })
 export class AgentMinting {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
     @Property()
-    state!: 'start' | 'done';
+    state!: 'started' | 'done';
 
-    @Property()
+    @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
-    
+
     @Property({ type: BNType })
     requestId!: BN;
 
-    @Property()
+    @Property({ type: BNType })
+    valueUBA!: BN;
+
+    @Property({ type: BNType })
+    feeUBA!: BN;
+
+    @Property({ type: BNType })
+    lastUnderlyingBlock!: BN;
+
+    @Property({ type: BNType })
+    lastUnderlyingTimestamp!: BN;
+
+    @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 }
 
 @Entity()
+@Unique({ properties: ['agentAddress', 'requestId'] })
 export class AgentRedemption {
     @PrimaryKey({ autoincrement: true })
     id!: number;
-    
+
     @Property()
-    state!: 'start' | 'paid' | 'requestedProof' | 'done';
+    state!: 'started' | 'paid' | 'requestedProof' | 'done';
 
     // status: 'active' | 'defaulted'
 
     // 'start' state data
 
-    @Property()
+    @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
 
     @Property({ type: BNType })
     requestId!: BN;
 
-    @Property()
+    @Property({ length: BYTES32_LENGTH })
     paymentAddress!: string;
 
     @Property({ type: BNType })
@@ -77,7 +96,7 @@ export class AgentRedemption {
     @Property({ type: BNType })
     feeUBA!: BN;
 
-    @Property()
+    @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 
     // 'paid' state data

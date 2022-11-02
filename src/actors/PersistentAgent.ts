@@ -1,4 +1,4 @@
-import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
@@ -10,7 +10,7 @@ import { isNotNull, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { Agent } from "./Agent";
-import { AgentEntity, AgentRedemption } from "./entities";
+import { AgentEntity, AgentMinting, AgentRedemption } from "./entities";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -31,7 +31,7 @@ export class PersistentAgent {
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.ownerAddress = agent.ownerAddress;
-            agentEntity.vaultAddress = agent.agentVault.address;
+            agentEntity.vaultAddress = agent.vaultAddress;
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
@@ -54,8 +54,10 @@ export class PersistentAgent {
             for (const event of events) {
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     this.mintingStarted(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
+                    await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
-                    this.startRedemption(em, event.args);
+                    this.redemptionStarted(em, event.args);
                 }
             }
         }).catch(error => {
@@ -83,19 +85,36 @@ export class PersistentAgent {
     }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
-        
+        em.create(AgentMinting, {
+            state: 'started',
+            agentAddress: this.agent.vaultAddress,
+            requestId: toBN(request.collateralReservationId),
+            valueUBA: toBN(request.valueUBA),
+            feeUBA: toBN(request.feeUBA),
+            lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
+            lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
+            paymentReference: request.paymentReference,
+        });
+    }
+    
+    async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
+        const minting = await em.findOneOrFail(AgentMinting, { 
+            agentAddress: this.agent.vaultAddress,
+            requestId: request.collateralReservationId 
+        });
+        minting.state = 'done';
     }
 
-    startRedemption(em: EM, request: EventArgs<RedemptionRequested>) {
-        const redemption = new AgentRedemption();
-        redemption.state = 'start';
-        redemption.agentAddress = this.agent.agentVault.address;
-        redemption.requestId = toBN(request.requestId);
-        redemption.paymentAddress = request.paymentAddress;
-        redemption.valueUBA = toBN(request.valueUBA);
-        redemption.feeUBA = toBN(request.feeUBA);
-        redemption.paymentReference = request.paymentReference;
-        em.persist(redemption);
+    redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>) {
+        em.create(AgentRedemption, {
+            state: 'started',
+            agentAddress: this.agent.vaultAddress,
+            requestId: toBN(request.requestId),
+            paymentAddress: request.paymentAddress,
+            valueUBA: toBN(request.valueUBA),
+            feeUBA: toBN(request.feeUBA),
+            paymentReference: request.paymentReference,
+        });
     }
 
     async handleOpenRedemptions(rootEm: EM) {
@@ -112,7 +131,7 @@ export class PersistentAgent {
     async nextRedemptionStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) });
-            if (redemption.state === 'start') {
+            if (redemption.state === 'started') {
                 await this.payForRedemption(redemption);
             } if (redemption.state === 'paid') {
                 await this.checkPaymentProofAvailable(redemption);
