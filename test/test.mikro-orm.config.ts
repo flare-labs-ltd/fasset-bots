@@ -1,10 +1,10 @@
 import { Options } from "@mikro-orm/core";
 import { AbstractSqlDriver } from "@mikro-orm/knex";
-import { AgentEntity, Redemption, WalletAddress } from "../src/actors/entities";
+import { AgentEntity, AgentRedemption, WalletAddress } from "../src/actors/entities";
 import { createOrm, CreateOrmOptions, SchemaUpdate } from "../src/config/orm";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, Redemption],
+    entities: [WalletAddress, AgentEntity, AgentRedemption],
     type: 'sqlite',
     dbName: 'fasset-bots-test.db',
     debug: false,

@@ -1,4 +1,5 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { BNType } from "../config/orm-types";
 
 @Entity()
 export class WalletAddress {
@@ -28,11 +29,29 @@ export class AgentEntity {
     active!: boolean;
 
     @Property({ nullable: true })
-    lastEventBlockHandled?: number;
+    lastEventBlockHandled!: number;
 }
 
 @Entity()
-export class Redemption {
+export class AgentMinting {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: 'start' | 'done';
+
+    @Property()
+    agentAddress!: string;
+    
+    @Property({ type: BNType })
+    requestId!: BN;
+
+    @Property()
+    paymentReference!: string;
+}
+
+@Entity()
+export class AgentRedemption {
     @PrimaryKey({ autoincrement: true })
     id!: number;
     
@@ -46,16 +65,16 @@ export class Redemption {
     @Property()
     agentAddress!: string;
 
-    @Property()
+    @Property({ type: BNType })
     requestId!: BN;
 
     @Property()
     paymentAddress!: string;
 
-    @Property()
+    @Property({ type: BNType })
     valueUBA!: BN;
 
-    @Property()
+    @Property({ type: BNType })
     feeUBA!: BN;
 
     @Property()

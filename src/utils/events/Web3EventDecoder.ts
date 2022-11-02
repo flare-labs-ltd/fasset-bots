@@ -28,8 +28,9 @@ export class Web3EventDecoder extends EventFormatter {
     decodeEvent(event: RawEvent): EvmEvent | null {
         const signature = event.topics[0];
         const evtType = this.eventTypes.get(signature);
-        if (evtType == null)
+        if (evtType == null) {
             return null;
+        }
         // based on web3 docs, first topic has to be removed for non-anonymous events
         const topics = evtType.anonymous ? event.topics : event.topics.slice(1);
         const decodedArgs: any = web3.eth.abi.decodeLog(evtType.inputs!, event.data, topics);
