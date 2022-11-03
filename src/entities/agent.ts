@@ -1,22 +1,11 @@
 import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
-
-export const ADDRESS_LENGTH = 42;
-export const BYTES32_LENGTH = 66;
-
-@Entity()
-export class WalletAddress {
-    @PrimaryKey()
-    address!: string;
-
-    @Property()
-    encryptedPrivateKey!: string;
-}
+import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: 'agent' })
 export class AgentEntity {
     // vaultAddress is unique accross chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)
-    @PrimaryKey()
+    @PrimaryKey({ length: ADDRESS_LENGTH })
     vaultAddress!: string;
 
     @Property()

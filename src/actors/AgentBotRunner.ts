@@ -5,10 +5,10 @@ import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { web3 } from "../utils/web3";
-import { AgentEntity } from "./entities";
-import { PersistentAgent } from "./PersistentAgent";
+import { AgentEntity } from "../entities/agent";
+import { AgentBot } from "./AgentBot";
 
-export class PersistentAgentRunner {
+export class AgentBotRunner {
     constructor(
         public context: IAssetContext,
         public orm: ORM,
@@ -26,7 +26,7 @@ export class PersistentAgentRunner {
         const agentEntities = await em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             try {
-                const agent = await PersistentAgent.fromEntity(this.context, agentEntity);
+                const agent = await AgentBot.fromEntity(this.context, agentEntity);
                 await agent.handleEvents(em);
                 await agent.handleOpenRedemptions(em);
             } catch (error) {
@@ -40,7 +40,7 @@ export class PersistentAgentRunner {
         const runners: Promise<void>[] = [];
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
-            const chainRunner = new PersistentAgentRunner(assetContext, orm);
+            const chainRunner = new AgentBotRunner(assetContext, orm);
             runners.push(chainRunner.run());
         }
         await Promise.all(runners);

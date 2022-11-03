@@ -1,12 +1,12 @@
 import { AgentVaultInstance } from "../../typechain-truffle";
 import { CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
-import { IAssetContext } from "../fasset/IAssetContext";
-import { PaymentReference } from "../fasset/PaymentReference";
-import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
 import { checkEventNotEmited, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
+import { IAssetContext } from "./IAssetContext";
+import { PaymentReference } from "./PaymentReference";
 
 const AgentVault = artifacts.require('AgentVault');
 

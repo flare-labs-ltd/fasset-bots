@@ -1,20 +1,23 @@
 import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
+import { Agent } from "../fasset/Agent";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { isNotNull, toBN } from "../utils/helpers";
+import { toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
-import { Agent } from "./Agent";
-import { AgentEntity, AgentMinting, AgentRedemption } from "./entities";
+import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
+
+const NATIVE_FINALIZATION_BLOCKS = 1;
+const READ_LOGS_CHUNK_SIZE = 100;
 
 const AgentVault = artifacts.require('AgentVault');
 
-export class PersistentAgent {
+export class AgentBot {
     constructor(
         public agent: Agent
     ) { }
@@ -36,20 +39,19 @@ export class PersistentAgent {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             em.persist(agentEntity);
-            return new PersistentAgent(agent);
+            return new AgentBot(agent);
         });
     }
 
     static async fromEntity(context: IAssetContext, agentEntity: AgentEntity) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new PersistentAgent(agent);
+        return new AgentBot(agent);
     }
 
     async handleEvents(rootEm: EM) {
         await rootEm.transactional(async em => {
             const events = await this.readUnhandledEvents(em);
-            // handle events
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
@@ -68,20 +70,20 @@ export class PersistentAgent {
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress });
         // get all logs for this agent
-        const lastBlock = await web3.eth.getBlockNumber() - 1; // TODO: should put finalization blocks here?
-        if (agentEnt.lastEventBlockHandled >= lastBlock) {
-            return [];
+        const lastBlock = await web3.eth.getBlockNumber() - NATIVE_FINALIZATION_BLOCKS;
+        const events: EvmEvent[] = [];
+        for (let lastHandled = agentEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += READ_LOGS_CHUNK_SIZE) {
+            const logs = await web3.eth.getPastLogs({
+                address: this.agent.assetManager.address,
+                fromBlock: lastHandled + 1,
+                toBlock: Math.min(lastHandled + READ_LOGS_CHUNK_SIZE, lastBlock),
+                topics: [null, this.agent.vaultAddress]
+            });
+            events.push(...this.eventDecoder.decodeEvents(logs));
         }
-        const rawLogs = await web3.eth.getPastLogs({
-            address: this.agent.assetManager.address,
-            fromBlock: agentEnt.lastEventBlockHandled + 1,
-            toBlock: lastBlock,
-            topics: [null, this.agent.vaultAddress]
-        });
         // mark as handled
         agentEnt.lastEventBlockHandled = lastBlock;
-        // decode events
-        return rawLogs.map(log => this.eventDecoder.decodeEvent(log)).filter(isNotNull);
+        return events;
     }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
@@ -97,11 +99,13 @@ export class PersistentAgent {
         });
     }
     
+    async findMinting(em: EM, requestId: BN) {
+        const agentAddress = this.agent.vaultAddress;
+        return await em.findOneOrFail(AgentMinting, { agentAddress, requestId });
+    }
+
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
-        const minting = await em.findOneOrFail(AgentMinting, { 
-            agentAddress: this.agent.vaultAddress,
-            requestId: request.collateralReservationId 
-        });
+        const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = 'done';
     }
 

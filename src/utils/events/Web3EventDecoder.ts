@@ -56,12 +56,15 @@ export class Web3EventDecoder extends EventFormatter {
         };
     }
 
-    decodeEvents(tx: Truffle.TransactionResponse<any> | TransactionReceipt): EvmEvent[] {
+    decodeEvents(txOrRawLogs: Truffle.TransactionResponse<any> | TransactionReceipt | RawEvent[]): EvmEvent[] {
+        const rawLogs = Array.isArray(txOrRawLogs) ? txOrRawLogs : this.rawTransactionLogs(txOrRawLogs);
+        return rawLogs.map(log => this.decodeEvent(log)).filter(isNotNull);
+    }
+
+    private rawTransactionLogs(tx: Truffle.TransactionResponse<any> | TransactionReceipt): RawEvent[] {
         // for truffle, must decode tx.receipt.rawLogs to also obtain logs from indirectly called contracts
         // for plain web3, just decode receipt.logs
         const receipt: TransactionReceipt = 'receipt' in tx ? tx.receipt : tx;
-        const rawLogs: RawEvent[] = 'rawLogs' in receipt ? (receipt as any).rawLogs : receipt.logs;
-        // decode all events
-        return rawLogs.map(raw => this.decodeEvent(raw)).filter(isNotNull);
+        return 'rawLogs' in receipt ? (receipt as any).rawLogs : receipt.logs;
     }
 }

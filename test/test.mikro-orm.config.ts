@@ -1,7 +1,8 @@
 import { Options } from "@mikro-orm/core";
 import { AbstractSqlDriver } from "@mikro-orm/knex";
-import { AgentEntity, AgentMinting, AgentRedemption, WalletAddress } from "../src/actors/entities";
 import { createOrm, CreateOrmOptions } from "../src/config/orm";
+import { AgentEntity, AgentMinting, AgentRedemption } from "../src/entities/agent";
+import { WalletAddress } from "../src/entities/wallet";
 
 const testOptions: CreateOrmOptions = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],

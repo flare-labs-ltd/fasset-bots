@@ -1,4 +1,4 @@
-import { PersistentAgent } from "../../../src/actors/PersistentAgent";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { BotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
@@ -27,6 +27,6 @@ describe("Persistent agent tests", async () => {
     });
 
     it("create agent", async () => {
-        await PersistentAgent.create(orm.em, context, ownerAddress);
+        await AgentBot.create(orm.em, context, ownerAddress);
     });
 });

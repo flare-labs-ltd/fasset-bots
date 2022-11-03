@@ -1,5 +1,5 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { WalletAddress } from "../actors/entities";
+import { WalletAddress } from "../entities/wallet";
 import { decryptText, encryptText } from "../utils/encryption";
 import { fail } from "../utils/helpers";
 
