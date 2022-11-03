@@ -1,23 +1,33 @@
 import { UseRequestContext } from "@mikro-orm/core";
-import Web3 from "web3";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
-import { IAssetContext } from "../fasset/IAssetContext";
-import { web3 } from "../utils/web3";
 import { AgentEntity } from "../entities/agent";
+import { IAssetContext } from "../fasset/IAssetContext";
+import { sleep } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
     constructor(
-        public context: IAssetContext,
+        public contexts: Map<number, IAssetContext>,
         public orm: ORM,
+        public loopDelay: number,
     ) { }
 
+    private stopRequested = false;
+    
     async run() {
-        while (true) {
+        this.stopRequested = false;
+        while (!this.stopRequested) {
             await this.runStep();
+            if (this.loopDelay > 0) {
+                await sleep(this.loopDelay);
+            }
         }
+    }
+
+    requestStop() {
+        this.stopRequested = true;
     }
 
     @UseRequestContext()
@@ -26,7 +36,12 @@ export class AgentBotRunner {
         const agentEntities = await em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             try {
-                const agent = await AgentBot.fromEntity(this.context, agentEntity);
+                const context = this.contexts.get(agentEntity.chainId);
+                if (context == null) {
+                    console.warn(`Invalid chain id ${agentEntity.chainId}`);
+                    continue;
+                }
+                const agent = await AgentBot.fromEntity(context, agentEntity);
                 await agent.handleEvents(em);
                 await agent.handleOpenRedemptions(em);
             } catch (error) {
@@ -35,14 +50,22 @@ export class AgentBotRunner {
         }
     }
     
-    static async createAndRun(orm: ORM, botConfig: BotConfig) {
-        web3.setProvider(new Web3.providers.HttpProvider(botConfig.rpcUrl));
-        const runners: Promise<void>[] = [];
+    @UseRequestContext()
+    async createMissingAgents(ownerAddress: string) {
+        for (const [chainId, context] of this.contexts) {
+            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true });
+            if (existing === 0) {
+                await AgentBot.create(this.orm.em, context, ownerAddress);
+            }
+        }
+    }
+    
+    static async create(orm: ORM, botConfig: BotConfig) {
+        const contexts: Map<number, IAssetContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
-            const chainRunner = new AgentBotRunner(assetContext, orm);
-            runners.push(chainRunner.run());
+            contexts.set(chainConfig.chainInfo.chainId, assetContext);
         }
-        await Promise.all(runners);
+        return new AgentBotRunner(contexts, orm, botConfig.loopDelay);
     }
 }

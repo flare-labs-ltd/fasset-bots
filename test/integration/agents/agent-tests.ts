@@ -7,7 +7,7 @@ import { initTestWeb3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test.mikro-orm.config";
 import { createTestConfig } from "./test-config";
 
-describe("Persistent agent tests", async () => {
+describe("Agent bot tests", async () => {
     let accounts: string[];
     let config: BotConfig;
     let context: IAssetContext;
@@ -19,7 +19,7 @@ describe("Persistent agent tests", async () => {
         ownerAddress = accounts[5];
         config = await createTestConfig();
         context = await createAssetContext(config, config.chains[0]);
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
     });
     
     beforeEach(async () => {
@@ -28,5 +28,9 @@ describe("Persistent agent tests", async () => {
 
     it("create agent", async () => {
         await AgentBot.create(orm.em, context, ownerAddress);
+    });
+    
+    it("", async () => {
+        
     });
 });

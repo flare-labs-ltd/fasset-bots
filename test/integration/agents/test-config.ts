@@ -18,6 +18,7 @@ export async function createTestConfig(): Promise<BotConfig> {
     const mockXrp = createMockChainConfig('FXRP', testChainInfo.xrp, stateConnectorClient);
     return {
         rpcUrl: LOCAL_HARDHAT_RPC,
+        loopDelay: 0,
         contractsJsonFile: CONTRACTS_JSON,
         stateConnector: stateConnectorClient,
         chains: [mockBtc, mockXrp]

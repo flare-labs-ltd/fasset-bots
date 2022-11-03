@@ -1,5 +1,3 @@
-import { Options } from "@mikro-orm/core";
-import { AbstractSqlDriver } from "@mikro-orm/knex";
 import { createOrm, CreateOrmOptions } from "../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../src/entities/agent";
 import { WalletAddress } from "../src/entities/wallet";
@@ -13,8 +11,8 @@ const testOptions: CreateOrmOptions = {
     schemaUpdate: 'full',
 }
 
-export async function createTestOrm(testOptionsOverride: Options<AbstractSqlDriver> = {}) {
-    const options: Options<AbstractSqlDriver> = { ...testOptions, ...testOptionsOverride };
+export async function createTestOrm(testOptionsOverride: CreateOrmOptions = {}) {
+    const options: CreateOrmOptions = { ...testOptions, ...testOptionsOverride };
     return await createOrm(options);
 }
 
