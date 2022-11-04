@@ -25,7 +25,7 @@ export function contractWithEvents(contract: Truffle.ContractInstance, anyMethod
 }
 
 export function eventIs<C extends Truffle.ContractInstance, E extends EventSelector, N extends E['name']>(event: BaseEvent, source: ContractWithEvents<C, E>, eventName: N): event is TruffleExtractEvent<E, N> {
-    return event.address === source.contract.address && event.event === eventName;
+    return event.address === source.address && event.event === eventName;
 } 
 
 export function syntheticEventIs<E extends BaseEvent>(event: BaseEvent, eventName: E['event']): event is E {

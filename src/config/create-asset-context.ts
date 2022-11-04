@@ -32,6 +32,7 @@ async function createAssetContextFromContracts(botConfig: BotConfig & { contract
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
     const settings = await assetManager.getSettings();
     return {
+        nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
         chain: chainConfig.chain,
         chainEvents: new UnderlyingChainEvents(chainConfig.chain, chainConfig.chainEvents, null),
@@ -54,6 +55,7 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
     const settings = await assetManager.getSettings();
     return {
+        nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
         chain: chainConfig.chain,
         chainEvents: new UnderlyingChainEvents(chainConfig.chain, chainConfig.chainEvents, null),

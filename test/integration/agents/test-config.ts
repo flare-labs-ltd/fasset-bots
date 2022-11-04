@@ -10,18 +10,27 @@ const CONTRACTS_JSON = "../fasset/deployment/deploys/hardhat.json";
 
 const StateConnectorMock = artifacts.require("StateConnectorMock");
 
-export async function createTestConfig(): Promise<BotConfig> {
+export async function createTestConfig(chains: string[] = ['btc', 'xrp']): Promise<BotConfig> {
     const contracts = loadContracts(CONTRACTS_JSON);
     const stateConnectorMock = await StateConnectorMock.at(contracts.StateConnector.address);
     const stateConnectorClient = new MockStateConnectorClient(stateConnectorMock, 'auto');
-    const mockBtc = createMockChainConfig('FBTC', testChainInfo.btc, stateConnectorClient);
-    const mockXrp = createMockChainConfig('FXRP', testChainInfo.xrp, stateConnectorClient);
+    const chainConfigs: BotConfigChain[] = [];
+    if (chains.includes('btc')) {
+        chainConfigs.push(createMockChainConfig('FBTC', testChainInfo.btc, stateConnectorClient));
+    }
+    if (chains.includes('xrp')) {
+        chainConfigs.push(createMockChainConfig('FXRP', testChainInfo.xrp, stateConnectorClient));
+    }
     return {
         rpcUrl: LOCAL_HARDHAT_RPC,
         loopDelay: 0,
         contractsJsonFile: CONTRACTS_JSON,
         stateConnector: stateConnectorClient,
-        chains: [mockBtc, mockXrp]
+        chains: chainConfigs,
+        nativeChainInfo: {
+            finalizationBlocks: 0,
+            readLogsChunkSize: 10,
+        }
     }
 }
 

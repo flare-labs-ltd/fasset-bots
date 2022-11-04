@@ -12,9 +12,6 @@ import { web3 } from "../utils/web3";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 
-const NATIVE_FINALIZATION_BLOCKS = 1;
-const READ_LOGS_CHUNK_SIZE = 100;
-
 const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {
@@ -27,7 +24,7 @@ export class AgentBot {
 
     static async create(rootEm: EM, context: IAssetContext, ownerAddress: string) {
         const lastBlock = await web3.eth.getBlockNumber();
-        await rootEm.transactional(async em => {
+        return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
             // TODO: add EOA proof when needed
             const agent = await Agent.create(context, ownerAddress, underlyingAddress);
@@ -54,6 +51,7 @@ export class AgentBot {
             const events = await this.readUnhandledEvents(em);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
+                // console.log(this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     this.mintingStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
@@ -63,21 +61,23 @@ export class AgentBot {
                 }
             }
         }).catch(error => {
-            console.error(`Error handling events for agent ${this.agent.vaultAddress}`);
+            console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
         });
     }
     
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress });
         // get all logs for this agent
-        const lastBlock = await web3.eth.getBlockNumber() - NATIVE_FINALIZATION_BLOCKS;
+        const nci = this.context.nativeChainInfo;
+        const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
-        for (let lastHandled = agentEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += READ_LOGS_CHUNK_SIZE) {
+        const encodedVaultAddress = web3.eth.abi.encodeParameter('address', this.agent.vaultAddress);
+        for (let lastHandled = agentEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
             const logs = await web3.eth.getPastLogs({
                 address: this.agent.assetManager.address,
                 fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + READ_LOGS_CHUNK_SIZE, lastBlock),
-                topics: [null, this.agent.vaultAddress]
+                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                topics: [null, encodedVaultAddress]
             });
             events.push(...this.eventDecoder.decodeEvents(logs));
         }
@@ -87,6 +87,7 @@ export class AgentBot {
     }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
+        // const minting = new AgentMinting();
         em.create(AgentMinting, {
             state: 'started',
             agentAddress: this.agent.vaultAddress,
@@ -96,12 +97,20 @@ export class AgentBot {
             lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
             paymentReference: request.paymentReference,
-        });
+        }, { persist: true });
     }
     
     async findMinting(em: EM, requestId: BN) {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId });
+    }
+    
+    async openMintings(em: EM, onlyIds: boolean) {
+        let query = em.createQueryBuilder(AgentMinting);
+        if (onlyIds) query = query.select('id');
+        return await query.where({ agentAddress: this.agent.vaultAddress })
+            .andWhere({ $not: { state: 'done' } })
+            .getResultList();
     }
 
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
@@ -118,18 +127,22 @@ export class AgentBot {
             valueUBA: toBN(request.valueUBA),
             feeUBA: toBN(request.feeUBA),
             paymentReference: request.paymentReference,
-        });
+        }, { persist: true });
     }
 
     async handleOpenRedemptions(rootEm: EM) {
-        const openRedemptions = await rootEm.createQueryBuilder(AgentRedemption)
-            .select('id')
-            .where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: 'done' } })
-            .getResultList();
+        const openRedemptions = await this.openRedemptions(rootEm, true);
         for (const rd of openRedemptions) {
             await this.nextRedemptionStep(rootEm, rd.id);
         }
+    }
+
+    async openRedemptions(em: EM, onlyIds: boolean) {
+        let query = em.createQueryBuilder(AgentRedemption);
+        if (onlyIds) query = query.select('id');
+        return await query.where({ agentAddress: this.agent.vaultAddress })
+            .andWhere({ $not: { state: 'done' } })
+            .getResultList();
     }
 
     async nextRedemptionStep(rootEm: EM, id: number) {

@@ -4,7 +4,7 @@ import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
 import { ContractWithEvents } from "../utils/events/truffle";
-import { ChainInfo } from "./ChainInfo";
+import { ChainInfo, NativeChainInfo } from "./ChainInfo";
 
 export type AddressUpdaterEvents = import('../../typechain-truffle/AddressUpdater').AllEvents;
 export type AssetManagerControllerEvents = import('../../typechain-truffle/AssetManagerController').AllEvents;
@@ -19,6 +19,7 @@ export type AssetManagerEvents = import('../../typechain-truffle/AssetManager').
 export type FAssetEvents = import('../../typechain-truffle/FAsset').AllEvents;
 
 export interface IAssetContext {
+    nativeChainInfo: NativeChainInfo;
     chainInfo: ChainInfo;
     chain: IBlockChain;
     wallet: IBlockChainWallet;

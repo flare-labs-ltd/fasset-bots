@@ -20,9 +20,7 @@ export class AgentBotRunner {
         this.stopRequested = false;
         while (!this.stopRequested) {
             await this.runStep();
-            if (this.loopDelay > 0) {
-                await sleep(this.loopDelay);
-            }
+            await sleep(this.loopDelay);
         }
     }
 
@@ -64,7 +62,7 @@ export class AgentBotRunner {
         const contexts: Map<number, IAssetContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
-            contexts.set(chainConfig.chainInfo.chainId, assetContext);
+            contexts.set(assetContext.chainInfo.chainId, assetContext);
         }
         return new AgentBotRunner(contexts, orm, botConfig.loopDelay);
     }
