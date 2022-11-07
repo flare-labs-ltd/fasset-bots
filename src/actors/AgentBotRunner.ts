@@ -30,8 +30,7 @@ export class AgentBotRunner {
 
     @UseRequestContext()
     async runStep() {
-        const em = this.orm.em;
-        const agentEntities = await em.find(AgentEntity, { active: true });
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             try {
                 const context = this.contexts.get(agentEntity.chainId);
@@ -39,9 +38,8 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain id ${agentEntity.chainId}`);
                     continue;
                 }
-                const agent = await AgentBot.fromEntity(context, agentEntity);
-                await agent.handleEvents(em);
-                await agent.handleOpenRedemptions(em);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity);
+                await agentBot.runStep(this.orm.em);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
             }

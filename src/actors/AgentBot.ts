@@ -45,6 +45,11 @@ export class AgentBot {
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
         return new AgentBot(agent);
     }
+    
+    async runStep(rootEm: EM) {
+        await this.handleEvents(rootEm);
+        await this.handleOpenRedemptions(rootEm);
+    }
 
     async handleEvents(rootEm: EM) {
         await rootEm.transactional(async em => {
@@ -130,6 +135,11 @@ export class AgentBot {
         }, { persist: true });
     }
 
+    async findRedemption(em: EM, requestId: BN) {
+        const agentAddress = this.agent.vaultAddress;
+        return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId });
+    }
+
     async handleOpenRedemptions(rootEm: EM) {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         for (const rd of openRedemptions) {
@@ -165,6 +175,7 @@ export class AgentBot {
         // !!! TODO: what if there are too little funds on underlying address to pay for fee?
         const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
         redemption.txHash = txHash;
+        redemption.state = 'paid';
     }
 
     async checkPaymentProofAvailable(redemption: AgentRedemption) {
