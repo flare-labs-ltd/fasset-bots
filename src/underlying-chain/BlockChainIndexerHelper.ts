@@ -190,6 +190,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
                         }
                     }
                 }
+                if (inputs.length == 0) return [["", toBN(0)]];
                 return inputs;
             }
         } else {
@@ -200,6 +201,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
                     toBN(Math.round((item.value || 0) * BTC_MDU).toFixed(0))
                 ])
             })
+            if (outputs.length == 0) return [["", toBN(0)]];
             return outputs;
         }
     }
