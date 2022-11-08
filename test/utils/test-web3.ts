@@ -1,6 +1,6 @@
 import hre from "hardhat";
 import { provider } from 'web3-core';
-import { initWeb3, web3 } from "../../src/utils/web3";
+import { initWeb3, usingGlobalWeb3, web3 } from "../../src/utils/web3";
 
 export const NETWORK = process.env.NETWORK ?? 'hardhat';
 
@@ -17,6 +17,7 @@ export async function initTestWeb3(provider: provider = NETWORK, defaultAccount:
 }
 
 function configureOpenzeppelin() {
+    if (usingGlobalWeb3()) return;
     require('@openzeppelin/test-helpers/configure')({
         provider: web3.currentProvider,
         singletons: {

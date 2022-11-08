@@ -1,5 +1,5 @@
-// import "@nomiclabs/hardhat-truffle5";
-// import "@nomiclabs/hardhat-web3";
+import "@nomiclabs/hardhat-truffle5";
+import "@nomiclabs/hardhat-web3";
 import * as dotenv from "dotenv";
 import fs from "fs";
 import { HardhatUserConfig, task } from "hardhat/config";

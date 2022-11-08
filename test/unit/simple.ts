@@ -1,14 +1,19 @@
 import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp } from "../../src/utils/helpers";
+import { web3 } from "../../src/utils/web3";
 import { initTestWeb3 } from "../utils/test-web3";
 
 const WNat = artifacts.require('WNat');
+
+// (global as any).contract("abc", async (accounts: string[]) => {
+// })
 
 describe("test initial", async () => {
     let accounts: string[];
     
     before(async () => {
-        accounts = await initTestWeb3();
+        accounts = await web3.eth.getAccounts();
+        // accounts = await initTestWeb3();
     });
     
     it("test native chain access", async () => {

@@ -69,25 +69,10 @@ export function deployLibrary(name: string, dependencies: { [key: string]: Truff
 }
 
 export function linkDependencies<T extends Truffle.Contract<any>>(contract: T, dependencies: { [key: string]: Truffle.ContractInstance } = {}): T {
-    // from hardhat-truffle5/src/artifacts.ts method link()
-    const contractAny = contract as any;
-    const contractJson = contractAny._originalJson;
-    const linkReferences: Record<string, Record<string, Array<{start: number, length: number}>>> = contractJson.linkReferences;
-    const bytecode: string = contractJson.bytecode;
-    for (const libfile of Object.values(linkReferences)) {
-        for (const [libName, occList] of Object.entries(libfile)) {
-            const {start, length} = occList[0];
-            const refName = bytecode.slice(2 + 2 * start, 2 + 2 * (start + length)).replace(/_/g, '').replace(/\$/g, '\\$');
-            const library = dependencies[libName];
-            if (library == null) {
-                console.warn(`Missing library ${libName} while linking ${contract.contractName}`);
-                continue;
-            }
-            if (contractAny.network_id == null) {
-                contractAny.setNetwork((library.constructor as any).network_id);
-            }
-            contract.link(refName, library.address);
-        }
+    // for some strange reason, the only way to call `link` that is supported by Hardhat, doesn't have type info by typechain
+    // so the interface of this method assumes that maybe we will need linking by name in the future (that's why it accepts dictionary)
+    for (const dependencyName of Object.keys(dependencies)) {
+        contract.link(dependencies[dependencyName] as any);
     }
     return contract;
 }

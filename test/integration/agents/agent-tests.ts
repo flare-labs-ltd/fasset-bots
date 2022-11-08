@@ -7,9 +7,9 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test.mikro-orm.config";
 import { createTestAssetContext } from "../../utils/test-asset-context";
-import { initTestWeb3 } from "../../utils/test-web3";
 import { testChainInfo } from "../../utils/TestChainInfo";
 
 describe("Agent bot tests", async () => {
@@ -24,7 +24,8 @@ describe("Agent bot tests", async () => {
     });
     
     beforeEach(async () => {
-        accounts = await initTestWeb3();
+        accounts = await web3.eth.getAccounts();
+        // accounts = await initTestWeb3();
         ownerAddress = accounts[5];
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
         // config = await createTestConfig(['xrp']);

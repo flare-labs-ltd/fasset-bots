@@ -55,6 +55,6 @@ function createWeb3() {
     return (global as any).web3 ?? new Web3();
 }
 
-function usingGlobalWeb3() {
+export function usingGlobalWeb3() {
     return web3 === (global as any).web3;
 }

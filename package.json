@@ -54,7 +54,8 @@
       "test": "mocha",
       "test_all": "mocha --recursive -t 500000 \"test/**/*.ts\"",
       "test_all:unit": "mocha --recursive -t 500000 \"test/unit/**/*.ts\"",
-      "test:coverage": "yarn nyc yarn test_all"
+      "test:coverage": "yarn nyc yarn test_all",
+      "testhh": "yarn hardhat test --no-compile"
    },
    "dependencies": {
       "@flarenetwork/mcc": "^2.0.5",
@@ -68,6 +69,8 @@
    },
    "devDependencies": {
       "@istanbuljs/nyc-config-typescript": "1.0.2",
+      "@nomiclabs/hardhat-truffle5": "2.0.5",
+      "@nomiclabs/hardhat-web3": "2.0.0",
       "@openzeppelin/test-helpers": "^0.5.16",
       "@types/bn.js": "^4.11.0",
       "@types/chai": "4.3.1",
