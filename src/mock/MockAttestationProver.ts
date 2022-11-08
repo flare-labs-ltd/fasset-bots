@@ -1,6 +1,6 @@
+import Web3 from "web3";
 import { TxInputOutput, TX_FAILED } from "../underlying-chain/interfaces/IBlockChain";
 import { BN_ZERO, toBN, ZERO_BYTES32 } from "../utils/helpers";
-import { web3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { MockChain, MockChainTransaction } from "./MockChain";
@@ -14,7 +14,7 @@ export class MockAttestationProverError extends Error {
 function totalValueFor(ios: TxInputOutput[], address: string) {
     let total = BN_ZERO;
     for (const [a, v] of ios) {
-        if (web3.utils.keccak256(a) === address) total = total.add(v);
+        if (Web3.utils.keccak256(a) === address) total = total.add(v);
     }
     return total;
 }
@@ -35,8 +35,8 @@ export class MockAttestationProver {
 
     payment(transactionHash: string, inUtxo: number, utxo: number, upperBoundProof: string): DHPayment {
         const { transaction, block } = this.findTransaction('payment', transactionHash, upperBoundProof);
-        const sourceAddressHash = web3.utils.keccak256(transaction.inputs[inUtxo][0]);
-        const receivingAddressHash = web3.utils.keccak256(transaction.outputs[utxo][0]);
+        const sourceAddressHash = Web3.utils.keccak256(transaction.inputs[inUtxo][0]);
+        const receivingAddressHash = Web3.utils.keccak256(transaction.outputs[utxo][0]);
         const spent = totalSpentValue(transaction, sourceAddressHash);
         const proof: DHPayment = {
             stateConnectorRound: 0, // filled later
@@ -58,7 +58,7 @@ export class MockAttestationProver {
 
     balanceDecreasingTransaction(transactionHash: string, inUtxo: number, upperBoundProof: string): DHBalanceDecreasingTransaction {
         const { transaction, block } = this.findTransaction('balanceDecreasingTransaction', transactionHash, upperBoundProof);
-        const sourceAddressHash = web3.utils.keccak256(transaction.inputs[inUtxo][0]);
+        const sourceAddressHash = Web3.utils.keccak256(transaction.inputs[inUtxo][0]);
         const spent = totalSpentValue(transaction, sourceAddressHash);
         const proof: DHBalanceDecreasingTransaction = {
             stateConnectorRound: 0, // filled later

@@ -1,8 +1,6 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { BotConfig } from "../../../src/config/BotConfig";
-import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { IAssetContext } from "../../../src/fasset/IAssetContext";
 import { Minter } from "../../../src/mock/Minter";
@@ -10,39 +8,35 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { createTestOrm } from "../../test.mikro-orm.config";
-import { createTestConfig } from "../../utils/test-bot-config";
+import { createTestAssetContext } from "../../utils/test-asset-context";
 import { initTestWeb3 } from "../../utils/test-web3";
+import { testChainInfo } from "../../utils/TestChainInfo";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
-    let config: BotConfig;
+    // let config: BotConfig;
     let context: IAssetContext;
     let orm: ORM;
     let ownerAddress: string;
     let chain: MockChain;
 
     before(async () => {
-        accounts = await initTestWeb3('local');
-        ownerAddress = accounts[5];
-        config = await createTestConfig(['xrp']);
-        context = await createAssetContext(config, config.chains[0]);
-        chain = checkedCast(context.chain, MockChain);
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
     });
     
     beforeEach(async () => {
+        accounts = await initTestWeb3();
+        ownerAddress = accounts[5];
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        // config = await createTestConfig(['xrp']);
+        // context = await createAssetContext(config, config.chains[0]);
         orm.em.clear();
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        chain = checkedCast(context.chain, MockChain);
     });
 
     it("create agent", async () => {
         await AgentBot.create(orm.em, context, ownerAddress);
     });
-    
-    async function runAgentSteps(agentBot: AgentBot, steps: number) {
-        for (let i = 0; i < steps; i++) {
-            await agentBot.runStep(orm.em);
-        }
-    }
     
     it("perform minting and redemption", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);

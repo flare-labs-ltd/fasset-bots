@@ -1,10 +1,10 @@
-import { BNish, BN_ZERO, Dict, fail, formatBN, systemTimestamp, toBN } from "../utils/helpers";
-import { ILogger } from "../utils/logging";
+import Web3 from "web3";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { BlockHandler, IBlockChainEvents, TransactionHandler } from "../underlying-chain/interfaces/IBlockChainEvents";
 import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { BNish, BN_ZERO, Dict, fail, formatBN, systemTimestamp, toBN } from "../utils/helpers";
 import { stringifyJson } from "../utils/json-bn";
-import { web3 } from "../utils/web3";
+import { ILogger } from "../utils/logging";
 
 export type MockTransactionOptions = TransactionOptions & { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -134,7 +134,7 @@ export class MockChain implements IBlockChain, IBlockChainEvents {
             this.nonces[src] = (this.nonces[src] ?? 0) + 1;
         }
         // calculate hash
-        return web3.utils.keccak256(JSON.stringify(data));
+        return Web3.utils.keccak256(JSON.stringify(data));
     }
     
     skipTime(timeDelta: number) {
@@ -204,7 +204,7 @@ export class MockChain implements IBlockChain, IBlockChainEvents {
         // create new block
         const number = this.blocks.length;
         const timestamp = this.newBlockTimestamp();
-        const hash = web3.utils.keccak256(JSON.stringify({ number, timestamp, transactions: transactions.map(tx => tx.hash) }));
+        const hash = Web3.utils.keccak256(JSON.stringify({ number, timestamp, transactions: transactions.map(tx => tx.hash) }));
         this.blocks.push({ hash, number, timestamp, transactions });
         this.blockIndex[hash] = number;
         // log

@@ -29,6 +29,7 @@ class ArtifactsImpl {
     loadContract<T>(path: string): T {
         const abi = JSON.parse(readFileSync(path).toString());
         const contract = createContract(abi);
+        contract._originalJson = abi;
         this.updateContractWeb3(contract);
         return contract;
     }
@@ -70,7 +71,11 @@ class ArtifactsImpl {
 }
 
 interface ArtifactsWithUpdate extends Truffle.Artifacts {
-    updateWeb3(web3: Web3): void;
+    updateWeb3?(web3: Web3): void;
 }
 
-export const artifacts: ArtifactsWithUpdate = new ArtifactsImpl();
+export const artifacts: ArtifactsWithUpdate = createArtifacts();
+
+function createArtifacts() {
+    return (global as any).artifacts ?? new ArtifactsImpl();
+}
