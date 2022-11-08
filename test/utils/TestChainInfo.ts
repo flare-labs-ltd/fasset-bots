@@ -1,5 +1,5 @@
-import { ChainInfo } from "../../../src/fasset/ChainInfo";
-import { SourceId } from "../../../src/verification/sources/sources";
+import { ChainInfo } from "../../src/fasset/ChainInfo";
+import { SourceId } from "../../src/verification/sources/sources";
 
 export interface TestChainInfo extends ChainInfo {
     blockTime: number;

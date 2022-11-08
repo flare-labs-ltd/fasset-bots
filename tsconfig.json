@@ -20,7 +20,8 @@
         "src/**/*",
         "test/**/*",
         "./typechain-truffle",
-        "./typechain-truffle/types.d.ts"
+        "./typechain-truffle/types.d.ts",
+        "./hardhat.config.ts"
     ],
     "ts-node": {
         "files": true

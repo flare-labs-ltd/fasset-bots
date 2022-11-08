@@ -18,7 +18,7 @@ export interface ChainContracts {
     AttestationClient: Contract;
     AgentVaultFactory: Contract;
     AssetManagerController: Contract;
-    AssetManagerWhitelist: Contract;
+    AssetManagerWhitelist?: Contract;
     // others (asset managers & fassets & everything from flare-smart-contract)
     [key: string]: Contract | undefined;
 }

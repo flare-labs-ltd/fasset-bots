@@ -1,8 +1,8 @@
-import { BotConfig, BotConfigChain } from "../../../src/config/BotConfig";
-import { loadContracts } from "../../../src/config/contracts";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { artifacts } from "../../../src/utils/artifacts";
+import { BotConfig, BotConfigChain } from "../../src/config/BotConfig";
+import { loadContracts } from "../../src/config/contracts";
+import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { artifacts } from "../../src/utils/artifacts";
 import { testChainInfo, TestChainInfo } from "./TestChainInfo";
 
 const LOCAL_HARDHAT_RPC = "http://127.0.0.1:8545";

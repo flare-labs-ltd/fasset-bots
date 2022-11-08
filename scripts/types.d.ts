@@ -8,7 +8,6 @@
 declare type EventEmitter = import("events").EventEmitter;
 
 declare type BN = import("bn.js");
-declare type Web3 = import("web3").default;
 declare type AbiItem = import("web3-utils").AbiItem;
 declare type TransactionConfig = import("web3-core").TransactionConfig;
 declare type PromiEvent<T> = import("web3-core").PromiEvent<T>;
@@ -86,22 +85,4 @@ declare namespace Truffle {
   interface ContractNew<ARGs extends any[]> {
     "new"(...args: ARGs): any;
   }
-
-  interface Deployer {
-    link(
-      library: Truffle.Contract<any>,
-      destination: Truffle.Contract<any>
-    ): Deployer;
-    link(
-      library: Truffle.Contract<any>,
-      destinations: Array<Truffle.Contract<any>>
-    ): Deployer;
-    deploy<T extends any[]>(c: ContractNew<T>, ...args: T): Deployer;
-  }
-
-  type Migration = (
-    deploy: Deployer,
-    network: string,
-    accounts: Accounts
-  ) => void;
 }

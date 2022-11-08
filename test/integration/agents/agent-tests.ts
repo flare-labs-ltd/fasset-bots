@@ -9,9 +9,9 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
-import { initTestWeb3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test.mikro-orm.config";
-import { createTestConfig } from "./test-config";
+import { createTestConfig } from "../../utils/test-bot-config";
+import { initTestWeb3 } from "../../utils/test-web3";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];

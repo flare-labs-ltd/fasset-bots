@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { glob } from "glob";
 import { basename, extname } from "path";
+import Web3 from "web3";
 
 const createContract = require("@truffle/contract");
 
@@ -45,7 +46,7 @@ class ArtifactsImpl {
         }
         return artifactData.contract;
     }
-    
+
     updateWeb3(web3: Web3) {
         this.web3 = web3;
         if (this.artifactMap) {
@@ -56,7 +57,7 @@ class ArtifactsImpl {
             }
         }
     }
-    
+
     private updateContractWeb3(contract: any) {
         if (this.web3?.currentProvider != null) {
             contract.setProvider(this.web3.currentProvider);
