@@ -88,7 +88,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     chain.secondsPerBlock = chainInfo.blockTime;
     const chainEventsRaw = chain;
     const chainEvents = new UnderlyingChainEvents(chain, chainEventsRaw, null);
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, 'on_wait');
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, 'auto');
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
     const wallet = new MockChainWallet(chain);

@@ -16,7 +16,7 @@ let currentProvider: provider;
  */
 export async function initWeb3(provider: provider, walletKeys: string[] | 'network' | null, defaultAccount: string | number | null) {
     if (usingGlobalWeb3()) {
-        console.warn("Using injected web3; initWeb3(...) has no effect.")
+        throw new Error("Using injected web3; initWeb3(...) has no effect.")
     }
     if (provider !== currentProvider) {
         currentProvider = provider;
