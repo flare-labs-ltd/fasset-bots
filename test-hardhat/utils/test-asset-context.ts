@@ -13,7 +13,7 @@ import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { newAssetManager } from "./new-asset-manager";
-import { TestChainInfo } from "./TestChainInfo";
+import { TestChainInfo } from "../../test/utils/TestChainInfo";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
 const AttestationClient = artifacts.require('AttestationClientSC');

@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
 
     paths: {
         sources: "./contracts/",
-        tests: process.env.TEST_PATH || "./test/{unit,integration}",
+        tests: process.env.TEST_PATH || "./test-hardhat/{unit,integration}",
         cache: "./cache",
         artifacts: "./artifacts",
     },
