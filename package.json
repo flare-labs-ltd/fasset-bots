@@ -46,7 +46,6 @@
       "/src"
    ],
    "scripts": {
-      "preinstall": "env bash scripts/check-yarn.sh",
       "publish": "echo npm publish",
       "pack": "npm pack",
       "build": "tsc --allowJs",
