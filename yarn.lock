@@ -1836,14 +1836,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:4.3.1":
-  version: 4.3.1
-  resolution: "@types/chai@npm:4.3.1"
-  checksum: 2ee246b76c469cd620a7a1876a73bc597074361b67d547b4bd96a0c1adb43597ede2d8589ab626192e14349d83cbb646cc11e2c179eeeb43ff11596de94d82c4
-  languageName: node
-  linkType: hard
-
-"@types/chai@npm:^4.2.0":
+"@types/chai@npm:4.3.4, @types/chai@npm:^4.2.0":
   version: 4.3.4
   resolution: "@types/chai@npm:4.3.4"
   checksum: 571184967beb03bf64c4392a13a7d44e72da9af5a1e83077ff81c39cf59c0fda2a5c78d2005084601cf8f3d11726608574d8b5b4a0e3e9736792807afd926cd0
@@ -4846,7 +4839,7 @@ __metadata:
     "@openzeppelin/test-helpers": ^0.5.16
     "@truffle/contract": ^4.5.23
     "@types/bn.js": ^4.11.0
-    "@types/chai": 4.3.1
+    "@types/chai": 4.3.4
     "@types/chai-as-promised": ^7.1.5
     "@types/glob": 7.2.0
     "@types/mocha": 9.1.1
@@ -4866,6 +4859,7 @@ __metadata:
     simple-wallet: "link:../simple-wallet"
     source-map-support: 0.5.21
     ts-node: 10.8.0
+    typescript: 4.7.3
   languageName: unknown
   linkType: soft
 
