@@ -1,8 +1,8 @@
 *.log
-.DS_Store
-node_modules
-dist
-cache
+.DS_Store/
+node_modules/
+dist/
+cache/
 
 ### VisualStudioCode template
 .vscode/*
@@ -10,6 +10,15 @@ cache
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+### yarn 3
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
 
 ## code coverage files
 coverage.json
@@ -21,5 +30,5 @@ coverage/
 *.tgz
 
 # local db
-/*.db
-/*.db-journal
+*.db
+*.db-journal

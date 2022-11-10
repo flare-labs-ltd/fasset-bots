@@ -46,6 +46,7 @@
       "/src"
    ],
    "scripts": {
+      "preinstall": "env bash scripts/check-yarn.sh",
       "publish": "echo npm publish",
       "pack": "npm pack",
       "build": "tsc --allowJs",
@@ -90,5 +91,6 @@
       "prettier": "2.7.1",
       "source-map-support": "0.5.21",
       "ts-node": "10.8.0"
-   }
+   },
+   "packageManager": "yarn@3.2.4"
 }
