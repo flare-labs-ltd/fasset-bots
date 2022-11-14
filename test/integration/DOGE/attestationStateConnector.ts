@@ -35,7 +35,7 @@ const DOGEMccConnectionTest = {
 
 
 let stateConnectorClient: StateConnectorClientHelper;
-const attestationUrl: string = requireEnv('COSTON2_ATTESTER_BASE_URL');
+const attestationUrls: string[] = requireEnv('COSTON2_ATTESTER_BASE_URLS').split(", ");
 const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
 const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
 const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
@@ -51,7 +51,7 @@ describe("DOGE attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await StateConnectorClientHelper.create(artifacts, attestationUrl, attestationClientAddress, stateConnectorAddress, account);
+        stateConnectorClient = await StateConnectorClientHelper.create(artifacts, attestationUrls, attestationClientAddress, stateConnectorAddress, account);
         walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
         mccClient = new MCC.DOGE(DOGEMccConnectionTest);
         blockChainHelper = new BlockChainHelper(walletClient, mccClient);

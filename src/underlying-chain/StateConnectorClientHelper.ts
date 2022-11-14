@@ -19,7 +19,7 @@ export class StateConnectorError extends Error {
 
 export class StateConnectorClientHelper implements IStateConnectorClient {
 
-    client: AxiosInstance;
+    clients: AxiosInstance[] = [];
 
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
@@ -29,21 +29,23 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     constructor(
         public artifacts: Truffle.Artifacts,
-        public attestationProviderUrl: string,
+        public attestationProviderUrls: string[],
         public attestationClientAddress: string,
         public stateConnectorAddress: string,
         public account: string
     ) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: attestationProviderUrl,
-            timeout: DEFAULT_TIMEOUT,
-            headers: { "Content-Type": "application/json" },
-            validateStatus: function (status: number) {
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        // set client
-        this.client = axios.create(createAxiosConfig);
+        for (const url of attestationProviderUrls) {
+            const createAxiosConfig: AxiosRequestConfig = {
+                baseURL: url,
+                timeout: DEFAULT_TIMEOUT,
+                headers: { "Content-Type": "application/json" },
+                validateStatus: function (status: number) {
+                    return (status >= 200 && status < 300) || status == 500;
+                },
+            };
+            // set clients
+            this.clients.push(axios.create(createAxiosConfig));
+        }
     }
 
     async initStateConnector() {
@@ -55,20 +57,16 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
 
-    static async create(artifacts: Truffle.Artifacts, url: string, attestationClientAddress: string, stateConnectorAddress: string, account: string) {
-        const helper = new StateConnectorClientHelper(artifacts, url, attestationClientAddress, stateConnectorAddress, account);
+    static async create(artifacts: Truffle.Artifacts, urls: string[], attestationClientAddress: string, stateConnectorAddress: string, account: string) {
+        const helper = new StateConnectorClientHelper(artifacts, urls, attestationClientAddress, stateConnectorAddress, account);
         await helper.initStateConnector();
         return helper;
     }
 
     async roundFinalized(round: number): Promise<boolean> {
-        const res = await this.client.get(`/api/proof/status`);
-        const status = res.data.status;
-        const data = res.data.data;
-        if (status === "OK") {
-            if (round <= data.latestAvailableRoundId) {
-                return true;
-            }
+        const lastRound = Number(await this.stateConnector.lastFinalizedRoundId);
+        if (round <= lastRound) {
+            return true;
         }
         return false;
     }
@@ -98,63 +96,66 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
         try {
-            const resp = await this.client.get(`/api/proof/votes-for-round/${round}`);
-            const status = resp.data.status;
-            const data = resp.data.data;
+            for (const client of this.clients) {
+                const resp = await client.get(`/api/proof/votes-for-round/${round}`);
+                const status = resp.data.status;
+                const data = resp.data.data;
 
-            // is the round finalized?
-            if (status !== "OK") {
-                return { finalized: false, result: null };
-            }
-
-            // find response matching requestData
-            let matchedResponse: any = null;
-            for (let item of data) {
-                let encoded = encodeRequest(item.request);
-                if (encoded.toUpperCase() === requestData.toUpperCase()) {
-                    matchedResponse = item;
+                // is the round finalized?
+                if (status !== "OK") {
+                    return { finalized: false, result: null };
                 }
-            }
-            if (matchedResponse == null) {
-                // round is finalized, but this request hasn't been proved (it is false)
-                return { finalized: true, result: null };
-            }
 
-            // build Merkle tree, obtain proof, and check root
-            const hashes: string[] = data.map((item: any) => item.hash) as string[];
-            const tree = new MerkleTree(hashes);
-            const index = tree.sortedHashes.findIndex((hash) => hash === matchedResponse.hash);
-            const proof = tree.getProof(index);
-            if (proof == null) {
-                // this should never happen, unless there is bug in the MerkleTree implementation
-                throw new StateConnectorError(`Cannot obtain Merkle proof`);
-            }
+                // find response matching requestData
+                let matchedResponse: any = null;
+                for (let item of data) {
+                    let encoded = encodeRequest(item.request);
+                    if (encoded.toUpperCase() === requestData.toUpperCase()) {
+                        matchedResponse = item;
+                    }
+                }
+                if (matchedResponse == null) {
+                    // round is finalized, but this request hasn't been proved (it is false)
+                    return { finalized: true, result: null };
+                }
 
-            // gets the root and checks that it is available (throws if it is not)
-            const scFinalizedRoot = await this.stateConnector.merkleRoot(round);
-            if (scFinalizedRoot !== tree.root) {
-                // this can only happen if the attestation provider from where we picked data is
-                // inconsistent with the finalized Merkle root in the blockchain
-                throw new StateConnectorError(`SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
-            }
+                // build Merkle tree, obtain proof, and check root
+                const hashes: string[] = data.map((item: any) => item.hash) as string[];
+                const tree = new MerkleTree(hashes);
+                const index = tree.sortedHashes.findIndex((hash) => hash === matchedResponse.hash);
+                const proof = tree.getProof(index);
+                if (proof == null) {
+                    // this should never happen, unless there is bug in the MerkleTree implementation
+                    throw new StateConnectorError(`Cannot obtain Merkle proof`);
+                }
 
-            // convert the proof
-            const proofData = this.decodeProof(matchedResponse.response, matchedResponse.request.attestationType, proof);
+                // gets the root and checks that it is available (throws if it is not)
+                const scFinalizedRoot = await this.stateConnector.merkleRoot(round);
+                if (scFinalizedRoot !== tree.root) {
+                    // this can only happen if the attestation provider from where we picked data is
+                    // inconsistent with the finalized Merkle root in the blockchain
+                    // skip to next attestation provider
+                    continue;
+                }
 
-            // extra verification - should never fail, since Merkle root matches
-            const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
-            if (!verified) {
-                // console.error(JSON.stringify(web3DeepNormalize(proofData)));
-                throw new StateConnectorError("Proof does not verify!!!")
+                // convert the proof
+                const proofData = this.decodeProof(matchedResponse.response, matchedResponse.request.attestationType, proof);
+
+                // extra verification - should never fail, since Merkle root matches
+                const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
+                if (!verified) {
+                    throw new StateConnectorError("Proof does not verify!!!")
+                }
+
+                return { finalized: true, result: proofData };
             }
-            
-            return { finalized: true, result: proofData };
+            throw new StateConnectorError("There aren't any attestation providers.")
         } catch (e) {
             if (e instanceof StateConnectorError) throw e;
             throw new StateConnectorError(String(e));
         }
     }
-    
+
     private async verifyProof(sourceId: BNish, type: AttestationType, proofData: DHType) {
         const normalizedProofData = web3DeepNormalize(proofData);
         switch (type) {
