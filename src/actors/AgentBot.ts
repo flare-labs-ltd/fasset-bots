@@ -11,6 +11,8 @@ import { toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
+import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
+import { EntityData } from "@mikro-orm/core/typings";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -71,7 +73,7 @@ export class AgentBot {
     }
     
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress });
+        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
@@ -102,12 +104,12 @@ export class AgentBot {
             lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
             paymentReference: request.paymentReference,
-        }, { persist: true });
+        } as EntityData<AgentMinting>, { persist: true });
     }
     
     async findMinting(em: EM, requestId: BN) {
         const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentMinting, { agentAddress, requestId });
+        return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
     }
     
     async openMintings(em: EM, onlyIds: boolean) {
@@ -132,12 +134,12 @@ export class AgentBot {
             valueUBA: toBN(request.valueUBA),
             feeUBA: toBN(request.feeUBA),
             paymentReference: request.paymentReference,
-        }, { persist: true });
+        } as RequiredEntityData<AgentRedemption>, { persist: true });
     }
 
     async findRedemption(em: EM, requestId: BN) {
         const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId });
+        return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
     }
 
     async handleOpenRedemptions(rootEm: EM) {
@@ -157,7 +159,7 @@ export class AgentBot {
 
     async nextRedemptionStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
-            const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) });
+            const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
             if (redemption.state === 'started') {
                 await this.payForRedemption(redemption);
             } if (redemption.state === 'paid') {
