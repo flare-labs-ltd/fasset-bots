@@ -7,9 +7,9 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { toBN } from "../utils/helpers";
+import { systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
-import { DHPayment } from "../verification/generated/attestation-hash-types";
+import { DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { EntityData } from "@mikro-orm/core/typings";
@@ -50,6 +50,7 @@ export class AgentBot {
     
     async runStep(rootEm: EM) {
         await this.handleEvents(rootEm);
+        await this.handleOpenMintings(rootEm);
         await this.handleOpenRedemptions(rootEm);
     }
 
@@ -112,6 +113,13 @@ export class AgentBot {
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
     }
     
+    async handleOpenMintings(rootEm: EM) {
+        const openMintings = await this.openMintings(rootEm, true);
+        for (const rd of openMintings) {
+            await this.nextMintingStep(rootEm, rd.id);
+        }
+    }
+
     async openMintings(em: EM, onlyIds: boolean) {
         let query = em.createQueryBuilder(AgentMinting);
         if (onlyIds) query = query.select('id');
@@ -123,6 +131,50 @@ export class AgentBot {
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
         const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = 'done';
+    }
+
+    async nextMintingStep(rootEm: EM, id: number) {
+        await rootEm.transactional(async em => {
+            const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
+            if (minting.state === 'started') {
+                await this.checkForNonPaymentProof(minting);
+            } else if (minting.state === 'requestedNonPaymentProof') {
+                await this.checkNonPayment(minting);
+            }
+        }).catch(error => {
+            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
+        });
+    }
+
+    async checkForNonPaymentProof(minting: AgentMinting) {
+        const blockHeight = await this.context.chain.getBlockHeight();
+        if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
+            await this.requestNonPaymentProofForMinting(minting);
+        }
+    }
+
+    async requestNonPaymentProofForMinting(minting: AgentMinting) {
+        const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
+            minting.agentAddress,
+            minting.paymentReference,
+            minting.valueUBA.add(minting.feeUBA),
+            minting.lastUnderlyingBlock.toNumber(),
+            minting.lastUnderlyingTimestamp.toNumber());
+        minting.state = 'requestedNonPaymentProof';
+        minting.proofRequestRound = request.round;
+        minting.proofRequestData = request.data;
+    }
+
+    async checkNonPayment(minting: AgentMinting) {
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
+        if (!proof.finalized) return;
+        if (proof.result && proof.result.merkleProof) {
+            const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
+            await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId , { from: this.agent.ownerAddress });
+            minting.state = 'done';
+        } else {
+            // TODO: non payment happened but we cannot obtain proof... ALERT!!!
+        }
     }
 
     redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>) {

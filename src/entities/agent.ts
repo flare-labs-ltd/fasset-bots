@@ -33,7 +33,7 @@ export class AgentMinting {
     id!: number;
 
     @Property()
-    state!: 'started' | 'done';
+    state!: 'started' | 'done' | 'requestedNonPaymentProof';
 
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
@@ -55,6 +55,14 @@ export class AgentMinting {
 
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
+
+    // 'requestedNonPaymentProof' state data
+
+    @Property({ nullable: true })
+    proofRequestRound?: number;
+
+    @Property({ nullable: true })
+    proofRequestData?: string;
 }
 
 @Entity()
