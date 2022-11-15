@@ -93,6 +93,12 @@ export class AgentRedemption {
     @Property({ type: BNType })
     feeUBA!: BN;
 
+    @Property({ type: BNType })
+    lastUnderlyingBlock!: BN;
+
+    @Property({ type: BNType })
+    lastUnderlyingTimestamp!: BN;
+    
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 

@@ -9,7 +9,7 @@ import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
-import { DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { EntityData } from "@mikro-orm/core/typings";
@@ -47,7 +47,7 @@ export class AgentBot {
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
         return new AgentBot(agent);
     }
-    
+
     async runStep(rootEm: EM) {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
@@ -76,7 +76,7 @@ export class AgentBot {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
         });
     }
-    
+
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // get all logs for this agent
@@ -111,12 +111,12 @@ export class AgentBot {
             paymentReference: request.paymentReference,
         } as EntityData<AgentMinting>, { persist: true });
     }
-    
+
     async findMinting(em: EM, requestId: BN) {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
     }
-    
+
     async handleOpenMintings(rootEm: EM) {
         const openMintings = await this.openMintings(rootEm, true);
         for (const rd of openMintings) {
@@ -151,14 +151,15 @@ export class AgentBot {
     }
 
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting) {
-        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
-        const blockHeight = await this.context.chain.getBlockHeight();
-        if (proof.lowestQueryWindowBlockNumber <= minting.lastUnderlyingBlock 
-            || proof.lowestQueryWindowBlockTimestamp <= minting.lastUnderlyingTimestamp) { // if more than 24h passed -> unstickMinting()
-            await this.context.assetManager.unstickMinting(proof, minting.requestId);
-        } else if (blockHeight > minting.lastUnderlyingBlock.toNumber() 
-            && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) { // else check for non payment proof
-            await this.requestNonPaymentProofForMinting(minting);
+        const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
+        if (proof) {
+            await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress });
+            minting.state = 'done';
+        } else {
+            const blockHeight = await this.context.chain.getBlockHeight();
+            if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
+                await this.requestNonPaymentProofForMinting(minting);
+            }
         }
     }
 
@@ -179,7 +180,7 @@ export class AgentBot {
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
-            await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId , { from: this.agent.ownerAddress });
+            await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = 'done';
         } else {
             // TODO: non payment happened but we cannot obtain proof... ALERT!!!
@@ -195,6 +196,8 @@ export class AgentBot {
             valueUBA: toBN(request.valueUBA),
             feeUBA: toBN(request.feeUBA),
             paymentReference: request.paymentReference,
+            lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
+            lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp)
         } as RequiredEntityData<AgentRedemption>, { persist: true });
     }
 
@@ -239,18 +242,30 @@ export class AgentBot {
     }
 
     async payForRedemption(redemption: AgentRedemption) {
-        const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
-        // !!! TODO: what if there are too little funds on underlying address to pay for fee?
-        const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-        redemption.txHash = txHash;
-        redemption.state = 'paid';
+        const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
+        if (proof) {
+            await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
+            redemption.state = 'done';
+        } else {
+            const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
+            // !!! TODO: what if there are too little funds on underlying address to pay for fee?
+            const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+            redemption.txHash = txHash;
+            redemption.state = 'paid';
+        }
     }
 
     async checkPaymentProofAvailable(redemption: AgentRedemption) {
-        const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash!);
-        const blockHeight = await this.context.chain.getBlockHeight();
-        if (txBlock != null && blockHeight - txBlock.number >= this.context.chain.finalizationBlocks) {
-            await this.requestPaymentProof(redemption);
+        const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
+        if (proof) {
+            await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
+            redemption.state = 'done';
+        } else {
+            const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash!);
+            const blockHeight = await this.context.chain.getBlockHeight();
+            if (txBlock != null && blockHeight - txBlock.number >= this.context.chain.finalizationBlocks) {
+                await this.requestPaymentProof(redemption);
+            }
         }
     }
 
@@ -273,4 +288,12 @@ export class AgentBot {
         }
     }
 
+    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
+        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
+        if (proof.lowestQueryWindowBlockNumber <= lastUnderlyingBlock
+            || proof.lowestQueryWindowBlockTimestamp <= lastUnderlyingTimestamp) {
+            return proof;
+        }
+        return null;
+    }
 }
