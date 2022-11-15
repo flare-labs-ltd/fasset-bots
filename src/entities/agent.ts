@@ -33,7 +33,7 @@ export class AgentMinting {
     id!: number;
 
     @Property()
-    state!: 'started' | 'done' | 'requestedNonPaymentProof';
+    state!: 'started' | 'done' | 'requestedNonPaymentProof' | 'requestedPaymentProof';
 
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
@@ -57,6 +57,7 @@ export class AgentMinting {
     paymentReference!: string;
 
     // 'requestedNonPaymentProof' state data
+    // TODO - can these fields be reused for 'requestedPaymentProof' state data
 
     @Property({ nullable: true })
     proofRequestRound?: number;
@@ -98,7 +99,7 @@ export class AgentRedemption {
 
     @Property({ type: BNType })
     lastUnderlyingTimestamp!: BN;
-    
+
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 

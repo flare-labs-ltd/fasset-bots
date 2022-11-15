@@ -13,18 +13,20 @@ import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistenc
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { EntityData } from "@mikro-orm/core/typings";
+import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 
 const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {
     constructor(
-        public agent: Agent
+        public agent: Agent,
+        public blockChainIndexer: BlockChainIndexerHelper
     ) { }
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
-    static async create(rootEm: EM, context: IAssetContext, ownerAddress: string) {
+    static async create(rootEm: EM, context: IAssetContext, ownerAddress: string, indexer: BlockChainIndexerHelper) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -38,14 +40,14 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             em.persist(agentEntity);
-            return new AgentBot(agent);
+            return new AgentBot(agent, indexer);
         });
     }
 
-    static async fromEntity(context: IAssetContext, agentEntity: AgentEntity) {
+    static async fromEntity(context: IAssetContext, agentEntity: AgentEntity, indexer: BlockChainIndexerHelper) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new AgentBot(agent);
+        return new AgentBot(agent, indexer);
     }
 
     async runStep(rootEm: EM) {
@@ -144,6 +146,8 @@ export class AgentBot {
                 await this.checkForNonPaymentProofOrExpiredProofs(minting);
             } else if (minting.state === 'requestedNonPaymentProof') {
                 await this.checkNonPayment(minting);
+            } else if (minting.state === 'requestedPaymentProof') {
+                await this.checkPaymentAndExecuteMinting(minting);
             }
         }).catch(error => {
             console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
@@ -157,10 +161,28 @@ export class AgentBot {
             minting.state = 'done';
         } else {
             const blockHeight = await this.context.chain.getBlockHeight();
+            // time expires on underlying
             if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
-                await this.requestNonPaymentProofForMinting(minting);
+                const txs = await this.blockChainIndexer.getTransactionsByReference(minting.paymentReference);
+                if (txs.length === 1) {
+                    // check minter paid -> request payment proof -> execute minting
+                    const txHash = txs[0].hash;
+                    // TODO is it ok to check first address - UTXO?
+                    const sourceAddress = txs[0].inputs[0][0];
+                    await this.requestPaymentProofForMinting(minting, txHash, sourceAddress)
+                } else if (txs.length === 0) {
+                    // minter did not pay -> request non payment proof -> unstick minting
+                    await this.requestNonPaymentProofForMinting(minting);
+                }
             }
         }
+    }
+
+    async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string) {
+        const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
+        minting.state = 'requestedPaymentProof';
+        minting.proofRequestRound = request.round;
+        minting.proofRequestData = request.data;
     }
 
     async requestNonPaymentProofForMinting(minting: AgentMinting) {
@@ -184,6 +206,18 @@ export class AgentBot {
             minting.state = 'done';
         } else {
             // TODO: non payment happened but we cannot obtain proof... ALERT!!!
+        }
+    }
+
+    async checkPaymentAndExecuteMinting(minting: AgentMinting) {
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
+        if (!proof.finalized) return;
+        if (proof.result && proof.result.merkleProof) {
+            const paymentProof = proof.result as ProvedDH<DHPayment>;
+            await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
+            minting.state = 'done';
+        } else {
+            // TODO: payment happened but we cannot obtain proof... ALERT!!!
         }
     }
 
@@ -231,7 +265,7 @@ export class AgentBot {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
             if (redemption.state === 'started') {
                 await this.payForRedemption(redemption);
-            } if (redemption.state === 'paid') {
+            } else if (redemption.state === 'paid') {
                 await this.checkPaymentProofAvailable(redemption);
             } else if (redemption.state === 'requestedProof') {
                 await this.checkConfirmPayment(redemption);
