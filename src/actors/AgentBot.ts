@@ -1,4 +1,4 @@
-import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { Agent } from "../fasset/Agent";
 import { IAssetContext } from "../fasset/IAssetContext";
@@ -68,6 +68,8 @@ export class AgentBot {
                     await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
+                    this.redemptionFinished(em, event.args);
                 }
             }
         }).catch(error => {
@@ -194,6 +196,11 @@ export class AgentBot {
             feeUBA: toBN(request.feeUBA),
             paymentReference: request.paymentReference,
         } as RequiredEntityData<AgentRedemption>, { persist: true });
+    }
+
+    async redemptionFinished(em: EM, request: EventArgs<RedemptionDefault>) {
+        const redemption = await this.findRedemption(em, request.requestId);
+        redemption.state = 'done';
     }
 
     async findRedemption(em: EM, requestId: BN) {
