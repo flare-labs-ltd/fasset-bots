@@ -1,9 +1,10 @@
-import { UseRequestContext } from "@mikro-orm/core";
+import { FilterQuery, UseRequestContext } from "@mikro-orm/core";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetContext } from "../fasset/IAssetContext";
+import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import { sleep } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 
@@ -12,6 +13,7 @@ export class AgentBotRunner {
         public contexts: Map<number, IAssetContext>,
         public orm: ORM,
         public loopDelay: number,
+        public blockChainIndexerClient: BlockChainIndexerHelper
     ) { }
 
     private stopRequested = false;
@@ -30,7 +32,7 @@ export class AgentBotRunner {
 
     @UseRequestContext()
     async runStep() {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
                 const context = this.contexts.get(agentEntity.chainId);
@@ -38,7 +40,7 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain id ${agentEntity.chainId}`);
                     continue;
                 }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.blockChainIndexerClient);
                 await agentBot.runStep(this.orm.em);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
@@ -49,19 +51,19 @@ export class AgentBotRunner {
     @UseRequestContext()
     async createMissingAgents(ownerAddress: string) {
         for (const [chainId, context] of this.contexts) {
-            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true });
+            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
             if (existing === 0) {
-                await AgentBot.create(this.orm.em, context, ownerAddress);
+                await AgentBot.create(this.orm.em, context, ownerAddress, this.blockChainIndexerClient);
             }
         }
     }
     
-    static async create(orm: ORM, botConfig: BotConfig) {
+    static async create(orm: ORM, botConfig: BotConfig, ) {
         const contexts: Map<number, IAssetContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
         }
-        return new AgentBotRunner(contexts, orm, botConfig.loopDelay);
+        return new AgentBotRunner(contexts, orm, botConfig.loopDelay, botConfig.blockChainIndexerClient);
     }
 }

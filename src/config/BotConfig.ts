@@ -1,4 +1,5 @@
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
+import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainEvents } from "../underlying-chain/interfaces/IBlockChainEvents";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -22,4 +23,5 @@ export interface BotConfig {
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
     nativeChainInfo: NativeChainInfo;
+    blockChainIndexerClient: BlockChainIndexerHelper;
 }

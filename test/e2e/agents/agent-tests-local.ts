@@ -8,6 +8,7 @@ import { IAssetContext } from "../../../src/fasset/IAssetContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
+import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { checkedCast, systemTimestamp, toBN, toBNExp } from "../../../src/utils/helpers";
 import { createTestOrm } from "../../test.mikro-orm.config";
 import { createTestConfig } from "../../utils/test-bot-config";
@@ -22,6 +23,7 @@ describe("Agent bot tests - local network", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
+    let blockChainIndexerClient: BlockChainIndexerHelper; // TODO initialize
 
     before(async () => {
         accounts = await initTestWeb3();
@@ -35,7 +37,7 @@ describe("Agent bot tests - local network", async () => {
     });
 
     it("perform minting and redemption", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress, blockChainIndexerClient);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, `MINTER_ADDRESS_${systemTimestamp()}`, toBNExp(10_000, 6)); // lot is 1000 XRP
