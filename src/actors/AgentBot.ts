@@ -64,6 +64,8 @@ export class AgentBot {
                     this.mintingStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     await this.mintingExecuted(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {
+                    await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
                 }
@@ -137,7 +139,7 @@ export class AgentBot {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
             if (minting.state === 'started') {
-                await this.checkForNonPaymentProof(minting);
+                await this.checkForNonPaymentProofOrExpiredProofs(minting);
             } else if (minting.state === 'requestedNonPaymentProof') {
                 await this.checkNonPayment(minting);
             }
@@ -146,9 +148,14 @@ export class AgentBot {
         });
     }
 
-    async checkForNonPaymentProof(minting: AgentMinting) {
+    async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting) {
+        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
         const blockHeight = await this.context.chain.getBlockHeight();
-        if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
+        if (proof.lowestQueryWindowBlockNumber <= minting.lastUnderlyingBlock 
+            || proof.lowestQueryWindowBlockTimestamp <= minting.lastUnderlyingTimestamp) { // if more than 24h passed -> unstickMinting()
+            await this.context.assetManager.unstickMinting(proof, minting.requestId);
+        } else if (blockHeight > minting.lastUnderlyingBlock.toNumber() 
+            && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) { // else check for non payment proof
             await this.requestNonPaymentProofForMinting(minting);
         }
     }
