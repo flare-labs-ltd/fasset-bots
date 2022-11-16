@@ -12,8 +12,8 @@ import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import { EntityData } from "@mikro-orm/core/typings";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
+import BN from "bn.js";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -111,7 +111,7 @@ export class AgentBot {
             lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
             paymentReference: request.paymentReference,
-        } as EntityData<AgentMinting>, { persist: true });
+        } as RequiredEntityData<AgentMinting>, { persist: true });
     }
 
     async findMinting(em: EM, requestId: BN) {
