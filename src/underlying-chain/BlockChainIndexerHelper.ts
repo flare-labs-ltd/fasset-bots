@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
-import { BTC_MDU, hexToBase32, MccClient, UtxoTransaction } from "@flarenetwork/mcc";
+import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
 
@@ -17,7 +17,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
         public walletClient: WalletClient,
-        public mccClient: MccClient //backup for UTXO chains 
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: indexerWebServerUrl,
@@ -196,14 +195,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
                         const data = resp.data.data;
                         if (status === "OK" && data) {
                             const vout = data.response.data.vout;
-                            const elt = vout[item.vout];
-                            inputs.push([
-                                elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
-                                toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
-                            ])
-                        } else { // Indexer does not have stored this tx anymore. Check via mcc.
-                            const tx = await this.mccClient.getTransaction(item.txid) as UtxoTransaction;
-                            const vout = tx.data.vout;
                             const elt = vout[item.vout];
                             inputs.push([
                                 elt.scriptPubKey.address ? elt.scriptPubKey.address : "",

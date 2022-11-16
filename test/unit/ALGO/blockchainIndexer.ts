@@ -1,6 +1,5 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
-import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
@@ -8,7 +7,6 @@ import { requireEnv } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
 
 let walletClient: WALLET.ALGO;
-let mccClient: MCC.ALGO;
 let blockChainIndexerClient: BlockChainIndexerHelper;
 const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.ALGO;
@@ -17,17 +15,6 @@ const ALGOWalletConnectionTest = {
     algod: {
         url: process.env.ALGO_ALGOD_URL_TESTNET_WALLET || "",
         token: ""
-    },
-};
-
-const ALGOMccConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_MCC || "",
-        token: "",
-    },
-    indexer: {
-        url: process.env.ALGO_INDEXER_URL_TESTNET_MCC || "",
-        token: "",
     },
 };
 
@@ -40,8 +27,7 @@ describe("ALGO blockchain tests via indexer", async () => {
 
     before(async () => {
         walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
-        mccClient = new MCC.ALGO(ALGOMccConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient, mccClient);
+        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
     })
 
     it("Should retrieve transaction", async () => {
