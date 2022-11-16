@@ -150,7 +150,7 @@ export class AgentBot {
                 await this.checkPaymentAndExecuteMinting(minting);
             }
         }).catch(error => {
-            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
+            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}`);
         });
     }
 
