@@ -5,34 +5,20 @@ import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestBlockChainHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
-
-let walletClient: WALLET.LTC;
-let mccClient: MCC.LTC;
+const sourceId: SourceId = SourceId.LTC;
 
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
-
-const LTCWalletConnectionTest = {
-    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
-
-const LTCMCCConnectionTest = {
-    url: process.env.LTC_URL_TESTNET_MCC || "",
-    username: process.env.LTC_URL_USER_NAME_TESTNET_MCC || "",
-    password: process.env.LTC_URL_PASSWORD_TESTNET_MCC || "",
-    inTestnet: true
-};
 
 const amountToSendLTC = 0.00001;
 
@@ -41,10 +27,8 @@ describe("LTC wallet tests", async () => {
     before(async () => {
         orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
-        walletClient = new WALLET.LTC(LTCWalletConnectionTest);
-        mccClient = new MCC.LTC(LTCMCCConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
+        blockChainHelper = createTestBlockChainHelper(sourceId);
+        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
     })
 
     it("Should insert address and private key into db", async () => {

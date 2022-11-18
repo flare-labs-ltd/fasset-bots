@@ -1,22 +1,12 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
-import { requireEnv } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestIndexerHelper } from "../../utils/test-bot-config";
 
-let walletClient: WALLET.ALGO;
 let blockChainIndexerClient: BlockChainIndexerHelper;
-const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.ALGO;
-
-const ALGOWalletConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_WALLET || "",
-        token: ""
-    },
-};
 
 const txHash = "2117898bd891d3191b616492e027999052e35dc0e023131adfb296412986e7bc";
 const blockId = 24044383;
@@ -26,8 +16,7 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 describe("ALGO blockchain tests via indexer", async () => {
 
     before(async () => {
-        walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
+        blockChainIndexerClient = createTestIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

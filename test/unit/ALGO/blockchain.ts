@@ -1,31 +1,12 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
-let mccClient: MCC.ALGO;
-let walletClient: WALLET.ALGO;
-
-const ALGOWalletConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_WALLET || "",
-        token: ""
-     },
-};
-
-const ALGOMccConnectionTest = {
-    algod: {
-        url: process.env.ALGO_ALGOD_URL_TESTNET_MCC || "",
-        token: "",
-    },
-    indexer: {
-        url: process.env.ALGO_INDEXER_URL_TESTNET_MCC || "",
-        token: "",
-    },
-};
+const sourceId: SourceId = SourceId.ALGO;
 
 const txHash0 = "RGEUIORIOM6PTCP2EXZDKQRWPI6SJ4CBTH5LRYO7CLEQNYGIZS6A";
 const blockId0 = 24277222;
@@ -38,9 +19,7 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 describe("ALGO blockchain tests", async () => {
 
     before(async () => {
-        walletClient = new WALLET.ALGO(ALGOWalletConnectionTest);
-        mccClient = new MCC.ALGO(ALGOMccConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
+        blockChainHelper = createTestBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

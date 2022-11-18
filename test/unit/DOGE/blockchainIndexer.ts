@@ -1,19 +1,10 @@
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
-import { requireEnv } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestIndexerHelper } from "../../utils/test-bot-config";
 
 let blockChainIndexerClient: BlockChainIndexerHelper;
-const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.DOGE;
-let walletClient: WALLET.DOGE;
-
-const DOGEWalletConnectionTest = {
-    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
-    username: "",
-    password: ""
-};
 
 const txHash = "94a678dad4ccc05375f28c5e7bb6e8c02573a552898f50480d6af8548e731e75";
 const blockId = 4074766;
@@ -23,8 +14,7 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 describe("DOGE blockchain tests via indexer", async () => {
 
     before(async () => {
-        walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
+        blockChainIndexerClient = createTestIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

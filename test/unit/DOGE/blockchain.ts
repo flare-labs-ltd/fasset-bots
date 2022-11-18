@@ -1,24 +1,10 @@
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
-import { MCC } from "@flarenetwork/mcc";
+import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
-let mccClient: MCC.DOGE;
-let walletClient: WALLET.DOGE;
-
-const DOGEWalletConnectionTest = {
-    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
-    username: "",
-    password: ""
-};
-
-const DOGEMccConnectionTest = {
-    url: process.env.DOGE_URL_TESTNET_MCC || "",
-    username: process.env.DOGE_USERNAME_TESTNET_MCC || "",
-    password: process.env.DOGE_PASSWORD_TESTNET_MCC || "",
-    inTestnet: true
-};
+const sourceId: SourceId = SourceId.DOGE;
 
 const txHash = "8d0609d85fa234b77ccdfd5494227fc3f620e9a4c9d84e164981e70a8d7c8bc6";
 const blockId = 4042116;
@@ -28,9 +14,7 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 describe("DOGE blockchain tests", async () => {
 
     before(async () => {
-        walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
-        mccClient = new MCC.DOGE(DOGEMccConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
+        blockChainHelper = createTestBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

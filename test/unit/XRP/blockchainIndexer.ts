@@ -1,20 +1,10 @@
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
-import { requireEnv } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
+import { createTestIndexerHelper } from "../../utils/test-bot-config";
 
 let blockChainIndexerClient: BlockChainIndexerHelper;
-const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
 const sourceId: SourceId = SourceId.XRP;
-let walletClient: WALLET.XRP;
-
-const XRPWalletConnectionTest = {
-    url: process.env.XRP_URL_TESTNET_WALLET || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
 
 const txHash = "B13959D20BFF1AC0A7CE6A82CACD755DAC7718FFD77AD360BA35BCCBD975E94C";
 const blockId = 31788287;
@@ -24,8 +14,7 @@ const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 describe("XRP blockchain tests via indexer", async () => {
 
     before(async () => {
-        walletClient = new WALLET.XRP(XRPWalletConnectionTest);
-        blockChainIndexerClient = new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, walletClient);
+        blockChainIndexerClient = createTestIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {
