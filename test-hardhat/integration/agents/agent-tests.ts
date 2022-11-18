@@ -2,7 +2,6 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { IAssetContext } from "../../../src/fasset/IAssetContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -11,18 +10,17 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
     // let config: BotConfig;
-    let context: IAssetContext;
+    let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    let blockChainIndexerClient: BlockChainIndexerHelper; // TODO initialize
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -39,11 +37,11 @@ describe("Agent bot tests", async () => {
     });
 
     it("create agent", async () => {
-        await AgentBot.create(orm.em, context, ownerAddress, blockChainIndexerClient);
+        await AgentBot.create(orm.em, context, ownerAddress);
     });
     
     it("perform minting and redemption", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress, blockChainIndexerClient);
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
@@ -70,7 +68,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("perform minting and redemption", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress, blockChainIndexerClient);
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP

@@ -1,7 +1,6 @@
 import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { initTestWeb3 } from "../../test/utils/test-web3";
 
 const WNat = artifacts.require('WNat');
 

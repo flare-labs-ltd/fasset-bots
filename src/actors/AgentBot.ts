@@ -1,37 +1,37 @@
 import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { Agent } from "../fasset/Agent";
-import { IAssetContext } from "../fasset/IAssetContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { systemTimestamp, toBN } from "../utils/helpers";
+import { requireEnv, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import BN from "bn.js";
+import { Agent } from "../fasset/Agent";
+import { IAssetContext } from "../fasset/IAssetContext";
+import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentB } from "../fasset-bots/AgentB";
 
 const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {
     constructor(
-        public agent: Agent,
-        public blockChainIndexer: BlockChainIndexerHelper
+        public agent: AgentB
     ) { }
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
-    static async create(rootEm: EM, context: IAssetContext, ownerAddress: string, indexer: BlockChainIndexerHelper) {
+    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
             // TODO: add EOA proof when needed
-            const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+            const agent = await AgentB.create(context, ownerAddress, underlyingAddress);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.ownerAddress = agent.ownerAddress;
@@ -40,14 +40,14 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             em.persist(agentEntity);
-            return new AgentBot(agent, indexer);
+            return new AgentBot(agent);
         });
     }
 
-    static async fromEntity(context: IAssetContext, agentEntity: AgentEntity, indexer: BlockChainIndexerHelper) {
+    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity) {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
-        const agent = new Agent(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new AgentBot(agent, indexer);
+        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
+        return new AgentBot(agent);
     }
 
     async runStep(rootEm: EM) {
@@ -163,11 +163,11 @@ export class AgentBot {
             const blockHeight = await this.context.chain.getBlockHeight();
             // time expires on underlying
             if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
-                const txs = await this.blockChainIndexer.getTransactionsByReference(minting.paymentReference);
+                const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
                     // check minter paid -> request payment proof -> execute minting
                     const txHash = txs[0].hash;
-                    // TODO is it ok to check first address - UTXO?
+                    // TODO is it ok to check first address in UTXO chains?
                     const sourceAddress = txs[0].inputs[0][0];
                     await this.requestPaymentProofForMinting(minting, txHash, sourceAddress)
                 } else if (txs.length === 0) {

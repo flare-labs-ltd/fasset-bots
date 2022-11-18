@@ -12,6 +12,7 @@ export interface BotConfigChain {
     wallet: IBlockChainWallet;
     assetManager?: string;
     fAssetSymbol?: string;
+    blockChainIndexerClient: BlockChainIndexerHelper;
 }
 
 export interface BotConfig {
@@ -23,5 +24,4 @@ export interface BotConfig {
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
     nativeChainInfo: NativeChainInfo;
-    blockChainIndexerClient: BlockChainIndexerHelper;
 }

@@ -1,4 +1,5 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
+import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
@@ -16,7 +17,7 @@ const IFtsoRegistry = artifacts.require('IFtsoRegistry');
 const IFtsoManager = artifacts.require('IFtsoManager');
 const FAsset = artifacts.require('FAsset');
 
-export async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigChain): Promise<IAssetContext> {
+export async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigChain): Promise<IAssetBotContext> {
     if (botConfig.contractsJsonFile) {
         return await createAssetContextFromContracts(botConfig as BotConfig & { contractsJsonFile: string }, chainConfig);
     } else if (botConfig.addressUpdater) {
@@ -26,7 +27,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
     }
 }
 
-async function createAssetContextFromContracts(botConfig: BotConfig & { contractsJsonFile: string }, chainConfig: BotConfigChain): Promise<IAssetContext> {
+async function createAssetContextFromContracts(botConfig: BotConfig & { contractsJsonFile: string }, chainConfig: BotConfigChain): Promise<IAssetBotContext> {
     const contracts = loadContracts(botConfig.contractsJsonFile);
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
@@ -46,10 +47,11 @@ async function createAssetContextFromContracts(botConfig: BotConfig & { contract
         fAsset: await FAsset.at(await assetManager.fAsset()),
         natFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.natFtsoSymbol)),
         assetFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol)),
+        blockChainIndexerClient: chainConfig.blockChainIndexerClient
     };
 }
 
-async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { addressUpdater: string }, chainConfig: BotConfigChain): Promise<IAssetContext> {
+async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { addressUpdater: string }, chainConfig: BotConfigChain): Promise<IAssetBotContext> {
     const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
     const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
@@ -69,6 +71,7 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
         fAsset: await FAsset.at(await assetManager.fAsset()),
         natFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.natFtsoSymbol)),
         assetFtso: await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol)),
+        blockChainIndexerClient: chainConfig.blockChainIndexerClient
     };
 }
 

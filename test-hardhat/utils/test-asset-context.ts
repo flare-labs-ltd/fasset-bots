@@ -14,6 +14,8 @@ import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { newAssetManager } from "./new-asset-manager";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
+import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { createTestIndexerHelper } from "../../test/utils/test-bot-config";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
 const AttestationClient = artifacts.require('AttestationClientSC');
@@ -44,7 +46,7 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo): Promise<IAssetContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo): Promise<IAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -102,8 +104,10 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const settings = createAssetManagerSettings(contracts, parameters);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings));
+    // indexer
+    const blockChainIndexerClient = createTestIndexerHelper(chainInfo.chainId);
     // return context
-    return { nativeChainInfo, chainInfo, chain, chainEvents, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso };
+    return { nativeChainInfo, chainInfo, chain, chainEvents, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso, blockChainIndexerClient };
 }
 
 function bnToString(x: BN | number | string) {

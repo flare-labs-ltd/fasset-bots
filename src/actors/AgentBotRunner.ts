@@ -12,8 +12,7 @@ export class AgentBotRunner {
     constructor(
         public contexts: Map<number, IAssetContext>,
         public orm: ORM,
-        public loopDelay: number,
-        public blockChainIndexerClient: BlockChainIndexerHelper
+        public loopDelay: number
     ) { }
 
     private stopRequested = false;
@@ -40,7 +39,7 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain id ${agentEntity.chainId}`);
                     continue;
                 }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.blockChainIndexerClient);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity);
                 await agentBot.runStep(this.orm.em);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
@@ -53,7 +52,7 @@ export class AgentBotRunner {
         for (const [chainId, context] of this.contexts) {
             const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
             if (existing === 0) {
-                await AgentBot.create(this.orm.em, context, ownerAddress, this.blockChainIndexerClient);
+                await AgentBot.create(this.orm.em, context, ownerAddress);
             }
         }
     }
@@ -64,6 +63,6 @@ export class AgentBotRunner {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
         }
-        return new AgentBotRunner(contexts, orm, botConfig.loopDelay, botConfig.blockChainIndexerClient);
+        return new AgentBotRunner(contexts, orm, botConfig.loopDelay);
     }
 }
