@@ -10,7 +10,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { systemTimestamp, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -70,6 +70,10 @@ export class AgentBot {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
                     this.redemptionFinished(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
+                    this.topupCollateral('ccb');
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
+                    this.topupCollateral('liquidation');
                 }
             }
         }).catch(error => {
@@ -327,5 +331,22 @@ export class AgentBot {
             return proof;
         }
         return null;
+    }
+
+    // owner deposits flr/sgb to vault to get out of ccb or liquidation
+    async topupCollateral(type: 'liquidation' | 'ccb') {
+        const agentInfo = await this.agent.getAgentInfo();
+        const settings = await this.context.assetManager.getSettings();
+        const totalCollateralNATWei = agentInfo.totalCollateralNATWei;
+        const collateralRatioBIPS = agentInfo.collateralRatioBIPS;
+        const requiredCR = type === 'liquidation' ? toBN(settings.safetyMinCollateralRatioBIPS) : toBN(settings.minCollateralRatioBIPS);
+        const backingCollateral = totalCollateralNATWei.div(collateralRatioBIPS).muln(MAX_BIPS);
+        const requiredCollateral = backingCollateral.mul(requiredCR).divn(MAX_BIPS);
+        const requiredTopup = requiredCollateral.sub(totalCollateralNATWei);
+        if (requiredTopup.lte(BN_ZERO)) {
+            // Too late for top up
+            return;
+        }
+        await this.agent.agentVault.deposit({ value: requiredTopup });
     }
 }
