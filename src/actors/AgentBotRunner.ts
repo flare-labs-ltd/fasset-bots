@@ -3,14 +3,13 @@ import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
-import { IAssetContext } from "../fasset/IAssetContext";
-import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
+import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { sleep } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
     constructor(
-        public contexts: Map<number, IAssetContext>,
+        public contexts: Map<number, IAssetBotContext>,
         public orm: ORM,
         public loopDelay: number
     ) { }
@@ -58,7 +57,7 @@ export class AgentBotRunner {
     }
     
     static async create(orm: ORM, botConfig: BotConfig, ) {
-        const contexts: Map<number, IAssetContext> = new Map();
+        const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);

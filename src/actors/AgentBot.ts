@@ -1,20 +1,18 @@
+import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
+import BN from "bn.js";
 import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
+import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
+import { AgentB } from "../fasset-bots/AgentB";
+import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { requireEnv, systemTimestamp, toBN } from "../utils/helpers";
+import { systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import BN from "bn.js";
-import { Agent } from "../fasset/Agent";
-import { IAssetContext } from "../fasset/IAssetContext";
-import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentB } from "../fasset-bots/AgentB";
 
 const AgentVault = artifacts.require('AgentVault');
 

@@ -2,9 +2,9 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
+import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { NativeChainInfo } from "../../src/fasset/ChainInfo";
-import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
@@ -12,10 +12,9 @@ import { UnderlyingChainEvents } from "../../src/underlying-chain/UnderlyingChai
 import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { newAssetManager } from "./new-asset-manager";
-import { TestChainInfo } from "../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { createTestIndexerHelper } from "../../test/utils/test-bot-config";
+import { TestChainInfo } from "../../test/utils/TestChainInfo";
+import { newAssetManager } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
 const AttestationClient = artifacts.require('AttestationClientSC');

@@ -1,6 +1,5 @@
-import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance } from "../../typechain-truffle";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { IAssetContext } from "../fasset/IAssetContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
 import { artifacts } from "../utils/artifacts";
