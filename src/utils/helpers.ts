@@ -328,3 +328,8 @@ export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefin
     if (errorIncluded(error, expectedErrors)) return;
     throw error;    // unexpected error
 }
+
+// (unfair) coin flip - returns true with probability p
+export function coinFlip(p: number = 0.5) {
+    return Math.random() < p;
+}

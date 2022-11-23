@@ -73,7 +73,7 @@ export class AgentRedemption {
     id!: number;
 
     @Property()
-    state!: 'started' | 'paid' | 'requestedProof' | 'done';
+    state!: 'started' | 'paid' | 'requestedProof' | 'done' | 'NotRequestedProof';
 
     // status: 'active' | 'defaulted'
 

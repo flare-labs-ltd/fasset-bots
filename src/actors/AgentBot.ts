@@ -10,7 +10,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
+import { BN_ZERO, coinFlip, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -23,7 +23,7 @@ export class AgentBot {
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
-
+   
     static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
@@ -292,6 +292,12 @@ export class AgentBot {
     }
 
     async checkPaymentProofAvailable(redemption: AgentRedemption) {
+        // corner case: agent pays but does not confirm
+        if (coinFlip(0.1)) {
+            redemption.state = 'NotRequestedProof';
+            return;
+        }
+        // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
@@ -349,4 +355,5 @@ export class AgentBot {
         }
         await this.agent.agentVault.deposit({ value: requiredTopup });
     }
+    
 }
