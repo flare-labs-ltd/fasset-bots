@@ -5,6 +5,7 @@ import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -23,12 +24,15 @@ export class AgentBot {
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
-   
+
     static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
-            // TODO: add EOA proof when needed
+            const settings = await context.assetManager.getSettings();
+            if (settings.requireEOAAddressProof) {
+                this.proveEOAaddress(context, underlyingAddress, ownerAddress);
+            }
             const agent = await AgentB.create(context, ownerAddress, underlyingAddress);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
@@ -40,6 +44,13 @@ export class AgentBot {
             em.persist(agentEntity);
             return new AgentBot(agent);
         });
+    }
+
+    static async proveEOAaddress(context: IAssetBotContext, underlyingAddress: string, ownerAddress: string) {
+        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
+        // TODO wait for tx finalization?
+        const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
+        await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
 
     static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity) {
@@ -355,5 +366,4 @@ export class AgentBot {
         }
         await this.agent.agentVault.deposit({ value: requiredTopup });
     }
-    
 }
