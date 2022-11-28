@@ -18,6 +18,8 @@ export const HOURS = 60 * MINUTES;
 export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
 
+export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
+
 /**
  * Asynchronously wait `ms` milliseconds.
  */
