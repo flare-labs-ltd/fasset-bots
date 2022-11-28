@@ -150,6 +150,8 @@ export class AgentBot {
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
         const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = 'done';
+        // check cr after liquidation to prevent ccb or liquidation (CcbLiquidationPreventionTrigger.ts)
+        this.topupCollateral('trigger');
     }
 
     async nextMintingStep(rootEm: EM, id: number) {

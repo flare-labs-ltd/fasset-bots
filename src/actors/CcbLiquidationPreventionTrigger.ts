@@ -1,19 +1,16 @@
 import { FilterQuery } from "@mikro-orm/core";
-import { MintingExecuted } from "../../typechain-truffle/AssetManager";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerEvents } from "../fasset/IAssetContext";
 import { ExtractedEventArgs } from "../utils/events/common";
-import { EvmEventArgs, IEvmEvents } from "../utils/events/IEvmEvents";
+import { IEvmEvents } from "../utils/events/IEvmEvents";
 import { EventExecutionQueue, TriggerableEvent } from "../utils/events/ScopedEvents";
-import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { CCB_LIQUIDATION_PREVENTION_FACTOR, toBN } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 
 export class CcbLiquidationPreventionTrigger {
     constructor(
-        public runner: ScopedRunner,
         public orm: ORM,
         public context: IAssetBotContext,
         public contexts: Map<number, IAssetBotContext>,
@@ -29,28 +26,11 @@ export class CcbLiquidationPreventionTrigger {
     registerForEvents() {
         // check for liquidations when prices change
         this.pricesUpdated.subscribe(() => this.checkAllAgentsForColletaralRatio());
-        // also check for liquidation after every minting
-        this.assetManagerEvent('MintingExecuted').subscribe(async args => await this.handleMintingExecuted(args));
+        // checking for liquidation after every minting => is done in AgentBot.ts
     }
 
     assetManagerEvent<N extends AssetManagerEvents['name']>(event: N, filter?: Partial<ExtractedEventArgs<AssetManagerEvents, N>>) {
         return this.truffleEvents.event(this.context.assetManager, event, filter);
-    }
-
-    async handleMintingExecuted(args: EvmEventArgs<MintingExecuted>) {
-        const agentEntity = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
-        if (!agentEntity) return;
-        const context = this.contexts.get(agentEntity.chainId);
-        if (context == null) {
-            console.warn(`Invalid chain id ${agentEntity.chainId}`);
-            return;
-        }
-        const agentBot = await AgentBot.fromEntity(context, agentEntity);
-        await this.checkAgentForCollateralRatio(agentBot);
-        this.runner.startThread(async (scope) => {
-            await this.checkAgentForCollateralRatio(agentBot)
-                .catch(e => scope.exitOnExpectedError(e, []));
-        })
     }
 
     async checkAllAgentsForColletaralRatio() {
