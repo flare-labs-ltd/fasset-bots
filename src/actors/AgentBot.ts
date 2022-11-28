@@ -11,7 +11,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, coinFlip, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, coinFlip, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -351,12 +351,21 @@ export class AgentBot {
     }
 
     // owner deposits flr/sgb to vault to get out of ccb or liquidation
-    async topupCollateral(type: 'liquidation' | 'ccb') {
+    async topupCollateral(type: 'liquidation' | 'ccb' | 'trigger') {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
         const totalCollateralNATWei = agentInfo.totalCollateralNATWei;
         const collateralRatioBIPS = agentInfo.collateralRatioBIPS;
-        const requiredCR = type === 'liquidation' ? toBN(settings.safetyMinCollateralRatioBIPS) : toBN(settings.minCollateralRatioBIPS);
+        let requiredCR = BN_ZERO;
+        if (type === 'liquidation') {
+            requiredCR = toBN(settings.safetyMinCollateralRatioBIPS);
+        } else if (type === 'ccb') {
+            requiredCR = toBN(settings.minCollateralRatioBIPS);
+        } else if (type === 'trigger') {
+            requiredCR = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        } else {
+            throw new Error(`Invalid type ${type}`);
+        }
         const backingCollateral = totalCollateralNATWei.div(collateralRatioBIPS).muln(MAX_BIPS);
         const requiredCollateral = backingCollateral.mul(requiredCR).divn(MAX_BIPS);
         const requiredTopup = requiredCollateral.sub(totalCollateralNATWei);

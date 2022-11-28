@@ -77,7 +77,7 @@ export class CcbLiquidationPreventionTrigger {
         const minCollateralRatioBIPS = toBN(settings.minCollateralRatioBIPS);
         
         if (cr <= minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR)) {
-            await agentBot.topupCollateral('ccb');
+            await agentBot.topupCollateral('trigger');
         }
     }
 }
