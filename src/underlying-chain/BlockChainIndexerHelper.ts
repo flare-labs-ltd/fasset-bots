@@ -139,6 +139,28 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return txs;
     }
 
+    async getTransactionsWithinTimestampRange(from: number, to: number) {
+        const chain = getSourceName(this.sourceId);
+        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/from/${from}/to/${to}`);
+        const status = resp.data.status;
+        const data = resp.data.data;
+        let txs: ITransaction[] = [];
+        if (status === "OK") {
+            if (data) {
+                for (const tx of data) {
+                    txs.push({
+                        hash: tx.transactionId,
+                        inputs: await this.handleInputsOutputs(tx, true),
+                        outputs: await this.handleInputsOutputs(tx, false),
+                        reference: tx.paymentReference,
+                        status: this.successStatus(tx)
+                    })
+                }
+            }
+        }
+        return txs;
+    }
+
     private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response.data;
