@@ -8,6 +8,7 @@ import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClien
 import { BlockChainHelper } from "../../src/underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../../src/underlying-chain/BlockChainIndexerHelper";
 import { BlockChainWalletHelper } from "../../src/underlying-chain/BlockChainWalletHelper";
+import { StateConnectorClientHelper } from "../../src/underlying-chain/StateConnectorClientHelper";
 import { artifacts } from "../../src/utils/artifacts";
 import { requireEnv } from "../../src/utils/helpers";
 import { SourceId } from "../../src/verification/sources/sources";
@@ -195,4 +196,12 @@ export function createTestBlockChainWalletHelper(sourceId: SourceId, em: EntityM
         default:
             throw new Error(`SourceId not supported ${sourceId}`)
     }
+}
+
+export async function createTestStateConnectorClient() {
+    const attestationUrl: string = requireEnv('COSTON2_ATTESTER_BASE_URL');
+    const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
+    const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
+    const account = requireEnv('COSTON2_ACCOUNT');
+    return await StateConnectorClientHelper.create(artifacts, attestationUrl, attestationClientAddress, stateConnectorAddress, account); 
 }
