@@ -48,7 +48,7 @@ export class AgentBot {
 
     static async proveEOAaddress(context: IAssetBotContext, underlyingAddress: string, ownerAddress: string) {
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
-        // TODO wait for tx finalization?
+        await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }

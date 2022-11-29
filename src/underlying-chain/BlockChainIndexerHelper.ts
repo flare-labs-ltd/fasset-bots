@@ -1,7 +1,7 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
-import { toBN } from "../utils/helpers";
+import { sleep, toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
 import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
 
@@ -313,4 +313,23 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return TX_FAILED;
     }
 
+    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number) {
+        const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);
+        if (transaction == null) return null;
+        return transaction;
+    }
+
+    private async waitForUnderlyingTransaction(txHash: string, maxBlocksToWaitForTx?: number) {
+        const transaction = await this.getTransaction(txHash);
+        if (transaction != null) return transaction;
+        let currentBlockHeight = await this.getBlockHeight();
+        const waitBlocks = maxBlocksToWaitForTx ?? Math.max(this.finalizationBlocks, 1);
+        while (currentBlockHeight < currentBlockHeight + waitBlocks){
+            await sleep(1000);
+            const transaction = await this.getTransaction(txHash);
+            if (transaction != null) return transaction;
+            currentBlockHeight = await this.getBlockHeight();
+        }
+        return null;
+    }
 }
