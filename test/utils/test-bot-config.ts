@@ -169,13 +169,13 @@ export function createTestBlockChainHelper(sourceId: SourceId) {
         case SourceId.ALGO:
             return new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
         case SourceId.BTC:
-            new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
+            return new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
         case SourceId.DOGE:
-            new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
+            return new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
         case SourceId.LTC:
-            new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
+            return new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
         case SourceId.XRP:
-            new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
+            return new BlockChainHelper(createTestWalletClient(sourceId), createTestMccClient(sourceId));
         default:
             throw new Error(`SourceId not supported ${sourceId}`)
     }
@@ -186,13 +186,13 @@ export function createTestBlockChainWalletHelper(sourceId: SourceId, em: EntityM
         case SourceId.ALGO:
             return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         case SourceId.BTC:
-            new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         case SourceId.DOGE:
-            new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         case SourceId.LTC:
-            new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         case SourceId.XRP:
-            new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         default:
             throw new Error(`SourceId not supported ${sourceId}`)
     }
