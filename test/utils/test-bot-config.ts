@@ -6,6 +6,7 @@ import { loadContracts } from "../../src/config/contracts";
 import { EM } from "../../src/config/orm";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../../src/underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../../src/underlying-chain/BlockChainIndexerHelper";
 import { BlockChainWalletHelper } from "../../src/underlying-chain/BlockChainWalletHelper";
@@ -234,6 +235,23 @@ export function createTestBlockChainWalletHelper(sourceId: SourceId, em: EntityM
             return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
         case SourceId.XRP:
             return new BlockChainWalletHelper(createTestWalletClient(sourceId), em, createTestBlockChainHelper(sourceId));
+        default:
+            throw new Error(`SourceId not supported ${sourceId}`)
+    }
+}
+
+export async function createTestAttestationHelper(sourceId: SourceId) {
+    switch (sourceId) {
+        case SourceId.ALGO:
+            return new AttestationHelper(await createTestStateConnectorClient(), createTestBlockChainHelper(sourceId), sourceId);
+        case SourceId.BTC:
+            return new AttestationHelper(await createTestStateConnectorClient(), createTestBlockChainHelper(sourceId), sourceId);
+        case SourceId.DOGE:
+            return new AttestationHelper(await createTestStateConnectorClient(), createTestBlockChainHelper(sourceId), sourceId);
+        case SourceId.LTC:
+            return new AttestationHelper(await createTestStateConnectorClient(), createTestBlockChainHelper(sourceId), sourceId);
+        case SourceId.XRP:
+            return new AttestationHelper(await createTestStateConnectorClient(), createTestBlockChainHelper(sourceId), sourceId);
         default:
             throw new Error(`SourceId not supported ${sourceId}`)
     }

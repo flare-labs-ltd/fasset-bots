@@ -1,44 +1,20 @@
-import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
-import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
-import { artifacts } from "../../../src/utils/artifacts";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestStateConnectorClient, createTestAttestationHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 
-let blockChainHelper: BlockChainHelper;
-let walletClient: WALLET.LTC;
-let mccClient: MCC.LTC;
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;
 let orm: ORM;
 
-const LTCWalletConnectionTest = {
-    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
-
-const LTCMccConnectionTest = {
-    url: process.env.LTC_URL_TESTNET_MCC || "",
-    username: process.env.LTC_URL_USER_NAME_TESTNET_MCC || "",
-    password: process.env.LTC_URL_PASSWORD_TESTNET_MCC || "",
-    inTestnet: true
-};
-
 let stateConnectorClient: StateConnectorClientHelper;
-const attestationUrls: string[] = requireEnv('COSTON2_ATTESTER_BASE_URLS').split(", ");
 const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
-const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
-const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
-const account = requireEnv('COSTON2_ACCOUNT');
 const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
@@ -50,13 +26,10 @@ describe("LTC attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await StateConnectorClientHelper.create(artifacts, attestationUrls, attestationClientAddress, stateConnectorAddress, account);
-        walletClient = new WALLET.LTC(LTCWalletConnectionTest);
-        mccClient = new MCC.LTC(LTCMccConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        attestationHelper = new AttestationHelper(stateConnectorClient, blockChainHelper, sourceId);
+        stateConnectorClient = await createTestStateConnectorClient();
+        attestationHelper = await createTestAttestationHelper(sourceId);
         orm = await createTestOrm();
-        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
+        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
     })
     //PAYMENT
     it("Should create payment, send request for payment proof to attestations and retrieve proof from state connector", async () => {
