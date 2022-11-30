@@ -240,9 +240,9 @@ export function createTestBlockChainWalletHelper(sourceId: SourceId, em: EntityM
 }
 
 export async function createTestStateConnectorClient() {
-    const attestationUrl: string = requireEnv('COSTON2_ATTESTER_BASE_URL');
+    const attestationProviderUrls: string[] = requireEnv('COSTON2_ATTESTER_BASE_URLS').split(",");;
     const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
     const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
     const account = requireEnv('COSTON2_ACCOUNT');
-    return await StateConnectorClientHelper.create(artifacts, attestationUrl, attestationClientAddress, stateConnectorAddress, account); 
+    return await StateConnectorClientHelper.create(artifacts, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, account); 
 }

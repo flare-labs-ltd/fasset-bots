@@ -64,7 +64,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async roundFinalized(round: number): Promise<boolean> {
-        const lastRound = Number(await this.stateConnector.lastFinalizedRoundId);
+        const lastRound = Number(await this.stateConnector.lastFinalizedRoundId());
         if (round <= lastRound) {
             return true;
         }
@@ -96,7 +96,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
         try {
-            for (const client of this.clients) {
+            for (const [i, client] of this.clients.entries()) {
                 const resp = await client.get(`/api/proof/votes-for-round/${round}`);
                 const status = resp.data.status;
                 const data = resp.data.data;
@@ -116,7 +116,11 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 }
                 if (matchedResponse == null) {
                     // round is finalized, but this request hasn't been proved (it is false)
-                    return { finalized: true, result: null };
+                    if (this.lastClient(i)) {
+                        return { finalized: true, result: null };
+                    } else {
+                        continue;
+                    }
                 }
 
                 // build Merkle tree, obtain proof, and check root
@@ -135,7 +139,11 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                     // this can only happen if the attestation provider from where we picked data is
                     // inconsistent with the finalized Merkle root in the blockchain
                     // skip to next attestation provider
-                    continue;
+                    if (this.lastClient(i)) {
+                        throw new StateConnectorError(`SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
+                    } else {
+                        continue;
+                    }
                 }
 
                 // convert the proof
@@ -250,6 +258,10 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             lowerBoundaryBlockTimestamp: toBN(matchedResponse.lowerBoundaryBlockTimestamp),
             firstOverflowBlockNumber: toBN(matchedResponse.firstOverflowBlockNumber),
             firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp),
-        };
+        };   
+    }
+
+    private lastClient(i: number) {
+        return i === this.clients.length -1;
     }
 }

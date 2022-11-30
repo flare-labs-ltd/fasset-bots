@@ -36,7 +36,7 @@ describe("XRP attestation/state connector tests", async () => {
 
     it("Should obtain proof", async () => {
         const proof = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2);
-        console.log(proof);
+        expect(proof.finalized).to.be.true;
     });
 
 });
