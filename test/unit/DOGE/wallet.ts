@@ -1,38 +1,22 @@
-import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestBlockChainHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
-
-let walletClient: WALLET.DOGE;
-let mccClient: MCC.DOGE;
+const sourceId: SourceId = SourceId.DOGE;
 
 const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
 const targetPrivateKey = "ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9";
-
-const DOGEWalletConnectionTest = {
-    url: process.env.BTC_LTC_DOGE_URL_WALLET || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
-
-const DOGEMccConnectionTest = {
-    url: process.env.DOGE_URL_TESTNET_MCC || "",
-    username: process.env.DOGE_USERNAME_TESTNET_MCC || "",
-    password: process.env.DOGE_PASSWORD_TESTNET_MCC || "",
-    inTestnet: true
-};
 
 const amountToSendDOGE = 1;
 
@@ -41,10 +25,8 @@ describe("DOGE wallet tests", async () => {
     before(async () => {
         orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
-        walletClient = new WALLET.DOGE(DOGEWalletConnectionTest);
-        mccClient = new MCC.DOGE(DOGEMccConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
+        blockChainHelper = createTestBlockChainHelper(sourceId);
+        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
     })
 
     it("Should insert address and private key into db", async () => {

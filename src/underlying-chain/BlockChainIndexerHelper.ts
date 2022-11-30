@@ -1,9 +1,9 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
-import { toBN } from "../utils/helpers";
+import { sleep, toBN } from "../utils/helpers";
 import { WalletClient } from "simple-wallet";
-import { BTC_MDU, hexToBase32, MccClient, UtxoTransaction } from "@flarenetwork/mcc";
+import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
 
@@ -17,7 +17,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
         public walletClient: WalletClient,
-        public mccClient: MccClient //backup for UTXO chains 
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: indexerWebServerUrl,
@@ -118,6 +117,50 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return 0;
     }
 
+    async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
+        const chain = getSourceName(this.sourceId);
+        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/payment-reference/${reference}`);
+        const status = resp.data.status;
+        const data = resp.data.data;
+        let txs: ITransaction[] = [];
+        if (status === "OK") {
+            if (data) {
+                for (const tx of data) {
+                    txs.push({
+                        hash: tx.transactionId,
+                        inputs: await this.handleInputsOutputs(tx, true),
+                        outputs: await this.handleInputsOutputs(tx, false),
+                        reference: tx.paymentReference,
+                        status: this.successStatus(tx)
+                    })
+                }
+            }
+        }
+        return txs;
+    }
+
+    async getTransactionsWithinTimestampRange(from: number, to: number) {
+        const chain = getSourceName(this.sourceId);
+        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/from/${from}/to/${to}`);
+        const status = resp.data.status;
+        const data = resp.data.data;
+        let txs: ITransaction[] = [];
+        if (status === "OK") {
+            if (data) {
+                for (const tx of data) {
+                    txs.push({
+                        hash: tx.transactionId,
+                        inputs: await this.handleInputsOutputs(tx, true),
+                        outputs: await this.handleInputsOutputs(tx, false),
+                        reference: tx.paymentReference,
+                        status: this.successStatus(tx)
+                    })
+                }
+            }
+        }
+        return txs;
+    }
+
     private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response.data;
@@ -174,14 +217,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
                         const data = resp.data.data;
                         if (status === "OK" && data) {
                             const vout = data.response.data.vout;
-                            const elt = vout[item.vout];
-                            inputs.push([
-                                elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
-                                toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
-                            ])
-                        } else { // Indexer does not have stored this tx anymore. Check via mcc.
-                            const tx = await this.mccClient.getTransaction(item.txid) as UtxoTransaction;
-                            const vout = tx.data.vout;
                             const elt = vout[item.vout];
                             inputs.push([
                                 elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
@@ -278,4 +313,23 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return TX_FAILED;
     }
 
+    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number) {
+        const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);
+        if (transaction == null) return null;
+        return transaction;
+    }
+
+    private async waitForUnderlyingTransaction(txHash: string, maxBlocksToWaitForTx?: number) {
+        const transaction = await this.getTransaction(txHash);
+        if (transaction != null) return transaction;
+        let currentBlockHeight = await this.getBlockHeight();
+        const waitBlocks = maxBlocksToWaitForTx ?? Math.max(this.finalizationBlocks, 1);
+        while (currentBlockHeight < currentBlockHeight + waitBlocks){
+            await sleep(1000);
+            const transaction = await this.getTransaction(txHash);
+            if (transaction != null) return transaction;
+            currentBlockHeight = await this.getBlockHeight();
+        }
+        return null;
+    }
 }

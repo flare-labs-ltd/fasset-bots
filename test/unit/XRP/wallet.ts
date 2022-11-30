@@ -1,11 +1,11 @@
-import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestBlockChainHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 
@@ -13,27 +13,12 @@ let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
 let blockChainHelper: BlockChainHelper;
-
-let walletClient: WALLET.XRP;
-let mccClient: MCC.XRP;
+const sourceId: SourceId = SourceId.XRP;
 
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 const fundedPrivateKey = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0E3A1622";
 const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
-
-const XRPMccConnectionTest = {
-    url: process.env.XRP_URL_TESTNET_MCC || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
-const XRPWalletConnectionTest = {
-    url: process.env.XRP_URL_TESTNET_WALLET || "",
-    username: "",
-    password: "",
-    inTestnet: true
-};
 
 const amountToSendXRP = 10;
 
@@ -42,10 +27,8 @@ describe("XRP wallet tests", async () => {
     before(async () => {
         orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
-        walletClient = new WALLET.XRP(XRPWalletConnectionTest);
-        mccClient = new MCC.XRP(XRPMccConnectionTest);
-        blockChainHelper = new BlockChainHelper(walletClient, mccClient);
-        walletHelper = new BlockChainWalletHelper(walletClient, orm.em, blockChainHelper);
+        blockChainHelper = createTestBlockChainHelper(sourceId);
+        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
     })
 
     it("Should insert address and private key into db", async () => {

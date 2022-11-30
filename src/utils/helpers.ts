@@ -18,6 +18,8 @@ export const HOURS = 60 * MINUTES;
 export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
 
+export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
+
 /**
  * Asynchronously wait `ms` milliseconds.
  */
@@ -327,4 +329,9 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
     if (errorIncluded(error, expectedErrors)) return;
     throw error;    // unexpected error
+}
+
+// (unfair) coin flip - returns true with probability p
+export function coinFlip(p: number = 0.5) {
+    return Math.random() < p;
 }

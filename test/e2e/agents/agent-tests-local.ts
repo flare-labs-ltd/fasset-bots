@@ -4,7 +4,7 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { BotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
-import { IAssetContext } from "../../../src/fasset/IAssetContext";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -16,7 +16,7 @@ import { initTestWeb3 } from "../../utils/test-web3";
 describe("Agent bot tests - local network", async () => {
     let accounts: string[];
     let config: BotConfig;
-    let context: IAssetContext;
+    let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;

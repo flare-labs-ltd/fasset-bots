@@ -1,14 +1,11 @@
 import { expect } from "chai";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
-import { artifacts } from "../../../src/utils/artifacts";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
+import { createTestStateConnectorClient } from "../../utils/test-bot-config";
 
 let stateConnectorClient: StateConnectorClientHelper;
-const attestationUrl: string = requireEnv('COSTON2_ATTESTER_BASE_URL');
 const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
-const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
-const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
 const account = requireEnv('COSTON2_ACCOUNT');
 const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 
@@ -18,7 +15,7 @@ const requestDataBytesC2 = "0x000100000003b4c8cd83c70ef7c9e7d38bc8de67be914a1840
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await StateConnectorClientHelper.create(artifacts, attestationUrl, attestationClientAddress, stateConnectorAddress, account);
+        stateConnectorClient = await createTestStateConnectorClient();
     })
 
     it("Should return round is finalized", async () => {

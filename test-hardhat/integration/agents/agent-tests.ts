@@ -2,7 +2,6 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { IAssetContext } from "../../../src/fasset/IAssetContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -11,11 +10,12 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
     // let config: BotConfig;
-    let context: IAssetContext;
+    let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;

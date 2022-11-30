@@ -1,17 +1,17 @@
-import { UseRequestContext } from "@mikro-orm/core";
+import { FilterQuery, UseRequestContext } from "@mikro-orm/core";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
-import { IAssetContext } from "../fasset/IAssetContext";
+import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { sleep } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
     constructor(
-        public contexts: Map<number, IAssetContext>,
+        public contexts: Map<number, IAssetBotContext>,
         public orm: ORM,
-        public loopDelay: number,
+        public loopDelay: number
     ) { }
 
     private stopRequested = false;
@@ -30,7 +30,7 @@ export class AgentBotRunner {
 
     @UseRequestContext()
     async runStep() {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
                 const context = this.contexts.get(agentEntity.chainId);
@@ -49,15 +49,15 @@ export class AgentBotRunner {
     @UseRequestContext()
     async createMissingAgents(ownerAddress: string) {
         for (const [chainId, context] of this.contexts) {
-            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true });
+            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
             if (existing === 0) {
                 await AgentBot.create(this.orm.em, context, ownerAddress);
             }
         }
     }
     
-    static async create(orm: ORM, botConfig: BotConfig) {
-        const contexts: Map<number, IAssetContext> = new Map();
+    static async create(orm: ORM, botConfig: BotConfig, ) {
+        const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
