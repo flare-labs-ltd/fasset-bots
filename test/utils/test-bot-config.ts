@@ -3,6 +3,7 @@ import { Connection, EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { WALLET } from "simple-wallet";
 import { BotConfig, BotConfigChain } from "../../src/config/BotConfig";
 import { loadContracts } from "../../src/config/contracts";
+import { EM } from "../../src/config/orm";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { BlockChainHelper } from "../../src/underlying-chain/BlockChainHelper";
@@ -57,6 +58,46 @@ function createMockChainConfig(fAssetSymbol: string, info: TestChainInfo, stateC
         fAssetSymbol: fAssetSymbol,
         blockChainIndexerClient: createTestIndexerHelper(info.chainId)
     };
+}
+
+export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'], em: EM): Promise<BotConfig> {
+    const stateConnectorClient = await createTestStateConnectorClient();
+    const chainConfigs: BotConfigChain[] = [];
+    if (chains.includes('btc')) {
+        chainConfigs.push(createChainConfig('FBTC', testChainInfo.btc, em));
+    }
+    if (chains.includes('xrp')) {
+        chainConfigs.push(createChainConfig('FXRP', testChainInfo.xrp, em));
+    }
+    return {
+        rpcUrl: LOCAL_HARDHAT_RPC,
+        loopDelay: 0,
+        contractsJsonFile: CONTRACTS_JSON,
+        stateConnector: stateConnectorClient,
+        chains: chainConfigs,
+        nativeChainInfo: {
+            finalizationBlocks: 0,
+            readLogsChunkSize: 10,
+        }
+    }
+}
+
+function createChainConfig(fAssetSymbol: string, info: TestChainInfo, em: EM): BotConfigChain {
+    const chainEv = new MockChain(); // OK one mock here, but it is not really used
+    const chain = createTestBlockChainHelper(info.chainId);
+    chain.finalizationBlocks = info.finalizationBlocks;
+    chain.secondsPerBlock = info.blockTime;
+    const wallet = createTestBlockChainWalletHelper(info.chainId, em);
+    const indexer = createTestIndexerHelper(info.chainId);
+    return {
+        chain: chain,
+        chainEvents: chainEv,
+        chainInfo: info,
+        wallet: wallet,
+        fAssetSymbol: fAssetSymbol,
+        blockChainIndexerClient: indexer
+    };
+
 }
 
 export function createTestWalletClient(sourceId: SourceId) {
