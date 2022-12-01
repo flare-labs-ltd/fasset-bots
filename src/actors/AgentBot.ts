@@ -31,7 +31,7 @@ export class AgentBot {
             const underlyingAddress = await context.wallet.createAccount();
             const settings = await context.assetManager.getSettings();
             if (settings.requireEOAAddressProof) {
-                this.proveEOAaddress(context, underlyingAddress, ownerAddress);
+                await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
             }
             const agent = await AgentB.create(context, ownerAddress, underlyingAddress);
             const agentEntity = new AgentEntity();
@@ -80,11 +80,11 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
-                    this.redemptionFinished(em, event.args);
+                    await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
-                    this.topupCollateral('ccb');
+                    await this.topupCollateral('ccb');
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    this.topupCollateral('liquidation');
+                    await this.topupCollateral('liquidation');
                 }
             }
         }).catch(error => {
@@ -151,7 +151,7 @@ export class AgentBot {
         const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = 'done';
         // check cr after liquidation to prevent ccb or liquidation (CcbLiquidationPreventionTrigger.ts)
-        this.topupCollateral('trigger');
+        await this.topupCollateral('trigger');
     }
 
     async nextMintingStep(rootEm: EM, id: number) {
