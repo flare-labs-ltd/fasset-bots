@@ -61,19 +61,19 @@ function createMockChainConfig(fAssetSymbol: string, info: TestChainInfo, stateC
     };
 }
 
-export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'], em: EM): Promise<BotConfig> {
+export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'], em: EM, rpcUrl: string, contractJson: string): Promise<BotConfig> {
     const stateConnectorClient = await createTestStateConnectorClient();
     const chainConfigs: BotConfigChain[] = [];
     if (chains.includes('btc')) {
-        chainConfigs.push(createChainConfig('FBTC', testChainInfo.btc, em));
+        chainConfigs.push(createChainConfig('FtestBTC', testChainInfo.btc, em));
     }
     if (chains.includes('xrp')) {
-        chainConfigs.push(createChainConfig('FXRP', testChainInfo.xrp, em));
+        chainConfigs.push(createChainConfig('FtestXRP', testChainInfo.xrp, em));
     }
     return {
-        rpcUrl: LOCAL_HARDHAT_RPC,
+        rpcUrl: rpcUrl,
         loopDelay: 0,
-        contractsJsonFile: CONTRACTS_JSON,
+        contractsJsonFile: contractJson,
         stateConnector: stateConnectorClient,
         chains: chainConfigs,
         nativeChainInfo: {
@@ -84,7 +84,7 @@ export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'],
 }
 
 function createChainConfig(fAssetSymbol: string, info: TestChainInfo, em: EM): BotConfigChain {
-    const chainEv = new MockChain(); // OK one mock here, but it is not really used
+    const chainEv = new MockChain(); // OK one mock here, but it is not really used?
     const chain = createTestBlockChainHelper(info.chainId);
     chain.finalizationBlocks = info.finalizationBlocks;
     chain.secondsPerBlock = info.blockTime;
