@@ -1,9 +1,11 @@
+import { FilterQuery } from "@mikro-orm/core/typings";
 import { time } from "@openzeppelin/test-helpers";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { BotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
+import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -22,6 +24,7 @@ describe("Agent bot tests - local network", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
+    let agentBot: AgentBot;
 
     before(async () => {
         accounts = await initTestWeb3();
@@ -34,8 +37,20 @@ describe("Agent bot tests - local network", async () => {
         chain = checkedCast(context.chain, MockChain);
     });
 
-    it("perform minting and redemption", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+    it("Should create agent", async () => {
+        agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        expect(agentBot.agent.underlyingAddress).is.not.null;
+        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    })
+
+    it("Should read agent from entity", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(context, agentEnt)
+        expect(agentBot.agent.underlyingAddress).is.not.null;
+        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    })
+
+    it("Should perform minting and redemption", async () => {
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, `MINTER_ADDRESS_${systemTimestamp()}`, toBNExp(10_000, 6)); // lot is 1000 XRP
