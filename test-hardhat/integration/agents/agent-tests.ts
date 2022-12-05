@@ -35,16 +35,13 @@ describe("Agent bot tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
-
-    it("create agent", async () => {
-        await AgentBot.create(orm.em, context, ownerAddress);
-    });
     
-    it("perform minting and redemption", async () => {
+    it("Should perform minting", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
+        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservetion
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -67,12 +64,13 @@ describe("Agent bot tests", async () => {
         assert.equal(mintingAfter.state, 'done');
     });
 
-    it("perform minting and redemption", async () => {
+    it("Should perform minting and redemption", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
         const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
+        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -96,7 +94,7 @@ describe("Agent bot tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
             console.log(`Agent step ${i}, state=${redemption.state}`)
-            if (redemption.state === 'done') break;
+            if (redemption.state === 'done' || redemption.state === 'notRequestedProof') break;
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
