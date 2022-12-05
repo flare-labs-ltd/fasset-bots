@@ -31,4 +31,8 @@ export interface IBlockChainWallet {
     // Creates a new account and returns the address.
     // Private key is kept in the wallet.
     createAccount(): Promise<string>;
+
+    // Add existing account.
+    // Private key is kept in the wallet.
+    addExistingAccount(address: string, privateKey: string): Promise<string>;
 }

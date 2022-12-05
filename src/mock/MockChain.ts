@@ -277,6 +277,10 @@ export class MockChainWallet implements IBlockChainWallet {
         public chain: MockChain,
     ) {}
     
+    addExistingAccount(address: string, privateKey: string): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
+    
     async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);

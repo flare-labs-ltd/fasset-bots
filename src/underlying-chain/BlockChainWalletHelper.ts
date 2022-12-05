@@ -39,4 +39,9 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         return account.address;
     }
 
+    async addExistingAccount(address: string, privateKey: string): Promise<string> {
+        const walletKeys = new DBWalletKeys(this.em);
+        await walletKeys.addKey(address, privateKey);
+        return address;
+    }
 }
