@@ -23,11 +23,9 @@ const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to re
 export class Challenger {
     constructor(
         public runner: ScopedRunner,
-        public orm: ORM,
         public address: string,
         public context: IAssetBotContext,
     ) {
-        this.registerForEvents();
     }
 
     activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
@@ -36,22 +34,40 @@ export class Challenger {
     challengedAgents = new Set<string>();
     eventDecoder = new Web3EventDecoder({});
 
-    async registerForEvents() {
-        await this.orm.em.transactional(async em => {
+    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
+        const lastBlock = await web3.eth.getBlockNumber();
+        return await rootEm.transactional(async em => {
+            const challengerEntity = new ChallengerEntity();
+            challengerEntity.chainId = context.chainInfo.chainId;
+            challengerEntity.address = address;
+            challengerEntity.lastEventBlockHandled = lastBlock;
+            challengerEntity.lastEventTimestampHandled = systemTimestamp();
+            em.persist(challengerEntity);
+            const challenger = new Challenger(runner, address, context);
+            return challenger;
+        });
+    }
+
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ChallengerEntity) {
+        return new Challenger(runner, challengerEntity.address, context);
+    }
+
+    async runStep(em: EM) {
+        await this.registerEvents(em);
+    }
+
+    async registerEvents(rootEm: EM) {
+        await rootEm.transactional(async em => {
             // Underlying chain events
             const challengerEnt = await em.findOneOrFail(ChallengerEntity, { address: this.address } as FilterQuery<ChallengerEntity>);
             let from = challengerEnt.lastEventTimestampHandled;
             const to = systemTimestamp();
-            // Set the same the first time challenger is subscribing?
-            if (!from) {
-                from = to;
-            }
             const transactions = await this.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
             for (const transaction of transactions) {
                 await this.handleUnderlyingTransaction(em, transaction);
             }
             challengerEnt.lastEventTimestampHandled = to;
-            
+
             // Native chain events
             const events = await this.readUnhandledEvents(challengerEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
@@ -116,7 +132,7 @@ export class Challenger {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         if (agentEnt) await this.checkForNegativeFreeBalance(agentEnt);
     }
-    
+
     handleRedemptionRequested(args: EvmEventArgs<RedemptionRequested>): void {
         this.activeRedemptions.set(args.paymentReference, { agentAddress: args.agentVault, amount: toBN(args.valueUBA) });
     }
@@ -127,16 +143,16 @@ export class Challenger {
         this.transactionForPaymentReference.delete(reference);
         this.activeRedemptions.delete(reference);
     }
-    
+
     // illegal transactions
 
     async checkForIllegalTransaction(transaction: ITransaction, agentEnt: AgentEntity) {
-        const transactionValid = PaymentReference.isValid(transaction.reference) 
+        const transactionValid = PaymentReference.isValid(transaction.reference)
             && (this.isValidRedemptionReference(agentEnt, transaction.reference) || await this.isValidAnnouncedPaymentReference(agentEnt, transaction.reference));
         // if the challenger starts tracking later, activeRedemptions might not hold all active redemeptions,
         // but that just means there will be a few unnecessary illegal transaction challenges, which is perfectly safe
         const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
-        if (!transactionValid && agentInfo.status !== AgentStatus.FULL_LIQUIDATION) {
+        if (!transactionValid && Number(agentInfo.status) !== AgentStatus.FULL_LIQUIDATION) {
             this.runner.startThread((scope) => this.illegalTransactionChallenge(scope, transaction, agentEnt));
         }
     }
@@ -150,7 +166,7 @@ export class Challenger {
                 .catch(e => scope.exitOnExpectedError(e, ['chlg: already liquidating', 'chlg: transaction confirmed', 'matching redemption active', 'matching ongoing announced pmt']));
         });
     }
-    
+
     // double payments
 
     checkForDoublePayment(transaction: ITransaction, agentEnt: AgentEntity) {
@@ -174,7 +190,7 @@ export class Challenger {
                 .catch(e => scope.exitOnExpectedError(e, ['chlg dbl: already liquidating']));
         });
     }
-    
+
     // free balance negative
 
     async checkForNegativeFreeBalance(agentEnt: AgentEntity) {
@@ -216,9 +232,9 @@ export class Challenger {
                 .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough free balance', 'mult chlg: payment confirmed']));
         });
     }
-    
+
     // utils
-    
+
     isValidRedemptionReference(agentEnt: AgentEntity, reference: string) {
         const redemption = this.activeRedemptions.get(reference);
         if (redemption == null) return false;
@@ -247,7 +263,7 @@ export class Challenger {
         return await this.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch(e => scope.exitOnExpectedError(e, [AttestationClientError]));
     }
-    
+
     async singleChallengePerAgent(agentEnt: AgentEntity, body: () => Promise<void>) {
         while (this.challengedAgents.has(agentEnt.vaultAddress)) {
             await sleep(1);
@@ -255,7 +271,7 @@ export class Challenger {
         try {
             this.challengedAgents.add(agentEnt.vaultAddress);
             const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
-            if (agentInfo.status === AgentStatus.FULL_LIQUIDATION) return;
+            if (Number(agentInfo.status) === AgentStatus.FULL_LIQUIDATION) return;
             await body();
         } finally {
             this.challengedAgents.delete(agentEnt.vaultAddress);
