@@ -306,8 +306,8 @@ export class AgentBot {
 
     async checkPaymentProofAvailable(redemption: AgentRedemption) {
         // corner case: agent pays but does not confirm
-        if (coinFlip(0.1)) {
-            redemption.state = 'NotRequestedProof';
+        if (coinFlip(0.01)) {
+            redemption.state = 'notRequestedProof';
             return;
         }
         // corner case: proof expires in indexer
@@ -345,8 +345,9 @@ export class AgentBot {
 
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
-        if (proof.lowestQueryWindowBlockNumber <= lastUnderlyingBlock
-            || proof.lowestQueryWindowBlockTimestamp <= lastUnderlyingTimestamp) {
+        const lqwblock = toBN(proof.lowestQueryWindowBlockNumber);
+        const lqwbtimestamp =toBN(proof.lowestQueryWindowBlockTimestamp);
+        if (lqwblock > toBN(lastUnderlyingBlock) || lqwbtimestamp > toBN(lastUnderlyingTimestamp)) {
             return proof;
         }
         return null;
@@ -356,8 +357,8 @@ export class AgentBot {
     async topupCollateral(type: 'liquidation' | 'ccb' | 'trigger') {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
-        const totalCollateralNATWei = agentInfo.totalCollateralNATWei;
-        const collateralRatioBIPS = agentInfo.collateralRatioBIPS;
+        const totalCollateralNATWei = toBN(agentInfo.totalCollateralNATWei);
+        const collateralRatioBIPS = toBN(agentInfo.collateralRatioBIPS);
         let requiredCR = BN_ZERO;
         if (type === 'liquidation') {
             requiredCR = toBN(settings.safetyMinCollateralRatioBIPS);

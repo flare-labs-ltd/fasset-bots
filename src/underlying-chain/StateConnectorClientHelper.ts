@@ -183,16 +183,12 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     private decodeProof(matchedResponse: any, type: AttestationType, proof: string[]): DHType {
         switch (type) {
             case AttestationType.Payment:
-                console.log('Payment');
                 return this.decodePayment(matchedResponse, proof);
             case AttestationType.BalanceDecreasingTransaction:
-                console.log('verifyBalanceDecreasingTransaction');
                 return this.decodeBalanceDecreasingTransaction(matchedResponse, proof);
             case AttestationType.ConfirmedBlockHeightExists:
-                console.log('verifyConfirmedBlockHeightExists');
                 return this.decodeConfirmedBlockHeightExists(matchedResponse, proof);
             case AttestationType.ReferencedPaymentNonexistence:
-                console.log('verifyReferencedPaymentNonexistence');
                 return this.decodeReferencedPaymentNonexistence(matchedResponse, proof);
             default:
                 throw new StateConnectorError(`Invalid attestation type ${matchedResponse.request.attestationType}`);
