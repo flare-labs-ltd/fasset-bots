@@ -9,6 +9,7 @@ export type SchemaUpdate = 'safe' | 'full' | 'recreate';
 
 export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     schemaUpdate?: SchemaUpdate;
+    dbName?: string;
 };
 
 export async function createOrm(options: CreateOrmOptions): Promise<ORM> {
