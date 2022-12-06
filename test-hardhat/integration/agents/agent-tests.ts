@@ -14,7 +14,6 @@ import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
-    // let config: BotConfig;
     let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
@@ -26,7 +25,7 @@ describe("Agent bot tests", async () => {
         accounts = await web3.eth.getAccounts();
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
     });
-    
+
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
@@ -35,14 +34,14 @@ describe("Agent bot tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
-    
+
     it("Should perform minting", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
         chain.mine(chain.finalizationBlocks + 1);
-        // create collateral reservetion
+        // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
         // should have an open minting
@@ -99,5 +98,37 @@ describe("Agent bot tests", async () => {
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
         assert.equal(String(balance), String(toBN(rdreq.valueUBA).sub(toBN(rdreq.feeUBA))));
+    });
+
+    it("Should not perform minting - minter does not pay", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
+        chain.mine(chain.finalizationBlocks + 1);
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        // should have an open minting
+        orm.em.clear();
+        let mintings = await agentBot.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingStarted = mintings[0];
+        assert.equal(mintingStarted.state, 'started');
+        // skip time so the payment will expire on underlying chain
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp))
+        chain.mine(Number(crt.lastUnderlyingBlock))
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        // should have one open minting with state 'requestedNonPaymentProof'
+        mintings = await agentBot.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingRequestedNonPaymentProof = mintings[0];
+        assert.equal(mintingRequestedNonPaymentProof.state, 'requestedNonPaymentProof');
+        // check if minting is done
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
+        assert.equal(mintingDone.state, 'done');
     });
 });

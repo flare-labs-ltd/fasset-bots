@@ -16,7 +16,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public walletClient: WalletClient,
+        public walletClient: WalletClient
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: indexerWebServerUrl,

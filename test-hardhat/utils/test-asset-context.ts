@@ -6,13 +6,14 @@ import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
+import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { UnderlyingChainEvents } from "../../src/underlying-chain/UnderlyingChainEvents";
 import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { createTestIndexerHelper } from "../../test/utils/test-bot-config";
+import { createTestIndexerHelper, createTestWalletClient } from "../../test/utils/test-bot-config";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
 import { newAssetManager } from "./new-asset-manager";
 
@@ -104,7 +105,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings));
     // indexer
-    const blockChainIndexerClient = createTestIndexerHelper(chainInfo.chainId);
+    const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, createTestWalletClient(chainInfo.chainId));
     // return context
     return { nativeChainInfo, chainInfo, chain, chainEvents, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso, blockChainIndexerClient };
 }
