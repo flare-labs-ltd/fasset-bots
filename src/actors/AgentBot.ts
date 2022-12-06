@@ -5,6 +5,7 @@ import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
@@ -346,7 +347,7 @@ export class AgentBot {
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
         const lqwblock = toBN(proof.lowestQueryWindowBlockNumber);
-        const lqwbtimestamp =toBN(proof.lowestQueryWindowBlockTimestamp);
+        const lqwbtimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
         if (lqwblock > toBN(lastUnderlyingBlock) || lqwbtimestamp > toBN(lastUnderlyingTimestamp)) {
             return proof;
         }
@@ -357,8 +358,6 @@ export class AgentBot {
     async topupCollateral(type: 'liquidation' | 'ccb' | 'trigger') {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
-        const totalCollateralNATWei = toBN(agentInfo.totalCollateralNATWei);
-        const collateralRatioBIPS = toBN(agentInfo.collateralRatioBIPS);
         let requiredCR = BN_ZERO;
         if (type === 'liquidation') {
             requiredCR = toBN(settings.safetyMinCollateralRatioBIPS);
@@ -369,13 +368,33 @@ export class AgentBot {
         } else {
             throw new Error(`Invalid type ${type}`);
         }
-        const backingCollateral = totalCollateralNATWei.div(collateralRatioBIPS).muln(MAX_BIPS);
-        const requiredCollateral = backingCollateral.mul(requiredCR).divn(MAX_BIPS);
-        const requiredTopup = requiredCollateral.sub(totalCollateralNATWei);
+        const requiredTopup = await this.requiredTopup(requiredCR, settings, agentInfo);
         if (requiredTopup.lte(BN_ZERO)) {
-            // Too late for top up
+            // no need for topup
             return;
         }
         await this.agent.agentVault.deposit({ value: requiredTopup });
+    }
+
+    private async requiredTopup(requiredCR: BN, settings: any, agentInfo: any): Promise<BN> {
+        const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
+        const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
+        const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);
+        const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
+        const backingNATWei = convertUBAToNATWei(settings, totalUBA, amgToNATWei);
+        const requiredCollateral = backingNATWei.mul(requiredCR).divn(MAX_BIPS);
+        return requiredCollateral.sub(collateral);
+    }
+
+    private async currentAmgToNATWeiPriceWithTrusted(settings: any): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
+        const { 0: natPrice, 1: natTimestamp } = await this.context.natFtso.getCurrentPrice();
+        const { 0: assetPrice, 1: assetTimestamp } = await this.context.assetFtso.getCurrentPrice();
+        const { 0: natPriceTrusted, 1: natTimestampTrusted } = await this.context.natFtso.getCurrentPriceFromTrustedProviders();
+        const { 0: assetPriceTrusted, 1: assetTimestampTrusted } = await this.context.assetFtso.getCurrentPriceFromTrustedProviders();
+        const ftsoPrice = amgToNATWeiPrice(settings, natPrice, assetPrice);
+        const trustedPrice = natTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(natTimestamp) &&
+            assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(assetTimestamp) ?
+            amgToNATWeiPrice(settings, natPriceTrusted, assetPriceTrusted) : ftsoPrice;
+        return [ftsoPrice, trustedPrice];
     }
 }
