@@ -38,6 +38,9 @@ export class AgentMinting {
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
 
+    @Property({ length: ADDRESS_LENGTH })
+    agentUnderlyingAddress!: string;
+
     @Property({ type: BNType })
     requestId!: BN;
 

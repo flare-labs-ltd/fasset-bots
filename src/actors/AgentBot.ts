@@ -15,6 +15,7 @@ import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, coinFlip, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import Web3 from "web3";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -119,6 +120,7 @@ export class AgentBot {
         em.create(AgentMinting, {
             state: 'started',
             agentAddress: this.agent.vaultAddress,
+            agentUnderlyingAddress: this.agent.underlyingAddress,
             requestId: toBN(request.collateralReservationId),
             valueUBA: toBN(request.valueUBA),
             feeUBA: toBN(request.feeUBA),
@@ -177,8 +179,9 @@ export class AgentBot {
             minting.state = 'done';
         } else {
             const blockHeight = await this.context.chain.getBlockHeight();
+            const latestBlock = await this.context.chain.getBlockAt(blockHeight);
             // time expires on underlying
-            if (blockHeight > minting.lastUnderlyingBlock.toNumber() && systemTimestamp() > minting.lastUnderlyingTimestamp.toNumber()) {
+            if (latestBlock && latestBlock.number > minting.lastUnderlyingBlock.toNumber() && latestBlock.timestamp > minting.lastUnderlyingTimestamp.toNumber()) {
                 const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
                     // check minter paid -> request payment proof -> execute minting
@@ -203,7 +206,7 @@ export class AgentBot {
 
     async requestNonPaymentProofForMinting(minting: AgentMinting) {
         const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
-            minting.agentAddress,
+            minting.agentUnderlyingAddress,
             minting.paymentReference,
             minting.valueUBA.add(minting.feeUBA),
             minting.lastUnderlyingBlock.toNumber(),
