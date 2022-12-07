@@ -12,6 +12,7 @@ export class MockIndexer extends BlockChainIndexerHelper {
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
         public walletClient: WalletClient,
+        public chain: MockChain
     ) {
         super(indexerWebServerUrl, sourceId, walletClient);
         this.client = axios.create({});
@@ -26,6 +27,14 @@ export class MockIndexer extends BlockChainIndexerHelper {
     }
 
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
+        const blocks = this.chain.blocks;
+        for (let block of blocks) {
+                for (let transaction of block.transactions){
+                    if (transaction.reference === reference) {
+                        return [transaction];
+                    }
+                }
+        }
         return [];
     }
 }

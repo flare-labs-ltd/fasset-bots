@@ -105,7 +105,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings));
     // indexer
-    const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, createTestWalletClient(chainInfo.chainId));
+    const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, createTestWalletClient(chainInfo.chainId), chain);
     // return context
     return { nativeChainInfo, chainInfo, chain, chainEvents, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso, blockChainIndexerClient };
 }
