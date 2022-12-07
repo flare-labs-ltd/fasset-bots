@@ -19,6 +19,7 @@ export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
 
 export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
+export const QUERY_WINDOW_SECONDS = 86400;
 
 /**
  * Asynchronously wait `ms` milliseconds.

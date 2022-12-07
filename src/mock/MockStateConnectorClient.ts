@@ -1,6 +1,6 @@
 import { StateConnectorMockInstance } from "../../typechain-truffle";
 import { AttestationRequest, AttestationResponse, IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { filterStackTrace, sleep, toBN, toNumber, ZERO_BYTES32 } from "../utils/helpers";
+import { filterStackTrace, QUERY_WINDOW_SECONDS, sleep, toBN, toNumber, ZERO_BYTES32 } from "../utils/helpers";
 import { stringifyJson } from "../utils/json-bn";
 import { ILogger } from "../utils/logging";
 import { DHType } from "../verification/generated/attestation-hash-types";
@@ -48,7 +48,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     rounds: string[][] = [];
     finalizedRounds: FinalizedRound[] = [];
     logger?: ILogger;
-    queryWindowSeconds = 86400;
+    queryWindowSeconds = QUERY_WINDOW_SECONDS;
     
     setTimedFinalization(timedRoundSeconds: number) {
         this.finalizationType = 'timed';

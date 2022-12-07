@@ -351,7 +351,7 @@ export class AgentBot {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
         const lqwblock = toBN(proof.lowestQueryWindowBlockNumber);
         const lqwbtimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
-        if (lqwblock > toBN(lastUnderlyingBlock) || lqwbtimestamp > toBN(lastUnderlyingTimestamp)) {
+        if (lqwblock > toBN(lastUnderlyingBlock) && lqwbtimestamp > toBN(lastUnderlyingTimestamp)) {
             return proof;
         }
         return null;
