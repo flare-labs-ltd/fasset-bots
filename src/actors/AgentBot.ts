@@ -2,7 +2,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import BN from "bn.js";
 import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentRedemption } from "../entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
@@ -12,10 +12,9 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, coinFlip, MAX_BIPS, systemTimestamp, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import Web3 from "web3";
 
 const AgentVault = artifacts.require('AgentVault');
 
@@ -61,10 +60,10 @@ export class AgentBot {
         return new AgentBot(agent);
     }
 
-    async runStep(rootEm: EM) {
+    async runStep(rootEm: EM, skipConfirmation?: boolean) {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
-        await this.handleOpenRedemptions(rootEm);
+        await this.handleOpenRedemptions(rootEm, skipConfirmation);
     }
 
     async handleEvents(rootEm: EM) {
@@ -118,7 +117,7 @@ export class AgentBot {
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
         // const minting = new AgentMinting();
         em.create(AgentMinting, {
-            state: 'started',
+            state: AgentMintingState.STARTED,
             agentAddress: this.agent.vaultAddress,
             agentUnderlyingAddress: this.agent.underlyingAddress,
             requestId: toBN(request.collateralReservationId),
@@ -146,13 +145,13 @@ export class AgentBot {
         let query = em.createQueryBuilder(AgentMinting);
         if (onlyIds) query = query.select('id');
         return await query.where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: 'done' } })
+            .andWhere({ $not: { state: AgentMintingState.DONE } })
             .getResultList();
     }
 
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
         const minting = await this.findMinting(em, request.collateralReservationId);
-        minting.state = 'done';
+        minting.state = AgentMintingState.DONE;
         // check cr after liquidation to prevent ccb or liquidation (CcbLiquidationPreventionTrigger.ts)
         await this.topupCollateral('trigger');
     }
@@ -160,11 +159,11 @@ export class AgentBot {
     async nextMintingStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
-            if (minting.state === 'started') {
+            if (minting.state === AgentMintingState.STARTED) {
                 await this.checkForNonPaymentProofOrExpiredProofs(minting);
-            } else if (minting.state === 'requestedNonPaymentProof') {
+            } else if (minting.state === AgentMintingState.REQUEST_NON_PAYMENT_PROOF) {
                 await this.checkNonPayment(minting);
-            } else if (minting.state === 'requestedPaymentProof') {
+            } else if (minting.state === AgentMintingState.REQUEST_PAYMENT_PROOF) {
                 await this.checkPaymentAndExecuteMinting(minting);
             }
         }).catch(error => {
@@ -176,7 +175,7 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress });
-            minting.state = 'done';
+            minting.state = AgentMintingState.DONE;
         } else {
             const blockHeight = await this.context.chain.getBlockHeight();
             const latestBlock = await this.context.chain.getBlockAt(blockHeight);
@@ -199,7 +198,7 @@ export class AgentBot {
 
     async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string) {
         const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
-        minting.state = 'requestedPaymentProof';
+        minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
         minting.proofRequestRound = request.round;
         minting.proofRequestData = request.data;
     }
@@ -211,7 +210,7 @@ export class AgentBot {
             minting.valueUBA.add(minting.feeUBA),
             minting.lastUnderlyingBlock.toNumber(),
             minting.lastUnderlyingTimestamp.toNumber());
-        minting.state = 'requestedNonPaymentProof';
+        minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
         minting.proofRequestRound = request.round;
         minting.proofRequestData = request.data;
     }
@@ -222,7 +221,7 @@ export class AgentBot {
         if (proof.result && proof.result.merkleProof) {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
             await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
-            minting.state = 'done';
+            minting.state = AgentMintingState.DONE;
         } else {
             // TODO: non payment happened but we cannot obtain proof... ALERT!!!
         }
@@ -234,7 +233,7 @@ export class AgentBot {
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
-            minting.state = 'done';
+            minting.state = AgentMintingState.DONE;
         } else {
             // TODO: payment happened but we cannot obtain proof... ALERT!!!
         }
@@ -242,7 +241,7 @@ export class AgentBot {
 
     redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>) {
         em.create(AgentRedemption, {
-            state: 'started',
+            state: AgentRedemptionState.STARTED,
             agentAddress: this.agent.vaultAddress,
             requestId: toBN(request.requestId),
             paymentAddress: request.paymentAddress,
@@ -256,7 +255,7 @@ export class AgentBot {
 
     async redemptionFinished(em: EM, request: EventArgs<RedemptionDefault>) {
         const redemption = await this.findRedemption(em, request.requestId);
-        redemption.state = 'done';
+        redemption.state = AgentRedemptionState.DONE;
     }
 
     async findRedemption(em: EM, requestId: BN) {
@@ -264,10 +263,10 @@ export class AgentBot {
         return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
     }
 
-    async handleOpenRedemptions(rootEm: EM) {
+    async handleOpenRedemptions(rootEm: EM, skipConfirmation?: boolean) {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         for (const rd of openRedemptions) {
-            await this.nextRedemptionStep(rootEm, rd.id);
+            await this.nextRedemptionStep(rootEm, rd.id, skipConfirmation);
         }
     }
 
@@ -275,18 +274,18 @@ export class AgentBot {
         let query = em.createQueryBuilder(AgentRedemption);
         if (onlyIds) query = query.select('id');
         return await query.where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: 'done' } })
+            .andWhere({ $not: { state: AgentRedemptionState.DONE } })
             .getResultList();
     }
 
-    async nextRedemptionStep(rootEm: EM, id: number) {
+    async nextRedemptionStep(rootEm: EM, id: number, skipConfirmation?: boolean) {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
-            if (redemption.state === 'started') {
+            if (redemption.state === AgentRedemptionState.STARTED) {
                 await this.payForRedemption(redemption);
-            } else if (redemption.state === 'paid') {
-                await this.checkPaymentProofAvailable(redemption);
-            } else if (redemption.state === 'requestedProof') {
+            } else if (redemption.state === AgentRedemptionState.PAID) {
+                await this.checkPaymentProofAvailable(redemption, skipConfirmation);
+            } else if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) {
                 await this.checkConfirmPayment(redemption);
             }
         }).catch(error => {
@@ -298,27 +297,27 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
-            redemption.state = 'done';
+            redemption.state = AgentRedemptionState.DONE;
         } else {
             const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
             // !!! TODO: what if there are too little funds on underlying address to pay for fee?
             const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
             redemption.txHash = txHash;
-            redemption.state = 'paid';
+            redemption.state = AgentRedemptionState.PAID;
         }
     }
 
-    async checkPaymentProofAvailable(redemption: AgentRedemption) {
+    async checkPaymentProofAvailable(redemption: AgentRedemption, skipConfirmation?: boolean) {
         // corner case: agent pays but does not confirm
-        if (coinFlip(0.01)) {
-            redemption.state = 'notRequestedProof';
+        if (skipConfirmation) {
+            redemption.state = AgentRedemptionState.NOT_REQUESTED_PROOF;
             return;
         }
         // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
-            redemption.state = 'done';
+            redemption.state = AgentRedemptionState.DONE;
         } else {
             const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash!);
             const blockHeight = await this.context.chain.getBlockHeight();
@@ -330,7 +329,7 @@ export class AgentBot {
 
     async requestPaymentProof(redemption: AgentRedemption) {
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
-        redemption.state = 'requestedProof';
+        redemption.state = AgentRedemptionState.REQUESTED_PROOF;
         redemption.proofRequestRound = request.round;
         redemption.proofRequestData = request.data;
     }
@@ -341,7 +340,7 @@ export class AgentBot {
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
-            redemption.state = 'done';
+            redemption.state = AgentRedemptionState.DONE;
         } else {
             // TODO: payment happened but we cannot obtain proof... ALERT!!!
         }

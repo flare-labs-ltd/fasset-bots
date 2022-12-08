@@ -33,7 +33,7 @@ export class AgentMinting {
     id!: number;
 
     @Property()
-    state!: 'started' | 'done' | 'requestedNonPaymentProof' | 'requestedPaymentProof';
+    state!: AgentMintingState;
 
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
@@ -76,7 +76,7 @@ export class AgentRedemption {
     id!: number;
 
     @Property()
-    state!: 'started' | 'paid' | 'requestedProof' | 'done' | 'notRequestedProof';
+    state!: AgentRedemptionState;
 
     // status: 'active' | 'defaulted'
 
@@ -120,4 +120,19 @@ export class AgentRedemption {
     proofRequestData?: string;
 
     // 'confirmed' state data
+}
+
+export enum AgentMintingState {
+    DONE = 'done',
+    STARTED = 'started',
+    REQUEST_NON_PAYMENT_PROOF = 'requestedNonPaymentProof',
+    REQUEST_PAYMENT_PROOF = 'requestedPaymentProof'
+}
+
+export enum AgentRedemptionState {
+    DONE = 'done',
+    STARTED = 'started',
+    PAID = 'paid',
+    REQUESTED_PROOF = 'requestedProof',
+    NOT_REQUESTED_PROOF = 'notRequestedProof'
 }
