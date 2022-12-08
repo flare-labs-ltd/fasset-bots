@@ -13,7 +13,7 @@ import { UnderlyingChainEvents } from "../../src/underlying-chain/UnderlyingChai
 import { artifacts } from "../../src/utils/artifacts";
 import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { createTestIndexerHelper, createTestWalletClient } from "../../test/utils/test-bot-config";
+import { createTestWalletClient } from "../../test/utils/test-bot-config";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
 import { newAssetManager } from "./new-asset-manager";
 

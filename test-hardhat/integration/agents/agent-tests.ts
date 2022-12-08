@@ -11,8 +11,7 @@ import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { MockAttestationProver } from "../../../src/mock/MockAttestationProver";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { AgentMintingState, AgentRedemptionState } from "../../../src/entities/agent";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
@@ -22,6 +21,7 @@ describe("Agent bot tests", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
+    let settings: any;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -35,6 +35,7 @@ describe("Agent bot tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
+        settings = await context.assetManager.getSettings();
     });
 
     it("Should perform minting", async () => {
@@ -51,7 +52,7 @@ describe("Agent bot tests", async () => {
         const mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const minting = mintings[0];
-        assert.equal(minting.state, 'started');
+        assert.equal(minting.state, AgentMintingState.STARTED);
         // pay for and execute minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -62,7 +63,7 @@ describe("Agent bot tests", async () => {
         const openMintingsAfter = await agentBot.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
-        assert.equal(mintingAfter.state, 'done');
+        assert.equal(mintingAfter.state, AgentMintingState.DONE);
     });
 
     it("Should perform minting and redemption", async () => {
@@ -95,7 +96,7 @@ describe("Agent bot tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
             console.log(`Agent step ${i}, state=${redemption.state}`)
-            if (redemption.state === 'done' || redemption.state === 'notRequestedProof') break;
+            if (redemption.state === AgentRedemptionState.DONE) break;
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
@@ -126,7 +127,7 @@ describe("Agent bot tests", async () => {
         mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingRequestedNonPaymentProof = mintings[0];
-        assert.equal(mintingRequestedNonPaymentProof.state, 'requestedNonPaymentProof');
+        assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
         // check if minting is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
@@ -152,7 +153,7 @@ describe("Agent bot tests", async () => {
         let mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, 'started');
+        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // pay for minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -165,12 +166,12 @@ describe("Agent bot tests", async () => {
         mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingRequestedNonPaymentProof = mintings[0];
-        assert.equal(mintingRequestedNonPaymentProof.state, 'requestedPaymentProof');
+        assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // check if minting is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
-        assert.equal(mintingDone.state, 'done');
+        assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
@@ -187,7 +188,7 @@ describe("Agent bot tests", async () => {
         let mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, 'started');
+        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
@@ -199,7 +200,7 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
-        assert.equal(mintingDone.state, 'done');
+        assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
     it("Should perform unstick minting - minter pays and time expires in indexer", async () => {
@@ -216,7 +217,7 @@ describe("Agent bot tests", async () => {
         let mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, 'started');
+        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // pay for minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -231,8 +232,123 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
-        assert.equal(mintingDone.state, 'done');
+        assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling unstickMinting will revert
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
+    });
+
+    it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
+        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
+        chain.mine(chain.finalizationBlocks + 1);
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // request redemption
+        const [rdreqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdreqs.length, 1);
+        const rdreq = rdreqs[0];
+        // skip time so the payment will expire on underlying chain
+        chain.skipTimeTo(Number(rdreq.lastUnderlyingTimestamp))
+        chain.mine(Number(rdreq.lastUnderlyingBlock))
+        // redeemer requests non-payment proof 
+        // redeemer triggers payment default and gets paid in collateral with extra
+        const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
+        const startBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
+        const res = await redeemer.redemptionPaymentDefault(rdreq);
+        const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
+        const endBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
+        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedCollateralWei));
+        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
+        // check if redemption is done
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
+    });
+
+    it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
+        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
+        chain.mine(chain.finalizationBlocks + 1);
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // request redemption
+        const [rdreqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdreqs.length, 1);
+        const rdreq = rdreqs[0];
+        // skip time so the proof will expire in indexer
+        const queryWindow = QUERY_WINDOW_SECONDS * 2;
+        const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        // check if redemption is done
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
+    });
+
+    it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
+        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
+        chain.mine(chain.finalizationBlocks + 1);
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // request redemption
+        const [rdreqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdreqs.length, 1);
+        const rdreq = rdreqs[0];
+        // redemption has started and is paid
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionPaid = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
+        // agent does not confirm payment
+        await agentBot.runStep(orm.em, true);
+        orm.em.clear();
+        const redemptionNotConfirmed = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionNotConfirmed.state, AgentRedemptionState.NOT_REQUESTED_PROOF);
+        // others can confirm redemption payment after some time
+        await time.increase(settings.confirmationByOthersAfterSeconds);
+        chain.mine(chain.finalizationBlocks + 1);
+        const someAddress = accounts[10];
+        const startBalance = await context.wnat.balanceOf(someAddress);
+        const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdreq.paymentAddress);
+        await context.assetManager.confirmRedemptionPayment(proof, rdreq.requestId, { from: someAddress });
+        const endBalance = await context.wnat.balanceOf(someAddress);
+        assert.equal(String(endBalance.sub(startBalance)), String(settings.confirmationByOthersRewardNATWei));
     });
 });
