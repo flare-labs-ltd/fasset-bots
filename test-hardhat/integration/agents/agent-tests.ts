@@ -1,4 +1,4 @@
-import { time } from "@openzeppelin/test-helpers";
+import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
@@ -132,6 +132,10 @@ describe("Agent bot tests", async () => {
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, 'done');
+        // check that executing minting after calling mintingPaymentDefault will revert
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
     });
 
     it("Should perform minting - minter pays, agent execute minting", async () => {
@@ -214,7 +218,7 @@ describe("Agent bot tests", async () => {
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, 'started');
         // pay for minting
-        await minter.performMintingPayment(crt);
+        const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -228,5 +232,7 @@ describe("Agent bot tests", async () => {
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, 'done');
+        // check that executing minting after calling unstickMinting will revert
+        await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
     });
 });
