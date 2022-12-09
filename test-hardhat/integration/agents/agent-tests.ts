@@ -310,6 +310,43 @@ describe("Agent bot tests", async () => {
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
+    it("Should not perform redemption - agent pays, time expires in indexer", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
+        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
+        chain.mine(chain.finalizationBlocks + 1);
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // request redemption
+        const [rdreqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdreqs.length, 1);
+        const rdreq = rdreqs[0];
+        // agent pays
+        await agentBot.runStep(orm.em);
+        const redemptionPaid = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
+        // skip time so the proof will expire in indexer
+        const queryWindow = QUERY_WINDOW_SECONDS * 2;
+        const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        // check if redemption is done
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
+    });
+
     it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
