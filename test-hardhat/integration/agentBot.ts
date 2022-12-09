@@ -1,17 +1,17 @@
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
-import { AgentBot } from "../../../src/actors/AgentBot";
-import { ORM } from "../../../src/config/orm";
-import { Minter } from "../../../src/mock/Minter";
-import { MockChain } from "../../../src/mock/MockChain";
-import { Redeemer } from "../../../src/mock/Redeemer";
-import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
-import { web3 } from "../../../src/utils/web3";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
-import { createTestAssetContext } from "../../utils/test-asset-context";
-import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { AgentMintingState, AgentRedemptionState } from "../../../src/entities/agent";
+import { AgentBot } from "../../src/actors/AgentBot";
+import { ORM } from "../../src/config/orm";
+import { Minter } from "../../src/mock/Minter";
+import { MockChain } from "../../src/mock/MockChain";
+import { Redeemer } from "../../src/mock/Redeemer";
+import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { web3 } from "../../src/utils/web3";
+import { createTestOrm } from "../../test/test.mikro-orm.config";
+import { createTestAssetContext } from "../utils/test-asset-context";
+import { testChainInfo } from "../../test/utils/TestChainInfo";
+import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];

@@ -1,6 +1,6 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { EM, ORM } from "../config/orm";
+import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { ChallengerEntity } from "../entities/challenger";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";

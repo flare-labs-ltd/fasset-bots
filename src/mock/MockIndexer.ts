@@ -22,8 +22,11 @@ export class MockIndexer extends BlockChainIndexerHelper {
     getTransactionsWithinTimestampRange(from: number, to: number): Promise<ITransaction[]> {
         throw new Error("Method not implemented.");
     }
-    waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number | undefined): Promise<ITransaction | null> {
-        throw new Error("Method not implemented.");
+
+    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number) {
+        const transaction = await this.chain.getTransaction(txHash);
+        this.chain.mine(this.chain.finalizationBlocks + 1);
+        return transaction;
     }
 
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {

@@ -21,8 +21,12 @@
         "test/**/*",
         "./typechain-truffle",
         "./typechain-truffle/types.d.ts",
-        "./hardhat.config.ts"
-, "test-hardhat/unit", "test-hardhat/integration/agents/agent-tests.ts", "test-hardhat/utils/new-asset-manager.ts", "test-hardhat/utils/test-asset-context.ts"    ],
+        "./hardhat.config.ts",
+        "test-hardhat/unit",
+        "test-hardhat/integration",
+        "test-hardhat/utils/new-asset-manager.ts",
+        "test-hardhat/utils/test-asset-context.ts"
+    ],
     "ts-node": {
         "files": true
     }

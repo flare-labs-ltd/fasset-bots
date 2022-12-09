@@ -46,7 +46,7 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo): Promise<IAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean): Promise<IAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -101,6 +101,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create asset manager
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
+    if (typeof requireEOAAddressProof !== 'undefined') parameters.requireEOAAddressProof = requireEOAAddressProof
     const settings = createAssetManagerSettings(contracts, parameters);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings));

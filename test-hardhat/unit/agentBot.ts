@@ -1,11 +1,8 @@
-import { time } from "@openzeppelin/test-helpers";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
-import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
-import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../utils/test-asset-context";
@@ -22,8 +19,6 @@ describe("Agent bot unit tests", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    const minterUnderlyingAddress = "MINTER_ADDRESS";
-    const redeemerUnderlyingAddress = "REDEEMER_ADDRESS";
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -45,22 +40,30 @@ describe("Agent bot unit tests", async () => {
         expect(agentBot.agent.underlyingAddress).to.not.be.null;
     })
 
-    it("Should create minter", async () => {
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlyingAddress, toBNExp(10_000, 6));
-        expect(minter.address).to.eq(minterAddress);
-        expect(minter.underlyingAddress).to.eq(minterUnderlyingAddress);
-    })
-
-    it("Should create redeemer", async () => {
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlyingAddress);
-        expect(redeemer.address).to.eq(redeemerAddress);
-        expect(redeemer.underlyingAddress).to.eq(redeemerUnderlyingAddress);
-    })
-
     it("Should read agent from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt)
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    });
+
+    it("Should prove EOA address", async () => {
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
+        await AgentBot.create(orm.em, context, ownerAddress);
+    });
+
+    it("Should topup collateral - liquidation", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.topupCollateral("liquidation");
+    });
+
+    it("Should topup collateral - ccb", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.topupCollateral("ccb");
+    });
+
+    it("Should topup collateral - trigger", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.topupCollateral("trigger");
     });
 });
