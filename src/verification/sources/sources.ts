@@ -10,7 +10,7 @@ export enum SourceId {
 }
 
 export function getSourceName(sourceId: number) {
-   if (sourceId == null || SourceId[sourceId] === null) {
+   if (typeof SourceId[sourceId] === 'undefined') {
       return null;
    }
    return SourceId[sourceId];
@@ -22,7 +22,7 @@ export function toSourceId(id: any) : SourceId {
 
    const sourceId = SourceId[id];
 
-   if( sourceId==null ) return SourceId.invalid;
+   if(typeof sourceId === 'undefined') return SourceId.invalid;
 
    return (sourceId as any ) as SourceId;
 }
