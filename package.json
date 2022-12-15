@@ -26,6 +26,15 @@
       "include": [
          "src/**/*.ts"
       ],
+      "exclude": [
+         "src/verification/generated/*.ts",
+         "src/verification/attestation-types/attestation-types.ts",
+         "src/verification/attestation-types/t-00001-payment.ts",
+         "src/verification/attestation-types/t-00002-balance-decreasing-transaction.ts",
+         "src/verification/attestation-types/t-00003-confirmed-block-height-exists.ts",
+         "src/verification/attestation-types/t-00004-referenced-payment-nonexistence.ts",
+         "src/verification/attestation-types/t-00005-trustline-issuance.ts"
+      ],
       "reporter": [
          "html",
          "lcov",
@@ -55,9 +64,14 @@
       "test_all": "mocha --recursive -t 500000 \"test/**/*.ts\"",
       "test_all:unit": "mocha --recursive -t 500000 \"test/unit/**/*.ts\"",
       "test:coverage": "yarn nyc yarn test_all",
+      "test_certain": "mocha --recursive -t 500000 \"test/unit/{ALGO,XRP}/*.ts\"",
       "testhh": "yarn hardhat test --no-compile",
       "testhh_all": "env TEST_PATH=\"./test-hardhat/{unit,integration}\" yarn hardhat test --no-compile",
-      "testhh:coverage": "yarn nyc yarn testhh_all"
+      "testhh:coverage": "yarn nyc yarn testhh_all",
+      "cover": "yarn cover:test; yarn cover:testhh; yarn cover:report",
+      "cover:test": "nyc --silent yarn test_certain",
+      "cover:testhh": "nyc --silent --no-clean yarn testhh_all",
+      "cover:report": "yarn nyc report --reporter=lcov --reporter=text"
    },
    "dependencies": {
       "@flarenetwork/mcc": "^2.0.5",
