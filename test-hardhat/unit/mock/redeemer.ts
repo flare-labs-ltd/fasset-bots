@@ -1,11 +1,11 @@
 import { expect } from "chai";
-import { MockChain } from "../../src/mock/MockChain";
-import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext } from "../utils/test-asset-context";
-import { testChainInfo } from "../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { MockChain } from "../../../src/mock/MockChain";
+import { Redeemer } from "../../../src/mock/Redeemer";
+import { checkedCast } from "../../../src/utils/helpers";
+import { createTestAssetContext } from "../../utils/test-asset-context";
+import { web3 } from "../../../src/utils/web3";
+import { testChainInfo } from "../../../test/utils/TestChainInfo";
 
 describe("Redeemer unit tests", async () => {
     let accounts: string[];

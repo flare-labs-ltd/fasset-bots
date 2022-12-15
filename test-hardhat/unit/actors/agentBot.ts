@@ -1,15 +1,15 @@
 import { expect } from "chai";
-import { AgentBot } from "../../src/actors/AgentBot";
-import { ORM } from "../../src/config/orm";
-import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
-import { createTestOrm } from "../../test/test.mikro-orm.config";
-import { createTestAssetContext } from "../utils/test-asset-context";
-import { testChainInfo } from "../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentBot } from "../../../src/actors/AgentBot";
+import { ORM } from "../../../src/config/orm";
+import { MockChain } from "../../../src/mock/MockChain";
+import { checkedCast } from "../../../src/utils/helpers";
+import { web3 } from "../../../src/utils/web3";
+import { createTestOrm } from "../../../test/test.mikro-orm.config";
+import { createTestAssetContext } from "../../utils/test-asset-context";
+import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentEntity } from "../../src/entities/agent";
+import { AgentEntity } from "../../../src/entities/agent";
 
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
@@ -38,7 +38,7 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
         expect(agentBot.agent.underlyingAddress).to.not.be.null;
-    })
+    });
 
     it("Should read agent from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
@@ -66,4 +66,5 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         await agentBot.topupCollateral("trigger");
     });
+    
 });

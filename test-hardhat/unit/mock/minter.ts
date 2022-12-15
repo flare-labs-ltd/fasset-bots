@@ -1,11 +1,11 @@
 import { expect } from "chai";
-import { Minter } from "../../src/mock/Minter";
-import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast, toBNExp } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext } from "../utils/test-asset-context";
-import { testChainInfo } from "../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { Minter } from "../../../src/mock/Minter";
+import { MockChain } from "../../../src/mock/MockChain";
+import { checkedCast, toBNExp } from "../../../src/utils/helpers";
+import { web3 } from "../../../src/utils/web3";
+import { createTestAssetContext } from "../../utils/test-asset-context";
+import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 
 describe("Minter unit tests", async () => {
     let accounts: string[];
