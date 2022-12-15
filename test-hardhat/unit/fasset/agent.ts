@@ -6,7 +6,7 @@ import { createTestAssetContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../../src/fasset/Agent";
-import { time } from "@openzeppelin/test-helpers";
+import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -24,7 +24,7 @@ describe("Agent unit tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
     });
-    
+
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
@@ -32,7 +32,7 @@ describe("Agent unit tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
-    
+
     it("Should create agent", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         expect(agent.ownerAddress).to.eq(ownerAddress);
@@ -100,7 +100,7 @@ describe("Agent unit tests", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
-       await agent.confirmTopupPayment(tx);
+        await agent.confirmTopupPayment(tx);
     });
 
     it("Should announce, perform and confirm underlying withdrawal", async () => {
@@ -138,6 +138,11 @@ describe("Agent unit tests", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const res = await agent.selfClose(1);
         expect(res.agentVault).to.eq(agent.vaultAddress);
+    });
+
+    it("Should noy buyback agent collateral", async () => {
+        const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        await expectRevert(agent.buybackAgentCollateral(), "f-asset not terminated");
     });
 
     it("Should prove EOA address", async () => {
