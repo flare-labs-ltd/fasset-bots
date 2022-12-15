@@ -8,9 +8,9 @@ import { createTestIndexerHelper } from "../../utils/test-bot-config";
 let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.ALGO;
 
-const txHash = "2117898bd891d3191b616492e027999052e35dc0e023131adfb296412986e7bc";
-const blockId = 24044383;
-const blockHash = "648764971e7918177935ab1689f0e62a348df4c156060eabd054b787dcc7e79d";
+const txHash = "ae4491a8a57f45555d467a79c8a9ac70411ca0f6d2d4ce729e957a39b9c36638";
+const blockId = 24078316;
+const blockHash = "c6e59c61584b193701a0b880a6575bed9e8e434f33da8493a4eb1ff6d27fc064";
 const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 
 describe("ALGO blockchain tests via indexer", async () => {

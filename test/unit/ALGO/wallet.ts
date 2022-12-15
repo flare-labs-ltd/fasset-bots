@@ -27,15 +27,18 @@ describe("ALGO wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createTestBlockChainHelper(sourceId);
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
-    })
+    });
 
-    it("Should insert address and private key into db", async () => {
-        await dbWallet.addKey(fundedAddress, fundedPrivateKey);
-        await dbWallet.addKey(targetAddress, targetPrivateKey);
-        const targetPrivateKeyFromDb = await dbWallet.getKey(targetAddress);
-        const fundedPrivateKeyFromDb = await dbWallet.getKey(fundedAddress);
-        expect(targetPrivateKeyFromDb).to.equal(targetPrivateKey);
-        expect(fundedPrivateKeyFromDb).to.equal(fundedPrivateKey);
+    it("Should create account", async () => {
+        const account = await walletHelper.createAccount();
+        const privateKey = await dbWallet.getKey(account);
+        expect(privateKey).to.not.be.null;
+    });
+
+    it("Should add account", async () => {
+        const account = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        const privateKey = await dbWallet.getKey(account);
+        expect(privateKey).to.eq(fundedPrivateKey);
     });
 
     it("Should send funds and retrieve transaction", async () => {

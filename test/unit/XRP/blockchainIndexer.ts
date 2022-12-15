@@ -6,9 +6,9 @@ import { createTestIndexerHelper } from "../../utils/test-bot-config";
 let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.XRP;
 
-const txHash = "B13959D20BFF1AC0A7CE6A82CACD755DAC7718FFD77AD360BA35BCCBD975E94C";
-const blockId = 31788287;
-const blockHash = "81E91F148AA08FF8EBD6A088A1CE0BE55A66B001BE94C4CAEE86FA87927AA205";
+const txHash = "60fdd6901a43f3d814db0a132b237a38c782615c8a3a71c4ce7f090e64d9eb50";
+const blockId = 2620269;
+const blockHash = "395066007a0c47adf5b5ca62a75c124b24868b12ad370f2050bc47fc18f3d88b";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests via indexer", async () => {

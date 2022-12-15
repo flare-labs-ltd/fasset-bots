@@ -8,9 +8,9 @@ import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
 
-const txHash = "6C43D0F27F98B03979DC8869AAABDAD6B3C4E023580A2B25349C7FF5C1A52BEB";
-const blockId = 31387252;
-const blockHash = "53C070D1842C17A9A4A3980CC5168BCA7A8486440219E6A430717911BF10099D";
+const txHash = "1580BC9E024B55E81C09E178C92FB0B5E03F1EDB2F10225C2AD1C43F2C5607CB";
+const blockId = 33694363;
+const blockHash = "DCEEACF83320277B0886CA55B4AB7D7671B9202A25B1B7A935465F932758C6AF";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests", async () => {
