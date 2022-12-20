@@ -113,7 +113,7 @@ export class Challenger {
 
     async handleUnderlyingTransaction(em: EM, transaction: ITransaction): Promise<void> {
         for (const [address, amount] of transaction.inputs) {
-            const agentEnt = await em.findOneOrFail(AgentEntity, { underlyingAddress: address } as FilterQuery<AgentEntity>);
+            const agentEnt = await em.findOne(AgentEntity, { underlyingAddress: address } as FilterQuery<AgentEntity>);
             if (agentEnt == null) continue;
             // add to list of transactions - OK
             this.addUnconfirmedTransaction(agentEnt, transaction);
@@ -243,7 +243,7 @@ export class Challenger {
 
     async isValidAnnouncedPaymentReference(agentEnt: AgentEntity, reference: string) {
         const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
-        return !agentInfo.announcedUnderlyingWithdrawalId.isZero() && reference === PaymentReference.announcedWithdrawal(agentInfo.announcedUnderlyingWithdrawalId);
+        return !toBN(agentInfo.announcedUnderlyingWithdrawalId).isZero() && reference === PaymentReference.announcedWithdrawal(agentInfo.announcedUnderlyingWithdrawalId);
     }
 
     addUnconfirmedTransaction(agentEnt: AgentEntity, transaction: ITransaction) {
