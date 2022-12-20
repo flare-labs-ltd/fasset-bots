@@ -46,7 +46,7 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean): Promise<IAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean): Promise<IAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -85,7 +85,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
     };
     // create mock chain attestation provider
-    const chain = new MockChain(await time.latest());
+    const chain = new MockChain(mockChainAddCurrentTime ? await time.latest() : undefined);
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
     const chainEventsRaw = chain;

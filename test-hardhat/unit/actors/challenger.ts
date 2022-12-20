@@ -2,7 +2,6 @@ import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { Challenger } from "../../../src/actors/Challenger";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity } from "../../../src/entities/agent";
 import { ChallengerEntity } from "../../../src/entities/challenger";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
@@ -16,7 +15,7 @@ describe("Challenger unit tests", async () => {
     let accounts: string[];
     let context: IAssetBotContext;
     let runner: ScopedRunner;
-    let challengerAddress1: string;
+    let challengerAddress: string;
     let orm: ORM;
 
     before(async () => {
@@ -28,17 +27,17 @@ describe("Challenger unit tests", async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         runner = new ScopedRunner();
-        challengerAddress1 = accounts[10];
+        challengerAddress = accounts[10];
     });
 
     it("Should create challenger", async () => {
-        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress1);
-        expect(challenger.address).to.eq(challengerAddress1);
+        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress);
+        expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should read agent from entity", async () => {
-        const challengerEnt = await orm.em.findOneOrFail(ChallengerEntity, { address: challengerAddress1 } as FilterQuery<ChallengerEntity>);
+        const challengerEnt = await orm.em.findOneOrFail(ChallengerEntity, { address: challengerAddress } as FilterQuery<ChallengerEntity>);
         const challengerBot = await Challenger.fromEntity(runner, context, challengerEnt);
-        expect(challengerBot.address).to.eq(challengerAddress1);
+        expect(challengerBot.address).to.eq(challengerAddress);
     });
 });
