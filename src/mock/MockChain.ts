@@ -319,11 +319,10 @@ export class MockChainWallet implements IBlockChainWallet {
         // hash is set set when transaction is added to a block
         return { hash, inputs, outputs, reference, status };
     }
-
-    lastAccountId = 0;
     
     async createAccount(): Promise<string> {
-        return `UNDERLYING_ACCOUNT_${++this.lastAccountId}`;
+        const accountId = Math.floor(Math.random() * 100000) + 1;
+        return `UNDERLYING_ACCOUNT_${accountId}`;
     }
 
     private calculateMaxFee(options: TransactionOptionsWithFee) {
