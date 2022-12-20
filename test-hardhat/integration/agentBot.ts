@@ -13,6 +13,9 @@ import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
 
+const minterUnderlying: string = "MINTER_ADDRESS";
+const redeemerUnderlying: string = "REDEEMER_ADDRESS";
+
 describe("Agent bot tests", async () => {
     let accounts: string[];
     let context: IAssetBotContext;
@@ -22,28 +25,32 @@ describe("Agent bot tests", async () => {
     let redeemerAddress: string;
     let chain: MockChain;
     let settings: any;
+    let agentBot: AgentBot;
+    let minter: Minter;
+    let redeemer: Redeemer;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        ownerAddress = accounts[3];
+        minterAddress = accounts[4];
+        redeemerAddress = accounts[5];
     });
 
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
-        ownerAddress = accounts[3];
-        minterAddress = accounts[4];
-        redeemerAddress = accounts[5];
         settings = await context.assetManager.getSettings();
+        agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot.agent.makeAvailable(500, 25000);
+        minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        chain.mine(chain.finalizationBlocks + 1);
+        redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
     });
 
     it("Should perform minting", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
-        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -67,12 +74,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should perform minting and redemption", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
-        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
-        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -104,11 +105,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform minting - minter does not pay", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
-        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -140,11 +136,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should perform minting - minter pays, agent execute minting", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
-        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -175,11 +166,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
-        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -204,11 +190,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should perform unstick minting - minter pays and time expires in indexer", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS", toBNExp(10_000, 6)); // lot is 1000 XRP
-        chain.mine(chain.finalizationBlocks + 1);
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -238,12 +219,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
-        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
-        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -278,12 +253,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
-        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
-        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -311,12 +280,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent pays, time expires in indexer", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
-        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
-        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -348,12 +311,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
-        const minter = await Minter.createTest(context, minterAddress, "MINTER_ADDRESS_2", toBNExp(10_000, 6)); // lot is 1000 XRP
-        const redeemer = await Redeemer.create(context, redeemerAddress, "REDEEMER_ADDRESS_2");
-        chain.mine(chain.finalizationBlocks + 1);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
