@@ -1,5 +1,5 @@
 import { time } from "@openzeppelin/test-helpers";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
@@ -16,10 +16,10 @@ import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { AgentStatus } from "../../src/state/TrackedAgentState";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
-import { EventArgs } from "../../src/utils/events/common";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { ChallengerEntity } from "../../src/entities/challenger";
-import { FilterQuery } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core/typings";
+import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
+import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -43,7 +43,7 @@ describe("Challenger tests", async () => {
         return Number(agentInfo.status) as AgentStatus;
     }
 
-    async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
+    async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, challengerAddress: string) {
         const challengerEnt = await rootEm.findOne(ChallengerEntity, { address: challengerAddress } as FilterQuery<ChallengerEntity>);
         if (challengerEnt) {
             return await Challenger.fromEntity(runner, context, challengerEnt);
@@ -140,7 +140,7 @@ describe("Challenger tests", async () => {
         const [reqs] = await redeemer.requestRedemption(2);
         const rdreq = reqs[0];
         // run agent's steps until redemption process is finished
-        for (let i = 0; i < 10 ; i++) {
+        for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -259,5 +259,57 @@ describe("Challenger tests", async () => {
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
     });
-    
+
+    it("Should catch 'RedemptionPaymentFailed' event - failed underlying payment (not redeemer's address)", async () => {
+        const challenger = await createTestChallenger(runner, orm.em, context, challengerAddress);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot, 50);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // perform redemption
+        const [reqs] = await redeemer.requestRedemption(2);
+        const rdreq = reqs[0];
+        // create redemption entity
+        await agentBot.handleEvents(orm.em);
+        const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        expect(redemption.state).eq(AgentRedemptionState.STARTED);
+        // pay for redemption - wrong underlying address
+        redemption.paymentAddress = minter.underlyingAddress;
+        await agentBot.payForRedemption(redemption);
+        expect(redemption.state).eq(AgentRedemptionState.PAID);
+        // check payment proof is available
+        await agentBot.nextRedemptionStep(orm.em, redemption.id);
+        expect(redemption.state).eq(AgentRedemptionState.REQUESTED_PROOF);
+        // check start balance
+        const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
+        const startBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
+        // confirm payment proof is available
+        const proof = await context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        const paymentProof = proof.result as ProvedDH<DHPayment>;
+        const res = await context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: agentBot.agent.ownerAddress });
+        // finish redemption
+        await agentBot.runStep(orm.em);
+        expect(redemption.state).eq(AgentRedemptionState.DONE);
+        // catch 'RedemptionPaymentFailed' event
+        await challenger.runStep(orm.em);
+        let argsFailed: any = null;
+        let argsDefault: any = null;
+        for (const item of res!.logs) {
+            if (item.event === 'RedemptionPaymentFailed') {
+                argsFailed = item.args;
+            }
+            if (item.event === 'RedemptionDefault') {
+                argsDefault = item.args;
+            }
+        }
+        // check end balance
+        const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
+        const endBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
+        // asserts
+        assert(argsFailed.failureReason , "not redeemer's address");
+        assert(endBalanceRedeemer.sub(startBalanceRedeemer), String(argsDefault.redeemedCollateralWei));
+        assert(startBalanceAgent.sub(endBalanceAgent), String(argsDefault.redeemedCollateralWei));
+    });
+
 });

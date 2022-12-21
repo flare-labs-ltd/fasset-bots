@@ -82,6 +82,8 @@ export class AgentBot {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
                     await this.redemptionFinished(em, event.args);
+                } else if(eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
+                    await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
                     await this.topupCollateral('ccb');
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {

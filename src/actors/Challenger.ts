@@ -1,4 +1,4 @@
-import { FilterQuery } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core/typings";
 import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -32,7 +32,7 @@ export class Challenger {
     transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
-    eventDecoder = new Web3EventDecoder({});
+    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
     static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
@@ -66,12 +66,14 @@ export class Challenger {
             for (const transaction of transactions) {
                 await this.handleUnderlyingTransaction(em, transaction);
             }
+            // mark as handled
             challengerEnt.lastEventTimestampHandled = to;
 
             // Native chain events
             const events = await this.readUnhandledEvents(challengerEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
+                // console.log(this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.handleRedemptionRequested(event.args)
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
@@ -96,13 +98,12 @@ export class Challenger {
         const nci = this.context.nativeChainInfo;
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
-        const encodedAddress = web3.eth.abi.encodeParameter('address', this.address);
         for (let lastHandled = challengerEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
             const logs = await web3.eth.getPastLogs({
-                address: this.address,
+                address: this.context.assetManager.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
-                topics: [null, encodedAddress]
+                topics: [null]
             });
             events.push(...this.eventDecoder.decodeEvents(logs));
         }
