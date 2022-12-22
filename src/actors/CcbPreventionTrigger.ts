@@ -13,13 +13,12 @@ import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 export class CcbPreventionTrigger {
     constructor(
         public context: IAssetBotContext,
-        public contexts: Map<number, IAssetBotContext>,
         public address: string
     ) {}
 
-    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager });
+    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
     
-    static async create(rootEm: EM, context: IAssetBotContext, contexts: Map<number, IAssetBotContext>, address: string) {
+    static async create(rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const ccbTriggerEntity = new ActorEntity();
@@ -28,13 +27,13 @@ export class CcbPreventionTrigger {
             ccbTriggerEntity.lastEventBlockHandled = lastBlock;
             ccbTriggerEntity.type = ActorType.CCB_PREVENTION_TRIGGER;
             em.persist(ccbTriggerEntity);
-            const ccbTrigger = new CcbPreventionTrigger(context, contexts, address);
+            const ccbTrigger = new CcbPreventionTrigger(context, address);
             return ccbTrigger;
         });
     }
 
-    static async fromEntity(context: IAssetBotContext, contexts: Map<number, IAssetBotContext>, ccbTriggerEntity: ActorEntity) {
-        return new CcbPreventionTrigger(context, contexts, ccbTriggerEntity.address);
+    static async fromEntity(context: IAssetBotContext, ccbTriggerEntity: ActorEntity) {
+        return new CcbPreventionTrigger(context, ccbTriggerEntity.address);
     }
 
     async runStep(em: EM) {
@@ -48,9 +47,13 @@ export class CcbPreventionTrigger {
             const events = await this.readUnhandledEvents(liquidatorEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
-                console.log(this.context.ftsoManager.address, event.address, event.event);
+                console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAllAgentsForColletaralRatio(rootEm)
+                    await this.checkAllAgentsForColletaralRatio(rootEm);
+                } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
+                    const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: event.args.agentVault } as FilterQuery<AgentEntity>);
+                    const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
+                    await this.checkAgentForCollateralRatio(agentBot);
                 }
             }
             // checking for collateral ratio after every minting => is done in AgentBot.ts
@@ -65,13 +68,20 @@ export class CcbPreventionTrigger {
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
         for (let lastHandled = liquidatorEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
-            const logs = await web3.eth.getPastLogs({
+            const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                 topics: [null]
             });
-            events.push(...this.eventDecoder.decodeEvents(logs));
+            events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+            const logsFtsoManager = await web3.eth.getPastLogs({
+                address: this.context.ftsoManager.address,
+                fromBlock: lastHandled + 1,
+                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                topics: [null]
+            });
+            events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
         liquidatorEnt.lastEventBlockHandled = lastBlock;
@@ -79,15 +89,10 @@ export class CcbPreventionTrigger {
     }
 
     async checkAllAgentsForColletaralRatio(rootEm: EM) {
-        const agentEntities = await rootEm.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
+        const agentEntities = await rootEm.find(AgentEntity, { active: true, chainId: this.context.chainInfo.chainId } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
-                const context = this.contexts.get(agentEntity.chainId);
-                if (context == null) {
-                    console.warn(`Invalid chain id ${agentEntity.chainId}`);
-                    continue;
-                }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity);
+                const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
                 await this.checkAgentForCollateralRatio(agentBot);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
