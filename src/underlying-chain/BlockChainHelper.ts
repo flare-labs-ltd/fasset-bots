@@ -13,9 +13,8 @@ export class BlockChainHelper implements IBlockChain {
     secondsPerBlock: number = 0;
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
-        let transaction = null;
         if (this.mccClient instanceof MCC.ALGO) {
-            transaction = await this.mccClient.getIndexerTransaction(txHash);
+            const transaction = await this.mccClient.getIndexerTransaction(txHash);
             if (transaction) {
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
@@ -34,7 +33,7 @@ export class BlockChainHelper implements IBlockChain {
                 };
             }
         } else {
-            transaction = await this.mccClient.getTransaction(txHash);
+            const transaction = await this.mccClient.getTransaction(txHash);
             if (transaction) {
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
@@ -51,9 +50,9 @@ export class BlockChainHelper implements IBlockChain {
                     reference: transaction.stdPaymentReference,
                     status: transaction.successStatus
                 };
-            }
+            } 
         }
-        return transaction;
+        return null;
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
