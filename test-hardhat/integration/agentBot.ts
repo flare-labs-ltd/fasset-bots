@@ -12,6 +12,7 @@ import { createTestAssetContext } from "../utils/test-asset-context";
 import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
+import { disableMccTraceManager } from "../utils/helpers";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -30,6 +31,7 @@ describe("Agent bot tests", async () => {
     let redeemer: Redeemer;
 
     before(async () => {
+        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
         ownerAddress = accounts[3];

@@ -16,10 +16,11 @@ import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { AgentStatus } from "../../src/state/TrackedAgentState";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
-import { ChallengerEntity } from "../../src/entities/challenger";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
 import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
+import { ActorEntity, ActorType } from "../../src/entities/actor";
+import { disableMccTraceManager } from "../utils/helpers";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -44,7 +45,7 @@ describe("Challenger tests", async () => {
     }
 
     async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, challengerAddress: string) {
-        const challengerEnt = await rootEm.findOne(ChallengerEntity, { address: challengerAddress } as FilterQuery<ChallengerEntity>);
+        const challengerEnt = await rootEm.findOne(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
         if (challengerEnt) {
             return await Challenger.fromEntity(runner, context, challengerEnt);
         } else {
@@ -62,12 +63,14 @@ describe("Challenger tests", async () => {
     }
 
     before(async () => {
+        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         challengerAddress = accounts[6];
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
+
     });
 
     beforeEach(async () => {

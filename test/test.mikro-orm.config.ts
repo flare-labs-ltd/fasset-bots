@@ -1,10 +1,10 @@
 import { createOrm, CreateOrmOptions } from "../src/config/orm";
+import { ActorEntity } from "../src/entities/actor";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../src/entities/agent";
-import { ChallengerEntity } from "../src/entities/challenger";
 import { WalletAddress } from "../src/entities/wallet";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, ChallengerEntity],
+    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, ActorEntity],
     type: 'sqlite',
     dbName: 'fasset-bots-test.db',
     debug: false,

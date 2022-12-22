@@ -5,8 +5,8 @@ import { Challenger } from "../../../src/actors/Challenger";
 import { BotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
+import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { AgentEntity } from "../../../src/entities/agent";
-import { ChallengerEntity } from "../../../src/entities/challenger";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
@@ -74,7 +74,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should read challenger from entity", async () => {
-        const challengerEnt = await orm.em.findOneOrFail(ChallengerEntity, { address: challengerAddress } as FilterQuery<ChallengerEntity>);
+        const challengerEnt = await orm.em.findOneOrFail(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
         const challenger = await Challenger.fromEntity(runner, context, challengerEnt);
         expect(challenger.address).to.eq(challengerAddress);
     });

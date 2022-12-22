@@ -1,8 +1,8 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
+import { ActorEntity, ActorType } from "../entities/actor";
 import { AgentEntity } from "../entities/agent";
-import { ChallengerEntity } from "../entities/challenger";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -37,18 +37,19 @@ export class Challenger {
     static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
-            const challengerEntity = new ChallengerEntity();
+            const challengerEntity = new ActorEntity();
             challengerEntity.chainId = context.chainInfo.chainId;
             challengerEntity.address = address;
             challengerEntity.lastEventBlockHandled = lastBlock;
             challengerEntity.lastEventTimestampHandled = systemTimestamp();
+            challengerEntity.type = ActorType.CHALLENGER;
             em.persist(challengerEntity);
             const challenger = new Challenger(runner, address, context);
             return challenger;
         });
     }
 
-    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ChallengerEntity) {
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity) {
         return new Challenger(runner, challengerEntity.address, context);
     }
 
@@ -59,8 +60,8 @@ export class Challenger {
     async registerEvents(rootEm: EM) {
         await rootEm.transactional(async em => {
             // Underlying chain events
-            const challengerEnt = await em.findOneOrFail(ChallengerEntity, { address: this.address } as FilterQuery<ChallengerEntity>);
-            let from = challengerEnt.lastEventTimestampHandled;
+            const challengerEnt = await em.findOneOrFail(ActorEntity, { address: this.address } as FilterQuery<ActorEntity>);
+            let from = challengerEnt.lastEventTimestampHandled!;
             const to = systemTimestamp();
             const transactions = await this.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
             for (const transaction of transactions) {
@@ -93,7 +94,7 @@ export class Challenger {
         });
     }
 
-    async readUnhandledEvents(challengerEnt: ChallengerEntity): Promise<EvmEvent[]> {
+    async readUnhandledEvents(challengerEnt: ActorEntity): Promise<EvmEvent[]> {
         // get all logs for this challenger
         const nci = this.context.nativeChainInfo;
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;

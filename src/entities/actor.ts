@@ -1,8 +1,8 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { ADDRESS_LENGTH } from "./common";
 
-@Entity({ tableName: 'challenger' })
-export class ChallengerEntity {
+@Entity({ tableName: 'actor' })
+export class ActorEntity {
     @PrimaryKey({ length: ADDRESS_LENGTH })
     address!: string;
 
@@ -13,5 +13,14 @@ export class ChallengerEntity {
     lastEventBlockHandled!: number;
 
     @Property({ nullable: true })
-    lastEventTimestampHandled!: number;
+    lastEventTimestampHandled?: number;
+
+    @Property()
+    type!: ActorType;
+}
+
+export enum ActorType {
+    CHALLENGER = 'challenger',
+    CCB_PREVENTION_TRIGGER = 'ccbPreventionTrigger',
+    LIQUIDATOR = 'liquidator'
 }

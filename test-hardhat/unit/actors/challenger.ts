@@ -1,8 +1,9 @@
+import { TraceManager } from "@flarenetwork/mcc/dist/src/utils/trace";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { Challenger } from "../../../src/actors/Challenger";
 import { ORM } from "../../../src/config/orm";
-import { ChallengerEntity } from "../../../src/entities/challenger";
+import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
@@ -36,8 +37,9 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should read agent from entity", async () => {
-        const challengerEnt = await orm.em.findOneOrFail(ChallengerEntity, { address: challengerAddress } as FilterQuery<ChallengerEntity>);
+        const challengerEnt = await orm.em.findOneOrFail(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
         const challengerBot = await Challenger.fromEntity(runner, context, challengerEnt);
         expect(challengerBot.address).to.eq(challengerAddress);
     });
+
 });
