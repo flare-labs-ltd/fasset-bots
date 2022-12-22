@@ -74,7 +74,7 @@
       "cover:report": "yarn nyc report --reporter=lcov --reporter=text"
    },
    "dependencies": {
-      "@flarenetwork/mcc": "^2.0.5",
+      "@flarenetwork/mcc": "^2.0.9",
       "@mikro-orm/cli": "^5.4.2",
       "@mikro-orm/core": "^5.4.2",
       "@mikro-orm/sqlite": "^5.4.2",
