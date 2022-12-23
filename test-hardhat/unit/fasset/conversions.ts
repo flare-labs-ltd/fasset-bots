@@ -4,8 +4,7 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { AMG_NATWEI_PRICE_SCALE, convertAmgToNATWei, convertAmgToUBA, convertLotsToAMG, convertLotsToUBA, convertNATWeiToAMG, convertUBAToAmg, convertUBAToLots, convertUBAToNATWei, lotSize } from "../../../src/fasset/Conversions";
 import { expect } from "chai";
-import { toBN } from "@flarenetwork/mcc";
-import { toBNExp } from "../../../src/utils/helpers";
+import { toBN, toBNExp } from "../../../src/utils/helpers";
 
 describe("Conversions unit tests", async () => {
     let accounts: string[];
