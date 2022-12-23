@@ -6,7 +6,6 @@ import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { AgentStatus } from "../state/TrackedAgentState";
 import { AttestationClientError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { EvmEvent } from "../utils/events/common";
@@ -17,6 +16,7 @@ import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { getOrCreate, sleep, sumBN, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
+import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 

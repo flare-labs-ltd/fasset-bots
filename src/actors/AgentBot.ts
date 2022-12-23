@@ -16,6 +16,17 @@ import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, toBN } from "../u
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
+// status as returned from getAgentInfo
+export enum AgentStatus {
+    NORMAL = 0,             // agent is operating normally
+    CCB = 1,                // agent in collateral call band
+    LIQUIDATION = 2,        // liquidation due to collateral ratio - ends when agent is healthy
+    FULL_LIQUIDATION = 3,   // illegal payment liquidation - always liquidates all and then agent must close vault
+    DESTROYING = 4,         // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
+}
+
+const MAX_UINT256 = toBN(1).shln(256).subn(1);
+
 const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {
@@ -378,6 +389,46 @@ export class AgentBot {
         await this.agent.agentVault.deposit({ value: requiredTopup });
     }
 
+    async possibleLiquidationTransition(timestamp: BN): Promise<Number> {
+        const agentInfo = await this.agent.getAgentInfo();
+        const settings = await this.context.assetManager.getSettings();
+        const cr = await this.collateralRatioBIPS(settings, agentInfo);
+        const agentStatus = Number(agentInfo.status);
+        if (agentStatus === AgentStatus.NORMAL) {
+            if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS))) {
+                return AgentStatus.LIQUIDATION;
+            } else if (cr.lt(toBN(settings.minCollateralRatioBIPS))) {
+                return AgentStatus.CCB;
+            }
+        } else if (agentStatus === AgentStatus.CCB) {
+            if (cr.gte(toBN(settings.minCollateralRatioBIPS))) {
+                return AgentStatus.NORMAL;
+            } else if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS)) || timestamp.gte(agentInfo.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
+                return AgentStatus.LIQUIDATION;
+            }
+        } else if (agentStatus === AgentStatus.LIQUIDATION) {
+            if (cr.gte(toBN(settings.safetyMinCollateralRatioBIPS))) {
+                return AgentStatus.NORMAL;
+            }
+        }
+        return agentStatus;
+    }
+
+    async collateralRatioBIPS(settings: any, agentInfo: any) {
+        const prices = (await this.currentPriceWithTrusted())[0];
+        const trustedPrices = (await this.currentPriceWithTrusted())[1];
+        const ratio = this.collateralRatioForPriceBIPS(prices, settings, agentInfo);
+        const ratioFromTrusted = this.collateralRatioForPriceBIPS(trustedPrices, settings, agentInfo);
+        return BN.max(ratio, ratioFromTrusted);
+    }
+
+    private collateralRatioForPriceBIPS(prices: any, agentInfo: any, settings: any) {
+        const totalUBA = toBN(agentInfo.reservedUBA).add(toBN(agentInfo.mintedUBA)).add(toBN(agentInfo.redeemingUBA));
+        if (totalUBA.isZero()) return MAX_UINT256;
+        const backingCollateral = convertUBAToNATWei(settings, totalUBA, prices.amgNatWei);
+        return toBN(agentInfo.totalCollateralNATWei).muln(MAX_BIPS).div(backingCollateral);
+    }
+
     private async requiredTopup(requiredCR: BN, settings: any, agentInfo: any): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
@@ -389,14 +440,21 @@ export class AgentBot {
     }
 
     private async currentAmgToNATWeiPriceWithTrusted(settings: any): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
+        const prices = (await this.currentPriceWithTrusted())[0];
+        const trustedPrices = (await this.currentPriceWithTrusted())[1];
+        const ftsoPrice = amgToNATWeiPrice(settings, prices.natPrice, prices.assetPrice);
+        const trustedPrice = trustedPrices.natTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.natTimestamp) &&
+        trustedPrices.assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.assetTimestamp) ?
+            amgToNATWeiPrice(settings, trustedPrices.natPriceTrusted, trustedPrices.assetPriceTrusted) : ftsoPrice;
+        return [ftsoPrice, trustedPrice];
+    }
+
+    private async currentPriceWithTrusted(): Promise<[{ natPrice: BN, natTimestamp: BN, assetPrice: BN, assetTimestamp: BN }, { natPriceTrusted: BN, natTimestampTrusted: BN, assetPriceTrusted: BN, assetTimestampTrusted: BN }]> {
         const { 0: natPrice, 1: natTimestamp } = await this.context.natFtso.getCurrentPrice();
         const { 0: assetPrice, 1: assetTimestamp } = await this.context.assetFtso.getCurrentPrice();
         const { 0: natPriceTrusted, 1: natTimestampTrusted } = await this.context.natFtso.getCurrentPriceFromTrustedProviders();
         const { 0: assetPriceTrusted, 1: assetTimestampTrusted } = await this.context.assetFtso.getCurrentPriceFromTrustedProviders();
-        const ftsoPrice = amgToNATWeiPrice(settings, natPrice, assetPrice);
-        const trustedPrice = natTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(natTimestamp) &&
-            assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(assetTimestamp) ?
-            amgToNATWeiPrice(settings, natPriceTrusted, assetPriceTrusted) : ftsoPrice;
-        return [ftsoPrice, trustedPrice];
+        return [{ natPrice: natPrice, natTimestamp: natTimestamp, assetPrice: assetPrice, assetTimestamp: assetTimestamp }, 
+            { natPriceTrusted: natPriceTrusted, natTimestampTrusted: natTimestampTrusted, assetPriceTrusted: assetPriceTrusted, assetTimestampTrusted: assetTimestampTrusted }];
     }
 }

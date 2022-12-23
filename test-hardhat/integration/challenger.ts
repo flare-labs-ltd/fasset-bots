@@ -1,6 +1,6 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
-import { AgentBot } from "../../src/actors/AgentBot";
+import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
@@ -13,7 +13,6 @@ import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Challenger } from "../../src/actors/Challenger";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { AgentStatus } from "../../src/state/TrackedAgentState";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core/typings";
