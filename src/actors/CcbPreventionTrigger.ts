@@ -1,14 +1,15 @@
 import { FilterQuery } from "@mikro-orm/core";
-import { EM, ORM } from "../config/orm";
+import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { ActorEntity, ActorType } from "../entities/actor";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { EvmEvent } from "../utils/events/common";
+import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { CCB_LIQUIDATION_PREVENTION_FACTOR, systemTimestamp, toBN } from "../utils/helpers";
+import { CCB_LIQUIDATION_PREVENTION_FACTOR, toBN } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
+import { MintingExecuted } from "../../typechain-truffle/AssetManager";
 
 export class CcbPreventionTrigger {
     constructor(
@@ -49,11 +50,9 @@ export class CcbPreventionTrigger {
             for (const event of events) {
                 console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAllAgentsForColletaralRatio(rootEm);
+                    await this.checkAllAgentsForColletaralRatio(em);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: event.args.agentVault } as FilterQuery<AgentEntity>);
-                    const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
-                    await this.checkAgentForCollateralRatio(agentBot);
+                    await this.handleMintingExecuted(em, event.args)
                 }
             }
             // checking for collateral ratio after every minting => is done in AgentBot.ts
@@ -86,6 +85,12 @@ export class CcbPreventionTrigger {
         // mark as handled
         liquidatorEnt.lastEventBlockHandled = lastBlock;
         return events;
+    }
+
+    async handleMintingExecuted(em: EM, args: EventArgs<MintingExecuted>) {
+        const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
+        await this.checkAgentForCollateralRatio(agentBot);
     }
 
     async checkAllAgentsForColletaralRatio(rootEm: EM) {

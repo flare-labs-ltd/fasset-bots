@@ -27,21 +27,21 @@ describe("Collateral call band trigger tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
 
-    async function createTestCcbTrigger(rootEm: EM, context: IAssetBotContext, ccbTriggerAddress: string) {
-        const ccbTriggerEnt = await rootEm.findOne(ActorEntity, { address: ccbTriggerAddress, type: ActorType.CCB_PREVENTION_TRIGGER } as FilterQuery<ActorEntity>);
+    async function createTestCcbTrigger(rootEm: EM, context: IAssetBotContext, address: string) {
+        const ccbTriggerEnt = await rootEm.findOne(ActorEntity, { address: address, type: ActorType.CCB_PREVENTION_TRIGGER } as FilterQuery<ActorEntity>);
         if (ccbTriggerEnt) {
             return await CcbPreventionTrigger.fromEntity(context, ccbTriggerEnt);
         } else {
-            return await CcbPreventionTrigger.create(rootEm, context, ccbTriggerAddress);
+            return await CcbPreventionTrigger.create(rootEm, context, address);
         }
     }
 
-    async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
-        const agentEnt = await rootEm.findOne(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
+    async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string) {
+        const agentEnt = await rootEm.findOne(AgentEntity, { ownerAddress: address } as FilterQuery<AgentEntity>);
         if (agentEnt) {
             return await AgentBot.fromEntity(context, agentEnt);
         } else {
-            const agentBot =  await AgentBot.create(rootEm, context, ownerAddress);
+            const agentBot =  await AgentBot.create(rootEm, context, address);
             await agentBot.agent.depositCollateral(toBNExp(100_000_000, 18));
             await agentBot.agent.makeAvailable(500, 3_0000);
             return agentBot;

@@ -44,12 +44,12 @@ describe("Challenger tests", async () => {
         return Number(agentInfo.status) as AgentStatus;
     }
 
-    async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, challengerAddress: string) {
-        const challengerEnt = await rootEm.findOne(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
+    async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
+        const challengerEnt = await rootEm.findOne(ActorEntity, { address: address, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
         if (challengerEnt) {
             return await Challenger.fromEntity(runner, context, challengerEnt);
         } else {
-            return await Challenger.create(runner, rootEm, context, challengerAddress);
+            return await Challenger.create(runner, rootEm, context, address);
         }
     }
 
