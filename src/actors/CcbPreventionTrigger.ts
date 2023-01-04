@@ -3,13 +3,12 @@ import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { ActorEntity, ActorType } from "../entities/actor";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { EventArgs, EvmEvent } from "../utils/events/common";
+import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { CCB_LIQUIDATION_PREVENTION_FACTOR, toBN } from "../utils/helpers";
 import { AgentBot } from "./AgentBot";
 import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { MintingExecuted } from "../../typechain-truffle/AssetManager";
 
 export class CcbPreventionTrigger {
     constructor(
@@ -51,11 +50,8 @@ export class CcbPreventionTrigger {
                 console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     await this.checkAllAgentsForColletaralRatio(em);
-                } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    await this.handleMintingExecuted(em, event.args)
                 }
             }
-            // checking for collateral ratio after every minting => is done in AgentBot.ts
         }).catch(error => {
             console.error(`Error handling events for challenger ${this.address}: ${error}`);
         });
@@ -87,12 +83,6 @@ export class CcbPreventionTrigger {
         return events;
     }
 
-    async handleMintingExecuted(em: EM, args: EventArgs<MintingExecuted>) {
-        const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
-        await this.checkAgentForCollateralRatio(agentBot);
-    }
-
     async checkAllAgentsForColletaralRatio(rootEm: EM) {
         const agentEntities = await rootEm.find(AgentEntity, { active: true, chainId: this.context.chainInfo.chainId } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
@@ -107,11 +97,12 @@ export class CcbPreventionTrigger {
 
     private async checkAgentForCollateralRatio(agentBot: AgentBot) {
         const agentInfo = await agentBot.agent.getAgentInfo();
-        const cr = agentInfo.collateralRatioBIPS;
+        const cr = toBN(agentInfo.collateralRatioBIPS);
         const settings = await agentBot.agent.context.assetManager.getSettings();
         const minCollateralRatioBIPS = toBN(settings.minCollateralRatioBIPS);
-        if (cr <= minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR)) {
-            await agentBot.topupCollateral('trigger');
+        console.log(cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR)))
+        if (cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR))) {
+            await agentBot.topupCollateral();
         }
     }
 }

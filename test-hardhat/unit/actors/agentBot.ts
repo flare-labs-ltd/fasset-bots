@@ -47,24 +47,14 @@ describe("Agent bot unit tests", async () => {
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     });
 
+    it("Should topup collateral", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        await agentBot.topupCollateral();
+    });
+
     it("Should prove EOA address", async () => {
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true, true);
         await AgentBot.create(orm.em, context, ownerAddress);
     });
 
-    it("Should topup collateral - liquidation", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.topupCollateral("liquidation");
-    });
-
-    it("Should topup collateral - ccb", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.topupCollateral("ccb");
-    });
-
-    it("Should topup collateral - trigger", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        await agentBot.topupCollateral("trigger");
-    });
-    
 });

@@ -4,6 +4,8 @@ import { EM } from "../config/orm";
 import { ActorEntity, ActorType } from "../entities/actor";
 import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
+import { Prices } from "../state/Prices";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
@@ -17,8 +19,24 @@ export class LiquidationTrigger {
         public address: string
     ) {}
 
-    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
+    // must call initialize to init prices and settings
+    prices!: Prices;
+    trustedPrices!: Prices;
+    // settings
+    settings!: AssetManagerSettings;
     
+    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
+
+    // async initialization part
+    async initialize() {
+        this.settings = await this.context.assetManager.getSettings();
+        [this.prices, this.trustedPrices] = await this.getPrices();
+    }
+
+    async getPrices(): Promise<[Prices, Prices]> {
+        return await Prices.getPrices(this.context, this.settings);
+    }
+
     static async create(rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
@@ -48,8 +66,10 @@ export class LiquidationTrigger {
             const events = await this.readUnhandledEvents(liquidatorEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
-                console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
+                // console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
+                    // refresh prices
+                    [this.prices, this.trustedPrices] = await this.getPrices();
                     await this.checkAllAgentsForLiquidation(em);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     await this.handleMintingExecuted(em, event.args);
@@ -89,29 +109,27 @@ export class LiquidationTrigger {
 
     async handleMintingExecuted(em: EM, args: EventArgs<MintingExecuted>) {
         const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
-        await this.checkAgentForLiquidation(agentBot);
+        await this.checkAgentForLiquidation(agentEntity);
     }
 
     async checkAllAgentsForLiquidation(rootEm: EM) {
         const agentEntities = await rootEm.find(AgentEntity, { active: true, chainId: this.context.chainInfo.chainId } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
-                const agentBot = await AgentBot.fromEntity(this.context, agentEntity);
-                await this.checkAgentForLiquidation(agentBot);
+                await this.checkAgentForLiquidation(agentEntity);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
             }
         }
     }
 
-    private async checkAgentForLiquidation(agentBot: AgentBot) {
+    private async checkAgentForLiquidation(agentBotEnt: AgentEntity) {
         const timestamp = await latestBlockTimestampBN();
-        const newStatus = await agentBot.possibleLiquidationTransition(timestamp);
-        const agentStatus = Number((await agentBot.agent.getAgentInfo()).status);
-        if (newStatus > agentStatus) {
+        const agentBot = await AgentBot.fromEntity(this.context, agentBotEnt);
+        const newStatus = await agentBot.possibleLiquidationTransition(timestamp, this.prices, this.trustedPrices, agentBotEnt.status);
+        if (newStatus > agentBotEnt.status) {
             await this.context.assetManager.startLiquidation(agentBot.agent.vaultAddress, { from: this.address });
-        } else if (newStatus < agentStatus) {
+        } else if (newStatus < agentBotEnt.status) {
             await this.context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: this.address });
         }
     }

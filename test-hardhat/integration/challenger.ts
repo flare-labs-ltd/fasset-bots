@@ -14,7 +14,7 @@ import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Challenger } from "../../src/actors/Challenger";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
-import { AgentRedemptionState } from "../../src/entities/agent";
+import { AgentEntity, AgentRedemptionState } from "../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
 import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
@@ -108,6 +108,11 @@ describe("Challenger tests", async () => {
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
+        // handle status change as agent bot and entity
+        const agentBotEnt = await orm.em.findOne(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address,  } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt?.status, AgentStatus.NORMAL);
+        await agentBot.runStep(orm.em);
+        assert.equal(agentBotEnt?.status, AgentStatus.FULL_LIQUIDATION);
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {

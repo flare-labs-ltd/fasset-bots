@@ -131,7 +131,7 @@ export class Challenger {
     async handleTransactionConfirmed(em: EM, agentVault: string, transactionHash: string): Promise<void> {
         this.deleteUnconfirmedTransaction(agentVault, transactionHash);
         // also re-check free balance
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await em.findOne(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         if (agentEnt) await this.checkForNegativeFreeBalance(agentEnt);
     }
 

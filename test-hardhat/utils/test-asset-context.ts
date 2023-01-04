@@ -15,6 +15,7 @@ import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { createTestWalletClient } from "../../test/utils/test-bot-config";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
+import { FtsoManagerMockInstance, FtsoMockContract, FtsoMockInstance } from "../../typechain-truffle";
 import { newAssetManager } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
@@ -46,7 +47,14 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean): Promise<IAssetBotContext> {
+type Modify<T, R> = Omit<T, keyof R> & R;
+export type TestAssetBotContext = Modify<IAssetBotContext, {
+    natFtso: FtsoMockInstance;
+    assetFtso: FtsoMockInstance;
+    ftsoManager: FtsoManagerMockInstance;
+}>
+
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });

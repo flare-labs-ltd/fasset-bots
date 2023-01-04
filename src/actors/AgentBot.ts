@@ -5,8 +5,10 @@ import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
+import { Prices } from "../state/Prices";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -96,9 +98,15 @@ export class AgentBot {
                 } else if(eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
-                    await this.topupCollateral('ccb');
+                    await this.handleStatusChange(em, AgentStatus.CCB, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    await this.topupCollateral('liquidation');
+                    await this.handleStatusChange(em, AgentStatus.LIQUIDATION, event.args.timestamp);
+                } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
+                    await this.handleStatusChange(em, AgentStatus.FULL_LIQUIDATION, event.args.timestamp);
+                }  else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
+                    await this.handleStatusChange(em, AgentStatus.NORMAL);
+                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
+                    await this.handleStatusChange(em, AgentStatus.DESTROYING, event.args.timestamp);
                 }
             }
         }).catch(error => {
@@ -361,27 +369,18 @@ export class AgentBot {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
         const lqwblock = toBN(proof.lowestQueryWindowBlockNumber);
         const lqwbtimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
-        if (lqwblock > toBN(lastUnderlyingBlock) && lqwbtimestamp > toBN(lastUnderlyingTimestamp)) {
+        if (lqwblock.gt(lastUnderlyingBlock) && lqwbtimestamp.gt(lastUnderlyingTimestamp)) {
             return proof;
         }
         return null;
     }
 
-    // owner deposits flr/sgb to vault to get out of ccb or liquidation
-    async topupCollateral(type: 'liquidation' | 'ccb' | 'trigger') {
+    // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
+    async topupCollateral() {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
-        let requiredCR = BN_ZERO;
-        if (type === 'liquidation') {
-            requiredCR = toBN(settings.safetyMinCollateralRatioBIPS);
-        } else if (type === 'ccb') {
-            requiredCR = toBN(settings.minCollateralRatioBIPS);
-        } else if (type === 'trigger') {
-            requiredCR = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        } else {
-            throw new Error(`Invalid type ${type}`);
-        }
-        const requiredTopup = await this.requiredTopup(requiredCR, settings, agentInfo);
+        let requiredCR = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopup = await this.requiredTopup(requiredCR, agentInfo, settings);
         if (requiredTopup.lte(BN_ZERO)) {
             // no need for topup
             return;
@@ -389,11 +388,10 @@ export class AgentBot {
         await this.agent.agentVault.deposit({ value: requiredTopup });
     }
 
-    async possibleLiquidationTransition(timestamp: BN): Promise<Number> {
+    async possibleLiquidationTransition(timestamp: BN, prices: Prices, trustedPrices: Prices, agentStatus: AgentStatus): Promise<Number> {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
-        const cr = await this.collateralRatioBIPS(settings, agentInfo);
-        const agentStatus = Number(agentInfo.status);
+        const cr = await this.collateralRatioBIPS(settings, agentInfo, prices, trustedPrices);
         if (agentStatus === AgentStatus.NORMAL) {
             if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS))) {
                 return AgentStatus.LIQUIDATION;
@@ -414,22 +412,31 @@ export class AgentBot {
         return agentStatus;
     }
 
-    async collateralRatioBIPS(settings: any, agentInfo: any) {
-        const prices = (await this.currentPriceWithTrusted())[0];
-        const trustedPrices = (await this.currentPriceWithTrusted())[1];
-        const ratio = this.collateralRatioForPriceBIPS(prices, settings, agentInfo);
-        const ratioFromTrusted = this.collateralRatioForPriceBIPS(trustedPrices, settings, agentInfo);
+    async collateralRatioBIPS(settings: AssetManagerSettings, agentInfo: AgentInfo, prices: Prices, trustedPrices: Prices) {
+        const ratio = this.collateralRatioForPriceBIPS(prices, agentInfo, settings);
+        const ratioFromTrusted = this.collateralRatioForPriceBIPS(trustedPrices, agentInfo, settings);
         return BN.max(ratio, ratioFromTrusted);
     }
 
-    private collateralRatioForPriceBIPS(prices: any, agentInfo: any, settings: any) {
+    async handleStatusChange(em: EM, status: AgentStatus, timestamp?: BN): Promise<void> {
+        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        if (timestamp && agentBotEnt.status === AgentStatus.NORMAL && status === AgentStatus.CCB) {
+            agentBotEnt.ccbStartTimestamp = timestamp;
+        }
+        if (timestamp && (agentBotEnt.status === AgentStatus.NORMAL || agentBotEnt.status === AgentStatus.CCB) && (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION)) {
+            agentBotEnt.liquidationStartTimestamp = timestamp;
+        }
+        agentBotEnt.status = status;
+    }
+
+    private collateralRatioForPriceBIPS(prices: Prices, agentInfo: AgentInfo, settings: AssetManagerSettings) {
         const totalUBA = toBN(agentInfo.reservedUBA).add(toBN(agentInfo.mintedUBA)).add(toBN(agentInfo.redeemingUBA));
         if (totalUBA.isZero()) return MAX_UINT256;
         const backingCollateral = convertUBAToNATWei(settings, totalUBA, prices.amgNatWei);
         return toBN(agentInfo.totalCollateralNATWei).muln(MAX_BIPS).div(backingCollateral);
     }
 
-    private async requiredTopup(requiredCR: BN, settings: any, agentInfo: any): Promise<BN> {
+    private async requiredTopup(requiredCR: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
         const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);
@@ -439,7 +446,7 @@ export class AgentBot {
         return requiredCollateral.sub(collateral);
     }
 
-    private async currentAmgToNATWeiPriceWithTrusted(settings: any): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
+    private async currentAmgToNATWeiPriceWithTrusted(settings: AssetManagerSettings): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
         const prices = (await this.currentPriceWithTrusted())[0];
         const trustedPrices = (await this.currentPriceWithTrusted())[1];
         const ftsoPrice = amgToNATWeiPrice(settings, prices.natPrice, prices.assetPrice);

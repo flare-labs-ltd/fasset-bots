@@ -1,6 +1,6 @@
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
-import { AgentBot } from "../../src/actors/AgentBot";
+import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
@@ -8,18 +8,19 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestOrm } from "../../test/test.mikro-orm.config";
-import { createTestAssetContext } from "../utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
 import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
-import { AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
+import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
 import { disableMccTraceManager } from "../utils/helpers";
+import { FilterQuery } from "@mikro-orm/core/typings";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
+    let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
@@ -347,4 +348,79 @@ describe("Agent bot tests", async () => {
         const endBalance = await context.wnat.balanceOf(someAddress);
         assert.equal(String(endBalance.sub(startBalance)), String(settings.confirmationByOthersRewardNATWei));
     });
+
+    it("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        // should have an open minting
+        orm.em.clear();
+        const mintings = await agentBot.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const minting = mintings[0];
+        assert.equal(minting.state, AgentMintingState.STARTED);
+        // pay for and execute minting
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // the minting status should now be 'done'
+        orm.em.clear();
+        const openMintingsAfter = await agentBot.openMintings(orm.em, false);
+        assert.equal(openMintingsAfter.length, 0);
+        const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
+        assert.equal(mintingAfter.state, AgentMintingState.DONE);
+        // check status in agent bot entity
+        const agentBotEnt = await orm.em.findOne(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt?.status, AgentStatus.NORMAL);
+        await context.assetFtso.setCurrentPrice(toBNExp(3521, 50), 0);
+        await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
+        await agentBot.runStep(orm.em);
+        // handle status change and entity
+        await agentBot.runStep(orm.em);
+        assert.equal(agentBotEnt?.status, AgentStatus.LIQUIDATION);
+    });
+
+    it("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        // should have an open minting
+        orm.em.clear();
+        const mintings = await agentBot.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const minting = mintings[0];
+        assert.equal(minting.state, AgentMintingState.STARTED);
+        // pay for and execute minting
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // the minting status should now be 'done'
+        orm.em.clear();
+        const openMintingsAfter = await agentBot.openMintings(orm.em, false);
+        assert.equal(openMintingsAfter.length, 0);
+        const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
+        assert.equal(mintingAfter.state, AgentMintingState.DONE);
+        // check status in agent bot entity
+        const agentBotEnt = await orm.em.findOne(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt?.status, AgentStatus.NORMAL);
+        // change price
+        const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
+        await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
+        // start liquidation
+        await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
+        // handle status change and entity
+        await agentBot.runStep(orm.em);
+        assert.equal(agentBotEnt?.status, AgentStatus.LIQUIDATION);
+        // change price back
+        const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
+        await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
+        // agent ends liquidation
+        await agentBot.agent.endLiquidation();
+        // handle status change and entity
+        await agentBot.runStep(orm.em);
+        assert.equal(agentBotEnt?.status, AgentStatus.NORMAL);
+    });
+
 });
