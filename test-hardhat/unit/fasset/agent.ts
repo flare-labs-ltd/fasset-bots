@@ -140,7 +140,7 @@ describe("Agent unit tests", async () => {
         expect(res.agentVault).to.eq(agent.vaultAddress);
     });
 
-    it("Should noy buyback agent collateral", async () => {
+    it("Should not buyback agent collateral", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         await expectRevert(agent.buybackAgentCollateral(), "f-asset not terminated");
     });

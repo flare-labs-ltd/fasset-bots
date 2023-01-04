@@ -47,7 +47,7 @@ export class CcbPreventionTrigger {
             const events = await this.readUnhandledEvents(liquidatorEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
-                console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
+                // console.log(this.context.ftsoManager.address, this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     await this.checkAllAgentsForColletaralRatio(em);
                 }
@@ -100,7 +100,6 @@ export class CcbPreventionTrigger {
         const cr = toBN(agentInfo.collateralRatioBIPS);
         const settings = await agentBot.agent.context.assetManager.getSettings();
         const minCollateralRatioBIPS = toBN(settings.minCollateralRatioBIPS);
-        console.log(cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR)))
         if (cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR))) {
             await agentBot.topupCollateral();
         }
