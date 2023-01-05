@@ -1,6 +1,6 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import BN from "bn.js";
-import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { AgentDestroyed, CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
@@ -95,7 +95,7 @@ export class AgentBot {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
                     await this.redemptionFinished(em, event.args);
-                } else if(eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
                     await this.handleStatusChange(em, AgentStatus.CCB, event.args.timestamp);
@@ -103,10 +103,12 @@ export class AgentBot {
                     await this.handleStatusChange(em, AgentStatus.LIQUIDATION, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
                     await this.handleStatusChange(em, AgentStatus.FULL_LIQUIDATION, event.args.timestamp);
-                }  else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
                     await this.handleStatusChange(em, AgentStatus.NORMAL);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
                     await this.handleStatusChange(em, AgentStatus.DESTROYING, event.args.timestamp);
+                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
+                    await this.handleAgentDestruction(em, event.args);
                 }
             }
         }).catch(error => {
@@ -178,12 +180,18 @@ export class AgentBot {
     async nextMintingStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
-            if (minting.state === AgentMintingState.STARTED) {
-                await this.checkForNonPaymentProofOrExpiredProofs(minting);
-            } else if (minting.state === AgentMintingState.REQUEST_NON_PAYMENT_PROOF) {
-                await this.checkNonPayment(minting);
-            } else if (minting.state === AgentMintingState.REQUEST_PAYMENT_PROOF) {
-                await this.checkPaymentAndExecuteMinting(minting);
+            switch(minting.state) {
+                case AgentMintingState.STARTED:
+                    await this.checkForNonPaymentProofOrExpiredProofs(minting);
+                    break;
+                case AgentMintingState.REQUEST_NON_PAYMENT_PROOF:
+                    await this.checkNonPayment(minting);
+                    break;
+                case AgentMintingState.REQUEST_PAYMENT_PROOF:
+                    await this.checkPaymentAndExecuteMinting(minting);
+                    break;
+                default:
+                    console.error(`Minting state: ${minting.state} not supported`);
             }
         }).catch(error => {
             console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}`);
@@ -300,15 +308,21 @@ export class AgentBot {
     async nextRedemptionStep(rootEm: EM, id: number, skipConfirmation?: boolean) {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
-            if (redemption.state === AgentRedemptionState.STARTED) {
-                await this.payForRedemption(redemption);
-            } else if (redemption.state === AgentRedemptionState.PAID) {
-                await this.checkPaymentProofAvailable(redemption, skipConfirmation);
-            } else if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) {
-                await this.checkConfirmPayment(redemption);
+            switch(redemption.state) {
+                case AgentRedemptionState.STARTED:
+                    await this.payForRedemption(redemption);
+                    break;
+                case AgentRedemptionState.PAID:
+                    await this.checkPaymentProofAvailable(redemption, skipConfirmation);
+                    break;
+                case AgentRedemptionState.REQUESTED_PROOF:
+                    await this.checkConfirmPayment(redemption);
+                    break;
+                default: 
+                    console.error(`Redemption state: ${redemption.state} not supported`);
             }
         }).catch(error => {
-            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
+            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`, error);
         });
     }
 
@@ -401,7 +415,7 @@ export class AgentBot {
         } else if (agentStatus === AgentStatus.CCB) {
             if (cr.gte(toBN(settings.minCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
-            } else if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS)) || timestamp.gte(agentInfo.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
+            } else if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS)) || timestamp.gte(toBN(agentInfo.ccbStartTimestamp).add(toBN(settings.ccbTimeSeconds)))) {
                 return AgentStatus.LIQUIDATION;
             }
         } else if (agentStatus === AgentStatus.LIQUIDATION) {
@@ -429,6 +443,11 @@ export class AgentBot {
         agentBotEnt.status = status;
     }
 
+    async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>) {
+        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
+        agentBotEnt.active = false;
+    }
+
     private collateralRatioForPriceBIPS(prices: Prices, agentInfo: AgentInfo, settings: AssetManagerSettings) {
         const totalUBA = toBN(agentInfo.reservedUBA).add(toBN(agentInfo.mintedUBA)).add(toBN(agentInfo.redeemingUBA));
         if (totalUBA.isZero()) return MAX_UINT256;
@@ -451,7 +470,7 @@ export class AgentBot {
         const trustedPrices = (await this.currentPriceWithTrusted())[1];
         const ftsoPrice = amgToNATWeiPrice(settings, prices.natPrice, prices.assetPrice);
         const trustedPrice = trustedPrices.natTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.natTimestamp) &&
-        trustedPrices.assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.assetTimestamp) ?
+            trustedPrices.assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.assetTimestamp) ?
             amgToNATWeiPrice(settings, trustedPrices.natPriceTrusted, trustedPrices.assetPriceTrusted) : ftsoPrice;
         return [ftsoPrice, trustedPrice];
     }
@@ -461,7 +480,7 @@ export class AgentBot {
         const { 0: assetPrice, 1: assetTimestamp } = await this.context.assetFtso.getCurrentPrice();
         const { 0: natPriceTrusted, 1: natTimestampTrusted } = await this.context.natFtso.getCurrentPriceFromTrustedProviders();
         const { 0: assetPriceTrusted, 1: assetTimestampTrusted } = await this.context.assetFtso.getCurrentPriceFromTrustedProviders();
-        return [{ natPrice: natPrice, natTimestamp: natTimestamp, assetPrice: assetPrice, assetTimestamp: assetTimestamp }, 
-            { natPriceTrusted: natPriceTrusted, natTimestampTrusted: natTimestampTrusted, assetPriceTrusted: assetPriceTrusted, assetTimestampTrusted: assetTimestampTrusted }];
+        return [{ natPrice: natPrice, natTimestamp: natTimestamp, assetPrice: assetPrice, assetTimestamp: assetTimestamp },
+        { natPriceTrusted: natPriceTrusted, natTimestampTrusted: natTimestampTrusted, assetPriceTrusted: assetPriceTrusted, assetTimestampTrusted: assetTimestampTrusted }];
     }
 }

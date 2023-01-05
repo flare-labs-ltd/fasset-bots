@@ -2,14 +2,14 @@ import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast } from "../../../src/utils/helpers";
+import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentEntity } from "../../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
 
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
@@ -57,4 +57,73 @@ describe("Agent bot unit tests", async () => {
         await AgentBot.create(orm.em, context, ownerAddress);
     });
 
+    it("Should not do next redemption step due to invalid redemption state", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        // create redemption with invalid state
+        const rd = orm.em.create(AgentRedemption, {
+            state: 'invalid' as AgentRedemptionState,
+            agentAddress: "",
+            requestId: "",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0)
+        });
+        await agentBot.nextRedemptionStep(orm.em, rd.id);
+        await orm.em.persistAndFlush(rd);
+        await agentBot.nextRedemptionStep(orm.em, rd.id);
+    });
+
+    it("Should not do next minting step due to invalid minting state", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        // create redemption with invalid state
+        const mt = orm.em.create(AgentMinting, {
+            state: 'invalid' as AgentMintingState,
+            agentAddress: "",
+            agentUnderlyingAddress: "",
+            requestId: toBN(0),
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: ""
+        });
+        await agentBot.nextMintingStep(orm.em, mt.id);
+        await orm.em.persistAndFlush(mt);
+        await agentBot.nextMintingStep(orm.em, mt.id);
+    });
+
+    it("Should return open redemptions", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        // create redemptions
+        const rd1 = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.STARTED,
+            agentAddress: "000",
+            requestId: "000",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0)
+        });
+        const rd2 = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.DONE,
+            agentAddress: "001",
+            requestId: "001",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0)
+        });
+        await orm.em.persistAndFlush([rd1, rd2]);
+        const ids = await agentBot.openRedemptions(orm.em, true);
+        const rds = await agentBot.openRedemptions(orm.em, false);
+        expect(ids.length).to.eq(1);
+        expect(rds.length).to.eq(1);
+    });
 });

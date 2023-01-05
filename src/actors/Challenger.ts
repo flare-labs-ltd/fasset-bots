@@ -117,7 +117,7 @@ export class Challenger {
         for (const [address, amount] of transaction.inputs) {
             const agentEnt = await em.findOne(AgentEntity, { underlyingAddress: address } as FilterQuery<AgentEntity>);
             if (agentEnt == null) continue;
-            // add to list of transactions - OK
+            // add to list of transactions
             this.addUnconfirmedTransaction(agentEnt, transaction);
             // illegal transaction challenge
             await this.checkForIllegalTransaction(transaction, agentEnt);
@@ -131,8 +131,8 @@ export class Challenger {
     async handleTransactionConfirmed(em: EM, agentVault: string, transactionHash: string): Promise<void> {
         this.deleteUnconfirmedTransaction(agentVault, transactionHash);
         // also re-check free balance
-        const agentEnt = await em.findOne(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        if (agentEnt) await this.checkForNegativeFreeBalance(agentEnt);
+        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        await this.checkForNegativeFreeBalance(agentEnt);
     }
 
     handleRedemptionRequested(args: EvmEventArgs<RedemptionRequested>): void {
@@ -217,9 +217,10 @@ export class Challenger {
         // extract highest MAX_REPORT transactions
         transactions = transactions.slice(0, MAX_NEGATIVE_BALANCE_REPORT);
         // initiate challenge if total spent is big enough
+
         const totalSpent = sumBN(transactions, tx => tx.spent);
         const agenInfo = await this.getAgentInfo(agentEnt.vaultAddress);
-        if (totalSpent.gt(agenInfo.freeUnderlyingBalanceUBA)) {
+        if (totalSpent.gt(toBN(agenInfo.freeUnderlyingBalanceUBA))) {
             const transactionHashes = transactions.map(tx => tx.txHash);
             this.runner.startThread((scope) => this.freeBalanceNegativeChallenge(scope, transactionHashes, agentEnt));
         }
@@ -239,7 +240,7 @@ export class Challenger {
 
     isValidRedemptionReference(agentEnt: AgentEntity, reference: string) {
         const redemption = this.activeRedemptions.get(reference);
-        if (redemption == null) return false;
+        if (redemption === undefined) return false;
         return agentEnt.vaultAddress === redemption.agentAddress;
     }
 

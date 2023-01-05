@@ -109,10 +109,10 @@ describe("Challenger tests", async () => {
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
         // handle status change as agent bot and entity
-        const agentBotEnt = await orm.em.findOne(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address,  } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt?.status, AgentStatus.NORMAL);
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
         await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt?.status, AgentStatus.FULL_LIQUIDATION);
+        assert.equal(agentBotEnt.status, AgentStatus.FULL_LIQUIDATION);
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
@@ -219,23 +219,23 @@ describe("Challenger tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
             console.log(`Agent step ${i}, state=${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.DONE) break;
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
-        // await agentBot.agent.confirmActiveRedemptionPayment(reqs[0], txHash);
         // repeat the same payment (already confirmed)
         await agentBot.agent.performRedemptionPayment(rdreq);
-        // run challenger's steps until agent's status is FULL_LIQUIDATION
+        // run challenger's and agent's steps until agent's status is FULL_LIQUIDATION
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
             await sleep(3000);
             await challenger.runStep(orm.em);
-            const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
-            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            await agentBot.runStep(orm.em);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentBotEnt.status]}`)
+            if (agentBotEnt.status === AgentStatus.FULL_LIQUIDATION) break;
         }
-        const agentStatus2 = await getAgentStatus(agentBot);
-        assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
+        assert.equal(agentBotEnt.status, AgentStatus.FULL_LIQUIDATION);
+
     });
 
     it("Should challenge illegal payment - reference for already confirmed announced withdrawal", async () => {
@@ -314,9 +314,27 @@ describe("Challenger tests", async () => {
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const endBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
         // asserts
-        assert(argsFailed.failureReason , "not redeemer's address");
+        assert(argsFailed.failureReason, "not redeemer's address");
         assert(endBalanceRedeemer.sub(startBalanceRedeemer), String(argsDefault.redeemedCollateralWei));
         assert(startBalanceAgent.sub(endBalanceAgent), String(argsDefault.redeemedCollateralWei));
+    });
+
+    it("Should perform free balance negative challenge", async () => {
+        const challenger = await createTestChallenger(runner, orm.em, context, challengerAddress);
+        // announce and perform underlying withdrawal
+        const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
+        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal, 100);
+        chain.mine(chain.finalizationBlocks + 1);
+        // run challenger's steps until agent's status is FULL_LIQUIDATION
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await sleep(3000);
+            await challenger.runStep(orm.em);
+            const agentStatus = await getAgentStatus(agentBot);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+        }
     });
 
 });
