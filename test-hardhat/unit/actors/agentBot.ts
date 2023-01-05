@@ -100,7 +100,7 @@ describe("Agent bot unit tests", async () => {
         // create redemptions
         const rd1 = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.STARTED,
-            agentAddress: "000",
+            agentAddress: agentBot.agent.vaultAddress,
             requestId: "000",
             paymentAddress: "",
             valueUBA: toBN(0),
@@ -111,7 +111,7 @@ describe("Agent bot unit tests", async () => {
         });
         const rd2 = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.DONE,
-            agentAddress: "001",
+            agentAddress: agentBot.agent.vaultAddress,
             requestId: "001",
             paymentAddress: "",
             valueUBA: toBN(0),
