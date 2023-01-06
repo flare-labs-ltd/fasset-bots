@@ -13,6 +13,10 @@ import { ActorEntity, ActorType } from "../../src/entities/actor";
 import { disableMccTraceManager } from "../utils/helpers";
 import { CcbPreventionTrigger } from "../../src/actors/CcbPreventionTrigger";
 import { AgentEntity } from "../../src/entities/agent";
+const chai = require('chai');
+const spies = require('chai-spies');
+chai.use(spies);
+const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 
@@ -72,14 +76,17 @@ describe("Collateral call band trigger tests", async () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const ccbTrigger = await createTestCcbTrigger(orm.em, context, ccbTriggerAddress);
+        const spy = chai.spy.on(ccbTrigger, 'runStep');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await ccbTrigger.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after price changes 2", async () => {
         const ccbTrigger = await createTestCcbTrigger(orm.em, context, ccbTriggerAddress);
+        const spy = chai.spy.on(ccbTrigger, 'runStep');
         // create collateral reservation
         await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         // change price
@@ -89,5 +96,6 @@ describe("Collateral call band trigger tests", async () => {
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await ccbTrigger.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
 });

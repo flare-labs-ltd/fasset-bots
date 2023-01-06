@@ -1,11 +1,14 @@
-import { expect } from "chai";
 import { formatBN, isNotNull, last, randomAddress, sleep, systemTimestamp, toBN, toHex, toNumber, toStringExp, toWei } from "../../../src/utils/helpers";
 import Web3 from "web3";
+import { expect } from "chai";
+const chai = require('chai');
+chai.use(require('chai-as-promised'));
 
 describe("Helpers unit tests", async () => {
 
     it("Should sleep for x seconds", async () => {
         await sleep(1000);
+        await expect(sleep(1000)).to.eventually.be.fulfilled;
     });
     
     it("Should return system timestamp", async () => {

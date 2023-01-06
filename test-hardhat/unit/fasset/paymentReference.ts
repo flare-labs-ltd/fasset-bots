@@ -4,7 +4,6 @@ import { toBN, toHex } from "../../../src/utils/helpers";
 
 
 describe("Payment reference unit tests", async () => {
-
     const id = 5;
     const address = "";
 

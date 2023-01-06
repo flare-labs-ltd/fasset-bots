@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -10,6 +9,10 @@ import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
+const chai = require('chai');
+const spies = require('chai-spies');
+chai.use(spies);
+const expect = chai.expect;
 
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
@@ -49,16 +52,21 @@ describe("Agent bot unit tests", async () => {
 
     it("Should topup collateral", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'topupCollateral');
         await agentBot.topupCollateral();
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should prove EOA address", async () => {
+        const spy = chai.spy.on(AgentBot, 'create');
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true, true);
         await AgentBot.create(orm.em, context, ownerAddress);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should not do next redemption step due to invalid redemption state", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'nextRedemptionStep');
         // create redemption with invalid state
         const rd = orm.em.create(AgentRedemption, {
             state: 'invalid' as AgentRedemptionState,
@@ -74,10 +82,12 @@ describe("Agent bot unit tests", async () => {
         await agentBot.nextRedemptionStep(orm.em, rd.id);
         await orm.em.persistAndFlush(rd);
         await agentBot.nextRedemptionStep(orm.em, rd.id);
+        expect(spy).to.have.been.called.twice;
     });
 
     it("Should not do next minting step due to invalid minting state", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'nextMintingStep');
         // create redemption with invalid state
         const mt = orm.em.create(AgentMinting, {
             state: 'invalid' as AgentMintingState,
@@ -93,6 +103,7 @@ describe("Agent bot unit tests", async () => {
         await agentBot.nextMintingStep(orm.em, mt.id);
         await orm.em.persistAndFlush(mt);
         await agentBot.nextMintingStep(orm.em, mt.id);
+        expect(spy).to.have.been.called.twice;
     });
 
     it("Should return open redemptions", async () => {

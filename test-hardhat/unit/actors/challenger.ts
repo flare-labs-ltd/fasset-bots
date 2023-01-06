@@ -1,4 +1,3 @@
-import { TraceManager } from "@flarenetwork/mcc/dist/src/utils/trace";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { Challenger } from "../../../src/actors/Challenger";

@@ -235,7 +235,6 @@ describe("Challenger tests", async () => {
             if (agentBotEnt.status === AgentStatus.FULL_LIQUIDATION) break;
         }
         assert.equal(agentBotEnt.status, AgentStatus.FULL_LIQUIDATION);
-
     });
 
     it("Should challenge illegal payment - reference for already confirmed announced withdrawal", async () => {
@@ -335,6 +334,8 @@ describe("Challenger tests", async () => {
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
+        const agentStatus2 = await getAgentStatus(agentBot);
+        assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
     });
 
 });

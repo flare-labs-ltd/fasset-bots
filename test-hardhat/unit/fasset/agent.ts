@@ -1,4 +1,4 @@
-import { assert, expect } from "chai";
+import { assert } from "chai";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, QUERY_WINDOW_SECONDS, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
@@ -11,6 +11,10 @@ import { SourceId } from "../../../src/verification/sources/sources";
 import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
+const chai = require('chai');
+const spies = require('chai-spies');
+chai.use(spies);
+const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -106,9 +110,11 @@ describe("Agent unit tests", async () => {
 
     it("Should perform and confirm topup", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        const spy = chai.spy.on(agent, 'confirmTopupPayment');
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.confirmTopupPayment(tx);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should announce, perform and confirm underlying withdrawal", async () => {
@@ -154,6 +160,7 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should prove EOA address", async () => {
+        const spy = chai.spy.on(Agent, 'proveAddressEOA');
         const testChain = {
             chainId: SourceId.XRP,
             name: "Ripple",
@@ -166,10 +173,13 @@ describe("Agent unit tests", async () => {
         }
         const contextEOA = await createTestAssetContext(accounts[0], testChain);
         await Agent.proveAddressEOA(contextEOA, ownerAddress, underlyingAddress);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should not prove EOA address", async () => {
+        const spy = chai.spy.on(Agent, 'proveAddressEOA');
         await Agent.proveAddressEOA(context, ownerAddress, underlyingAddress);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should exit available", async () => {
@@ -196,6 +206,7 @@ describe("Agent unit tests", async () => {
 
     it("Should unstick minting", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        const spy = chai.spy.on(agent, 'unstickMinting');
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
@@ -206,6 +217,7 @@ describe("Agent unit tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         await agent.unstickMinting(crt);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should execute mintingPaymentDefault", async () => {
@@ -223,6 +235,7 @@ describe("Agent unit tests", async () => {
 
     it("Should mint, redeem and confirm active redemption payment", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        const spy = chai.spy.on(agent, 'confirmActiveRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
@@ -239,6 +252,7 @@ describe("Agent unit tests", async () => {
         const [rdreqs] = await redeemer.requestRedemption(lots);
         const tx1Hash = await agent.performRedemptionPayment(rdreqs[0]);
         await agent.confirmActiveRedemptionPayment(rdreqs[0], tx1Hash);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
@@ -275,6 +289,7 @@ describe("Agent unit tests", async () => {
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        const spy = chai.spy.on(agent, 'confirmDefaultedRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
@@ -303,6 +318,7 @@ describe("Agent unit tests", async () => {
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
         const tx2Hash = await agent.performRedemptionPayment(rdreq);
         await agent.confirmDefaultedRedemptionPayment(rdreq, tx2Hash);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should not perform redemption - failed underlying payment (not redeemer's address)", async () => {

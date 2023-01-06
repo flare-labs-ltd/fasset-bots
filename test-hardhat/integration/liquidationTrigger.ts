@@ -14,6 +14,10 @@ import { disableMccTraceManager } from "../utils/helpers";
 import { LiquidationTrigger } from "../../src/actors/LiquidationTrigger";
 import { AgentEntity } from "../../src/entities/agent";
 import { assert } from "chai";
+const chai = require('chai');
+const spies = require('chai-spies');
+chai.use(spies);
+const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 
@@ -83,10 +87,12 @@ describe("Liquidation trigger tests", async () => {
     it("Should check collateral ratio after price changes", async () => {
         const liquidationTrigger = await createTestLiquidationTrigger(orm.em, context, liquidationTriggerAddress);
         await liquidationTrigger.initialize();
+        const spy = chai.spy.on(liquidationTrigger, 'runStep');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await liquidationTrigger.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
@@ -191,9 +197,12 @@ describe("Liquidation trigger tests", async () => {
     it("Should check collateral ratio after minting execution", async () => {
         const liquidationTrigger = await createTestLiquidationTrigger(orm.em, context, liquidationTriggerAddress);
         await liquidationTrigger.initialize();
+        const spy = chai.spy.on(liquidationTrigger, 'runStep');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution
         await liquidationTrigger.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
+
 });
