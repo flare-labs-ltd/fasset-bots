@@ -4,7 +4,6 @@ import { Prices } from "../../../src/state/Prices";
 import { toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { disableMccTraceManager } from "../../utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
 
 
@@ -14,7 +13,6 @@ describe("Prices tests", async () => {
     let settings: AssetManagerSettings;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
         settings = await context.assetManager.getSettings();

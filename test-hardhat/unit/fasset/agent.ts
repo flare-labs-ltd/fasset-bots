@@ -45,6 +45,10 @@ describe("Agent unit tests", async () => {
         chain.secondsPerBlock = 1;
     });
 
+    afterEach(function() {
+        chai.spy.restore(Agent);
+      })
+
     it("Should create agent", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         expect(agent.ownerAddress).to.eq(ownerAddress);
