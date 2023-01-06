@@ -28,6 +28,6 @@ describe("Redeemer unit tests", async () => {
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlyingAddress);
         expect(redeemer.address).to.eq(redeemerAddress);
         expect(redeemer.underlyingAddress).to.eq(redeemerUnderlyingAddress);
-    })
+    });
 
 });

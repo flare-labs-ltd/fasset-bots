@@ -322,7 +322,7 @@ export class AgentBot {
                     console.error(`Redemption state: ${redemption.state} not supported`);
             }
         }).catch(error => {
-            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`, error);
+            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
         });
     }
 

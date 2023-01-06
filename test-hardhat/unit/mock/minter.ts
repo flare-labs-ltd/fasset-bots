@@ -28,6 +28,13 @@ describe("Minter unit tests", async () => {
         const minter = await Minter.createTest(context, minterAddress, minterUnderlyingAddress, toBNExp(10_000, 6));
         expect(minter.address).to.eq(minterAddress);
         expect(minter.underlyingAddress).to.eq(minterUnderlyingAddress);
-    })
+    });
+
+    it("Should perform payment", async () => {
+        const minter = await Minter.createTest(context, minterAddress, minterUnderlyingAddress, toBNExp(10_000, 6));
+        const txHash = await minter.performPayment("ADDRESS", 1, null);
+        const getTx = await chain.getTransaction(txHash);
+        expect(txHash).to.eq(getTx?.hash);
+    });
 
 });
