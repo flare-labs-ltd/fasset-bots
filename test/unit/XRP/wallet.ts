@@ -25,7 +25,7 @@ const amountToSendXRP = 10;
 describe("XRP wallet tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createTestBlockChainHelper(sourceId);
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
@@ -42,7 +42,7 @@ describe("XRP wallet tests", async () => {
         const privateKey = await dbWallet.getKey(account);
         expect(privateKey).to.eq(fundedPrivateKey);
     });
-
+//TODO-FIX receivedAmounts() in getTransaction
     it("Should send funds and retrieve transaction", async () => {
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);

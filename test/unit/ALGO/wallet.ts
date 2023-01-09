@@ -17,13 +17,12 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 const fundedPrivateKey = "UvwtoiKaq8lbnS7EFJilRLDJrP5CxALEFX33OkPEq3qfrVez9lmfsaA2a3a0mFRrCxj74a16pst1T08iAhuCpg";
 const targetAddress = "O2GT7KTTT7ESYYR6CJ23QQHXCVNV5W3MGYOYA2MGBPND5MB2BOPGVKFTLE";
 const targetPrivateKey = "9BgYnNJDoyja61qVaEkoiKB41dD6XGCi7cKADtpq/tt2jT+qc5/JLGI+EnW4QPcVW17bbDYdgGmGC9o+sDoLng==";
-
-const amountToSendALGO = 1;
+const amountToSendALGO = 0.05;
 
 describe("ALGO wallet tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createTestBlockChainHelper(sourceId);
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
@@ -36,9 +35,12 @@ describe("ALGO wallet tests", async () => {
     });
 
     it("Should add account", async () => {
-        const account = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const privateKey = await dbWallet.getKey(account);
-        expect(privateKey).to.eq(fundedPrivateKey);
+        const account1 = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        const privateKey1 = await dbWallet.getKey(account1);
+        expect(privateKey1).to.eq(fundedPrivateKey);
+        const account2 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
+        const privateKey2 = await dbWallet.getKey(account2);
+        expect(privateKey2).to.eq(targetPrivateKey);
     });
 
     it("Should send funds and retrieve transaction", async () => {

@@ -25,7 +25,7 @@ const amountToSendLTC = 0.00001;
 describe("LTC wallet tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createTestBlockChainHelper(sourceId);
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);

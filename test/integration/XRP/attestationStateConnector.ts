@@ -30,7 +30,7 @@ describe("XRP attestation/state connector tests", async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createTestStateConnectorClient();
         attestationHelper = await createTestAttestationHelper(sourceId);
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
     })
     //PAYMENT

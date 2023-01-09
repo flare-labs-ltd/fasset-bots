@@ -23,7 +23,7 @@ const amountToSendDOGE = 1;
 describe("DOGE wallet tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm();
+        orm = await createTestOrm({ schemaUpdate: 'recreate' });
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createTestBlockChainHelper(sourceId);
         walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
