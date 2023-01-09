@@ -15,7 +15,7 @@ import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { createTestWalletClient } from "../../test/utils/test-bot-config";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
-import { FtsoManagerMockInstance, FtsoMockContract, FtsoMockInstance } from "../../typechain-truffle";
+import { FtsoManagerMockInstance, FtsoMockInstance } from "../../typechain-truffle";
 import { newAssetManager } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
@@ -54,7 +54,7 @@ export type TestAssetBotContext = Modify<IAssetBotContext, {
     ftsoManager: FtsoManagerMockInstance;
 }>
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean): Promise<TestAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean, customParameters?: any): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -110,7 +110,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     if (typeof requireEOAAddressProof !== 'undefined') parameters.requireEOAAddressProof = requireEOAAddressProof
-    const settings = createAssetManagerSettings(contracts, parameters);
+    const settings = createAssetManagerSettings(contracts, customParameters ? customParameters : parameters);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings));
     // indexer
