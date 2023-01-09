@@ -9,11 +9,11 @@ const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
 const account = requireEnv('COSTON2_ACCOUNT');
 const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
 
-const roundIdC2 = 388728;
-const requestDataBytesC2_1 = "0x0003000000011711319cbe00bf3fb1446bd221e0ec03a7df48d86aad43c1efd38b4b7c871563";
-const requestDataBytesC2_2 = "0x00040000000103734f76266db944d215163aff60353d75e30f1091666d779b14a1f46a4006730027fafe639a1f390ee83174e8fbca00c692b44f06a0adfadb0da9f929b0b371a3040618e71d2534f522a75304e54742d7d5d0b440a6cc2a7c17883f766aab51e86b11d4f6a5ff8f1155a53ee8c1d00192bc387975850248";
-const requestDataBytesC2_3 = "0x000100000001045f58873409d75a00ca2b8d5bc7b4bd337f40087ec8012fabe904bceea4ba13d8ac4266dc150a93020b252f3518089db2f8d5368917682bb9112eda7f204c920000";
-const requestDataBytesC2_4 = "0x000200000001045f58873409d75a00ca2b8d5bc7b4bd337f40087ec8012fabe904bceea4ba13f7d1b5ef2709b71c78de6071e603a6cb45c022c8d3a43070d5e069c4a197d00e00";
+const roundIdC2 = 413192;
+const requestDataBytesC2_1 = "0x000300000001bfa8ccefbe3307418d00a88fbb180e1ee63cf33cb5388245d519c6de150f1bd4";
+const requestDataBytesC2_2 = "0x000400000001d5416a66687e4a3b8f1244157cd04572c3954ceaeccc795b802361e8e958afa50028390563bba04bbcea6e5be2292a8082fbdd1a4fcdf4f8964563d954323c45a6abaa05da7228c5548d92e261443a5bf13857c4e2bcd8571458567f5d20b8d9e5ac21ab3a69f236dd4e9113c8216513e460cbb268de5d24";
+const requestDataBytesC2_3 = "0x0001000000016afa762068996971cc45283b0012e847e2a85e6e980db32e53cf51d7e0df9d126bacfde48b6bc09d950707da39446a053a2e8e596e24e5b1de9eecb26ad777c20000";
+const requestDataBytesC2_4 = "0x0002000000015d3575e92106318656c874687b19c26337cadda3f63a755846f4774f3d520695f624581ae6c6cc7a71032c8ae6d3de1e3a9a4b7640c8a8b917ae062efa9b457d00";
 
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
@@ -40,7 +40,7 @@ describe("XRP attestation/state connector tests", async () => {
         const resp = await stateConnectorClient.submitRequest(requestDataBytesC2_1);
         expect(resp.round).to.be.greaterThan(0);
     });
-//TODO-FIX
+
     it("Should obtain proof", async () => {
         const proof1 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_1);
         expect(proof1.finalized).to.be.true;
