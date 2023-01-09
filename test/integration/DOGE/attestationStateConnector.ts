@@ -7,7 +7,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
-import { createTestBlockChainWalletHelper, createTestStateConnectorClient } from "../../utils/test-bot-config";
+import { createTestAttestationHelper, createTestBlockChainWalletHelper, createTestStateConnectorClient } from "../../utils/test-bot-config";
 
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;
@@ -63,7 +63,3 @@ describe("DOGE attestation/state connector tests", async () => {
     });
 
 });
-function createTestAttestationHelper(sourceId: SourceId): AttestationHelper | PromiseLike<AttestationHelper> {
-    throw new Error("Function not implemented.");
-}
-
