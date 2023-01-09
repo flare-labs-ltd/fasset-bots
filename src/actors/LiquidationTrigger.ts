@@ -126,10 +126,11 @@ export class LiquidationTrigger {
     private async checkAgentForLiquidation(agentBotEnt: AgentEntity) {
         const timestamp = await latestBlockTimestampBN();
         const agentBot = await AgentBot.fromEntity(this.context, agentBotEnt);
-        const newStatus = await agentBot.possibleLiquidationTransition(timestamp, this.prices, this.trustedPrices, agentBotEnt.status);
-        if (newStatus > agentBotEnt.status) {
+        const agentStatus = Number((await agentBot.agent.getAgentInfo()).status);
+        const newStatus = await agentBot.possibleLiquidationTransition(timestamp, this.prices, this.trustedPrices, agentStatus);
+        if (newStatus > agentStatus) {
             await this.context.assetManager.startLiquidation(agentBot.agent.vaultAddress, { from: this.address });
-        } else if (newStatus < agentBotEnt.status) {
+        } else if (newStatus < agentStatus) {
             await this.context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: this.address });
         }
     }
