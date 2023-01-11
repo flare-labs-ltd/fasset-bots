@@ -1,14 +1,13 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
-import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { AgentCreated, AgentDestroyed, RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { ActorEntity, ActorType } from "../entities/actor";
-import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { AttestationClientError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { EvmEvent } from "../utils/events/common";
+import { EventArgs, EvmEvent } from "../utils/events/common";
 import { EvmEventArgs } from "../utils/events/IEvmEvents";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
@@ -20,11 +19,17 @@ import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 
+export interface TrackedAgent {
+    vaultAddress: string;
+    ownerAddress: string;
+    underlyingAddress: string;
+}
+
 export class Challenger {
     constructor(
         public runner: ScopedRunner,
-        public address: string,
         public context: IAssetBotContext,
+        public address: string
     ) {
     }
 
@@ -33,6 +38,9 @@ export class Challenger {
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
+    // agent state
+    agents: Map<string, TrackedAgent> = new Map();                // map agent_address => agent
+    agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => agent
 
     static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
@@ -44,13 +52,13 @@ export class Challenger {
             challengerEntity.lastEventTimestampHandled = systemTimestamp();
             challengerEntity.type = ActorType.CHALLENGER;
             em.persist(challengerEntity);
-            const challenger = new Challenger(runner, address, context);
+            const challenger = new Challenger(runner, context, address);
             return challenger;
         });
     }
 
     static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity) {
-        return new Challenger(runner, challengerEntity.address, context);
+        return new Challenger(runner, context, challengerEntity.address);
     }
 
     async runStep(em: EM) {
@@ -65,7 +73,7 @@ export class Challenger {
             const to = systemTimestamp();
             const transactions = await this.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
             for (const transaction of transactions) {
-                await this.handleUnderlyingTransaction(em, transaction);
+                await this.handleUnderlyingTransaction(transaction);
             }
             // mark as handled
             challengerEnt.lastEventTimestampHandled = to;
@@ -76,17 +84,21 @@ export class Challenger {
             for (const event of events) {
                 // console.log(this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
-                    this.handleRedemptionRequested(event.args)
+                    this.handleRedemptionRequested(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
-                    this.handleRedemptionFinished(event.args)
+                    this.handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPerformed')) {
-                    await this.handleTransactionConfirmed(em, event.args.agentVault, event.args.transactionHash)
+                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
-                    await this.handleTransactionConfirmed(em, event.args.agentVault, event.args.transactionHash)
+                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
-                    await this.handleTransactionConfirmed(em, event.args.agentVault, event.args.transactionHash)
+                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
-                    await this.handleTransactionConfirmed(em, event.args.agentVault, event.args.transactionHash)
+                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
+                } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
+                    this.createAgent(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
+                    this.destroyAgent(event.args);
                 }
             }
         }).catch(error => {
@@ -113,26 +125,45 @@ export class Challenger {
         return events;
     }
 
-    async handleUnderlyingTransaction(em: EM, transaction: ITransaction): Promise<void> {
-        for (const [address, amount] of transaction.inputs) {
-            const agentEnt = await em.findOne(AgentEntity, { underlyingAddress: address } as FilterQuery<AgentEntity>);
-            if (agentEnt == null) continue;
-            // add to list of transactions
-            this.addUnconfirmedTransaction(agentEnt, transaction);
-            // illegal transaction challenge
-            await this.checkForIllegalTransaction(transaction, agentEnt);
-            // double payment challenge
-            this.checkForDoublePayment(transaction, agentEnt);
-            // negative balance challenge
-            await this.checkForNegativeFreeBalance(agentEnt);
+    createAgent(args: EventArgs<AgentCreated>) {
+        const agent = { vaultAddress: args.agentVault, ownerAddress: args.owner, underlyingAddress: args.underlyingAddress };
+        this.agents.set(agent.vaultAddress, agent);
+        this.agentsByUnderlying.set(agent.underlyingAddress, agent);
+        return agent;
+    }
+
+    destroyAgent(args: EventArgs<AgentDestroyed>) {
+        const agent = this.getAgent(args.agentVault);
+        if (agent) {
+            this.agents.delete(args.agentVault);
+            this.agentsByUnderlying.delete(agent.underlyingAddress);
         }
     }
 
-    async handleTransactionConfirmed(em: EM, agentVault: string, transactionHash: string): Promise<void> {
+    getAgent(address: string): TrackedAgent | undefined {
+        return this.agents.get(address);
+    }
+
+    async handleUnderlyingTransaction(transaction: ITransaction): Promise<void> {
+        for (const [address, amount] of transaction.inputs) {
+            const agent = this.agentsByUnderlying.get(address);
+            if (agent == null) continue;
+            // add to list of transactions
+            this.addUnconfirmedTransaction(agent, transaction);
+            // illegal transaction challenge
+            await this.checkForIllegalTransaction(transaction, agent);
+            // double payment challenge
+            this.checkForDoublePayment(transaction, agent);
+            // negative balance challenge
+            await this.checkForNegativeFreeBalance(agent);
+        }
+    }
+
+    async handleTransactionConfirmed(agentVault: string, transactionHash: string): Promise<void> {
         this.deleteUnconfirmedTransaction(agentVault, transactionHash);
         // also re-check free balance
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        await this.checkForNegativeFreeBalance(agentEnt);
+        const agent = this.getAgent(agentVault);
+        if (agent) await this.checkForNegativeFreeBalance(agent);
     }
 
     handleRedemptionRequested(args: EvmEventArgs<RedemptionRequested>): void {
@@ -147,67 +178,66 @@ export class Challenger {
     }
 
     // illegal transactions
-
-    async checkForIllegalTransaction(transaction: ITransaction, agentEnt: AgentEntity) {
+    async checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgent) {
         const transactionValid = PaymentReference.isValid(transaction.reference)
-            && (this.isValidRedemptionReference(agentEnt, transaction.reference) || await this.isValidAnnouncedPaymentReference(agentEnt, transaction.reference));
+            && (this.isValidRedemptionReference(agent, transaction.reference) || await this.isValidAnnouncedPaymentReference(agent, transaction.reference));
         // if the challenger starts tracking later, activeRedemptions might not hold all active redemeptions,
         // but that just means there will be a few unnecessary illegal transaction challenges, which is perfectly safe
-        const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
+        const agentInfo = await this.getAgentInfo(agent.vaultAddress);
         if (!transactionValid && Number(agentInfo.status) !== AgentStatus.FULL_LIQUIDATION) {
-            this.runner.startThread((scope) => this.illegalTransactionChallenge(scope, transaction, agentEnt));
+            this.runner.startThread((scope) => this.illegalTransactionChallenge(scope, transaction, agent));
         }
     }
 
-    async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agentEnt: AgentEntity) {
-        await this.singleChallengePerAgent(agentEnt, async () => {
-            const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agentEnt.underlyingAddress);
+    async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agent: TrackedAgent) {
+        await this.singleChallengePerAgent(agent, async () => {
+            const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             // due to async nature of challenging (and the fact that challenger might start tracking agent later), there may be some false challenges which will be rejected
             // this is perfectly safe for the system, but the errors must be caught
-            await this.context.assetManager.illegalPaymentChallenge(proof, agentEnt.vaultAddress, { from: this.address })
+            await this.context.assetManager.illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['chlg: already liquidating', 'chlg: transaction confirmed', 'matching redemption active', 'matching ongoing announced pmt']));
         });
     }
 
     // double payments
 
-    checkForDoublePayment(transaction: ITransaction, agentEnt: AgentEntity) {
+    checkForDoublePayment(transaction: ITransaction, agent: TrackedAgent) {
         if (!PaymentReference.isValid(transaction.reference)) return;   // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
-            this.runner.startThread((scope) => this.doublePaymentChallenge(scope, transaction.hash, existingHash, agentEnt));
+            this.runner.startThread((scope) => this.doublePaymentChallenge(scope, transaction.hash, existingHash, agent));
         } else {
             this.transactionForPaymentReference.set(transaction.reference, transaction.hash);
         }
     }
 
-    async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agentEnt: AgentEntity) {
-        await this.singleChallengePerAgent(agentEnt, async () => {
+    async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agent: TrackedAgent) {
+        await this.singleChallengePerAgent(agent, async () => {
             const [proof1, proof2] = await Promise.all([
-                this.waitForDecreasingBalanceProof(scope, tx1hash, agentEnt.underlyingAddress),
-                this.waitForDecreasingBalanceProof(scope, tx2hash, agentEnt.underlyingAddress),
+                this.waitForDecreasingBalanceProof(scope, tx1hash, agent.underlyingAddress),
+                this.waitForDecreasingBalanceProof(scope, tx2hash, agent.underlyingAddress),
             ]);
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.context.assetManager.doublePaymentChallenge(proof1, proof2, agentEnt.vaultAddress, { from: this.address })
+            await this.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['chlg dbl: already liquidating']));
         });
     }
 
     // free balance negative
 
-    async checkForNegativeFreeBalance(agentEnt: AgentEntity) {
-        const agentTransactions = this.unconfirmedTransactions.get(agentEnt.vaultAddress);
+    async checkForNegativeFreeBalance(agent: TrackedAgent) {
+        const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
         // extract the spent value for each transaction
         let transactions: Array<{ txHash: string, spent: BN }> = [];
         for (const transaction of agentTransactions.values()) {
             if (!PaymentReference.isValid(transaction.reference)) continue;     // should be caught by illegal payment challenge
-            const spentAmount = transaction.inputs.find(input => input[0] === agentEnt.underlyingAddress)?.[1];
+            const spentAmount = transaction.inputs.find(input => input[0] === agent.underlyingAddress)?.[1];
             if (spentAmount == null) continue;
-            if (this.isValidRedemptionReference(agentEnt, transaction.reference)) {
+            if (this.isValidRedemptionReference(agent, transaction.reference)) {
                 const { amount } = this.activeRedemptions.get(transaction.reference)!;
                 transactions.push({ txHash: transaction.hash, spent: spentAmount.sub(amount) });
-            } else if (await this.isValidAnnouncedPaymentReference(agentEnt, transaction.reference)) {
+            } else if (await this.isValidAnnouncedPaymentReference(agent, transaction.reference)) {
                 transactions.push({ txHash: transaction.hash, spent: spentAmount });
             }
             // other options should be caught by illegal payment challenge
@@ -219,41 +249,41 @@ export class Challenger {
         // initiate challenge if total spent is big enough
 
         const totalSpent = sumBN(transactions, tx => tx.spent);
-        const agenInfo = await this.getAgentInfo(agentEnt.vaultAddress);
+        const agenInfo = await this.getAgentInfo(agent.vaultAddress);
         if (totalSpent.gt(toBN(agenInfo.freeUnderlyingBalanceUBA))) {
             const transactionHashes = transactions.map(tx => tx.txHash);
-            this.runner.startThread((scope) => this.freeBalanceNegativeChallenge(scope, transactionHashes, agentEnt));
+            this.runner.startThread((scope) => this.freeBalanceNegativeChallenge(scope, transactionHashes, agent));
         }
     }
 
-    async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agentEnt: AgentEntity) {
-        await this.singleChallengePerAgent(agentEnt, async () => {
+    async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgent) {
+        await this.singleChallengePerAgent(agent, async () => {
             const proofs = await Promise.all(transactionHashes.map(txHash =>
-                this.waitForDecreasingBalanceProof(scope, txHash, agentEnt.underlyingAddress)));
+                this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.context.assetManager.freeBalanceNegativeChallenge(proofs, agentEnt.vaultAddress, { from: this.address })
+            await this.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough free balance', 'mult chlg: payment confirmed']));
         });
     }
 
     // utils
 
-    isValidRedemptionReference(agentEnt: AgentEntity, reference: string) {
+    isValidRedemptionReference(agent: TrackedAgent, reference: string): boolean {
         const redemption = this.activeRedemptions.get(reference);
         if (redemption === undefined) return false;
-        return agentEnt.vaultAddress === redemption.agentAddress;
+        return agent.vaultAddress === redemption.agentAddress;
     }
 
-    async isValidAnnouncedPaymentReference(agentEnt: AgentEntity, reference: string) {
-        const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
+    async isValidAnnouncedPaymentReference(agent: TrackedAgent, reference: string): Promise<boolean> {
+        const agentInfo = await this.getAgentInfo(agent.vaultAddress);
         return !toBN(agentInfo.announcedUnderlyingWithdrawalId).isZero() && reference === PaymentReference.announcedWithdrawal(agentInfo.announcedUnderlyingWithdrawalId);
     }
 
-    addUnconfirmedTransaction(agentEnt: AgentEntity, transaction: ITransaction) {
-        getOrCreate(this.unconfirmedTransactions, agentEnt.vaultAddress, () => new Map()).set(transaction.hash, transaction);
+    addUnconfirmedTransaction(agent: TrackedAgent, transaction: ITransaction): void {
+        getOrCreate(this.unconfirmedTransactions, agent.vaultAddress, () => new Map()).set(transaction.hash, transaction);
     }
 
-    deleteUnconfirmedTransaction(agentVault: string, transactionHash: string) {
+    deleteUnconfirmedTransaction(agentVault: string, transactionHash: string): void {
         const agentTransactions = this.unconfirmedTransactions.get(agentVault);
         if (agentTransactions) {
             agentTransactions.delete(transactionHash);
@@ -267,17 +297,17 @@ export class Challenger {
             .catch(e => scope.exitOnExpectedError(e, [AttestationClientError]));
     }
 
-    async singleChallengePerAgent(agentEnt: AgentEntity, body: () => Promise<void>) {
-        while (this.challengedAgents.has(agentEnt.vaultAddress)) {
+    async singleChallengePerAgent(agent: TrackedAgent, body: () => Promise<void>) {
+        while (this.challengedAgents.has(agent.vaultAddress)) {
             await sleep(1);
         }
         try {
-            this.challengedAgents.add(agentEnt.vaultAddress);
-            const agentInfo = await this.getAgentInfo(agentEnt.vaultAddress);
+            this.challengedAgents.add(agent.vaultAddress);
+            const agentInfo = await this.getAgentInfo(agent.vaultAddress);
             if (Number(agentInfo.status) === AgentStatus.FULL_LIQUIDATION) return;
             await body();
         } finally {
-            this.challengedAgents.delete(agentEnt.vaultAddress);
+            this.challengedAgents.delete(agent.vaultAddress);
         }
     }
 
