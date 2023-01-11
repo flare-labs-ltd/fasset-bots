@@ -60,6 +60,7 @@
       "build": "tsc --allowJs",
       "watch": "tsc --allowJs --watch --noEmit",
       "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
+      "---------TEST---SCRIPTS": "",
       "test": "mocha",
       "test_all": "mocha --recursive -t 500000 \"test/**/*.ts\"",
       "test_all:unit": "mocha --recursive -t 500000 \"test/unit/**/*.ts\"",
