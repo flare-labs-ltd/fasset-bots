@@ -8,7 +8,6 @@ import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { Prices } from "../state/Prices";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -97,16 +96,6 @@ export class AgentBot {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
-                } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
-                    await this.handleStatusChange(em, AgentStatus.CCB, event.args.timestamp);
-                } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    await this.handleStatusChange(em, AgentStatus.LIQUIDATION, event.args.timestamp);
-                } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
-                    await this.handleStatusChange(em, AgentStatus.FULL_LIQUIDATION, event.args.timestamp);
-                } else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
-                    await this.handleStatusChange(em, AgentStatus.NORMAL);
-                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
-                    await this.handleStatusChange(em, AgentStatus.DESTROYING, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args);
                 }
@@ -402,57 +391,9 @@ export class AgentBot {
         await this.agent.agentVault.deposit({ value: requiredTopup });
     }
 
-    async possibleLiquidationTransition(timestamp: BN, prices: Prices, trustedPrices: Prices, agentStatus: AgentStatus): Promise<Number> {
-        const agentInfo = await this.agent.getAgentInfo();
-        const settings = await this.context.assetManager.getSettings();
-        const cr = await this.collateralRatioBIPS(settings, agentInfo, prices, trustedPrices);
-        if (agentStatus === AgentStatus.NORMAL) {
-            if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS))) {
-                return AgentStatus.LIQUIDATION;
-            } else if (cr.lt(toBN(settings.minCollateralRatioBIPS))) {
-                return AgentStatus.CCB;
-            }
-        } else if (agentStatus === AgentStatus.CCB) {
-            if (cr.gte(toBN(settings.minCollateralRatioBIPS))) {
-                return AgentStatus.NORMAL;
-            } else if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS)) || timestamp.gte(toBN(agentInfo.ccbStartTimestamp).add(toBN(settings.ccbTimeSeconds)))) {
-                return AgentStatus.LIQUIDATION;
-            }
-        } else if (agentStatus === AgentStatus.LIQUIDATION) {
-            if (cr.gte(toBN(settings.safetyMinCollateralRatioBIPS))) {
-                return AgentStatus.NORMAL;
-            }
-        }
-        return agentStatus;
-    }
-
-    async collateralRatioBIPS(settings: AssetManagerSettings, agentInfo: AgentInfo, prices: Prices, trustedPrices: Prices) {
-        const ratio = this.collateralRatioForPriceBIPS(prices, agentInfo, settings);
-        const ratioFromTrusted = this.collateralRatioForPriceBIPS(trustedPrices, agentInfo, settings);
-        return BN.max(ratio, ratioFromTrusted);
-    }
-
-    async handleStatusChange(em: EM, status: AgentStatus, timestamp?: BN): Promise<void> {
-        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        if (timestamp && agentBotEnt.status === AgentStatus.NORMAL && status === AgentStatus.CCB) {
-            agentBotEnt.ccbStartTimestamp = timestamp;
-        }
-        if (timestamp && (agentBotEnt.status === AgentStatus.NORMAL || agentBotEnt.status === AgentStatus.CCB) && (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION)) {
-            agentBotEnt.liquidationStartTimestamp = timestamp;
-        }
-        agentBotEnt.status = status;
-    }
-
     async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>) {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
-    }
-
-    private collateralRatioForPriceBIPS(prices: Prices, agentInfo: AgentInfo, settings: AssetManagerSettings) {
-        const totalUBA = toBN(agentInfo.reservedUBA).add(toBN(agentInfo.mintedUBA)).add(toBN(agentInfo.redeemingUBA));
-        if (totalUBA.isZero()) return MAX_UINT256;
-        const backingCollateral = convertUBAToNATWei(settings, totalUBA, prices.amgNatWei);
-        return toBN(agentInfo.totalCollateralNATWei).muln(MAX_BIPS).div(backingCollateral);
     }
 
     private async requiredTopup(requiredCR: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {

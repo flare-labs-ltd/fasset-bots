@@ -5,6 +5,7 @@ import { ActorEntity, ActorType } from "../entities/actor";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
+import { TrackedAgent } from "../state/TrackedAgent";
 import { AttestationClientError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -19,28 +20,21 @@ import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 
-export interface TrackedAgent {
-    vaultAddress: string;
-    ownerAddress: string;
-    underlyingAddress: string;
-}
-
 export class Challenger {
     constructor(
         public runner: ScopedRunner,
         public context: IAssetBotContext,
         public address: string
-    ) {
-    }
+    ) {}
 
     activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
     transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
-    // agent state
-    agents: Map<string, TrackedAgent> = new Map();                // map agent_address => agent
-    agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => agent
+    // tracked agents
+    agents: Map<string, TrackedAgent> = new Map();                // map agent_address => tracked agent
+    agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => tracked agent
 
     static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
@@ -126,7 +120,7 @@ export class Challenger {
     }
 
     createAgent(args: EventArgs<AgentCreated>) {
-        const agent = { vaultAddress: args.agentVault, ownerAddress: args.owner, underlyingAddress: args.underlyingAddress };
+        const agent = new TrackedAgent(args.agentVault, args.owner, args.underlyingAddress);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
         return agent;

@@ -4,6 +4,7 @@ import { LiquidationTrigger } from "../../../src/actors/LiquidationTrigger";
 import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
@@ -15,6 +16,7 @@ describe("Liquidation trigger unit tests", async () => {
     let context: IAssetBotContext;
     let liquidationTriggerAddress: string;
     let orm: ORM;
+    let runner: ScopedRunner;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -25,16 +27,17 @@ describe("Liquidation trigger unit tests", async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         liquidationTriggerAddress = accounts[10];
+        runner = new ScopedRunner();
     });
 
     it("Should create liquidationTrigger", async () => {
-        const liquidationTrigger = await LiquidationTrigger.create(orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await LiquidationTrigger.create(runner, orm.em, context, liquidationTriggerAddress);
         expect(liquidationTrigger.address).to.eq(liquidationTriggerAddress);
     });
 
     it("Should read liquidationTrigger from entity", async () => {
         const liquidationTriggerEnt = await orm.em.findOneOrFail(ActorEntity, { address: liquidationTriggerAddress, type: ActorType.LIQUIDATION_TRIGGER } as FilterQuery<ActorEntity>);
-        const liquidationTrigger = await LiquidationTrigger.fromEntity(context, liquidationTriggerEnt);
+        const liquidationTrigger = await LiquidationTrigger.fromEntity(runner, context, liquidationTriggerEnt);
         expect(liquidationTrigger.address).to.eq(liquidationTriggerAddress);
     });    
 

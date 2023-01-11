@@ -1,20 +1,22 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
-import { MintingExecuted } from "../../typechain-truffle/AssetManager";
+import { AgentCreated, AgentDestroyed, MintingExecuted } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { ActorEntity, ActorType } from "../entities/actor";
-import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { Prices } from "../state/Prices";
+import { TrackedAgent } from "../state/TrackedAgent";
 import { EventArgs, EvmEvent } from "../utils/events/common";
+import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentBot } from "./AgentBot";
+import { AgentStatus } from "./AgentBot";
 
 export class LiquidationTrigger {
     constructor(
+        public runner: ScopedRunner,
         public context: IAssetBotContext,
         public address: string
     ) {}
@@ -26,7 +28,10 @@ export class LiquidationTrigger {
     settings!: AssetManagerSettings;
     
     eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
-
+    // tracked agents
+    agents: Map<string, TrackedAgent> = new Map();                // map agent_address => tracked agent
+    agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => tracked agent
+    
     // async initialization part
     async initialize() {
         this.settings = await this.context.assetManager.getSettings();
@@ -37,7 +42,7 @@ export class LiquidationTrigger {
         return await Prices.getPrices(this.context, this.settings);
     }
 
-    static async create(rootEm: EM, context: IAssetBotContext, address: string) {
+    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const liquidationTriggerEntity = new ActorEntity();
@@ -46,13 +51,13 @@ export class LiquidationTrigger {
             liquidationTriggerEntity.lastEventBlockHandled = lastBlock;
             liquidationTriggerEntity.type = ActorType.LIQUIDATION_TRIGGER;
             em.persist(liquidationTriggerEntity);
-            const liquidationTrigger = new LiquidationTrigger(context, address);
+            const liquidationTrigger = new LiquidationTrigger(runner, context, address);
             return liquidationTrigger;
         });
     }
 
-    static async fromEntity(context: IAssetBotContext, ccbTriggerEntity: ActorEntity) {
-        return new LiquidationTrigger(context, ccbTriggerEntity.address);
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, ccbTriggerEntity: ActorEntity) {
+        return new LiquidationTrigger(runner, context, ccbTriggerEntity.address);
     }
 
     async runStep(em: EM) {
@@ -70,9 +75,23 @@ export class LiquidationTrigger {
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     // refresh prices
                     [this.prices, this.trustedPrices] = await this.getPrices();
-                    await this.checkAllAgentsForLiquidation(em);
+                    await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    await this.handleMintingExecuted(em, event.args);
+                    await this.handleMintingExecuted(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
+                    this.createAgent(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
+                    this.destroyAgent(event.args);
+                } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
+                    await this.handleStatusChange(AgentStatus.CCB, event.args.vaultAddress, event.args.timestamp);
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
+                    await this.handleStatusChange(AgentStatus.LIQUIDATION, event.args.vaultAddress, event.args.timestamp);
+                } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
+                    await this.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.vaultAddress, event.args.timestamp);
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
+                    await this.handleStatusChange(AgentStatus.NORMAL, event.args.vaultAddress);
+                } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
+                    await this.handleStatusChange(AgentStatus.DESTROYING, event.args.vaultAddress, event.args.timestamp);
                 }
             }
             // checking for collateral ratio after every minting => is done in AgentBot.ts
@@ -107,31 +126,69 @@ export class LiquidationTrigger {
         return events;
     }
 
-    async handleMintingExecuted(em: EM, args: EventArgs<MintingExecuted>) {
-        const agentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
-        await this.checkAgentForLiquidation(agentEntity);
+    createAgent(args: EventArgs<AgentCreated>) {
+        const agent = new TrackedAgent(args.agentVault, args.owner, args.underlyingAddress);
+        this.agents.set(agent.vaultAddress, agent);
+        this.agentsByUnderlying.set(agent.underlyingAddress, agent);
+        return agent;
     }
 
-    async checkAllAgentsForLiquidation(rootEm: EM) {
-        const agentEntities = await rootEm.find(AgentEntity, { active: true, chainId: this.context.chainInfo.chainId } as FilterQuery<AgentEntity>);
-        for (const agentEntity of agentEntities) {
+    destroyAgent(args: EventArgs<AgentDestroyed>) {
+        const agent = this.getAgent(args.agentVault);
+        if (agent) {
+            this.agents.delete(args.agentVault);
+            this.agentsByUnderlying.delete(agent.underlyingAddress);
+        }
+    }
+
+    getAgent(address: string): TrackedAgent | undefined {
+        return this.agents.get(address);
+    }
+    
+    async handleMintingExecuted(args: EventArgs<MintingExecuted>) {
+        const agent = this.getAgent(args.agentVault);
+        if (!agent) return;
+        this.runner.startThread(async (scope) => {
+            await this.checkAgentForLiquidation(agent)
+                .catch(e => scope.exitOnExpectedError(e, []));
+        })
+    }
+
+    async checkAllAgentsForLiquidation() {
+        for (const agent of this.agents.values()) {
             try {
-                await this.checkAgentForLiquidation(agentEntity);
+                await this.checkAgentForLiquidation(agent);
             } catch (error) {
-                console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
+                console.error(`Error with agent ${agent.vaultAddress}`, error);
             }
         }
     }
 
-    private async checkAgentForLiquidation(agentBotEnt: AgentEntity) {
+    async handleStatusChange(status: AgentStatus, agentVault: string, timestamp?: BN): Promise<void> {
+        const agent = this.getAgent(agentVault);
+        if (!agent) return;
+        const agentInfo = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        const agentStatus = Number(agentInfo.status);
+        if (timestamp && agentStatus === AgentStatus.NORMAL && status === AgentStatus.CCB) {
+            agent.ccbStartTimestamp = timestamp;
+        }
+        if (timestamp && (agentStatus === AgentStatus.NORMAL || agentStatus === AgentStatus.CCB) && (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION)) {
+            agent.liquidationStartTimestamp = timestamp;
+        }
+        agent.status = status;
+    }
+
+    private async checkAgentForLiquidation(agent: TrackedAgent) {
         const timestamp = await latestBlockTimestampBN();
-        const agentBot = await AgentBot.fromEntity(this.context, agentBotEnt);
-        const agentStatus = Number((await agentBot.agent.getAgentInfo()).status);
-        const newStatus = await agentBot.possibleLiquidationTransition(timestamp, this.prices, this.trustedPrices, agentStatus);
+        const agentInfo = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        const agentStatus = Number(agentInfo.status);
+        const settings = await this.context.assetManager.getSettings();
+        const newStatus = await agent.possibleLiquidationTransition(timestamp, settings, agentInfo, this.prices, this.trustedPrices);
         if (newStatus > agentStatus) {
-            await this.context.assetManager.startLiquidation(agentBot.agent.vaultAddress, { from: this.address });
+            await this.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
         } else if (newStatus < agentStatus) {
-            await this.context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: this.address });
+            await this.context.assetManager.endLiquidation(agent.vaultAddress, { from: this.address });
         }
     }
+
 }
