@@ -1,14 +1,15 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
-import { AgentCreated, AgentDestroyed, RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { ActorEntity, ActorType } from "../entities/actor";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgent } from "../state/TrackedAgent";
+import { TrackedState } from "../state/TrackedState";
 import { AttestationClientError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { EventArgs, EvmEvent } from "../utils/events/common";
+import { EvmEvent } from "../utils/events/common";
 import { EvmEventArgs } from "../utils/events/IEvmEvents";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
@@ -24,7 +25,8 @@ export class Challenger {
     constructor(
         public runner: ScopedRunner,
         public context: IAssetBotContext,
-        public address: string
+        public address: string,
+        public state: TrackedState
     ) {}
 
     activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
@@ -32,11 +34,8 @@ export class Challenger {
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
-    // tracked agents
-    agents: Map<string, TrackedAgent> = new Map();                // map agent_address => tracked agent
-    agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => tracked agent
 
-    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string) {
+    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const challengerEntity = new ActorEntity();
@@ -46,13 +45,13 @@ export class Challenger {
             challengerEntity.lastEventTimestampHandled = systemTimestamp();
             challengerEntity.type = ActorType.CHALLENGER;
             em.persist(challengerEntity);
-            const challenger = new Challenger(runner, context, address);
+            const challenger = new Challenger(runner, context, address, state);
             return challenger;
         });
     }
 
-    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity) {
-        return new Challenger(runner, context, challengerEntity.address);
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity, state: TrackedState) {
+        return new Challenger(runner, context, challengerEntity.address, state);
     }
 
     async runStep(em: EM) {
@@ -90,9 +89,9 @@ export class Challenger {
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    this.createAgent(event.args);
+                    this.state.createAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
-                    this.destroyAgent(event.args);
+                    this.state.destroyAgent(event.args);
                 }
             }
         }).catch(error => {
@@ -119,28 +118,9 @@ export class Challenger {
         return events;
     }
 
-    createAgent(args: EventArgs<AgentCreated>) {
-        const agent = new TrackedAgent(args.agentVault, args.owner, args.underlyingAddress);
-        this.agents.set(agent.vaultAddress, agent);
-        this.agentsByUnderlying.set(agent.underlyingAddress, agent);
-        return agent;
-    }
-
-    destroyAgent(args: EventArgs<AgentDestroyed>) {
-        const agent = this.getAgent(args.agentVault);
-        if (agent) {
-            this.agents.delete(args.agentVault);
-            this.agentsByUnderlying.delete(agent.underlyingAddress);
-        }
-    }
-
-    getAgent(address: string): TrackedAgent | undefined {
-        return this.agents.get(address);
-    }
-
     async handleUnderlyingTransaction(transaction: ITransaction): Promise<void> {
         for (const [address, amount] of transaction.inputs) {
-            const agent = this.agentsByUnderlying.get(address);
+            const agent = this.state.agentsByUnderlying.get(address);
             if (agent == null) continue;
             // add to list of transactions
             this.addUnconfirmedTransaction(agent, transaction);
@@ -156,7 +136,7 @@ export class Challenger {
     async handleTransactionConfirmed(agentVault: string, transactionHash: string): Promise<void> {
         this.deleteUnconfirmedTransaction(agentVault, transactionHash);
         // also re-check free balance
-        const agent = this.getAgent(agentVault);
+        const agent = this.state.getAgent(agentVault);
         if (agent) await this.checkForNegativeFreeBalance(agent);
     }
 

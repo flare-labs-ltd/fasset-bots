@@ -4,6 +4,7 @@ import { Challenger } from "../../../src/actors/Challenger";
 import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
@@ -17,6 +18,7 @@ describe("Challenger unit tests", async () => {
     let runner: ScopedRunner;
     let challengerAddress: string;
     let orm: ORM;
+    let state: TrackedState;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -31,13 +33,13 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress);
+        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should read agent from entity", async () => {
         const challengerEnt = await orm.em.findOneOrFail(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
-        const challengerBot = await Challenger.fromEntity(runner, context, challengerEnt);
+        const challengerBot = await Challenger.fromEntity(runner, context, challengerEnt, state);
         expect(challengerBot.address).to.eq(challengerAddress);
     });
 

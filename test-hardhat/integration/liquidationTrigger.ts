@@ -16,6 +16,7 @@ import { AgentEntity } from "../../src/entities/agent";
 import { assert } from "chai";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { time } from "@openzeppelin/test-helpers";
+import { TrackedState } from "../../src/state/TrackedState";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -34,13 +35,14 @@ describe("Liquidation trigger tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let runner: ScopedRunner;
+    let state: TrackedState;
 
-    async function createTestLiquidationTrigger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string): Promise<LiquidationTrigger> {
+    async function createTestLiquidationTrigger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState): Promise<LiquidationTrigger> {
         const ccbTriggerEnt = await rootEm.findOne(ActorEntity, { address: address, type: ActorType.LIQUIDATION_TRIGGER } as FilterQuery<ActorEntity>);
         if (ccbTriggerEnt) {
-            return await LiquidationTrigger.fromEntity(runner, context, ccbTriggerEnt);
+            return await LiquidationTrigger.fromEntity(runner, context, ccbTriggerEnt, state);
         } else {
-            return await LiquidationTrigger.create(runner, rootEm, context, address);
+            return await LiquidationTrigger.create(runner, rootEm, context, address, state);
         }
     }
 
@@ -88,10 +90,11 @@ describe("Liquidation trigger tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         runner = new ScopedRunner();
+        state = new TrackedState();
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
         await liquidationTrigger.initialize();
         const spy = chai.spy.on(liquidationTrigger, 'runStep');
         // mock price changes
@@ -102,7 +105,7 @@ describe("Liquidation trigger tests", async () => {
     });
 
     it("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
         await liquidationTrigger.initialize();
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         // create collateral reservation and perform minting
@@ -140,7 +143,7 @@ describe("Liquidation trigger tests", async () => {
     });
 
     it("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
         await liquidationTrigger.initialize();
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         // create collateral reservation and perform minting
@@ -205,7 +208,7 @@ describe("Liquidation trigger tests", async () => {
     });
 
     it("Should check collateral ratio after minting execution", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
         await liquidationTrigger.initialize();
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         const spy = chai.spy.on(liquidationTrigger, 'runStep');
@@ -217,11 +220,11 @@ describe("Liquidation trigger tests", async () => {
     });
 
     it("Should remove agent when agent is destroyed", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
         await liquidationTrigger.initialize();
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         await liquidationTrigger.runStep(orm.em);
-        assert.equal(liquidationTrigger.agents.size, 1);
+        assert.equal(liquidationTrigger.state.agents.size, 1);
         // check agent status
         const status = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status, AgentStatus.NORMAL);
@@ -242,7 +245,7 @@ describe("Liquidation trigger tests", async () => {
         assert.equal(agentBotEnt.active, false);
         // handle destruction
         await liquidationTrigger.runStep(orm.em);
-        assert.equal(liquidationTrigger.agents.size, 0);
+        assert.equal(liquidationTrigger.state.agents.size, 0);
     });
 
 });

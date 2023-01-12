@@ -8,6 +8,7 @@ import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -30,6 +31,7 @@ describe("Agent bot tests - coston2", async () => {
     let redeemerAddress: string;
     let challengerAddress: string;
     let runner: ScopedRunner;
+    let state: TrackedState;
 
     before(async () => {
         accounts = await initWeb3(costonRPCUrl, getCoston2AccountsFromEnv(), null);
@@ -41,6 +43,7 @@ describe("Agent bot tests - coston2", async () => {
         config = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm.em, costonRPCUrl, CONTRACTS_JSON);
         context = await createAssetContext(config, config.chains[0]);
         runner = new ScopedRunner();
+        state = new TrackedState();
     });
 
     it("Should create agent", async () => {
@@ -62,7 +65,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress);
+        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
@@ -75,7 +78,7 @@ describe("Agent bot tests - coston2", async () => {
 
     it("Should read challenger from entity", async () => {
         const challengerEnt = await orm.em.findOneOrFail(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
-        const challenger = await Challenger.fromEntity(runner, context, challengerEnt);
+        const challenger = await Challenger.fromEntity(runner, context, challengerEnt, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
 });

@@ -54,5 +54,15 @@ export class TrackedAgent {
         return toBN(agentInfo.totalCollateralNATWei).muln(MAX_BIPS).div(backingCollateral);
     }
 
+    handleStatusChange(status: AgentStatus, timestamp?: BN): void {
+        if (timestamp && this.status === AgentStatus.NORMAL && status === AgentStatus.CCB) {
+            this.ccbStartTimestamp = timestamp;
+        }
+        if (timestamp && (this.status === AgentStatus.NORMAL || this.status === AgentStatus.CCB) && (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION)) {
+            this.liquidationStartTimestamp = timestamp;
+        }
+        this.status = status;
+    }
+
 }
 

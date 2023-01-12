@@ -20,6 +20,7 @@ import { DHPayment } from "../../src/verification/generated/attestation-hash-typ
 import { ActorEntity, ActorType } from "../../src/entities/actor";
 import { disableMccTraceManager } from "../utils/helpers";
 import { Challenger } from "../../src/actors/Challenger";
+import { TrackedState } from "../../src/state/TrackedState";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -37,6 +38,7 @@ describe("Challenger tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
+    let state: TrackedState;
 
     async function getAgentStatus(agentBot: AgentBot): Promise<number> {
         const agentInfo = await agentBot.agent.getAgentInfo();
@@ -46,9 +48,9 @@ describe("Challenger tests", async () => {
     async function createTestChallenger(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string): Promise<Challenger>{
         const challengerEnt = await rootEm.findOne(ActorEntity, { address: address, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
         if (challengerEnt) {
-            return await Challenger.fromEntity(runner, context, challengerEnt);
+            return await Challenger.fromEntity(runner, context, challengerEnt, state);
         } else {
-            return await Challenger.create(runner, rootEm, context, address);
+            return await Challenger.create(runner, rootEm, context, address, state);
         }
     }
 
@@ -83,6 +85,7 @@ describe("Challenger tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         runner = new ScopedRunner();
+        state = new TrackedState();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
         chain = checkedCast(context.chain, MockChain);
         // chain tunning
@@ -365,7 +368,7 @@ describe("Challenger tests", async () => {
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep(orm.em);
-        assert.equal(challenger.agents.size, 1);
+        assert.equal(challenger.state.agents.size, 1);
         // check agent status
         const status = await getAgentStatus(agentBot);
         assert.equal(status, AgentStatus.NORMAL);
@@ -386,7 +389,7 @@ describe("Challenger tests", async () => {
         assert.equal(agentBotEnt.active, false);
         // handle destruction
         await challenger.runStep(orm.em);
-        assert.equal(challenger.agents.size, 0);
+        assert.equal(challenger.state.agents.size, 0);
     });
 
 });
