@@ -14,6 +14,10 @@ import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/
 import { disableMccTraceManager } from "../utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+const chai = require('chai');
+const spies = require('chai-spies');
+chai.use(spies);
+const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -426,6 +430,29 @@ describe("Agent bot tests", async () => {
         // check agent status
         const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status3, AgentStatus.NORMAL);
+    });
+
+    it("Should check collateral ratio after price changes", async () => {
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatio');
+        // mock price changes
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // check collateral ratio after price changes
+        await agentBot.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should check collateral ratio after price changes 2", async () => {
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatio');
+        // create collateral reservation
+        await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        // change price
+        const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
+        await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
+        // mock price changes
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // check collateral ratio after price changes
+        await agentBot.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {

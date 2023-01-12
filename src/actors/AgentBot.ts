@@ -34,7 +34,7 @@ export class AgentBot {
     ) { }
 
     context = this.agent.context;
-    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
+    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
     static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
         const lastBlock = await web3.eth.getBlockNumber();
@@ -96,6 +96,8 @@ export class AgentBot {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args);
+                } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
+                    await this.checkAgentForCollateralRatio();
                 }
             }
         }).catch(error => {
@@ -111,13 +113,20 @@ export class AgentBot {
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter('address', this.agent.vaultAddress);
         for (let lastHandled = agentEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
-            const logs = await web3.eth.getPastLogs({
+            const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.agent.assetManager.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                 topics: [null, encodedVaultAddress]
             });
-            events.push(...this.eventDecoder.decodeEvents(logs));
+            events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+            const logsFtsoManager = await web3.eth.getPastLogs({
+                address: this.context.ftsoManager.address,
+                fromBlock: lastHandled + 1,
+                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                topics: [null]
+            });
+            events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
         agentEnt.lastEventBlockHandled = lastBlock;
@@ -392,6 +401,16 @@ export class AgentBot {
     async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>) {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
+    }
+
+    async checkAgentForCollateralRatio() {
+        const agentInfo = await this.agent.getAgentInfo();
+        const cr = toBN(agentInfo.collateralRatioBIPS);
+        const settings = await this.agent.context.assetManager.getSettings();
+        const minCollateralRatioBIPS = toBN(settings.minCollateralRatioBIPS);
+        if (cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR))) {
+            await this.topupCollateral();
+        }
     }
 
     private async requiredTopup(requiredCR: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
