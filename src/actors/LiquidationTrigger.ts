@@ -82,15 +82,15 @@ export class LiquidationTrigger {
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.state.destroyAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
-                    this.handleStatusChange(AgentStatus.CCB, event.args.vaultAddress, event.args.timestamp);
+                    this.handleStatusChange(AgentStatus.CCB, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    this.handleStatusChange(AgentStatus.LIQUIDATION, event.args.vaultAddress, event.args.timestamp);
+                    this.handleStatusChange(AgentStatus.LIQUIDATION, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
-                    this.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.vaultAddress, event.args.timestamp);
+                    this.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
-                    this.handleStatusChange(AgentStatus.NORMAL, event.args.vaultAddress);
+                    this.handleStatusChange(AgentStatus.NORMAL, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
-                    this.handleStatusChange(AgentStatus.DESTROYING, event.args.vaultAddress, event.args.timestamp);
+                    this.handleStatusChange(AgentStatus.DESTROYING, event.args.agentVault, event.args.timestamp);
                 }
             }
         }).catch(error => {

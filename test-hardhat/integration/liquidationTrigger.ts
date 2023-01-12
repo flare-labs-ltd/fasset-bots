@@ -2,7 +2,7 @@ import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
@@ -17,6 +17,8 @@ import { assert } from "chai";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { time } from "@openzeppelin/test-helpers";
 import { TrackedState } from "../../src/state/TrackedState";
+import { Challenger } from "../../src/actors/Challenger";
+import { PaymentReference } from "../../src/fasset/PaymentReference";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -30,6 +32,7 @@ describe("Liquidation trigger tests", async () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
+    let challengerAddress: string;
     let liquidationTriggerAddress: string;
     let chain: MockChain;
     let agentBot: AgentBot;
@@ -78,6 +81,7 @@ describe("Liquidation trigger tests", async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
+        challengerAddress = accounts[5];
         liquidationTriggerAddress = accounts[6];
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
@@ -219,10 +223,54 @@ describe("Liquidation trigger tests", async () => {
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should remove agent when agent is destroyed", async () => {
-        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state);
-        await liquidationTrigger.initialize();
+    it("Should not handle minting - no tracked agent", async () => {
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
+        const liquidationTrigger = await LiquidationTrigger.create(runner, orm.em, context, accounts[71], state);
+        await liquidationTrigger.initialize();
+        // check tracked agents
+        assert.equal(liquidationTrigger.state.agents.size, 0);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot, 2);
+        // check tracked agents
+        await liquidationTrigger.runStep(orm.em);
+        assert.equal(liquidationTrigger.state.agents.size, 0);
+    });
+
+    it("Should not handle agent status change - no tracked agent", async () => {
+        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress, new TrackedState());
+        // create test actors
+        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
+        // create liquidator
+        const liquidationTrigger = await LiquidationTrigger.create(runner, orm.em, context, accounts[70], state);
+        await liquidationTrigger.initialize();
+        await challenger.runStep(orm.em);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot, 2);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot, 2);
+        // perform illegal payment
+        const agentInfo = await agentBot.agent.getAgentInfo();
+        await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.mintedUBA).divn(2), PaymentReference.redemption(15));
+        // run challenger's steps until agent's status is FULL_LIQUIDATION
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await sleep(3000);
+            await challenger.runStep(orm.em);
+            const agentStatus = await getAgentStatus(context, agentBot.agent.vaultAddress);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+        }
+        const agentStatus = await getAgentStatus(context, agentBot.agent.vaultAddress);
+        assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
+        // handle status change
+        await liquidationTrigger.runStep(orm.em);
+    });
+
+    it("Should remove agent when agent is destroyed", async () => {
+        const liquidationTrigger = await LiquidationTrigger.create(runner, orm.em, context, accounts[80], state);
+        await liquidationTrigger.initialize();
+        const agentBot = await createTestAgentBot(orm.em, context, accounts[81]);
         await liquidationTrigger.runStep(orm.em);
         assert.equal(liquidationTrigger.state.agents.size, 1);
         // check agent status

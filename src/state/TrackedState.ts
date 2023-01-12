@@ -25,7 +25,7 @@ export class TrackedState {
             }
         }
     
-        getAgent(address: string): TrackedAgent | undefined {
-            return this.agents.get(address);
+        getAgent(vaultAddress: string): TrackedAgent | undefined {
+            return this.agents.get(vaultAddress);
         }
 }
