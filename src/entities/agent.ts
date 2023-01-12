@@ -1,7 +1,5 @@
 import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
-import { AgentStatus } from "../actors/AgentBot";
 import { BNType } from "../config/orm-types";
-import { toBN } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: 'agent' })
@@ -24,15 +22,6 @@ export class AgentEntity {
 
     @Property({ nullable: true })
     lastEventBlockHandled!: number;
-
-    @Property({ type: BNType })
-    ccbStartTimestamp: BN = toBN(0);
-
-    @Property({ type: BNType })
-    liquidationStartTimestamp: BN = toBN(0);
-
-    @Property()
-    status: AgentStatus = AgentStatus.NORMAL;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were

@@ -26,8 +26,6 @@ export enum AgentStatus {
     DESTROYING = 4,         // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
 }
 
-const MAX_UINT256 = toBN(1).shln(256).subn(1);
-
 const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {

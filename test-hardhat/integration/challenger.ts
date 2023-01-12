@@ -112,11 +112,6 @@ describe("Challenger tests", async () => {
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
-        // handle status change as agent bot and entity
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
-        await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt.status, AgentStatus.FULL_LIQUIDATION);
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
@@ -247,10 +242,12 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep(orm.em);
             await agentBot.runStep(orm.em);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentBotEnt.status]}`)
-            if (agentBotEnt.status === AgentStatus.FULL_LIQUIDATION) break;
+            const agentStatus = await getAgentStatus(agentBot);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
-        assert.equal(agentBotEnt.status, AgentStatus.FULL_LIQUIDATION);
+        const agentStatus = await getAgentStatus(agentBot);
+        assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
     });
 
     it("Should challenge illegal payment - reference for already confirmed announced withdrawal", async () => {
@@ -361,6 +358,35 @@ describe("Challenger tests", async () => {
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
+    });
+
+    it("Should remove agent when agent is destroyed", async () => {
+        const challenger = await createTestChallenger(runner, orm.em, context, challengerAddress);
+        // create test actors
+        await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
+        await challenger.runStep(orm.em);
+        assert.equal(challenger.agents.size, 1);
+        // check agent status
+        const status = await getAgentStatus(agentBot);
+        assert.equal(status, AgentStatus.NORMAL);
+        // exit available
+        await agentBot.agent.exitAvailable();
+        // announce agent destruction
+        await agentBot.agent.announceDestroy();
+        // check agent status
+        const status2 = await getAgentStatus(agentBot);
+        assert.equal(status2, AgentStatus.DESTROYING);
+        // increase time
+        const settings = await context.assetManager.getSettings();
+        await time.increase(Number(settings.withdrawalWaitMinSeconds) * 2);
+        // agent destruction
+        await agentBot.agent.destroy();
+        await agentBot.runStep(orm.em);
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt.active, false);
+        // handle destruction
+        await challenger.runStep(orm.em);
+        assert.equal(challenger.agents.size, 0);
     });
 
 });

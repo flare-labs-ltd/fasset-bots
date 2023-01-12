@@ -13,6 +13,7 @@ import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
 import { disableMccTraceManager } from "../utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
+import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -29,6 +30,11 @@ describe("Agent bot tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
+
+    async function getAgentStatus(context: IAssetBotContext, vaultAddress: string): Promise<AgentStatus> {
+        const agentInfo = await context.assetManager.getAgentInfo(vaultAddress);
+        return Number(agentInfo.status);
+    }
 
     before(async () => {
         disableMccTraceManager();
@@ -369,15 +375,15 @@ describe("Agent bot tests", async () => {
         assert.equal(openMintingsAfter.length, 0);
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
-        // check status in agent bot entity
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
+        // check agent status
+        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status1, AgentStatus.NORMAL);
         await context.assetFtso.setCurrentPrice(toBNExp(3521, 50), 0);
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
-        // handle status change
-        await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt.status, AgentStatus.LIQUIDATION);
+        // check agent status
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.LIQUIDATION);
     });
 
     it("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
@@ -401,38 +407,39 @@ describe("Agent bot tests", async () => {
         assert.equal(openMintingsAfter.length, 0);
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
-        // check status in agent bot entity
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
+        // check agent status
+        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status1, AgentStatus.NORMAL);
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
         // start liquidation
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
-        // handle status change
-        await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt.status, AgentStatus.LIQUIDATION);
+        // check agent status
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.LIQUIDATION);
         // change price back
         const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
         // agent ends liquidation
         await agentBot.agent.endLiquidation();
-        // handle status change
-        await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
+        // check agent status
+        const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status3, AgentStatus.NORMAL);
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
-        // check status in agent bot entity
         const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt.status, AgentStatus.NORMAL);
+        // check agent status
+        const status = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status, AgentStatus.NORMAL);
         // exit available
         await agentBot.agent.exitAvailable();
         // announce agent destruction
         await agentBot.agent.announceDestroy();
-        // handle status change
-        await agentBot.runStep(orm.em);
-        assert.equal(agentBotEnt.status, AgentStatus.DESTROYING);
+        // check agent status
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
         await time.increase(settings.withdrawalWaitMinSeconds * 2);
         // agent destruction
@@ -441,5 +448,5 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         assert.equal(agentBotEnt.active, false);
     });
-    
+
 });

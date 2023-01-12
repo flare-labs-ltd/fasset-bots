@@ -15,6 +15,7 @@ import { LiquidationTrigger } from "../../src/actors/LiquidationTrigger";
 import { AgentEntity } from "../../src/entities/agent";
 import { assert } from "chai";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
+import { time } from "@openzeppelin/test-helpers";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -213,6 +214,35 @@ describe("Liquidation trigger tests", async () => {
         // check collateral ratio after minting execution
         await liquidationTrigger.runStep(orm.em);
         expect(spy).to.have.been.called.once;
+    });
+
+    it("Should remove agent when agent is destroyed", async () => {
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress);
+        await liquidationTrigger.initialize();
+        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
+        await liquidationTrigger.runStep(orm.em);
+        assert.equal(liquidationTrigger.agents.size, 1);
+        // check agent status
+        const status = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status, AgentStatus.NORMAL);
+        // exit available
+        await agentBot.agent.exitAvailable();
+        // announce agent destruction
+        await agentBot.agent.announceDestroy();
+        // check agent status
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.DESTROYING);
+        // increase time
+        const settings = await context.assetManager.getSettings();
+        await time.increase(Number(settings.withdrawalWaitMinSeconds) * 2);
+        // agent destruction
+        await agentBot.agent.destroy();
+        await agentBot.runStep(orm.em);
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        assert.equal(agentBotEnt.active, false);
+        // handle destruction
+        await liquidationTrigger.runStep(orm.em);
+        assert.equal(liquidationTrigger.agents.size, 0);
     });
 
 });
