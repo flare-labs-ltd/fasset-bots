@@ -11,7 +11,7 @@ import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClien
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { UnderlyingChainEvents } from "../../src/underlying-chain/UnderlyingChainEvents";
 import { artifacts } from "../../src/utils/artifacts";
-import { toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { Modify, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { createTestWalletClient } from "../../test/utils/test-bot-config";
 import { TestChainInfo } from "../../test/utils/TestChainInfo";
@@ -47,7 +47,6 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-type Modify<T, R> = Omit<T, keyof R> & R;
 export type TestAssetBotContext = Modify<IAssetBotContext, {
     natFtso: FtsoMockInstance;
     assetFtso: FtsoMockInstance;
