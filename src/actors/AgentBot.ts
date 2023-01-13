@@ -97,7 +97,7 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAgentForCollateralRatio();
+                    await this.checkAgentForCollateralRatioAndTopup();
                 }
             }
         }).catch(error => {
@@ -176,7 +176,7 @@ export class AgentBot {
     async nextMintingStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
-            switch(minting.state) {
+            switch (minting.state) {
                 case AgentMintingState.STARTED:
                     await this.checkForNonPaymentProofOrExpiredProofs(minting);
                     break;
@@ -304,7 +304,7 @@ export class AgentBot {
     async nextRedemptionStep(rootEm: EM, id: number, skipConfirmation?: boolean) {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
-            switch(redemption.state) {
+            switch (redemption.state) {
                 case AgentRedemptionState.STARTED:
                     await this.payForRedemption(redemption);
                     break;
@@ -314,7 +314,7 @@ export class AgentBot {
                 case AgentRedemptionState.REQUESTED_PROOF:
                     await this.checkConfirmPayment(redemption);
                     break;
-                default: 
+                default:
                     console.error(`Redemption state: ${redemption.state} not supported`);
             }
         }).catch(error => {
@@ -385,41 +385,31 @@ export class AgentBot {
         return null;
     }
 
-    // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
-    async topupCollateral() {
-        const agentInfo = await this.agent.getAgentInfo();
-        const settings = await this.context.assetManager.getSettings();
-        let requiredCR = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopup = await this.requiredTopup(requiredCR, agentInfo, settings);
-        if (requiredTopup.lte(BN_ZERO)) {
-            // no need for topup
-            return;
-        }
-        await this.agent.agentVault.deposit({ value: requiredTopup });
-    }
-
     async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>) {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
     }
 
-    async checkAgentForCollateralRatio() {
+    // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
+    async checkAgentForCollateralRatioAndTopup() {
         const agentInfo = await this.agent.getAgentInfo();
-        const cr = toBN(agentInfo.collateralRatioBIPS);
-        const settings = await this.agent.context.assetManager.getSettings();
-        const minCollateralRatioBIPS = toBN(settings.minCollateralRatioBIPS);
-        if (cr.lte(minCollateralRatioBIPS.muln(CCB_LIQUIDATION_PREVENTION_FACTOR))) {
-            await this.topupCollateral();
+        const settings = await this.context.assetManager.getSettings();
+        const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopup = await this.requiredTopup(requiredCrBIPS, agentInfo, settings);
+        if (requiredTopup.lte(BN_ZERO)) {
+            // no need for topup
+            return;
         }
+        await this.agent.depositCollateral(requiredTopup);
     }
 
-    private async requiredTopup(requiredCR: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
+    private async requiredTopup(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
         const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
         const backingNATWei = convertUBAToNATWei(settings, totalUBA, amgToNATWei);
-        const requiredCollateral = backingNATWei.mul(requiredCR).divn(MAX_BIPS);
+        const requiredCollateral = backingNATWei.mul(requiredCrBIPS).divn(MAX_BIPS);
         return requiredCollateral.sub(collateral);
     }
 

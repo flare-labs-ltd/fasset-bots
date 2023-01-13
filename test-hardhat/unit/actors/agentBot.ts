@@ -52,8 +52,8 @@ describe("Agent bot unit tests", async () => {
 
     it("Should topup collateral", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'topupCollateral');
-        await agentBot.topupCollateral();
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
+        await agentBot.checkAgentForCollateralRatioAndTopup();
         expect(spy).to.have.been.called.once;
     });
 

@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
@@ -14,6 +14,7 @@ import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/
 import { disableMccTraceManager } from "../utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentInfo } from "../../src/fasset/AssetManagerTypes";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -35,9 +36,8 @@ describe("Agent bot tests", async () => {
     let minter: Minter;
     let redeemer: Redeemer;
 
-    async function getAgentStatus(context: IAssetBotContext, vaultAddress: string): Promise<AgentStatus> {
-        const agentInfo = await context.assetManager.getAgentInfo(vaultAddress);
-        return Number(agentInfo.status);
+    async function getAgentInfo(context: IAssetBotContext, vaultAddress: string): Promise<AgentInfo> {
+        return await context.assetManager.getAgentInfo(vaultAddress);   
     }
 
     before(async () => {
@@ -380,13 +380,13 @@ describe("Agent bot tests", async () => {
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
-        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status1 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status1, AgentStatus.NORMAL);
         await context.assetFtso.setCurrentPrice(toBNExp(3521, 50), 0);
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
     });
 
@@ -412,7 +412,7 @@ describe("Agent bot tests", async () => {
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
-        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status1 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status1, AgentStatus.NORMAL);
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
@@ -420,7 +420,7 @@ describe("Agent bot tests", async () => {
         // start liquidation
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // change price back
         const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
@@ -428,12 +428,12 @@ describe("Agent bot tests", async () => {
         // agent ends liquidation
         await agentBot.agent.endLiquidation();
         // check agent status
-        const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status3 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status3, AgentStatus.NORMAL);
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatio');
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -442,30 +442,37 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes 2", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatio');
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
         // create collateral reservation
         await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
+        // expect cr to be less than required cr
+        const crBIPSBefore = (await getAgentInfo(context, agentBot.agent.agentVault.address)).collateralRatioBIPS;
+        const crRequiredBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        expect(Number(crBIPSBefore)).lt(Number(crRequiredBIPS));
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await agentBot.runStep(orm.em);
         expect(spy).to.have.been.called.once;
+        // expect cr to be the same as required cr
+        const crBIPSAfter = (await getAgentInfo(context, agentBot.agent.agentVault.address)).collateralRatioBIPS;
+        expect(Number(crBIPSAfter)).eq(Number(crRequiredBIPS));
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
         const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
         // check agent status
-        const status = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status, AgentStatus.NORMAL);
         // exit available
         await agentBot.agent.exitAvailable();
         // announce agent destruction
         await agentBot.agent.announceDestroy();
         // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
         assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
         await time.increase(settings.withdrawalWaitMinSeconds * 2);

@@ -392,4 +392,35 @@ describe("Challenger tests", async () => {
         assert.equal(challenger.state.agents.size, 0);
     });
 
+    it("Should not handle transaction confirmed - no tracked agent", async () => {
+        // create test actors
+        await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
+        // create challenger
+        const challenger = await createTestChallenger(runner, orm.em, context, accounts[70]);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot, 50);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // perform redemption
+        const [reqs] = await redeemer.requestRedemption(2);
+        const rdreq = reqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            console.log(`Agent step ${i}, state=${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+        }
+        const agentStatus1 = await getAgentStatus(agentBot);
+        assert.equal(agentStatus1, AgentStatus.NORMAL);
+        //
+        await challenger.runStep(orm.em);
+        assert.equal(challenger.state.agents.size, 0);
+    });
+
 });
