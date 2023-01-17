@@ -390,6 +390,11 @@ export class AgentBot {
         agentBotEnt.active = false;
     }
 
+    async underlyingTopup(amount: BN, sourceUnderlyingAddress: string) {
+        const txHash = await this.agent.performTopupPayment(amount, sourceUnderlyingAddress);
+        await this.agent.confirmTopupPayment(txHash);
+    }
+
     // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
     async checkAgentForCollateralRatioAndTopup() {
         const agentInfo = await this.agent.getAgentInfo();

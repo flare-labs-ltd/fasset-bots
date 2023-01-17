@@ -51,6 +51,7 @@ export type TestAssetBotContext = Modify<IAssetBotContext, {
     natFtso: FtsoMockInstance;
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
+    chain: MockChain;
 }>
 
 export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean, customParameters?: any): Promise<TestAssetBotContext> {

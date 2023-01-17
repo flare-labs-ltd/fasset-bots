@@ -4,7 +4,7 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
-import { createTestAssetContext } from "../../utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { FilterQuery } from "@mikro-orm/core";
@@ -16,7 +16,7 @@ const expect = chai.expect;
 
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
+    let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
@@ -27,16 +27,19 @@ describe("Agent bot unit tests", async () => {
         accounts = await web3.eth.getAccounts();
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
     });
-    
+
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
+        // chain tunning
+        chain.finalizationBlocks = 0;
+        chain.secondsPerBlock = 1;
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
-    
+
     it("Should create agent", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
@@ -54,6 +57,16 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
         await agentBot.checkAgentForCollateralRatioAndTopup();
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should topup underlying", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'underlyingTopup');
+        const randomUnderlyingAddress = "RANDOM_UNDERLYING";
+        const amount = 100;
+        context.chain.mint(randomUnderlyingAddress, amount);
+        await agentBot.underlyingTopup(toBN(amount), randomUnderlyingAddress);
         expect(spy).to.have.been.called.once;
     });
 
