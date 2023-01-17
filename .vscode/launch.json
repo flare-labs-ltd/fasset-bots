@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Mocha individual test",
+            "type": "node",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "test",
+                "${workspaceFolder}/test/e2e/agents/agent-tests-coston2.ts"
+            ]
+        }, 
+        {
+            "name": "Hardhat individual test",
+            "type": "node",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "testhh",
+                "${workspaceFolder}/test-hardhat/unit/actors/agentBot.ts"
+            ]
+        }
+    ]
+}

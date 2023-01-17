@@ -10,6 +10,13 @@ For example: `yarn test test/**/**.ts`.
 * `test-hardhat/` These are run by command `testhh`.
 For example: `yarn testhh test-hardhat/**/**.ts`.
 
+### Debugging:
+There are two configurations in `.vscode/launch.json` that allow to debug individual test files from folders `test/` and `test-hardhat/`.
+
+*  To debug specific test file in `test/`, modify **Mocha individual test** configuration's `runtimeArgs` to include desired test file.
+*  To debug specific test file in `test-hardhat/`, modify **Hardhat individual test** configuration's `runtimeArgs` to include desired test file.
+
+
 ### Coverage:
 
 * Run `testhh:coverage` for coverage in `test-hardhat/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
