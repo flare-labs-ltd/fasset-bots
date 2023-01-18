@@ -6,7 +6,6 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
 const chai = require('chai');
@@ -101,7 +100,7 @@ describe("Agent bot unit tests", async () => {
     it("Should not do next minting step due to invalid minting state", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         const spy = chai.spy.on(agentBot, 'nextMintingStep');
-        // create redemption with invalid state
+        // create minting with invalid state
         const mt = orm.em.create(AgentMinting, {
             state: 'invalid' as AgentMintingState,
             agentAddress: "",
@@ -150,4 +149,134 @@ describe("Agent bot unit tests", async () => {
         expect(ids.length).to.eq(1);
         expect(rds.length).to.eq(1);
     });
+
+    it("Should not receive proof 1 - not finalized", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkNonPayment');
+        // create minting
+        const mt = orm.em.create(AgentMinting, {
+            state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
+            agentAddress: "",
+            agentUnderlyingAddress: "",
+            requestId: toBN(0),
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: "",
+            proofRequestRound: 1,
+            proofRequestData: ""
+        });
+        await agentBot.checkNonPayment(mt);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 2 - not finalized", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkPaymentAndExecuteMinting');
+        // create minting
+        const mt = orm.em.create(AgentMinting, {
+            state: AgentMintingState.REQUEST_PAYMENT_PROOF,
+            agentAddress: "",
+            agentUnderlyingAddress: "",
+            requestId: toBN(0),
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: "",
+            proofRequestRound: 1,
+            proofRequestData: ""
+        });
+        await agentBot.checkPaymentAndExecuteMinting(mt);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 3 - not finalized", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkConfirmPayment');
+        // create redemption
+        const rd = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.REQUESTED_PROOF,
+            agentAddress: agentBot.agent.vaultAddress,
+            requestId: "003",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: 1,
+            proofRequestData: ""
+        });
+        await agentBot.checkConfirmPayment(rd);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 1 - not proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkNonPayment');
+        // create minting
+        const mt = orm.em.create(AgentMinting, {
+            state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
+            agentAddress: "",
+            agentUnderlyingAddress: "",
+            requestId: toBN(0),
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: "",
+            proofRequestRound: 0,
+            proofRequestData: ""
+        });
+        await agentBot.checkNonPayment(mt);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 2 - not proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkPaymentAndExecuteMinting');
+        // create minting
+        const mt = orm.em.create(AgentMinting, {
+            state: AgentMintingState.REQUEST_PAYMENT_PROOF,
+            agentAddress: "",
+            agentUnderlyingAddress: "",
+            requestId: toBN(0),
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: "",
+            proofRequestRound: 0,
+            proofRequestData: ""
+        });
+        await agentBot.checkPaymentAndExecuteMinting(mt);
+        expect(spy).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 3 - not proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot, 'checkConfirmPayment');
+        // create redemption
+        const rd = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.REQUESTED_PROOF,
+            agentAddress: agentBot.agent.vaultAddress,
+            requestId: "003",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: 0,
+            proofRequestData: ""
+        });
+        await agentBot.checkConfirmPayment(rd);
+        expect(spy).to.have.been.called.once;
+    });
+
 });

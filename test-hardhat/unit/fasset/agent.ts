@@ -2,9 +2,8 @@ import { assert } from "chai";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, QUERY_WINDOW_SECONDS, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext } from "../../utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../../src/fasset/Agent";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
@@ -24,7 +23,7 @@ const withdraw = toBNExp(1, 18);
 
 describe("Agent unit tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
+    let context: TestAssetBotContext;
     let ownerAddress: string;
     let minterAddress: string;
     let redeemerAddress: string;
@@ -355,6 +354,18 @@ describe("Agent unit tests", async () => {
         assert(res[0].failureReason, "not redeemer's address");
         assert(endBalanceRedeemer.sub(startBalanceRedeemer), String(res[1].redeemedCollateralWei));
         assert(startBalanceAgent.sub(endBalanceAgent), String(res[1].redeemedCollateralWei));
+    });
+
+    it("Should self mint", async () => {
+        const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        await agent.depositCollateral(deposit);
+        await agent.makeAvailable(500, 25000);
+        const lots = 3;
+        const randomUnderlyingAddress = "RANDOM_UNDERLYING";
+        context.chain.mint(randomUnderlyingAddress, toBNExp(10_000, 6));
+        const amountUBA = convertLotsToUBA(await context.assetManager.getSettings(), lots);
+        const selfMint = await agent.selfMint(randomUnderlyingAddress, amountUBA, lots);
+        assert(selfMint.mintedAmountUBA.toString(), amountUBA.toString());
     });
 
 });

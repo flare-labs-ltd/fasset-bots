@@ -1,11 +1,9 @@
 import BN from "bn.js";
 import { AgentStatus } from "../actors/AgentBot";
 import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
-import { MAX_BIPS, toBN } from "../utils/helpers";
+import { MAX_BIPS, MAX_UINT256, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
 import { convertUBAToNATWei } from "../fasset/Conversions";
-
-const MAX_UINT256 = toBN(1).shln(256).subn(1);
 
 export class TrackedAgent {
     constructor(
