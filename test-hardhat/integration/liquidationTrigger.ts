@@ -123,7 +123,7 @@ describe("Liquidation trigger tests", async () => {
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
         await liquidationTrigger.runStep(orm.em);
-        // heck agent status
+        // check agent status
         const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status2, AgentStatus.CCB);
         // change prices
@@ -144,6 +144,8 @@ describe("Liquidation trigger tests", async () => {
         // check agent status
         const status4 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status4, AgentStatus.NORMAL);
+        // send notification
+        await agentBot.runStep(orm.em);
     });
 
     it("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {

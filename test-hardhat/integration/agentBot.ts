@@ -343,10 +343,6 @@ describe("Agent bot tests", async () => {
         const redemptionPaid = await agentBot.findRedemption(orm.em, rdreq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // agent does not confirm payment
-        await agentBot.runStep(orm.em, true);
-        orm.em.clear();
-        const redemptionNotConfirmed = await agentBot.findRedemption(orm.em, rdreq.requestId);
-        assert.equal(redemptionNotConfirmed.state, AgentRedemptionState.NOT_REQUESTED_PROOF);
         // others can confirm redemption payment after some time
         await time.increase(settings.confirmationByOthersAfterSeconds);
         chain.mine(chain.finalizationBlocks + 1);

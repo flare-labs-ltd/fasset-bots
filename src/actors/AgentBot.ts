@@ -8,6 +8,7 @@ import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
+import { MockNotifier } from "../mock/MockNotifier";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -33,6 +34,7 @@ export class AgentBot {
         public agent: AgentB
     ) { }
 
+    notifier = new MockNotifier();
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
@@ -70,10 +72,10 @@ export class AgentBot {
         return new AgentBot(agent);
     }
 
-    async runStep(rootEm: EM, skipConfirmation?: boolean) {
+    async runStep(rootEm: EM) {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
-        await this.handleOpenRedemptions(rootEm, skipConfirmation);
+        await this.handleOpenRedemptions(rootEm);
     }
 
     async handleEvents(rootEm: EM) {
@@ -84,9 +86,9 @@ export class AgentBot {
                 // console.log(this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     this.mintingStarted(em, event.args);
-                } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {
+                    await this.mintingExecuted(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
@@ -94,10 +96,22 @@ export class AgentBot {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
+                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
+                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     await this.checkAgentForCollateralRatioAndTopup();
+                } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
+                    this.notifier.sendCCBAlert(event.args.agentVault);
+                } else if (eventIs(event, this.context.assetManager, "UnderlyingFreeBalanceNegative")) {
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault);
+                } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
+                } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
                 }
             }
         }).catch(error => {
@@ -195,10 +209,12 @@ export class AgentBot {
     }
 
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting) {
+        // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
+            this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
         } else {
             const blockHeight = await this.context.chain.getBlockHeight();
             const latestBlock = await this.context.chain.getBlockAt(blockHeight);
@@ -206,6 +222,7 @@ export class AgentBot {
             if (latestBlock && latestBlock.number > minting.lastUnderlyingBlock.toNumber() && latestBlock.timestamp > minting.lastUnderlyingTimestamp.toNumber()) {
                 const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
+                    // corner case: minter pays and doesn't execute minting
                     // check minter paid -> request payment proof -> execute minting
                     const txHash = txs[0].hash;
                     // TODO is it ok to check first address in UTXO chains?
@@ -224,6 +241,7 @@ export class AgentBot {
         minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
         minting.proofRequestRound = request.round;
         minting.proofRequestData = request.data;
+        this.notifier.sendMintingCornerCase(minting.requestId.toString());
     }
 
     async requestNonPaymentProofForMinting(minting: AgentMinting) {
@@ -246,7 +264,7 @@ export class AgentBot {
             await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            // TODO: non payment happened but we cannot obtain proof... ALERT!!!
+            this.notifier.sendNoProofObtained(minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -258,7 +276,7 @@ export class AgentBot {
             await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            // TODO: payment happened but we cannot obtain proof... ALERT!!!
+            this.notifier.sendNoProofObtained(minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -286,10 +304,10 @@ export class AgentBot {
         return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
     }
 
-    async handleOpenRedemptions(rootEm: EM, skipConfirmation?: boolean) {
+    async handleOpenRedemptions(rootEm: EM) {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         for (const rd of openRedemptions) {
-            await this.nextRedemptionStep(rootEm, rd.id, skipConfirmation);
+            await this.nextRedemptionStep(rootEm, rd.id);
         }
     }
 
@@ -301,7 +319,7 @@ export class AgentBot {
             .getResultList();
     }
 
-    async nextRedemptionStep(rootEm: EM, id: number, skipConfirmation?: boolean) {
+    async nextRedemptionStep(rootEm: EM, id: number) {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
             switch (redemption.state) {
@@ -309,7 +327,7 @@ export class AgentBot {
                     await this.payForRedemption(redemption);
                     break;
                 case AgentRedemptionState.PAID:
-                    await this.checkPaymentProofAvailable(redemption, skipConfirmation);
+                    await this.checkPaymentProofAvailable(redemption);
                     break;
                 case AgentRedemptionState.REQUESTED_PROOF:
                     await this.checkConfirmPayment(redemption);
@@ -336,17 +354,13 @@ export class AgentBot {
         }
     }
 
-    async checkPaymentProofAvailable(redemption: AgentRedemption, skipConfirmation?: boolean) {
-        // corner case: agent pays but does not confirm
-        if (skipConfirmation) {
-            redemption.state = AgentRedemptionState.NOT_REQUESTED_PROOF;
-            return;
-        }
+    async checkPaymentProofAvailable(redemption: AgentRedemption) {
         // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
+            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString());
         } else {
             const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash!);
             const blockHeight = await this.context.chain.getBlockHeight();
@@ -371,7 +385,7 @@ export class AgentBot {
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
-            // TODO: payment happened but we cannot obtain proof... ALERT!!!
+            this.notifier.sendNoProofObtained(redemption.proofRequestRound!, redemption.proofRequestData!);
         }
     }
 
