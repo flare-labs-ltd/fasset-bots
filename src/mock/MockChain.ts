@@ -72,6 +72,10 @@ export class MockChain implements IBlockChain, IBlockChainEvents {
     async getBalance(address: string): Promise<BN> {
         return this.balances[address] ?? BN_ZERO;
     }
+
+    async getTransactionFee(): Promise<BN> {
+        return this.requiredFee;
+    }
     
     async getBlock(blockHash: string): Promise<IBlock | null> {
         const index = this.blockIndex[blockHash];

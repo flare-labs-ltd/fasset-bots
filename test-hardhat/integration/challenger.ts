@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
-import { MockChain, MockTransactionOptions } from "../../src/mock/MockChain";
+import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
@@ -302,19 +302,22 @@ describe("Challenger tests", async () => {
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep(orm.em);
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot, 50);
+        await createCRAndPerformMinting(minter, agentBot, 1);
         // transfer fassets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         // perform redemption
-        const [reqs] = await redeemer.requestRedemption(2);
+        const [reqs] = await redeemer.requestRedemption(1);
         const rdreq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
         const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
-        // pay for redemption - wrong underlying address
+        // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
+        const agentBalance = await context.chain.getBalance(agentBot.agent.underlyingAddress);
+        redemption.valueUBA = toBN(agentBalance);
+        chain.requiredFee = redemption.feeUBA;
         await agentBot.payForRedemption(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
@@ -342,7 +345,7 @@ describe("Challenger tests", async () => {
                 argsDefault = item.args;
             }
         }
-        // send notification
+        // send alert
         await agentBot.runStep(orm.em);
         // check end balance
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);

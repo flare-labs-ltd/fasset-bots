@@ -14,7 +14,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -96,6 +96,7 @@ export class AgentBot {
                     await this.redemptionFinished(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
+                    await this.checkUnderlyingBalance(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
                     this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
@@ -403,6 +404,15 @@ export class AgentBot {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
     }
+
+    async checkUnderlyingBalance(agentVault: string) {
+        const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
+        const estimatedFee = toBN(await this.context.chain.getTransactionFee());
+        if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
+            this.notifier.sendLowUnderlyingBalance(agentVault, freeUnderlyingBalance.toString());
+        }
+    }
+
 
     async underlyingTopup(amount: BN, sourceUnderlyingAddress: string) {
         const txHash = await this.agent.performTopupPayment(amount, sourceUnderlyingAddress);

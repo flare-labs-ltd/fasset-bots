@@ -70,6 +70,11 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return toBN(balance);
     }
 
+    async getTransactionFee(): Promise<BN> {
+        const fee = await this.walletClient.getCurrentTransactionFee();
+        return toBN(fee);
+    }
+
     async getBlock(blockHash: string): Promise<IBlock | null> {
         const chain = getSourceName(this.sourceId);
         const resp = await this.client.get(`/api/indexer/chain/${chain}/block/${blockHash}`);

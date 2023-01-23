@@ -64,6 +64,11 @@ export class BlockChainHelper implements IBlockChain {
         return toBN(balance);
     }
 
+    async getTransactionFee(): Promise<BN> {
+        const fee = await this.walletClient.getCurrentTransactionFee();
+        return toBN(fee);
+    }
+
     async getBlock(blockHash: string): Promise<IBlock | null> {
         if (this.mccClient instanceof MCC.ALGO) {
             throw new Error("Method not implemented in ALGO.");

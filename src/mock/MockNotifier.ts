@@ -4,6 +4,7 @@ const MINTING_CORNER_CASE = "MINTING ALERT";
 const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
 const NO_PROOF = "NO PROOF OBTAINED ALERT";
 const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
+const LOW_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
 
 export class MockNotifier {
 
@@ -47,6 +48,10 @@ export class MockNotifier {
         } else {
             this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked`);
         }
+    }
+
+    sendLowUnderlyingBalance(agentVault: string, freeUnderlyingBalanceUBA: string) {
+        this.send(LOW_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA}.`);
     }
 
 }

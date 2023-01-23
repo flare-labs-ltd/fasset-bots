@@ -37,7 +37,7 @@ describe("Agent bot tests", async () => {
     let redeemer: Redeemer;
 
     async function getAgentInfo(context: IAssetBotContext, vaultAddress: string): Promise<AgentInfo> {
-        return await context.assetManager.getAgentInfo(vaultAddress);   
+        return await context.assetManager.getAgentInfo(vaultAddress);
     }
 
     before(async () => {
