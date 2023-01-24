@@ -107,6 +107,8 @@ export class AgentBot {
                     await this.checkAgentForCollateralRatioAndTopup();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
                     this.notifier.sendCCBAlert(event.args.agentVault);
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
+                    this.notifier.sendLiquidationStartAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingFreeBalanceNegative")) {
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
@@ -430,6 +432,7 @@ export class AgentBot {
             return;
         }
         await this.agent.depositCollateral(requiredTopup);
+        this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopup.toString());
     }
 
     private async requiredTopup(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {

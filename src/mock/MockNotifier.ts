@@ -1,10 +1,12 @@
 const CCB_TITLE = "CCB ALERT";
+const LIQUIDATION_STARTED_ALERT = "LIQUIDATION STARTED ALERT";
 const FULL_LIQUIDATION_TITLE = "FULL LIQUIDATION ALERT";
 const MINTING_CORNER_CASE = "MINTING ALERT";
 const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
 const NO_PROOF = "NO PROOF OBTAINED ALERT";
 const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
 const LOW_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
+const COLLATERAL_TOP_UP_ALERT = "COLLATERAL TOP UP ALERT";
 
 export class MockNotifier {
 
@@ -14,6 +16,14 @@ export class MockNotifier {
 
     sendCCBAlert(agentVault: string) {
         this.send(CCB_TITLE, `Agent ${agentVault} is in collateral call band.`);
+    }
+
+    sendLiquidationStartAlert(agentVault: string) {
+        this.send(LIQUIDATION_STARTED_ALERT, `Agent ${agentVault} is in liquidation.`);
+    }
+
+    sendCollateralTopUpAlert(agentVault: string, value: string) {
+        this.send(COLLATERAL_TOP_UP_ALERT, `Agent ${agentVault} was automaticallty topped up with ${value} due to price changes.`);
     }
 
     sendFullLiquidationAlert(agentVault: string, payment1?: string, payment2?: string) {
