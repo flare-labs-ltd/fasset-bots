@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { toBN } from "../../../../src/utils/helpers";
+import { NumberLike, SupportedSolidityType } from "../../../../src/verification/attestation-types/attestation-types";
 import { numberLikeToNumber, prefix0x, randomListElement, randSol, tsTypeForSolidityType, toHex, hexlifyBN } from "../../../../src/verification/attestation-types/attestation-types-helpers";
 
 describe("Attestation types helper unit tests", () => {
@@ -19,6 +20,8 @@ describe("Attestation types helper unit tests", () => {
         expect(tsTypeForSolidityType("string")).to.eq(expected3);
         expect(tsTypeForSolidityType("bytes4")).to.eq(expected3);
         expect(tsTypeForSolidityType("bytes32")).to.eq(expected3);
+        const expected4 = undefined;
+        expect(tsTypeForSolidityType("bytes3" as SupportedSolidityType)).to.eq(expected4);
     });
 
     it("Should return prefixed string", () => {
@@ -28,17 +31,21 @@ describe("Attestation types helper unit tests", () => {
     });
 
     it("Should return random value", () => {
-        expect(typeof randSol({}, "", "uint8") === 'object');
-        expect(typeof randSol({}, "", "uint16") === 'object');
-        expect(typeof randSol({}, "", "uint32") === 'object');
-        expect(typeof randSol({}, "", "uint64") === 'object');
-        expect(typeof randSol({}, "", "uint128") === 'object');
-        expect(typeof randSol({}, "", "uint256") === 'object');
-        expect(typeof randSol({}, "", "int256") === 'object');
-        expect(typeof randSol({}, "", "bool") === 'object');
-        expect(typeof randSol({}, "", "string") === 'object');
-        expect(typeof randSol({}, "", "bytes4") === 'object');
-        expect(typeof randSol({ "0": 0 }, "0", "bytes32") === 'object');
+        const expected = 'object';
+        expect(typeof randSol({}, "", "uint8") === expected);
+        expect(typeof randSol({}, "", "uint16") === expected);
+        expect(typeof randSol({}, "", "uint32") === expected);
+        expect(typeof randSol({}, "", "uint64") === expected);
+        expect(typeof randSol({}, "", "uint128") === expected);
+        expect(typeof randSol({}, "", "uint256") === expected);
+        expect(typeof randSol({}, "", "int256") === expected);
+        expect(typeof randSol({}, "", "bool") === expected);
+        expect(typeof randSol({}, "", "string") === expected);
+        expect(typeof randSol({}, "", "bytes4") === expected);
+        expect(typeof randSol({}, "", "bytes32") === expected);
+        expect(typeof randSol({ "0": 1 }, "0", "bytes32") === expected);
+        const expected2 = undefined;
+        expect(typeof randSol({}, "", "bytes3" as SupportedSolidityType) === expected2);
     });
 
     it("Should convert to number", () => {
@@ -46,6 +53,9 @@ describe("Attestation types helper unit tests", () => {
         expect(numberLikeToNumber(expected)).to.eq(expected);
         expect(numberLikeToNumber(toBN(expected))).to.eq(expected);
         expect(numberLikeToNumber("" + expected)).to.eq(expected);
+        const expected2 = undefined;
+        expect(numberLikeToNumber(undefined as unknown as NumberLike)).to.eq(expected2);
+        expect(numberLikeToNumber(null as unknown as NumberLike)).to.eq(expected2);
     });
 
     it("Should return random list element", () => {
