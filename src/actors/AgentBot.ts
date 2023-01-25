@@ -104,7 +104,7 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAgentForCollateralRatioAndTopup();
+                    await this.checkAgentForCollateralRatioAndTopUp();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
                     this.notifier.sendCCBAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
@@ -394,9 +394,9 @@ export class AgentBot {
 
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
-        const lqwblock = toBN(proof.lowestQueryWindowBlockNumber);
-        const lqwbtimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
-        if (lqwblock.gt(lastUnderlyingBlock) && lqwbtimestamp.gt(lastUnderlyingTimestamp)) {
+        const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
+        const lqwBTimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
+        if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
             return proof;
         }
         return null;
@@ -416,26 +416,26 @@ export class AgentBot {
     }
 
 
-    async underlyingTopup(amount: BN, sourceUnderlyingAddress: string) {
+    async underlyingTopUp(amount: BN, sourceUnderlyingAddress: string) {
         const txHash = await this.agent.performTopupPayment(amount, sourceUnderlyingAddress);
         await this.agent.confirmTopupPayment(txHash);
     }
 
     // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
-    async checkAgentForCollateralRatioAndTopup() {
+    async checkAgentForCollateralRatioAndTopUp() {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
         const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopup = await this.requiredTopup(requiredCrBIPS, agentInfo, settings);
-        if (requiredTopup.lte(BN_ZERO)) {
+        const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo, settings);
+        if (requiredTopUp.lte(BN_ZERO)) {
             // no need for topup
             return;
         }
-        await this.agent.depositCollateral(requiredTopup);
-        this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopup.toString());
+        await this.agent.depositCollateral(requiredTopUp);
+        this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUp.toString());
     }
 
-    private async requiredTopup(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
+    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
         const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);

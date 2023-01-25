@@ -14,7 +14,7 @@
                 "test",
                 "${workspaceFolder}/test/e2e/agents/agent-tests-coston2.ts"
             ]
-        }, 
+        },
         {
             "name": "Hardhat individual test",
             "type": "node",

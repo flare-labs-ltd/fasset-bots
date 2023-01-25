@@ -108,7 +108,7 @@ describe("Agent bot tests", async () => {
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
-            console.log(`Agent step ${i}, state=${redemption.state}`);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
         // redeemer should now have some funds on the underlying chain
@@ -429,7 +429,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -438,7 +438,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes 2", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
         // create collateral reservation
         await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         // change price

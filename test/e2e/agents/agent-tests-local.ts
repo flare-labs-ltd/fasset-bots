@@ -77,7 +77,7 @@ describe("Agent bot tests - local network", async () => {
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
-            console.log(`Agent step ${i}, state=${redemption.state}`)
+            console.log(`Agent step ${i}, state = ${redemption.state}`)
             if (redemption.state === 'done') break;
         }
         // redeemer should now have some funds on the underlying chain

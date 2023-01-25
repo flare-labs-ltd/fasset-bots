@@ -25,10 +25,10 @@ describe("Payment reference unit tests", async () => {
         expect(announcedWithdrawalRef).to.eq(expected);
     });
 
-    it("Should get topup reference", () => {
-        const topupRef = PaymentReference.topup(address);
+    it("Should get topTOP_UPup reference", () => {
+        const topUpRef = PaymentReference.topup(address);
         const expected = toHex(toBN(address).or(PaymentReference.TOPUP), 32);
-        expect(topupRef).to.eq(expected);
+        expect(topUpRef).to.eq(expected);
     });
 
     it("Should get selfMint reference", () => {

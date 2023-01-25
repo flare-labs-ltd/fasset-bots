@@ -173,7 +173,7 @@ describe("Challenger tests", async () => {
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
-            console.log(`Agent step ${i}, state=${redemption.state}`);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
         const agentStatus1 = await getAgentStatus(agentBot);
@@ -244,7 +244,7 @@ describe("Challenger tests", async () => {
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
-            console.log(`Agent step ${i}, state=${redemption.state}`);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
         // repeat the same payment (already confirmed)
@@ -467,7 +467,7 @@ describe("Challenger tests", async () => {
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
-            console.log(`Agent step ${i}, state=${redemption.state}`);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
         const agentStatus1 = await getAgentStatus(agentBot);

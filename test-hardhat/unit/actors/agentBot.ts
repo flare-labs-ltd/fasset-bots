@@ -39,33 +39,33 @@ describe("Agent bot unit tests", async () => {
         redeemerAddress = accounts[5];
     });
 
-    it("Should create agent", async () => {
+    it("Should create agent bot", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
         expect(agentBot.agent.underlyingAddress).to.not.be.null;
     });
 
-    it("Should read agent from entity", async () => {
+    it("Should read agent bot from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt)
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     });
 
-    it("Should topup collateral", async () => {
+    it("Should top up collateral", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopup');
-        await agentBot.checkAgentForCollateralRatioAndTopup();
+        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
+        await agentBot.checkAgentForCollateralRatioAndTopUp();
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should topup underlying", async () => {
+    it("Should top up underlying", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'underlyingTopup');
+        const spy = chai.spy.on(agentBot, 'underlyingTopUp');
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const amount = 100;
         context.chain.mint(randomUnderlyingAddress, amount);
-        await agentBot.underlyingTopup(toBN(amount), randomUnderlyingAddress);
+        await agentBot.underlyingTopUp(toBN(amount), randomUnderlyingAddress);
         expect(spy).to.have.been.called.once;
     });
 
