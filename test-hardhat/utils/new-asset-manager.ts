@@ -8,8 +8,8 @@ import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerCo
 export async function newAssetManager(
     governanceAddress: string,
     assetManagerController: string | AssetManagerControllerInstance,
-    name: string, 
-    symbol: string, 
+    name: string,
+    symbol: string,
     decimals: number,
     assetManagerSettings: AssetManagerSettings,
     updateExecutor: string = governanceAddress
@@ -57,8 +57,8 @@ export async function linkAssetManager() {
     const Challenges = await deployLibrary('Challenges');
     const FullAgentInfo = await deployLibrary('FullAgentInfo');
     // link AssetManagerContract
-    return linkDependencies(artifacts.require('AssetManager'), { 
-        SettingsUpdater, StateUpdater, Agents, AvailableAgents, CollateralReservations, Liquidation, Minting, 
+    return linkDependencies(artifacts.require('AssetManager'), {
+        SettingsUpdater, StateUpdater, Agents, AvailableAgents, CollateralReservations, Liquidation, Minting,
         UnderlyingFreeBalance, Redemption, UnderlyingWithdrawalAnnouncements, Challenges, FullAgentInfo
     });
 }

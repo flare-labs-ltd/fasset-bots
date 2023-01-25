@@ -9,7 +9,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         public walletClient: WalletClient,
         private em: EntityManager,
         public chain: IBlockChain
-    ) {}
+    ) { }
 
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
         const walletKeys = new DBWalletKeys(this.em);

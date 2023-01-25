@@ -10,11 +10,11 @@ export interface IWalletKeys {
 
 export class DBWalletKeys implements IWalletKeys {
     private password = process.env['WALLET_ENCRIPTION_PASSWORD'] ?? fail("Missing wallet password");
-    
+
     private privateKeyCache = new Map<string, string>();
-    
-    constructor (private em: EntityManager) {}
-    
+
+    constructor(private em: EntityManager) { }
+
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {
             const wa = await this.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);

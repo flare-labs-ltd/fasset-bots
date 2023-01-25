@@ -27,7 +27,7 @@ export interface IBlockChainWallet {
     // This variant is typically used on utxo chains.
     // Returns new transaction hash.
     addMultiTransaction(spend: { [address: string]: NumberLike; }, receive: { [address: string]: NumberLike; }, reference: string | null, options?: TransactionOptions): Promise<string>;
-    
+
     // Creates a new account and returns the address.
     // Private key is kept in the wallet.
     createAccount(): Promise<string>;

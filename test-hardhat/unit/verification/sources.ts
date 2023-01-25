@@ -8,18 +8,18 @@ const sourceNameBTC = "BTC";
 
 describe("Sources tests", async () => {
 
-    it("Should return source name", async () => {        
+    it("Should return source name", async () => {
         const returnedSourceNameBTC = getSourceName(sourceBTC);
         expect(returnedSourceNameBTC).to.equal(sourceNameBTC);
     });
 
-    it("Should not return source name, invalid sourceId", async () => {    
-        const source100 = 10000;    
+    it("Should not return source name, invalid sourceId", async () => {
+        const source100 = 10000;
         const returnedNullSourceName = getSourceName(source100);
         expect(returnedNullSourceName).to.be.null;
     });
 
-    it("Should return sourceId", async () => {    
+    it("Should return sourceId", async () => {
         const returnedToSourceId1 = toSourceId(sourceBTC);
         expect(returnedToSourceId1).to.equal(sourceBTC);
 

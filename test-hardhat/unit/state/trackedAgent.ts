@@ -34,7 +34,7 @@ describe("Tracked agent tests", async () => {
         const { 0: natPrice, 1: natTimestamp } = await context.natFtso.getCurrentPrice();
         const { 0: assetPrice, 1: assetTimestamp } = await context.assetFtso.getCurrentPrice();
         return new Prices(settings, natPrice, natTimestamp, assetPrice, assetTimestamp);
-    }   
+    }
 
     before(async () => {
         accounts = await web3.eth.getAccounts();

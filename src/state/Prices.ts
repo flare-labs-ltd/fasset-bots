@@ -11,10 +11,10 @@ export class Prices {
         public readonly natTimestamp: BN,
         public readonly assetUSDDec5: BN,
         public readonly assetTimestamp: BN,
-    ) { 
+    ) {
         this.amgNatWei = !natTimestamp.isZero() && !assetTimestamp.isZero() ? amgToNATWeiPrice(settings, natUSDDec5, assetUSDDec5) : BN_ZERO;
     }
-    
+
     readonly amgNatWei: BN;
 
     get natUSD() {
@@ -49,7 +49,7 @@ export class Prices {
         const { 0: assetPriceTrusted, 1: assetTimestampTrusted } = await context.assetFtso.getCurrentPriceFromTrustedProviders();
         return new Prices(settings, natPriceTrusted, natTimestampTrusted, assetPriceTrusted, assetTimestampTrusted);
     }
-    
+
     static async getPrices(context: IAssetContext, settings: AssetManagerSettings): Promise<[Prices, Prices]> {
         const ftsoPrices = await this.getFtsoPrices(context, settings);
         const trustedPrices = await this.getTrustedPrices(context, settings);

@@ -12,8 +12,8 @@ export const TDEF: AttestationTypeScheme = {
          key: "attestationType",
          size: ATT_BYTES,
          type: "AttestationType",
-         description: 
-`
+         description:
+            `
 Attestation type id for this request, see 'AttestationType' enum.
 `
       },
@@ -21,8 +21,8 @@ Attestation type id for this request, see 'AttestationType' enum.
          key: "sourceId",
          size: SOURCE_ID_BYTES,
          type: "SourceId",
-         description: 
-`
+         description:
+            `
 The ID of the underlying chain, see 'SourceId' enum.
 `
       },
@@ -30,8 +30,8 @@ The ID of the underlying chain, see 'SourceId' enum.
          key: "upperBoundProof",
          size: UPPER_BOUND_PROOF_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The hash of the confirmation block for an upper query window boundary block.
 `
       },
@@ -39,8 +39,8 @@ The hash of the confirmation block for an upper query window boundary block.
          key: "id",
          size: TX_ID_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 Transaction hash to search for.
 `
       },
@@ -49,7 +49,7 @@ Transaction hash to search for.
          size: UTXO_BYTES,
          type: "NumberLike",
          description:
-`
+            `
 Index of the source address on UTXO chains. Always 0 on non-UTXO chains.
 `
       },
@@ -57,8 +57,8 @@ Index of the source address on UTXO chains. Always 0 on non-UTXO chains.
          key: "utxo",
          size: UTXO_BYTES,
          type: "NumberLike",
-         description: 
-`
+         description:
+            `
 Index of the receiving address on UTXO chains. Always 0 on non-UTXO chains.
 `
       },
@@ -67,8 +67,8 @@ Index of the receiving address on UTXO chains. Always 0 on non-UTXO chains.
       {
          key: "blockNumber",
          type: "uint64",
-         description: 
-`
+         description:
+            `
 Number of the transaction block on the underlying chain.
 `
       },
@@ -76,7 +76,7 @@ Number of the transaction block on the underlying chain.
          key: "blockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Timestamp of the transaction block on the underlying chain.
 `
       },
@@ -84,7 +84,7 @@ Timestamp of the transaction block on the underlying chain.
          key: "transactionHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the transaction on the underlying chain.
 `
       },
@@ -92,7 +92,7 @@ Hash of the transaction on the underlying chain.
          key: "inUtxo",
          type: "uint8",
          description:
-`
+            `
 Index of the transaction input indicating source address on UTXO chains, 0 on non-UTXO chains.
 `
       },
@@ -100,7 +100,7 @@ Index of the transaction input indicating source address on UTXO chains, 0 on no
          key: "utxo",
          type: "uint8",
          description:
-`
+            `
 Output index for a transaction with multiple outputs on UTXO chains, 0 on non-UTXO chains.
 The same as in the 'utxo' parameter from the request.
 `
@@ -109,7 +109,7 @@ The same as in the 'utxo' parameter from the request.
          key: "sourceAddressHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the source address viewed as a string (the one indicated by the 'inUtxo'
 parameter for UTXO blockchains).
 `
@@ -118,7 +118,7 @@ parameter for UTXO blockchains).
          key: "receivingAddressHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the receiving address as a string (the one indicated by the 'utxo'
 parameter for UTXO blockchains).
 `
@@ -127,7 +127,7 @@ parameter for UTXO blockchains).
          key: "spentAmount",
          type: "int256",
          description:
-`
+            `
 The amount that went out of the source address, in the smallest underlying units.
 In non-UTXO chains it includes both payment value and fee (gas).
 Calculation for UTXO chains depends on the existence of standardized payment reference.
@@ -140,7 +140,7 @@ on the input indicated by 'inUtxo'.
          key: "receivedAmount",
          type: "int256",
          description:
-`
+            `
 The amount received to the receiving address, in smallest underlying units. Can be negative in UTXO chains.
 `
       },
@@ -148,7 +148,7 @@ The amount received to the receiving address, in smallest underlying units. Can 
          key: "paymentReference",
          type: "bytes32",
          description:
-`
+            `
 Standardized payment reference, if it exists, 0 otherwise.
 `
       },
@@ -156,7 +156,7 @@ Standardized payment reference, if it exists, 0 otherwise.
          key: "oneToOne",
          type: "bool",
          description:
-`
+            `
 'true' if the transaction has exactly one source address and 
 exactly one receiving address (different from source).
 `
@@ -165,7 +165,7 @@ exactly one receiving address (different from source).
          key: "status",
          type: "uint8",
          description:
-`
+            `
 Transaction success status, can have 3 values:
   - 0 - Success
   - 1 - Failure due to sender (this is the default failure)

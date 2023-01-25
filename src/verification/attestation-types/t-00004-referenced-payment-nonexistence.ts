@@ -19,8 +19,8 @@ export const TDEF: AttestationTypeScheme = {
          key: "attestationType",
          size: ATT_BYTES,
          type: "AttestationType",
-         description: 
-`
+         description:
+            `
 Attestation type id for this request, see 'AttestationType' enum.
 `
       },
@@ -28,8 +28,8 @@ Attestation type id for this request, see 'AttestationType' enum.
          key: "sourceId",
          size: SOURCE_ID_BYTES,
          type: "SourceId",
-         description: 
-`
+         description:
+            `
 The ID of the underlying chain, see 'SourceId' enum.
 `
       },
@@ -37,8 +37,8 @@ The ID of the underlying chain, see 'SourceId' enum.
          key: "upperBoundProof",
          size: UPPER_BOUND_PROOF_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The hash of the confirmation block for an upper query window boundary block.
 `
       },
@@ -46,8 +46,8 @@ The hash of the confirmation block for an upper query window boundary block.
          key: "deadlineBlockNumber",
          size: BLOCKNUMBER_BYTES,
          type: "NumberLike",
-         description: 
-`
+         description:
+            `
 Maximum number of the block where the transaction is searched for.
 `
       },
@@ -56,8 +56,8 @@ Maximum number of the block where the transaction is searched for.
          key: "deadlineTimestamp",
          size: TIMESTAMP_BYTES,
          type: "NumberLike",
-         description: 
-`
+         description:
+            `
 Maximum median timestamp of the block where the transaction is searched for.
 `
       },
@@ -66,7 +66,7 @@ Maximum median timestamp of the block where the transaction is searched for.
          size: TX_ID_BYTES,
          type: "ByteSequenceLike",
          description:
-`
+            `
 Hash of exact address to which the payment was done to.
 `
       },
@@ -74,8 +74,8 @@ Hash of exact address to which the payment was done to.
          key: "amount",
          size: AMOUNT_BYTES,
          type: "NumberLike",
-         description: 
-`
+         description:
+            `
 The exact amount to search for.
 `
       },
@@ -83,8 +83,8 @@ The exact amount to search for.
          key: "paymentReference",
          size: PAYMENT_REFERENCE_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The payment reference to search for.
 `
       },
@@ -94,7 +94,7 @@ The payment reference to search for.
          key: "deadlineBlockNumber",
          type: "uint64",
          description:
-`
+            `
 Deadline block number specified in the attestation request.
 `
       },
@@ -103,7 +103,7 @@ Deadline block number specified in the attestation request.
          key: "deadlineTimestamp",
          type: "uint64",
          description:
-`
+            `
 Deadline timestamp specified in the attestation request.
 `
       },
@@ -111,7 +111,7 @@ Deadline timestamp specified in the attestation request.
          key: "destinationAddressHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the destination address searched for.
 `
       },
@@ -119,7 +119,7 @@ Hash of the destination address searched for.
          key: "paymentReference",
          type: "bytes32",
          description:
-`
+            `
 The payment reference searched for.
 `
       },
@@ -127,7 +127,7 @@ The payment reference searched for.
          key: "amount",
          type: "uint128",
          description:
-`
+            `
 The amount searched for.
 `
       },
@@ -135,7 +135,7 @@ The amount searched for.
          key: "lowerBoundaryBlockNumber",
          type: "uint64",
          description:
-`
+            `
 The first confirmed block that gets checked.
 It is the lowest block in the synchronized query window.
 `
@@ -144,7 +144,7 @@ It is the lowest block in the synchronized query window.
          key: "lowerBoundaryBlockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Timestamp of the lowerBoundaryBlockNumber.
 `
       },
@@ -152,7 +152,7 @@ Timestamp of the lowerBoundaryBlockNumber.
          key: "firstOverflowBlockNumber",
          type: "uint64",
          description:
-`
+            `
 The first (lowest) confirmed block with 'timestamp > deadlineTimestamp' 
 and 'blockNumber  > deadlineBlockNumber'.
 `
@@ -161,7 +161,7 @@ and 'blockNumber  > deadlineBlockNumber'.
          key: "firstOverflowBlockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Timestamp of the firstOverflowBlock. 
 `
       },

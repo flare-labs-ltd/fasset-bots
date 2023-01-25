@@ -20,7 +20,7 @@ describe("Prices tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let settings: AssetManagerSettings;
-    
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
         context = await createContext(accounts[0], setMaxTrustedPriceAgeSeconds);

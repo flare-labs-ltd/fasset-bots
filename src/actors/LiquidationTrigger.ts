@@ -21,16 +21,16 @@ export class LiquidationTrigger {
         public context: IAssetBotContext,
         public address: string,
         public state: TrackedState
-    ) {}
+    ) { }
 
     // must call initialize to init prices and settings
     prices!: Prices;
     trustedPrices!: Prices;
     // settings
     settings!: AssetManagerSettings;
-    
+
     eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
-    
+
     // async initialization part
     async initialize() {
         this.settings = await this.context.assetManager.getSettings();
@@ -123,7 +123,7 @@ export class LiquidationTrigger {
         liquidatorEnt.lastEventBlockHandled = lastBlock;
         return events;
     }
-    
+
     async handleMintingExecuted(args: EventArgs<MintingExecuted>) {
         const agent = this.state.getAgent(args.agentVault);
         if (!agent) return;

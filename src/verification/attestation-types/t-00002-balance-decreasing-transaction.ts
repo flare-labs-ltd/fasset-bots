@@ -10,8 +10,8 @@ export const TDEF: AttestationTypeScheme = {
          key: "attestationType",
          size: ATT_BYTES,
          type: "AttestationType",
-         description: 
-`
+         description:
+            `
 Attestation type id for this request, see 'AttestationType' enum.
 `
       },
@@ -19,8 +19,8 @@ Attestation type id for this request, see 'AttestationType' enum.
          key: "sourceId",
          size: SOURCE_ID_BYTES,
          type: "SourceId",
-         description: 
-`
+         description:
+            `
 The ID of the underlying chain, see 'SourceId' enum.
 `
       },
@@ -28,8 +28,8 @@ The ID of the underlying chain, see 'SourceId' enum.
          key: "upperBoundProof",
          size: UPPER_BOUND_PROOF_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The hash of the confirmation block for an upper query window boundary block.
 `
       },
@@ -37,8 +37,8 @@ The hash of the confirmation block for an upper query window boundary block.
          key: "id",
          size: TX_ID_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 Transaction hash to search for.
 `
       },
@@ -46,8 +46,8 @@ Transaction hash to search for.
          key: "inUtxo",
          size: UTXO_BYTES,
          type: "NumberLike",
-         description: 
-`
+         description:
+            `
 Index of the source address on UTXO chains.
 `
       },
@@ -57,7 +57,7 @@ Index of the source address on UTXO chains.
          key: "blockNumber",
          type: "uint64",
          description:
-`
+            `
 Number of the transaction block on the underlying chain.
 `
       },
@@ -65,7 +65,7 @@ Number of the transaction block on the underlying chain.
          key: "blockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Timestamp of the transaction block on the underlying chain.
 `
       },
@@ -73,7 +73,7 @@ Timestamp of the transaction block on the underlying chain.
          key: "transactionHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the transaction on the underlying chain.
 `
       },
@@ -81,7 +81,7 @@ Hash of the transaction on the underlying chain.
          key: "inUtxo",
          type: "uint8",
          description:
-`
+            `
 Index of the transaction input indicating source address on UTXO chains, 0 on non-UTXO chains.
 `
       },
@@ -89,7 +89,7 @@ Index of the transaction input indicating source address on UTXO chains, 0 on no
          key: "sourceAddressHash",
          type: "bytes32",
          description:
-`
+            `
 Hash of the source address as a string. For UTXO transactions with multiple input addresses 
 this is the address that is on the input indicated by 'inUtxo' parameter.
 `
@@ -98,7 +98,7 @@ this is the address that is on the input indicated by 'inUtxo' parameter.
          key: "spentAmount",
          type: "int256",
          description:
-`
+            `
 The amount that went out of the source address, in the smallest underlying units.
 In non-UTXO chains it includes both payment value and fee (gas).
 Calculation for UTXO chains depends on the existence of standardized payment reference.
@@ -111,7 +111,7 @@ on the input indicated by 'inUtxo'.
          key: "paymentReference",
          type: "bytes32",
          description:
-`
+            `
 Standardized payment reference, if it exists, 0 otherwise.
 `
       },

@@ -5,7 +5,7 @@ fassetsdir=$(readlink -f ../fasset)
 
 if ! [ -d ${fassetsdir} ]; then echo "Missing dir ${fassetsdir}"; exit 1; fi
 
-# build 
+# build
 
 rm -rf artifacts; mkdir -p artifacts
 rm -rf typechain-truffle; mkdir -p typechain-truffle

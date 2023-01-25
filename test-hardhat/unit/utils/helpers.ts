@@ -10,7 +10,7 @@ describe("Helpers unit tests", async () => {
         await sleep(1000);
         await expect(sleep(1000)).to.eventually.be.fulfilled;
     });
-    
+
     it("Should return system timestamp", async () => {
         const time = systemTimestamp();
         expect(time).to.not.be.null;
@@ -77,7 +77,7 @@ describe("Helpers unit tests", async () => {
     it("Should return address", async() => {
         expect(randomAddress()).to.not.be.null;
     });
-    
+
     it("Should return last element of array", async() => {
         expect(last([1, 2, 3])).to.eq(3);
         expect(typeof last([]) === 'undefined').to.be.true;

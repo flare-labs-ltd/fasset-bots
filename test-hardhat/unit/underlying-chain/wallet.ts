@@ -25,7 +25,7 @@ describe("Wallet keys tests", async () => {
         await dbWallet.addKey(address1, privateKey1);
         await dbWallet.addKey(address2, privateKey2);
         const privateKey1FromDb = await dbWallet.getKey(address1);
-        const privateKey2FromDb = await dbWallet.getKey(address2);        
+        const privateKey2FromDb = await dbWallet.getKey(address2);
         expect(privateKey1FromDb).to.equal(privateKey1);
         expect(privateKey2FromDb).to.equal(privateKey2);
     });

@@ -125,21 +125,21 @@ export function prefix0x(tx: string) {
 
 export function hexlifyBN(obj: any): any {
   const isHexReqex = /^[0-9A-Fa-f]+$/
-  if(obj?.mul) {
-     return prefix0x(toHex(obj));
+  if (obj?.mul) {
+    return prefix0x(toHex(obj));
   }
-  if(Array.isArray(obj)) {
-     return (obj as any[]).map(item => hexlifyBN(item));
+  if (Array.isArray(obj)) {
+    return (obj as any[]).map(item => hexlifyBN(item));
   }
-  if(typeof obj === "object") {
-     let res = {} as any;
-     for(let key of Object.keys(obj)) {
-        let value = obj[key];
-        res[key] = hexlifyBN(value);
-     }   
-     return res;      
+  if (typeof obj === "object") {
+    let res = {} as any;
+    for (let key of Object.keys(obj)) {
+      let value = obj[key];
+      res[key] = hexlifyBN(value);
+    }
+    return res;
   }
-  if(typeof obj === "string" && obj.match(isHexReqex)){
+  if (typeof obj === "string" && obj.match(isHexReqex)) {
     return prefix0x(obj);
   }
   return obj

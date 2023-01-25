@@ -42,6 +42,6 @@ describe("Liquidation trigger unit tests", async () => {
         const liquidationTriggerEnt = await orm.em.findOneOrFail(ActorEntity, { address: liquidationTriggerAddress, type: ActorType.LIQUIDATION_TRIGGER } as FilterQuery<ActorEntity>);
         const liquidationTrigger = await LiquidationTrigger.fromEntity(runner, context, liquidationTriggerEnt, state);
         expect(liquidationTrigger.address).to.eq(liquidationTriggerAddress);
-    });    
+    });
 
 });

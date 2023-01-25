@@ -1,10 +1,10 @@
-/// <reference types="../../../typechain-truffle/types" /> 
+/// <reference types="../../../typechain-truffle/types" />
 
 declare module "@openzeppelin/test-helpers" {
     import BN from "bn.js";
 
     export type BalanceUnit = 'wei' | 'gwei' | 'ether';
-    
+
     export type StringForBN<T> = { [K in keyof T]: T[K] extends BN ? BN | string : T[K] };
 
     export namespace constants {

@@ -13,7 +13,7 @@ export class Redeemer {
         public underlyingAddress: string
     ) {
     }
-    
+
     get assetManager() {
         return this.context.assetManager;
     }
@@ -25,7 +25,7 @@ export class Redeemer {
     static async create(ctx: IAssetContext, address: string, underlyingAddress: string) {
         return new Redeemer(ctx, address, underlyingAddress);
     }
-    
+
     async requestRedemption(lots: number): Promise<[requests: EventArgs<RedemptionRequested>[], remainingLots: BN, dustChanges: EventArgs<DustChanged>[]]> {
         const res = await this.assetManager.redeem(lots, this.underlyingAddress, { from: this.address });
         const redemptionRequests = filterEvents(res, 'RedemptionRequested').map(e => e.args);

@@ -12,8 +12,8 @@ export const TDEF: AttestationTypeScheme = {
          key: "attestationType",
          size: ATT_BYTES,
          type: "AttestationType",
-         description: 
-`
+         description:
+            `
 Attestation type id for this request, see 'AttestationType' enum.
 `
       },
@@ -21,8 +21,8 @@ Attestation type id for this request, see 'AttestationType' enum.
          key: "sourceId",
          size: SOURCE_ID_BYTES,
          type: "SourceId",
-         description: 
-`
+         description:
+            `
 The ID of the underlying chain, see 'SourceId' enum.
 `
       },
@@ -30,8 +30,8 @@ The ID of the underlying chain, see 'SourceId' enum.
          key: "upperBoundProof",
          size: UPPER_BOUND_PROOF_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The hash of the confirmation block for an upper query window boundary block.
 `
       },
@@ -39,8 +39,8 @@ The hash of the confirmation block for an upper query window boundary block.
          key: "issuerAccount",
          size: XRP_ACCOUNT_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 Ripple account address as bytes.
 `
       }
@@ -49,8 +49,8 @@ Ripple account address as bytes.
       {
          key: "tokenCurrencyCode",
          type: "bytes32",
-         description: 
-`
+         description:
+            `
 3 letter code or 160-bit hexadecimal string known as 
 [Currency code](https://xrpl.org/currency-formats.html#currency-codes).
 The first byte indicates whether it is a 3 letter encoded ascii string "0x00..."
@@ -61,7 +61,7 @@ or 160 bit hex string "0x01...".
          key: "tokenValueNominator",
          type: "uint256",
          description:
-`
+            `
 Nominator of the token value described as the fraction reduced by the highest exponent of 10.
 `
       },
@@ -69,7 +69,7 @@ Nominator of the token value described as the fraction reduced by the highest ex
          key: "tokenValueDenominator",
          type: "uint256",
          description:
-`
+            `
 Denominator of the token value described as the fraction reduced by the highest exponent of 10.
 `
       },
@@ -77,7 +77,7 @@ Denominator of the token value described as the fraction reduced by the highest 
          key: "tokenIssuer",
          type: "bytes32",
          description:
-`
+            `
 Ripple account address of token issuer as bytes (right padded address bytes (20 + 12)).
 `
       }

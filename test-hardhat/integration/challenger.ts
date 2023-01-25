@@ -387,8 +387,8 @@ describe("Challenger tests", async () => {
         await challenger.runStep(orm.em);
         // send notification
         const spy = chai.spy.on(agentBot.notifier, 'sendRedemptionFailedOrBlocked');
-        await agentBot.runStep(orm.em);    
-        expect(spy).to.have.been.called.once;   
+        await agentBot.runStep(orm.em);
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should perform free balance negative challenge", async () => {

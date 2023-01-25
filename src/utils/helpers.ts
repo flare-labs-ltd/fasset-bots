@@ -275,7 +275,7 @@ export interface PromiseValue<T> {
  */
 export function promiseValue<T>(promise: Promise<T>): PromiseValue<T> {
     const result: PromiseValue<T> = { resolved: false };
-    void promise.then(value => { 
+    void promise.then(value => {
         result.resolved = true;
         result.value = value;
     });
@@ -319,7 +319,7 @@ export function reportError(error: any) {
 }
 
 // either (part of) error message or an error constructor
-export type ErrorFilter = string | { new (...args: any[]): Error };
+export type ErrorFilter = string | { new(...args: any[]): Error };
 
 export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     const message = String(error?.message ?? '');

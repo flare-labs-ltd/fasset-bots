@@ -80,10 +80,10 @@ async function getAssetManagerAndController(chainConfig: BotConfigChain, address
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());
         return [assetManager, assetManagerController] as const;
     } else if (chainConfig.fAssetSymbol) {
-        const controllerAddress = 
+        const controllerAddress =
             addressUpdater != null ? await addressUpdater.getContractAddress('AssetManagerController') :
-            contracts != null ? contracts.AssetManagerController.address :
-            fail('Either addressUpdater or contracts must be defined');
+                contracts != null ? contracts.AssetManagerController.address :
+                    fail('Either addressUpdater or contracts must be defined');
         const assetManagerController = await AssetManagerController.at(controllerAddress);
         const assetManager = await findAssetManager(assetManagerController, chainConfig.fAssetSymbol);
         return [assetManager, assetManagerController] as const;

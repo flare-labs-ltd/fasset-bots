@@ -15,7 +15,7 @@ export class UnderlyingChainEvents {
             return ClearableSubscription.of(() => this.events.removeHandler(subscriptionId));
         });
     }
-    
+
     blockHeightReachedEvent(height: number): EventEmitter<IBlockId> {
         return new EventEmitter(this.executionQueue, handler => {
             const subscriptionId = this.events.addBlockHandler(blockId => {
@@ -34,7 +34,7 @@ export class UnderlyingChainEvents {
             return ClearableSubscription.of(() => this.events.removeHandler(subscriptionId));
         });
     }
-    
+
     async waitForUnderlyingTransaction(scope: EventScope | undefined, txHash: string, maxBlocksToWaitForTx?: number) {
         const transaction = await this.chain.getTransaction(txHash);
         if (transaction != null) return transaction;

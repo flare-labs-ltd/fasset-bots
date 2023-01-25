@@ -119,7 +119,7 @@ export class MerkleTree {
     }
     return proof;
   }
-  
+
   getProofForValue(value: string) {
     const valueNorm = toHex(value, 32);
     const hash = this.initialHash ? singleHash(valueNorm) : valueNorm;

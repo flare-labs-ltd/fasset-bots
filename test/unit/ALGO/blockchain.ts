@@ -33,7 +33,7 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve block (hash)", async () => {
-        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejected; 
+        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejected;
     });
 
     it("Should retrieve block (number)", async () => {

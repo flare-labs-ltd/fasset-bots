@@ -27,7 +27,7 @@ export class Challenger {
         public context: IAssetBotContext,
         public address: string,
         public state: TrackedState
-    ) {}
+    ) { }
 
     activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
     transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash

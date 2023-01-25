@@ -6,11 +6,11 @@ const WNat = artifacts.require('WNat');
 
 describe("test initial", async () => {
     let accounts: string[];
-    
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
     });
-    
+
     it("test native chain access", async () => {
         const wnat = await WNat.new(accounts[0], "Native", "NAT");
         // const wnat = await WNat.at("0x8858eeb3dfffa017d4bce9801d340d36cf895ccf");
@@ -19,4 +19,5 @@ describe("test initial", async () => {
         const balance = await wnat.balanceOf(accounts[1]);
         console.log(`Balance = ${balance}`);
     });
+
 });

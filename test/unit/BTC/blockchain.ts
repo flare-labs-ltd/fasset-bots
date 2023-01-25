@@ -47,5 +47,5 @@ describe("BTC blockchain tests", async () => {
         expect(transactionBlock?.number).to.be.eq(blockId);
         expect(transactionBlock?.hash).to.be.eq(blockHash);
     });
-    
+
 });

@@ -13,8 +13,8 @@ export const TDEF: AttestationTypeScheme = {
          key: "attestationType",
          size: ATT_BYTES,
          type: "AttestationType",
-         description: 
-`
+         description:
+            `
 Attestation type id for this request, see AttestationType enum.
 `
       },
@@ -22,8 +22,8 @@ Attestation type id for this request, see AttestationType enum.
          key: "sourceId",
          size: SOURCE_ID_BYTES,
          type: "SourceId",
-         description: 
-`
+         description:
+            `
 The ID of the underlying chain, see SourceId enum.
 `
       },
@@ -31,8 +31,8 @@ The ID of the underlying chain, see SourceId enum.
          key: "upperBoundProof",
          size: UPPER_BOUND_PROOF_BYTES,
          type: "ByteSequenceLike",
-         description: 
-`
+         description:
+            `
 The hash of the confirmation block for an upper query window boundary block.
 `
       },
@@ -42,7 +42,7 @@ The hash of the confirmation block for an upper query window boundary block.
          key: "blockNumber",
          type: "uint64",
          description:
-`
+            `
 Number of the highest confirmed block that was proved to exist.
 `
       },
@@ -50,7 +50,7 @@ Number of the highest confirmed block that was proved to exist.
          key: "blockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Timestamp of the confirmed block that was proved to exist.
 `
       },
@@ -58,7 +58,7 @@ Timestamp of the confirmed block that was proved to exist.
          key: "numberOfConfirmations",
          type: "uint8",
          description:
-`
+            `
 Number of confirmations for the blockchain.
 `
       },
@@ -66,7 +66,7 @@ Number of confirmations for the blockchain.
          key: "averageBlockProductionTimeMs",
          type: "uint64",
          description:
-`
+            `
 Average block production time based on the data in the query window.
 `
       },
@@ -74,7 +74,7 @@ Average block production time based on the data in the query window.
          key: "lowestQueryWindowBlockNumber",
          type: "uint64",
          description:
-`
+            `
 Lowest query window block number.
 `
       },
@@ -82,7 +82,7 @@ Lowest query window block number.
          key: "lowestQueryWindowBlockTimestamp",
          type: "uint64",
          description:
-`
+            `
 Lowest query window block timestamp.
 `
       }

@@ -50,7 +50,7 @@ export class BlockChainHelper implements IBlockChain {
                     reference: transaction.stdPaymentReference,
                     status: transaction.successStatus
                 };
-            } 
+            }
         }
         return null;
     }
@@ -81,7 +81,7 @@ export class BlockChainHelper implements IBlockChain {
                     timestamp: block.unixTimestamp,
                     transactions: block.transactionIds
                 };
-            } 
+            }
         }
         return null;
     }

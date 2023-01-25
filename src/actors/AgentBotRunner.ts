@@ -15,7 +15,7 @@ export class AgentBotRunner {
     ) { }
 
     private stopRequested = false;
-    
+
     async run() {
         this.stopRequested = false;
         while (!this.stopRequested) {
@@ -45,7 +45,7 @@ export class AgentBotRunner {
             }
         }
     }
-    
+
     @UseRequestContext()
     async createMissingAgents(ownerAddress: string) {
         for (const [chainId, context] of this.contexts) {
@@ -55,8 +55,8 @@ export class AgentBotRunner {
             }
         }
     }
-    
-    static async create(orm: ORM, botConfig: BotConfig, ) {
+
+    static async create(orm: ORM, botConfig: BotConfig) {
         const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);

@@ -10,12 +10,12 @@ export class TrackedAgent {
         public vaultAddress: string,
         public ownerAddress: string,
         public underlyingAddress: string
-    ) {}
+    ) { }
 
     status = AgentStatus.NORMAL;
     ccbStartTimestamp = toBN(0);
     liquidationStartTimestamp = toBN(0);
-    
+
     async possibleLiquidationTransition(timestamp: BN, settings: AssetManagerSettings, agentInfo: AgentInfo, prices: Prices, trustedPrices: Prices): Promise<Number> {
         const cr = await this.collateralRatioBIPS(settings, agentInfo, prices, trustedPrices);
         const agentStatus = Number(agentInfo.status);

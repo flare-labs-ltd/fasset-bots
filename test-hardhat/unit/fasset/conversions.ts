@@ -51,7 +51,7 @@ describe("Conversions unit tests", async () => {
         const expected = Number(toBN(lots).mul(lotSize(settings)));
         expect(uba).to.eq(expected);
     });
-    
+
     it("Should convert lots to amg", async () => {
         const lots = 5;
         const uba = Number(convertLotsToAMG(settings, lots));

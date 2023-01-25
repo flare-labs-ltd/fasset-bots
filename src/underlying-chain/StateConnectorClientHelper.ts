@@ -254,10 +254,10 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             lowerBoundaryBlockTimestamp: toBN(matchedResponse.lowerBoundaryBlockTimestamp),
             firstOverflowBlockNumber: toBN(matchedResponse.firstOverflowBlockNumber),
             firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp),
-        };   
+        };
     }
 
     private lastClient(i: number) {
-        return i === this.clients.length -1;
+        return i === this.clients.length - 1;
     }
 }

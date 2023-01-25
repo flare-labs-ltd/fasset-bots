@@ -18,23 +18,23 @@ export class Agent {
         public underlyingAddress: string,
     ) {
     }
-    
+
     get assetManager() {
         return this.context.assetManager;
     }
-    
+
     get attestationProvider() {
         return this.context.attestationProvider;
     }
-    
+
     get vaultAddress() {
         return this.agentVault.address;
     }
-    
+
     get wallet() {
         return this.context.wallet;
     }
-    
+
     // static async createTest(ctx: AssetContext, ownerAddress: string, underlyingAddress: string) {
     //     if (!(ctx.chain instanceof MockChain)) assert.fail("only for mock chains");
     //     // mint some funds on underlying address (just enough to make EOA proof)
@@ -45,7 +45,7 @@ export class Agent {
     //     const wallet = new MockChainWallet(ctx.chain);
     //     return await Agent.create(ctx, ownerAddress, underlyingAddress, wallet);
     // }
-    
+
     static async proveAddressEOA(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create and prove transaction from underlyingAddress if EOA required
         if (ctx.chainInfo.requireEOAProof) {
@@ -57,7 +57,7 @@ export class Agent {
             await ctx.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
         }
     }
-    
+
     static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create agent
         const response = await ctx.assetManager.createAgent(underlyingAddress, { from: ownerAddress });
@@ -68,11 +68,11 @@ export class Agent {
         // create object
         return new Agent(ctx, ownerAddress, agentVault, underlyingAddress);
     }
-    
+
     async depositCollateral(amountNATWei: BNish) {
         await this.agentVault.deposit({ from: this.ownerAddress, value: toBN(amountNATWei) });
     }
-    
+
     async makeAvailable(feeBIPS: BNish, collateralRatioBIPS: BNish) {
         const res = await this.assetManager.makeAgentAvailable(this.vaultAddress, feeBIPS, collateralRatioBIPS, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AgentAvailable');
@@ -89,7 +89,7 @@ export class Agent {
     //     await time.increase(300);
     //     return await this.destroy();
     // }
-    
+
     async announceCollateralWithdrawal(amountNATWei: BNish) {
         await this.assetManager.announceCollateralWithdrawal(this.vaultAddress, amountNATWei, { from: this.ownerAddress });
     }
@@ -101,7 +101,7 @@ export class Agent {
     async announceDestroy() {
         await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
     }
-    
+
     async destroy() {
         const res = await this.assetManager.destroyAgent(this.vaultAddress, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AgentDestroyed');
@@ -135,7 +135,7 @@ export class Agent {
         const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
     }
-    
+
     async performRedemptionPayment(request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee) {
         const paymentAmount = request.valueUBA.sub(request.feeUBA);
         return await this.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
@@ -147,7 +147,7 @@ export class Agent {
         findRequiredEvent(res, 'RedemptionFinished');
         return requiredEventArgs(res, 'RedemptionPerformed');
     }
-    
+
     async confirmDefaultedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
@@ -157,7 +157,7 @@ export class Agent {
         checkEventNotEmited(res, 'RedemptionPaymentBlocked');
     }
 
-    async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]>  {
+    async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
         findRequiredEvent(res, 'RedemptionFinished');

@@ -17,13 +17,13 @@ describe("Redeemer unit tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
     });
-    
+
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
         redeemerAddress = accounts[5];
     });
-    
+
     it("Should create redeemer", async () => {
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlyingAddress);
         expect(redeemer.address).to.eq(redeemerAddress);

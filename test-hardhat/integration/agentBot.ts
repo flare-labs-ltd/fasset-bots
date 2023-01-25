@@ -248,7 +248,7 @@ describe("Agent bot tests", async () => {
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(rdreq.lastUnderlyingTimestamp))
         chain.mine(Number(rdreq.lastUnderlyingBlock))
-        // redeemer requests non-payment proof 
+        // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);

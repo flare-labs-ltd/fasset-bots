@@ -64,8 +64,8 @@ export function web3DeepNormalize<T = any>(value: T): T {
         } else if (typeof obj === "object") {
             if (BN.isBN(obj)) {
                 return obj.toString(10);
-            // } else if (BigNumber.isBigNumber(obj)) {
-            //     return obj.toString();
+                // } else if (BigNumber.isBigNumber(obj)) {
+                //     return obj.toString();
             } else if (Array.isArray(obj)) {
                 return normalizeArray(obj);
             } else {

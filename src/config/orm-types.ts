@@ -6,12 +6,12 @@ export class BNType extends Type<BN, string> {
         if (typeof value === 'string') return value;
         return value.toString(10);
     }
-    
+
     override convertToJSValue(value: string | BN, platform: Platform): BN {
         if (value instanceof BN) return value;
         return new BN(value, 10);
     }
-    
+
     override getColumnType(prop: EntityProperty<any>, platform: Platform): string {
         return `decimal(38, 0)`
     }
