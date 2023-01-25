@@ -1,6 +1,7 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { BotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
@@ -23,7 +24,7 @@ const sourceId = SourceId.XRP;
 
 describe("Agent bot tests - coston2", async () => {
     let accounts: string[];
-    let config: BotConfig;
+    let botConfig: BotConfig;
     let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
@@ -40,16 +41,47 @@ describe("Agent bot tests - coston2", async () => {
         redeemerAddress = accounts[2];
         challengerAddress = accounts[3];
         orm = await createTestOrm({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' });
-        config = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm.em, costonRPCUrl, CONTRACTS_JSON);
-        context = await createAssetContext(config, config.chains[0]);
+        botConfig = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm.em, costonRPCUrl, CONTRACTS_JSON);
+        context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();
         state = new TrackedState();
     });
 
-    it("Should create agent", async () => {
+    it("Should create agent bot", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    });
+
+    it("Should create agent bot runner", async () => {
+        const contexts: Map<number, IAssetBotContext> = new Map();
+        contexts.set(context.chainInfo.chainId, context);
+        const agentBotRunner = new AgentBotRunner(contexts, orm, 5);
+        expect(agentBotRunner.loopDelay).to.eq(5);
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+    });
+
+    it("Should create agent bot runner from bot config", async () => {
+        const agentBotRunner = await AgentBotRunner.create(orm, botConfig)
+        expect(agentBotRunner.loopDelay).to.eq(0);
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+    });
+
+    it("Should create missing agents for agent bot runner", async () => {
+        const agentBotRunner = await AgentBotRunner.create(orm, botConfig)
+        expect(agentBotRunner.loopDelay).to.eq(0);
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        await agentBotRunner.createMissingAgents(ownerAddress);
+        const existing1 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
+        expect(existing1).to.eq(1);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
+        agentEnt.active = false;
+        await orm.em.persistAndFlush(agentEnt);
+        const existing2 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
+        expect(existing2).to.eq(0);
+        await agentBotRunner.createMissingAgents(ownerAddress);
+        const existing3 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
+        expect(existing3).to.eq(1);
     });
 
     it("Should create minter", async () => {
@@ -69,7 +101,7 @@ describe("Agent bot tests - coston2", async () => {
         expect(challenger.address).to.eq(challengerAddress);
     });
 
-    it("Should read agent from entity", async () => {
+    it("Should read agent bot from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt)
         expect(agentBot.agent.underlyingAddress).is.not.null;
@@ -82,5 +114,3 @@ describe("Agent bot tests - coston2", async () => {
         expect(challenger.address).to.eq(challengerAddress);
     });
 });
-
-
