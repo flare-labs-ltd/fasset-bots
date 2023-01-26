@@ -428,7 +428,7 @@ export class AgentBot {
         const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo, settings);
         if (requiredTopUp.lte(BN_ZERO)) {
-            // no need for topup
+            // no need for top up
             return;
         }
         await this.agent.depositCollateral(requiredTopUp);

@@ -60,14 +60,15 @@ describe("Agent bot runner tests", async () => {
         expect(existing3).to.eq(1);
     });
 
-    it.skip("Should run agent bot runner until its stopped", async () => {
+    it("Should run agent bot runner until its stopped", async () => {
         const contexts: Map<number, IAssetBotContext> = new Map();
         contexts.set(context.chainInfo.chainId, context);
         const loopDelay = 2;
         const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
-        const spy = chai.spy.on(agentBotRunner, 'requestStop');
+        const spy = chai.spy.on(agentBotRunner, 'runStep');
         agentBotRunner.requestStop();
-        await agentBotRunner.run();
+        const run = agentBotRunner.run();
+        agentBotRunner.requestStop();
         expect(spy).to.have.been.called.once;
     });
 

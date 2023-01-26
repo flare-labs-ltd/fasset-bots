@@ -102,7 +102,7 @@ describe("Agent unit tests", async () => {
         expect(Number(val)).to.eq(Number(deposit.sub(withdraw)));
     });
 
-    it("Should announce agent destroyal and destroy", async () => {
+    it("Should announce agent destruction and destroy it", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         await agent.depositCollateral(deposit);
         await agent.announceDestroy();
@@ -111,7 +111,7 @@ describe("Agent unit tests", async () => {
         expect(res.agentVault).to.eq(agent.agentVault.address);
     });
 
-    it("Should perform and confirm topup", async () => {
+    it("Should perform and confirm top up", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const spy = chai.spy.on(agent, 'confirmTopupPayment');
         const tx = await agent.performTopupPayment(1, underlyingAddress);
