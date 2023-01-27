@@ -1,7 +1,7 @@
 {
    "name": "fasset-bots",
    "version": "1.0.0",
-   "description": "F-Asset bot library",
+   "description": "FAsset bot library",
    "main": "dist/index.js",
    "types": "dist/index.d.ts",
    "author": "Flare Networks",
@@ -11,6 +11,7 @@
       "url": "https://gitlab.com/flarenetwork/fasset-bots"
    },
    "license": "MIT",
+   "bin": "dist/src/cli/index.js",
    "prettier": {
       "printWidth": 160,
       "semi": true,
@@ -81,7 +82,10 @@
       "@mikro-orm/sqlite": "^5.4.2",
       "@truffle/contract": "^4.5.23",
       "bn.js": "^4.12.0",
+      "commander": "^10.0.0",
+      "figlet": "^1.5.2",
       "glob": "^7.2.3",
+      "inquirer": "8.0.0",
       "simple-wallet": "link:../simple-wallet"
    },
    "devDependencies": {
@@ -93,6 +97,7 @@
       "@types/chai": "4.3.4",
       "@types/chai-as-promised": "^7.1.5",
       "@types/glob": "7.2.0",
+      "@types/inquirer": "^9.0.3",
       "@types/mocha": "9.1.1",
       "@types/node": "18.6.3",
       "@typescript-eslint/eslint-plugin": "5.36.1",
