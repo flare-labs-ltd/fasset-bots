@@ -1,15 +1,7 @@
-#!/usr/bin/env node
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../actors/AgentBot";
-import { createOrm, CreateOrmOptions, ORM } from "../config/orm";
+import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
-import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import options from "../mikro-orm.config";
-import { getSourceName, SourceId } from "../verification/sources/sources";
-import inquirer from 'inquirer';
-import { requireEnv } from "../utils/helpers";
-import { createTestOrm } from "../../test/test.mikro-orm.config";
-import { createTestConfigNoMocks } from "../../test/utils/test-bot-config";
 import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig } from "../config/BotConfig";
 import chalk from 'chalk';

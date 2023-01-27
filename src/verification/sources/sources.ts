@@ -9,7 +9,7 @@ export enum SourceId {
    ALGO = 4,
 }
 
-export function getSourceName(sourceId: number) {
+export function getSourceName(sourceId: number): string | null {
    if (typeof SourceId[sourceId] === 'undefined') {
       return null;
    }
