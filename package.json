@@ -1,7 +1,7 @@
 {
    "name": "fasset-bots",
    "version": "1.0.0",
-   "description": "FAsset bot library",
+   "description": "FAsset bots library",
    "main": "dist/index.js",
    "types": "dist/index.d.ts",
    "author": "Flare Networks",
@@ -11,7 +11,9 @@
       "url": "https://gitlab.com/flarenetwork/fasset-bots"
    },
    "license": "MIT",
-   "bin": "dist/src/cli/index.js",
+   "bin": {
+      "fasset-bots-cli": "dist/src/cli/index.js"
+   },
    "prettier": {
       "printWidth": 160,
       "semi": true,

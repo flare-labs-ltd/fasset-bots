@@ -4944,7 +4944,7 @@ __metadata:
     ts-node: 10.8.0
     typescript: 4.7.3
   bin:
-    fasset-bots: dist/src/cli/index.js
+    fasset-bots-cli: dist/src/cli/index.js
   languageName: unknown
   linkType: soft
 
