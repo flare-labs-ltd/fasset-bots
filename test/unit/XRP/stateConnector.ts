@@ -6,8 +6,7 @@ import { createTestStateConnectorClient } from "../../utils/test-bot-config";
 
 let stateConnectorClient: StateConnectorClientHelper;
 const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
-const account = requireEnv('COSTON2_ACCOUNT');
-const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
+const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const roundIdC2 = 413192;
 const requestDataBytesC2_1 = "0x000300000001bfa8ccefbe3307418d00a88fbb180e1ee63cf33cb5388245d519c6de150f1bd4";

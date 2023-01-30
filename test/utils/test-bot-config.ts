@@ -261,6 +261,6 @@ export async function createTestStateConnectorClient() {
     const attestationProviderUrls: string[] = requireEnv('COSTON2_ATTESTER_BASE_URLS').split(",");;
     const attestationClientAddress: string = requireEnv('COSTON2_ATTESTATION_CLIENT_ADDRESS');
     const stateConnectorAddress: string = requireEnv('COSTON2_STATE_CONNECTOR_ADDRESS');
-    const account = requireEnv('COSTON2_ACCOUNT');
+    const account = requireEnv('OWNER_ADDRESS');
     return await StateConnectorClientHelper.create(artifacts, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, account);
 }

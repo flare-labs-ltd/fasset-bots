@@ -5,10 +5,10 @@ import { SourceId } from "../../src/verification/sources/sources";
 import axios from "axios";
 import { Redeemer } from "../../src/mock/Redeemer";
 
-const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
+const ownerAccountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
+const account1PrivateKey = requireEnv('COSTON2_ACCOUNT1_PRIVATE_KEY');
 const account2PrivateKey = requireEnv('COSTON2_ACCOUNT2_PRIVATE_KEY');
 const account3PrivateKey = requireEnv('COSTON2_ACCOUNT3_PRIVATE_KEY');
-const account4PrivateKey = requireEnv('COSTON2_ACCOUNT4_PRIVATE_KEY');
 
 export async function createTestMinter(ctx: IAssetBotContext, address: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -27,6 +27,6 @@ export async function createTestRedeemer(ctx: IAssetBotContext, address: string)
 }
 
 export function getCoston2AccountsFromEnv() {
-    return [accountPrivateKey, account2PrivateKey, account3PrivateKey, account4PrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey];
 }
 

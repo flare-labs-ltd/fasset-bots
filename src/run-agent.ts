@@ -5,8 +5,8 @@ import options from "./mikro-orm.config";
 import { requireEnv, toplevelRun } from "./utils/helpers";
 import { initWeb3 } from "./utils/web3";
 
-const OWNER_ADDRESS = requireEnv('OWNER_ADDRESS');
-const OWNER_PRIVATE_KEY = requireEnv('OWNER_PRIVATE_KEY');
+const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 
 toplevelRun(async () => {
     const configFile = process.argv[2];

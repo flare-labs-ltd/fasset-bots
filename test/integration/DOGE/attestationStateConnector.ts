@@ -15,7 +15,7 @@ let orm: ORM;
 
 let stateConnectorClient: StateConnectorClientHelper;
 const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
-const accountPrivateKey = requireEnv('COSTON2_ACCOUNT_PRIVATE_KEY');
+const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";

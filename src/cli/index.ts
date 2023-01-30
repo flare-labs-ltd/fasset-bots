@@ -8,7 +8,7 @@ const program = new Command();
 console.log(figlet.textSync("FAsset bots"));
 
 program
-  .name("fassetBotsCli")
+  .name("fasset-bots-cli")
 
 program.command("create")
     .description("create new agent vault from owner's address")
@@ -34,4 +34,3 @@ program.command("exit")
     .action(exitAvailableList);
 
 program.parse();
-
