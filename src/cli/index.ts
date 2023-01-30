@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { createAgentVault, depositToVault, enterAvailableList, exitAvailableList } from "./commands";
 
 const { Command } = require("commander");

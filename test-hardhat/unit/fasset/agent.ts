@@ -291,7 +291,7 @@ describe("Agent unit tests", async () => {
         assert.equal(String(resp[0]?.requestId), String(rdreq.requestId));
     });
 
-    it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
+    it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const spy = chai.spy.on(agent, 'confirmDefaultedRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
