@@ -99,7 +99,7 @@ export class LiquidationTrigger {
     }
 
     async readUnhandledEvents(liquidatorEnt: ActorEntity): Promise<EvmEvent[]> {
-        // get all logs for this challenger
+        // get all logs for this liquidator
         const nci = this.context.nativeChainInfo;
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];

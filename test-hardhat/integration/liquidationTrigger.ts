@@ -298,4 +298,35 @@ describe("Liquidation trigger tests", async () => {
         assert.equal(liquidationTrigger.state.agents.size, 0);
     });
 
+    it("Should liquidate agent", async () => {
+        const liquidationTrigger = await createTestLiquidationTrigger(runner, orm.em, context, liquidationTriggerAddress, state)
+        await liquidationTrigger.initialize();
+        const agentBot = await createTestAgentBot(orm.em, context, accounts[81]);
+        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context)
+        await liquidationTrigger.runStep(orm.em);
+        // check agent status
+        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // perform minting
+        const lots = 3;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await agentBot.runStep(orm.em);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        const minted = await minter.executeMinting(crt, txHash0);
+        await agentBot.runStep(orm.em);
+        // price change
+        await context.natFtso.setCurrentPrice(1, 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
+        // liquidator "buys" f-assets
+        await context.fAsset.transfer(liquidationTrigger.address, minted.mintedAmountUBA, { from: minter.address });
+        // liquidate agent (partially)
+        const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
+        await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidationTrigger.address });
+        // check agent status
+        await agentBot.runStep(orm.em);
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.LIQUIDATION);
+    });
+
 });

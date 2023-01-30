@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { MockChain } from "../../../src/mock/MockChain";
+import { MockChain, MockTransactionOptionsWithFee } from "../../../src/mock/MockChain";
 import { checkedCast, QUERY_WINDOW_SECONDS, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
@@ -10,6 +10,7 @@ import { SourceId } from "../../../src/verification/sources/sources";
 import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
+import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -44,9 +45,9 @@ describe("Agent unit tests", async () => {
         chain.secondsPerBlock = 1;
     });
 
-    afterEach(function() {
+    afterEach(function () {
         chai.spy.restore(Agent);
-      })
+    })
 
     it("Should create agent", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
@@ -354,6 +355,32 @@ describe("Agent unit tests", async () => {
         assert(res[0].failureReason, "not redeemer's address");
         assert(endBalanceRedeemer.sub(startBalanceRedeemer), String(res[1].redeemedCollateralWei));
         assert(startBalanceAgent.sub(endBalanceAgent), String(res[1].redeemedCollateralWei));
+    });
+
+    it("Should not perform redemption - failed underlying payment (blocked)", async () => {
+        const agent = await Agent.create(context, ownerAddress, underlyingAddress);
+        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        await agent.depositCollateral(deposit);
+        await agent.makeAvailable(500, 25000);
+        const lots = 1;
+        const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
+        const tx1Hash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, tx1Hash);
+        chain.mine(chain.finalizationBlocks + 1);
+        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        // transfer fassets
+        const fbalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        const [rdreqs] = await redeemer.requestRedemption(lots);
+        const rdreq = rdreqs[0];
+        // pay for redemption - payment blocked
+        const paymentAmount = rdreq.valueUBA.sub(rdreq.feeUBA);
+        const txHash = await context.wallet.addTransaction(agent.underlyingAddress, rdreq.paymentAddress, paymentAmount, rdreq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
+        chain.mine(chain.finalizationBlocks + 1);
+        const res = await agent.confirmBlockedRedemptionPayment(rdreq, txHash);
+        expect(res.agentVault).to.eq(agent.vaultAddress);
+        expect(res.redeemer).to.eq(redeemer.address);
     });
 
     it("Should self mint", async () => {

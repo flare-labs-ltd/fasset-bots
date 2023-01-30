@@ -22,6 +22,7 @@ export const WEEKS = 7 * DAYS;
 
 export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
 export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
+export const OWNERS_LOW_BALANCE = toBNExp(10, 18);
 
 export const QUERY_WINDOW_SECONDS = 86400;
 
@@ -61,7 +62,7 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
 }
 
 /**
- * Helper wrapper to convert number to BN 
+ * Helper wrapper to convert number to BN
  * @param x number expressed in any reasonable type
  * @returns same number as BN
  */
@@ -271,7 +272,7 @@ export interface PromiseValue<T> {
 }
 
 /**
- * Return a struct whose `value` field is set when promise id fullfiled.
+ * Return a struct whose `value` field is set when promise id fulfilled.
  */
 export function promiseValue<T>(promise: Promise<T>): PromiseValue<T> {
     const result: PromiseValue<T> = { resolved: false };

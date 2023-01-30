@@ -18,7 +18,7 @@ export interface BotConfigChain {
 export interface BotConfig {
     rpcUrl: string;
     loopDelay: number;
-    // either one most be set
+    // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
     stateConnector: IStateConnectorClient;

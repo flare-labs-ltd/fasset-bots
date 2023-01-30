@@ -14,7 +14,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, OWNERS_LOW_BALANCE, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -94,6 +94,7 @@ export class AgentBot {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
                     await this.redemptionFinished(em, event.args);
+                    this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     await this.redemptionFinished(em, event.args);
                     await this.checkUnderlyingBalance(event.args.agentVault);
@@ -109,6 +110,8 @@ export class AgentBot {
                     this.notifier.sendCCBAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
                     this.notifier.sendLiquidationStartAlert(event.args.agentVault);
+                } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
+                    this.notifier.sendLiquidationWasPerformed(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingFreeBalanceNegative")) {
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
@@ -267,7 +270,7 @@ export class AgentBot {
             await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(minting.proofRequestRound!, minting.proofRequestData!);
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -279,7 +282,7 @@ export class AgentBot {
             await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(minting.proofRequestRound!, minting.proofRequestData!);
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -388,7 +391,7 @@ export class AgentBot {
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(redemption.proofRequestRound!, redemption.proofRequestData!);
+            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!);
         }
     }
 
