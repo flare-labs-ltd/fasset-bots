@@ -20,7 +20,7 @@ const fundedPrivateKey = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F19
 const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
-const amountToSendXRP = 10;
+const amountToSendXRP = 1;
 
 describe("XRP wallet tests", async () => {
 
@@ -42,7 +42,7 @@ describe("XRP wallet tests", async () => {
         const privateKey = await dbWallet.getKey(account);
         expect(privateKey).to.eq(fundedPrivateKey);
     });
-//TODO-FIX receivedAmounts() in getTransaction
+
     it("Should send funds and retrieve transaction", async () => {
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
