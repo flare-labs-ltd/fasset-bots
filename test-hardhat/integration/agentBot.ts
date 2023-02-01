@@ -1,7 +1,7 @@
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
-import { EM, ORM } from "../../src/config/orm";
+import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
@@ -93,13 +93,13 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -107,13 +107,13 @@ describe("Agent bot tests", async () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
-        assert.equal(String(balance), String(toBN(rdreq.valueUBA).sub(toBN(rdreq.feeUBA))));
+        assert.equal(String(balance), String(toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA))));
     });
 
     it("Should not perform minting - minter does not pay", async () => {
@@ -238,21 +238,21 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(rdreq.lastUnderlyingTimestamp))
-        chain.mine(Number(rdreq.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp))
+        chain.mine(Number(rdReq.lastUnderlyingBlock))
         // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
-        const res = await redeemer.redemptionPaymentDefault(rdreq);
+        const res = await redeemer.redemptionPaymentDefault(rdReq);
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const endBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedCollateralWei));
@@ -260,7 +260,7 @@ describe("Agent bot tests", async () => {
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -272,13 +272,13 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
@@ -287,7 +287,7 @@ describe("Agent bot tests", async () => {
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -299,16 +299,16 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // agent pays
         await agentBot.runStep(orm.em);
-        const redemptionPaid = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemptionPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -318,7 +318,7 @@ describe("Agent bot tests", async () => {
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -330,17 +330,17 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // redemption has started and is paid
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionPaid = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemptionPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // agent does not confirm payment
         // others can confirm redemption payment after some time
@@ -348,8 +348,8 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const someAddress = accounts[10];
         const startBalance = await context.wnat.balanceOf(someAddress);
-        const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdreq.paymentAddress);
-        await context.assetManager.confirmRedemptionPayment(proof, rdreq.requestId, { from: someAddress });
+        const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
+        await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
         const endBalance = await context.wnat.balanceOf(someAddress);
         assert.equal(String(endBalance.sub(startBalance)), String(settings.confirmationByOthersRewardNATWei));
     });

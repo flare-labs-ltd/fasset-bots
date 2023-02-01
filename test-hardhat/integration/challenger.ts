@@ -159,12 +159,12 @@ describe("Challenger tests", async () => {
         await challenger.runStep(orm.em);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 50);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(2);
-        const rdreq = reqs[0];
+        const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -172,7 +172,7 @@ describe("Challenger tests", async () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
@@ -230,12 +230,12 @@ describe("Challenger tests", async () => {
         await challenger.runStep(orm.em);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 50);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // create redemption requests and perform redemption
         const [reqs] = await redeemer.requestRedemption(10);
-        const rdreq = reqs[0];
+        const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -243,12 +243,12 @@ describe("Challenger tests", async () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
         // repeat the same payment (already confirmed)
-        await agentBot.agent.performRedemptionPayment(rdreq);
+        await agentBot.agent.performRedemptionPayment(rdReq);
         // run challenger's and agent's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -303,15 +303,15 @@ describe("Challenger tests", async () => {
         await challenger.runStep(orm.em);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 1);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(1);
-        const rdreq = reqs[0];
+        const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
@@ -363,19 +363,19 @@ describe("Challenger tests", async () => {
         await challenger.runStep(orm.em);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 50);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(2);
-        const rdreq = reqs[0];
+        const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+        const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
-        const paymentAmount = rdreq.valueUBA.sub(rdreq.feeUBA);
-        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdreq.paymentAddress, paymentAmount, rdreq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
+        const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
+        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         redemption.txHash = txHash;
@@ -453,12 +453,12 @@ describe("Challenger tests", async () => {
         const challenger = await createTestChallenger(runner, orm.em, context, accounts[70]);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 50);
-        // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(2);
-        const rdreq = reqs[0];
+        const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -466,7 +466,7 @@ describe("Challenger tests", async () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
