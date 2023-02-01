@@ -35,17 +35,6 @@ export class Agent {
         return this.context.wallet;
     }
 
-    // static async createTest(ctx: AssetContext, ownerAddress: string, underlyingAddress: string) {
-    //     if (!(ctx.chain instanceof MockChain)) assert.fail("only for mock chains");
-    //     // mint some funds on underlying address (just enough to make EOA proof)
-    //     if (ctx.chainInfo.requireEOAProof) {
-    //         ctx.chain.mint(underlyingAddress, ctx.chain.requiredFee.addn(1));
-    //     }
-    //     // create mock wallet
-    //     const wallet = new MockChainWallet(ctx.chain);
-    //     return await Agent.create(ctx, ownerAddress, underlyingAddress, wallet);
-    // }
-
     static async proveAddressEOA(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create and prove transaction from underlyingAddress if EOA required
         if (ctx.chainInfo.requireEOAProof) {

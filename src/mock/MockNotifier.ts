@@ -9,8 +9,10 @@ const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
 const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED ALERT";
 const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION ALERT";
 const COLLATERAL_TOP_UP_ALERT = "COLLATERAL TOP UP ALERT";
-const LOW_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
-const LOW_OWNERS_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
+const COLLATERAL_TOP_UP_FAILED_ALERT = "COLLATERAL TOP UP FAILED ALERT";
+const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
+const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
+const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS ALERT";
 
 export class MockNotifier {
 
@@ -65,15 +67,27 @@ export class MockNotifier {
     }
 
     sendCollateralTopUpAlert(agentVault: string, value: string) {
-        this.send(COLLATERAL_TOP_UP_ALERT, `Agent ${agentVault} was automatically topped up with ${value} due to price changes.`);
+        this.send(COLLATERAL_TOP_UP_ALERT, `Agent ${agentVault} was automatically topped up with collateral ${value} due to price changes.`);
     }
 
-    sendLowUnderlyingBalance(agentVault: string, freeUnderlyingBalanceUBA: string) {
-        this.send(LOW_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA}.`);
+    sendCollateralTopUpFailedAlert(agentVault: string, value: string) {
+        this.send(COLLATERAL_TOP_UP_FAILED_ALERT, `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`);
+    }
+
+    sendLowUnderlyingAgentBalance(agentVault: string, freeUnderlyingBalanceUBA: string) {
+        this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`);
+    }
+
+    sendLowUnderlyingAgentBalanceFailed(agentVault: string, amount: string) {
+        this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} was automatically topped up with underlying ${amount}.`);
+    }
+
+    sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: string) {
+        this.send(LOW_OWNERS_UNDERLYING_BALANCE, `Owner's underlying address ${ownerUnderlyingAddress} has low underlying ${ownerUnderlyingBalance}.`);
     }
 
     sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: string) {
-        this.send(LOW_OWNERS_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
+        this.send(LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
     }
 
     sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean) {

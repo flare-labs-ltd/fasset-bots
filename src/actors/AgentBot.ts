@@ -14,7 +14,7 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, OWNERS_LOW_BALANCE, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, requireEnv, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -391,7 +391,7 @@ export class AgentBot {
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!);
+            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!, true);
         }
     }
 
@@ -414,14 +414,25 @@ export class AgentBot {
         const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
         const estimatedFee = toBN(await this.context.chain.getTransactionFee());
         if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            this.notifier.sendLowUnderlyingBalance(agentVault, freeUnderlyingBalance.toString());
+            await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), agentVault, freeUnderlyingBalance);
         }
     }
 
 
-    async underlyingTopUp(amount: BN, sourceUnderlyingAddress: string) {
-        const txHash = await this.agent.performTopupPayment(amount, sourceUnderlyingAddress);
-        await this.agent.confirmTopupPayment(txHash);
+    async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN) {
+        const ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
+        try {
+            const txHash = await this.agent.performTopupPayment(amount, ownerUnderlyingAddress);
+            await this.agent.confirmTopupPayment(txHash);
+            this.notifier.sendLowUnderlyingAgentBalance(agentVault, amount.toString());
+        } catch (error) {
+            this.notifier.sendLowUnderlyingAgentBalanceFailed(agentVault, freeUnderlyingBalance.toString());
+        }
+        const ownerUnderlyingBalance = await this.context.chain.getBalance(ownerUnderlyingAddress);
+        const estimatedFee = toBN(await this.context.chain.getTransactionFee());
+        if (ownerUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
+            this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance.toString());
+        }
     }
 
     // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
@@ -434,11 +445,19 @@ export class AgentBot {
             // no need for top up
             return;
         }
-        await this.agent.depositCollateral(requiredTopUp);
-        this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUp.toString());
+        try {
+            await this.agent.depositCollateral(requiredTopUp);
+            this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUp.toString());
+        } catch (err) {
+            this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUp.toString());
+        }
+        const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
+        if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString());
+        }
     }
 
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
+    async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
         const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);

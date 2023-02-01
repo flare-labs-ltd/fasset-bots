@@ -1,11 +1,11 @@
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
-import { ORM } from "../../src/config/orm";
+import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
@@ -438,37 +438,54 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes 2", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
+        const ownerAddress2 = accounts[30];
+        const agentBot2 = await AgentBot.create(orm.em, context, ownerAddress2);
+        await agentBot2.agent.depositCollateral(toBNExp(1_000_000, 18));
+        await agentBot2.agent.makeAvailable(500, 25000);
+        const spy = chai.spy.on(agentBot2, 'checkAgentForCollateralRatioAndTopUp');
         // create collateral reservation
-        await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await minter.reserveCollateral(agentBot2.agent.vaultAddress, 2);
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
         // expect cr to be less than required cr
-        const crBIPSBefore = (await getAgentInfo(context, agentBot.agent.agentVault.address)).collateralRatioBIPS;
+        const crBIPSBefore = (await getAgentInfo(context, agentBot2.agent.vaultAddress)).collateralRatioBIPS;
         const crRequiredBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         expect(Number(crBIPSBefore)).lt(Number(crRequiredBIPS));
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
+        // remove some native from owner's address
+        const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await getAgentInfo(context, agentBot2.agent.vaultAddress), settings);
+        const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
+        const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
+        const agentBot3 = await AgentBot.create(orm.em, context, ownerAddress2);
+        await  agentBot3.agent.depositCollateral(sub);
         // check collateral ratio after price changes
-        await agentBot.runStep(orm.em);
-        expect(spy).to.have.been.called.once;
+        await agentBot2.runStep(orm.em);
         // expect cr to be the same as required cr
-        const crBIPSAfter = (await getAgentInfo(context, agentBot.agent.agentVault.address)).collateralRatioBIPS;
+        const crBIPSAfter = (await getAgentInfo(context, agentBot2.agent.vaultAddress)).collateralRatioBIPS;
         expect(Number(crBIPSAfter)).eq(Number(crRequiredBIPS));
+        // change price
+        const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
+        await context.assetFtso.setCurrentPrice(assetPrice2.muln(10000), 0);
+        // mock price changes
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await agentBot2.runStep(orm.em);
+        expect(spy).to.have.been.called.twice;
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress, } as FilterQuery<AgentEntity>);
         // check agent status
-        const status = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status = Number((await getAgentInfo(context, agentBot.agent.vaultAddress)).status);
         assert.equal(status, AgentStatus.NORMAL);
         // exit available
         await agentBot.agent.exitAvailable();
         // announce agent destruction
         await agentBot.agent.announceDestroy();
         // check agent status
-        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status2 = Number((await getAgentInfo(context, agentBot.agent.vaultAddress)).status);
         assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
         await time.increase(settings.withdrawalWaitMinSeconds * 2);

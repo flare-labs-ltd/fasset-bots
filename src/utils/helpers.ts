@@ -22,7 +22,7 @@ export const WEEKS = 7 * DAYS;
 
 export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
 export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
-export const OWNERS_LOW_BALANCE = toBNExp(10, 18);
+export const NATIVE_LOW_BALANCE = toBNExp(1000, 18);
 
 export const QUERY_WINDOW_SECONDS = 86400;
 

@@ -1,7 +1,7 @@
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, toBN } from "../../../src/utils/helpers";
+import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
@@ -18,6 +18,7 @@ describe("Agent bot unit tests", async () => {
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
+    let ownerUnderlyingAddress: string;
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
@@ -34,9 +35,11 @@ describe("Agent bot unit tests", async () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        // accounts
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
+        ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
     });
 
     it("Should create agent bot", async () => {
@@ -59,13 +62,22 @@ describe("Agent bot unit tests", async () => {
         expect(spy).to.have.been.called.once;
     });
 
+    it("Should top up underlying - failed", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const ownerAmount = 100;
+        context.chain.mint(ownerUnderlyingAddress, ownerAmount);
+        const spy = chai.spy.on(agentBot, 'underlyingTopUp');
+        const topUpAmount = 420;
+        await agentBot.underlyingTopUp(toBN(topUpAmount), agentBot.agent.vaultAddress, toBN(1));
+        expect(spy).to.have.been.called.once;
+    });
+
     it("Should top up underlying", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const ownerAmount = 100;
+        context.chain.mint(ownerUnderlyingAddress, ownerAmount);
         const spy = chai.spy.on(agentBot, 'underlyingTopUp');
-        const randomUnderlyingAddress = "RANDOM_UNDERLYING";
-        const amount = 100;
-        context.chain.mint(randomUnderlyingAddress, amount);
-        await agentBot.underlyingTopUp(toBN(amount), randomUnderlyingAddress);
+        await agentBot.underlyingTopUp(toBN(ownerAmount), agentBot.agent.vaultAddress, toBN(1));
         expect(spy).to.have.been.called.once;
     });
 
