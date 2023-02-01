@@ -18,7 +18,7 @@ import { createTestOrm } from "../../test.mikro-orm.config";
 import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../utils/test-actors";
 import { createTestConfigNoMocks } from "../../utils/test-bot-config";
 
-const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
+const costonRPCUrl: string = requireEnv('RPC_URL');
 const CONTRACTS_JSON = "../fasset/deployment/deploys/coston2.json";
 const sourceId = SourceId.XRP;
 

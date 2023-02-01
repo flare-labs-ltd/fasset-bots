@@ -1,7 +1,7 @@
 import { expect } from "chai";
+import { createBlockChainHelper } from "../../../src/config/BotConfig";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.DOGE;
@@ -14,7 +14,7 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 describe("DOGE blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createTestBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

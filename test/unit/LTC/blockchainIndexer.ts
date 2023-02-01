@@ -1,7 +1,7 @@
 import { expect } from "chai";
+import { createIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestIndexerHelper } from "../../utils/test-bot-config";
 
 let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.LTC;
@@ -14,7 +14,7 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 describe("LTC blockchain tests via indexer", async () => {
 
     before(async () => {
-        blockChainIndexerClient = createTestIndexerHelper(sourceId);
+        blockChainIndexerClient = createIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

@@ -1,9 +1,9 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 import { expect } from "chai";
+import { createBlockChainHelper } from "../../../src/config/BotConfig";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.ALGO;
@@ -19,7 +19,7 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 describe("ALGO blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createTestBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

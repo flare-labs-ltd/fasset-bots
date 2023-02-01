@@ -1,7 +1,7 @@
 import { expect } from "chai";
+import { createBlockChainHelper } from "../../../src/config/BotConfig";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.LTC;
@@ -14,7 +14,7 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 describe("LTC blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createTestBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

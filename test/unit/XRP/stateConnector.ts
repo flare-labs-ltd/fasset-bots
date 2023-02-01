@@ -1,11 +1,11 @@
 import { expect } from "chai";
+import { createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { createTestStateConnectorClient } from "../../utils/test-bot-config";
 
 let stateConnectorClient: StateConnectorClientHelper;
-const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
+const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const roundIdC2 = 413192;
@@ -17,7 +17,7 @@ const requestDataBytesC2_4 = "0x0002000000015d3575e92106318656c874687b19c26337ca
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createTestStateConnectorClient();
+        stateConnectorClient = await createStateConnectorClient();
     })
 
     it("Should return round is finalized", async () => {

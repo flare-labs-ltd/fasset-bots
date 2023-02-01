@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { createAttestationHelper, createBlockChainWalletHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
@@ -8,7 +9,6 @@ import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
-import { createTestStateConnectorClient, createTestAttestationHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 let attestationHelper: AttestationHelper;
@@ -16,7 +16,7 @@ let walletHelper: BlockChainWalletHelper;
 let orm: ORM;
 
 let stateConnectorClient: StateConnectorClientHelper;
-const costonRPCUrl: string = requireEnv('COSTON2_RPC_URL');
+const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
@@ -28,10 +28,10 @@ describe("XRP attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createTestStateConnectorClient();
-        attestationHelper = await createTestAttestationHelper(sourceId);
+        stateConnectorClient = await createStateConnectorClient();
+        attestationHelper = await createAttestationHelper(sourceId);
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
-        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
+        walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })
     //PAYMENT
     it("Should create payment, send request for payment proof to attestations and retrieve proof from state connector", async () => {

@@ -1,9 +1,9 @@
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 import { expect } from "chai";
+import { createBlockChainHelper } from "../../../src/config/BotConfig";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestBlockChainHelper } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
@@ -16,7 +16,7 @@ const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 describe("XRP blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createTestBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

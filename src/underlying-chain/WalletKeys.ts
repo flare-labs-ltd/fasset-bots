@@ -9,7 +9,7 @@ export interface IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = process.env['WALLET_ENCRIPTION_PASSWORD'] ?? fail("Missing wallet password");
+    private password = process.env['WALLET_ENCRYPTION_PASSWORD'] ?? fail("Missing wallet password.");
 
     private privateKeyCache = new Map<string, string>();
 

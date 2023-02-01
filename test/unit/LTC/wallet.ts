@@ -1,13 +1,13 @@
 import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
 import { WALLET } from "simple-wallet";
+import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrm } from "../../test.mikro-orm.config";
-import { createTestBlockChainHelper, createTestBlockChainWalletHelper } from "../../utils/test-bot-config";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
@@ -27,8 +27,8 @@ describe("LTC wallet tests", async () => {
     before(async () => {
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainHelper = createTestBlockChainHelper(sourceId);
-        walletHelper = createTestBlockChainWalletHelper(sourceId, orm.em);
+        blockChainHelper = createBlockChainHelper(sourceId);
+        walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     });
 
     it("Should create account", async () => {

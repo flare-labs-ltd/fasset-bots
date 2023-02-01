@@ -6,9 +6,9 @@ import axios from "axios";
 import { Redeemer } from "../../src/mock/Redeemer";
 
 const ownerAccountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
-const account1PrivateKey = requireEnv('COSTON2_ACCOUNT1_PRIVATE_KEY');
-const account2PrivateKey = requireEnv('COSTON2_ACCOUNT2_PRIVATE_KEY');
-const account3PrivateKey = requireEnv('COSTON2_ACCOUNT3_PRIVATE_KEY');
+const account1PrivateKey = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
+const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
+const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
 
 export async function createTestMinter(ctx: IAssetBotContext, address: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
