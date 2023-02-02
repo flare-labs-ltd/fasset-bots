@@ -7,7 +7,6 @@ import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
 import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
@@ -15,6 +14,8 @@ import { disableMccTraceManager } from "../utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../../src/fasset/AssetManagerTypes";
+import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
+import { createTestOrmOptions } from "../../test/utils/test-bot-config";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -43,7 +44,7 @@ describe("Agent bot tests", async () => {
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];

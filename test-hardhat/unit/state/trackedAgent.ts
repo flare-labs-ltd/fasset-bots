@@ -3,12 +3,13 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { EM, ORM } from "../../../src/config/orm";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Prices } from "../../../src/state/Prices";
 import { TrackedAgent } from "../../../src/state/TrackedAgent";
 import { checkedCast, MAX_UINT256, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
+import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 
@@ -39,7 +40,7 @@ describe("Tracked agent tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
         chain = checkedCast(context.chain, MockChain);

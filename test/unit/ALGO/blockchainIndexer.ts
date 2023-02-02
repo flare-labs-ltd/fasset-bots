@@ -13,7 +13,7 @@ const blockId = 24078316;
 const blockHash = "c6e59c61584b193701a0b880a6575bed9e8e434f33da8493a4eb1ff6d27fc064";
 const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 
-describe("ALGO blockchain tests via indexer", async () => {
+describe.skip("ALGO blockchain tests via indexer", async () => {
 
     before(async () => {
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);

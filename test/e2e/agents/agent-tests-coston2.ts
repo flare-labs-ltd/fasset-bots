@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
-import { BotConfig } from "../../../src/config/BotConfig";
+import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
@@ -11,16 +11,9 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { getSourceName, SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrm } from "../../test.mikro-orm.config";
 import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { createTestConfigNoMocks } from "../../utils/test-bot-config";
-
-const costonRPCUrl: string = requireEnv('RPC_URL');
-const CONTRACTS_JSON = "../fasset/deployment/deploys/coston2.json";
-const sourceId = SourceId.XRP;
+import { COSTON2_CONTRACTS_JSON, COSTON2_RPC, createTestOrmOptions, createTestRunConfig } from "../../utils/test-bot-config";
 
 describe("Agent bot tests - coston2", async () => {
     let accounts: string[];
@@ -33,15 +26,17 @@ describe("Agent bot tests - coston2", async () => {
     let challengerAddress: string;
     let runner: ScopedRunner;
     let state: TrackedState;
+    let runConfig: RunConfig;
 
     before(async () => {
-        accounts = await initWeb3(costonRPCUrl, getCoston2AccountsFromEnv(), null);
+        accounts = await initWeb3(COSTON2_RPC, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
         minterAddress = accounts[1];
         redeemerAddress = accounts[2];
         challengerAddress = accounts[3];
-        orm = await createTestOrm({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' });
-        botConfig = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm, costonRPCUrl, CONTRACTS_JSON);
+        runConfig = createTestRunConfig(COSTON2_RPC, COSTON2_CONTRACTS_JSON, createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' }), undefined, 'FtestXRP');
+        botConfig = await createBotConfig(runConfig);
+        orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();
         state = new TrackedState();
@@ -113,4 +108,5 @@ describe("Agent bot tests - coston2", async () => {
         const challenger = await Challenger.fromEntity(runner, context, challengerEnt, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
+
 });

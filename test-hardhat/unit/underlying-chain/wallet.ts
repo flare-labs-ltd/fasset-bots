@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { ORM } from "../../../src/config/orm";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
+import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 
@@ -17,7 +18,7 @@ const privateKey2 = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092A
 describe("Wallet keys tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm({ schemaUpdate: 'recreate', dbName: 'fasset-bots-wallet-keys-test.db' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-wallet-keys-test.db' }));
         dbWallet = new DBWalletKeys(orm.em);
     })
 

@@ -1,13 +1,14 @@
 import { expect } from "chai";
 import { createAttestationHelper, createBlockChainWalletHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestOrmOptions } from "../../utils/test-bot-config";
 
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;
@@ -28,7 +29,7 @@ describe("LTC attestation/state connector tests", async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient();
         attestationHelper = await createAttestationHelper(sourceId);
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })
     //PAYMENT

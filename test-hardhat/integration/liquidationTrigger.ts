@@ -4,7 +4,6 @@ import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../utils/test-asset-context";
 import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
@@ -19,6 +18,8 @@ import { time } from "@openzeppelin/test-helpers";
 import { TrackedState } from "../../src/state/TrackedState";
 import { Challenger } from "../../src/actors/Challenger";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
+import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
+import { createTestOrmOptions } from "../../test/utils/test-bot-config";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -83,7 +84,7 @@ describe("Liquidation trigger tests", async () => {
         minterAddress = accounts[4];
         challengerAddress = accounts[5];
         liquidationTriggerAddress = accounts[6];
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
         chain = checkedCast(context.chain, MockChain);
         // chain tunning

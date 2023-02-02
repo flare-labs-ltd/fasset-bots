@@ -3,9 +3,10 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
+import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { disableMccTraceManager } from "../../utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
@@ -23,7 +24,7 @@ describe("Agent bot runner tests", async () => {
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         ownerAddress = accounts[3];
     });
 

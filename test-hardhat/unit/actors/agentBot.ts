@@ -3,11 +3,12 @@ import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
 import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -25,7 +26,7 @@ describe("Agent bot unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
     beforeEach(async () => {

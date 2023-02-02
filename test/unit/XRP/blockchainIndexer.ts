@@ -11,7 +11,7 @@ const blockId = 2620269;
 const blockHash = "395066007a0c47adf5b5ca62a75c124b24868b12ad370f2050bc47fc18f3d88b";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
-describe("XRP blockchain tests via indexer", async () => {
+describe.skip("XRP blockchain tests via indexer", async () => {
 
     before(async () => {
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);

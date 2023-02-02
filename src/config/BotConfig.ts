@@ -4,7 +4,7 @@ import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { WALLET } from "simple-wallet";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
-import options from "../mikro-orm.config";
+import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
@@ -16,25 +16,17 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { artifacts } from "../utils/artifacts";
 import { requireEnv } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
-import { createOrm, CreateOrmOptions, EM, ORM } from "./orm";
+import { CreateOrmOptions, EM, ORM } from "./orm";
 
 export interface RunConfig {
+    rpcUrl: string,
     loopDelay: number;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
     nativeChainInfo: NativeChainInfo;
-    chainInfos: ChainInfo[];
+    chainInfos: BotChainInfo[];
     ormOptions: CreateOrmOptions;
-}
-
-export interface BotConfigChain {
-    chainInfo: ChainInfo;
-    chain: IBlockChain;
-    wallet: IBlockChainWallet;
-    assetManager?: string;
-    fAssetSymbol?: string;
-    blockChainIndexerClient: BlockChainIndexerHelper;
 }
 
 export interface BotConfig {
@@ -49,15 +41,30 @@ export interface BotConfig {
     orm: ORM;
 }
 
+export interface BotConfigChain {
+    chainInfo: ChainInfo;
+    chain: IBlockChain;
+    wallet: IBlockChainWallet;
+    assetManager?: string;
+    fAssetSymbol?: string;
+    blockChainIndexerClient: BlockChainIndexerHelper;
+}
+
+export interface BotChainInfo extends ChainInfo {
+    // either one must be set
+    assetManager?: string;
+    fAssetSymbol?: string;
+}
+
 export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
     const stateConnector = await createStateConnectorClient();
-    const orm = await createOrm({ ...options, schemaUpdate: 'safe' });
+    const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (let chainInfo of runConfig.chainInfos) {
         chains.push(await createBotConfigChain(chainInfo, orm.em))
     }
     return {
-        rpcUrl: requireEnv('RPC_URL'),
+        rpcUrl: runConfig.rpcUrl,
         loopDelay: runConfig.loopDelay,
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
@@ -68,15 +75,17 @@ export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> 
     }
 }
 
-export async function createBotConfigChain(chainInfo: ChainInfo, em: EM): Promise<BotConfigChain> {
+export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em);
-    const blockChainIndexerClient =  createBlockChainIndexerHelper(chainInfo.chainId);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
     return {
         chainInfo: chainInfo,
         chain: chain,
         wallet: wallet,
-        blockChainIndexerClient: blockChainIndexerClient
+        blockChainIndexerClient: blockChainIndexerClient,
+        assetManager: chainInfo.assetManager,
+        fAssetSymbol: chainInfo.fAssetSymbol
     }
 }
 

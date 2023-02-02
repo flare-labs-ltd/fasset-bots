@@ -7,7 +7,6 @@ import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestOrm } from "../../test/test.mikro-orm.config";
 import { createTestAssetContext } from "../utils/test-asset-context";
 import { testChainInfo } from "../../test/utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
@@ -23,6 +22,8 @@ import { Challenger } from "../../src/actors/Challenger";
 import { TrackedState } from "../../src/state/TrackedState";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
+import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
+import { createTestOrmOptions } from "../../test/utils/test-bot-config";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -87,7 +88,7 @@ describe("Challenger tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         challengerAddress = accounts[6];
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
     beforeEach(async () => {

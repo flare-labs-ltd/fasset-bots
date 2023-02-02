@@ -4,10 +4,11 @@ import { LiquidationTrigger } from "../../../src/actors/LiquidationTrigger";
 import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrm } from "../../../test/test.mikro-orm.config";
+import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
 import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 
@@ -22,7 +23,7 @@ describe("Liquidation trigger unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
     beforeEach(async () => {

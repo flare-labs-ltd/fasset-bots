@@ -1,13 +1,12 @@
-import { MCC } from "@flarenetwork/mcc";
 import { expect } from "chai";
-import { WALLET } from "simple-wallet";
 import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestOrmOptions } from "../../utils/test-bot-config";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
@@ -25,7 +24,7 @@ const amountToSendBTC = 0.00001;
 describe("BTC wallet tests", async () => {
 
     before(async () => {
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);

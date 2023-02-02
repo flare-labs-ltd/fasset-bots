@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { createAttestationHelper, createBlockChainWalletHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
@@ -8,7 +9,7 @@ import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateC
 import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrm } from "../../test.mikro-orm.config";
+import { createTestOrmOptions } from "../../utils/test-bot-config";
 
 let blockChainHelper: BlockChainHelper;
 let attestationHelper: AttestationHelper;
@@ -30,7 +31,7 @@ describe("XRP attestation/state connector tests", async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient();
         attestationHelper = await createAttestationHelper(sourceId);
-        orm = await createTestOrm({ schemaUpdate: 'recreate' });
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })
     //PAYMENT
