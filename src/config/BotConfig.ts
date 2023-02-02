@@ -4,23 +4,33 @@ import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { WALLET } from "simple-wallet";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
+import options from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import { BlockChainWalletHelper } from "../underlying-chain/BlockChainWalletHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
-import { IBlockChainEvents } from "../underlying-chain/interfaces/IBlockChainEvents";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { artifacts } from "../utils/artifacts";
 import { requireEnv } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
+import { createOrm, CreateOrmOptions, EM, ORM } from "./orm";
+
+export interface RunConfig {
+    loopDelay: number;
+    // either one must be set
+    addressUpdater?: string;
+    contractsJsonFile?: string;
+    nativeChainInfo: NativeChainInfo;
+    chainInfos: ChainInfo[];
+    ormOptions: CreateOrmOptions;
+}
 
 export interface BotConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
-    chainEvents: IBlockChainEvents,
     wallet: IBlockChainWallet;
     assetManager?: string;
     fAssetSymbol?: string;
@@ -36,9 +46,41 @@ export interface BotConfig {
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
     nativeChainInfo: NativeChainInfo;
+    orm: ORM;
 }
 
-export function createWalletClient(sourceId: SourceId) {
+export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
+    const stateConnector = await createStateConnectorClient();
+    const orm = await createOrm({ ...options, schemaUpdate: 'safe' });
+    const chains: BotConfigChain[] = [];
+    for (let chainInfo of runConfig.chainInfos) {
+        chains.push(await createBotConfigChain(chainInfo, orm.em))
+    }
+    return {
+        rpcUrl: requireEnv('RPC_URL'),
+        loopDelay: runConfig.loopDelay,
+        addressUpdater: runConfig.addressUpdater,
+        contractsJsonFile: runConfig.contractsJsonFile,
+        stateConnector: stateConnector,
+        chains: chains,
+        nativeChainInfo: runConfig.nativeChainInfo,
+        orm: orm
+    }
+}
+
+export async function createBotConfigChain(chainInfo: ChainInfo, em: EM): Promise<BotConfigChain> {
+    const chain = createBlockChainHelper(chainInfo.chainId);
+    const wallet = createBlockChainWalletHelper(chainInfo.chainId, em);
+    const blockChainIndexerClient =  createBlockChainIndexerHelper(chainInfo.chainId);
+    return {
+        chainInfo: chainInfo,
+        chain: chain,
+        wallet: wallet,
+        blockChainIndexerClient: blockChainIndexerClient
+    }
+}
+
+export function createWalletClient(sourceId: SourceId): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     switch (sourceId) {
         case SourceId.ALGO:
             return new WALLET.ALGO({
@@ -80,7 +122,7 @@ export function createWalletClient(sourceId: SourceId) {
     }
 }
 
-export function createMccClient(sourceId: SourceId) {
+export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DOGE | MCC.LTC | MCC.XRP {
     switch (sourceId) {
         case SourceId.ALGO:
             return new MCC.ALGO({
@@ -126,7 +168,7 @@ export function createMccClient(sourceId: SourceId) {
     }
 }
 
-export function createIndexerHelper(sourceId: SourceId) {
+export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainIndexerHelper {
     const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
     switch (sourceId) {
         case SourceId.ALGO:
@@ -144,7 +186,7 @@ export function createIndexerHelper(sourceId: SourceId) {
     }
 }
 
-export function createBlockChainHelper(sourceId: SourceId) {
+export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
@@ -161,7 +203,7 @@ export function createBlockChainHelper(sourceId: SourceId) {
     }
 }
 
-export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>) {
+export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>): BlockChainWalletHelper {
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
@@ -178,7 +220,7 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
     }
 }
 
-export async function createAttestationHelper(sourceId: SourceId) {
+export async function createAttestationHelper(sourceId: SourceId): Promise<AttestationHelper> {
     switch (sourceId) {
         case SourceId.ALGO:
             return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
@@ -195,8 +237,8 @@ export async function createAttestationHelper(sourceId: SourceId) {
     }
 }
 
-export async function createStateConnectorClient() {
-    const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");;
+export async function createStateConnectorClient(): Promise<StateConnectorClientHelper> {
+    const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
     const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
     const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
     const account = requireEnv('OWNER_ADDRESS');

@@ -163,29 +163,6 @@ describe("Agent unit tests", async () => {
         await expectRevert(agent.buybackAgentCollateral(), "f-asset not terminated");
     });
 
-    it("Should prove EOA address", async () => {
-        const spy = chai.spy.on(Agent, 'proveAddressEOA');
-        const testChain = {
-            chainId: SourceId.XRP,
-            name: "Ripple",
-            symbol: "XRP",
-            decimals: 6,
-            amgDecimals: 0,
-            blockTime: 10,
-            finalizationBlocks: 0,
-            requireEOAProof: true
-        }
-        const contextEOA = await createTestAssetContext(accounts[0], testChain);
-        await Agent.proveAddressEOA(contextEOA, ownerAddress, underlyingAddress);
-        expect(spy).to.have.been.called.once;
-    });
-
-    it("Should not prove EOA address", async () => {
-        const spy = chai.spy.on(Agent, 'proveAddressEOA');
-        await Agent.proveAddressEOA(context, ownerAddress, underlyingAddress);
-        expect(spy).to.have.been.called.once;
-    });
-
     it("Should exit available", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         await agent.depositCollateral(deposit);

@@ -41,7 +41,7 @@ describe("Agent bot tests - coston2", async () => {
         redeemerAddress = accounts[2];
         challengerAddress = accounts[3];
         orm = await createTestOrm({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' });
-        botConfig = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm.em, costonRPCUrl, CONTRACTS_JSON);
+        botConfig = await createTestConfigNoMocks([getSourceName(sourceId)!.toLocaleLowerCase()], orm, costonRPCUrl, CONTRACTS_JSON);
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();
         state = new TrackedState();
@@ -62,13 +62,13 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create agent bot runner from bot config", async () => {
-        const agentBotRunner = await AgentBotRunner.create(orm, botConfig)
+        const agentBotRunner = await AgentBotRunner.create(botConfig)
         expect(agentBotRunner.loopDelay).to.eq(0);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should create missing agents for agent bot runner", async () => {
-        const agentBotRunner = await AgentBotRunner.create(orm, botConfig)
+        const agentBotRunner = await AgentBotRunner.create(botConfig)
         expect(agentBotRunner.loopDelay).to.eq(0);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
         await agentBotRunner.createMissingAgents(ownerAddress);

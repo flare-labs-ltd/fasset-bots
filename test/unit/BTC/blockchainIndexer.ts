@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { createIndexerHelper } from "../../../src/config/BotConfig";
+import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
 
@@ -14,7 +14,7 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 describe("BTC blockchain tests via indexer", async () => {
 
     before(async () => {
-        blockChainIndexerClient = createIndexerHelper(sourceId);
+        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

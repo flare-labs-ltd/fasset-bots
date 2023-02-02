@@ -17,7 +17,7 @@ import { initTestWeb3 } from "../../utils/test-web3";
 
 describe("Agent bot tests - local network", async () => {
     let accounts: string[];
-    let config: BotConfig;
+    let botConfig: BotConfig;
     let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
@@ -32,8 +32,8 @@ describe("Agent bot tests - local network", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         orm = await createTestOrm({ schemaUpdate: 'recreate' });
-        config = await createTestConfig(['xrp']);
-        context = await createAssetContext(config, config.chains[0]);
+        botConfig = await createTestConfig(['xrp'], orm);
+        context = await createAssetContext(botConfig, botConfig.chains[0]);
         chain = checkedCast(context.chain, MockChain);
     });
 

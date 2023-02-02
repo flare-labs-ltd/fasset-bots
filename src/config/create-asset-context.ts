@@ -1,7 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance } from "../../typechain-truffle";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
 import { artifacts } from "../utils/artifacts";
 import { fail } from "../utils/helpers";
 import { BotConfig, BotConfigChain } from "./BotConfig";
@@ -35,7 +34,6 @@ async function createAssetContextFromContracts(botConfig: BotConfig & { contract
         nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
         chain: chainConfig.chain,
-        chainEvents: new UnderlyingChainEvents(chainConfig.chain, chainConfig.chainEvents, null),
         wallet: chainConfig.wallet,
         attestationProvider: new AttestationHelper(botConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
@@ -59,7 +57,6 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
         nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
         chain: chainConfig.chain,
-        chainEvents: new UnderlyingChainEvents(chainConfig.chain, chainConfig.chainEvents, null),
         wallet: chainConfig.wallet,
         attestationProvider: new AttestationHelper(botConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
         assetManager: assetManager,

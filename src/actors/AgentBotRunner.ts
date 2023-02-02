@@ -56,12 +56,12 @@ export class AgentBotRunner {
         }
     }
 
-    static async create(orm: ORM, botConfig: BotConfig) {
+    static async create(botConfig: BotConfig) {
         const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
         }
-        return new AgentBotRunner(contexts, orm, botConfig.loopDelay);
+        return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay);
     }
 }

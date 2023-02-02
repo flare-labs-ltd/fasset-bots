@@ -10,7 +10,6 @@ import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
-import { UnderlyingChainEvents } from "../../src/underlying-chain/UnderlyingChainEvents";
 import { artifacts } from "../../src/utils/artifacts";
 import { Modify, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
@@ -96,8 +95,6 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const chain = new MockChain(mockChainAddCurrentTime ? await time.latest() : undefined);
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const chainEventsRaw = chain;
-    const chainEvents = new UnderlyingChainEvents(chain, chainEventsRaw, null);
     const stateConnectorClient = new MockStateConnectorClient(stateConnector, 'auto');
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
@@ -116,7 +113,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // indexer
     const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, createWalletClient(chainInfo.chainId), chain);
     // return context
-    return { nativeChainInfo, chainInfo, chain, chainEvents, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso, blockChainIndexerClient };
+    return { nativeChainInfo, chainInfo, chain, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wnat, fAsset, natFtso, assetFtso, blockChainIndexerClient };
 }
 
 function bnToString(x: BN | number | string) {

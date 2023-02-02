@@ -35,18 +35,6 @@ export class Agent {
         return this.context.wallet;
     }
 
-    static async proveAddressEOA(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
-        // create and prove transaction from underlyingAddress if EOA required
-        if (ctx.chainInfo.requireEOAProof) {
-            const txHash = await ctx.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
-            if (ctx.chain.finalizationBlocks > 0) {
-                await ctx.chainEvents.waitForUnderlyingTransactionFinalization(undefined, txHash);
-            }
-            const proof = await ctx.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
-            await ctx.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
-        }
-    }
-
     static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
         // create agent
         const response = await ctx.assetManager.createAgent(underlyingAddress, { from: ownerAddress });

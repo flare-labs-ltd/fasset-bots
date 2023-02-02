@@ -2,7 +2,6 @@ import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, I
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { UnderlyingChainEvents } from "../underlying-chain/UnderlyingChainEvents";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { ChainInfo, NativeChainInfo } from "./ChainInfo";
 
@@ -23,7 +22,6 @@ export interface IAssetContext {
     chainInfo: ChainInfo;
     chain: IBlockChain;
     wallet: IBlockChainWallet;
-    chainEvents: UnderlyingChainEvents;
     attestationProvider: AttestationHelper;
     // contracts
     assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;

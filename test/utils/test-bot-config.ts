@@ -1,6 +1,6 @@
-import { BotConfig, BotConfigChain, createBlockChainHelper, createBlockChainWalletHelper, createIndexerHelper, createStateConnectorClient } from "../../src/config/BotConfig";
+import { BotConfig, BotConfigChain, createBlockChainHelper, createBlockChainWalletHelper, createBlockChainIndexerHelper, createStateConnectorClient } from "../../src/config/BotConfig";
 import { loadContracts } from "../../src/config/contracts";
-import { EM } from "../../src/config/orm";
+import { EM, ORM } from "../../src/config/orm";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { artifacts } from "../../src/utils/artifacts";
@@ -11,7 +11,7 @@ const CONTRACTS_JSON = "../fasset/deployment/deploys/hardhat.json";
 
 const StateConnectorMock = artifacts.require("StateConnectorMock");
 
-export async function createTestConfig(chains: string[] = ['btc', 'xrp']): Promise<BotConfig> {
+export async function createTestConfig(chains: string[] = ['btc', 'xrp'], orm: ORM): Promise<BotConfig> {
     const contracts = loadContracts(CONTRACTS_JSON);
     const stateConnectorMock = await StateConnectorMock.at(contracts.StateConnector.address);
     const stateConnectorClient = new MockStateConnectorClient(stateConnectorMock, 'auto');
@@ -31,7 +31,8 @@ export async function createTestConfig(chains: string[] = ['btc', 'xrp']): Promi
         nativeChainInfo: {
             finalizationBlocks: 0,
             readLogsChunkSize: 10,
-        }
+        },
+        orm: orm
     }
 }
 
@@ -42,22 +43,21 @@ function createMockChainConfig(fAssetSymbol: string, info: TestChainInfo, stateC
     stateConnectorClient.addChain(info.chainId, chain);
     return {
         chain: chain,
-        chainEvents: chain,
         chainInfo: info,
         wallet: new MockChainWallet(chain),
         fAssetSymbol: fAssetSymbol,
-        blockChainIndexerClient: createIndexerHelper(info.chainId)
+        blockChainIndexerClient: createBlockChainIndexerHelper(info.chainId)
     };
 }
 
-export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'], em: EM, rpcUrl: string, contractJson: string): Promise<BotConfig> {
+export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'], orm: ORM, rpcUrl: string, contractJson: string): Promise<BotConfig> {
     const stateConnectorClient = await createStateConnectorClient();
     const chainConfigs: BotConfigChain[] = [];
     if (chains.includes('btc')) {
-        chainConfigs.push(createChainConfig('FtestBTC', testChainInfo.btc, em));
+        chainConfigs.push(createChainConfig('FtestBTC', testChainInfo.btc, orm.em));
     }
     if (chains.includes('xrp')) {
-        chainConfigs.push(createChainConfig('FtestXRP', testChainInfo.xrp, em));
+        chainConfigs.push(createChainConfig('FtestXRP', testChainInfo.xrp, orm.em));
     }
     return {
         rpcUrl: rpcUrl,
@@ -68,20 +68,19 @@ export async function createTestConfigNoMocks(chains: string[] = ['btc', 'xrp'],
         nativeChainInfo: {
             finalizationBlocks: 0,
             readLogsChunkSize: 10,
-        }
+        },
+        orm: orm
     }
 }
 
 function createChainConfig(fAssetSymbol: string, info: TestChainInfo, em: EM): BotConfigChain {
-    const chainEv = new MockChain(); // OK one mock here, but it is not really used?
     const chain = createBlockChainHelper(info.chainId);
     chain.finalizationBlocks = info.finalizationBlocks;
     chain.secondsPerBlock = info.blockTime;
     const wallet = createBlockChainWalletHelper(info.chainId, em);
-    const indexer = createIndexerHelper(info.chainId);
+    const indexer = createBlockChainIndexerHelper(info.chainId);
     return {
         chain: chain,
-        chainEvents: chainEv,
         chainInfo: info,
         wallet: wallet,
         fAssetSymbol: fAssetSymbol,
