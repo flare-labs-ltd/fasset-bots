@@ -9,8 +9,7 @@ import { TrackedAgent } from "../state/TrackedAgent";
 import { TrackedState } from "../state/TrackedState";
 import { AttestationClientError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { EvmEvent } from "../utils/events/common";
-import { EvmEventArgs } from "../utils/events/IEvmEvents";
+import { EventArgs, EvmEvent } from "../utils/events/common";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
@@ -140,11 +139,11 @@ export class Challenger {
         if (agent) await this.checkForNegativeFreeBalance(agent);
     }
 
-    handleRedemptionRequested(args: EvmEventArgs<RedemptionRequested>): void {
+    handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
         this.activeRedemptions.set(args.paymentReference, { agentAddress: args.agentVault, amount: toBN(args.valueUBA) });
     }
 
-    handleRedemptionFinished(args: EvmEventArgs<RedemptionFinished>): void {
+    handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
         // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediatelly illegal anyway
         const reference = PaymentReference.redemption(args.requestId);
         this.transactionForPaymentReference.delete(reference);
