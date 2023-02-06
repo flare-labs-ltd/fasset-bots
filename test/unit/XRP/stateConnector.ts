@@ -8,6 +8,11 @@ let stateConnectorClient: StateConnectorClientHelper;
 const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
+const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
+const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
+const ownerAddress: string = requireEnv('OWNER_ADDRESS');
+
 const roundIdC2 = 413192;
 const requestDataBytesC2_1 = "0x000300000001bfa8ccefbe3307418d00a88fbb180e1ee63cf33cb5388245d519c6de150f1bd4";
 const requestDataBytesC2_2 = "0x000400000001d5416a66687e4a3b8f1244157cd04572c3954ceaeccc795b802361e8e958afa50028390563bba04bbcea6e5be2292a8082fbdd1a4fcdf4f8964563d954323c45a6abaa05da7228c5548d92e261443a5bf13857c4e2bcd8571458567f5d20b8d9e5ac21ab3a69f236dd4e9113c8216513e460cbb268de5d24";
@@ -17,7 +22,7 @@ const requestDataBytesC2_4 = "0x0002000000015d3575e92106318656c874687b19c26337ca
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient();
+        stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
     })
 
     it("Should return round is finalized", async () => {

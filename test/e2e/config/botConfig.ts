@@ -1,25 +1,31 @@
 import { expect } from "chai";
+import { readFileSync } from "fs";
 import { createAttestationHelper, createBlockChainHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createBotConfig, createMccClient, createStateConnectorClient, createWalletClient, RunConfig } from "../../../src/config/BotConfig"
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
 import { getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { COSTON2_CONTRACTS_JSON, COSTON2_RPC, createTestOrmOptions, createTestRunConfig } from "../../utils/test-bot-config";
+import { COSTON2_RUN_CONFIG } from "../../utils/test-bot-config";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require("chai");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require("chai-as-promised"));
 
+const ATTESTER_BASE_URLS: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
+const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const STATE_CONNECTOR_ADDRESS: string = requireEnv('STATE_CONNECTOR_ADDRESS');
+const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+
 describe("Bot config tests", async () => {
     let runConfig: RunConfig;
     before(async () => {
-        await initWeb3(COSTON2_RPC, getCoston2AccountsFromEnv(), null);
-        runConfig = createTestRunConfig(COSTON2_RPC, COSTON2_CONTRACTS_JSON, createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' }));
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG).toString()) as RunConfig;
+        await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
         expect(botConfig.stateConnector).to.not.be.null;
@@ -113,31 +119,23 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create attestation helper", async () => {
-        const algo = await createAttestationHelper(SourceId.ALGO);
+        const stateConnector = await createStateConnectorClient(ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const algo = await createAttestationHelper(SourceId.ALGO, stateConnector);
         expect(algo.chainId).to.eq(SourceId.ALGO);
-        const btc = await createAttestationHelper(SourceId.BTC);
+        const btc = await createAttestationHelper(SourceId.BTC, stateConnector);
         expect(btc.chainId).to.eq(SourceId.BTC);
-        const doge = await createAttestationHelper(SourceId.DOGE);
+        const doge = await createAttestationHelper(SourceId.DOGE, stateConnector);
         expect(doge.chainId).to.eq(SourceId.DOGE);
-        const ltc = await createAttestationHelper(SourceId.LTC);
+        const ltc = await createAttestationHelper(SourceId.LTC, stateConnector);
         expect(ltc.chainId).to.eq(SourceId.LTC);
-        const xrp = await createAttestationHelper(SourceId.XRP);
+        const xrp = await createAttestationHelper(SourceId.XRP, stateConnector);
         expect(xrp.chainId).to.eq(SourceId.XRP);
-        await expect(createAttestationHelper(-200 as SourceId)).to.eventually.be.rejected;
+        await expect(createAttestationHelper(-200 as SourceId, stateConnector)).to.eventually.be.rejected;
     });
 
     it("Should create state connector helper", async () => {
-        const account = requireEnv('OWNER_ADDRESS');
-        const algo = await createStateConnectorClient();
-        expect(algo.account).to.eq(account);
-        const btc = await createStateConnectorClient();
-        expect(btc.account).to.eq(account);
-        const doge = await createStateConnectorClient();
-        expect(doge.account).to.eq(account);
-        const ltc = await createStateConnectorClient();
-        expect(ltc.account).to.eq(account);
-        const xrp = await createStateConnectorClient();
-        expect(xrp.account).to.eq(account);
+        const stateConnector = await createStateConnectorClient(ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        expect(stateConnector.account).to.eq(OWNER_ADDRESS);
     });
 
 });

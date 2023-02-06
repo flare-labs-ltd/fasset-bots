@@ -154,7 +154,6 @@ export class AgentBot {
     }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
-        // const minting = new AgentMinting();
         em.create(AgentMinting, {
             state: AgentMintingState.STARTED,
             agentAddress: this.agent.vaultAddress,

@@ -27,6 +27,9 @@ export interface RunConfig {
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
     ormOptions: CreateOrmOptions;
+    attestationProviderUrls: string[];
+    attestationClientAddress: string;
+    stateConnectorAddress: string;
 }
 
 export interface BotConfig {
@@ -56,8 +59,8 @@ export interface BotChainInfo extends ChainInfo {
     fAssetSymbol?: string;
 }
 
-export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
-    const stateConnector = await createStateConnectorClient();
+export async function createBotConfig(runConfig: RunConfig, ownerAddress: string): Promise<BotConfig> {
+    const stateConnector = await createStateConnectorClient(runConfig.attestationProviderUrls, runConfig.attestationClientAddress, runConfig.stateConnectorAddress, ownerAddress);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (let chainInfo of runConfig.chainInfos) {
@@ -229,27 +232,23 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
     }
 }
 
-export async function createAttestationHelper(sourceId: SourceId): Promise<AttestationHelper> {
+export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper): Promise<AttestationHelper> {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.BTC:
-            return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.DOGE:
-            return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.LTC:
-            return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.XRP:
-            return new AttestationHelper(await createStateConnectorClient(), createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`)
     }
 }
 
-export async function createStateConnectorClient(): Promise<StateConnectorClientHelper> {
-    const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
-    const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
-    const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
-    const account = requireEnv('OWNER_ADDRESS');
-    return await StateConnectorClientHelper.create(artifacts, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, account);
+export async function createStateConnectorClient(attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
+    return await StateConnectorClientHelper.create(artifacts, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
 }

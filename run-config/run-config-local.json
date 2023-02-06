@@ -1,0 +1,26 @@
+{
+    "rpcUrl": "http://127.0.0.1:8545",
+    "loopDelay": 0,
+    "contractsJsonFile": "../fasset/deployment/deploys/hardhat.json",
+    "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
+    "chainInfos": [
+      {
+        "chainId": 3,
+        "name": "Ripple",
+        "symbol": "XRP",
+        "decimals": 6,
+        "amgDecimals": 0,
+        "requireEOAProof": false,
+        "fAssetSymbol": "FXRP"
+      }
+    ],
+    "ormOptions": {
+      "dbName": "fasset-bots-local.db",
+      "debug": false,
+      "allowGlobalContext": true,
+      "schemaUpdate": "recreate"
+    },
+    "attestationProviderUrls": ["https://flare4.oracle-daemon.com/coston2"],
+    "attestationClientAddress": "0xdDD96662ea11dA6F289A5D00da41Ec5F3b67d2b4",
+    "stateConnectorAddress": "0xf784709d2317D872237C4bC22f867d1BAe2913AB"
+  }

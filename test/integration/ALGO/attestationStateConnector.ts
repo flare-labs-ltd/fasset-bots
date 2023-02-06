@@ -22,13 +22,17 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 const targetAddress = "O2GT7KTTT7ESYYR6CJ23QQHXCVNV5W3MGYOYA2MGBPND5MB2BOPGVKFTLE";
 const amountToSendALGO = 1;
 const sourceId = SourceId.ALGO;
+const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
+const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
+const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 
 describe("ALGO attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient();
-        attestationHelper = await createAttestationHelper(sourceId);
+        stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
+        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient);
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })

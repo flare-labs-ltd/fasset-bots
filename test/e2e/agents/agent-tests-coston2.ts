@@ -1,5 +1,6 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
+import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
@@ -11,9 +12,12 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
+import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { COSTON2_CONTRACTS_JSON, COSTON2_RPC, createTestOrmOptions, createTestRunConfig } from "../../utils/test-bot-config";
+import { COSTON2_RUN_CONFIG } from "../../utils/test-bot-config";
+
+const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 
 describe("Agent bot tests - coston2", async () => {
     let accounts: string[];
@@ -29,13 +33,13 @@ describe("Agent bot tests - coston2", async () => {
     let runConfig: RunConfig;
 
     before(async () => {
-        accounts = await initWeb3(COSTON2_RPC, getCoston2AccountsFromEnv(), null);
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG).toString()) as RunConfig;
+        accounts = await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
         minterAddress = accounts[1];
         redeemerAddress = accounts[2];
         challengerAddress = accounts[3];
-        runConfig = createTestRunConfig(COSTON2_RPC, COSTON2_CONTRACTS_JSON, createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-c2.db' }), undefined, 'FtestXRP');
-        botConfig = await createBotConfig(runConfig);
+        botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();

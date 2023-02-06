@@ -1,6 +1,7 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
+import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
@@ -11,7 +12,7 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, systemTimestamp, toBN, toBNExp } from "../../../src/utils/helpers";
-import { createTestOrmOptions, createTestRunConfig, HARDHAT_CONTRACTS_JSON, LOCAL_HARDHAT_RPC } from "../../utils/test-bot-config";
+import { LOCAL_HARDHAT_RUN_CONFIG } from "../../utils/test-bot-config";
 import { initTestWeb3 } from "../../utils/test-web3";
 
 describe.skip("Agent bot tests - local network", async () => {
@@ -27,12 +28,12 @@ describe.skip("Agent bot tests - local network", async () => {
     let runConfig: RunConfig;
 
     before(async () => {
+        runConfig = JSON.parse(readFileSync(LOCAL_HARDHAT_RUN_CONFIG).toString()) as RunConfig;
         accounts = await initTestWeb3();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
-        runConfig = createTestRunConfig(LOCAL_HARDHAT_RPC, HARDHAT_CONTRACTS_JSON, createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-local.db' }), undefined, 'FXRP');
-        botConfig = await createBotConfig(runConfig);
+        botConfig = await createBotConfig(runConfig, ownerAddress);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         chain = checkedCast(context.chain, MockChain);

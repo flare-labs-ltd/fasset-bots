@@ -60,13 +60,6 @@ export class Agent {
         return requiredEventArgs(res, 'AvailableAgentExited');
     }
 
-    // async exitAndDestroy(collateral: BNish) {
-    //     await this.exitAvailable();
-    //     await this.announceDestroy();
-    //     await time.increase(300);
-    //     return await this.destroy();
-    // }
-
     async announceCollateralWithdrawal(amountNATWei: BNish) {
         await this.assetManager.announceCollateralWithdrawal(this.vaultAddress, amountNATWei, { from: this.ownerAddress });
     }

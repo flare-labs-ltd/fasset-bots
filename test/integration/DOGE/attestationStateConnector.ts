@@ -22,13 +22,17 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
 const amountToSendDOGE = 1;
 const sourceId = SourceId.DOGE;
+const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
+const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
+const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 
 describe("DOGE attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient();
-        attestationHelper = await createAttestationHelper(sourceId);
+        stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
+        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient);
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })

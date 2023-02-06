@@ -22,13 +22,17 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 const amountToSendBTC = 0.00001;
 const sourceId = SourceId.BTC;
+const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
+const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
+const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 
 describe("BTC attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient();
-        attestationHelper = await createAttestationHelper(sourceId);
+        stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
+        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient);
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     })
