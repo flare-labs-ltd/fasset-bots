@@ -22,3 +22,15 @@ There are two configurations in `.vscode/launch.json` that allow to debug indivi
 * Run `testhh:coverage` for coverage in `test-hardhat/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
 * Run `test:coverage` for coverage in `test/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
 * Run `cover` for coverage in `test-hardhat/` and `test/unit/{ALGO,XRP}/`. `html` coverage report is found in `/fasset-bots/coverage/lcov-report/index.html`
+
+## CLI `fasset-bots-cli`
+
+Usage: `fasset-bots-cli [command] <arg>`
+
+Available commands: 
+
+* `create` - create new agent vault
+* `deposit <amount> <agentVault>` - deposit amount to agent vault from owner's address
+* `enter <agentVault> <feeBIPS> <agentMinCRBIPS>` - enter available agent's list
+* `exit <agentVault>` - exit available agent's list 
+
