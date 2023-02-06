@@ -5,7 +5,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { createBotConfig, RunConfig } from "../config/BotConfig";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { ORM } from "../config/orm";
-import { initWeb3, web3 } from "../utils/web3";
+import { initWeb3 } from "../utils/web3";
 import { requireEnv } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
@@ -30,8 +30,9 @@ export class BotCliCommands {
         this.orm = botConfig.orm;
     }
 
-    async createAgentVault(): Promise<void> {
-        await AgentBot.create(this.orm.em, this.context, this.ownerAddress);
+    async createAgentVault(): Promise<string> {
+        const agentBot = await AgentBot.create(this.orm.em, this.context, this.ownerAddress);
+        return agentBot.agent.vaultAddress;
     }
 
     async depositToVault(amount: string, agentVault: string): Promise<void> {

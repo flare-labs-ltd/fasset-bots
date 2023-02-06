@@ -9,13 +9,14 @@ toplevelRun(async () => {
     await cli.initEnvironment();
     switch (process.argv[2]) {
         case 'create':
-            await cli.createAgentVault();
+            const agentVault = await cli.createAgentVault();
+            console.log(`Agent ${agentVault} was created.`);
             break;
         case 'deposit':
             const amount = process.argv[3];
             const agentVaultDeposit = process.argv[4];
             if (amount && agentVaultDeposit) {
-                const deposit = cli.depositToVault(amount, agentVaultDeposit);
+                await cli.depositToVault(amount, agentVaultDeposit);
             } else {
                 console.log("Missing arguments ", chalk.blue("<amount> <agentVault>"), " for command ", chalk.yellow("deposit"));
             }
@@ -25,7 +26,7 @@ toplevelRun(async () => {
             const feeBIPS = process.argv[4];
             const agentMinCRBIPS = process.argv[5];
             if (agentVaultEnter && feeBIPS && agentMinCRBIPS) {
-                const enter = cli.enterAvailableList(agentVaultEnter, feeBIPS, agentMinCRBIPS);
+                await cli.enterAvailableList(agentVaultEnter, feeBIPS, agentMinCRBIPS);
             } else {
                 console.log("Missing arguments ", chalk.blue("<agentVault> <feeBIPS> <agentMinCRBIPS>"), " for command ", chalk.yellow("enter"));
             }
@@ -33,7 +34,7 @@ toplevelRun(async () => {
         case 'exit':
             const agentVaultExit = process.argv[3];
             if (agentVaultExit) {
-                const enter = cli.exitAvailableList(agentVaultExit);
+                await cli.exitAvailableList(agentVaultExit);
             } else {
                 console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("exit"));
             }
