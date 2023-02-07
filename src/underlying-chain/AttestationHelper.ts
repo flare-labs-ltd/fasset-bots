@@ -140,7 +140,7 @@ export class AttestationHelper {
         return await this.client.obtainProof(round, requestData) as AttestationResponse<DHConfirmedBlockHeightExists>;
     }
 
-    async obtainVerifiedPaymentProof(requestRound: number, requestData: string) {
+    async obtainVerifiedPaymentProof(requestRound: number, requestData: string): Promise<ProvedDH<DHPayment>> {
         const { result } = await this.obtainPaymentProof(requestRound, requestData);
         if (result == null || result.merkleProof == null) {
             throw new AttestationClientError("payment: not proved");
@@ -148,7 +148,7 @@ export class AttestationHelper {
         return result as ProvedDH<DHPayment>;
     }
 
-    async obtainVerifiedBalanceDecreasingTransactionProof(requestRound: number, requestData: string) {
+    async obtainVerifiedBalanceDecreasingTransactionProof(requestRound: number, requestData: string): Promise<ProvedDH<DHBalanceDecreasingTransaction>> {
         const { result } = await this.obtainBalanceDecreasingTransactionProof(requestRound, requestData);
         if (result == null || result.merkleProof == null) {
             throw new AttestationClientError("balanceDecreasingTransaction: not proved");
@@ -156,7 +156,7 @@ export class AttestationHelper {
         return result as ProvedDH<DHBalanceDecreasingTransaction>;
     }
 
-    async obtainVerifiedReferencedPaymentNonexistenceProof(requestRound: number, requestData: string) {
+    async obtainVerifiedReferencedPaymentNonexistenceProof(requestRound: number, requestData: string): Promise<ProvedDH<DHReferencedPaymentNonexistence>> {
         const { result } = await this.obtainReferencedPaymentNonexistenceProof(requestRound, requestData);
         if (result == null || result.merkleProof == null) {
             throw new AttestationClientError("referencedPaymentNonexistence: not proved");
@@ -164,7 +164,7 @@ export class AttestationHelper {
         return result as ProvedDH<DHReferencedPaymentNonexistence>;
     }
 
-    async obtainVerifiedConfirmedBlockHeightExistsProof(requestRound: number, requestData: string) {
+    async obtainVerifiedConfirmedBlockHeightExistsProof(requestRound: number, requestData: string): Promise<ProvedDH<DHConfirmedBlockHeightExists>> {
         const { result } = await this.obtainConfirmedBlockHeightExistsProof(requestRound, requestData);
         if (result == null || result.merkleProof == null) {
             throw new AttestationClientError("confirmedBlockHeightExists: not proved");

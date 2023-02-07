@@ -48,7 +48,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
     }
 
-    async initStateConnector() {
+    async initStateConnector(): Promise<void> {
         const IStateConnector = this.artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
         const AttestationClientSC = this.artifacts.require("AttestationClientSC");
@@ -57,7 +57,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
 
-    static async create(artifacts: Truffle.Artifacts, urls: string[], attestationClientAddress: string, stateConnectorAddress: string, account: string) {
+    static async create(artifacts: Truffle.Artifacts, urls: string[], attestationClientAddress: string, stateConnectorAddress: string, account: string): Promise<StateConnectorClientHelper> {
         const helper = new StateConnectorClientHelper(artifacts, urls, attestationClientAddress, stateConnectorAddress, account);
         await helper.initStateConnector();
         return helper;
@@ -164,7 +164,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
     }
 
-    private async verifyProof(sourceId: BNish, type: AttestationType, proofData: DHType) {
+    private async verifyProof(sourceId: BNish, type: AttestationType, proofData: DHType): Promise<boolean> {
         const normalizedProofData = web3DeepNormalize(proofData);
         switch (type) {
             case AttestationType.Payment:
@@ -257,7 +257,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         };
     }
 
-    private lastClient(i: number) {
+    private lastClient(i: number): boolean {
         return i === this.clients.length - 1;
     }
 }

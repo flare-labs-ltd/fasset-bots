@@ -32,7 +32,7 @@ export class SystemKeeper {
     eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
 
     // async initialization part
-    async initialize() {
+    async initialize(): Promise<void> {
         this.settings = await this.context.assetManager.getSettings();
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
@@ -55,15 +55,15 @@ export class SystemKeeper {
         });
     }
 
-    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, ccbTriggerEntity: ActorEntity, state: TrackedState) {
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, ccbTriggerEntity: ActorEntity, state: TrackedState): Promise<SystemKeeper> {
         return new SystemKeeper(runner, context, ccbTriggerEntity.address, state);
     }
 
-    async runStep(em: EM) {
+    async runStep(em: EM): Promise<void> {
         await this.registerEvents(em);
     }
 
-    async registerEvents(rootEm: EM) {
+    async registerEvents(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const liquidatorEnt = await em.findOneOrFail(ActorEntity, { address: this.address, type: ActorType.SYSTEM_KEEPER } as FilterQuery<ActorEntity>);
             // Native chain events
@@ -124,7 +124,7 @@ export class SystemKeeper {
         return events;
     }
 
-    async handleMintingExecuted(args: EventArgs<MintingExecuted>) {
+    async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = this.state.getAgent(args.agentVault);
         if (!agent) return;
         this.runner.startThread(async (scope) => {
@@ -133,7 +133,7 @@ export class SystemKeeper {
         })
     }
 
-    async checkAllAgentsForLiquidation() {
+    async checkAllAgentsForLiquidation(): Promise<void> {
         for (const agent of this.state.agents.values()) {
             try {
                 await this.checkAgentForLiquidation(agent);
@@ -149,7 +149,7 @@ export class SystemKeeper {
         agent.handleStatusChange(status, timestamp);
     }
 
-    private async checkAgentForLiquidation(agent: TrackedAgent) {
+    private async checkAgentForLiquidation(agent: TrackedAgent): Promise<void> {
         const timestamp = await latestBlockTimestampBN();
         const agentInfo = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
         const agentStatus = Number(agentInfo.status);

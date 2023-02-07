@@ -16,7 +16,7 @@ export class AgentBotRunner {
 
     private stopRequested = false;
 
-    async run() {
+    async run(): Promise<void> {
         this.stopRequested = false;
         while (!this.stopRequested) {
             await this.runStep();
@@ -24,12 +24,12 @@ export class AgentBotRunner {
         }
     }
 
-    requestStop() {
+    requestStop(): void {
         this.stopRequested = true;
     }
 
     @UseRequestContext()
-    async runStep() {
+    async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
@@ -47,7 +47,7 @@ export class AgentBotRunner {
     }
 
     @UseRequestContext()
-    async createMissingAgents(ownerAddress: string) {
+    async createMissingAgents(ownerAddress: string): Promise<void> {
         for (const [chainId, context] of this.contexts) {
             const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
             if (existing === 0) {
@@ -56,7 +56,7 @@ export class AgentBotRunner {
         }
     }
 
-    static async create(botConfig: BotConfig) {
+    static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);

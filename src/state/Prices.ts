@@ -29,12 +29,12 @@ export class Prices {
         return this.assetUSD / this.natUSD;
     }
 
-    fresh(relativeTo: Prices, maxAge: BNish) {
+    fresh(relativeTo: Prices, maxAge: BNish): boolean {
         maxAge = toBN(maxAge);
         return this.natTimestamp.add(maxAge).gte(relativeTo.natTimestamp) && this.assetTimestamp.add(maxAge).gte(relativeTo.assetTimestamp);
     }
 
-    toString() {
+    toString(): string {
         return `(nat=${this.natUSD.toFixed(3)}$, asset=${this.assetUSD.toFixed(3)}$, asset/nat=${this.assetNat.toFixed(3)})`;
     }
 

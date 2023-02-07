@@ -101,7 +101,7 @@ describe("System keeper tests", async () => {
     it("Should check collateral ratio after price changes", async () => {
         const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
         await systemKeeper.initialize();
-        const spy = chai.spy.on(SystemKeeper, 'runStep');
+        const spy = chai.spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -218,7 +218,7 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
         await systemKeeper.initialize();
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(systemKeeper, 'runStep');
+        const spy = chai.spy.on(systemKeeper, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution

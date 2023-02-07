@@ -22,7 +22,7 @@ export async function createOrm(options: CreateOrmOptions): Promise<ORM> {
     return orm;
 }
 
-export async function updateSchema(orm: ORM, update: SchemaUpdate) {
+export async function updateSchema(orm: ORM, update: SchemaUpdate): Promise<void> {
     const generator = orm.getSchemaGenerator();
     if (update == 'recreate') {
         await generator.dropSchema();

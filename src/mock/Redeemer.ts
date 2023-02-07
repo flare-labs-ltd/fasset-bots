@@ -22,7 +22,7 @@ export class Redeemer {
         return this.context.attestationProvider;
     }
 
-    static async create(ctx: IAssetContext, address: string, underlyingAddress: string) {
+    static async create(ctx: IAssetContext, address: string, underlyingAddress: string): Promise<Redeemer> {
         return new Redeemer(ctx, address, underlyingAddress);
     }
 
@@ -35,7 +35,7 @@ export class Redeemer {
         return [redemptionRequests, remainingLots, dustChangedEvents];
     }
 
-    async convertDustToTicket(agent: Agent) {
+    async convertDustToTicket(agent: Agent): Promise<BN> {
         const res = await this.assetManager.convertDustToTicket(agent.agentVault.address);
         const dustChangedEvent = requiredEventArgs(res, 'DustChanged');
         assert.equal(dustChangedEvent.agentVault, agent.agentVault.address);

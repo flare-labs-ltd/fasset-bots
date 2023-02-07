@@ -47,7 +47,7 @@ describe("Agent unit tests", async () => {
 
     afterEach(function () {
         chai.spy.restore(Agent);
-    })
+    });
 
     it("Should create agent", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
@@ -114,7 +114,7 @@ describe("Agent unit tests", async () => {
 
     it("Should perform and confirm top up", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent, 'confirmTopupPayment');
+        const spy = chai.spy.on(agent.assetManager, 'confirmTopupPayment');
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.confirmTopupPayment(tx);
@@ -187,7 +187,7 @@ describe("Agent unit tests", async () => {
 
     it("Should unstick minting", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent, 'unstickMinting');
+        const spy = chai.spy.on(agent.assetManager, 'unstickMinting');
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
@@ -216,7 +216,7 @@ describe("Agent unit tests", async () => {
 
     it("Should mint, redeem and confirm active redemption payment", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent, 'confirmActiveRedemptionPayment');
+        const spy = chai.spy.on(agent.assetManager, 'confirmRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
@@ -270,7 +270,7 @@ describe("Agent unit tests", async () => {
 
     it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent, 'confirmDefaultedRedemptionPayment');
+        const spy = chai.spy.on(agent.assetManager, 'confirmRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);

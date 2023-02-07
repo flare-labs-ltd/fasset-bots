@@ -23,14 +23,14 @@ export class Minter {
         return this.context.attestationProvider;
     }
 
-    static async createTest(ctx: IAssetContext, address: string, underlyingAddress: string, underlyingBalance: BN) {
+    static async createTest(ctx: IAssetContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
         if (!(ctx.chain instanceof MockChain)) fail("only for mock chains");
         ctx.chain.mint(underlyingAddress, underlyingBalance);
         const wallet = new MockChainWallet(ctx.chain);
         return Minter.create(ctx, address, underlyingAddress, wallet);
     }
 
-    static async create(ctx: IAssetContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet) {
+    static async create(ctx: IAssetContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet): Promise<Minter> {
         return new Minter(ctx, address, underlyingAddress, wallet);
     }
 
@@ -41,7 +41,7 @@ export class Minter {
         return requiredEventArgs(res, 'CollateralReserved');
     }
 
-    async performMintingPayment(crt: EventArgs<CollateralReserved>) {
+    async performMintingPayment(crt: EventArgs<CollateralReserved>): Promise<string> {
         const paymentAmount = crt.valueUBA.add(crt.feeUBA);
         return this.performPayment(crt.paymentAddress, paymentAmount, crt.paymentReference);
     }
@@ -52,11 +52,11 @@ export class Minter {
         return requiredEventArgs(res, 'MintingExecuted');
     }
 
-    async getCollateralReservationFee(lots: BNish) {
+    async getCollateralReservationFee(lots: BNish): Promise<BN> {
         return await this.assetManager.collateralReservationFee(lots);
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null) {
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
     }
 }

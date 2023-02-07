@@ -12,27 +12,27 @@ export namespace PaymentReference {
     export const SELF_MINT = toBN('0x4642505266410012').shln(TYPE_SHIFT);
     export const ADDRESS_OWNERSHIP = toBN('0x4642505266410013').shln(TYPE_SHIFT);
 
-    export function minting(id: BNish) {
+    export function minting(id: BNish): string {
         return toHex(toBN(id).or(MINTING), 32);
     }
 
-    export function redemption(id: BNish) {
+    export function redemption(id: BNish): string {
         return toHex(toBN(id).or(REDEMPTION), 32);
     }
 
-    export function announcedWithdrawal(id: BNish) {
+    export function announcedWithdrawal(id: BNish): string {
         return toHex(toBN(id).or(ANNOUNCED_WITHDRAWAL), 32);
     }
 
-    export function topup(address: string) {
+    export function topup(address: string): string {
         return toHex(toBN(address).or(TOPUP), 32);
     }
 
-    export function selfMint(address: string) {
+    export function selfMint(address: string): string {
         return toHex(toBN(address).or(SELF_MINT), 32);
     }
 
-    export function addressOwnership(address: string) {
+    export function addressOwnership(address: string): string {
         return toHex(toBN(address).or(ADDRESS_OWNERSHIP), 32);
     }
 

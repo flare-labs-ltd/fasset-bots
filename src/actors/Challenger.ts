@@ -7,7 +7,7 @@ import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgent } from "../state/TrackedAgent";
 import { TrackedState } from "../state/TrackedState";
-import { AttestationClientError } from "../underlying-chain/AttestationHelper";
+import { AttestationClientError, ProvedDH } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { EventScope } from "../utils/events/ScopedEvents";
@@ -16,6 +16,7 @@ import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { getOrCreate, sleep, sumBN, systemTimestamp, toBN } from "../utils/helpers";
 import { web3 } from "../utils/web3";
+import { DHBalanceDecreasingTransaction } from "../verification/generated/attestation-hash-types";
 import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
@@ -34,7 +35,7 @@ export class Challenger {
     challengedAgents = new Set<string>();
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager });
 
-    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState) {
+    static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState): Promise<Challenger> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const challengerEntity = new ActorEntity();
@@ -49,15 +50,15 @@ export class Challenger {
         });
     }
 
-    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity, state: TrackedState) {
+    static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, challengerEntity: ActorEntity, state: TrackedState): Promise<Challenger> {
         return new Challenger(runner, context, challengerEntity.address, state);
     }
 
-    async runStep(em: EM) {
+    async runStep(em: EM): Promise<void> {
         await this.registerEvents(em);
     }
 
-    async registerEvents(rootEm: EM) {
+    async registerEvents(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             // Underlying chain events
             const challengerEnt = await em.findOneOrFail(ActorEntity, { address: this.address } as FilterQuery<ActorEntity>);
@@ -151,7 +152,7 @@ export class Challenger {
     }
 
     // illegal transactions
-    async checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgent) {
+    async checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgent): Promise<void> {
         const transactionValid = PaymentReference.isValid(transaction.reference)
             && (this.isValidRedemptionReference(agent, transaction.reference) || await this.isValidAnnouncedPaymentReference(agent, transaction.reference));
         // if the challenger starts tracking later, activeRedemptions might not hold all active redemeptions,
@@ -162,7 +163,7 @@ export class Challenger {
         }
     }
 
-    async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agent: TrackedAgent) {
+    async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agent: TrackedAgent): Promise<void> {
         await this.singleChallengePerAgent(agent, async () => {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             // due to async nature of challenging (and the fact that challenger might start tracking agent later), there may be some false challenges which will be rejected
@@ -174,7 +175,7 @@ export class Challenger {
 
     // double payments
 
-    checkForDoublePayment(transaction: ITransaction, agent: TrackedAgent) {
+    checkForDoublePayment(transaction: ITransaction, agent: TrackedAgent): void {
         if (!PaymentReference.isValid(transaction.reference)) return;   // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
@@ -184,7 +185,7 @@ export class Challenger {
         }
     }
 
-    async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agent: TrackedAgent) {
+    async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agent: TrackedAgent): Promise<void> {
         await this.singleChallengePerAgent(agent, async () => {
             const [proof1, proof2] = await Promise.all([
                 this.waitForDecreasingBalanceProof(scope, tx1hash, agent.underlyingAddress),
@@ -198,7 +199,7 @@ export class Challenger {
 
     // free balance negative
 
-    async checkForNegativeFreeBalance(agent: TrackedAgent) {
+    async checkForNegativeFreeBalance(agent: TrackedAgent): Promise<void> {
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
         // extract the spent value for each transaction
@@ -229,7 +230,7 @@ export class Challenger {
         }
     }
 
-    async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgent) {
+    async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgent): Promise<void> {
         await this.singleChallengePerAgent(agent, async () => {
             const proofs = await Promise.all(transactionHashes.map(txHash =>
                 this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
@@ -264,13 +265,13 @@ export class Challenger {
         }
     }
 
-    async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
+    async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string): Promise<ProvedDH<DHBalanceDecreasingTransaction>> {
         await this.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         return await this.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch(e => scope.exitOnExpectedError(e, [AttestationClientError]));
     }
 
-    async singleChallengePerAgent(agent: TrackedAgent, body: () => Promise<void>) {
+    async singleChallengePerAgent(agent: TrackedAgent, body: () => Promise<void>): Promise<void> {
         while (this.challengedAgents.has(agent.vaultAddress)) {
             await sleep(1);
         }

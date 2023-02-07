@@ -1,8 +1,6 @@
 import { StateConnectorMockInstance } from "../../typechain-truffle";
 import { AttestationRequest, AttestationResponse, IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { filterStackTrace, QUERY_WINDOW_SECONDS, sleep, toBN, toNumber, ZERO_BYTES32 } from "../utils/helpers";
-import { stringifyJson } from "../utils/json-bn";
-import { ILogger } from "../utils/logging";
 import { DHType } from "../verification/generated/attestation-hash-types";
 import { dataHash } from "../verification/generated/attestation-hash-utils";
 import { parseRequest } from "../verification/generated/attestation-request-parse";
@@ -47,7 +45,6 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     supportedChains: { [chainId: number]: MockChain } = {};
     rounds: string[][] = [];
     finalizedRounds: FinalizedRound[] = [];
-    logger?: ILogger;
     queryWindowSeconds = QUERY_WINDOW_SECONDS;
 
     setTimedFinalization(timedRoundSeconds: number) {
@@ -84,7 +81,6 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         // add request
         const round = this.rounds.length - 1;
         this.rounds[round].push(data);
-        this.logger?.log(`STATE CONNECTOR SUBMIT round=${round} data=${data}`);
         // auto finalize?
         if (this.finalizationType === 'auto') {
             await this.finalizeRound();
@@ -141,13 +137,6 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         }
         // add new finalized round
         this.finalizedRounds.push({ proofs, tree });
-        // log
-        if (this.logger) {
-            this.logger.log(`STATE CONNECTOR ROUND ${round} FINALIZED`);
-            for (const [data, proof] of Object.entries(proofs)) {
-                this.logger.log(`    ${data}  ${stringifyJson(proof)}`);
-            }
-        }
     }
 
     private proveRequest(requestData: string): DHProof | null {
@@ -160,7 +149,6 @@ export class MockStateConnectorClient implements IStateConnectorClient {
             if (e instanceof MockAttestationProverError) {
                 const stack = filterStackTrace(e);
                 console.error(stack);
-                this.logger?.log("!!! " + stack);
                 return null;
             }
             throw e;    // other errors not allowed

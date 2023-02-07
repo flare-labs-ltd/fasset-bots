@@ -2,8 +2,6 @@ import Web3 from "web3";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { BNish, BN_ZERO, Dict, fail, formatBN, systemTimestamp, toBN } from "../utils/helpers";
-import { stringifyJson } from "../utils/json-bn";
-import { ILogger } from "../utils/logging";
 
 export type MockTransactionOptions = TransactionOptions & { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -52,7 +50,6 @@ export class MockChain implements IBlockChain {
     requiredFee: BN = BN_ZERO;   // this much gas/fee will be used at each transaction
     estimatedGasPrice: BN = BN_ZERO;
     automine: boolean = true;
-    logger?: ILogger;
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
         const [block, ind] = this.transactionIndex[txHash] ?? [null, null];
@@ -170,9 +167,6 @@ export class MockChain implements IBlockChain {
             }
             const negative = Object.entries(changedBalances).filter(([address, value]) => value.isNeg());
             if (negative.length > 0) {
-                for (const [address, value] of negative) {
-                    this.logger?.log(`!!! Mock chain: transaction ${transaction.hash} makes balance of ${address} negative`);
-                }
                 transaction.status = TX_FAILED;
             } else {
                 // update balances
@@ -189,46 +183,6 @@ export class MockChain implements IBlockChain {
         const hash = Web3.utils.keccak256(JSON.stringify({ number, timestamp, transactions: transactions.map(tx => tx.hash) }));
         this.blocks.push({ hash, number, timestamp, transactions });
         this.blockIndex[hash] = number;
-        // log
-        if (this.logger && transactions.length > 0) {
-            this.logger.log(`MINED UNDERLYING BLOCK ${number}  hash=${hash}`);
-            for (const transaction of transactions) {
-                if (transaction.inputs.length === 1 && transaction.outputs.length === 1) {
-                    const [from, sent] = transaction.inputs[0];
-                    const [to, received] = transaction.outputs[0];
-                    this.logger.log(`    simple transaction from=${from} to=${to} amount=${formatBN(received)} gas=${formatBN(sent.sub(received))} reference=${transaction.reference} status=${transaction.status} hash=${transaction.hash}`);
-                } else {
-                    this.logger.log(`    transaction ${stringifyJson(transaction)}`);
-                }
-            }
-        }
-    }
-
-    private filterMatches(filter: Dict<string>, transaction: MockChainTransaction) {
-        for (const [key, value] of Object.entries(filter)) {
-            switch (key) {
-                case 'hash': {
-                    if (transaction.hash !== value) return false;
-                    break;
-                }
-                case 'reference': {
-                    if (transaction.reference !== value) return false;
-                    break;
-                }
-                case 'from': {
-                    const match = transaction.inputs.some(([address, _]) => address === value);
-                    if (!match) return false;
-                    break;
-                }
-                case 'to': {
-                    const match = transaction.outputs.some(([address, _]) => address === value);
-                    if (!match) return false;
-                    break;
-                }
-                default: throw new Error(`Invalid transaction filter ${key}`);
-            }
-        }
-        return true;
     }
 
     private newBlockTimestamp() {

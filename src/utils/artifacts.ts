@@ -15,7 +15,7 @@ class ArtifactsImpl {
     artifactMap?: Map<string, ArtifactData>;
     web3?: Web3;
 
-    loadArtifactMap() {
+    loadArtifactMap(): void {
         this.artifactMap = new Map();
         const paths = glob.sync("artifacts/**/*.json");
         for (const path of paths) {
@@ -34,7 +34,7 @@ class ArtifactsImpl {
         return contract;
     }
 
-    require(name: string) {
+    require(name: string): ArtifactData {
         if (this.artifactMap == null) {
             this.loadArtifactMap();
         }
@@ -48,7 +48,7 @@ class ArtifactsImpl {
         return artifactData.contract;
     }
 
-    updateWeb3(web3: Web3) {
+    updateWeb3(web3: Web3): void {
         this.web3 = web3;
         if (this.artifactMap) {
             for (const artifact of this.artifactMap.values()) {
@@ -59,7 +59,7 @@ class ArtifactsImpl {
         }
     }
 
-    private updateContractWeb3(contract: any) {
+    private updateContractWeb3(contract: any): void {
         if (this.web3?.currentProvider != null) {
             contract.setProvider(this.web3.currentProvider);
             contract.setWallet(this.web3.eth.accounts.wallet);
@@ -76,6 +76,6 @@ interface ArtifactsWithUpdate extends Truffle.Artifacts {
 
 export const artifacts: ArtifactsWithUpdate = createArtifacts();
 
-function createArtifacts() {
+function createArtifacts(): ArtifactsWithUpdate {
     return (global as any).artifacts ?? new ArtifactsImpl();
 }

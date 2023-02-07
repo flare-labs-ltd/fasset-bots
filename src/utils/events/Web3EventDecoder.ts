@@ -1,15 +1,14 @@
 import { isNotNull, toBN } from "../helpers";
-import { EventFormatter } from "./EventFormatter";
 import { EvmEvent } from "./common";
 import { web3 } from "../web3";
 
 export declare type RawEvent = import("web3-core").Log;
 
-export class Web3EventDecoder extends EventFormatter {
+export class Web3EventDecoder {
     public eventTypes = new Map<string, AbiItem>(); // signature (topic[0]) => type
+    public contractNames = new Map<string, string>(); // address => name
 
     constructor(contracts: { [name: string]: Truffle.ContractInstance; }, filter?: string[]) {
-        super();
         this.addContracts(contracts, filter);
     }
 

@@ -1,4 +1,5 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -78,18 +79,18 @@ describe("Agent bot runner tests", async () => {
         contexts.set(context.chainInfo.chainId, context);
         const loopDelay = 2;
         const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
-        const spy = chai.spy.on(agentBotRunner, 'runStep');
+        const spy = chai.spy.on(AgentBot, 'fromEntity');
         await agentBotRunner.createMissingAgents(ownerAddress);
         await agentBotRunner.runStep();
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should run agent bot runner step 2", async () => {
+    it("Should run agent bot runner step - invalid source id", async () => {
         const contexts: Map<number, IAssetBotContext> = new Map();
         contexts.set(context.chainInfo.chainId, context);
         const loopDelay = 2;
         const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
-        const spy = chai.spy.on(agentBotRunner, 'runStep');
+        const spy = chai.spy.on(console, 'warn');
         await agentBotRunner.createMissingAgents(ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress, active: true } as FilterQuery<AgentEntity>);
         agentEnt.chainId = SourceId.BTC;

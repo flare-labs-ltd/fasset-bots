@@ -45,7 +45,7 @@ export class TrackedAgent {
         return BN.max(ratio, ratioFromTrusted);
     }
 
-    private collateralRatioForPriceBIPS(prices: Prices, agentInfo: AgentInfo, settings: AssetManagerSettings) {
+    private collateralRatioForPriceBIPS(prices: Prices, agentInfo: AgentInfo, settings: AssetManagerSettings): BN {
         const totalUBA = toBN(agentInfo.reservedUBA).add(toBN(agentInfo.mintedUBA)).add(toBN(agentInfo.redeemingUBA));
         if (totalUBA.isZero()) return MAX_UINT256;
         const backingCollateral = convertUBAToNATWei(settings, totalUBA, prices.amgNatWei);

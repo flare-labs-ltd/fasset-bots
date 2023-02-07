@@ -38,7 +38,7 @@ export class AgentBot {
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
-    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string) {
+    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string): Promise<AgentBot> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -59,26 +59,26 @@ export class AgentBot {
         });
     }
 
-    static async proveEOAaddress(context: IAssetBotContext, underlyingAddress: string, ownerAddress: string) {
+    static async proveEOAaddress(context: IAssetBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
         await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
 
-    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity) {
+    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
         return new AgentBot(agent);
     }
 
-    async runStep(rootEm: EM) {
+    async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
         await this.handleOpenRedemptions(rootEm);
     }
 
-    async handleEvents(rootEm: EM) {
+    async handleEvents(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const events = await this.readUnhandledEvents(em);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
@@ -153,7 +153,7 @@ export class AgentBot {
         return events;
     }
 
-    mintingStarted(em: EM, request: EventArgs<CollateralReserved>) {
+    mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
         em.create(AgentMinting, {
             state: AgentMintingState.STARTED,
             agentAddress: this.agent.vaultAddress,
@@ -167,19 +167,19 @@ export class AgentBot {
         } as RequiredEntityData<AgentMinting>, { persist: true });
     }
 
-    async findMinting(em: EM, requestId: BN) {
+    async findMinting(em: EM, requestId: BN): Promise<AgentMinting> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
     }
 
-    async handleOpenMintings(rootEm: EM) {
+    async handleOpenMintings(rootEm: EM): Promise<void> {
         const openMintings = await this.openMintings(rootEm, true);
         for (const rd of openMintings) {
             await this.nextMintingStep(rootEm, rd.id);
         }
     }
 
-    async openMintings(em: EM, onlyIds: boolean) {
+    async openMintings(em: EM, onlyIds: boolean): Promise<AgentMinting[]> {
         let query = em.createQueryBuilder(AgentMinting);
         if (onlyIds) query = query.select('id');
         return await query.where({ agentAddress: this.agent.vaultAddress })
@@ -187,12 +187,12 @@ export class AgentBot {
             .getResultList();
     }
 
-    async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>) {
+    async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>): Promise<void> {
         const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = AgentMintingState.DONE;
     }
 
-    async nextMintingStep(rootEm: EM, id: number) {
+    async nextMintingStep(rootEm: EM, id: number): Promise<void> {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
             switch (minting.state) {
@@ -213,7 +213,7 @@ export class AgentBot {
         });
     }
 
-    async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting) {
+    async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
         // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
@@ -241,7 +241,7 @@ export class AgentBot {
         }
     }
 
-    async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string) {
+    async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
         minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
         minting.proofRequestRound = request.round;
@@ -249,7 +249,7 @@ export class AgentBot {
         this.notifier.sendMintingCornerCase(minting.requestId.toString());
     }
 
-    async requestNonPaymentProofForMinting(minting: AgentMinting) {
+    async requestNonPaymentProofForMinting(minting: AgentMinting): Promise<void> {
         const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
             minting.agentUnderlyingAddress,
             minting.paymentReference,
@@ -261,7 +261,7 @@ export class AgentBot {
         minting.proofRequestData = request.data;
     }
 
-    async checkNonPayment(minting: AgentMinting) {
+    async checkNonPayment(minting: AgentMinting): Promise<void> {
         const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
@@ -273,7 +273,7 @@ export class AgentBot {
         }
     }
 
-    async checkPaymentAndExecuteMinting(minting: AgentMinting) {
+    async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
         const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
@@ -285,7 +285,7 @@ export class AgentBot {
         }
     }
 
-    redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>) {
+    redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>): void {
         em.create(AgentRedemption, {
             state: AgentRedemptionState.STARTED,
             agentAddress: this.agent.vaultAddress,
@@ -299,24 +299,24 @@ export class AgentBot {
         } as RequiredEntityData<AgentRedemption>, { persist: true });
     }
 
-    async redemptionFinished(em: EM, request: EventArgs<RedemptionDefault>) {
+    async redemptionFinished(em: EM, request: EventArgs<RedemptionDefault>): Promise<void> {
         const redemption = await this.findRedemption(em, request.requestId);
         redemption.state = AgentRedemptionState.DONE;
     }
 
-    async findRedemption(em: EM, requestId: BN) {
+    async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
     }
 
-    async handleOpenRedemptions(rootEm: EM) {
+    async handleOpenRedemptions(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         for (const rd of openRedemptions) {
             await this.nextRedemptionStep(rootEm, rd.id);
         }
     }
 
-    async openRedemptions(em: EM, onlyIds: boolean) {
+    async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
         let query = em.createQueryBuilder(AgentRedemption);
         if (onlyIds) query = query.select('id');
         return await query.where({ agentAddress: this.agent.vaultAddress })
@@ -324,7 +324,7 @@ export class AgentBot {
             .getResultList();
     }
 
-    async nextRedemptionStep(rootEm: EM, id: number) {
+    async nextRedemptionStep(rootEm: EM, id: number): Promise<void> {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
             switch (redemption.state) {
@@ -345,7 +345,7 @@ export class AgentBot {
         });
     }
 
-    async payForRedemption(redemption: AgentRedemption) {
+    async payForRedemption(redemption: AgentRedemption): Promise<void> {
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
@@ -359,7 +359,7 @@ export class AgentBot {
         }
     }
 
-    async checkPaymentProofAvailable(redemption: AgentRedemption) {
+    async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
         // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
@@ -375,14 +375,14 @@ export class AgentBot {
         }
     }
 
-    async requestPaymentProof(redemption: AgentRedemption) {
+    async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
         redemption.state = AgentRedemptionState.REQUESTED_PROOF;
         redemption.proofRequestRound = request.round;
         redemption.proofRequestData = request.data;
     }
 
-    async checkConfirmPayment(redemption: AgentRedemption) {
+    async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
         const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
@@ -404,12 +404,12 @@ export class AgentBot {
         return null;
     }
 
-    async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>) {
+    async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>): Promise<void> {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
     }
 
-    async checkUnderlyingBalance(agentVault: string) {
+    async checkUnderlyingBalance(agentVault: string): Promise<void> {
         const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
         const estimatedFee = toBN(await this.context.chain.getTransactionFee());
         if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
@@ -418,7 +418,7 @@ export class AgentBot {
     }
 
 
-    async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN) {
+    async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
         const ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
         try {
             const txHash = await this.agent.performTopupPayment(amount, ownerUnderlyingAddress);
@@ -435,7 +435,7 @@ export class AgentBot {
     }
 
     // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
-    async checkAgentForCollateralRatioAndTopUp() {
+    async checkAgentForCollateralRatioAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
         const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);

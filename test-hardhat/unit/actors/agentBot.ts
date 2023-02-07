@@ -43,6 +43,10 @@ describe("Agent bot unit tests", async () => {
         ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
     });
 
+    afterEach(function () {
+        chai.spy.restore(console);
+    });
+
     it("Should create agent bot", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
@@ -58,7 +62,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should top up collateral", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
+        const spy = chai.spy.on(agentBot, 'requiredTopUp');
         await agentBot.checkAgentForCollateralRatioAndTopUp();
         expect(spy).to.have.been.called.once;
     });
@@ -67,7 +71,7 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
         const ownerAmount = 100;
         context.chain.mint(ownerUnderlyingAddress, ownerAmount);
-        const spy = chai.spy.on(agentBot, 'underlyingTopUp');
+        const spy = chai.spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalanceFailed');
         const topUpAmount = 420;
         await agentBot.underlyingTopUp(toBN(topUpAmount), agentBot.agent.vaultAddress, toBN(1));
         expect(spy).to.have.been.called.once;
@@ -75,15 +79,17 @@ describe("Agent bot unit tests", async () => {
 
     it("Should top up underlying", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const spy = chai.spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalance');
+        const spy2 = chai.spy.on(agentBot.notifier, 'sendLowBalanceOnUnderlyingOwnersAddress');
         const ownerAmount = 100;
         context.chain.mint(ownerUnderlyingAddress, ownerAmount);
-        const spy = chai.spy.on(agentBot, 'underlyingTopUp');
         await agentBot.underlyingTopUp(toBN(ownerAmount), agentBot.agent.vaultAddress, toBN(1));
         expect(spy).to.have.been.called.once;
+        expect(spy2).to.have.been.called.once;
     });
 
     it("Should prove EOA address", async () => {
-        const spy = chai.spy.on(AgentBot, 'create');
+        const spy = chai.spy.on(AgentBot, 'proveEOAaddress');
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true, true);
         await AgentBot.create(orm.em, context, ownerAddress);
         expect(spy).to.have.been.called.once;
@@ -91,7 +97,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not do next redemption step due to invalid redemption state", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'nextRedemptionStep');
+        const spy = chai.spy.on(console, 'error');
         // create redemption with invalid state
         const rd = orm.em.create(AgentRedemption, {
             state: 'invalid' as AgentRedemptionState,
@@ -112,7 +118,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not do next minting step due to invalid minting state", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'nextMintingStep');
+        const spy = chai.spy.on(console, 'error');
         // create minting with invalid state
         const mt = orm.em.create(AgentMinting, {
             state: 'invalid' as AgentMintingState,
@@ -165,7 +171,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 1 - not finalized", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkNonPayment');
+        const spy = chai.spy.on(agentBot.context.attestationProvider, 'obtainReferencedPaymentNonexistenceProof');
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
@@ -186,7 +192,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 2 - not finalized", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkPaymentAndExecuteMinting');
+        const spy = chai.spy.on(agentBot.context.attestationProvider, 'obtainPaymentProof');
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_PAYMENT_PROOF,
@@ -207,7 +213,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 3 - not finalized", async () => {
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkConfirmPayment');
+        const spy = chai.spy.on(agentBot.context.attestationProvider, 'obtainPaymentProof');
         // create redemption
         const rd = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.REQUESTED_PROOF,
@@ -226,10 +232,10 @@ describe("Agent bot unit tests", async () => {
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should not receive proof 1 - not proof", async () => {
+    it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkNonPayment');
+        const spy = chai.spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
@@ -248,10 +254,10 @@ describe("Agent bot unit tests", async () => {
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should not receive proof 2 - not proof", async () => {
+    it("Should not receive proof 2 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkPaymentAndExecuteMinting');
+        const spy = chai.spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_PAYMENT_PROOF,
@@ -270,10 +276,10 @@ describe("Agent bot unit tests", async () => {
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should not receive proof 3 - not proof", async () => {
+    it("Should not receive proof 3 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
         const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
-        const spy = chai.spy.on(agentBot, 'checkConfirmPayment');
+        const spy = chai.spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create redemption
         const rd = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.REQUESTED_PROOF,

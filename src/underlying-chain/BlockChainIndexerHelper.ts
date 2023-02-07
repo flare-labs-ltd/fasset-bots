@@ -144,7 +144,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return txs;
     }
 
-    async getTransactionsWithinTimestampRange(from: number, to: number) {
+    async getTransactionsWithinTimestampRange(from: number, to: number): Promise<ITransaction[]> {
         const chain = getSourceName(this.sourceId);
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/from/${from}/to/${to}`);
         const status = resp.data.status;
@@ -199,7 +199,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return transactionIds;
     }
 
-    private get isUTXOchain() {
+    private get isUTXOchain(): boolean {
         return getSourceName(this.sourceId) === "BTC" ||
             getSourceName(this.sourceId) === "DOGE" ||
             getSourceName(this.sourceId) === "LTC";
@@ -318,13 +318,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return TX_FAILED;
     }
 
-    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number) {
+    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);
         if (transaction == null) return null;
         return transaction;
     }
 
-    private async waitForUnderlyingTransaction(txHash: string, maxBlocksToWaitForTx?: number) {
+    private async waitForUnderlyingTransaction(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         const transaction = await this.getTransaction(txHash);
         if (transaction != null) return transaction;
         let currentBlockHeight = await this.getBlockHeight();

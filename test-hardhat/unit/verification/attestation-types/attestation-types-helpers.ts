@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { toBN } from "../../../../src/utils/helpers";
 import { NumberLike, SupportedSolidityType } from "../../../../src/verification/attestation-types/attestation-types";
-import { numberLikeToNumber, prefix0x, randomListElement, randSol, tsTypeForSolidityType, toHex, hexlifyBN } from "../../../../src/verification/attestation-types/attestation-types-helpers";
+import { numberLikeToNumber, prefix0x, randSol, tsTypeForSolidityType, toHex, hexlifyBN } from "../../../../src/verification/attestation-types/attestation-types-helpers";
 
 describe("Attestation types helper unit tests", () => {
 
@@ -56,13 +56,6 @@ describe("Attestation types helper unit tests", () => {
         const expected2 = undefined;
         expect(numberLikeToNumber(undefined as unknown as NumberLike)).to.eq(expected2);
         expect(numberLikeToNumber(null as unknown as NumberLike)).to.eq(expected2);
-    });
-
-    it("Should return random list element", () => {
-        const array = [1, 2, 3];
-        expect(array.includes(randomListElement([1, 2, 3]))).to.be.true;
-        expect(typeof randomListElement([]) === 'undefined').to.be.true;
-
     });
 
     it("Should return hex", () => {

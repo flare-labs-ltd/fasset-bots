@@ -10,14 +10,14 @@ export class TrackedState {
     agents: Map<string, TrackedAgent> = new Map();                // map agent_address => tracked agent
     agentsByUnderlying: Map<string, TrackedAgent> = new Map();    // map underlying_address => tracked agent
 
-    createAgent(args: EventArgs<AgentCreated>) {
+    createAgent(args: EventArgs<AgentCreated>): TrackedAgent {
         const agent = new TrackedAgent(args.agentVault, args.owner, args.underlyingAddress);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
         return agent;
     }
 
-    destroyAgent(args: EventArgs<AgentDestroyed>) {
+    destroyAgent(args: EventArgs<AgentDestroyed>): void {
         const agent = this.getAgent(args.agentVault);
         if (agent) {
             this.agents.delete(args.agentVault);

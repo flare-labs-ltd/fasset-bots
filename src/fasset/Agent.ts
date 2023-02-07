@@ -2,9 +2,10 @@ import { AgentVaultInstance } from "../../typechain-truffle";
 import { CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { artifacts } from "../utils/artifacts";
-import { EventArgs } from "../utils/events/common";
+import { EventArgs, ExtractedEventArgs } from "../utils/events/common";
 import { checkEventNotEmited, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
+import { AgentInfo } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 
@@ -35,7 +36,7 @@ export class Agent {
         return this.context.wallet;
     }
 
-    static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string) {
+    static async create(ctx: IAssetContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
         // create agent
         const response = await ctx.assetManager.createAgent(underlyingAddress, { from: ownerAddress });
         // extract agent vault address from AgentCreated event
@@ -46,7 +47,7 @@ export class Agent {
         return new Agent(ctx, ownerAddress, agentVault, underlyingAddress);
     }
 
-    async depositCollateral(amountNATWei: BNish) {
+    async depositCollateral(amountNATWei: BNish): Promise<void> {
         await this.agentVault.deposit({ from: this.ownerAddress, value: toBN(amountNATWei) });
     }
 
@@ -60,7 +61,7 @@ export class Agent {
         return requiredEventArgs(res, 'AvailableAgentExited');
     }
 
-    async announceCollateralWithdrawal(amountNATWei: BNish) {
+    async announceCollateralWithdrawal(amountNATWei: BNish): Promise<void> {
         await this.assetManager.announceCollateralWithdrawal(this.vaultAddress, amountNATWei, { from: this.ownerAddress });
     }
 
@@ -68,7 +69,7 @@ export class Agent {
         return await this.agentVault.withdraw(amountNATWei, { from: this.ownerAddress });
     }
 
-    async announceDestroy() {
+    async announceDestroy(): Promise<void> {
         await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
     }
 
@@ -77,11 +78,11 @@ export class Agent {
         return requiredEventArgs(res, 'AgentDestroyed');
     }
 
-    async performTopupPayment(amount: BNish, underlyingAddress: string) {
+    async performTopupPayment(amount: BNish, underlyingAddress: string): Promise<string> {
         return await this.wallet.addTransaction(underlyingAddress, this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address));
     }
 
-    async confirmTopupPayment(transactionHash: string) {
+    async confirmTopupPayment(transactionHash: string): Promise<void> {
         const proof = await this.attestationProvider.provePayment(transactionHash, null, this.underlyingAddress);
         await this.assetManager.confirmTopupPayment(proof, this.agentVault.address, { from: this.ownerAddress });
     }
@@ -91,7 +92,7 @@ export class Agent {
         return requiredEventArgs(res, 'UnderlyingWithdrawalAnnounced');
     }
 
-    async performUnderlyingWithdrawal(request: EventArgs<UnderlyingWithdrawalAnnounced>, amount: BNish, underlyingAddress: string = "someAddress") {
+    async performUnderlyingWithdrawal(request: EventArgs<UnderlyingWithdrawalAnnounced>, amount: BNish, underlyingAddress: string = "someAddress"): Promise<string> {
         return await this.wallet.addTransaction(this.underlyingAddress, underlyingAddress, amount, request.paymentReference);
     }
 
@@ -106,7 +107,7 @@ export class Agent {
         return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
     }
 
-    async performRedemptionPayment(request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee) {
+    async performRedemptionPayment(request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee): Promise<string> {
         const paymentAmount = request.valueUBA.sub(request.feeUBA);
         return await this.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
     }
@@ -179,7 +180,7 @@ export class Agent {
         return requiredEventArgs(res, 'MintingPaymentDefault');
     }
 
-    async unstickMinting(crt: EventArgs<CollateralReserved>) {
+    async unstickMinting(crt: EventArgs<CollateralReserved>): Promise<void> {
         const proof = await this.attestationProvider.proveConfirmedBlockHeightExists();
         await this.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: this.ownerAddress });
     }
@@ -196,7 +197,7 @@ export class Agent {
         return requiredEventArgs(res, 'SelfClose');
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee) {
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee): Promise<string> {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
     }
 
@@ -205,11 +206,11 @@ export class Agent {
         return eventArgs(res, 'LiquidationEnded');
     }
 
-    async buybackAgentCollateral() {
+    async buybackAgentCollateral(): Promise<void> {
         await this.assetManager.buybackAgentCollateral(this.agentVault.address, { from: this.ownerAddress });
     }
 
-    async getAgentInfo() {
+    async getAgentInfo(): Promise<AgentInfo> {
         return await this.context.assetManager.getAgentInfo(this.agentVault.address);
     }
 }

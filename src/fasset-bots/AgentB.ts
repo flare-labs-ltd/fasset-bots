@@ -16,7 +16,7 @@ export class AgentB extends Agent {
         super(context, ownerAddress, agentVault, underlyingAddress);
     }
 
-    static async create(ctx: IAssetBotContext, ownerAddress: string, underlyingAddress: string) {
+    static async create(ctx: IAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
         // create agent
         const response = await ctx.assetManager.createAgent(underlyingAddress, { from: ownerAddress });
         // extract agent vault address from AgentCreated event

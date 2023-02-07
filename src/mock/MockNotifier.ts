@@ -74,11 +74,11 @@ export class MockNotifier {
         this.send(COLLATERAL_TOP_UP_FAILED_ALERT, `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`);
     }
 
-    sendLowUnderlyingAgentBalance(agentVault: string, freeUnderlyingBalanceUBA: string) {
+    sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string) {
         this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`);
     }
 
-    sendLowUnderlyingAgentBalanceFailed(agentVault: string, amount: string) {
+    sendLowUnderlyingAgentBalance(agentVault: string, amount: string) {
         this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} was automatically topped up with underlying ${amount}.`);
     }
 

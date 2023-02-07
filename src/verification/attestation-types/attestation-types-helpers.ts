@@ -72,46 +72,6 @@ export function numberLikeToNumber(n: NumberLike): number | undefined {
   return n as number;
 }
 
-export function randomListElement<T>(list: T[]) {
-  let randN = Math.floor(Math.random() * list.length);
-  return list[randN];
-}
-
-export function randomWeightedChoice<T>(choices: WeightedRandomChoice<T>[]): T {
-  let weightSum = choices.map(choice => choice.weight).reduce((a, b) => a + b);
-  let randSum = Math.floor(Math.random() * (weightSum + 1));
-  let tmpSum = 0;
-  for (let choice of choices) {
-    tmpSum += choice.weight;
-    if (tmpSum >= randSum) return choice.name;
-  }
-  return choices[choices.length - 1].name;
-}
-
-
-export async function getAttTypesDefinitionFiles(): Promise<string[]> {
-
-  const pattern = `t-*.${process.env.NODE_ENV === "development" ? "ts" : "js"}`;
-
-  return new Promise((resolve, reject) => {
-    glob(pattern, { cwd: ATT_TYPE_DEFINITIONS_ROOT }, (er: any, files: string[] | null) => {
-      if (er) {
-        reject(er);
-      } else {
-        if (files) {
-          files.sort();
-        }
-        resolve(files || []);
-      }
-    });
-  });
-}
-
-export async function readAttestationTypeSchemes(): Promise<AttestationTypeScheme[]> {
-  let names = await getAttTypesDefinitionFiles();
-  return names.map(name => require(`../attestation-types/${name}`).TDEF as AttestationTypeScheme)
-}
-
 export function toHex(x: string | number | BN, padToBytes?: number) {
   if (padToBytes as any > 0) {
     return Web3.utils.leftPad(Web3.utils.toHex(x), padToBytes! * 2);
