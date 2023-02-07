@@ -1,6 +1,6 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
-import { LiquidationTrigger } from "../../../src/actors/LiquidationTrigger";
+import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { ORM } from "../../../src/config/orm";
 import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
@@ -13,10 +13,10 @@ import { testChainInfo } from "../../../test/utils/TestChainInfo";
 import { createTestAssetContext } from "../../utils/test-asset-context";
 
 
-describe("Liquidation trigger unit tests", async () => {
+describe("System keeper unit tests", async () => {
     let accounts: string[];
     let context: IAssetBotContext;
-    let liquidationTriggerAddress: string;
+    let systemKeeperAddress: string;
     let orm: ORM;
     let runner: ScopedRunner;
     let state: TrackedState;
@@ -29,20 +29,20 @@ describe("Liquidation trigger unit tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        liquidationTriggerAddress = accounts[10];
+        systemKeeperAddress = accounts[10];
         runner = new ScopedRunner();
         state = new TrackedState();
     });
 
-    it("Should create liquidationTrigger", async () => {
-        const liquidationTrigger = await LiquidationTrigger.create(runner, orm.em, context, liquidationTriggerAddress, state);
-        expect(liquidationTrigger.address).to.eq(liquidationTriggerAddress);
+    it("Should create system keeper", async () => {
+        const systemKeeper = await SystemKeeper.create(runner, orm.em, context, systemKeeperAddress, state);
+        expect(systemKeeper.address).to.eq(systemKeeperAddress);
     });
 
-    it("Should read liquidationTrigger from entity", async () => {
-        const liquidationTriggerEnt = await orm.em.findOneOrFail(ActorEntity, { address: liquidationTriggerAddress, type: ActorType.LIQUIDATION_TRIGGER } as FilterQuery<ActorEntity>);
-        const liquidationTrigger = await LiquidationTrigger.fromEntity(runner, context, liquidationTriggerEnt, state);
-        expect(liquidationTrigger.address).to.eq(liquidationTriggerAddress);
+    it("Should read system keeper from entity", async () => {
+        const systemKeeperEnt = await orm.em.findOneOrFail(ActorEntity, { address: systemKeeperAddress, type: ActorType.SYSTEM_KEEPER } as FilterQuery<ActorEntity>);
+        const systemKeeper = await SystemKeeper.fromEntity(runner, context, systemKeeperEnt, state);
+        expect(systemKeeper.address).to.eq(systemKeeperAddress);
     });
 
 });

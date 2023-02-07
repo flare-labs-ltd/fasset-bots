@@ -21,5 +21,6 @@ export class ActorEntity {
 
 export enum ActorType {
     CHALLENGER = 'challenger',
-    LIQUIDATION_TRIGGER = 'liquidationTrigger'
+    LIQUIDATION_TRIGGER = 'liquidationTrigger',
+    SYSTEM_KEEPER = 'systemKeeper'
 }

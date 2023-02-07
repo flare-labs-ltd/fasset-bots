@@ -15,7 +15,7 @@ import { web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentStatus } from "./AgentBot";
 
-export class LiquidationTrigger {
+export class SystemKeeper {
     constructor(
         public runner: ScopedRunner,
         public context: IAssetBotContext,
@@ -44,19 +44,19 @@ export class LiquidationTrigger {
     static async create(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState) {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
-            const liquidationTriggerEntity = new ActorEntity();
-            liquidationTriggerEntity.chainId = context.chainInfo.chainId;
-            liquidationTriggerEntity.address = address;
-            liquidationTriggerEntity.lastEventBlockHandled = lastBlock;
-            liquidationTriggerEntity.type = ActorType.LIQUIDATION_TRIGGER;
-            em.persist(liquidationTriggerEntity);
-            const liquidationTrigger = new LiquidationTrigger(runner, context, address, state);
-            return liquidationTrigger;
+            const systemKeeperEntity = new ActorEntity();
+            systemKeeperEntity.chainId = context.chainInfo.chainId;
+            systemKeeperEntity.address = address;
+            systemKeeperEntity.lastEventBlockHandled = lastBlock;
+            systemKeeperEntity.type = ActorType.SYSTEM_KEEPER;
+            em.persist(systemKeeperEntity);
+            const systemKeeper = new SystemKeeper(runner, context, address, state);
+            return systemKeeper;
         });
     }
 
     static async fromEntity(runner: ScopedRunner, context: IAssetBotContext, ccbTriggerEntity: ActorEntity, state: TrackedState) {
-        return new LiquidationTrigger(runner, context, ccbTriggerEntity.address, state);
+        return new SystemKeeper(runner, context, ccbTriggerEntity.address, state);
     }
 
     async runStep(em: EM) {
@@ -65,7 +65,7 @@ export class LiquidationTrigger {
 
     async registerEvents(rootEm: EM) {
         await rootEm.transactional(async em => {
-            const liquidatorEnt = await em.findOneOrFail(ActorEntity, { address: this.address, type: ActorType.LIQUIDATION_TRIGGER } as FilterQuery<ActorEntity>);
+            const liquidatorEnt = await em.findOneOrFail(ActorEntity, { address: this.address, type: ActorType.SYSTEM_KEEPER } as FilterQuery<ActorEntity>);
             // Native chain events
             const events = await this.readUnhandledEvents(liquidatorEnt);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
