@@ -89,7 +89,7 @@ export class Challenger {
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    this.state.createAgent(event.args);
+                    this.state.createAgent(event.args.agentVault, event.args.owner, event.args.underlyingAddress);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.state.destroyAgent(event.args);
                 }

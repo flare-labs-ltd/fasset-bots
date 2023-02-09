@@ -78,18 +78,23 @@ export class SystemKeeper {
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     await this.handleMintingExecuted(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    this.state.createAgent(event.args);
+                    this.state.createAgent(event.args.agentVault, event.args.owner, event.args.underlyingAddress);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.state.destroyAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
+                    await this.state.createAgentWithCurrentState(event.args.agentVault, this.context);
                     this.handleStatusChange(AgentStatus.CCB, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
+                    await this.state.createAgentWithCurrentState(event.args.agentVault, this.context);
                     this.handleStatusChange(AgentStatus.LIQUIDATION, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'FullLiquidationStarted')) {
+                    await this.state.createAgentWithCurrentState(event.args.agentVault, this.context);
                     this.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationEnded')) {
+                    await this.state.createAgentWithCurrentState(event.args.agentVault, this.context);
                     this.handleStatusChange(AgentStatus.NORMAL, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyAnnounced')) {
+                    await this.state.createAgentWithCurrentState(event.args.agentVault, this.context);
                     this.handleStatusChange(AgentStatus.DESTROYING, event.args.agentVault, event.args.timestamp);
                 }
             }
