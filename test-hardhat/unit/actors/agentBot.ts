@@ -20,8 +20,6 @@ describe("Agent bot unit tests", async () => {
     let orm: ORM;
     let ownerAddress: string;
     let ownerUnderlyingAddress: string;
-    let minterAddress: string;
-    let redeemerAddress: string;
     let chain: MockChain;
 
     before(async () => {
@@ -38,8 +36,6 @@ describe("Agent bot unit tests", async () => {
         chain.secondsPerBlock = 1;
         // accounts
         ownerAddress = accounts[3];
-        minterAddress = accounts[4];
-        redeemerAddress = accounts[5];
         ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
     });
 

@@ -27,7 +27,7 @@ export async function updateSchema(orm: ORM, update: SchemaUpdate): Promise<void
     if (update == 'recreate') {
         await generator.dropSchema();
         await generator.updateSchema();
-    } else if (update) {
+    } else {
         await generator.updateSchema({ safe: update === 'safe' });
     }
 }
