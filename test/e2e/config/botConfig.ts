@@ -43,10 +43,11 @@ describe("Bot config tests", async () => {
         expect(ltc.chainType).to.eq(SourceId.LTC);
         const xrp = createWalletClient(SourceId.XRP);
         expect(xrp.chainType).to.eq(SourceId.XRP);
+        const invalidSourceId = -200;
         const fn = () => {
-            return createWalletClient(-200 as SourceId);
+            return createWalletClient(invalidSourceId as SourceId);
         };
-        expect(fn).to.throw(Error);
+        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create mcc clients", async () => {
@@ -60,10 +61,11 @@ describe("Bot config tests", async () => {
         expect(ltc.chainType).to.eq(SourceId.LTC);
         const xrp = createMccClient(SourceId.XRP);
         expect(xrp.chainType).to.eq(SourceId.XRP);
+        const invalidSourceId = -200;
         const fn = () => {
-            return createMccClient(-200 as SourceId);
+            return createMccClient(invalidSourceId as SourceId);
         };
-        expect(fn).to.throw(Error);
+        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create block chain indexer", async () => {
@@ -77,10 +79,11 @@ describe("Bot config tests", async () => {
         expect(ltc.sourceId).to.eq(SourceId.LTC);
         const xrp = createBlockChainIndexerHelper(SourceId.XRP);
         expect(xrp.sourceId).to.eq(SourceId.XRP);
+        const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainIndexerHelper(-200 as SourceId);
+            return createBlockChainIndexerHelper(invalidSourceId as SourceId);
         };
-        expect(fn).to.throw(Error);
+        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create block chain helper", async () => {
@@ -94,10 +97,11 @@ describe("Bot config tests", async () => {
         expect(ltc.walletClient.chainType).to.eq(SourceId.LTC);
         const xrp = createBlockChainHelper(SourceId.XRP);
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
+        const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainHelper(-200 as SourceId);
+            return createBlockChainHelper(invalidSourceId as SourceId);
         };
-        expect(fn).to.throw(Error);
+        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {
@@ -112,10 +116,11 @@ describe("Bot config tests", async () => {
         expect(ltc.walletClient.chainType).to.eq(SourceId.LTC);
         const xrp = createBlockChainWalletHelper(SourceId.XRP, orm.em);
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
+        const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainWalletHelper(-200 as SourceId, orm.em);
+            return createBlockChainWalletHelper(invalidSourceId as SourceId, orm.em);
         };
-        expect(fn).to.throw(Error);
+        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create attestation helper", async () => {

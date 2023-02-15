@@ -34,7 +34,7 @@ describe("web3 normalize unit tests", async () => {
         const fn2 = () => {
             return web3Normalize({});
         };
-        expect(fn1).to.throw(Error);
-        expect(fn2).to.throw(Error);
+        expect(fn1).to.throw("Unsupported object type");
+        expect(fn2).to.throw("Unsupported object type");
     });
 });

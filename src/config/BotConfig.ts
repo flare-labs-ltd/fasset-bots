@@ -195,7 +195,7 @@ export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainInd
         case SourceId.XRP:
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
         default:
-            throw new Error(`SourceId not supported ${sourceId}`)
+            throw new Error(`SourceId ${sourceId} not supported.`)
     }
 }
 
@@ -212,7 +212,7 @@ export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
         case SourceId.XRP:
             return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
         default:
-            throw new Error(`SourceId not supported ${sourceId}`)
+            throw new Error(`SourceId ${sourceId} not supported.`)
     }
 }
 
