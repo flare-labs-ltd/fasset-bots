@@ -45,7 +45,7 @@ describe("XRP blockchain tests", async () => {
     });
 
     it("Should retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock(txHash)).to.eventually.be.rejected;
+        await expect(blockChainHelper.getTransactionBlock(txHash)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
 });

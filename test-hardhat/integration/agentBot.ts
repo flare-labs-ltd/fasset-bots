@@ -20,6 +20,9 @@ const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
+var rewire = require("rewire");
+const rewiredAgentBot = rewire("../../src/actors/AgentBot");
+const rewiredAgentBotClass = rewiredAgentBot.__get__('AgentBot');
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -440,7 +443,7 @@ describe("Agent bot tests", async () => {
 
     it("Should check collateral ratio after price changes 2", async () => {
         const ownerAddress2 = accounts[30];
-        const agentBot2 = await AgentBot.create(orm.em, context, ownerAddress2);
+        const agentBot2 = await rewiredAgentBotClass.create(orm.em, context, ownerAddress2);
         await agentBot2.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot2.agent.makeAvailable(500, 25000);
         const spy = chai.spy.on(agentBot2, 'checkAgentForCollateralRatioAndTopUp');

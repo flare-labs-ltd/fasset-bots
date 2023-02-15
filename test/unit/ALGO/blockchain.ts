@@ -33,7 +33,7 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve block (hash)", async () => {
-        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejected;
+        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejectedWith("Method not implemented in ALGO.").and.be.an.instanceOf(Error);
     });
 
     it("Should retrieve block (number)", async () => {
@@ -47,7 +47,7 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock(txHash1)).to.eventually.be.rejected;
+        await expect(blockChainHelper.getTransactionBlock(txHash1)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
 });

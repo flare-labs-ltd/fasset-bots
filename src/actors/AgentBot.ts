@@ -456,7 +456,7 @@ export class AgentBot {
         }
     }
 
-    async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
+    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
         const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
         const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);

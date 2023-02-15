@@ -57,8 +57,10 @@ describe("XRP wallet tests", async () => {
 
     it("Should not send funds: fee > maxFee", async () => {
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const options = { maxFee: 8 }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejected; 
+        const maxFee = 8;
+        const fee = 10;
+        const options = { maxFee: maxFee }; // maxFee in Drops
+        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
     });
 
 });

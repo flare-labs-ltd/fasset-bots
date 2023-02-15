@@ -45,8 +45,8 @@ describe("Bot config tests", async () => {
         expect(xrp.chainType).to.eq(SourceId.XRP);
         const fn = () => {
             return createWalletClient(-200 as SourceId);
-         };
-         expect(fn).to.throw(Error);
+        };
+        expect(fn).to.throw(Error);
     });
 
     it("Should create mcc clients", async () => {
@@ -62,8 +62,8 @@ describe("Bot config tests", async () => {
         expect(xrp.chainType).to.eq(SourceId.XRP);
         const fn = () => {
             return createMccClient(-200 as SourceId);
-         };
-         expect(fn).to.throw(Error);
+        };
+        expect(fn).to.throw(Error);
     });
 
     it("Should create block chain indexer", async () => {
@@ -79,8 +79,8 @@ describe("Bot config tests", async () => {
         expect(xrp.sourceId).to.eq(SourceId.XRP);
         const fn = () => {
             return createBlockChainIndexerHelper(-200 as SourceId);
-         };
-         expect(fn).to.throw(Error);
+        };
+        expect(fn).to.throw(Error);
     });
 
     it("Should create block chain helper", async () => {
@@ -96,8 +96,8 @@ describe("Bot config tests", async () => {
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
         const fn = () => {
             return createBlockChainHelper(-200 as SourceId);
-         };
-         expect(fn).to.throw(Error);
+        };
+        expect(fn).to.throw(Error);
     });
 
     it("Should create block chain wallet helper", async () => {
@@ -114,8 +114,8 @@ describe("Bot config tests", async () => {
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
         const fn = () => {
             return createBlockChainWalletHelper(-200 as SourceId, orm.em);
-         };
-         expect(fn).to.throw(Error);
+        };
+        expect(fn).to.throw(Error);
     });
 
     it("Should create attestation helper", async () => {
@@ -130,7 +130,8 @@ describe("Bot config tests", async () => {
         expect(ltc.chainId).to.eq(SourceId.LTC);
         const xrp = await createAttestationHelper(SourceId.XRP, stateConnector);
         expect(xrp.chainId).to.eq(SourceId.XRP);
-        await expect(createAttestationHelper(-200 as SourceId, stateConnector)).to.eventually.be.rejected;
+        const invalidSourceId = -200;
+        await expect(createAttestationHelper(invalidSourceId as SourceId, stateConnector)).to.eventually.be.rejectedWith(`SourceId ${invalidSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {
