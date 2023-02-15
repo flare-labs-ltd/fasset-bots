@@ -15,7 +15,7 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { COSTON2_RUN_CONFIG } from "../../utils/test-bot-config";
+import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../utils/test-bot-config";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 
@@ -33,7 +33,7 @@ describe("Agent bot tests - coston2", async () => {
     let runConfig: RunConfig;
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG).toString()) as RunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
         accounts = await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
         minterAddress = accounts[1];

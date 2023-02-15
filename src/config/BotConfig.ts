@@ -48,6 +48,7 @@ export interface BotConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
     wallet: IBlockChainWallet;
+    // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
     blockChainIndexerClient: BlockChainIndexerHelper;

@@ -6,7 +6,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
 import { getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { COSTON2_RUN_CONFIG } from "../../utils/test-bot-config";
+import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../utils/test-bot-config";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require("chai");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -20,7 +20,7 @@ const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 describe("Bot config tests", async () => {
     let runConfig: RunConfig;
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG).toString()) as RunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
         await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
     });
 

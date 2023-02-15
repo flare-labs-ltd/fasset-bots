@@ -1,0 +1,26 @@
+{
+  "rpcUrl": "https://coston2-api.flare.network/ext/bc/C/rpc",
+  "loopDelay": 0,
+  "addressUpdater": "0x248a75c6a7EB5280c75599014f88a9539c9beE48",
+  "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
+  "chainInfos": [
+    {
+      "chainId": 3,
+      "name": "Ripple",
+      "symbol": "XRP",
+      "decimals": 6,
+      "amgDecimals": 0,
+      "requireEOAProof": false,
+      "assetManager": "0x2dD8146Ad2138ac61F93E549f8F917927B47E28a"
+    }
+  ],
+  "ormOptions": {
+    "dbName": "fasset-bots-c2.db",
+    "debug": false,
+    "allowGlobalContext": true,
+    "schemaUpdate": "recreate"
+  },
+  "attestationProviderUrls": ["https://flare4.oracle-daemon.com/coston2"],
+  "attestationClientAddress": "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+  "stateConnectorAddress": "0x1000000000000000000000000000000000000001"
+}
