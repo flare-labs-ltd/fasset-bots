@@ -32,7 +32,7 @@ describe("ALGO blockchain tests", async () => {
         expect(balance.toNumber()).to.be.greaterThanOrEqual(0);
     });
 
-    it("Should retrieve block (hash)", async () => {
+    it("Should not retrieve block (hash) - not implemented", async () => {
         await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejectedWith("Method not implemented in ALGO.").and.be.an.instanceOf(Error);
     });
 
@@ -48,6 +48,24 @@ describe("ALGO blockchain tests", async () => {
 
     it("Should retrieve transaction block", async () => {
         await expect(blockChainHelper.getTransactionBlock(txHash1)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+    });
+
+    it("Should retrieve transaction fee", async () => {
+        const fee = await blockChainHelper.getTransactionFee();
+        expect(fee.toString()).to.not.be.null;
+    });
+
+    it("Should not retrieve invalid transaction", async () => {
+        const invalidTxHash = txHash0.slice(0,36);
+        const retrievedTransaction = await blockChainHelper.getTransaction(invalidTxHash);
+        expect(retrievedTransaction).to.be.null;
+    });
+
+    it("Should not retrieve block with invalid number", async () => {
+        const blockHeight = await blockChainHelper.getBlockHeight();
+        const invalidBlockNumber = blockHeight * 100;
+        const retrievedBlock = await blockChainHelper.getBlockAt(invalidBlockNumber);
+        expect(retrievedBlock).to.be.null;
     });
 
 });

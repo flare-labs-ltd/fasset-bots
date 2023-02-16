@@ -27,6 +27,7 @@ describe("ALGO wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -52,6 +53,10 @@ describe("ALGO wallet tests", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.toNumber()).to.be.greaterThan(balanceBefore.toNumber());
+    });
+
+    it("Should not add multi transaction - method not implemented", async () => {
+        await expect(walletHelper.addMultiTransaction({}, {}, null)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
 });

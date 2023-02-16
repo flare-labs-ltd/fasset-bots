@@ -28,6 +28,7 @@ describe("BTC wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -42,13 +43,9 @@ describe("BTC wallet tests", async () => {
         expect(privateKey).to.eq(fundedPrivateKey);
     });
 
-    it.skip("Should send funds and retrieve transaction", async () => {
-        const balanceBefore = await blockChainHelper.getBalance(targetAddress);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, true);
-        const balanceAfter = await blockChainHelper.getBalance(targetAddress);
-        const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
-        expect(transaction).to.equal(retrievedTransaction?.hash);
-        expect(balanceAfter.toNumber()).to.be.greaterThan(balanceBefore.toNumber());
+    it("Should send funds", async () => {
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, false);
+        expect(transaction).to.not.be.null;
     });
 
 });

@@ -48,4 +48,9 @@ describe("LTC blockchain tests", async () => {
         expect(transactionBlock?.hash).to.be.eq(blockHash);
     });
 
+    it("Should retrieve transaction fee", async () => {
+        const fee = await blockChainHelper.getTransactionFee();
+        expect(fee.toString()).to.not.be.null;
+    });
+
 });

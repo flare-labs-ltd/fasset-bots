@@ -13,16 +13,36 @@ export class BlockChainHelper implements IBlockChain {
     secondsPerBlock: number = 0;
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
-        if (this.mccClient instanceof MCC.ALGO) {
-            const transaction = await this.mccClient.getIndexerTransaction(txHash);
-            if (transaction) {
+        try {
+            if (this.mccClient instanceof MCC.ALGO) {
+                const transaction = await this.mccClient.getIndexerTransaction(txHash);
+                if (transaction) {
+                    const inputs: TxInputOutput[] = [];
+                    const outputs: TxInputOutput[] = [];
+                    for (let input of transaction.spentAmounts) {
+                        inputs.push([input.address!, input.amount]);
+                    }
+                    for (let output of transaction.receivedAmounts) {
+                        outputs.push([output.address!, output.amount]);
+                    }
+                    return {
+                        hash: transaction.hash,
+                        inputs: inputs,
+                        outputs: outputs,
+                        reference: transaction.stdPaymentReference,
+                        status: transaction.successStatus
+                    };
+                }
+                return null;
+            } else {
+                const transaction = await this.mccClient.getTransaction(txHash);
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
                 for (let input of transaction.spentAmounts) {
-                    inputs.push([input.address ? input.address : "", input.amount ? input.amount : toBN(0)]);
+                    inputs.push([input.address ? input.address : "", input.amount]);
                 }
                 for (let output of transaction.receivedAmounts) {
-                    outputs.push([output.address ? output.address : "", output.amount ? output.amount : toBN(0)]);
+                    outputs.push([output.address ? output.address : "", output.amount]);
                 }
                 return {
                     hash: transaction.hash,
@@ -32,27 +52,10 @@ export class BlockChainHelper implements IBlockChain {
                     status: transaction.successStatus
                 };
             }
-        } else {
-            const transaction = await this.mccClient.getTransaction(txHash);
-            if (transaction) {
-                const inputs: TxInputOutput[] = [];
-                const outputs: TxInputOutput[] = [];
-                for (let input of transaction.spentAmounts) {
-                    inputs.push([input.address ? input.address : "", input.amount ? input.amount : toBN(0)]);
-                }
-                for (let output of transaction.receivedAmounts) {
-                    outputs.push([output.address ? output.address : "", output.amount ? output.amount : toBN(0)]);
-                }
-                return {
-                    hash: transaction.hash,
-                    inputs: inputs,
-                    outputs: outputs,
-                    reference: transaction.stdPaymentReference,
-                    status: transaction.successStatus
-                };
-            }
+        } catch (error) {
+            console.error(`Transaction with hash ${txHash} not found.`);
+            return null;
         }
-        return null;
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
@@ -73,38 +76,42 @@ export class BlockChainHelper implements IBlockChain {
         if (this.mccClient instanceof MCC.ALGO) {
             throw new Error("Method not implemented in ALGO.");
         } else {
-            const block = await this.mccClient.getBlock(blockHash);
-            if (block) {
+            try {
+                const block = await this.mccClient.getBlock(blockHash);
                 return {
                     hash: block.blockHash,
                     number: block.number,
                     timestamp: block.unixTimestamp,
                     transactions: block.transactionIds
                 };
+            } catch (error) {
+                console.error(`Block with hash ${blockHash} not found.`);
+                return null;
             }
         }
-        return null;
     }
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
         let block = null;
         let hash = "";
-        if (this.mccClient instanceof MCC.ALGO) {
-            block = await this.mccClient.getBlock(blockNumber);
-            hash = block.blockHashBase32;
-        } else {
-            block = await this.mccClient.getBlock(blockNumber);
-            hash = block.blockHash;
-        }
-        if (block) {
+        try {
+            if (this.mccClient instanceof MCC.ALGO) {
+                block = await this.mccClient.getBlock(blockNumber);
+                hash = block.blockHashBase32;
+            } else {
+                block = await this.mccClient.getBlock(blockNumber);
+                hash = block.blockHash;
+            }
             return {
                 hash: hash,
                 number: block.number,
                 timestamp: block.unixTimestamp,
                 transactions: block.transactionIds
             }
+        } catch (error) {
+            console.error(`Block with number ${blockNumber} not found.`);
+            return null;
         }
-        return null;
     }
 
     async getBlockHeight(): Promise<number> {

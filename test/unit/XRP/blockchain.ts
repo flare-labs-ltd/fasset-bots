@@ -8,9 +8,9 @@ import { SourceId } from "../../../src/verification/sources/sources";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
 
-const txHash = "D722D986E2BBB1B6E3BE27B983F3496C9E3DEB4C6B946706490C154075B88093";
-const blockId = 34395505;
-const blockHash = "179566A4FAD53102098347A1FAEC7877D3D8F54D74C507F89E734841AE0034DA";
+const txHash = "70E60F3A2DFF7F4C035FD9DFB4639C023C99D24EEAB54A88453C06DCA5E4970A";
+const blockId = 35435676;
+const blockHash = "926801238ace41e1e799210574efca4b5b2f04574ee38988bbd2f48818f08d2c";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests", async () => {
@@ -44,8 +44,32 @@ describe("XRP blockchain tests", async () => {
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
-    it("Should retrieve transaction block", async () => {
+    it("Should not retrieve transaction block", async () => {
         await expect(blockChainHelper.getTransactionBlock(txHash)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+    });
+
+    it("Should retrieve transaction fee", async () => {
+        const fee = await blockChainHelper.getTransactionFee();
+        expect(fee.toString()).to.not.be.null;
+    });
+
+    it("Should not retrieve transaction with invalid hash", async () => {
+        const invalidTxHash = txHash.slice(0,36);
+        const retrievedTransaction = await blockChainHelper.getTransaction(invalidTxHash);
+        expect(retrievedTransaction).to.be.null;
+    });
+
+    it("Should not retrieve block with invalid number", async () => {
+        const blockHeight = await blockChainHelper.getBlockHeight();
+        const invalidBlockNumber = blockHeight * 100;
+        const retrievedBlock = await blockChainHelper.getBlockAt(invalidBlockNumber);
+        expect(retrievedBlock).to.be.null;
+    });
+
+    it("Should not retrieve block with invalid hash", async () => {
+        const invalidBlockHash = blockHash.slice(0,36);
+        const retrievedBlock = await blockChainHelper.getBlock(invalidBlockHash);
+        expect(retrievedBlock).to.be.null;
     });
 
 });

@@ -30,6 +30,7 @@ describe("XRP wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -45,10 +46,9 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should send funds and retrieve transaction", async () => {
-        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
         const options = { maxFee: 12 }; // maxFee in Drops
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true);
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, null, options, true);
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
@@ -61,6 +61,14 @@ describe("XRP wallet tests", async () => {
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
         await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should not add multi transaction - method not implemented", async () => {
+        await expect(walletHelper.addMultiTransaction({}, {}, null)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+    });
+
+    it("Should add transaction - source address not found in db", async () => {
+        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendXRP, null, undefined, true)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
     });
 
 });
