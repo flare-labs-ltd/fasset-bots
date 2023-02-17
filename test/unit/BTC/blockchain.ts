@@ -14,7 +14,7 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 describe("BTC blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId, true);
     })
 
     it("Should retrieve transaction", async () => {

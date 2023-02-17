@@ -32,9 +32,9 @@ describe("BTC attestation/state connector tests", async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
-        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient);
+        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient, true);
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
-        walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
     })
     //PAYMENT
     it("Should create payment, send request for payment proof to attestations and retrieve proof from state connector", async () => {

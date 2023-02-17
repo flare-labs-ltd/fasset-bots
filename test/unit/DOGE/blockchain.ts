@@ -15,7 +15,7 @@ const minedTransaction = "8dff2793bb9dc1cb197d88e7c43a87480734a75aba695cb8fae517
 describe("DOGE blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createBlockChainHelper(sourceId);
+        blockChainHelper = createBlockChainHelper(sourceId, true);
     })
 
     it("Should retrieve transaction", async () => {

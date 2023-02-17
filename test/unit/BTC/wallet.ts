@@ -26,8 +26,8 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainHelper = createBlockChainHelper(sourceId);
-        walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        blockChainHelper = createBlockChainHelper(sourceId, true);
+        walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 

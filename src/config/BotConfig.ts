@@ -58,6 +58,7 @@ export interface BotChainInfo extends ChainInfo {
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
+    inTestnet?: boolean;
 }
 
 export async function createBotConfig(runConfig: RunConfig, ownerAddress: string): Promise<BotConfig> {
@@ -81,8 +82,8 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
 
 export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
-    const wallet = createBlockChainWalletHelper(chainInfo.chainId, em);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
+    const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId, chainInfo.inTestnet);
     return {
         chainInfo: chainInfo,
         chain: chain,
@@ -93,7 +94,7 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
     }
 }
 
-export function createWalletClient(sourceId: SourceId): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
+export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     switch (sourceId) {
         case SourceId.ALGO:
             return new WALLET.ALGO({
@@ -101,34 +102,35 @@ export function createWalletClient(sourceId: SourceId): WALLET.ALGO | WALLET.BTC
                     url: requireEnv('ALGO_ALGOD_URL_WALLET'),
                     token: ""
                 },
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             })
         case SourceId.BTC:
             return new WALLET.BTC({
                 url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
                 username: "",
                 password: "",
-                inTestnet: true
+                inTestnet: inTestnet
             } as UtxoMccCreate);
         case SourceId.DOGE:
             return new WALLET.DOGE({
                 url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
                 username: "",
                 password: "",
-                inTestnet: true
+                inTestnet: inTestnet
             } as UtxoMccCreate);
         case SourceId.LTC:
             return new WALLET.LTC({
                 url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
                 username: "",
                 password: "",
-                inTestnet: true
+                inTestnet: inTestnet
             } as UtxoMccCreate);
         case SourceId.XRP:
             return new WALLET.XRP({
                 url: requireEnv('XRP_URL_WALLET'),
                 username: "",
                 password: "",
-                inTestnet: true
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             } as XrpMccCreate)
         default:
             throw new Error(`SourceId ${sourceId} not supported.`)
@@ -147,51 +149,52 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
                     url: requireEnv('ALGO_INDEXER_URL_MCC'),
                     token: "",
                 },
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             })
         case SourceId.BTC:
             return new MCC.BTC({
                 url: requireEnv('BTC_URL_MCC'),
-                username: requireEnv('BTC_USERNAME_MCC'),
-                password: requireEnv('BTC_PASSWORD_MCC'),
-                inTestnet: true
+                username: process.env.BTC_USERNAME_MCC || "",
+                password: process.env.BTC_PASSWORD_MCC || "",
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             } as UtxoMccCreate);
         case SourceId.DOGE:
             return new MCC.DOGE({
                 url: requireEnv('DOGE_URL_MCC'),
-                username: requireEnv('DOGE_USERNAME_MCC'),
-                password: requireEnv('DOGE_PASSWORD_MCC'),
-                inTestnet: true
+                username: process.env.DOGE_USERNAME_MCC || "",
+                password: process.env.DOGE_PASSWORD_MCC || "",
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             } as UtxoMccCreate);
         case SourceId.LTC:
             return new MCC.LTC({
                 url: requireEnv('LTC_URL_MCC'),
-                username: requireEnv('LTC_USERNAME_MCC'),
-                password: requireEnv('LTC_PASSWORD_MCC'),
-                inTestnet: true
+                username: process.env.LTC_USERNAME_MCC || "",
+                password: process.env.LTC_PASSWORD_MCC || "",
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             } as UtxoMccCreate);
         case SourceId.XRP:
             return new MCC.XRP({
                 url: requireEnv('XRP_URL_MCC'),
-                username: "",
-                password: "",
-                inTestnet: true
+                username: process.env.XRP_USERNAME_MCC || "",
+                password: process.env.XRP_PASSWORD_MCC || "",
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
             } as XrpMccCreate)
         default:
             throw new Error(`SourceId ${sourceId} not supported.`)
     }
 }
 
-export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainIndexerHelper {
+export function createBlockChainIndexerHelper(sourceId: SourceId, inTestnet?: boolean): BlockChainIndexerHelper {
     const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
         case SourceId.BTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
         case SourceId.DOGE:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
         case SourceId.LTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
         case SourceId.XRP:
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
         default:
@@ -199,16 +202,16 @@ export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainInd
     }
 }
 
-export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
+export function createBlockChainHelper(sourceId: SourceId, inTestnet?: boolean): BlockChainHelper {
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
         case SourceId.BTC:
-            return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
+            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
         case SourceId.DOGE:
-            return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
+            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
         case SourceId.LTC:
-            return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
+            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
         case SourceId.XRP:
             return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
         default:
@@ -216,16 +219,16 @@ export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
     }
 }
 
-export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>): BlockChainWalletHelper {
+export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockChainWalletHelper {
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
         case SourceId.BTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
         case SourceId.DOGE:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
         case SourceId.LTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
         case SourceId.XRP:
             return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
         default:
@@ -233,16 +236,16 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
     }
 }
 
-export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper): Promise<AttestationHelper> {
+export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper, inTestnet?: boolean): Promise<AttestationHelper> {
     switch (sourceId) {
         case SourceId.ALGO:
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.BTC:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
         case SourceId.DOGE:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
         case SourceId.LTC:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
         case SourceId.XRP:
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         default:
