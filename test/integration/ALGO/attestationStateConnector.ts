@@ -8,7 +8,7 @@ import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateC
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrmOptions } from "../../utils/test-bot-config";
+import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;

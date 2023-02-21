@@ -6,7 +6,7 @@ import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createTestOrmOptions } from "../../utils/test-bot-config";
+import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 const chai = require('chai');
 chai.use(require('chai-as-promised'));
 

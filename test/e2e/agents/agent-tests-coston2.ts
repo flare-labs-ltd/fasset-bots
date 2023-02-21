@@ -14,8 +14,8 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../utils/test-actors";
-import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../utils/test-bot-config";
+import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
+import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 

@@ -4,9 +4,9 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
-import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 
 const agentDestroyed = {
     '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',

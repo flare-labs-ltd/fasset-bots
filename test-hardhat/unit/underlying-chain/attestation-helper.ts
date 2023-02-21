@@ -1,8 +1,8 @@
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
-import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { expect } from "chai";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require("chai");
@@ -70,6 +70,12 @@ describe("Attestation client unit tests", async () => {
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const invalidTransaction = transaction.slice(0, 50);
         await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should not request balance decreasing transaction proof - address not in transaction", async () => {
+        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying2)).to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
     });
 
     it("Should not request payment proof - finalization block not found", async () => {

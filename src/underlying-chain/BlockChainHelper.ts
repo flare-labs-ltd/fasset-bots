@@ -15,25 +15,22 @@ export class BlockChainHelper implements IBlockChain {
     async getTransaction(txHash: string): Promise<ITransaction | null> {
         try {
             if (this.mccClient instanceof MCC.ALGO) {
-                const transaction = await this.mccClient.getIndexerTransaction(txHash);
-                if (transaction) {
-                    const inputs: TxInputOutput[] = [];
-                    const outputs: TxInputOutput[] = [];
-                    for (let input of transaction.spentAmounts) {
-                        inputs.push([input.address!, input.amount]);
-                    }
-                    for (let output of transaction.receivedAmounts) {
-                        outputs.push([output.address!, output.amount]);
-                    }
-                    return {
-                        hash: transaction.hash,
-                        inputs: inputs,
-                        outputs: outputs,
-                        reference: transaction.stdPaymentReference,
-                        status: transaction.successStatus
-                    };
+                const transaction = (await this.mccClient.getIndexerTransaction(txHash))!; //indexer is set, otherwise it fails on set up
+                const inputs: TxInputOutput[] = [];
+                const outputs: TxInputOutput[] = [];
+                for (let input of transaction.spentAmounts) {
+                    inputs.push([input.address!, input.amount]);
                 }
-                return null;
+                for (let output of transaction.receivedAmounts) {
+                    outputs.push([output.address!, output.amount]);
+                }
+                return {
+                    hash: transaction.hash,
+                    inputs: inputs,
+                    outputs: outputs,
+                    reference: transaction.stdPaymentReference,
+                    status: transaction.successStatus
+                };
             } else {
                 const transaction = await this.mccClient.getTransaction(txHash);
                 const inputs: TxInputOutput[] = [];

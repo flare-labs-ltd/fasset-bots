@@ -13,7 +13,7 @@ import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper"
 import { artifacts } from "../../src/utils/artifacts";
 import { Modify, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { TestChainInfo } from "../../test/utils/TestChainInfo";
+import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance } from "../../typechain-truffle";
 import { newAssetManager } from "./new-asset-manager";
 

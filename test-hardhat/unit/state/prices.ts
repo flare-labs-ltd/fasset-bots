@@ -3,8 +3,8 @@ import { AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
 import { Prices } from "../../../src/state/Prices";
 import { sleep, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../../test/utils/TestChainInfo";
-import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import fs from "fs";
 
 const setMaxTrustedPriceAgeSeconds = 1;

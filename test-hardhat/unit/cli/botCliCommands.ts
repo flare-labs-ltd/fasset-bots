@@ -1,10 +1,10 @@
 import { ORM } from "../../../src/config/orm";
 import { toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../utils/test-asset-context";
-import { testChainInfo } from "../../../test/utils/TestChainInfo";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../../test/utils/test-bot-config";
+import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
 const chai = require('chai');
 const spies = require('chai-spies');
