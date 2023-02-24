@@ -1,6 +1,6 @@
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
-import { AgentStatus, TrackedAgentState } from "./TrackedAgentState";
+import { TrackedAgentState } from "./TrackedAgentState";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
@@ -10,6 +10,7 @@ import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
 import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import assert from "node:assert";
+import { AgentStatus } from "../actors/AgentBot";
 
 export class TrackedState {
     constructor(
