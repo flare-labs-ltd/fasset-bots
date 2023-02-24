@@ -1,5 +1,4 @@
 import { CreateOrmOptions } from "../../src/config/orm";
-import { ActorEntity } from "../../src/entities/actor";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 import { requireEnv } from "../../src/utils/helpers";
@@ -13,7 +12,7 @@ export const COSTON2_RUN_CONFIG_CONTRACTS = "./run-config/run-config-coston2-wit
 export const COSTON2_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-config-coston2-with-address-updater.json";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, ActorEntity],
+    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
     type: 'sqlite',
     dbName: 'fasset-bots-test.db',
     debug: false,

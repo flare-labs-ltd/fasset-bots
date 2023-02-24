@@ -2,7 +2,7 @@ import { AgentVaultInstance } from "../../typechain-truffle";
 import { CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { artifacts } from "../utils/artifacts";
-import { EventArgs, ExtractedEventArgs } from "../utils/events/common";
+import { EventArgs } from "../utils/events/common";
 import { checkEventNotEmited, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
 import { AgentInfo } from "./AssetManagerTypes";

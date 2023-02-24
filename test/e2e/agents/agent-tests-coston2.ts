@@ -7,14 +7,13 @@ import { Challenger } from "../../../src/actors/Challenger";
 import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
-import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { requireEnv } from "../../../src/utils/helpers";
-import { initWeb3 } from "../../../src/utils/web3";
-import { createTestMinter, createTestRedeemer, getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
+import { requireEnv, systemTimestamp } from "../../../src/utils/helpers";
+import { initWeb3, web3 } from "../../../src/utils/web3";
+import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
@@ -43,7 +42,17 @@ describe("Agent bot tests - coston2", async () => {
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();
-        state = new TrackedState();
+        const lastBlock = await web3.eth.getBlockNumber();
+        state = new TrackedState(context, lastBlock);
+        await state.initialize();
+    });
+
+    beforeEach(async () => {
+        context = await createAssetContext(botConfig, botConfig.chains[0]);
+        runner = new ScopedRunner();
+        const lastBlock = await web3.eth.getBlockNumber();
+        state = new TrackedState(context, lastBlock);
+        await state.initialize();
     });
 
     it("Should create agent bot", async () => {
@@ -83,20 +92,8 @@ describe("Agent bot tests - coston2", async () => {
         expect(existing3).to.eq(1);
     });
 
-    it("Should create minter", async () => {
-        const minter = await createTestMinter(context, minterAddress);
-        expect(minter.underlyingAddress).is.not.null;
-        expect(minter.address).to.eq(minterAddress);
-    });
-
-    it("Should create redeemer", async () => {
-        const redeemer = await createTestRedeemer(context, redeemerAddress);
-        expect(redeemer.underlyingAddress).is.not.null;
-        expect(redeemer.address).to.eq(redeemerAddress);
-    });
-
     it("Should create challenger", async () => {
-        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress, state);
+        const challenger = new Challenger(runner, challengerAddress, state, systemTimestamp());
         expect(challenger.address).to.eq(challengerAddress);
     });
 
@@ -105,12 +102,6 @@ describe("Agent bot tests - coston2", async () => {
         const agentBot = await AgentBot.fromEntity(context, agentEnt)
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
-    });
-
-    it("Should read challenger from entity", async () => {
-        const challengerEnt = await orm.em.findOneOrFail(ActorEntity, { address: challengerAddress, type: ActorType.CHALLENGER } as FilterQuery<ActorEntity>);
-        const challenger = await Challenger.fromEntity(runner, context, challengerEnt, state);
-        expect(challenger.address).to.eq(challengerAddress);
     });
 
 });

@@ -6,7 +6,6 @@ import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/te
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { Agent } from "../../../src/fasset/Agent";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { SourceId } from "../../../src/verification/sources/sources";
 import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -126,7 +125,7 @@ describe("Agent unit tests", async () => {
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
         const tx = await agent.performUnderlyingWithdrawal(resAnnounce, 1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
-        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
+        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
         const resConfirm = await agent.confirmUnderlyingWithdrawal(resAnnounce, tx);
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
@@ -137,7 +136,7 @@ describe("Agent unit tests", async () => {
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
         const tx = await agent.performUnderlyingWithdrawal(resAnnounce, 1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
-        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
+        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
         const resConfirm = await agent.confirmUnderlyingWithdrawal(resAnnounce, tx);
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
@@ -146,7 +145,7 @@ describe("Agent unit tests", async () => {
     it("Should announce and cancel underlying withdrawal", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
-        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
+        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
         const resConfirm = await agent.cancelUnderlyingWithdrawal(resAnnounce);
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);

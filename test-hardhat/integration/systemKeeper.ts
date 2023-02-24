@@ -2,16 +2,13 @@ import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { EM, ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, sleep, systemTimestamp, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
-import { FilterQuery } from "@mikro-orm/core/typings";
-import { ActorEntity, ActorType } from "../../src/entities/actor";
 import { disableMccTraceManager } from "../test-utils/helpers";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
-import { AgentEntity } from "../../src/entities/agent";
 import { assert } from "chai";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { time } from "@openzeppelin/test-helpers";
@@ -41,13 +38,8 @@ describe("System keeper tests", async () => {
     let runner: ScopedRunner;
     let state: TrackedState;
 
-    async function createTestSystemKeeper(runner: ScopedRunner, rootEm: EM, context: IAssetBotContext, address: string, state: TrackedState): Promise<SystemKeeper> {
-        const ccbTriggerEnt = await rootEm.findOne(ActorEntity, { address: address, type: ActorType.SYSTEM_KEEPER } as FilterQuery<ActorEntity>);
-        if (ccbTriggerEnt) {
-            return await SystemKeeper.fromEntity(runner, context, ccbTriggerEnt, state);
-        } else {
-            return await SystemKeeper.create(runner, rootEm, context, address, state);
-        }
+    async function createTestSystemKeeper(runner: ScopedRunner, address: string, state: TrackedState): Promise<SystemKeeper> {
+        return new SystemKeeper(runner, address, state);
     }
 
     async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string): Promise<AgentBot> {
@@ -85,63 +77,67 @@ describe("System keeper tests", async () => {
         challengerAddress = accounts[5];
         systemKeeperAddress = accounts[6];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+    });
+
+    beforeEach(async () => {
+        orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
         chain = checkedCast(context.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
-    });
-
-    beforeEach(async () => {
-        orm.em.clear();
         runner = new ScopedRunner();
-        state = new TrackedState();
+        const lastBlock = await web3.eth.getBlockNumber();
+        state = new TrackedState(context, lastBlock);
+        await state.initialize();
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
-        await systemKeeper.initialize();
+        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         const spy = chai.spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         expect(spy).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
-        await systemKeeper.initialize();
+        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check agent status
         const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status1, AgentStatus.NORMAL);
+        console.log((await context.natFtso.getCurrentPrice())[0].toString());
         // change prices
         await context.natFtso.setCurrentPrice(39, 0);
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status2, AgentStatus.CCB);
         // change prices
+        console.log((await context.natFtso.getCurrentPrice())[0].toString());
         await context.natFtso.setCurrentPrice(36, 0);
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status3, AgentStatus.LIQUIDATION);
         // change prices
+        console.log((await context.natFtso.getCurrentPrice())[0].toString());
         await context.natFtso.setCurrentPrice(150, 0);
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
+        console.log((await context.natFtso.getCurrentPrice())[0].toString());
         // check agent status
         const status4 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status4, AgentStatus.NORMAL);
@@ -150,8 +146,7 @@ describe("System keeper tests", async () => {
     });
 
     it("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
-        await systemKeeper.initialize();
+        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
@@ -163,7 +158,7 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status2, AgentStatus.LIQUIDATION);
@@ -172,7 +167,7 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status3, AgentStatus.LIQUIDATION);
@@ -181,7 +176,7 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status4 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status4, AgentStatus.NORMAL);
@@ -190,7 +185,7 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status5 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status5, AgentStatus.CCB);
@@ -199,7 +194,7 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status6 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status6, AgentStatus.CCB);
@@ -208,45 +203,34 @@ describe("System keeper tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status7 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status7, AgentStatus.NORMAL);
     });
 
     it("Should check collateral ratio after minting execution", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state);
-        await systemKeeper.initialize();
+        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         const spy = chai.spy.on(systemKeeper, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should not handle minting - no tracked agent", async () => {
-        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const systemKeeper = await SystemKeeper.create(runner, orm.em, context, accounts[71], state);
-        await systemKeeper.initialize();
-        // check tracked agents
-        assert.equal(systemKeeper.state.agents.size, 0);
-        // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot, 2);
-        // check tracked agents
-        await systemKeeper.runStep(orm.em);
-        assert.equal(systemKeeper.state.agents.size, 0);
-    });
-
     it("Should not handle agent status change - no tracked agent", async () => {
-        const challenger = await Challenger.create(runner, orm.em, context, challengerAddress, new TrackedState());
+        const lastBlock = await web3.eth.getBlockNumber();
+        const timestamp = systemTimestamp();
+        const newState = new TrackedState(context, lastBlock);
+        await newState.initialize();
+        const challenger = new Challenger(runner, challengerAddress, newState, timestamp);
         // create test actors
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         // create liquidator
-        const systemKeeper = await SystemKeeper.create(runner, orm.em, context, accounts[70], state);
-        await systemKeeper.initialize();
-        await challenger.runStep(orm.em);
+        const systemKeeper = new SystemKeeper(runner, accounts[70], state);
+        await challenger.runStep();
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // create collateral reservation and perform minting
@@ -259,7 +243,7 @@ describe("System keeper tests", async () => {
             await time.advanceBlock();
             chain.mine();
             await sleep(3000);
-            await challenger.runStep(orm.em);
+            await challenger.runStep();
             const agentStatus = await getAgentStatus(context, agentBot.agent.vaultAddress);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -267,44 +251,14 @@ describe("System keeper tests", async () => {
         const agentStatus = await getAgentStatus(context, agentBot.agent.vaultAddress);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
         // handle status change
-        await systemKeeper.runStep(orm.em);
-    });
-
-    it("Should remove agent from tracked state when agent is destroyed", async () => {
-        const systemKeeper = await SystemKeeper.create(runner, orm.em, context, accounts[80], state);
-        await systemKeeper.initialize();
-        const agentBot = await createTestAgentBot(orm.em, context, accounts[81]);
-        await systemKeeper.runStep(orm.em);
-        assert.equal(systemKeeper.state.agents.size, 1);
-        // check agent status
-        const status = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status, AgentStatus.NORMAL);
-        // exit available
-        await agentBot.agent.exitAvailable();
-        // announce agent destruction
-        await agentBot.agent.announceDestroy();
-        // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status2, AgentStatus.DESTROYING);
-        // increase time
-        const settings = await context.assetManager.getSettings();
-        await time.increase(Number(settings.withdrawalWaitMinSeconds) * 2);
-        // agent destruction
-        await agentBot.agent.destroy();
-        await agentBot.runStep(orm.em);
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.agentVault.address, } as FilterQuery<AgentEntity>);
-        assert.equal(agentBotEnt.active, false);
-        // handle destruction
-        await systemKeeper.runStep(orm.em);
-        assert.equal(systemKeeper.state.agents.size, 0);
+        await systemKeeper.runStep();
     });
 
     it("Should liquidate agent", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, orm.em, context, systemKeeperAddress, state)
-        await systemKeeper.initialize();
+        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state)
         const agentBot = await createTestAgentBot(orm.em, context, accounts[81]);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context)
-        await systemKeeper.runStep(orm.em);
+        await systemKeeper.runStep();
         // check agent status
         const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status1, AgentStatus.NORMAL);

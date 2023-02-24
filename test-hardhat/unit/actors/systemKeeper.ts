@@ -1,8 +1,6 @@
-import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { ORM } from "../../../src/config/orm";
-import { ActorEntity, ActorType } from "../../../src/entities/actor";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedState } from "../../../src/state/TrackedState";
@@ -31,17 +29,14 @@ describe("System keeper unit tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         systemKeeperAddress = accounts[10];
         runner = new ScopedRunner();
-        state = new TrackedState();
+        const lastBlock = await web3.eth.getBlockNumber();
+        state = new TrackedState(context, lastBlock);
+        await state.initialize();
     });
 
     it("Should create system keeper", async () => {
-        const systemKeeper = await SystemKeeper.create(runner, orm.em, context, systemKeeperAddress, state);
-        expect(systemKeeper.address).to.eq(systemKeeperAddress);
-    });
-
-    it("Should read system keeper from entity", async () => {
-        const systemKeeperEnt = await orm.em.findOneOrFail(ActorEntity, { address: systemKeeperAddress, type: ActorType.SYSTEM_KEEPER } as FilterQuery<ActorEntity>);
-        const systemKeeper = await SystemKeeper.fromEntity(runner, context, systemKeeperEnt, state);
+        const lastBlock = await web3.eth.getBlockNumber();
+        const systemKeeper = new SystemKeeper(runner, systemKeeperAddress, state);
         expect(systemKeeper.address).to.eq(systemKeeperAddress);
     });
 
