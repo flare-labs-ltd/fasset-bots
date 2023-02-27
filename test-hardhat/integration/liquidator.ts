@@ -8,12 +8,12 @@ import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { disableMccTraceManager } from "../test-utils/helpers";
-import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { assert } from "chai";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
+import { Liquidator } from "../../src/actors/Liquidator";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -21,22 +21,21 @@ const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 
-describe("System keeper tests", async () => {
+describe("Liquidator tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext; // due to ftsoManagerMock's mockFinalizePriceEpoch()
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let challengerAddress: string;
-    let systemKeeperAddress: string;
+    let liquidatorAddress: string;
     let chain: MockChain;
     let agentBot: AgentBot;
     let minter: Minter;
     let runner: ScopedRunner;
     let state: TrackedState;
 
-    async function createTestSystemKeeper(runner: ScopedRunner, address: string, state: TrackedState): Promise<SystemKeeper> {
-        return new SystemKeeper(runner, address, state);
+    async function createTestLiquidator(runner: ScopedRunner, address: string, state: TrackedState): Promise<Liquidator> {
+        return new Liquidator(runner, address, state);
     }
 
     async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string): Promise<AgentBot> {
@@ -71,8 +70,7 @@ describe("System keeper tests", async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
-        challengerAddress = accounts[5];
-        systemKeeperAddress = accounts[6];
+        liquidatorAddress = accounts[6];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
@@ -90,17 +88,17 @@ describe("System keeper tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
-        const spy = chai.spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
+        const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
+        const spy = chai.spy.on(liquidator, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
-        await systemKeeper.runStep();
+        await liquidator.runStep();
         expect(spy).to.have.been.called.once;
     });
 
-    it("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
+    it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
+        const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         const spy = chai.spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation and perform minting
@@ -109,110 +107,71 @@ describe("System keeper tests", async () => {
         const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.natFtso.setCurrentPrice(39, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status2, AgentStatus.CCB);
-        // change prices
         await context.natFtso.setCurrentPrice(36, 0);
         await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
+        // FAsset balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
+        await liquidator.runStep();
         // check agent status
         const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status3, AgentStatus.LIQUIDATION);
-        // change prices
-        await context.natFtso.setCurrentPrice(150, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status4 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status4, AgentStatus.NORMAL);
+        // FAsset balance
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         // send notification
         await agentBot.runStep(orm.em);
         expect(spy).to.have.been.called.once;
-    });
-
-    it("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
-        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot, 2);
-        // check agent status
-        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status1, AgentStatus.NORMAL);
-        // change prices
-        await context.natFtso.setCurrentPrice(36, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status2, AgentStatus.LIQUIDATION);
-        // change prices
-        await context.natFtso.setCurrentPrice(34, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status3 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status3, AgentStatus.LIQUIDATION);
-        // change prices
-        await context.natFtso.setCurrentPrice(150, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status4 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status4, AgentStatus.NORMAL);
-        // change prices
-        await context.natFtso.setCurrentPrice(39, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status5 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status5, AgentStatus.CCB);
-        // change prices
-        await context.natFtso.setCurrentPrice(38, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status6 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status6, AgentStatus.CCB);
-        // change prices
-        await context.natFtso.setCurrentPrice(150, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await systemKeeper.runStep();
-        // check agent status
-        const status7 = await getAgentStatus(context, agentBot.agent.agentVault.address);
-        assert.equal(status7, AgentStatus.NORMAL);
+        // nothing is burned, liquidator does not have FAssets
+        expect(fBalanceBefore.eq(fBalanceAfter)).to.be.true;
+        expect(fBalanceBefore.eqn(0)).to.be.true;
     });
 
     it("Should check collateral ratio after minting execution", async () => {
-        const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
+        const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(systemKeeper, 'handleMintingExecuted');
+        const spy = chai.spy.on(liquidator, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution
-        await systemKeeper.runStep();
+        await liquidator.runStep();
         expect(spy).to.have.been.called.once;
+    });
+
+    it("Should liquidate agent", async () => {
+        const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
+        const agentBot = await createTestAgentBot(orm.em, context, accounts[81]);
+        await createTestActors(ownerAddress, minterAddress, minterUnderlying, context)
+        await liquidator.runStep();
+        // check agent status
+        const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // perform minting
+        const lots = 3;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await agentBot.runStep(orm.em);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        const minted = await minter.executeMinting(crt, txHash0);
+        await agentBot.runStep(orm.em);
+        // price change
+        await context.natFtso.setCurrentPrice(1, 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
+        // liquidator "buys" f-assets
+        await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
+        // FAsset balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        // liquidate agent (partially)
+        const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
+        await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidator.address });
+        // check agent status
+        await agentBot.runStep(orm.em);
+        const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
+        assert.equal(status2, AgentStatus.LIQUIDATION);
+        // FAsset balance
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        // check FAsset balance
+        expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
     });
 
 });
