@@ -177,7 +177,8 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         const agentBefore = trackedState.getAgent(agentBLocal.vaultAddress);
         expect(agentBefore?.status).to.eq(AgentStatus.DESTROYING);
-        await time.increase(300);
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.withdrawalWaitMinSeconds);
         await agentBLocal.destroy();
         await trackedState.readUnhandledEvents();
         const agentAfter = trackedState.getAgent(agentBLocal.vaultAddress);

@@ -13,12 +13,12 @@ toplevelRun(async () => {
             console.log(`Agent ${agentVault} was created.`);
             break;
         case 'deposit':
-            const amount = process.argv[3];
-            const agentVaultDeposit = process.argv[4];
+            const agentVaultDeposit = process.argv[3];
+            const amount = process.argv[4];
             if (amount && agentVaultDeposit) {
-                await cli.depositToVault(amount, agentVaultDeposit);
+                await cli.depositToVault(agentVaultDeposit, amount);
             } else {
-                console.log("Missing arguments ", chalk.blue("<amount> <agentVault>"), " for command ", chalk.yellow("deposit"));
+                console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("deposit"));
             }
             break;
         case 'enter':
@@ -40,12 +40,14 @@ toplevelRun(async () => {
             }
             break;
         default:
-            console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n")
-            console.log('  Available commands:', "\n")
-            console.log(chalk.yellow('  create'), "\t\t\t\t\t\t", "create new agent vault")
-            console.log(chalk.yellow('  deposit'), "\t", chalk.blue('<amount> <agentVault>'), "\t\t\t", "deposit amount to agent vault from owner's address")
-            console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault> <feeBIPS> <agentMinCRBIPS>'), "enter available agent's list")
-            console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list", "\n")
-            process.exit(-1)
+            console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
+            console.log('  Available commands:', "\n");
+            console.log(chalk.yellow('  create'), "\t\t\t\t\t\t", "create new agent vault");
+            console.log(chalk.yellow('  deposit'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "deposit amount to agent vault from owner's address");
+            console.log(chalk.yellow('  withdraw'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "withdraw amount from agent vault to owner's address");
+            console.log(chalk.yellow('  selfClose'), "\t", chalk.blue('<agentVault> <amountUBA>'), "\t\t", "self close agent vault with amountUBA of FAssets");
+            console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault> <feeBIPS> <agentMinCRBIPS>'), "enter available agent's list");
+            console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list", "\n");
+            process.exit(-1);
     }
 });

@@ -96,7 +96,8 @@ describe("Agent unit tests", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         await agent.depositCollateral(deposit);
         await agent.announceCollateralWithdrawal(withdraw);
-        await time.increase(300);
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.withdrawalWaitMinSeconds);
         await agent.withdrawCollateral(withdraw);
         const val = await context.wnat.balanceOf(agent.vaultAddress);
         expect(Number(val)).to.eq(Number(deposit.sub(withdraw)));
@@ -106,7 +107,8 @@ describe("Agent unit tests", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
         await agent.depositCollateral(deposit);
         await agent.announceDestroy();
-        await time.increase(300);
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.withdrawalWaitMinSeconds);
         const res = await agent.destroy();
         expect(res.agentVault).to.eq(agent.agentVault.address);
     });
@@ -153,8 +155,20 @@ describe("Agent unit tests", async () => {
 
     it("Should self close", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const res = await agent.selfClose(1);
-        expect(res.agentVault).to.eq(agent.vaultAddress);
+        await agent.depositCollateral(deposit);
+        await agent.makeAvailable(500, 25000);
+        // execute minting
+        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const crt = await minter.reserveCollateral(agent.vaultAddress, 2);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(ownerAddress, fBalance, { from: minter.address });
+        await agent.selfClose(fBalance.divn(2));
+        const fBalanceAfter = await context.fAsset.balanceOf(ownerAddress);
+        expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).toString());
     });
 
     it("Should not buy back agent collateral", async () => {

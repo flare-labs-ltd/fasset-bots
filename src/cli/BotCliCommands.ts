@@ -6,7 +6,7 @@ import { createBotConfig, RunConfig } from "../config/BotConfig";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { ORM } from "../config/orm";
 import { initWeb3 } from "../utils/web3";
-import { requireEnv } from "../utils/helpers";
+import { requireEnv, sleep, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 dotenv.config();
@@ -35,7 +35,7 @@ export class BotCliCommands {
         return agentBot.agent.vaultAddress;
     }
 
-    async depositToVault(amount: string, agentVault: string): Promise<void> {
+    async depositToVault(agentVault: string, amount: string): Promise<void> {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await agentBot.agent.depositCollateral(amount);
@@ -51,5 +51,20 @@ export class BotCliCommands {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await agentBot.agent.exitAvailable();
+    }
+
+    async withdrawFromVault(agentVault: string, amount: string) {
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        await agentBot.agent.announceCollateralWithdrawal(amount);
+        const settings = await this.context.assetManager.getSettings();
+        await sleep(toBN(settings.withdrawalWaitMinSeconds).muln(1000).toNumber());
+        await agentBot.agent.withdrawCollateral(amount);
+    }
+
+    async selfClose(agentVault: string, amountUBA: string) {
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        await agentBot.agent.selfClose(amountUBA);
     }
 }
