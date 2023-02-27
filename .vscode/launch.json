@@ -23,7 +23,7 @@
             "runtimeExecutable": "yarn",
             "runtimeArgs": [
                 "testhh",
-                "${workspaceFolder}/test-hardhat/unit/actors/agentBot.ts"
+                "${workspaceFolder}/test-hardhat/integration/challenger.ts"
             ]
         }
     ]

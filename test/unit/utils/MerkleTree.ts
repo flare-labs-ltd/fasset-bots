@@ -9,7 +9,7 @@ describe("Merkle tree unit tests", async () => {
         const tree = new MerkleTree([], true);
         expect(tree.hashCount).to.eq(0);
         expect(tree.root).to.be.null;
-        expect(tree.rootBN.toNumber()).to.eq(0);
+        expect(tree.rootBN.eqn(0)).to.true;
         expect(tree.sortedHashes.length).to.eq(0);
         expect(tree.tree.length).to.eq(0);
         expect(tree.getHash(0)).to.be.null;

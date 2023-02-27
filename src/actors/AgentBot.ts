@@ -83,7 +83,6 @@ export class AgentBot {
             const events = await this.readUnhandledEvents(em);
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
-                // console.log(this.context.assetManager.address, event.address, event.event);
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     this.mintingStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {

@@ -175,7 +175,7 @@ describe("Challenger tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.DONE) break;
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
@@ -225,6 +225,9 @@ describe("Challenger tests", async () => {
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
         expect(spy).to.have.been.called.once;
+        const spyAgent = chai.spy.on(agentBot.notifier, 'sendFullLiquidationAlert');
+        await agentBot.runStep(orm.em);
+        expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
@@ -407,7 +410,6 @@ describe("Challenger tests", async () => {
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
         const tx = await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal, 100);
-        console.log(tx);
         // await agentBot.agent.performPayment("underlying", 100);
         chain.mine(chain.finalizationBlocks + 1);
         // run challenger's steps until agent's status is FULL_LIQUIDATION

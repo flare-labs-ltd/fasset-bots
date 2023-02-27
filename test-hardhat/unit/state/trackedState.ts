@@ -4,7 +4,7 @@ import { AgentB } from "../../../src/fasset-bots/AgentB";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { EventArgs, EvmEvent } from "../../../src/utils/events/common";
+import { EventArgs } from "../../../src/utils/events/common";
 import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";

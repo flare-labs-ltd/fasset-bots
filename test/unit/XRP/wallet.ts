@@ -52,7 +52,7 @@ describe("XRP wallet tests", async () => {
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
-        expect(balanceAfter.toNumber()).to.be.greaterThan(balanceBefore.toNumber());
+        expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });
 
     it("Should not send funds: fee > maxFee", async () => {

@@ -35,7 +35,6 @@ describe("System keeper unit tests", async () => {
     });
 
     it("Should create system keeper", async () => {
-        const lastBlock = await web3.eth.getBlockNumber();
         const systemKeeper = new SystemKeeper(runner, systemKeeperAddress, state);
         expect(systemKeeper.address).to.eq(systemKeeperAddress);
     });

@@ -29,7 +29,7 @@ describe("ALGO blockchain tests", async () => {
 
     it("Should retrieve balance", async () => {
         const balance = await blockChainHelper.getBalance(fundedAddress);
-        expect(balance.toNumber()).to.be.greaterThanOrEqual(0);
+        expect(balance.gten(0)).to.be.true;
     });
 
     it("Should not retrieve block (hash) - not implemented", async () => {

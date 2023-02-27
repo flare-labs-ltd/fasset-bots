@@ -5,7 +5,6 @@ import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentStatus } from "./AgentBot";
 
 export class SystemKeeper {
     constructor(
@@ -27,16 +26,6 @@ export class SystemKeeper {
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, 'MintingExecuted')) {
                     await this.handleMintingExecuted(event.args);
-                } else if (eventIs(event, this.state.context.assetManager, "AgentInCCB")) {
-                    await this.handleStatusChange(AgentStatus.CCB, event.args.agentVault, event.args.timestamp);
-                } else if (eventIs(event, this.state.context.assetManager, 'LiquidationStarted')) {
-                    await this.handleStatusChange(AgentStatus.LIQUIDATION, event.args.agentVault, event.args.timestamp);
-                } else if (eventIs(event, this.state.context.assetManager, 'FullLiquidationStarted')) {
-                    await this.handleStatusChange(AgentStatus.FULL_LIQUIDATION, event.args.agentVault, event.args.timestamp);
-                } else if (eventIs(event, this.state.context.assetManager, 'LiquidationEnded')) {
-                    await this.handleStatusChange(AgentStatus.NORMAL, event.args.agentVault);
-                } else if (eventIs(event, this.state.context.assetManager, 'AgentDestroyAnnounced')) {
-                    await this.handleStatusChange(AgentStatus.DESTROYING, event.args.agentVault, event.args.timestamp);
                 }
             }
         } catch (error) {
@@ -61,11 +50,6 @@ export class SystemKeeper {
                 console.error(`Error with agent ${agent.vaultAddress}`, error);
             }
         }
-    }
-
-    async handleStatusChange(status: AgentStatus, agentVault: string, timestamp?: BN): Promise<void> {
-        const agent = await this.state.getAgentTriggerAdd(agentVault);
-        agent.handleStatusChange(status, timestamp);
     }
 
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
