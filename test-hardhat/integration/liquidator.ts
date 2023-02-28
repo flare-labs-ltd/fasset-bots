@@ -101,8 +101,9 @@ describe("Liquidator tests", async () => {
         const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
         const spy = chai.spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
-        // create collateral reservation and perform minting
+        // create collateral reservation, perform minting and run liquidation trigger
         await createCRAndPerformMinting(minter, agentBot, 2);
+        await liquidator.runStep();
         // check agent status
         const status1 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status1, AgentStatus.NORMAL);
