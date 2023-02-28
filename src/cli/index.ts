@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 import { toplevelRun } from "../utils/helpers";
 import { BotCliCommands } from "./BotCliCommands";
-
-const chalk = require('chalk')
+const chalk = require('chalk');
 
 toplevelRun(async () => {
     const cli = new BotCliCommands();
     await cli.initEnvironment();
     switch (process.argv[2]) {
         case 'create':
-            const agentVault = await cli.createAgentVault();
-            console.log(`Agent ${agentVault} was created.`);
+            await cli.createAgentVault();
             break;
         case 'deposit':
             const agentVaultDeposit = process.argv[3];
