@@ -28,7 +28,6 @@ describe("DOGE wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId, true);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -44,6 +43,7 @@ describe("DOGE wallet tests", async () => {
     });
 
     it("Should send funds and retrieve transaction", async () => {
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDOGE, "TestNote", undefined, true);
         const balanceAfter = await blockChainHelper.getBalance(targetAddress);

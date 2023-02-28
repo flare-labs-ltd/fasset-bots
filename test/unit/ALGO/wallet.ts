@@ -7,6 +7,8 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+const chai = require('chai');
+chai.use(require('chai-as-promised'));
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
@@ -27,7 +29,6 @@ describe("ALGO wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -46,6 +47,7 @@ describe("ALGO wallet tests", async () => {
     });
 
     it("Should send funds and retrieve transaction", async () => {
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab"
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendALGO, note, undefined, true);

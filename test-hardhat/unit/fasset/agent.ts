@@ -240,7 +240,7 @@ describe("Agent unit tests", async () => {
         await minter.executeMinting(crt, txHash);
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
-        // transfer fassets
+        // transfer FAssets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         const [rdreqs] = await redeemer.requestRedemption(lots);
@@ -261,7 +261,7 @@ describe("Agent unit tests", async () => {
         await minter.executeMinting(crt, txHash);
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
-        // transfer fassets
+        // transfer FAssets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         const [rdreqs] = await redeemer.requestRedemption(lots);
@@ -294,7 +294,7 @@ describe("Agent unit tests", async () => {
         await agent.executeMinting(crt, tx1Hash, minter.underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
-        // transfer fassets
+        // transfer FAssets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         const [rdreqs] = await redeemer.requestRedemption(lots);
@@ -327,7 +327,7 @@ describe("Agent unit tests", async () => {
         await minter.executeMinting(crt, tx1Hash);
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
-        // transfer fassets
+        // transfer FAssets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         const [rdreqs] = await redeemer.requestRedemption(lots);
@@ -359,7 +359,7 @@ describe("Agent unit tests", async () => {
         await minter.executeMinting(crt, tx1Hash);
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
-        // transfer fassets
+        // transfer FAssets
         const fbalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
         const [rdreqs] = await redeemer.requestRedemption(lots);

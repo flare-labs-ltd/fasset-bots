@@ -30,7 +30,6 @@ describe("XRP wallet tests", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
     });
 
     it("Should create account", async () => {
@@ -46,6 +45,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should send funds and retrieve transaction", async () => {
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
         const options = { maxFee: 12 }; // maxFee in Drops
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, null, options, true);
@@ -56,6 +56,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should not send funds: fee > maxFee", async () => {
+        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const maxFee = 8;
         const fee = 10;

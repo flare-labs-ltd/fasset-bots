@@ -159,8 +159,9 @@ describe("Liquidator tests", async () => {
         await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
-        // FAsset balance
+        // FAsset and collateral balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await state.context.wnat.balanceOf(liquidatorAddress);
         // liquidate agent (partially)
         const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
         await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidator.address });
@@ -168,10 +169,12 @@ describe("Liquidator tests", async () => {
         await agentBot.runStep(orm.em);
         const status2 = await getAgentStatus(context, agentBot.agent.agentVault.address);
         assert.equal(status2, AgentStatus.LIQUIDATION);
-        // FAsset balance
+        // FAsset and collateral balance
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceAfter = await state.context.wnat.balanceOf(liquidatorAddress);
         // check FAsset balance
         expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
+        expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;
     });
 
 });
