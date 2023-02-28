@@ -37,7 +37,7 @@ export class TrackedState {
 
     // async initialization part
     async initialize(): Promise<void> {
-        this.settings = await this.context.assetManager.getSettings();
+        this.settings = this.settings = Object.assign({}, await this.context.assetManager.getSettings());
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
 

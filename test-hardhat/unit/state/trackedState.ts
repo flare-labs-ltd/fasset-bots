@@ -24,7 +24,6 @@ const agentDestroyedArgs = {
     __length__: 1,
     agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d'
 } as EventArgs<AgentDestroyed>;
-
 const agentCreatedArgs = {
     '0': '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
     '1': toBN(0),
@@ -36,7 +35,6 @@ const agentCreatedArgs = {
     agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     underlyingAddress: 'UNDERLYING_ACCOUNT_78988'
 } as EventArgs<AgentCreated>;
-
 const deposit = toBNExp(1_000_000, 18);
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
 
@@ -296,14 +294,6 @@ describe("Tracked state tests", async () => {
         expect(agentAfter.dustUBA.gt(toBN(0))).to.be.true;
     });
 
-    it("Should not register event - error", async () => {
-        const spy = chai.spy.on(console, 'error');
-        const currentSettings = await context.assetManager.getSettings();
-        await context.assetManagerController.setLotSizeAmg([context.assetManager.address], toBN(currentSettings.lotSizeAMG).divn(4), { from: governance });
-        await trackedState.readUnhandledEvents();
-        expect(spy).to.have.been.called.once;
-    });
-
     it("Should handle event 'LiquidationPerformed'", async () => {
         await createTestActors(ownerAddress, minterAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
@@ -331,6 +321,66 @@ describe("Tracked state tests", async () => {
         expect(agentMiddle.freeUnderlyingBalanceUBA.lt(agentAfter.freeUnderlyingBalanceUBA)).to.be.true;
         expect(agentBefore.mintedUBA.lt(agentMiddle.mintedUBA)).to.be.true;
         expect(agentMiddle.mintedUBA.gt(agentAfter.mintedUBA)).to.be.true;
+    });
+
+    it("Should handle event 'SettingChanged'", async () => {
+        let lotSizeAMG_new = toBN(trackedState.settings.lotSizeAMG).muln(2);
+        await context.assetManagerController.setLotSizeAmg([context.assetManager.address], lotSizeAMG_new, { from: governance });
+        await trackedState.readUnhandledEvents();
+        const settingsAfter = trackedState.settings;
+        expect(settingsAfter.lotSizeAMG).to.eq(lotSizeAMG_new.toString());
+    });
+
+    it("Should handle event 'SettingArrayChanged'", async () => {
+        let liquidationCollateralFactorBIPS_new = [2_0000, 2_5000];
+        await context.assetManagerController.setLiquidationCollateralFactorBips([context.assetManager.address], liquidationCollateralFactorBIPS_new, { from: governance });
+        await trackedState.readUnhandledEvents();
+        const settingsAfter = trackedState.settings;
+        expect(settingsAfter.liquidationCollateralFactorBIPS[0].toString()).to.eq(liquidationCollateralFactorBIPS_new[0].toString());
+        expect(settingsAfter.liquidationCollateralFactorBIPS[1].toString()).to.eq(liquidationCollateralFactorBIPS_new[1].toString());
+    });
+
+    it("Should handle events 'SettingChanged' and 'SettingArrayChanged' - invalid setting", async () => {
+        const spy = chai.spy.on(console, 'error');
+        const settingChangedEventFail = {
+            address: trackedState.context.assetManager.address,
+            type: 'event',
+            signature: '0xac1fb27759c1e6f9e4a24d4f8c320be6091becb03cea5a95398fa220fca4ac0e',
+            event: 'SettingChanged',
+            args: {
+              '0': 'lotSizeAMGFail',
+              '1': toBN(0),
+              __length__: 2,
+              name: 'lotSizeAMGFail',
+              value: toBN(0)
+            },
+            blockHash: '0xdc0640480d61a307ad0e7b67b8b7e3586bbd20aefa52620fb5b54f4a943a299d',
+            blockNumber: 39,
+            logIndex: 0,
+            transactionHash: '0xf5081736c212077a16a512864ed480c60dfaf8f8d4d30bd452eec74125485cd5',
+            transactionIndex: 0
+          }
+        const settingArrayChangedEventFail = {
+            address: trackedState.context.assetManager.address,
+            type: 'event',
+            signature: '0xf8df5a8f8fc0ea5cc0d8aff70643ac14b7353b936a843e23cb08ff282ba74739',
+            event: 'SettingArrayChanged',
+            args: {
+                '0': 'liquidationCollateralFactorBIPSFail',
+                '1': [toBN(0), toBN(0)],
+                __length__: 2,
+                name: 'liquidationCollateralFactorBIPSFail',
+                value: [toBN(0), toBN(0)]
+            },
+            blockHash: '0xb80d1ac278eb17ad869bcd5c7be9bd6c907db6a03dabb69ec43b72e24aba141e',
+            blockNumber: 39,
+            logIndex: 0,
+            transactionHash: '0x4878b678646979bfe49669034562c6a8f0ad1765910d1db9109fb8245097e7c4',
+            transactionIndex: 0
+        }
+        await trackedState.registerStateEvents([settingChangedEventFail]);
+        await trackedState.registerStateEvents([settingArrayChangedEventFail]);
+        expect(spy).to.have.been.called.twice;
     });
 
 });
