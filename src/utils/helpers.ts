@@ -83,17 +83,17 @@ export function toNumber(x: BN | number | string) {
 
 // return String(Math.round(x * 10^exponent)), but sets places below float precision to zero instead of some random digits
 export function toStringExp(x: number | string, exponent: number): string {
-    let xstr: string;
+    let xStr: string;
     if (typeof x === 'number') {
         const significantDecimals = x !== 0 ? Math.max(0, 14 - Math.floor(Math.log10(x))) : 0;
         const decimals = Math.min(exponent, significantDecimals);
-        xstr = x.toFixed(decimals);
+        xStr = x.toFixed(decimals);
     } else {
-        xstr = x;
+        xStr = x;
     }
-    const dot = xstr.indexOf('.');
-    const mantissa = dot >= 0 ? xstr.slice(0, dot) + xstr.slice(dot + 1) : xstr;
-    const precision = dot >= 0 ? xstr.length - (dot + 1) : 0;
+    const dot = xStr.indexOf('.');
+    const mantissa = dot >= 0 ? xStr.slice(0, dot) + xStr.slice(dot + 1) : xStr;
+    const precision = dot >= 0 ? xStr.length - (dot + 1) : 0;
     if (precision === exponent) return mantissa;
     if (exponent < precision) throw new Error("toStringExp: loss of precision");
     const zeros = Array.from({ length: exponent - precision }, () => '0').join('');   // trailing zeros
@@ -126,10 +126,10 @@ export function formatBN(x: BN | string | number) {
 }
 
 function groupIntegerDigits(x: string) {
-    let startp = x.indexOf('.');
-    if (startp < 0) startp = x.length;
-    const endp = x[0] === '-' ? 1 : 0;
-    for (let p = startp - 3; p > endp; p -= 3) {
+    let startP = x.indexOf('.');
+    if (startP < 0) startP = x.length;
+    const endP = x[0] === '-' ? 1 : 0;
+    for (let p = startP - 3; p > endP; p -= 3) {
         x = x.slice(0, p) + '_' + x.slice(p); x
     }
     return x;
@@ -146,7 +146,7 @@ export function toHex(x: string | number | BN, padToBytes?: number) {
 }
 
 /**
- * Generate random EVM addresss.
+ * Generate random EVM address.
  */
 export function randomAddress() {
     return Web3.utils.toChecksumAddress(Web3.utils.randomHex(20))
