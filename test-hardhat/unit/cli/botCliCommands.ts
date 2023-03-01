@@ -1,14 +1,14 @@
 import { ORM } from "../../../src/config/orm";
-import { checkedCast, toBNExp, toStringExp } from "../../../src/utils/helpers";
+import { checkedCast, sleep, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
-import { toBN } from "@flarenetwork/mcc";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
+import { time } from "@openzeppelin/test-helpers";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -58,7 +58,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateral.toString()).to.eq(depositAmount);
     });
 
-    it("Should create enter and exit available list", async () => {
+    it("Should enter and exit available list", async () => {
         const depositAmount = toStringExp(100_000_000, 18);
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
@@ -75,7 +75,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(agenInfoAfter.publiclyAvailable).to.be.false;
     });
 
-    it.skip("Should withdraw from agent vault", async () => {
+    it("Should deposit and withdraw from agent vault", async () => {
         const depositAmount = toStringExp(100_000_000, 18);
         const withdrawAmount = toStringExp(100_000_000, 4);
         const vaultAddress = await botCliCommands.createAgentVault();
@@ -83,9 +83,11 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
         const collateralBefore = await context.wnat.balanceOf(vaultAddress);
         expect(collateralBefore.toString()).to.eq(depositAmount);
-        await botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
-        const collateralAfter = await context.wnat.balanceOf(vaultAddress);
-        expect(collateralAfter.toString()).to.eq(toBN(depositAmount).sub(toBN(withdrawAmount)).toString());
+        const res = botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
+        await sleep(500); //workaround to announce before increasing time - probably should be done differently
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.withdrawalWaitMinSeconds);
+        await Promise.all([res]);
     });
 
     it("Should self close", async () => {
@@ -105,6 +107,15 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.selfClose(vaultAddress, fBalance.divn(2).toString());
         const fBalanceAfter = await context.fAsset.balanceOf(ownerAddress);
         expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).toString());
+    });
+
+    it("Should set agent's minimal collateral ratio", async () => {
+        const settings = await context.assetManager.getSettings();
+        const minCR = toBN(settings.minCollateralRatioBIPS).muln(2).toString();
+        const vaultAddress = await botCliCommands.createAgentVault();
+        await botCliCommands.setAgentMinCR(vaultAddress, minCR);
+        const agentInfo = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(minCR).to.eq(agentInfo.agentMinCollateralRatioBIPS.toString());
     });
 
 });

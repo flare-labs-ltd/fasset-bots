@@ -60,20 +60,29 @@ export class BotCliCommands {
         console.log(chalk.cyan(`Agent ${agentVault} EXITED available list.`));
     }
 
-    async withdrawFromVault(agentVault: string, amount: string) {
+    async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await agentBot.agent.announceCollateralWithdrawal(amount);
+        console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} has been announced.`));
         const settings = await this.context.assetManager.getSettings();
+        console.log(chalk.cyan(`Waiting for ${settings.withdrawalWaitMinSeconds} seconds to start withdrawing from agent ${agentVault}.`));
         await sleep(toBN(settings.withdrawalWaitMinSeconds).muln(1000).toNumber());
         await agentBot.agent.withdrawCollateral(amount);
         console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} was successful.`));
     }
 
-    async selfClose(agentVault: string, amountUBA: string) {
+    async selfClose(agentVault: string, amountUBA: string): Promise<void> {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await agentBot.agent.selfClose(amountUBA);
         console.log(chalk.cyan(`Agent ${agentVault} self closed successfully.`));
+    }
+
+    async setAgentMinCR(agentVault: string, agentMinCollateralRationBIPS: string): Promise<void> {
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        await this.context.assetManager.setAgentMinCollateralRatioBIPS(agentVault, agentMinCollateralRationBIPS, { from: agentBot.agent.ownerAddress });
+        console.log(chalk.cyan(`Agent's min collateral ratio was successfully set to ${agentMinCollateralRationBIPS}.`));
     }
 }
