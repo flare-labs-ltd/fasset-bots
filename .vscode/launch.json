@@ -22,7 +22,7 @@
             "console": "integratedTerminal",
             "runtimeExecutable": "yarn",
             "runtimeArgs": [
-                "testhh",
+                "testHH",
                 "${workspaceFolder}/test-hardhat/integration/challenger.ts"
             ]
         }
