@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
 import { EM, ORM } from "../../../src/config/orm";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
@@ -53,9 +53,9 @@ describe("Tracked agent state tests", async () => {
     });
 
     it("Should return agent status", async () => {
-        await agentBot.agent.announceDestroy();
+        trackedAgentState.status = AgentStatus.DESTROYING;
         const status = await trackedAgentState.possibleLiquidationTransition(toBN(0));
-        expect(status.toString()).to.eq(agentInfo.status.toString());
+        expect(status.toString()).to.eq(trackedAgentState.status.toString());
     });
 
 });
