@@ -10,6 +10,7 @@ cache/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/cspell.json
 
 ### yarn 3
 .pnp.*
