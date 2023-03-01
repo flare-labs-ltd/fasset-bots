@@ -10,7 +10,7 @@ export class SystemKeeper {
     constructor(
         public runner: ScopedRunner,
         public address: string,
-        public state: TrackedState,
+        public state: TrackedState
     ) { }
 
     async runStep(): Promise<void> {

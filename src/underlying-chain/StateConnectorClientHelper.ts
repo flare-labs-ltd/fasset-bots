@@ -80,8 +80,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async submitRequest(data: string): Promise<AttestationRequest> {
-        const txres = await this.stateConnector.requestAttestations(data, { from: this.account });
-        const attReq = requiredEventArgs(txres, 'AttestationRequest')
+        const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
+        const attReq = requiredEventArgs(txRes, 'AttestationRequest');
         const calculated_round_id = this.timestampToRoundId(toNumber(attReq.timestamp));
         return {
             round: calculated_round_id,
@@ -237,7 +237,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             numberOfConfirmations: toBN(matchedResponse.numberOfConfirmations),
             averageBlockProductionTimeMs: toBN(matchedResponse.averageBlockProductionTimeMs),
             lowestQueryWindowBlockNumber: toBN(matchedResponse.lowestQueryWindowBlockNumber),
-            lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp),
+            lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp)
         };
     }
 
@@ -253,7 +253,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             lowerBoundaryBlockNumber: toBN(matchedResponse.lowerBoundaryBlockNumber),
             lowerBoundaryBlockTimestamp: toBN(matchedResponse.lowerBoundaryBlockTimestamp),
             firstOverflowBlockNumber: toBN(matchedResponse.firstOverflowBlockNumber),
-            firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp),
+            firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp)
         };
     }
 

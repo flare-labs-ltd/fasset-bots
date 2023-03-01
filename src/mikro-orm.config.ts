@@ -8,7 +8,7 @@ const options: Options<AbstractSqlDriver> = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
     type: 'sqlite',
     dbName: 'fasset-bots.db',
-    debug: false,
+    debug: false
 }
 
 export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions = {}): Promise<ORM> {

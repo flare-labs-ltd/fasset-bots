@@ -13,6 +13,6 @@ export class BNType extends Type<BN, string> {
     }
 
     override getColumnType(prop: EntityProperty<any>, platform: Platform): string {
-        return `decimal(38, 0)`
+        return `decimal(38, 0)`;
     }
 }

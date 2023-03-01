@@ -65,14 +65,14 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
         const collateral = await context.wnat.balanceOf(vaultAddress);
         expect(collateral.toString()).to.eq(depositAmount);
-        const agenInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
-        expect(agenInfoBefore.publiclyAvailable).to.be.false;
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
         await botCliCommands.enterAvailableList(vaultAddress, "500", "30000");
-        const agenInfoMiddle = await context.assetManager.getAgentInfo(vaultAddress);
-        expect(agenInfoMiddle.publiclyAvailable).to.be.true;
+        const agentInfoMiddle = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoMiddle.publiclyAvailable).to.be.true;
         await botCliCommands.exitAvailableList(vaultAddress);
-        const agenInfoAfter = await context.assetManager.getAgentInfo(vaultAddress);
-        expect(agenInfoAfter.publiclyAvailable).to.be.false;
+        const agentInfoAfter = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoAfter.publiclyAvailable).to.be.false;
     });
 
     it("Should deposit and withdraw from agent vault", async () => {

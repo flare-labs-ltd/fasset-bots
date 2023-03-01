@@ -38,7 +38,7 @@ export type AutoFinalizationType = 'auto' | 'on_wait' | 'timed' | 'manual';
 export class MockStateConnectorClient implements IStateConnectorClient {
     constructor(
         public stateConnector: StateConnectorMockInstance,
-        public finalizationType: AutoFinalizationType,
+        public finalizationType: AutoFinalizationType
     ) {
     }
 

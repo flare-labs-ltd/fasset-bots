@@ -21,7 +21,7 @@ export interface ITransaction {
     // Payment reference (a 256 bit number with defined prefix or `null` if not included)
     reference: string | null;
 
-    // Transaction status (only important on chains like Ehereum, where failed transactions are recorded and charged, otherwise always 0).
+    // Transaction status (only important on chains like Ethereum, where failed transactions are recorded and charged, otherwise always 0).
     // TX_SUCCESS (0) = success, TX_FAILED (1) = failure (sender's fault), TX_BLOCKED (2) = failure (receiver's fault, e.g. blocking contract)
     status: number;
 }

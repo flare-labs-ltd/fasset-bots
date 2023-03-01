@@ -66,7 +66,7 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (let chainInfo of runConfig.chainInfos) {
-        chains.push(await createBotConfigChain(chainInfo, orm.em))
+        chains.push(await createBotConfigChain(chainInfo, orm.em));
     }
     return {
         rpcUrl: runConfig.rpcUrl,
@@ -77,7 +77,7 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm
-    }
+    };
 }
 
 export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
@@ -91,7 +91,7 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
         blockChainIndexerClient: blockChainIndexerClient,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
-    }
+    };
 }
 
 export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
@@ -103,7 +103,7 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
                     token: ""
                 },
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            })
+            });
         case SourceId.BTC:
             return new WALLET.BTC({
                 url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
@@ -131,9 +131,9 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
                 username: "",
                 password: "",
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as XrpMccCreate)
+            } as XrpMccCreate);
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
@@ -150,7 +150,7 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
                     token: "",
                 },
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            })
+            });
         case SourceId.BTC:
             return new MCC.BTC({
                 url: requireEnv('BTC_URL_MCC'),
@@ -178,9 +178,9 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
                 username: process.env.XRP_USERNAME_MCC || "",
                 password: process.env.XRP_PASSWORD_MCC || "",
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as XrpMccCreate)
+            } as XrpMccCreate);
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
@@ -198,7 +198,7 @@ export function createBlockChainIndexerHelper(sourceId: SourceId, inTestnet?: bo
         case SourceId.XRP:
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
@@ -215,7 +215,7 @@ export function createBlockChainHelper(sourceId: SourceId, inTestnet?: boolean):
         case SourceId.XRP:
             return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
@@ -232,7 +232,7 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
         case SourceId.XRP:
             return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
@@ -249,7 +249,7 @@ export async function createAttestationHelper(sourceId: SourceId, stateConnector
         case SourceId.XRP:
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         default:
-            throw new Error(`SourceId ${sourceId} not supported.`)
+            throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 

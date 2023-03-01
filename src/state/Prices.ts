@@ -10,7 +10,7 @@ export class Prices {
         public readonly natUSDDec5: BN,
         public readonly natTimestamp: BN,
         public readonly assetUSDDec5: BN,
-        public readonly assetTimestamp: BN,
+        public readonly assetTimestamp: BN
     ) {
         this.amgNatWei = !natTimestamp.isZero() && !assetTimestamp.isZero() ? amgToNATWeiPrice(settings, natUSDDec5, assetUSDDec5) : BN_ZERO;
     }

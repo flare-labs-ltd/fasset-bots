@@ -24,7 +24,7 @@ export enum AgentStatus {
     CCB = 1,                // agent in collateral call band
     LIQUIDATION = 2,        // liquidation due to collateral ratio - ends when agent is healthy
     FULL_LIQUIDATION = 3,   // illegal payment liquidation - always liquidates all and then agent must close vault
-    DESTROYING = 4,         // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
+    DESTROYING = 4          // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
 }
 
 const AgentVault = artifacts.require('AgentVault');

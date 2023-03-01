@@ -7,7 +7,7 @@ export interface EventSubscription {
 class ScopedSubscription implements EventSubscription {
     constructor(
         private scope?: EventScope,
-        private subscription?: EventSubscription,
+        private subscription?: EventSubscription
     ) { }
 
     unsubscribe(): void {

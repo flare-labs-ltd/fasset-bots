@@ -6,7 +6,7 @@ import { toBN } from "../utils/helpers";
 export class BlockChainHelper implements IBlockChain {
     constructor(
         public walletClient: WalletClient,
-        public mccClient: MccClient,
+        public mccClient: MccClient
     ) { }
 
     finalizationBlocks: number = 0;

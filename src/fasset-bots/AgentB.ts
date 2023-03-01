@@ -11,7 +11,7 @@ export class AgentB extends Agent {
         public context: IAssetBotContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
-        public underlyingAddress: string,
+        public underlyingAddress: string
     ) {
         super(context, ownerAddress, agentVault, underlyingAddress);
     }

@@ -11,7 +11,7 @@ export class Minter {
         public context: IAssetContext,
         public address: string,
         public underlyingAddress: string,
-        public wallet: IBlockChainWallet,
+        public wallet: IBlockChainWallet
     ) {
     }
 

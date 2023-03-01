@@ -6,7 +6,7 @@ export enum SourceId {
    LTC = 1,
    DOGE = 2,
    XRP = 3,
-   ALGO = 4,
+   ALGO = 4
 }
 
 export function getSourceName(sourceId: number): string | null {

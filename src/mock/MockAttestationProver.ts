@@ -30,7 +30,7 @@ function totalReceivedValue(transaction: MockChainTransaction, receivingAddressH
 export class MockAttestationProver {
     constructor(
         public chain: MockChain,
-        public queryWindowSeconds: number,
+        public queryWindowSeconds: number
     ) { }
 
     payment(transactionHash: string, inUtxo: number, utxo: number, upperBoundProof: string): DHPayment {
@@ -68,7 +68,7 @@ export class MockAttestationProver {
             inUtxo: toBN(inUtxo),
             sourceAddressHash: sourceAddressHash,
             spentAmount: spent,
-            paymentReference: transaction.reference ?? ZERO_BYTES32,
+            paymentReference: transaction.reference ?? ZERO_BYTES32
         };
         return web3DeepNormalize(proof);
     }
@@ -117,7 +117,7 @@ export class MockAttestationProver {
             lowerBoundaryBlockNumber: toBN(lowerBoundaryBlockNumber),
             lowerBoundaryBlockTimestamp: toBN(this.chain.blocks[lowerBoundaryBlockNumber].timestamp),
             firstOverflowBlockNumber: toBN(overflowBlock),
-            firstOverflowBlockTimestamp: toBN(this.chain.blocks[overflowBlock].timestamp),
+            firstOverflowBlockTimestamp: toBN(this.chain.blocks[overflowBlock].timestamp)
         };
         return web3DeepNormalize(proof);
     }
@@ -164,7 +164,7 @@ export class MockAttestationProver {
             numberOfConfirmations: toBN(this.chain.finalizationBlocks),
             averageBlockProductionTimeMs: toBN(Math.round(this.chain.secondsPerBlock * 1000)),
             lowestQueryWindowBlockNumber: toBN(Math.max(0, block.number - Math.round(this.queryWindowSeconds / this.chain.secondsPerBlock))),
-            lowestQueryWindowBlockTimestamp: toBN(Math.max(0, block.timestamp - this.queryWindowSeconds)),
+            lowestQueryWindowBlockTimestamp: toBN(Math.max(0, block.timestamp - this.queryWindowSeconds))
         };
         return web3DeepNormalize(proof);
     }

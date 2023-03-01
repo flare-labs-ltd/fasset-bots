@@ -16,7 +16,7 @@ export class Agent {
         public context: IAssetContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
-        public underlyingAddress: string,
+        public underlyingAddress: string
     ) {
     }
 
