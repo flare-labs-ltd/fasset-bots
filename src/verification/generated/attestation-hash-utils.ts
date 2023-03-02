@@ -3,13 +3,13 @@
 //////////////////////////////////////////////////////////////
 
 import Web3 from "web3";
-import { 
+import {
    ARPayment,
    ARBalanceDecreasingTransaction,
    ARConfirmedBlockHeightExists,
    ARReferencedPaymentNonexistence,
    ARTrustlineIssuance,
-   ARType 
+   ARType
 } from "./attestation-request-types";
 import {
    DHPayment,
@@ -17,13 +17,13 @@ import {
    DHConfirmedBlockHeightExists,
    DHReferencedPaymentNonexistence,
    DHTrustlineIssuance,
-   DHType 
+   DHType
 } from "./attestation-hash-types";
 import { AttestationType } from "./attestation-types-enum";
 
 const web3 = new Web3();
 //////////////////////////////////////////////////////////////
-// Hash functions for requests and responses for particular 
+// Hash functions for requests and responses for particular
 // Attestation types.
 //////////////////////////////////////////////////////////////
 
@@ -173,7 +173,7 @@ export function hashTrustlineIssuance(request: ARTrustlineIssuance, response: DH
    return web3.utils.soliditySha3(encoded)!;
 }
 
-export function dataHash(request: ARType, response: DHType) {  
+export function dataHash(request: ARType, response: DHType) {
    switch(request.attestationType) {
       case AttestationType.Payment:
          return hashPayment(request as ARPayment, response as DHPayment);

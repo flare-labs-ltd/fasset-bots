@@ -78,7 +78,7 @@ declare module "@openzeppelin/test-helpers" {
 
     export namespace expectEvent {
         /**
-         * Same as expectEvent, but for events emitted in an arbitrary transaction (of hash txHash), by an arbitrary contract 
+         * Same as expectEvent, but for events emitted in an arbitrary transaction (of hash txHash), by an arbitrary contract
          * (emitter, the contract instance), even if it was indirectly called (i.e. if it was called by another smart contract and not an externally owned account).
          * Note: emitter must be the deployed contract instance emitting the expected event.
          * Note 2: unlike expectEvent, returns a Promise.

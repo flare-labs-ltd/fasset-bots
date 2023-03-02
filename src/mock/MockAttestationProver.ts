@@ -80,7 +80,7 @@ export class MockAttestationProver {
             throw new MockAttestationProverError(`AttestationProver.${method}: transaction hash not found ${transactionHash}`);
         }
         const [blockNumber, txInd] = transactionIndex;
-        // find and check finalziation block
+        // find and check finalization block
         const finalizationBlock = this.chain.blockWithHash(upperBoundProof);
         if (finalizationBlock == null) {
             throw new MockAttestationProverError(`AttestationProver.${method}: non-existent finalization block ${finalizationBlock}`);

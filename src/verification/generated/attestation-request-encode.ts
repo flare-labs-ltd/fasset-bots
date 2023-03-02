@@ -2,13 +2,13 @@
 // This file is auto generated. Do not edit.
 //////////////////////////////////////////////////////////////
 
-import { 
+import {
    ARPayment,
    ARBalanceDecreasingTransaction,
    ARConfirmedBlockHeightExists,
    ARReferencedPaymentNonexistence,
    ARTrustlineIssuance,
-   ARType 
+   ARType
 } from "./attestation-request-types";
 import { toHex, unPrefix0x } from "./attestation-request-parse";
 import { AttestationType } from "./attestation-types-enum";
@@ -25,7 +25,7 @@ export class AttestationRequestEncodeError extends Error {
 }
 
 function toUnprefixedBytes(value: any, type: string, size: number, key: string) {
-   let bytes = "";  
+   let bytes = "";
    switch (type) {
       case "AttestationType":
          bytes = unPrefix0x(toHex(value as number, size));
@@ -45,8 +45,8 @@ function toUnprefixedBytes(value: any, type: string, size: number, key: string) 
    if(bytes.length > size * 2) {
       throw new AttestationRequestEncodeError("Too long byte string for key: " + key);
    }
-   return bytes; 
-}  
+   return bytes;
+}
 
 export function encodePayment(request: ARPayment) {
    if(request.attestationType == null) {
@@ -177,7 +177,7 @@ export function encodeTrustlineIssuance(request: ARTrustlineIssuance) {
    return bytes;
 }
 
-export function encodeRequest(request: ARType): string  {  
+export function encodeRequest(request: ARType): string  {
    switch(request.attestationType) {
       case AttestationType.Payment:
          return encodePayment(request as ARPayment);

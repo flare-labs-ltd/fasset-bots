@@ -1,4 +1,4 @@
-// same as Trufle.AnyEvent
+// same as Truffle.AnyEvent
 export interface EventSelector {
     name: string;
     args: any;

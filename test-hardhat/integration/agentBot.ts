@@ -131,8 +131,8 @@ describe("Agent bot tests", async () => {
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, 'started');
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp))
-        chain.mine(Number(crt.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
         await agentBot.runStep(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedNonPaymentProof'
@@ -165,8 +165,8 @@ describe("Agent bot tests", async () => {
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp))
-        chain.mine(Number(crt.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
         await agentBot.runStep(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
@@ -194,8 +194,8 @@ describe("Agent bot tests", async () => {
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
-        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         await agentBot.runStep(orm.em);
         orm.em.clear();
         // check if minting is done
@@ -221,8 +221,8 @@ describe("Agent bot tests", async () => {
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
-        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         await agentBot.runStep(orm.em);
         orm.em.clear();
         // check if minting is done
@@ -250,8 +250,8 @@ describe("Agent bot tests", async () => {
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp))
-        chain.mine(Number(rdReq.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
         // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
@@ -286,8 +286,8 @@ describe("Agent bot tests", async () => {
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
-        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
@@ -317,8 +317,8 @@ describe("Agent bot tests", async () => {
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow)
-        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock)
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();

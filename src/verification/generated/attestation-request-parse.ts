@@ -4,13 +4,13 @@
 
 import Web3 from "web3";
 import BN from "bn.js";
-import { 
+import {
    ARPayment,
    ARBalanceDecreasingTransaction,
    ARConfirmedBlockHeightExists,
    ARReferencedPaymentNonexistence,
    ARTrustlineIssuance,
-   ARType 
+   ARType
 } from "./attestation-request-types";
 import { AttestationType } from "./attestation-types-enum";
 import { SourceId } from "../sources/sources";
@@ -54,7 +54,7 @@ function fromUnprefixedBytes(bytes: string, type: string, size: number) {
       case "ByteSequenceLike":
          return toHex(prefix0x(bytes), size);
       default:
-         throw new AttestationRequestParseError("Unsuported attestation request");
+         throw new AttestationRequestParseError("Unsupported attestation request");
    }
 }
 
@@ -72,17 +72,17 @@ export function getAttestationTypeAndSource(bytes: string) {
       throw new AttestationRequestParseError(e)
    }
 }
-  
+
 
 export function parsePayment(bytes: string): ARPayment {
    if(!bytes) {
       throw new AttestationRequestParseError("Empty attestation request")
    }
-   let input = unPrefix0x(bytes);  
+   let input = unPrefix0x(bytes);
    if(input.length != 144) {
       throw new AttestationRequestParseError("Incorrectly formatted attestation request")
    }
-  
+
    return {
       attestationType: fromUnprefixedBytes(input.slice(0, 4), "AttestationType", 2) as AttestationType,
       sourceId: fromUnprefixedBytes(input.slice(4, 12), "SourceId", 4) as SourceId,
@@ -97,11 +97,11 @@ export function parseBalanceDecreasingTransaction(bytes: string): ARBalanceDecre
    if(!bytes) {
       throw new AttestationRequestParseError("Empty attestation request")
    }
-   let input = unPrefix0x(bytes);  
+   let input = unPrefix0x(bytes);
    if(input.length != 142) {
       throw new AttestationRequestParseError("Incorrectly formatted attestation request")
    }
-  
+
    return {
       attestationType: fromUnprefixedBytes(input.slice(0, 4), "AttestationType", 2) as AttestationType,
       sourceId: fromUnprefixedBytes(input.slice(4, 12), "SourceId", 4) as SourceId,
@@ -115,11 +115,11 @@ export function parseConfirmedBlockHeightExists(bytes: string): ARConfirmedBlock
    if(!bytes) {
       throw new AttestationRequestParseError("Empty attestation request")
    }
-   let input = unPrefix0x(bytes);  
+   let input = unPrefix0x(bytes);
    if(input.length != 76) {
       throw new AttestationRequestParseError("Incorrectly formatted attestation request")
    }
-  
+
    return {
       attestationType: fromUnprefixedBytes(input.slice(0, 4), "AttestationType", 2) as AttestationType,
       sourceId: fromUnprefixedBytes(input.slice(4, 12), "SourceId", 4) as SourceId,
@@ -131,11 +131,11 @@ export function parseReferencedPaymentNonexistence(bytes: string): ARReferencedP
    if(!bytes) {
       throw new AttestationRequestParseError("Empty attestation request")
    }
-   let input = unPrefix0x(bytes);  
+   let input = unPrefix0x(bytes);
    if(input.length != 252) {
       throw new AttestationRequestParseError("Incorrectly formatted attestation request")
    }
-  
+
    return {
       attestationType: fromUnprefixedBytes(input.slice(0, 4), "AttestationType", 2) as AttestationType,
       sourceId: fromUnprefixedBytes(input.slice(4, 12), "SourceId", 4) as SourceId,
@@ -152,11 +152,11 @@ export function parseTrustlineIssuance(bytes: string): ARTrustlineIssuance {
    if(!bytes) {
       throw new AttestationRequestParseError("Empty attestation request")
    }
-   let input = unPrefix0x(bytes);  
+   let input = unPrefix0x(bytes);
    if(input.length != 116) {
       throw new AttestationRequestParseError("Incorrectly formatted attestation request")
    }
-  
+
    return {
       attestationType: fromUnprefixedBytes(input.slice(0, 4), "AttestationType", 2) as AttestationType,
       sourceId: fromUnprefixedBytes(input.slice(4, 12), "SourceId", 4) as SourceId,
@@ -165,7 +165,7 @@ export function parseTrustlineIssuance(bytes: string): ARTrustlineIssuance {
    }
 }
 
-export function parseRequest(bytes: string): ARType {  
+export function parseRequest(bytes: string): ARType {
    let { attestationType } = getAttestationTypeAndSource(bytes);
    switch(attestationType) {
       case AttestationType.Payment:

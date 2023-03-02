@@ -90,7 +90,7 @@ export class Challenger {
     }
 
     handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
-        // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediatelly illegal anyway
+        // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediately illegal anyway
         const reference = PaymentReference.redemption(args.requestId);
         this.transactionForPaymentReference.delete(reference);
         this.activeRedemptions.delete(reference);

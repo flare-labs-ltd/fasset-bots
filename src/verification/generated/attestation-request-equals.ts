@@ -2,14 +2,14 @@
 // This file is auto generated. Do not edit.
 //////////////////////////////////////////////////////////////
 
-import Web3 from "web3";  
-import { 
+import Web3 from "web3";
+import {
    ARPayment,
    ARBalanceDecreasingTransaction,
    ARConfirmedBlockHeightExists,
    ARReferencedPaymentNonexistence,
    ARTrustlineIssuance,
-   ARType 
+   ARType
 } from "./attestation-request-types";
 import { AttestationType } from "./attestation-types-enum";
 
@@ -36,7 +36,7 @@ export function assertEqualsByScheme(a: any, b: any, type: string) {
       case "ByteSequenceLike":
          return a === b;
       default:
-         throw new AttestationRequestEqualsError("Wrong type")      
+         throw new AttestationRequestEqualsError("Wrong type")
    }
 }
 
@@ -138,7 +138,7 @@ export function equalsTrustlineIssuance(request1: ARTrustlineIssuance, request2:
    return true;
 }
 
-export function equalsRequest(request1: ARType, request2: ARType): boolean  {  
+export function equalsRequest(request1: ARType, request2: ARType): boolean  {
    if(request1.attestationType != request2.attestationType) {
       return false;
    }

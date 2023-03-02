@@ -3,7 +3,7 @@ import { CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPa
 import { TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs } from "../utils/events/common";
-import { checkEventNotEmited, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
+import { checkEventNotEmitted, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
 import { AgentInfo } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
@@ -123,9 +123,9 @@ export class Agent {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
         findRequiredEvent(res, 'RedemptionFinished');
-        checkEventNotEmited(res, 'RedemptionPerformed');
-        checkEventNotEmited(res, 'RedemptionPaymentFailed');
-        checkEventNotEmited(res, 'RedemptionPaymentBlocked');
+        checkEventNotEmitted(res, 'RedemptionPerformed');
+        checkEventNotEmitted(res, 'RedemptionPaymentFailed');
+        checkEventNotEmitted(res, 'RedemptionPaymentBlocked');
     }
 
     async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]> {

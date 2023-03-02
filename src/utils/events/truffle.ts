@@ -48,10 +48,10 @@ export function findRequiredEvent<E extends EventSelector, N extends E['name']>(
     return event!;
 }
 
-export function checkEventNotEmited<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N) {
+export function checkEventNotEmitted<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N) {
     const event = findEvent(response, name);
     if (event != null) {
-        throw new Error(`Event ${name} emited`);
+        throw new Error(`Event ${name} emitted`);
     }
 }
 

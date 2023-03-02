@@ -5,7 +5,7 @@ import { numberLikeToNumber, prefix0x, randSol, tsTypeForSolidityType, toHex, he
 
 describe("Attestation types helper unit tests", () => {
 
-    it("Should convert solidty type to ts type", () => {
+    it("Should convert solidity type to ts type", () => {
         const expected1 = "BN";
         expect(tsTypeForSolidityType("uint8")).to.eq(expected1);
         expect(tsTypeForSolidityType("uint16")).to.eq(expected1);

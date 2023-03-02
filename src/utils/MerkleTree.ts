@@ -22,7 +22,7 @@ import { toBN, toHex } from "./helpers";
  * - left(i) = 2*i + 1
  * - right(i) = 2*i + 2
  *
- * Importants: all input strings should represent bytes32, hence should be 32-byte padded hex strings.
+ * Important: all input strings should represent bytes32, hence should be 32-byte padded hex strings.
  */
 
 const web3 = new Web3();
@@ -113,7 +113,7 @@ export class MerkleTree {
     let pos = this._tree.length - this.hashCount + i;
     while (pos > 0) {
       proof.push(
-        this._tree[pos + 2 * (pos % 2) - 1] // if pos even, take left sibiling at pos - 1, else the right sibiling at pos + 1
+        this._tree[pos + 2 * (pos % 2) - 1] // if pos even, take left sibling at pos - 1, else the right sibling at pos + 1
       );
       pos = this.parent(pos);
     }

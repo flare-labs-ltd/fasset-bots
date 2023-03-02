@@ -26,7 +26,7 @@ describe("Sources tests", async () => {
         const returnedToSourceId2 = toSourceId("BTC");
         expect(returnedToSourceId2).to.equal(sourceBTC);
 
-        const returnedToSourceId3 = toSourceId("BTCBTC");
+        const returnedToSourceId3 = toSourceId("BTC_BTC");
         expect(returnedToSourceId3).to.equal(SourceId.invalid);
     });
 

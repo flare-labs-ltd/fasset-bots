@@ -9,7 +9,7 @@ export interface DHPayment {
    // Attestation type
    stateConnectorRound: number;
    merkleProof?: string[];
-   
+
    // Number of the transaction block on the underlying chain.
    blockNumber: BN;
 
@@ -48,7 +48,7 @@ export interface DHPayment {
    // Standardized payment reference, if it exists, 0 otherwise.
    paymentReference: string;
 
-   // 'true' if the transaction has exactly one source address and 
+   // 'true' if the transaction has exactly one source address and
    // exactly one receiving address (different from source).
    oneToOne: boolean;
 
@@ -63,7 +63,7 @@ export interface DHBalanceDecreasingTransaction {
    // Attestation type
    stateConnectorRound: number;
    merkleProof?: string[];
-   
+
    // Number of the transaction block on the underlying chain.
    blockNumber: BN;
 
@@ -76,7 +76,7 @@ export interface DHBalanceDecreasingTransaction {
    // Index of the transaction input indicating source address on UTXO chains, 0 on non-UTXO chains.
    inUtxo: BN;
 
-   // Hash of the source address as a string. For UTXO transactions with multiple input addresses 
+   // Hash of the source address as a string. For UTXO transactions with multiple input addresses
    // this is the address that is on the input indicated by 'inUtxo' parameter.
    sourceAddressHash: string;
 
@@ -96,7 +96,7 @@ export interface DHConfirmedBlockHeightExists {
    // Attestation type
    stateConnectorRound: number;
    merkleProof?: string[];
-   
+
    // Number of the highest confirmed block that was proved to exist.
    blockNumber: BN;
 
@@ -120,7 +120,7 @@ export interface DHReferencedPaymentNonexistence {
    // Attestation type
    stateConnectorRound: number;
    merkleProof?: string[];
-   
+
    // Deadline block number specified in the attestation request.
    deadlineBlockNumber: BN;
 
@@ -143,7 +143,7 @@ export interface DHReferencedPaymentNonexistence {
    // Timestamp of the lowerBoundaryBlockNumber.
    lowerBoundaryBlockTimestamp: BN;
 
-   // The first (lowest) confirmed block with 'timestamp > deadlineTimestamp' 
+   // The first (lowest) confirmed block with 'timestamp > deadlineTimestamp'
    // and 'blockNumber  > deadlineBlockNumber'.
    firstOverflowBlockNumber: BN;
 
@@ -155,8 +155,8 @@ export interface DHTrustlineIssuance {
    // Attestation type
    stateConnectorRound: number;
    merkleProof?: string[];
-   
-   // 3 letter code or 160-bit hexadecimal string known as 
+
+   // 3 letter code or 160-bit hexadecimal string known as
    // [Currency code](https://xrpl.org/currency-formats.html#currency-codes).
    // The first byte indicates whether it is a 3 letter encoded ascii string "0x00..."
    // or 160 bit hex string "0x01...".

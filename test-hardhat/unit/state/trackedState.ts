@@ -231,8 +231,8 @@ describe("Tracked state tests", async () => {
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const lots = 2;
         const crt = await minter.reserveCollateral(agentB.vaultAddress, lots);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp))
-        chain.mine(Number(crt.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
         await trackedState.readUnhandledEvents();
         const agentMiddle = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         await agentB.mintingPaymentDefault(crt);

@@ -65,12 +65,12 @@ describe.skip("Agent bot tests - local network", async () => {
         await minter.executeMinting(crt, txHash);
         await agentBot.runStep(orm.em);
         // transfer fassets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // request redemption
-        const [rdreqs] = await redeemer.requestRedemption(2);
-        assert.equal(rdreqs.length, 1);
-        const rdreq = rdreqs[0];
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -78,12 +78,12 @@ describe.skip("Agent bot tests - local network", async () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdreq.requestId);
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`)
             if (redemption.state === 'done') break;
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
-        assert.equal(String(balance), String(toBN(rdreq.valueUBA).sub(toBN(rdreq.feeUBA))));
+        assert.equal(String(balance), String(toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA))));
     });
 });

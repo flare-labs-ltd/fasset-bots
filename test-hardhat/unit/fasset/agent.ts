@@ -221,8 +221,8 @@ describe("Agent unit tests", async () => {
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         const lots = 2;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp))
-        chain.mine(Number(crt.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
         const res = await agent.mintingPaymentDefault(crt);
         expect(res.agentVault).to.eq(agent.agentVault.address);
     });
@@ -241,11 +241,11 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         // transfer FAssets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
-        const [rdreqs] = await redeemer.requestRedemption(lots);
-        const tx1Hash = await agent.performRedemptionPayment(rdreqs[0]);
-        await agent.confirmActiveRedemptionPayment(rdreqs[0], tx1Hash);
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const tx1Hash = await agent.performRedemptionPayment(rdReqs[0]);
+        await agent.confirmActiveRedemptionPayment(rdReqs[0], tx1Hash);
         expect(spy).to.have.been.called.once;
     });
 
@@ -262,23 +262,23 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         // transfer FAssets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
-        const [rdreqs] = await redeemer.requestRedemption(lots);
-        const rdreq = rdreqs[0];
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const rdReq = rdReqs[0];
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(rdreq.lastUnderlyingTimestamp))
-        chain.mine(Number(rdreq.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
         // agent triggers payment default and gets paid in collateral with extra
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
-        const res = await agent.redemptionPaymentDefault(rdreq);
+        const res = await agent.redemptionPaymentDefault(rdReq);
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const endBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedCollateralWei));
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
-        const resp = await agent.finishRedemptionWithoutPayment(rdreq);
-        assert.equal(String(resp[0]?.requestId), String(rdreq.requestId));
+        const resp = await agent.finishRedemptionWithoutPayment(rdReq);
+        assert.equal(String(resp[0]?.requestId), String(rdReq.requestId));
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {
@@ -295,23 +295,23 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         // transfer FAssets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
-        const [rdreqs] = await redeemer.requestRedemption(lots);
-        const rdreq = rdreqs[0];
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const rdReq = rdReqs[0];
         // skip time so the payment will expire on underlying chain
-        chain.skipTimeTo(Number(rdreq.lastUnderlyingTimestamp))
-        chain.mine(Number(rdreq.lastUnderlyingBlock))
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
         // agent triggers payment default and gets paid in collateral with extra
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
-        const res = await agent.redemptionPaymentDefault(rdreq);
+        const res = await agent.redemptionPaymentDefault(rdReq);
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const endBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedCollateralWei));
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
-        const tx2Hash = await agent.performRedemptionPayment(rdreq);
-        await agent.confirmDefaultedRedemptionPayment(rdreq, tx2Hash);
+        const tx2Hash = await agent.performRedemptionPayment(rdReq);
+        await agent.confirmDefaultedRedemptionPayment(rdReq, tx2Hash);
         expect(spy).to.have.been.called.once;
     });
 
@@ -328,16 +328,16 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         // transfer FAssets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
-        const [rdreqs] = await redeemer.requestRedemption(lots);
-        const rdreq = rdreqs[0];
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const rdReq = rdReqs[0];
         // pay for redemption - wrong underlying address
-        rdreq.paymentAddress = minter.underlyingAddress;
-        const tx2Hash = await agent.performRedemptionPayment(rdreq);
+        rdReq.paymentAddress = minter.underlyingAddress;
+        const tx2Hash = await agent.performRedemptionPayment(rdReq);
         const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
-        const res = await agent.confirmFailedRedemptionPayment(rdreq, tx2Hash);
+        const res = await agent.confirmFailedRedemptionPayment(rdReq, tx2Hash);
         // check end balance
         const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
         const endBalanceAgent = await context.wnat.balanceOf(agent.agentVault.address);
@@ -360,15 +360,15 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         // transfer FAssets
-        const fbalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(redeemer.address, fbalance, { from: minter.address });
-        const [rdreqs] = await redeemer.requestRedemption(lots);
-        const rdreq = rdreqs[0];
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const rdReq = rdReqs[0];
         // pay for redemption - payment blocked
-        const paymentAmount = rdreq.valueUBA.sub(rdreq.feeUBA);
-        const txHash = await context.wallet.addTransaction(agent.underlyingAddress, rdreq.paymentAddress, paymentAmount, rdreq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
+        const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
+        const txHash = await context.wallet.addTransaction(agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
         chain.mine(chain.finalizationBlocks + 1);
-        const res = await agent.confirmBlockedRedemptionPayment(rdreq, txHash);
+        const res = await agent.confirmBlockedRedemptionPayment(rdReq, txHash);
         expect(res.agentVault).to.eq(agent.vaultAddress);
         expect(res.redeemer).to.eq(redeemer.address);
     });

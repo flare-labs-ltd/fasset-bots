@@ -5,7 +5,7 @@
 import BN from "bn.js";
 import Web3 from "web3";
 import { randSol } from "../attestation-types/attestation-types-helpers";
-import { 
+import {
    ARPayment,
    ARBalanceDecreasingTransaction,
    ARConfirmedBlockHeightExists,
@@ -38,7 +38,7 @@ export function randomResponsePayment() {
       receivedAmount: randSol({}, "receivedAmount", "int256") as BN,
       paymentReference: randSol({}, "paymentReference", "bytes32") as string,
       oneToOne: randSol({}, "oneToOne", "bool") as boolean,
-      status: randSol({}, "status", "uint8") as BN      
+      status: randSol({}, "status", "uint8") as BN
    } as DHPayment;
    return response;
 }
@@ -51,7 +51,7 @@ export function randomResponseBalanceDecreasingTransaction() {
       inUtxo: randSol({}, "inUtxo", "uint8") as BN,
       sourceAddressHash: randSol({}, "sourceAddressHash", "bytes32") as string,
       spentAmount: randSol({}, "spentAmount", "int256") as BN,
-      paymentReference: randSol({}, "paymentReference", "bytes32") as string      
+      paymentReference: randSol({}, "paymentReference", "bytes32") as string
    } as DHBalanceDecreasingTransaction;
    return response;
 }
@@ -63,7 +63,7 @@ export function randomResponseConfirmedBlockHeightExists() {
       numberOfConfirmations: randSol({}, "numberOfConfirmations", "uint8") as BN,
       averageBlockProductionTimeMs: randSol({}, "averageBlockProductionTimeMs", "uint64") as BN,
       lowestQueryWindowBlockNumber: randSol({}, "lowestQueryWindowBlockNumber", "uint64") as BN,
-      lowestQueryWindowBlockTimestamp: randSol({}, "lowestQueryWindowBlockTimestamp", "uint64") as BN      
+      lowestQueryWindowBlockTimestamp: randSol({}, "lowestQueryWindowBlockTimestamp", "uint64") as BN
    } as DHConfirmedBlockHeightExists;
    return response;
 }
@@ -78,7 +78,7 @@ export function randomResponseReferencedPaymentNonexistence() {
       lowerBoundaryBlockNumber: randSol({}, "lowerBoundaryBlockNumber", "uint64") as BN,
       lowerBoundaryBlockTimestamp: randSol({}, "lowerBoundaryBlockTimestamp", "uint64") as BN,
       firstOverflowBlockNumber: randSol({}, "firstOverflowBlockNumber", "uint64") as BN,
-      firstOverflowBlockTimestamp: randSol({}, "firstOverflowBlockTimestamp", "uint64") as BN      
+      firstOverflowBlockTimestamp: randSol({}, "firstOverflowBlockTimestamp", "uint64") as BN
    } as DHReferencedPaymentNonexistence;
    return response;
 }
@@ -88,12 +88,12 @@ export function randomResponseTrustlineIssuance() {
       tokenCurrencyCode: randSol({}, "tokenCurrencyCode", "bytes32") as string,
       tokenValueNominator: randSol({}, "tokenValueNominator", "uint256") as BN,
       tokenValueDenominator: randSol({}, "tokenValueDenominator", "uint256") as BN,
-      tokenIssuer: randSol({}, "tokenIssuer", "bytes32") as string      
+      tokenIssuer: randSol({}, "tokenIssuer", "bytes32") as string
    } as DHTrustlineIssuance;
    return response;
 }
 //////////////////////////////////////////////////////////////
-// Random attestation requests and resposes. Used for testing.
+// Random attestation requests and responses. Used for testing.
 //////////////////////////////////////////////////////////////
 
 export function getRandomResponseForType(attestationType: AttestationType) {
@@ -110,10 +110,10 @@ export function getRandomResponseForType(attestationType: AttestationType) {
          return randomResponseTrustlineIssuance();
       default:
          throw new Error("Wrong attestation type.")
-  }   
+  }
 }
 
-export function getRandomRequest() {  
+export function getRandomRequest() {
    let ids = [1, 2, 3, 4, 5];
    let randomAttestationType: AttestationType = ids[Math.floor(Math.random()*5)];
    let sourceId: SourceId = -1;
@@ -147,7 +147,7 @@ export function getRandomRequest() {
 export function getRandomRequestForAttestationTypeAndSourceId (
    attestationType: AttestationType,
    sourceId: SourceId
-) {  
+) {
    switch(attestationType) {
       case AttestationType.Payment:
          return {
