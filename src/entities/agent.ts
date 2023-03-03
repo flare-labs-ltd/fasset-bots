@@ -1,10 +1,11 @@
 import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
+import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: 'agent' })
 export class AgentEntity {
-    // vaultAddress is unique accross chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)
+    // vaultAddress is unique across chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)
     @PrimaryKey({ length: ADDRESS_LENGTH })
     vaultAddress!: string;
 
@@ -22,6 +23,18 @@ export class AgentEntity {
 
     @Property({ nullable: true })
     lastEventBlockHandled!: number;
+
+    @Property()
+    waitingForDestructionCleanUp: boolean =  false;
+
+    @Property()
+    waitingForDestructionTimestamp: number = 0;
+
+    @Property()
+    waitingForWithdrawalTimestamp: number = 0;
+
+    @Property({ type: BNType })
+    waitingForWithdrawalAmount: BN = BN_ZERO;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were

@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, sleep, systemTimestamp, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext } from "../test-utils/test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -52,8 +52,14 @@ describe("Challenger tests", async () => {
         return Number(agentInfo.status) as AgentStatus;
     }
 
-    async function createTestChallenger(runner: ScopedRunner, address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, systemTimestamp());
+    async function getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await chain.getBlockHeight();
+        const block = (await chain.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
+
+    async function createTestChallenger(address: string): Promise<Challenger> {
+        return new Challenger(runner, address, state, await getLatestBlockTimestamp());
     }
 
     async function createTestActors(ownerAddress: string, minterAddress: string, redeemerAddress: string, minterUnderlying: string, redeemerUnderlying: string): Promise<void> {
@@ -87,7 +93,7 @@ describe("Challenger tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         runner = new ScopedRunner();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
@@ -98,7 +104,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal payment", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -127,7 +133,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -153,7 +159,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -199,7 +205,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - announced withdrawal", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -231,7 +237,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -274,7 +280,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal/double payment - reference for already confirmed announced withdrawal", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
@@ -308,7 +314,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentFailed' event - failed underlying payment (not redeemer's address)", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -368,7 +374,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentBlocked' event", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -403,7 +409,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should perform free balance negative challenge", async () => {
-        const challenger = await createTestChallenger(runner, challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress);
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();

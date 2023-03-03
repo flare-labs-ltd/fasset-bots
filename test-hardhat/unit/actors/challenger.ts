@@ -7,7 +7,7 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { systemTimestamp, toBN } from "../../../src/utils/helpers";
+import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -39,6 +39,16 @@ describe("Challenger unit tests", async () => {
     let orm: ORM;
     let state: TrackedState;
 
+    async function getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await context.chain.getBlockHeight();
+        const block = (await context.chain.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
+
+    async function createTestChallenger(address: string): Promise<Challenger> {
+        return new Challenger(runner, address, state, await getLatestBlockTimestamp());
+    }
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
@@ -56,12 +66,12 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, systemTimestamp());
+        const challenger = await createTestChallenger(challengerAddress);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, systemTimestamp());
+        const challenger = await createTestChallenger(challengerAddress);
         const agentB = await AgentB.create(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -73,7 +83,7 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, systemTimestamp());
+        const challenger = await createTestChallenger(challengerAddress);
         const agentB = await AgentB.create(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);

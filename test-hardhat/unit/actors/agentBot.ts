@@ -1,7 +1,7 @@
-import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -9,6 +9,7 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
+import { time } from "@openzeppelin/test-helpers";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
@@ -50,6 +51,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should read agent bot from entity", async () => {
+        await AgentBot.create(orm.em, context, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt)
         expect(agentBot.agent.underlyingAddress).is.not.null;
@@ -86,7 +88,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should prove EOA address", async () => {
         const spy = chai.spy.on(AgentBot, 'proveEOAaddress');
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true, true);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
         await AgentBot.create(orm.em, context, ownerAddress);
         expect(spy).to.have.been.called.once;
     });
@@ -292,6 +294,66 @@ describe("Agent bot unit tests", async () => {
         });
         await agentBot.checkConfirmPayment(rd);
         expect(spy).to.have.been.called.once;
+    });
+
+    it("Should destruct agent", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        await agentBot.agent.announceDestroy();
+        agentEnt.waitingForDestructionTimestamp = (await time.latest()).toNumber();
+        const skipTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
+        await time.increase(skipTime);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfo.status).toNumber()).to.eq(AgentStatus.DESTROYING);
+        expect(agentEnt.waitingForDestructionTimestamp).to.be.gt(0);
+        await time.increase(skipTime);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
+    });
+
+    it("Should withdraw collateral", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const amount = toBN(10000);
+        await agentBot.agent.depositCollateral(amount);
+        await agentBot.agent.announceCollateralWithdrawal(amount);
+        agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
+        agentEnt.waitingForWithdrawalAmount = amount;
+        const skipTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
+        await time.increase(skipTime);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForWithdrawalTimestamp).to.be.gt(0);
+        expect(((await context.wnat.balanceOf(agentBot.agent.vaultAddress)).eq(amount))).to.be.true;
+        await time.increase(skipTime);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
+        expect((await context.wnat.balanceOf(agentBot.agent.vaultAddress)).eqn(0)).to.be.true;
+    });
+
+    it("Should announce to close vault", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        agentEnt.waitingForDestructionCleanUp = true;
+        const skipTime = toBN((await context.assetManager.getSettings()).withdrawalWaitMinSeconds).muln(2);
+        await time.increase(skipTime);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
+        expect(agentEnt.waitingForDestructionTimestamp).to.be.gt(0);
+    });
+
+    it("Should run handleAgentsWaitingsAndCleanUp and change nothing", async () => {
+        const agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
+        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
+        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
+        expect(agentEnt.waitingForWithdrawalAmount.eq(BN_ZERO)).to.be.true;
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
+        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
+        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
+        expect(agentEnt.waitingForWithdrawalAmount.eq(BN_ZERO)).to.be.true;
     });
 
 });

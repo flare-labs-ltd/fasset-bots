@@ -6,9 +6,10 @@ import { createBotConfig, RunConfig } from "../config/BotConfig";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { ORM } from "../config/orm";
 import { initWeb3 } from "../utils/web3";
-import { requireEnv, sleep, toBN } from "../utils/helpers";
+import { requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
+import { time } from "@openzeppelin/test-helpers";
 const chalk = require('chalk');
 dotenv.config();
 
@@ -65,11 +66,9 @@ export class BotCliCommands {
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await agentBot.agent.announceCollateralWithdrawal(amount);
         console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} has been announced.`));
-        const settings = await this.context.assetManager.getSettings();
-        console.log(chalk.cyan(`Waiting for ${settings.withdrawalWaitMinSeconds} seconds to start withdrawing from agent ${agentVault}.`));
-        await sleep(toBN(settings.withdrawalWaitMinSeconds).muln(1000).toNumber());
-        await agentBot.agent.withdrawCollateral(amount);
-        console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} was successful.`));
+        agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
+        agentEnt.waitingForWithdrawalAmount= toBN(amount);
+        // continue inside AgentBot
     }
 
     async selfClose(agentVault: string, amountUBA: string): Promise<void> {
@@ -84,5 +83,15 @@ export class BotCliCommands {
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
         await this.context.assetManager.setAgentMinCollateralRatioBIPS(agentVault, agentMinCollateralRationBIPS, { from: agentBot.agent.ownerAddress });
         console.log(chalk.cyan(`Agent's min collateral ratio was successfully set to ${agentMinCollateralRationBIPS}.`));
+    }
+
+    async closeVault(agentVault: string): Promise<void> {
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
+        if (agentInfo.publiclyAvailable) {
+            await this.exitAvailableList(agentVault);
+        }
+        agentEnt.waitingForDestructionCleanUp = true;
+        // continue inside AgentBot
     }
 }

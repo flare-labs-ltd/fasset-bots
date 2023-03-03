@@ -53,7 +53,7 @@ export type TestAssetBotContext = Modify<IAssetBotContext, {
     chain: MockChain;
 }>
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, mockChainAddCurrentTime: boolean = true, requireEOAAddressProof?: boolean, customParameters?: any): Promise<TestAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -92,7 +92,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
     };
     // create mock chain attestation provider
-    const chain = new MockChain(mockChainAddCurrentTime ? await time.latest() : undefined);
+    const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
     const stateConnectorClient = new MockStateConnectorClient(stateConnector, 'auto');

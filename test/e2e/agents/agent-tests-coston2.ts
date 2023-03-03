@@ -1,4 +1,5 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
+import { time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
@@ -93,7 +94,8 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, systemTimestamp());
+        const timestamp = (await time.latest()).toNumber();
+        const challenger = new Challenger(runner, challengerAddress, state, timestamp);
         expect(challenger.address).to.eq(challengerAddress);
     });
 

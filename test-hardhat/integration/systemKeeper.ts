@@ -78,7 +78,7 @@ describe("System keeper tests", async () => {
 
     beforeEach(async () => {
         orm.em.clear();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;

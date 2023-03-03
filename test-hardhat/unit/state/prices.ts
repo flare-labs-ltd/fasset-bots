@@ -13,7 +13,7 @@ async function createContext(governance: string, setMaxTrustedPriceAgeSeconds: N
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
-    return  await createTestAssetContext(governance, testChainInfo.xrp, false, undefined, parameters);
+    return  await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
 }
 
 describe("Prices tests", async () => {

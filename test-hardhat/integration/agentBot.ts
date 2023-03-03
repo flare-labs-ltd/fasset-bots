@@ -464,7 +464,7 @@ describe("Agent bot tests", async () => {
         const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
         const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
         const agentBot3 = await AgentBot.create(orm.em, context, ownerAddress2);
-        await  agentBot3.agent.depositCollateral(sub);
+        await agentBot3.agent.depositCollateral(sub);
         // check collateral ratio after price changes
         await agentBot2.runStep(orm.em);
         // expect cr to be the same as required cr
@@ -498,6 +498,44 @@ describe("Agent bot tests", async () => {
         // handle destruction
         await agentBot.runStep(orm.em);
         assert.equal(agentBotEnt.active, false);
+    });
+
+    it("Should announce to close vault only if no tickets are open for that agent", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // exit available
+        await agentBot.agent.exitAvailable();
+        // colse vault
+        agentEnt.waitingForDestructionCleanUp = true;
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+        }
+        await agentBot.runStep(orm.em);
+        const status = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        assert.equal(status, AgentStatus.DESTROYING);
     });
 
 });

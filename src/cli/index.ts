@@ -23,7 +23,7 @@ toplevelRun(async () => {
             case 'enter':
                 const agentVaultEnter = process.argv[3];
                 const feeBips = process.argv[4];
-                const agentMinCrBips= process.argv[5];
+                const agentMinCrBips = process.argv[5];
                 if (agentVaultEnter && feeBips && agentMinCrBips) {
                     await cli.enterAvailableList(agentVaultEnter, feeBips, agentMinCrBips);
                 } else {
@@ -36,6 +36,15 @@ toplevelRun(async () => {
                     await cli.exitAvailableList(agentVaultExit);
                 } else {
                     console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("exit"));
+                }
+                break;
+            case 'setMinCR':
+                const agentVaultMinCR = process.argv[3];
+                const minCollateralRatioBIPS = process.argv[4];
+                if (agentVaultMinCR && minCollateralRatioBIPS) {
+                    await cli.setAgentMinCR(agentVaultMinCR, minCollateralRatioBIPS);
+                } else {
+                    console.log("Missing arguments ", chalk.blue("<agentVault>, <agentMinCrBips>"), " for command ", chalk.yellow("setMinCr"));
                 }
                 break;
             case 'withdraw':
@@ -56,13 +65,12 @@ toplevelRun(async () => {
                     console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("selfClose"));
                 }
                 break;
-            case 'setMinCR':
-                const agentVaultMinCR = process.argv[3];
-                const minCollateralRatioBIPS = process.argv[4];
-                if (agentVaultMinCR && minCollateralRatioBIPS) {
-                    await cli.setAgentMinCR(agentVaultMinCR, minCollateralRatioBIPS);
+            case 'close':
+                const agentVaultClose = process.argv[3];
+                if (agentVaultClose) {
+                    await cli.closeVault(agentVaultClose);
                 } else {
-                    console.log("Missing arguments ", chalk.blue("<agentVault>, <agentMinCrBips>"), " for command ", chalk.yellow("setMinCr"));
+                    console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("close"));
                 }
                 break;
             default:
@@ -77,11 +85,12 @@ function listUsageAndCommands() {
     console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
     console.log('  Available commands:', "\n");
     console.log(chalk.yellow('  create'), "\t\t\t\t\t\t", "create new agent vault");
-    console.log(chalk.yellow('  setMinCr'), "\t", chalk.blue('<agentVault> <agentMinCrBips>'), "\t\t", "set agent's min CR in BIPS");
     console.log(chalk.yellow('  deposit'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "deposit amount to agent vault from owner's address");
+    console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault> <feeBips> <agentMinCrBips>'), "enter available agent's list");
+    console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list");
+    console.log(chalk.yellow('  setMinCr'), "\t", chalk.blue('<agentVault> <agentMinCrBips>'), "\t\t", "set agent's min CR in BIPS");
     console.log(chalk.yellow('  withdraw'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "withdraw amount from agent vault to owner's address");
     console.log(chalk.yellow('  selfClose'), "\t", chalk.blue('<agentVault> <amountUBA>'), "\t\t", "self close agent vault with amountUBA of FAssets");
-    console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault> <feeBips> <agentMinCrBips>'), "enter available agent's list");
-    console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list", "\n");
+    console.log(chalk.yellow('  close'), "\t", chalk.blue('<agentVault>'), "\t\t\t\t", "close agent vault", "\n");
     process.exit(-1);
 };

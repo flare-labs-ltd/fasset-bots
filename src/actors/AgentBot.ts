@@ -1,4 +1,5 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
+import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import { AgentDestroyed, CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
@@ -8,7 +9,7 @@ import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { MockNotifier } from "../mock/MockNotifier";
+import { Alerting } from "../mock/Alerting";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
@@ -34,7 +35,7 @@ export class AgentBot {
         public agent: AgentB
     ) { }
 
-    notifier = new MockNotifier();
+    notifier = new Alerting();
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
@@ -76,6 +77,7 @@ export class AgentBot {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
         await this.handleOpenRedemptions(rootEm);
+        await this.handleAgentsWaitingsAndCleanUp(rootEm);
     }
 
     async handleEvents(rootEm: EM): Promise<void> {
@@ -151,6 +153,34 @@ export class AgentBot {
         agentEnt.lastEventBlockHandled = lastBlock;
         return events;
     }
+
+    async handleAgentsWaitingsAndCleanUp(em: EM): Promise<void> {
+        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const settings = await this.context.assetManager.getSettings();
+        if (agentEnt.waitingForDestructionTimestamp > 0) {
+            const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForDestructionTimestamp));
+            if (waitedTime.lt(await time.latest())) {
+                await this.agent.destroy();
+                agentEnt.waitingForDestructionTimestamp = 0;
+            }
+        }
+        if (agentEnt.waitingForWithdrawalTimestamp > 0) {
+            const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForWithdrawalTimestamp));
+            if (waitedTime.lt(await time.latest())) {
+                await this.agent.withdrawCollateral(agentEnt.waitingForWithdrawalAmount);
+                agentEnt.waitingForWithdrawalTimestamp = 0;
+            }
+        }
+        if (agentEnt.waitingForDestructionCleanUp) {
+            const agentInfo = await this.context.assetManager.getAgentInfo(this.agent.vaultAddress);
+            if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
+                await this.agent.announceDestroy();
+                agentEnt.waitingForDestructionTimestamp = (await time.latest()).toNumber();
+                agentEnt.waitingForDestructionCleanUp = false;
+            }
+        }
+    }
+
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
         em.create(AgentMinting, {

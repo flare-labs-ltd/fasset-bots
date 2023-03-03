@@ -34,7 +34,7 @@ describe("Tracked agent state tests", async () => {
         ownerAddress = accounts[3];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         orm.em.clear();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, false);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         settings = await context.assetManager.getSettings();
     });
 

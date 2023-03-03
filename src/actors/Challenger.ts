@@ -8,7 +8,7 @@ import { EventArgs } from "../utils/events/common";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
-import { getOrCreate, sleep, sumBN, systemTimestamp, toBN } from "../utils/helpers";
+import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
@@ -54,7 +54,7 @@ export class Challenger {
         }
         // Underlying chain events
         let from = this.lastEventTimestampHandled!;
-        const to = systemTimestamp();
+        const to = await this.getLatestBlockTimestamp();
         const transactions = await this.state.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
@@ -222,4 +222,9 @@ export class Challenger {
         }
     }
 
+    async getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await this.state.context.chain.getBlockHeight();
+        const block = (await this.state.context.chain.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
 }

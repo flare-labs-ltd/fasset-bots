@@ -1,5 +1,5 @@
 import { ORM } from "../../../src/config/orm";
-import { checkedCast, sleep, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
+import { checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -8,13 +8,18 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
-import { time } from "@openzeppelin/test-helpers";
+import { AgentEntity } from "../../../src/entities/agent";
+import { FilterQuery } from "@mikro-orm/core";
 const chai = require('chai');
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
 
 const minterUnderlying: string = "MINTER_ADDRESS";
+const depositAmount = toStringExp(100_000_000, 18);
+const withdrawAmount = toStringExp(100_000_000, 4);
+const feeBIPS = 500;
+const minCR = 30000;
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -50,7 +55,6 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should deposit to agent vault,", async () => {
-        const depositAmount = toStringExp(100_000_000, 18);
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
@@ -59,7 +63,6 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should enter and exit available list", async () => {
-        const depositAmount = toStringExp(100_000_000, 18);
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
@@ -67,7 +70,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateral.toString()).to.eq(depositAmount);
         const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore.publiclyAvailable).to.be.false;
-        await botCliCommands.enterAvailableList(vaultAddress, "500", "30000");
+        await botCliCommands.enterAvailableList(vaultAddress, feeBIPS.toString(), minCR.toString());
         const agentInfoMiddle = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoMiddle.publiclyAvailable).to.be.true;
         await botCliCommands.exitAvailableList(vaultAddress);
@@ -76,25 +79,21 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should deposit and withdraw from agent vault", async () => {
-        const depositAmount = toStringExp(100_000_000, 18);
-        const withdrawAmount = toStringExp(100_000_000, 4);
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
         const collateralBefore = await context.wnat.balanceOf(vaultAddress);
         expect(collateralBefore.toString()).to.eq(depositAmount);
-        const res = botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
-        await sleep(500); //workaround to announce before increasing time - probably should be done differently
-        const settings = await context.assetManager.getSettings();
-        await time.increase(settings.withdrawalWaitMinSeconds);
-        await Promise.all([res]);
+        await botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEnt.waitingForWithdrawalAmount.eq(toBN(withdrawAmount))).to.be.true;
+        expect(agentEnt.waitingForWithdrawalTimestamp).to.gt(0);
     });
 
     it("Should self close", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
-        const depositAmount = toStringExp(100_000_000, 18);
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        await botCliCommands.enterAvailableList(vaultAddress, "500", "30000");
+        await botCliCommands.enterAvailableList(vaultAddress, feeBIPS.toString(), minCR.toString());
         // execute minting
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         const crt = await minter.reserveCollateral(vaultAddress, 2);
@@ -116,6 +115,20 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.setAgentMinCR(vaultAddress, minCR);
         const agentInfo = await context.assetManager.getAgentInfo(vaultAddress);
         expect(minCR).to.eq(agentInfo.agentMinCollateralRatioBIPS.toString());
+    });
+
+    it("Should close vault", async () => {
+        const vaultAddress1 = await botCliCommands.createAgentVault();
+        await botCliCommands.closeVault(vaultAddress1);
+        const agentEnt1 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress1 } as FilterQuery<AgentEntity>);
+        expect(agentEnt1.waitingForDestructionCleanUp).to.be.true;
+
+        const vaultAddress2 = await botCliCommands.createAgentVault();
+        await botCliCommands.depositToVault(vaultAddress2, depositAmount);
+        await botCliCommands.enterAvailableList(vaultAddress2, feeBIPS.toString(), minCR.toString());
+        await botCliCommands.closeVault(vaultAddress2);
+        const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress2 } as FilterQuery<AgentEntity>);
+        expect(agentEnt2.waitingForDestructionCleanUp).to.be.true;
     });
 
 });
