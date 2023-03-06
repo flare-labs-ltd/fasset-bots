@@ -1,6 +1,6 @@
 {
   "rpcUrl": "https://coston2-api.flare.network/ext/bc/C/rpc",
-  "loopDelay": 0,
+  "loopDelay": 10000,
   "contractsJsonFile": "../fasset/deployment/deploys/coston2.json",
   "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
   "chainInfos": [
@@ -17,8 +17,7 @@
   "ormOptions": {
     "dbName": "fasset-bots-c2.db",
     "debug": false,
-    "allowGlobalContext": true,
-    "schemaUpdate": "recreate"
+    "allowGlobalContext": true
   },
   "attestationProviderUrls": ["https://flare4.oracle-daemon.com/coston2"],
   "attestationClientAddress": "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",

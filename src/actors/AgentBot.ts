@@ -1,7 +1,6 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
-import { AgentDestroyed, CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
@@ -104,7 +103,7 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
                     this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
-                    await this.handleAgentDestruction(em, event.args);
+                    await this.handleAgentDestruction(em, event.args.agentVault);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     await this.checkAgentForCollateralRatioAndTopUp();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
@@ -154,33 +153,43 @@ export class AgentBot {
         return events;
     }
 
-    async handleAgentsWaitingsAndCleanUp(em: EM): Promise<void> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const settings = await this.context.assetManager.getSettings();
-        if (agentEnt.waitingForDestructionTimestamp > 0) {
-            const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForDestructionTimestamp));
-            if (waitedTime.lt(await time.latest())) {
-                await this.agent.destroy();
-                agentEnt.waitingForDestructionTimestamp = 0;
+    async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+        await rootEm.transactional(async em => {
+            const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            const settings = await this.context.assetManager.getSettings();
+            if (agentEnt.waitingForDestructionTimestamp > 0) {
+                const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForDestructionTimestamp));
+                const latestTimestamp = await this.latestBlockTimestamp();
+                if (waitedTime.lt(toBN(latestTimestamp))) {
+                    await this.agent.destroy();
+                    agentEnt.waitingForDestructionTimestamp = 0;
+                    await this.handleAgentDestruction(em, agentEnt.vaultAddress);
+                }
             }
-        }
-        if (agentEnt.waitingForWithdrawalTimestamp > 0) {
-            const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForWithdrawalTimestamp));
-            if (waitedTime.lt(await time.latest())) {
-                await this.agent.withdrawCollateral(agentEnt.waitingForWithdrawalAmount);
-                agentEnt.waitingForWithdrawalTimestamp = 0;
+            if (agentEnt.waitingForWithdrawalTimestamp > 0) {
+                const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForWithdrawalTimestamp));
+                const latestTimestamp = await this.latestBlockTimestamp();
+                if (waitedTime.lt(toBN(latestTimestamp))) {
+                    await this.agent.withdrawCollateral(agentEnt.waitingForWithdrawalAmount);
+                    agentEnt.waitingForWithdrawalTimestamp = 0;
+                }
             }
-        }
-        if (agentEnt.waitingForDestructionCleanUp) {
-            const agentInfo = await this.context.assetManager.getAgentInfo(this.agent.vaultAddress);
-            if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
-                await this.agent.announceDestroy();
-                agentEnt.waitingForDestructionTimestamp = (await time.latest()).toNumber();
-                agentEnt.waitingForDestructionCleanUp = false;
+            if (agentEnt.waitingForDestructionCleanUp) {
+                const agentInfo = await this.context.assetManager.getAgentInfo(this.agent.vaultAddress);
+                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
+                    await this.agent.announceDestroy();
+                    agentEnt.waitingForDestructionTimestamp = await this.latestBlockTimestamp();
+                    agentEnt.waitingForDestructionCleanUp = false;
+                }
             }
-        }
+        });
     }
 
+    async latestBlockTimestamp(): Promise<number> {
+        const latestBlock = await web3.eth.getBlockNumber();
+        const latestTimestamp = (await web3.eth.getBlock(latestBlock)).timestamp;
+        return Number(latestTimestamp);
+    }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
         em.create(AgentMinting, {
@@ -433,8 +442,8 @@ export class AgentBot {
         return null;
     }
 
-    async handleAgentDestruction(em: EM, args: EventArgs<AgentDestroyed>): Promise<void> {
-        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: args.agentVault } as FilterQuery<AgentEntity>);
+    async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
+        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
     }
 
