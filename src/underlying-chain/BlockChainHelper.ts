@@ -114,4 +114,10 @@ export class BlockChainHelper implements IBlockChain {
     async getBlockHeight(): Promise<number> {
         return await this.mccClient.getBlockHeight();
     }
+
+    async getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await this.getBlockHeight();
+        const block = (await this.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
 }

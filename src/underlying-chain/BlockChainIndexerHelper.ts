@@ -122,6 +122,12 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return 0;
     }
 
+    async getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await this.getBlockHeight();
+        const block = (await this.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
+
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
         const chain = getSourceName(this.sourceId);
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/payment-reference/${reference}`);

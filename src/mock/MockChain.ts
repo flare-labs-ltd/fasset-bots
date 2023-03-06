@@ -84,6 +84,11 @@ export class MockChain implements IBlockChain {
         return this.blocks.length - 1;
     }
 
+    async getLatestBlockTimestamp(): Promise<number> {
+        const blockHeight = await this.getBlockHeight();
+        const block = (await this.getBlockAt(blockHeight))!;
+        return block.timestamp;
+    }
     ////////////////////////////////////////////////////////////////////////////////
     // Mock methods
 
