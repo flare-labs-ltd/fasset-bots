@@ -1,5 +1,4 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
-import { time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
@@ -12,7 +11,7 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { requireEnv, systemTimestamp } from "../../../src/utils/helpers";
+import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
@@ -41,11 +40,6 @@ describe("Agent bot tests - coston2", async () => {
         challengerAddress = accounts[3];
         botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         orm = botConfig.orm;
-        context = await createAssetContext(botConfig, botConfig.chains[0]);
-        runner = new ScopedRunner();
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(context, lastBlock);
-        await state.initialize();
     });
 
     beforeEach(async () => {
@@ -94,8 +88,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create challenger", async () => {
-        const timestamp = (await time.latest()).toNumber();
-        const challenger = new Challenger(runner, challengerAddress, state, timestamp);
+        const challenger = new Challenger(runner, challengerAddress, state, await context.chain.getLatestBlockTimestamp());
         expect(challenger.address).to.eq(challengerAddress);
     });
 

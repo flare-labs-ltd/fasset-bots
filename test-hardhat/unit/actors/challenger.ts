@@ -39,14 +39,8 @@ describe("Challenger unit tests", async () => {
     let orm: ORM;
     let state: TrackedState;
 
-    async function getLatestBlockTimestamp(): Promise<number> {
-        const blockHeight = await context.chain.getBlockHeight();
-        const block = (await context.chain.getBlockAt(blockHeight))!;
-        return block.timestamp;
-    }
-
     async function createTestChallenger(address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, await getLatestBlockTimestamp());
+        return new Challenger(runner, address, state, await context.chain.getLatestBlockTimestamp());
     }
 
     before(async () => {

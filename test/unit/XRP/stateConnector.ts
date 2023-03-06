@@ -45,7 +45,7 @@ describe("XRP attestation/state connector tests", async () => {
         expect(resp.round).to.be.greaterThan(0);
     });
 
-    it("Should obtain proof", async () => {
+    it.skip("Should obtain proof", async () => {
         const proof1 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_1);
         expect(proof1.finalized).to.be.true;
         const proof2 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_2);

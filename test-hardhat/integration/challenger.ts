@@ -52,14 +52,8 @@ describe("Challenger tests", async () => {
         return Number(agentInfo.status) as AgentStatus;
     }
 
-    async function getLatestBlockTimestamp(): Promise<number> {
-        const blockHeight = await chain.getBlockHeight();
-        const block = (await chain.getBlockAt(blockHeight))!;
-        return block.timestamp;
-    }
-
     async function createTestChallenger(address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, await getLatestBlockTimestamp());
+        return new Challenger(runner, address, state, await chain.getLatestBlockTimestamp());
     }
 
     async function createTestActors(ownerAddress: string, minterAddress: string, redeemerAddress: string, minterUnderlying: string, redeemerUnderlying: string): Promise<void> {
