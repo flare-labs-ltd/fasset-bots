@@ -66,13 +66,13 @@ describe("Agent bot tests - coston2", async () => {
 
     it("Should create agent bot runner from bot config", async () => {
         const agentBotRunner = await AgentBotRunner.create(botConfig)
-        expect(agentBotRunner.loopDelay).to.eq(0);
+        expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should create missing agents for agent bot runner", async () => {
         const agentBotRunner = await AgentBotRunner.create(botConfig)
-        expect(agentBotRunner.loopDelay).to.eq(0);
+        expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
         await agentBotRunner.createMissingAgents(ownerAddress);
         const existing1 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);

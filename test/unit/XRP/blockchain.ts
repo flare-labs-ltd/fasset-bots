@@ -8,7 +8,7 @@ import { SourceId } from "../../../src/verification/sources/sources";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
 
-const txHash = "70E60F3A2DFF7F4C035FD9DFB4639C023C99D24EEAB54A88453C06DCA5E4970A";
+const txHash = "CA4E465B8009C315783A6005AC6B40AA083A4317C3D3A6C123E33B8A908174B2";
 const blockId = 35435676;
 const blockHash = "926801238ace41e1e799210574efca4b5b2f04574ee38988bbd2f48818f08d2c";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
