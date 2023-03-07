@@ -58,10 +58,13 @@
       "/src"
    ],
    "scripts": {
+      "---------PUBLISH---SCRIPTS": "",
       "publish": "echo npm publish",
       "pack": "npm pack",
+      "---------BUILD---SCRIPTS": "",
       "build": "tsc --allowJs",
       "watch": "tsc --allowJs --watch --noEmit",
+      "---------LINT---SCRIPTS": "",
       "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
       "---------TEST---SCRIPTS": "",
       "test": "mocha",
