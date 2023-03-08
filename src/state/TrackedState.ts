@@ -118,7 +118,7 @@ export class TrackedState {
             }
         } catch (error) {
             console.error(`Error handling events for state: ${error}`);
-        };
+        }
     }
 
     async readUnhandledEvents(): Promise<EvmEvent[]> {

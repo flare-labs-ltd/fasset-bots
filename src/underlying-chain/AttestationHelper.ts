@@ -45,7 +45,7 @@ export class AttestationHelper {
         const block = await this.chain.getTransactionBlock(transactionHash);
         if (transaction == null || block == null) {
             throw new AttestationClientError(`transaction not found ${transactionHash}`);
-        };
+        }
         const finalizationBlock = await this.chain.getBlockAt(block.number + this.chain.finalizationBlocks);
         if (finalizationBlock == null) {
             throw new AttestationClientError(`finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);
@@ -67,7 +67,7 @@ export class AttestationHelper {
         const block = await this.chain.getTransactionBlock(transactionHash);
         if (transaction == null || block == null) {
             throw new AttestationClientError(`transaction not found ${transactionHash}`);
-        };
+        }
         const finalizationBlock = await this.chain.getBlockAt(block.number + this.chain.finalizationBlocks);
         if (finalizationBlock == null) {
             throw new AttestationClientError(`finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);

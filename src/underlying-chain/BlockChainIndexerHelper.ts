@@ -133,7 +133,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/payment-reference/${reference}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        let txs: ITransaction[] = [];
+        const txs: ITransaction[] = [];
         if (status === "OK") {
             if (data) {
                 for (const tx of data) {
@@ -155,7 +155,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/from/${from}/to/${to}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        let txs: ITransaction[] = [];
+        const txs: ITransaction[] = [];
         if (status === "OK") {
             if (data) {
                 for (const tx of data) {
@@ -190,7 +190,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
-        let transactionIds: string[] = [];
+        const transactionIds: string[] = [];
         const chain = getSourceName(this.sourceId);
         const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions-in-block/${blockNumber}`);
         const status = resp.data.status;
@@ -218,7 +218,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
             } else {
                 const chain = getSourceName(this.sourceId);
                 const inputs: TxInputOutput[] = [];
-                for (let item of data.vin) {
+                for (const item of data.vin) {
                     if (item.txid && item.vout >= 0) {
                         // Given a UTXO transaction indexer does additional processing on UTXO inputs.
                         // The processing is done only if the transaction contains some kind of a payment reference (OP_RETURN).
@@ -271,13 +271,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
     private ALGOInputsOutputs(type: string, data: any, input: boolean): TxInputOutput[] {
         if (input) {
             if ((type === "pay" || type === "pay_close") && data.amt) {
-                let amount = data.amt.toString();
+                const amount = data.amt.toString();
                 return [[hexToBase32(data.snd.data), toBN(data.fee || 0).add(toBN(amount))]];
             }
             return [[hexToBase32(data.snd.data), toBN(data.fee || 0)]];
         } else {
             if (data.amt) {
-                let amount = data.amt.toString();
+                const amount = data.amt.toString();
                 return [[this.ALGOReceivingAddress(type, data), toBN(amount)]];
             }
             return [["", toBN(0)]];
@@ -302,8 +302,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
         }
         // https://xrpl.org/transaction-results.html
         const response = data.response.data.result;
-        let metaData = response.meta || (response as any).metaData;
-        let result = metaData.TransactionResult;
+        const metaData = response.meta || (response as any).metaData;
+        const result = metaData.TransactionResult;
         if (result === "tesSUCCESS") {
             // https://xrpl.org/tes-success.html
             return TX_SUCCESS;

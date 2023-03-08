@@ -108,8 +108,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
                 // find response matching requestData
                 let matchedResponse: any = null;
-                for (let item of data) {
-                    let encoded = encodeRequest(item.request);
+                for (const item of data) {
+                    const encoded = encodeRequest(item.request);
                     if (encoded.toUpperCase() === requestData.toUpperCase()) {
                         matchedResponse = item;
                     }

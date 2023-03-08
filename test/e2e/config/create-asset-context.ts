@@ -7,7 +7,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_ADDRESS_UPDATER, COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-var rewire = require("rewire");
+const rewire = require("rewire");
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__('getAssetManagerAndController');
 // eslint-disable-next-line @typescript-eslint/no-var-requires

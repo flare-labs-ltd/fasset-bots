@@ -49,7 +49,7 @@ export class TrackedAgentState {
         this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
     }
 
-    async possibleLiquidationTransition(timestamp: BN): Promise<Number> {
+    async possibleLiquidationTransition(timestamp: BN): Promise<number> {
         const cr = await this.collateralRatioBIPS();
         const agentStatus = this.status;
         const settings = this.parent.settings;

@@ -65,7 +65,7 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
     const stateConnector = await createStateConnectorClient(runConfig.attestationProviderUrls, runConfig.attestationClientAddress, runConfig.stateConnectorAddress, ownerAddress);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
-    for (let chainInfo of runConfig.chainInfos) {
+    for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createBotConfigChain(chainInfo, orm.em));
     }
     return {

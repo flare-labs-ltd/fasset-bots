@@ -30,7 +30,7 @@ export class SystemKeeper {
             }
         } catch (error) {
             console.error(`Error handling events for system keeper ${this.address}: ${error}`);
-        };
+        }
     }
 
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {

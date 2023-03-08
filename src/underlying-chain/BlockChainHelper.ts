@@ -18,10 +18,10 @@ export class BlockChainHelper implements IBlockChain {
                 const transaction = (await this.mccClient.getIndexerTransaction(txHash))!; //indexer is set, otherwise it fails on set up
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
-                for (let input of transaction.spentAmounts) {
+                for (const input of transaction.spentAmounts) {
                     inputs.push([input.address!, input.amount]);
                 }
-                for (let output of transaction.receivedAmounts) {
+                for (const output of transaction.receivedAmounts) {
                     outputs.push([output.address!, output.amount]);
                 }
                 return {
@@ -35,10 +35,10 @@ export class BlockChainHelper implements IBlockChain {
                 const transaction = await this.mccClient.getTransaction(txHash);
                 const inputs: TxInputOutput[] = [];
                 const outputs: TxInputOutput[] = [];
-                for (let input of transaction.spentAmounts) {
+                for (const input of transaction.spentAmounts) {
                     inputs.push([input.address ? input.address : "", input.amount]);
                 }
-                for (let output of transaction.receivedAmounts) {
+                for (const output of transaction.receivedAmounts) {
                     outputs.push([output.address ? output.address : "", output.amount]);
                 }
                 return {

@@ -31,7 +31,7 @@ export class Liquidator {
             }
         } catch (error) {
             console.error(`Error handling events for liquidator ${this.address}: ${error}`);
-        };
+        }
     }
 
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {

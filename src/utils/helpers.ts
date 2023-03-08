@@ -208,7 +208,7 @@ export function multimapAdd<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
  * Remove a value from "multimap" - a map where there are several values for each key.
  */
 export function multimapDelete<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
-    let set = map.get(key);
+    const set = map.get(key);
     if (set == undefined) return;
     set.delete(value);
     if (set.size === 0) {
