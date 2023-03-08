@@ -87,16 +87,13 @@ export class BotCliCommands {
     }
 
     async closeVault(agentVault: string): Promise<void> {
-        await this.orm.em.transactional(async em => {
-            const agentEnt = await em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+            const agentEnt = await this.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
             const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
             if (agentInfo.publiclyAvailable) {
                 await this.exitAvailableList(agentVault);
             }
             agentEnt.waitingForDestructionCleanUp = true;
-        }).catch(error => {
-            console.error(`Error handling events for agent ${agentVault}: ${error}`);
-        });
+            await this.orm.em.persist(agentEnt).flush();
     }
 
     async run(args: string[]): Promise<void> {
