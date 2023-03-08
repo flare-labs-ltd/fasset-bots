@@ -1,9 +1,9 @@
 import Web3 from "web3";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { BNish, BN_ZERO, fail, systemTimestamp, toBN } from "../utils/helpers";
 
-export type MockTransactionOptions = TransactionOptions & { status?: number };
+export type MockTransactionOptions = { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
 
 export interface MockChainTransaction {

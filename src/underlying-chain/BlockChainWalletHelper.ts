@@ -1,7 +1,7 @@
 import { EntityManager } from "@mikro-orm/core";
 import { WalletClient } from "simple-wallet";
 import { IBlockChain } from "./interfaces/IBlockChain";
-import { IBlockChainWallet, TransactionOptions, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
+import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
 
 export class BlockChainWalletHelper implements IBlockChainWallet {
