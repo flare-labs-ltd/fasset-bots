@@ -1,12 +1,15 @@
+import { FilterQuery } from "@mikro-orm/core";
 import { expect } from "chai";
 import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
+import { WalletAddress } from "../../../src/entities/wallet";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -47,6 +50,8 @@ describe("XRP wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKey);
+        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(orm, targetAddress);
     });
 
     it("Should send funds and retrieve transaction", async () => {
@@ -58,6 +63,7 @@ describe("XRP wallet tests", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
     it("Should not send funds: fee > maxFee", async () => {
@@ -67,6 +73,7 @@ describe("XRP wallet tests", async () => {
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
         await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+        await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
     it("Should not add multi transaction - method not implemented", async () => {

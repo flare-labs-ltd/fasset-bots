@@ -6,6 +6,7 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
@@ -40,12 +41,15 @@ describe("BTC wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKey);
+        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(orm, targetAddress);
     });
 
     it("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, false);
         expect(transaction).to.not.be.null;
+        await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
 });

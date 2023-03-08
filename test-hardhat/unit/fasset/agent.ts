@@ -10,7 +10,9 @@ import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;

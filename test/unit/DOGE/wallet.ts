@@ -7,6 +7,7 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
@@ -43,6 +44,8 @@ describe("DOGE wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKey);
+        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(orm, targetAddress);
     });
 
     it("Should send funds and retrieve transaction", async () => {
@@ -53,6 +56,7 @@ describe("DOGE wallet tests", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
 });

@@ -7,6 +7,7 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -46,6 +47,8 @@ describe("ALGO wallet tests", async () => {
         const account2 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey2 = await dbWallet.getKey(account2);
         expect(privateKey2).to.eq(targetPrivateKey);
+        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(orm, targetAddress);
     });
 
     it("Should send funds and retrieve transaction", async () => {
@@ -57,6 +60,7 @@ describe("ALGO wallet tests", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
     it("Should not add multi transaction - method not implemented", async () => {

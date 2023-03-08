@@ -22,7 +22,9 @@ import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
