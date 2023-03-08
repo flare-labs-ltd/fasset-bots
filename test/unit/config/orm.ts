@@ -1,10 +1,8 @@
-import { createOrm, CreateOrmOptions, ORM } from "../../../src/config/orm";
 import { existsSync, rm } from "fs";
 import { expect } from "chai";
-import { WalletAddress } from "../../../src/entities/wallet";
 
 const dbName: string = 'fasset-bots-unit-test.db';
-const dbOptions: CreateOrmOptions = { dbName: dbName, type: 'sqlite', entities: [WalletAddress] };
+
 describe("Orm config tests", async () => {
 
     it("Should create database", async() => {

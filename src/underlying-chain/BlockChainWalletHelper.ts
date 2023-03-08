@@ -28,7 +28,7 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         }
     }
 
-    async addMultiTransaction(spend: { [address: string]: string | number | BN; }, receive: { [address: string]: string | number | BN; }, reference: string | null, options?: TransactionOptions): Promise<string> {
+    async addMultiTransaction(): Promise<string> {
         throw new Error("Method not implemented.");
     }
 

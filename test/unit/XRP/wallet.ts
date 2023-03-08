@@ -70,7 +70,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should not add multi transaction - method not implemented", async () => {
-        await expect(walletHelper.addMultiTransaction({}, {}, null)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+        await expect(walletHelper.addMultiTransaction()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
     it("Should add transaction - source address not found in db", async () => {
