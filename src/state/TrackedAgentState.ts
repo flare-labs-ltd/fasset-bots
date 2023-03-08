@@ -6,7 +6,7 @@ import { Prices } from "./Prices";
 import { convertUBAToNATWei } from "../fasset/Conversions";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
-import { AgentAvailable, AvailableAgentExited, CollateralReservationDeleted, CollateralReserved, DustChanged, DustConvertedToTicket, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
+import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 
 export class TrackedAgentState {
     constructor(
@@ -131,10 +131,6 @@ export class TrackedAgentState {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.valueUBA));
     }
 
-    handleRedemptionPaymentFailed(args: EventArgs<RedemptionPaymentFailed>): void {
-        // irrelevant to agent
-    }
-
     handleRedemptionPaymentBlocked(args: EventArgs<RedemptionPaymentBlocked>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
     }
@@ -168,7 +164,7 @@ export class TrackedAgentState {
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
     }
 
-    handleUnderlyingWithdrawalCancelled(args: EventArgs<UnderlyingWithdrawalCancelled>): void {
+    handleUnderlyingWithdrawalCancelled(): void {
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
     }
 
@@ -179,7 +175,7 @@ export class TrackedAgentState {
         this.feeBIPS = toBN(args.feeBIPS);
     }
 
-    handleAvailableAgentExited(args: EventArgs<AvailableAgentExited>) {
+    handleAvailableAgentExited() {
         this.publiclyAvailable = false;
     }
 

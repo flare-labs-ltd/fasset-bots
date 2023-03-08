@@ -246,7 +246,7 @@ export class AgentBot {
                 default:
                     console.error(`Minting state: ${minting.state} not supported`);
             }
-        }).catch(error => {
+        }).catch(() => {
             console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}`);
         });
     }
@@ -300,26 +300,26 @@ export class AgentBot {
     }
 
     async checkNonPayment(minting: AgentMinting): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
             await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         }
     }
 
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         }
     }
 
@@ -378,7 +378,7 @@ export class AgentBot {
                 default:
                     console.error(`Redemption state: ${redemption.state} not supported`);
             }
-        }).catch(error => {
+        }).catch(() => {
             console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
         });
     }
@@ -405,7 +405,7 @@ export class AgentBot {
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString());
         } else {
-            const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash!);
+            const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash ?? "");
             const blockHeight = await this.context.chain.getBlockHeight();
             if (txBlock != null && blockHeight - txBlock.number >= this.context.chain.finalizationBlocks) {
                 await this.requestPaymentProof(redemption);
@@ -414,21 +414,21 @@ export class AgentBot {
     }
 
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
+        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash ?? "", this.agent.underlyingAddress, redemption.paymentAddress);
         redemption.state = AgentRedemptionState.REQUESTED_PROOF;
         redemption.proofRequestRound = request.round;
         redemption.proofRequestData = request.data;
     }
 
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound ?? 0, redemption.proofRequestData ?? "");
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!, true);
+            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound ?? 0, redemption.proofRequestData ?? "", true);
         }
     }
 

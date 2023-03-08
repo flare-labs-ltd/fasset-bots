@@ -66,7 +66,7 @@ export class MerkleTree {
 
   get sortedHashes() {
     const n = this.hashCount;
-    return this._tree.slice(this.hashCount - 1);
+    return this._tree.slice(n - 1);
   }
 
   parent(i: number) {
@@ -90,7 +90,7 @@ export class MerkleTree {
     if (n !== 0) {
       this._tree = [...new Array(n - 1).fill(0), ...hashes];
       for (let i = n - 2; i >= 0; i--) {
-        this._tree[i] = sortedHashPair(this._tree[2 * i + 1], this._tree[2 * i + 2])!;
+        this._tree[i] = sortedHashPair(this._tree[2 * i + 1], this._tree[2 * i + 2]);
       }
     } else {
       this._tree = [];
@@ -133,7 +133,7 @@ export class MerkleTree {
     if (!leaf || !proof || !this.root) return false;
     let hash = leaf;
     for (const pair of proof) {
-      hash = sortedHashPair(pair, hash)!;
+      hash = sortedHashPair(pair, hash);
     }
     return hash === this.root;
   }

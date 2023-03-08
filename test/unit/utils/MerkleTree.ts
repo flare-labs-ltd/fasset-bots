@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "chai";
 import { toBN, toHex } from "../../../src/utils/helpers";
 import { MerkleTree } from "../../../src/utils/MerkleTree";
 
 describe("Merkle tree unit tests", async () => {
-    const makeHashes = (i: number) => new Array(i).fill(0).map((x) => toHex(Math.floor(Math.random() * 10000000000000), 32));
+    const makeHashes = (i: number) => new Array(i).fill(0).map(() => toHex(Math.floor(Math.random() * 10000000000000), 32));
 
     it("Should create empty tree", async () => {
         const tree = new MerkleTree([], true);

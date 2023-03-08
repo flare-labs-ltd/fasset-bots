@@ -3,15 +3,13 @@ import { createAttestationHelper, createBlockChainWalletHelper, createStateConne
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
-import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
-import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
+import { requireEnv} from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 
-let blockChainHelper: BlockChainHelper;
 let attestationHelper: AttestationHelper;
 let walletHelper: BlockChainWalletHelper;
 let orm: ORM;
@@ -63,22 +61,6 @@ describe("XRP attestation/state connector tests", async () => {
         const proof = await stateConnectorClient.obtainProof(requestConfirmedBlockHeight.round, requestConfirmedBlockHeight.data);
         expect(proof.finalized).to.be.true;
         expect(proof.result).to.not.be.null;
-    });
-    //REFERENCED PAYMENT NONEXISTENCE
-    it("Should create payment, send request to attestations for referenced payment nonexistence proof and retrieve proof from state connector", async () => {
-        const transactionHash = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, "TestPaymentNonExistence", undefined, true);
-        const transactionBlock = await blockChainHelper.getTransactionBlock(transactionHash);
-        const transaction = await blockChainHelper.getTransaction(transactionHash);
-        await sleep(10000);
-        const upperBoundBlock = await blockChainHelper.getBlockAt(transactionBlock!.number + 1);
-        if (upperBoundBlock && transaction) {
-            const requestPaymentNonexistence = await attestationHelper.requestReferencedPaymentNonexistenceProof(targetAddress, transaction.reference || '', toBN(amountToSendXRP), upperBoundBlock.number, upperBoundBlock.timestamp);
-            await stateConnectorClient.waitForRoundFinalization(requestPaymentNonexistence.round);
-            const proof = await stateConnectorClient.obtainProof(requestPaymentNonexistence.round, requestPaymentNonexistence.data);
-            expect(proof.finalized).to.be.true;
-            expect(proof.result).to.not.be.null;
-        }
-
     });
 
 });

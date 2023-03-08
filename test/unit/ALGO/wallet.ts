@@ -7,7 +7,9 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require('chai-as-promised'));
 
 let orm: ORM;

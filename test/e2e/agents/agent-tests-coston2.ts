@@ -24,8 +24,6 @@ describe("Agent bot tests - coston2", async () => {
     let context: IAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let minterAddress: string;
-    let redeemerAddress: string;
     let challengerAddress: string;
     let runner: ScopedRunner;
     let state: TrackedState;
@@ -35,8 +33,6 @@ describe("Agent bot tests - coston2", async () => {
         runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
         accounts = await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
-        minterAddress = accounts[1];
-        redeemerAddress = accounts[2];
         challengerAddress = accounts[3];
         botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         orm = botConfig.orm;

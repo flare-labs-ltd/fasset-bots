@@ -55,7 +55,7 @@ export class BlockChainHelper implements IBlockChain {
         }
     }
 
-    async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
+    async getTransactionBlock(): Promise<IBlockId | null> {
         throw new Error("Method not implemented.");
     }
 

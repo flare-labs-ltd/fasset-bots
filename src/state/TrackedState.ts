@@ -89,7 +89,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'AgentAvailable')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentAvailable(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AvailableAgentExited')) {
-                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleAvailableAgentExited(event.args);
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleAvailableAgentExited();
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleCollateralReserved(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'MintingPaymentDefault')) {
@@ -102,8 +102,6 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionDefault(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentBlocked(event.args);
-                } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
-                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentFailed(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalAnnounced')) {
@@ -111,7 +109,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalConfirmed(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalCancelled')) {
-                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalCancelled(event.args);
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalCancelled();
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
                 }

@@ -146,10 +146,10 @@ describe("Agent unit tests", async () => {
 
     it("Should announce and cancel underlying withdrawal", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const resAnnounce = await agent.announceUnderlyingWithdrawal();
+        await agent.announceUnderlyingWithdrawal();
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
-        const resConfirm = await agent.cancelUnderlyingWithdrawal(resAnnounce);
+        const resConfirm = await agent.cancelUnderlyingWithdrawal();
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
     });
 

@@ -18,6 +18,7 @@ export async function initTestWeb3(provider?: provider, defaultAccount: string |
 
 function configureOpenzeppelin() {
     if (usingGlobalWeb3()) return;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('@openzeppelin/test-helpers/configure')({
         provider: web3.currentProvider,
         singletons: {

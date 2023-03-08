@@ -13,6 +13,7 @@ import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/te
 import { convertLotsToUBA, convertAmgToUBA } from "../../../src/fasset/Conversions";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
@@ -263,12 +264,12 @@ describe("Tracked state tests", async () => {
     it("Should handle events 'UnderlyingWithdrawalAnnounced' and 'UnderlyingWithdrawalCancelled'", async () => {
         const agentBLocal = await AgentB.create(context, ownerAddress, underlyingAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentBLocal.vaultAddress));
-        const resAnnounce = await agentBLocal.announceUnderlyingWithdrawal();
+        await agentBLocal.announceUnderlyingWithdrawal();
         await trackedState.readUnhandledEvents();
         const agentMiddle = Object.assign({}, trackedState.getAgent(agentBLocal.vaultAddress));
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
-        await agentBLocal.cancelUnderlyingWithdrawal(resAnnounce);
+        await agentBLocal.cancelUnderlyingWithdrawal();
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentBLocal.vaultAddress));
         expect(agentBefore.announcedUnderlyingWithdrawalId.eq(toBN(0))).to.be.true;
@@ -324,7 +325,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'SettingChanged'", async () => {
-        let lotSizeAMG_new = toBN(trackedState.settings.lotSizeAMG).muln(2);
+        const lotSizeAMG_new = toBN(trackedState.settings.lotSizeAMG).muln(2);
         await context.assetManagerController.setLotSizeAmg([context.assetManager.address], lotSizeAMG_new, { from: governance });
         await trackedState.readUnhandledEvents();
         const settingsAfter = trackedState.settings;
@@ -332,7 +333,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'SettingArrayChanged'", async () => {
-        let liquidationCollateralFactorBIPS_new = [2_0000, 2_5000];
+        const liquidationCollateralFactorBIPS_new = [2_0000, 2_5000];
         await context.assetManagerController.setLiquidationCollateralFactorBips([context.assetManager.address], liquidationCollateralFactorBIPS_new, { from: governance });
         await trackedState.readUnhandledEvents();
         const settingsAfter = trackedState.settings;

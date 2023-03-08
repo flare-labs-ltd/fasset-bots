@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as helperMethods from "../../../src/utils/helpers";
 // import { fail, formatBN, isNotNull, last, multimapAdd, multimapDelete, randomAddress, reportError, requireEnv, runAsync, sleep, systemTimestamp, toBN, toHex, toNumber, toStringExp, toWei } from "../../../src/utils/helpers";
 import Web3 from "web3";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require('chai-as-promised'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;

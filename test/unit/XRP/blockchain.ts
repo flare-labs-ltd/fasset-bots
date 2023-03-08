@@ -1,4 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require('chai-as-promised'));
 import { expect } from "chai";
 import { createBlockChainHelper } from "../../../src/config/BotConfig";
@@ -45,7 +47,7 @@ describe("XRP blockchain tests", async () => {
     });
 
     it("Should not retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock(txHash)).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
     it("Should retrieve transaction fee", async () => {

@@ -53,7 +53,7 @@ export class Challenger {
             console.error(`Error handling events for challenger ${this.address}: ${error}`);
         }
         // Underlying chain events
-        const from = this.lastEventTimestampHandled!;
+        const from = this.lastEventTimestampHandled;
         const to = await this.getLatestBlockTimestamp();
         const transactions = await this.state.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
         for (const transaction of transactions) {

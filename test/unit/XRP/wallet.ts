@@ -7,7 +7,9 @@ import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChain
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require('chai-as-promised'));
 
 let orm: ORM;
@@ -39,9 +41,12 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add account", async () => {
-        const account = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const privateKey = await dbWallet.getKey(account);
-        expect(privateKey).to.eq(fundedPrivateKey);
+        const account0 = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        const privateKey0 = await dbWallet.getKey(account0);
+        expect(privateKey0).to.eq(fundedPrivateKey);
+        const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
+        const privateKey1 = await dbWallet.getKey(account1);
+        expect(privateKey1).to.eq(targetPrivateKey);
     });
 
     it("Should send funds and retrieve transaction", async () => {

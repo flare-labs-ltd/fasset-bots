@@ -1,8 +1,7 @@
 import { expect } from "chai";
-import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
+import { createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
@@ -11,7 +10,6 @@ import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
-let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.BTC;
 
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
@@ -26,7 +24,6 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainHelper = createBlockChainHelper(sourceId, true);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
     });
 
@@ -37,9 +34,12 @@ describe("BTC wallet tests", async () => {
     });
 
     it("Should add account", async () => {
-        const account = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const privateKey = await dbWallet.getKey(account);
-        expect(privateKey).to.eq(fundedPrivateKey);
+        const account0 = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        const privateKey0 = await dbWallet.getKey(account0);
+        expect(privateKey0).to.eq(fundedPrivateKey);
+        const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
+        const privateKey1 = await dbWallet.getKey(account1);
+        expect(privateKey1).to.eq(targetPrivateKey);
     });
 
     it("Should send funds", async () => {

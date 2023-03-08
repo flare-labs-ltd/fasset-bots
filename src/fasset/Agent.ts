@@ -102,7 +102,7 @@ export class Agent {
         return requiredEventArgs(res, 'UnderlyingWithdrawalConfirmed');
     }
 
-    async cancelUnderlyingWithdrawal(request: EventArgs<UnderlyingWithdrawalAnnounced>) {
+    async cancelUnderlyingWithdrawal() {
         const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
     }

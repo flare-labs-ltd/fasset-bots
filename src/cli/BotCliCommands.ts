@@ -10,6 +10,7 @@ import { requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import { time } from "@openzeppelin/test-helpers";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chalk = require('chalk');
 dotenv.config();
 
@@ -103,7 +104,7 @@ export class BotCliCommands {
             case 'create':
                 await this.createAgentVault();
                 break;
-            case 'deposit':
+            case 'deposit': {
                 const agentVaultDeposit = args[3];
                 const amount = args[4];
                 if (agentVaultDeposit && amount) {
@@ -112,7 +113,8 @@ export class BotCliCommands {
                     console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("deposit"));
                 }
                 break;
-            case 'enter':
+            }
+            case 'enter': {
                 const agentVaultEnter = args[3];
                 const feeBips = args[4];
                 const agentMinCrBips = args[5];
@@ -122,7 +124,8 @@ export class BotCliCommands {
                     console.log("Missing arguments ", chalk.blue("<agentVault> <feeBips> <agentMinCrBips>"), " for command ", chalk.yellow("enter"));
                 }
                 break;
-            case 'exit':
+            }
+            case 'exit': {
                 const agentVaultExit = args[3];
                 if (agentVaultExit) {
                     await this.exitAvailableList(agentVaultExit);
@@ -130,7 +133,8 @@ export class BotCliCommands {
                     console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("exit"));
                 }
                 break;
-            case 'setMinCR':
+            }
+            case 'setMinCR': {
                 const agentVaultMinCR = args[3];
                 const minCollateralRatioBIPS = args[4];
                 if (agentVaultMinCR && minCollateralRatioBIPS) {
@@ -139,7 +143,8 @@ export class BotCliCommands {
                     console.log("Missing arguments ", chalk.blue("<agentVault>, <agentMinCrBips>"), " for command ", chalk.yellow("setMinCr"));
                 }
                 break;
-            case 'withdraw':
+            }
+            case 'withdraw': {
                 const agentVaultWithdraw = args[3];
                 const amountWithdraw = args[4];
                 if (agentVaultWithdraw && amountWithdraw) {
@@ -148,7 +153,8 @@ export class BotCliCommands {
                     console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("withdraw"));
                 }
                 break;
-            case 'selfClose':
+            }
+            case 'selfClose': {
                 const agentVaultSelfClose = args[3];
                 const amountSelfClose = args[4];
                 if (agentVaultSelfClose && amountSelfClose) {
@@ -157,7 +163,8 @@ export class BotCliCommands {
                     console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("selfClose"));
                 }
                 break;
-            case 'close':
+            }
+            case 'close': {
                 const agentVaultClose = args[3];
                 if (agentVaultClose) {
                     await this.closeVault(agentVaultClose);
@@ -165,6 +172,7 @@ export class BotCliCommands {
                     console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("close"));
                 }
                 break;
+            }
             default:
                 listUsageAndCommands();
         }
