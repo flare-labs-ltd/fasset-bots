@@ -1,8 +1,6 @@
-import { FilterQuery } from "@mikro-orm/core";
 import { expect } from "chai";
 import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
-import { WalletAddress } from "../../../src/entities/wallet";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";

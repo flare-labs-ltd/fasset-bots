@@ -1,4 +1,4 @@
-import { createOrm, CreateOrmOptions, ORM } from "../../../src/config/orm";
+import { createOrm, CreateOrmOptions } from "../../../src/config/orm";
 import { existsSync, rm } from "fs";
 import { expect } from "chai";
 import { WalletAddress } from "../../../src/entities/wallet";
