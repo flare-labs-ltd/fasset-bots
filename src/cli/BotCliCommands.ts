@@ -2,9 +2,8 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
-import { createBotConfig, RunConfig } from "../config/BotConfig";
+import { BotConfig, createBotConfig, RunConfig } from "../config/BotConfig";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { ORM } from "../config/orm";
 import { initWeb3 } from "../utils/web3";
 import { requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
@@ -21,50 +20,45 @@ const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 export class BotCliCommands {
 
     context!: IAssetBotContext;
-    orm!: ORM;
     ownerAddress!: string;
+    botConfig!: BotConfig;
 
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as RunConfig;
         const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
-        const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+        this.botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         this.ownerAddress = accounts[0];
-        this.context = await createAssetContext(botConfig, botConfig.chains[0]);
-        this.orm = botConfig.orm;
+        this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
         console.log(chalk.cyan('Environment successfully initialized.'));
     }
 
     async createAgentVault(): Promise<string> {
-        const agentBot = await AgentBot.create(this.orm.em, this.context, this.ownerAddress);
+        const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, this.botConfig.notifier);
         console.log(chalk.cyan(`Agent ${agentBot.agent.vaultAddress} was created.`));
         return agentBot.agent.vaultAddress;
     }
 
     async depositToVault(agentVault: string, amount: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositCollateral(amount);
         console.log(chalk.cyan(`Deposit of ${amount} to agent ${agentVault} was successful.`));
     }
 
     async enterAvailableList(agentVault: string, feeBIPS: string, collateralRatioBIPS: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.makeAvailable(feeBIPS, collateralRatioBIPS);
         console.log(chalk.cyan(`Agent ${agentVault} ENTERED available list.`));
     }
 
     async exitAvailableList(agentVault: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.exitAvailable();
         console.log(chalk.cyan(`Agent ${agentVault} EXITED available list.`));
     }
 
     async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         await agentBot.agent.announceCollateralWithdrawal(amount);
         console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} has been announced.`));
         agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
@@ -73,27 +67,31 @@ export class BotCliCommands {
     }
 
     async selfClose(agentVault: string, amountUBA: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.selfClose(amountUBA);
         console.log(chalk.cyan(`Agent ${agentVault} self closed successfully.`));
     }
 
     async setAgentMinCR(agentVault: string, agentMinCollateralRationBIPS: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await this.context.assetManager.setAgentMinCollateralRatioBIPS(agentVault, agentMinCollateralRationBIPS, { from: agentBot.agent.ownerAddress });
         console.log(chalk.cyan(`Agent's min collateral ratio was successfully set to ${agentMinCollateralRationBIPS}.`));
     }
 
     async closeVault(agentVault: string): Promise<void> {
-            const agentEnt = await this.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-            const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
-            if (agentInfo.publiclyAvailable) {
-                await this.exitAvailableList(agentVault);
-            }
-            agentEnt.waitingForDestructionCleanUp = true;
-            await this.orm.em.persist(agentEnt).flush();
+        const agentEnt = await this.botConfig.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
+        if (agentInfo.publiclyAvailable) {
+            await this.exitAvailableList(agentVault);
+        }
+        agentEnt.waitingForDestructionCleanUp = true;
+        await this.botConfig.orm.em.persist(agentEnt).flush();
+    }
+
+    async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot, agentEnt: AgentEntity }> {
+        const agentEnt = await this.botConfig.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier);
+        return { agentBot, agentEnt };
     }
 
     async run(args: string[]): Promise<void> {

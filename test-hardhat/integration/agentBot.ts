@@ -16,11 +16,15 @@ import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
+import { Notifier } from "../../src/utils/Notifier";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
-var rewire = require("rewire");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const rewire = require("rewire");
 const rewiredAgentBot = rewire("../../src/actors/AgentBot");
 const rewiredAgentBotClass = rewiredAgentBot.__get__('AgentBot');
 
@@ -39,6 +43,7 @@ describe("Agent bot tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
+    let notifier: Notifier;
 
     async function getAgentInfo(context: IAssetBotContext, vaultAddress: string): Promise<AgentInfo> {
         return await context.assetManager.getAgentInfo(vaultAddress);
@@ -58,7 +63,8 @@ describe("Agent bot tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
         settings = await context.assetManager.getSettings();
-        agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        notifier = new Notifier();
+        agentBot = await AgentBot.create(orm.em, context, ownerAddress, notifier);
         await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot.agent.makeAvailable(500, 25000);
         minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
@@ -162,7 +168,7 @@ describe("Agent bot tests", async () => {
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // pay for minting
-        const txHash = await minter.performMintingPayment(crt);
+        await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
@@ -187,7 +193,7 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        let mintings = await agentBot.openMintings(orm.em, false);
+        const mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, AgentMintingState.STARTED);
@@ -211,7 +217,7 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        let mintings = await agentBot.openMintings(orm.em, false);
+        const mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, AgentMintingState.STARTED);
@@ -463,7 +469,7 @@ describe("Agent bot tests", async () => {
         const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await getAgentInfo(context, agentBot2.agent.vaultAddress), settings);
         const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
         const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
-        const agentBot3 = await AgentBot.create(orm.em, context, ownerAddress2);
+        const agentBot3 = await AgentBot.create(orm.em, context, ownerAddress2, notifier);
         await agentBot3.agent.depositCollateral(sub);
         // check collateral ratio after price changes
         await agentBot2.runStep(orm.em);

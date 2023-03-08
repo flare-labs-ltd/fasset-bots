@@ -5,22 +5,31 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { Notifier } from "../../../src/utils/Notifier";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { disableMccTraceManager } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
 
+const loopDelay: number = 2;
 describe("Agent bot runner tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
+    const contexts: Map<number, IAssetBotContext> = new Map();
+
+    function createAgentBot() {
+        return new AgentBotRunner(contexts, orm, loopDelay, new Notifier());
+    }
 
     before(async () => {
         disableMccTraceManager();
@@ -32,21 +41,17 @@ describe("Agent bot runner tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        contexts.set(context.chainInfo.chainId, context);
     });
 
     it("Should create agent bot runner", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
-        const agentBotRunner = new AgentBotRunner(contexts, orm, 5);
-        expect(agentBotRunner.loopDelay).to.eq(5);
+        const agentBotRunner = createAgentBot();
+        expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should create missing agents for agent bot runner", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
-        const loopDelay = 2;
-        const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createAgentBot();
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
         await agentBotRunner.createMissingAgents(ownerAddress);
@@ -63,22 +68,16 @@ describe("Agent bot runner tests", async () => {
     });
 
     it("Should run agent bot runner until its stopped", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
-        const loopDelay = 2;
-        const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createAgentBot();
         const spy = chai.spy.on(agentBotRunner, 'runStep');
         agentBotRunner.requestStop();
-        const run = agentBotRunner.run();
+        void agentBotRunner.run();
         agentBotRunner.requestStop();
         expect(spy).to.have.been.called.once;
     });
 
     it("Should run agent bot runner step", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
-        const loopDelay = 2;
-        const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createAgentBot();
         const spy = chai.spy.on(AgentBot, 'fromEntity');
         await agentBotRunner.createMissingAgents(ownerAddress);
         await agentBotRunner.runStep();
@@ -86,10 +85,7 @@ describe("Agent bot runner tests", async () => {
     });
 
     it("Should run agent bot runner step - invalid source id", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
-        const loopDelay = 2;
-        const agentBotRunner = new AgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createAgentBot();
         const spy = chai.spy.on(console, 'warn');
         await agentBotRunner.createMissingAgents(ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress, active: true } as FilterQuery<AgentEntity>);

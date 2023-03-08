@@ -7,13 +7,21 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands, listUsageAndCommands } from "../../../src/cli/BotCliCommands";
 import { Minter } from "../../../src/mock/Minter";
-import { MockChain } from "../../../src/mock/MockChain";
+import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { AgentEntity } from "../../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core";
+import { Notifier } from "../../../src/utils/Notifier";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { artifacts } from "../../../src/utils/artifacts";
+import { MockIndexer } from "../../../src/mock/MockIndexer";
+import { createWalletClient } from "../../../src/config/BotConfig";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 chai.use(require("chai-as-promised"));
 
 const minterUnderlying: string = "MINTER_ADDRESS";
@@ -21,6 +29,7 @@ const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const feeBIPS = 500;
 const minCR = 30000;
+const StateConnector = artifacts.require('StateConnectorMock');
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -45,9 +54,35 @@ describe("Bot cli commands unit tests", async () => {
         chain = checkedCast(context.chain, MockChain);
         // bot cli commands
         botCliCommands = new BotCliCommands();
-        botCliCommands.orm = orm;
         botCliCommands.context = context;
         botCliCommands.ownerAddress = ownerAddress;
+        const chainId = 3;
+        botCliCommands.botConfig = {
+            rpcUrl: "",
+            loopDelay: 0,
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), "auto"),
+            chains: [{
+                chainInfo: {
+                    chainId: chainId,
+                    name: "Ripple",
+                    symbol: "XRP",
+                    decimals: 6,
+                    amgDecimals: 0,
+                    requireEOAProof: false
+                },
+                chain: chain,
+                wallet: new MockChainWallet(chain),
+                blockChainIndexerClient: new MockIndexer("", chainId, createWalletClient(chainId, true), chain),
+                assetManager: "",
+            }],
+            nativeChainInfo: {
+                finalizationBlocks: 0,
+                readLogsChunkSize: 0,
+            },
+            orm: orm,
+            notifier: new Notifier(),
+            addressUpdater: ""
+        }
     });
 
     afterEach(function () {

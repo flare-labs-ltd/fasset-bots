@@ -14,7 +14,10 @@ import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
+import { Notifier } from "../../src/utils/Notifier";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
@@ -27,7 +30,6 @@ describe("System keeper tests", async () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let challengerAddress: string;
     let systemKeeperAddress: string;
     let chain: MockChain;
     let agentBot: AgentBot;
@@ -40,7 +42,7 @@ describe("System keeper tests", async () => {
     }
 
     async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string): Promise<AgentBot> {
-        const agentBot = await AgentBot.create(rootEm, context, address);
+        const agentBot = await AgentBot.create(rootEm, context, address, new Notifier());
         await agentBot.agent.depositCollateral(toBNExp(100_000_000, 18));
         await agentBot.agent.makeAvailable(500, 3_0000);
         return agentBot;
@@ -71,7 +73,6 @@ describe("System keeper tests", async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
-        challengerAddress = accounts[5];
         systemKeeperAddress = accounts[6];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });

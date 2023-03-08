@@ -8,13 +8,13 @@ import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { Alerting } from "../mock/Alerting";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, requireEnv, toBN } from "../utils/helpers";
+import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
@@ -31,14 +31,14 @@ const AgentVault = artifacts.require('AgentVault');
 
 export class AgentBot {
     constructor(
-        public agent: AgentB
+        public agent: AgentB,
+        public notifier: Notifier
     ) { }
 
-    notifier = new Alerting();
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
-    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string): Promise<AgentBot> {
+    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string, notifier: Notifier): Promise<AgentBot> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -55,7 +55,7 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             em.persist(agentEntity);
-            return new AgentBot(agent);
+            return new AgentBot(agent, notifier);
         });
     }
 
@@ -66,10 +66,10 @@ export class AgentBot {
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
 
-    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity): Promise<AgentBot> {
+    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
-        return new AgentBot(agent);
+        return new AgentBot(agent, notifier);
     }
 
     async runStep(rootEm: EM): Promise<void> {

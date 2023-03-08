@@ -22,6 +22,7 @@ import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
+import { Notifier } from "../../src/utils/Notifier";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -59,7 +60,7 @@ describe("Challenger tests", async () => {
     }
 
     async function createTestActors(ownerAddress: string, minterAddress: string, redeemerAddress: string, minterUnderlying: string, redeemerUnderlying: string): Promise<void> {
-        agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        agentBot = await AgentBot.create(orm.em, context, ownerAddress, new Notifier());
         await agentBot.agent.depositCollateral(toBNExp(100_000_000, 18));
         await agentBot.agent.makeAvailable(500, 3_0000);
         minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(100_000, 18));

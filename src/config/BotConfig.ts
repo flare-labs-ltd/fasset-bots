@@ -5,6 +5,7 @@ import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { WALLET } from "simple-wallet";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
+import { Notifier } from "../utils/Notifier";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockChainHelper } from "../underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
@@ -21,44 +22,46 @@ import { CreateOrmOptions, EM, ORM } from "./orm";
 export interface RunConfig {
     rpcUrl: string,
     loopDelay: number;
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
     ormOptions: CreateOrmOptions;
     attestationProviderUrls: string[];
     attestationClientAddress: string;
     stateConnectorAddress: string;
+    // notifierFile: string;
+    // either one must be set
+    addressUpdater?: string;
+    contractsJsonFile?: string;
 }
 
 export interface BotConfig {
     rpcUrl: string;
     loopDelay: number;
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
     stateConnector: IStateConnectorClient;
     chains: BotConfigChain[];
     nativeChainInfo: NativeChainInfo;
     orm: ORM;
+    notifier: Notifier;
+    // either one must be set
+    addressUpdater?: string;
+    contractsJsonFile?: string;
 }
 
 export interface BotConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
     wallet: IBlockChainWallet;
+    blockChainIndexerClient: BlockChainIndexerHelper;
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
-    blockChainIndexerClient: BlockChainIndexerHelper;
 }
 
 export interface BotChainInfo extends ChainInfo {
+    inTestnet?: boolean;
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
-    inTestnet?: boolean;
 }
 
 export async function createBotConfig(runConfig: RunConfig, ownerAddress: string): Promise<BotConfig> {
@@ -71,12 +74,13 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
     return {
         rpcUrl: runConfig.rpcUrl,
         loopDelay: runConfig.loopDelay,
-        addressUpdater: runConfig.addressUpdater,
-        contractsJsonFile: runConfig.contractsJsonFile,
         stateConnector: stateConnector,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
-        orm: orm
+        orm: orm,
+        notifier: new Notifier(),
+        addressUpdater: runConfig.addressUpdater,
+        contractsJsonFile: runConfig.contractsJsonFile
     };
 }
 

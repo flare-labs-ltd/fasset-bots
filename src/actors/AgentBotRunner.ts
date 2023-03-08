@@ -5,13 +5,15 @@ import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { sleep } from "../utils/helpers";
+import { Notifier } from "../utils/Notifier";
 import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
     constructor(
         public contexts: Map<number, IAssetBotContext>,
         public orm: ORM,
-        public loopDelay: number
+        public loopDelay: number,
+        public notifier: Notifier
     ) { }
 
     private stopRequested = false;
@@ -38,7 +40,7 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain id ${agentEntity.chainId}`);
                     continue;
                 }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
                 await agentBot.runStep(this.orm.em);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
@@ -51,7 +53,7 @@ export class AgentBotRunner {
         for (const [chainId, context] of this.contexts) {
             const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
             if (existing === 0) {
-                await AgentBot.create(this.orm.em, context, ownerAddress);
+                await AgentBot.create(this.orm.em, context, ownerAddress, this.notifier);
             }
         }
     }
@@ -62,6 +64,6 @@ export class AgentBotRunner {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
         }
-        return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay);
+        return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifier);
     }
 }

@@ -40,14 +40,14 @@ describe.skip("Agent bot tests - local network", async () => {
     });
 
     it("Should create agent", async () => {
-        agentBot = await AgentBot.create(orm.em, context, ownerAddress);
+        agentBot = await AgentBot.create(orm.em, context, ownerAddress, botConfig.notifier);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     })
 
     it("Should read agent from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt)
+        const agentBot = await AgentBot.fromEntity(context, agentEnt, botConfig.notifier)
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     })

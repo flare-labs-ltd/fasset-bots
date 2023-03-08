@@ -14,7 +14,10 @@ import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { Liquidator } from "../../src/actors/Liquidator";
+import { Notifier } from "../../src/utils/Notifier";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const spies = require('chai-spies');
 chai.use(spies);
 const expect = chai.expect;
@@ -39,7 +42,7 @@ describe("Liquidator tests", async () => {
     }
 
     async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string): Promise<AgentBot> {
-        const agentBot = await AgentBot.create(rootEm, context, address);
+        const agentBot = await AgentBot.create(rootEm, context, address, new Notifier());
         await agentBot.agent.depositCollateral(toBNExp(100_000_000, 18));
         await agentBot.agent.makeAvailable(500, 3_0000);
         return agentBot;

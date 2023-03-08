@@ -14,7 +14,7 @@ const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
 const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
 const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS ALERT";
 
-export class Alerting {
+export class Notifier {
 
     send(title: string, message?: string) {
         console.log(title + ": " + message);
