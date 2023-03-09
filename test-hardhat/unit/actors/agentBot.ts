@@ -327,6 +327,7 @@ describe("Agent bot unit tests", async () => {
         await agentBot.agent.announceCollateralWithdrawal(amount);
         agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
         agentEnt.waitingForWithdrawalAmount = amount;
+        await orm.em.persist(agentEnt).flush();
         const skipTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
         await time.increase(skipTime);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
