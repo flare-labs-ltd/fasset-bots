@@ -110,21 +110,21 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
             });
         case SourceId.BTC:
             return new WALLET.BTC({
-                url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
+                url: requireEnv('BTC_URL_WALLET'),
                 username: "",
                 password: "",
                 inTestnet: inTestnet
             } as UtxoMccCreate);
         case SourceId.DOGE:
             return new WALLET.DOGE({
-                url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
+                url: requireEnv('DOGE_URL_WALLET'),
                 username: "",
                 password: "",
                 inTestnet: inTestnet
             } as UtxoMccCreate);
         case SourceId.LTC:
             return new WALLET.LTC({
-                url: requireEnv('BTC_LTC_DOGE_URL_WALLET'),
+                url: requireEnv('LTC_URL_WALLET'),
                 username: "",
                 password: "",
                 inTestnet: inTestnet
