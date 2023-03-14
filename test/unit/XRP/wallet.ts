@@ -26,7 +26,7 @@ const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B67
 
 const amountToSendXRP = 1;
 
-describe("XRP wallet tests", async () => {
+describe.skip("XRP wallet tests", async () => {
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));

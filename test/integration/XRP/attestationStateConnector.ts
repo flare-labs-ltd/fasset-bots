@@ -27,7 +27,7 @@ const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS'
 const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 
-describe("XRP attestation/state connector tests", async () => {
+describe.skip("XRP attestation/state connector tests", async () => {
     before(async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);

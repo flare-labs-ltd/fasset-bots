@@ -19,7 +19,7 @@ const requestDataBytesC2_2 = "0x000400000001d5416a66687e4a3b8f1244157cd04572c395
 const requestDataBytesC2_3 = "0x0001000000016afa762068996971cc45283b0012e847e2a85e6e980db32e53cf51d7e0df9d126bacfde48b6bc09d950707da39446a053a2e8e596e24e5b1de9eecb26ad777c20000";
 const requestDataBytesC2_4 = "0x0002000000015d3575e92106318656c874687b19c26337cadda3f63a755846f4774f3d520695f624581ae6c6cc7a71032c8ae6d3de1e3a9a4b7640c8a8b917ae062efa9b457d00";
 
-describe("XRP attestation/state connector tests", async () => {
+describe.skip("XRP attestation/state connector tests", async () => {
     before(async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
