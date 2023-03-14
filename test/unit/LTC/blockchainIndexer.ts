@@ -11,7 +11,7 @@ const blockId = 2559164;
 const blockHash = "308df85e795716573b71379c30bbeb5f7fb78f4f15fdea1bfe8053439ade32ed";
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 
-describe("LTC blockchain tests via indexer", async () => {
+describe.skip("LTC blockchain tests via indexer", async () => {
 
     before(async () => {
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId, true);

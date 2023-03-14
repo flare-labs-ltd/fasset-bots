@@ -10,10 +10,10 @@ import { SourceId } from "../../../src/verification/sources/sources";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.BTC;
 
-const txHash = "c545084a28520ac62dc113b951e981b11dd57b23122a5e814c34fb9e15b23890";
-const blockId = 2347669;
-const blockHash = "000000000000000f68dec9af25075839c9a010d8631c675f5841fb71145c92a5";
-const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
+const txHash = "16efd547467b1132a2dfbed853bbf8eaa2372ed70566d1c927ae730c715de196";
+const blockId = 780767;
+const blockHash = "000000000000000000005cdf6d623e9c864383d11e53db0101a9f702940b71e5";
+const minedTxHash = "bceb9ce14629611967678fd0040c19c457e95cbca66394b315a3fa18605448ac";
 
 describe("BTC blockchain tests", async () => {
 
@@ -26,9 +26,9 @@ describe("BTC blockchain tests", async () => {
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
     });
 
-    it("Should retrieve balance", async () => {
-        const balance = await blockChainHelper.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
+    it("Should retrieve transaction 2", async () => {
+        const retrievedTransaction = await blockChainHelper.getTransaction(minedTxHash);
+        expect(minedTxHash).to.be.eq(retrievedTransaction?.hash);
     });
 
     it("Should retrieve block (hash)", async () => {

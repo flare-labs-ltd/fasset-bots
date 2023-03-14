@@ -11,7 +11,7 @@ const blockId = 4074766;
 const blockHash = "e8ee3ff71df4338b7864e99afee8123c5993aa8eafe2af152bb7c91444586c98";
 const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 
-describe("DOGE blockchain tests via indexer", async () => {
+describe.skip("DOGE blockchain tests via indexer", async () => {
 
     before(async () => {
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId, true);

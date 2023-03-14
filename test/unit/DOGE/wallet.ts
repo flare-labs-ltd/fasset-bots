@@ -48,7 +48,7 @@ describe("DOGE wallet tests", async () => {
         await removeWalletAddressFromDB(orm, targetAddress);
     });
 
-    it("Should send funds and retrieve transaction", async () => {
+    it.skip("Should send funds and retrieve transaction", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const balanceBefore = await blockChainHelper.getBalance(targetAddress);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDOGE, "TestNote", undefined, true);

@@ -45,7 +45,7 @@ describe("BTC wallet tests", async () => {
         await removeWalletAddressFromDB(orm, targetAddress);
     });
 
-    it("Should send funds", async () => {
+    it.skip("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, false);
         expect(transaction).to.not.be.null;

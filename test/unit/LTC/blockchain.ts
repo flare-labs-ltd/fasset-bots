@@ -10,10 +10,10 @@ import { SourceId } from "../../../src/verification/sources/sources";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.LTC;
 
-const txHash = "28872e7d2268343c96d80c56962c9650a6796119835136be9f002215f438dca6";
-const blockId = 2538180;
-const blockHash = "257edc6d99359f37ca84fb5edabd9c4651f5db852555243ac48fbedfcc3aecf6";
-const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
+const txHash = "5ef8df9fa8a011c7c67321b7537e44d865e84e794d15ae6e15c1757f48e32f7b";
+const blockId = 2438547;
+const blockHash = "5e6260afbce873140c46cc664f492b38b64cf6b2fa491c7c7664ac5fe9742f24";
+const minedTxHash = "2f9b5fe922aaaac85bc18129fea4387414190148925def8154d36a34d628f602";
 
 describe("LTC blockchain tests", async () => {
 
@@ -26,9 +26,9 @@ describe("LTC blockchain tests", async () => {
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
     });
 
-    it("Should retrieve balance", async () => {
-        const balance = await blockChainHelper.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
+    it("Should retrieve transaction 2", async () => {
+        const retrievedTransaction = await blockChainHelper.getTransaction(minedTxHash);
+        expect(minedTxHash).to.be.eq(retrievedTransaction?.hash);
     });
 
     it("Should retrieve block (hash)", async () => {

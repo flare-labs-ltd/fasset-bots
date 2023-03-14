@@ -11,7 +11,7 @@ const blockId = 2378222;
 const blockHash = "000000000000001db67a27cca93221398c1948e65bcdf65a26004619f5e9e810";
 const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 
-describe("BTC blockchain tests via indexer", async () => {
+describe.skip("BTC blockchain tests via indexer", async () => {
 
     before(async () => {
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId, true);

@@ -11,8 +11,8 @@ let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
 
 const txHash = "CA4E465B8009C315783A6005AC6B40AA083A4317C3D3A6C123E33B8A908174B2";
-const blockId = 35435676;
-const blockHash = "926801238ace41e1e799210574efca4b5b2f04574ee38988bbd2f48818f08d2c";
+const blockId = 35949684;
+const blockHash = "a8df6084a8252a0343f476d58b4ad4b4fe681c79e298928dfd5d1703610cc6da";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests", async () => {
