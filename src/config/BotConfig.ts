@@ -1,4 +1,4 @@
-import { MCC, UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
+import { AlgoMccCreate, MCC, UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
@@ -107,7 +107,7 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
                     token: ""
                 },
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            });
+            } as AlgoMccCreate);
         case SourceId.BTC:
             return new WALLET.BTC({
                 url: requireEnv('BTC_URL_WALLET'),
@@ -154,7 +154,7 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
                     token: "",
                 },
                 apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            });
+            } as AlgoMccCreate);
         case SourceId.BTC:
             return new MCC.BTC({
                 url: requireEnv('BTC_URL_MCC'),
