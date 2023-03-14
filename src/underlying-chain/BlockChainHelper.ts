@@ -42,7 +42,7 @@ export class BlockChainHelper implements IBlockChain {
                     outputs.push([output.address ? output.address : "", output.amount]);
                 }
                 return {
-                    hash: transaction.hash,
+                    hash: transaction.txid,
                     inputs: inputs,
                     outputs: outputs,
                     reference: transaction.stdPaymentReference,
