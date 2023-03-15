@@ -2,11 +2,11 @@ import "@nomiclabs/hardhat-truffle5";
 import "@nomiclabs/hardhat-web3";
 import * as dotenv from "dotenv";
 import fs from "fs";
-import { HardhatUserConfig, task } from "hardhat/config";
+import { HardhatUserConfig } from "hardhat/config";
 
 dotenv.config();
 
-let accounts = [
+const accounts = [
     // In Truffle, default account is always the first one.
     ...(process.env.DEPLOYER_PRIVATE_KEY ? [{ privateKey: process.env.DEPLOYER_PRIVATE_KEY, balance: "100000000000000000000000000000000" }] : []),
     ...JSON.parse(fs.readFileSync('test-1020-accounts.json').toString()).slice(0, process.env.TENDERLY == 'true' ? 150 : 2000).filter((x: any) => x.privateKey != process.env.DEPLOYER_PRIVATE_KEY),

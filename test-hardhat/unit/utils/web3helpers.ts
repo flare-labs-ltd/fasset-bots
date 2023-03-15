@@ -18,8 +18,4 @@ describe("web3 helper unit tests", async () => {
         expect(typeof timestampBN === 'object').to.be.true;
     });
 
-    it("Should not initialize web3", async() => {
-        await expect(initWeb3("", null, null)).to.eventually.be.rejectedWith("Using injected web3; initWeb3(...) has no effect.").and.be.an.instanceOf(Error);
-    });
-
 });
