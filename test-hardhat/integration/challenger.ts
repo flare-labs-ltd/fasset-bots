@@ -56,7 +56,7 @@ describe("Challenger tests", async () => {
     }
 
     async function createTestChallenger(address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, await chain.getLatestBlockTimestamp());
+        return new Challenger(runner, address, state, await chain.getBlockHeight());
     }
 
     async function createTestActors(ownerAddress: string, minterAddress: string, redeemerAddress: string, minterUnderlying: string, redeemerUnderlying: string): Promise<void> {

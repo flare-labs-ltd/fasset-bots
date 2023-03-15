@@ -75,7 +75,4 @@ export interface IBlockChain {
 
     // Return the (approximate) current block height (last mined block number).
     getBlockHeight(): Promise<number>;
-
-    // Return the current's block height's timestamp.
-    getLatestBlockTimestamp(): Promise<number>;
 }

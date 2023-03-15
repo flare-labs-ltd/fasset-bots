@@ -77,7 +77,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, await context.chain.getLatestBlockTimestamp());
+        const challenger = new Challenger(runner, challengerAddress, state, await context.chain.getBlockHeight());
         expect(challenger.address).to.eq(challengerAddress);
     });
 

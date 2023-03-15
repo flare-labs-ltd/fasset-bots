@@ -19,11 +19,11 @@ export class MockIndexer extends BlockChainIndexerHelper {
     }
 
 
-    async getTransactionsWithinTimestampRange(from: number, to: number): Promise<ITransaction[] | []> {
+    async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[] | []> {
         const blocks = this.chain.blocks;
         const rangeTransactions: ITransaction[] = [];
         for (const block of blocks) {
-            if (block.timestamp >= from && block.timestamp < to) {
+            if (block.number >= from && block.number < to) {
                 for (const transaction of block.transactions) {
                     rangeTransactions.push(transaction);
                 }

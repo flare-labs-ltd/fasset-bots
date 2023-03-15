@@ -40,7 +40,7 @@ describe("Challenger unit tests", async () => {
     let state: TrackedState;
 
     async function createTestChallenger(address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, await context.chain.getLatestBlockTimestamp());
+        return new Challenger(runner, address, state, await context.chain.getBlockHeight());
     }
 
     before(async () => {

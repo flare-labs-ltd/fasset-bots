@@ -18,7 +18,7 @@ export class Challenger {
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
-        private lastEventTimestampHandled: number
+        private lastEventUnderlyingBlockHandled: number
     ) { }
 
     activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
@@ -53,14 +53,14 @@ export class Challenger {
             console.error(`Error handling events for challenger ${this.address}: ${error}`);
         }
         // Underlying chain events
-        const from = this.lastEventTimestampHandled;
-        const to = await this.getLatestBlockTimestamp();
-        const transactions = await this.state.context.blockChainIndexerClient.getTransactionsWithinTimestampRange(from, to);
+        const from = this.lastEventUnderlyingBlockHandled;
+        const to = await this.getLatestUnderlyingBlock();
+        const transactions = await this.state.context.blockChainIndexerClient.getTransactionsWithinBlockRange(from, to);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
         }
         // mark as handled
-        this.lastEventTimestampHandled = to;
+        this.lastEventUnderlyingBlockHandled = to;
     }
 
     handleUnderlyingTransaction(transaction: ITransaction): void {
@@ -222,9 +222,8 @@ export class Challenger {
         }
     }
 
-    async getLatestBlockTimestamp(): Promise<number> {
+    async getLatestUnderlyingBlock(): Promise<number> {
         const blockHeight = await this.state.context.chain.getBlockHeight();
-        const block = (await this.state.context.chain.getBlockAt(blockHeight))!;
-        return block.timestamp;
+        return blockHeight;
     }
 }
