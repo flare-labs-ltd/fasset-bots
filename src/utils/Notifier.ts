@@ -17,7 +17,11 @@ const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS
 export class Notifier {
 
     send(title: string, message?: string) {
-        console.log(title + ": " + message);
+        if (message) {
+            console.log(title + ": " + message);
+        } else {
+            console.log(title);
+        }
     }
 
     sendCCBAlert(agentVault: string) {

@@ -11,6 +11,8 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { convertLotsToUBA, convertAmgToUBA } from "../../../src/fasset/Conversions";
+import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
+import { Redeemer } from "../../../src/mock/Redeemer";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -38,6 +40,7 @@ const agentCreatedArgs = {
 } as EventArgs<AgentCreated>;
 const deposit = toBNExp(1_000_000, 18);
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
+const redeemerUnderlying = "REDEEMER_ADDRESS";
 
 describe("Tracked state tests", async () => {
     let context: TestAssetBotContext;
@@ -46,6 +49,7 @@ describe("Tracked state tests", async () => {
     let minter: Minter;
     let ownerAddress: string;
     let minterAddress: string;
+    let redeemerAddress: string;
     let chain: MockChain;
     let trackedState: TrackedState;
     let governance: string;
@@ -69,6 +73,7 @@ describe("Tracked state tests", async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
+        redeemerAddress = accounts[5];
         governance = accounts[0];
     });
 
@@ -241,6 +246,22 @@ describe("Tracked state tests", async () => {
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
         expect(agentMiddle.reservedUBA.gt(agentAfter.reservedUBA)).to.be.true;
+    });
+
+    it("Should handle event 'RedemptionPerformed'", async () => {
+        await createTestActors(ownerAddress, minterAddress);
+        await trackedState.readUnhandledEvents();
+        const lots = 2;
+        await createCRAndPerformMinting(minter, agentB, lots);
+        const spy = chai.spy.on(trackedState.getAgent(agentB.vaultAddress), 'handleRedemptionPerformed');
+        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const tx1Hash = await agentB.performRedemptionPayment(rdReqs[0]);
+        await agentB.confirmActiveRedemptionPayment(rdReqs[0], tx1Hash);
+        await trackedState.readUnhandledEvents();
+        expect(spy).to.have.been.called.once;
     });
 
     it("Should handle event 'CollateralReservationDeleted'", async () => {

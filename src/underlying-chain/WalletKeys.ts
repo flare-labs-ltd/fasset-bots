@@ -1,7 +1,7 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { WalletAddress } from "../entities/wallet";
 import { decryptText, encryptText } from "../utils/encryption";
-import { fail } from "../utils/helpers";
+import { requireEnv } from "../utils/helpers";
 
 export interface IWalletKeys {
     getKey(address: string): Promise<string | undefined>;
@@ -9,7 +9,7 @@ export interface IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = process.env['WALLET_ENCRYPTION_PASSWORD'] ?? fail("Missing wallet password.");
+    private password = requireEnv('WALLET_ENCRYPTION_PASSWORD');
 
     private privateKeyCache = new Map<string, string>();
 
