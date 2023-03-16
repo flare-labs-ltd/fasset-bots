@@ -14,7 +14,6 @@ const sourceId: SourceId = SourceId.XRP;
 const txHash = "60fdd6901a43f3d814db0a132b237a38c782615c8a3a71c4ce7f090e64d9eb50";
 const blockId = 2620269;
 const blockHash = "395066007a0c47adf5b5ca62a75c124b24868b12ad370f2050bc47fc18f3d88b";
-const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
@@ -27,11 +26,6 @@ describe("XRP blockchain tests via indexer", async () => {
     it.skip("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
-    });
-
-    it.skip("Should retrieve balance", async () => {
-        const balance = await blockChainIndexerClient.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
     });
 
     it.skip("Should retrieve block (hash)", async () => {

@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-import { WalletClient } from "simple-wallet/dist/types";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../verification/sources/sources";
@@ -11,10 +10,9 @@ export class MockIndexer extends BlockChainIndexerHelper {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public walletClient: WalletClient,
         public chain: MockChain
     ) {
-        super(indexerWebServerUrl, sourceId, walletClient, "");
+        super(indexerWebServerUrl, sourceId, "");
         this.client = axios.create({});
     }
 

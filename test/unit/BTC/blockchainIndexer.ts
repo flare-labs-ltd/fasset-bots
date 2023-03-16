@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { createWalletClient } from "../../../src/config/BotConfig";
 import { TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { requireEnv } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
@@ -14,14 +13,13 @@ const txHash = "c627a78e6de95684787d17aacd9a6821a02b1fd309afc6767a07dffd83ea6a2e
 const blockId = 2;
 const blockHash = "405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace";
 const txReference = "0x000000000000000000000000000000000000000000000000000000fd83ea6a2e";
-const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 const invalidTxHash = txHash.slice(2);
 
 describe("BTC blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(requireEnv('INDEXER_WEB_SERVER_URL'), sourceId, createWalletClient(sourceId), requireEnv('INDEXER_API_KEY'));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(requireEnv('INDEXER_WEB_SERVER_URL'), sourceId, requireEnv('INDEXER_API_KEY'));
     })
 
     it("Should retrieve transaction", async () => {

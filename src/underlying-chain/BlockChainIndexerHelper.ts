@@ -2,7 +2,6 @@ import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED,
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { sleep, toBN } from "../utils/helpers";
-import { WalletClient } from "simple-wallet";
 import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
 
 const DEFAULT_TIMEOUT = 15000;
@@ -16,7 +15,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public walletClient: WalletClient,
         private indexerWebServerApiKey: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
@@ -67,14 +65,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return null;
     }
 
-    async getBalance(address: string): Promise<import("bn.js")> {
-        const balance = await this.walletClient.getAccountBalance(address);
-        return toBN(balance);
-    }
-
-    async getTransactionFee(): Promise<BN> {
-        const fee = await this.walletClient.getCurrentTransactionFee();
-        return toBN(fee);
+    async getBalance(): Promise<BN> {
+        throw new Error("Method not implemented on indexer. Use wallet.");
     }
 
     async getBlock(blockHash: string): Promise<IBlock | null> {

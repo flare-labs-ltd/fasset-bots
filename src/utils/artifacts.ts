@@ -3,6 +3,7 @@ import { glob } from "glob";
 import { basename, extname } from "path";
 import Web3 from "web3";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const createContract = require("@truffle/contract");
 
 interface ArtifactData {

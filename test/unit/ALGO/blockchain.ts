@@ -12,7 +12,6 @@ const sourceId: SourceId = SourceId.ALGO;
 
 const txHash0 = "RGEUIORIOM6PTCP2EXZDKQRWPI6SJ4CBTH5LRYO7CLEQNYGIZS6A";
 const blockId1 = 23614509;
-const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKWM";
 
 describe("ALGO blockchain tests", async () => {
 
@@ -26,8 +25,7 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve balance", async () => {
-        const balance = await blockChainHelper.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
+        await expect(blockChainHelper.getBalance()).to.eventually.be.rejectedWith("Method not implemented on chain. Use wallet.").and.be.an.instanceOf(Error);
     });
 
     it("Should not retrieve block (hash) - not implemented", async () => {
@@ -45,12 +43,11 @@ describe("ALGO blockchain tests", async () => {
     });
 
     it("Should retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented on chain. Use indexer.").and.be.an.instanceOf(Error);
     });
 
     it("Should retrieve transaction fee", async () => {
-        const fee = await blockChainHelper.getTransactionFee();
-        expect(fee.toString()).to.not.be.null;
+        await expect(blockChainHelper.getBlock("blockHash")).to.eventually.be.rejectedWith("Method not implemented in ALGO.").and.be.an.instanceOf(Error);
     });
 
     it("Should not retrieve invalid transaction", async () => {

@@ -88,15 +88,15 @@ describe("Bot config tests", async () => {
 
     it("Should create block chain helper", async () => {
         const algo = createBlockChainHelper(SourceId.ALGO);
-        expect(algo.walletClient.chainType).to.eq(SourceId.ALGO);
+        expect(algo.mccClient.chainType).to.eq(SourceId.ALGO);
         const btc = createBlockChainHelper(SourceId.BTC);
-        expect(btc.walletClient.chainType).to.eq(SourceId.BTC);
+        expect(btc.mccClient.chainType).to.eq(SourceId.BTC);
         const doge = createBlockChainHelper(SourceId.DOGE);
-        expect(doge.walletClient.chainType).to.eq(SourceId.DOGE);
+        expect(doge.mccClient.chainType).to.eq(SourceId.DOGE);
         const ltc = createBlockChainHelper(SourceId.LTC);
-        expect(ltc.walletClient.chainType).to.eq(SourceId.LTC);
+        expect(ltc.mccClient.chainType).to.eq(SourceId.LTC);
         const xrp = createBlockChainHelper(SourceId.XRP);
-        expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
+        expect(xrp.mccClient.chainType).to.eq(SourceId.XRP);
         const invalidSourceId = -200;
         const fn = () => {
             return createBlockChainHelper(invalidSourceId as SourceId);

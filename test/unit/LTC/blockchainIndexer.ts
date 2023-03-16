@@ -9,7 +9,6 @@ const sourceId: SourceId = SourceId.LTC;
 const txHash = "9faaf0891133ecf6254976fe3dac5d2480b218f030a46a6380f2764c4b95fdfa";
 const blockId = 2559164;
 const blockHash = "308df85e795716573b71379c30bbeb5f7fb78f4f15fdea1bfe8053439ade32ed";
-const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 
 describe.skip("LTC blockchain tests via indexer", async () => {
 
@@ -21,11 +20,6 @@ describe.skip("LTC blockchain tests via indexer", async () => {
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
-    });
-
-    it("Should retrieve balance", async () => {
-        const balance = await blockChainIndexerClient.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
     });
 
     it("Should retrieve block (hash)", async () => {

@@ -54,10 +54,10 @@ describe("XRP wallet tests", async () => {
 
     it("Should send funds and retrieve transaction", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const balanceBefore = await blockChainHelper.getBalance(targetAddress);
+        const balanceBefore = await walletHelper.getBalance(targetAddress);
         const options = { maxFee: 12 }; // maxFee in Drops
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, null, options, true);
-        const balanceAfter = await blockChainHelper.getBalance(targetAddress);
+        const balanceAfter = await walletHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;

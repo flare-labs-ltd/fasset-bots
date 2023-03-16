@@ -17,7 +17,7 @@ const blockHash = "795ad75ab0287f87e9c20e400760825ee7f5100aeb4dc0414d3570e308cba
 describe("DOGE blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createBlockChainHelper(sourceId, true);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {
@@ -40,18 +40,8 @@ describe("DOGE blockchain tests", async () => {
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
-    it("Should retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
-    });
-
-    it("Should retrieve transaction fee", async () => {
-        const fee = await blockChainHelper.getTransactionFee()
-        expect(fee.toString()).to.not.be.null;
-    });
-
-    it("Should retrieve transaction fee", async () => {
-        const fee = await blockChainHelper.getTransactionFee();
-        expect(fee.toString()).to.not.be.null;
+    it("Should not retrieve transaction block - not implemented", async () => {
+        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented on chain. Use indexer.").and.be.an.instanceOf(Error);
     });
 
 });

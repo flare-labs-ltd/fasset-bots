@@ -1,11 +1,8 @@
 import { MCC, MccClient } from "@flarenetwork/mcc";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput } from "./interfaces/IBlockChain";
-import { WalletClient } from "simple-wallet";
-import { toBN } from "../utils/helpers";
 
 export class BlockChainHelper implements IBlockChain {
     constructor(
-        public walletClient: WalletClient,
         public mccClient: MccClient
     ) { }
 
@@ -56,17 +53,11 @@ export class BlockChainHelper implements IBlockChain {
     }
 
     async getTransactionBlock(): Promise<IBlockId | null> {
-        throw new Error("Method not implemented.");
+        throw new Error("Method not implemented on chain. Use indexer.");
     }
 
-    async getBalance(address: string): Promise<BN> {
-        const balance = await this.walletClient.getAccountBalance(address);
-        return toBN(balance);
-    }
-
-    async getTransactionFee(): Promise<BN> {
-        const fee = await this.walletClient.getCurrentTransactionFee();
-        return toBN(fee);
+    async getBalance(): Promise<BN> {
+        throw new Error("Method not implemented on chain. Use wallet.");
     }
 
     async getBlock(blockHash: string): Promise<IBlock | null> {

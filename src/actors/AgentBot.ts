@@ -449,7 +449,7 @@ export class AgentBot {
 
     async checkUnderlyingBalance(agentVault: string): Promise<void> {
         const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
-        const estimatedFee = toBN(await this.context.chain.getTransactionFee());
+        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
             await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), agentVault, freeUnderlyingBalance);
         }
@@ -466,7 +466,7 @@ export class AgentBot {
             this.notifier.sendLowUnderlyingAgentBalanceFailed(agentVault, freeUnderlyingBalance.toString());
         }
         const ownerUnderlyingBalance = await this.context.chain.getBalance(ownerUnderlyingAddress);
-        const estimatedFee = toBN(await this.context.chain.getTransactionFee());
+        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         if (ownerUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
             this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance.toString());
         }

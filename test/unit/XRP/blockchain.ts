@@ -13,7 +13,6 @@ const sourceId: SourceId = SourceId.XRP;
 const txHash = "CA4E465B8009C315783A6005AC6B40AA083A4317C3D3A6C123E33B8A908174B2";
 const blockId = 35949684;
 const blockHash = "a8df6084a8252a0343f476d58b4ad4b4fe681c79e298928dfd5d1703610cc6da";
-const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 
 describe("XRP blockchain tests", async () => {
 
@@ -24,11 +23,6 @@ describe("XRP blockchain tests", async () => {
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(txHash);
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
-    });
-
-    it("Should retrieve balance", async () => {
-        const balance = await blockChainHelper.getBalance(fundedAddress);
-        expect(balance.gten(0)).to.be.true;
     });
 
     it("Should retrieve block (hash)", async () => {
@@ -46,13 +40,12 @@ describe("XRP blockchain tests", async () => {
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
-    it("Should not retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
+    it("Should not retrieve transaction block - not implemented", async () => {
+        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented on chain. Use indexer.").and.be.an.instanceOf(Error);
     });
 
-    it("Should retrieve transaction fee", async () => {
-        const fee = await blockChainHelper.getTransactionFee();
-        expect(fee.toString()).to.not.be.null;
+    it("Should not retrieve balance - not implemented", async () => {
+        await expect(blockChainHelper.getBalance()).to.eventually.be.rejectedWith("Method not implemented on chain. Use wallet.").and.be.an.instanceOf(Error);
     });
 
     it("Should not retrieve transaction with invalid hash", async () => {

@@ -193,32 +193,32 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
 export function createBlockChainIndexerHelper(indexerWebServerUrl: string, sourceId: SourceId, inTestnet?: boolean, apiKey: string = ""): BlockChainIndexerHelper {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId), apiKey);
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         case SourceId.BTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         case SourceId.DOGE:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         case SourceId.LTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         case SourceId.XRP:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId), apiKey);
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
-export function createBlockChainHelper(sourceId: SourceId, inTestnet?: boolean): BlockChainHelper {
+export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
+            return new BlockChainHelper(createMccClient(sourceId));
         case SourceId.BTC:
-            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
+            return new BlockChainHelper(createMccClient(sourceId));
         case SourceId.DOGE:
-            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
+            return new BlockChainHelper(createMccClient(sourceId));
         case SourceId.LTC:
-            return new BlockChainHelper(createWalletClient(sourceId, inTestnet), createMccClient(sourceId));
+            return new BlockChainHelper(createMccClient(sourceId));
         case SourceId.XRP:
-            return new BlockChainHelper(createWalletClient(sourceId), createMccClient(sourceId));
+            return new BlockChainHelper(createMccClient(sourceId));
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
@@ -227,30 +227,30 @@ export function createBlockChainHelper(sourceId: SourceId, inTestnet?: boolean):
 export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockChainWalletHelper {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId), em);
         case SourceId.BTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.DOGE:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.LTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.XRP:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em, createBlockChainHelper(sourceId));
+            return new BlockChainWalletHelper(createWalletClient(sourceId), em);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
-export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper, inTestnet?: boolean): Promise<AttestationHelper> {
+export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper): Promise<AttestationHelper> {
     switch (sourceId) {
         case SourceId.ALGO:
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.BTC:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.DOGE:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.LTC:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId, inTestnet), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         case SourceId.XRP:
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
         default:

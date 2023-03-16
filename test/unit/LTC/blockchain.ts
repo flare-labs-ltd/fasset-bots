@@ -18,7 +18,7 @@ const minedTxHash = "2f9b5fe922aaaac85bc18129fea4387414190148925def8154d36a34d62
 describe("LTC blockchain tests", async () => {
 
     before(async () => {
-        blockChainHelper = createBlockChainHelper(sourceId, true);
+        blockChainHelper = createBlockChainHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {
@@ -46,13 +46,8 @@ describe("LTC blockchain tests", async () => {
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
-    it("Should retrieve transaction block", async () => {
-        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
-    });
-
-    it("Should retrieve transaction fee", async () => {
-        const fee = await blockChainHelper.getTransactionFee();
-        expect(fee.toString()).to.not.be.null;
+    it("Should not retrieve transaction block - not implemented", async () => {
+        await expect(blockChainHelper.getTransactionBlock()).to.eventually.be.rejectedWith("Method not implemented on chain. Use indexer.").and.be.an.instanceOf(Error);
     });
 
 });

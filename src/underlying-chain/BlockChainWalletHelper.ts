@@ -1,6 +1,6 @@
 import { EntityManager } from "@mikro-orm/core";
 import { WalletClient } from "simple-wallet";
-import { IBlockChain } from "./interfaces/IBlockChain";
+import { toBN } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
 
@@ -8,7 +8,6 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
     constructor(
         public walletClient: WalletClient,
         private em: EntityManager,
-        public chain: IBlockChain
     ) { }
 
     async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
@@ -43,5 +42,16 @@ export class BlockChainWalletHelper implements IBlockChainWallet {
         const walletKeys = new DBWalletKeys(this.em);
         await walletKeys.addKey(address, privateKey);
         return address;
+    }
+
+
+    async getBalance(address: string): Promise<BN> {
+        const balance = await this.walletClient.getAccountBalance(address);
+        return toBN(balance);
+    }
+
+    async getTransactionFee(): Promise<BN> {
+        const fee = await this.walletClient.getCurrentTransactionFee();
+        return toBN(fee);
     }
 }

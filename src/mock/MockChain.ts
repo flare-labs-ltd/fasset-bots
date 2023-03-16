@@ -67,10 +67,6 @@ export class MockChain implements IBlockChain {
         return this.balances[address] ?? BN_ZERO;
     }
 
-    async getTransactionFee(): Promise<BN> {
-        return this.requiredFee;
-    }
-
     async getBlock(blockHash: string): Promise<IBlock | null> {
         const index = this.blockIndex[blockHash];
         return index != null ? this.toIBlock(this.blocks[index]) : null;
@@ -202,7 +198,15 @@ export class MockChainWallet implements IBlockChainWallet {
         public chain: MockChain,
     ) { }
 
-    addExistingAccount(address: string, privateKey: string): Promise<string> {
+    async getBalance(address: string): Promise<BN> {
+        return this.chain.balances[address] ?? BN_ZERO;
+    }
+
+    async getTransactionFee(): Promise<BN> {
+        return this.chain.requiredFee;
+    }
+
+    addExistingAccount(): Promise<string> {
         throw new Error("Method not implemented.");
     }
 

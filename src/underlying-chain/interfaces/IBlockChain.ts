@@ -64,9 +64,6 @@ export interface IBlockChain {
     // Return the balance of an address on the chain. If the address does not exist, returns 0.
     getBalance(address: string): Promise<BN>;
 
-    // Return the current or estimated transaction fee on the chain.
-    getTransactionFee(): Promise<BN>;
-
     // Return block with given hash.
     getBlock(blockHash: string): Promise<IBlock | null>;
 

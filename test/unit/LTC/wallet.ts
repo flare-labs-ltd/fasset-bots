@@ -27,7 +27,7 @@ describe("LTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainHelper = createBlockChainHelper(sourceId, true);
+        blockChainHelper = createBlockChainHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
     });
 
@@ -50,9 +50,9 @@ describe("LTC wallet tests", async () => {
 
     it.skip("Should send funds and retrieve transaction", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const balanceBefore = await blockChainHelper.getBalance(targetAddress);
+        const balanceBefore = await walletHelper.getBalance(targetAddress);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendLTC, "TestNote", undefined, true);
-        const balanceAfter = await blockChainHelper.getBalance(targetAddress);
+        const balanceAfter = await walletHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;

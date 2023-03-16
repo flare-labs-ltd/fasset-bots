@@ -72,7 +72,7 @@ describe("Bot cli commands unit tests", async () => {
                 },
                 chain: chain,
                 wallet: new MockChainWallet(chain),
-                blockChainIndexerClient: new MockIndexer("", chainId, createWalletClient(chainId, true), chain),
+                blockChainIndexerClient: new MockIndexer("", chainId, chain),
                 assetManager: "",
             }],
             nativeChainInfo: {

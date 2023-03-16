@@ -1,5 +1,3 @@
-import { IBlockChain } from "./IBlockChain";
-
 type NumberLike = BN | number | string;
 
 export interface TransactionOptionsWithFee {
@@ -11,7 +9,6 @@ export interface TransactionOptionsWithFee {
 }
 
 export interface IBlockChainWallet {
-    chain: IBlockChain;
 
     // Create a transaction with a single source and target address.
     // Amount is the amount received by target and extra fee / gas can be added to it to obtain the value spent from sourceAddress
@@ -32,4 +29,10 @@ export interface IBlockChainWallet {
     // Add existing account.
     // Private key is kept in the wallet.
     addExistingAccount(address: string, privateKey: string): Promise<string>;
+
+    // Return the balance of an address on the chain. If the address does not exist, returns 0.
+    getBalance(address: string): Promise<BN>;
+
+    // Return the current or estimated transaction fee on the chain.
+    getTransactionFee(): Promise<BN>;
 }
