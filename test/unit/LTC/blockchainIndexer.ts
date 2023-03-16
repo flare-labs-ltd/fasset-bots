@@ -14,7 +14,8 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 describe.skip("LTC blockchain tests via indexer", async () => {
 
     before(async () => {
-        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId, true);
+        //TODO no indexer yet
+        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
     })
 
     it("Should retrieve transaction", async () => {

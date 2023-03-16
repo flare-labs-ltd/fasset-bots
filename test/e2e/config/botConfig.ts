@@ -69,19 +69,19 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain indexer", async () => {
-        const algo = createBlockChainIndexerHelper(SourceId.ALGO);
+        const algo = createBlockChainIndexerHelper("", SourceId.ALGO);
         expect(algo.sourceId).to.eq(SourceId.ALGO);
-        const btc = createBlockChainIndexerHelper(SourceId.BTC);
+        const btc = createBlockChainIndexerHelper("", SourceId.BTC, true);
         expect(btc.sourceId).to.eq(SourceId.BTC);
-        const doge = createBlockChainIndexerHelper(SourceId.DOGE);
+        const doge = createBlockChainIndexerHelper("", SourceId.DOGE);
         expect(doge.sourceId).to.eq(SourceId.DOGE);
-        const ltc = createBlockChainIndexerHelper(SourceId.LTC);
+        const ltc = createBlockChainIndexerHelper("", SourceId.LTC);
         expect(ltc.sourceId).to.eq(SourceId.LTC);
-        const xrp = createBlockChainIndexerHelper(SourceId.XRP);
+        const xrp = createBlockChainIndexerHelper("", SourceId.XRP);
         expect(xrp.sourceId).to.eq(SourceId.XRP);
         const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainIndexerHelper(invalidSourceId as SourceId);
+            return createBlockChainIndexerHelper("", invalidSourceId as SourceId);
         };
         expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });

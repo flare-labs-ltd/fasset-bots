@@ -18,7 +18,8 @@ const fundedAddress = "T6WVPM7WLGP3DIBWNN3LJGCUNMFRR67BVV5KNS3VJ5HSEAQ3QKTGY5ZKW
 describe.skip("ALGO blockchain tests via indexer", async () => {
 
     before(async () => {
-        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
+        //TODO no indexer yet
+        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
     })
 
     it("Should retrieve transaction", async () => {

@@ -14,7 +14,8 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 describe.skip("DOGE blockchain tests via indexer", async () => {
 
     before(async () => {
-        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId, true);
+        //TODO no indexer yet
+        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
     })
 
     it("Should retrieve transaction", async () => {

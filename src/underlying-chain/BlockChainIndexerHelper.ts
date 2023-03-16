@@ -16,12 +16,16 @@ export class BlockChainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public walletClient: WalletClient
+        public walletClient: WalletClient,
+        private indexerWebServerApiKey: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: indexerWebServerUrl,
             timeout: DEFAULT_TIMEOUT,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-API-KEY": indexerWebServerApiKey
+            },
             validateStatus: function (status: number) {
                 return (status >= 200 && status < 300) || status == 500;
             },
@@ -31,8 +35,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${txHash}`);
+        const resp = await this.client.get(`/api/indexer/transaction/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
         if (status === "OK") {
@@ -50,8 +53,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction-block/${txHash}`);
+        const resp = await this.client.get(`/api/indexer/transaction-block/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
         if (status === "OK") {
@@ -76,8 +78,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getBlock(blockHash: string): Promise<IBlock | null> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/block/${blockHash}`);
+        const resp = await this.client.get(`/api/indexer/block/${blockHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
         if (status === "OK") {
@@ -94,8 +95,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/block-at/${blockNumber}`);
+        const resp = await this.client.get(`/api/indexer/confirmed-block-at/${blockNumber}`);
         const status = resp.data.status;
         const data = resp.data.data;
         if (status === "OK") {
@@ -112,8 +112,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getBlockHeight(): Promise<number> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/block-height`);
+        const resp = await this.client.get(`/api/indexer/block-height`);
         const status = resp.data.status;
         const data = resp.data.data;
         if (status === "OK") {
@@ -123,44 +122,38 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/payment-reference/${reference}`);
+        const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}`);
         const status = resp.data.status;
-        const data = resp.data.data;
+        const dataArray = resp.data.data;
         const txs: ITransaction[] = [];
         if (status === "OK") {
-            if (data) {
-                for (const tx of data) {
-                    txs.push({
-                        hash: tx.transactionId,
-                        inputs: await this.handleInputsOutputs(tx, true),
-                        outputs: await this.handleInputsOutputs(tx, false),
-                        reference: tx.paymentReference,
-                        status: this.successStatus(tx)
-                    })
-                }
+            for (const tx of dataArray) {
+                txs.push({
+                    hash: tx.transactionId,
+                    inputs: await this.handleInputsOutputs(tx, true),
+                    outputs: await this.handleInputsOutputs(tx, false),
+                    reference: tx.paymentReference,
+                    status: this.successStatus(tx)
+                })
             }
         }
         return txs;
     }
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions/from/${from}/to/${to}`);
+        const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}`);
         const status = resp.data.status;
-        const data = resp.data.data;
+        const dataArray = resp.data.data;
         const txs: ITransaction[] = [];
         if (status === "OK") {
-            if (data) {
-                for (const tx of data) {
-                    txs.push({
-                        hash: tx.transactionId,
-                        inputs: await this.handleInputsOutputs(tx, true),
-                        outputs: await this.handleInputsOutputs(tx, false),
-                        reference: tx.paymentReference,
-                        status: this.successStatus(tx)
-                    })
-                }
+            for (const tx of dataArray) {
+                txs.push({
+                    hash: tx.transactionId,
+                    inputs: await this.handleInputsOutputs(tx, true),
+                    outputs: await this.handleInputsOutputs(tx, false),
+                    reference: tx.paymentReference,
+                    status: this.successStatus(tx)
+                })
             }
         }
         return txs;
@@ -185,16 +178,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
         const transactionIds: string[] = [];
-        const chain = getSourceName(this.sourceId);
-        const resp = await this.client.get(`/api/indexer/chain/${chain}/transactions-in-block/${blockNumber}`);
+        const resp = await this.client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`);
         const status = resp.data.status;
-        const data = resp.data.data;
+        const dataArray = resp.data.data;
         if (status === "OK") {
-            if (data) {
-                data.map((item: any) => {
-                    transactionIds.push(item.transactionId);
-                })
-            }
+            dataArray.map((item: any) => {
+                transactionIds.push(item.transactionId);
+            })
         }
         return transactionIds;
     }
@@ -210,14 +200,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
             if (type === "coinbase") {
                 return [["", toBN(0)]];
             } else {
-                const chain = getSourceName(this.sourceId);
                 const inputs: TxInputOutput[] = [];
                 for (const item of data.vin) {
                     if (item.txid && item.vout >= 0) {
                         // Given a UTXO transaction indexer does additional processing on UTXO inputs.
                         // The processing is done only if the transaction contains some kind of a payment reference (OP_RETURN).
                         // https://github.com/flare-foundation/attestation-client/blob/main/lib/indexer/chain-collector-helpers/readTransaction.ts#L6-L10
-                        const resp = await this.client.get(`/api/indexer/chain/${chain}/transaction/${item.txid}`);
+                        const resp = await this.client.get(`/api/indexer/transaction/${item.txid}`);
                         const status = resp.data.status;
                         const data = resp.data.data;
                         if (status === "OK" && data) {

@@ -14,7 +14,7 @@ export class MockIndexer extends BlockChainIndexerHelper {
         public walletClient: WalletClient,
         public chain: MockChain
     ) {
-        super(indexerWebServerUrl, sourceId, walletClient);
+        super(indexerWebServerUrl, sourceId, walletClient, "");
         this.client = axios.create({});
     }
 
@@ -32,7 +32,7 @@ export class MockIndexer extends BlockChainIndexerHelper {
         return rangeTransactions;
     }
 
-    async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number) {
+    async waitForUnderlyingTransactionFinalization(txHash: string) {
         const transaction = await this.chain.getTransaction(txHash);
         this.chain.mine(this.chain.finalizationBlocks + 1);
         return transaction;

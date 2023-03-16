@@ -58,6 +58,8 @@ export interface BotConfigChain {
 }
 
 export interface BotChainInfo extends ChainInfo {
+    indexerClientUrl: string;
+    indexerClientApiKey?: string;
     inTestnet?: boolean;
     // either one must be set
     assetManager?: string;
@@ -87,7 +89,7 @@ export async function createBotConfig(runConfig: RunConfig, ownerAddress: string
 export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId, chainInfo.inTestnet);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.inTestnet, chainInfo.indexerClientApiKey);
     return {
         chainInfo: chainInfo,
         chain: chain,
@@ -188,19 +190,18 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
     }
 }
 
-export function createBlockChainIndexerHelper(sourceId: SourceId, inTestnet?: boolean): BlockChainIndexerHelper {
-    const indexerWebServerUrl: string = requireEnv('INDEXER_WEB_SERVER_URL');
+export function createBlockChainIndexerHelper(indexerWebServerUrl: string, sourceId: SourceId, inTestnet?: boolean, apiKey: string = ""): BlockChainIndexerHelper {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId), apiKey);
         case SourceId.BTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
         case SourceId.DOGE:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
         case SourceId.LTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId, inTestnet), apiKey);
         case SourceId.XRP:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId));
+            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, createWalletClient(sourceId), apiKey);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
