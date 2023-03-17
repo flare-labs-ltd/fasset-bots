@@ -44,12 +44,4 @@ describe("web3 unit tests", async () => {
         web3.eth.accounts.wallet.clear();
     });
 
-    it("Should create wallet accounts 3", async () => {
-        const runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
-        const accounts = await initWeb3(runConfig.rpcUrl, "network", null);
-        console.log(accounts);
-        // expect(accounts.length).to.eq(0);
-        web3.eth.accounts.wallet.clear();
-    });
-
 });

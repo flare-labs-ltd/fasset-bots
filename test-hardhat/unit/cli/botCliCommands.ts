@@ -14,7 +14,6 @@ import { Notifier } from "../../../src/utils/Notifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { artifacts } from "../../../src/utils/artifacts";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { createWalletClient } from "../../../src/config/BotConfig";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
