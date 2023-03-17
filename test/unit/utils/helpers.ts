@@ -2,6 +2,9 @@
 import * as helperMethods from "../../../src/utils/helpers";
 // import { fail, formatBN, isNotNull, last, multimapAdd, multimapDelete, randomAddress, reportError, requireEnv, runAsync, sleep, systemTimestamp, toBN, toHex, toNumber, toStringExp, toWei } from "../../../src/utils/helpers";
 import Web3 from "web3";
+import { MockChain } from "../../../src/mock/MockChain";
+import { toBN } from "../../../src/utils/helpers";
+import { TrackedState } from "../../../src/state/TrackedState";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -166,12 +169,14 @@ describe("Helpers unit tests", async () => {
         expect(fn(obj.val1)).to.eq(obj2.val1);
     });
 
-    it("errorIncluded", () => {
-        const obj = { val0: 0, val1: 1 };
-        const fn = (x: number) => x + 1;
-        const obj2 = helperMethods.objectMap(obj, fn)
-        expect(fn(obj.val0)).to.eq(obj2.val0);
-        expect(fn(obj.val1)).to.eq(obj2.val1);
+    it("Should include and expect error", () => {
+        const error = { message: "ERROR"};
+        expect(helperMethods.errorIncluded(error, [Error])).to.be.false;
+        expect(helperMethods.errorIncluded(error, ["ERROR"])).to.be.true;
+        const fn = () => {
+            return helperMethods.expectErrors(error, [Error]);
+        };
+        expect(fn).to.throw('');
     });
 
 });

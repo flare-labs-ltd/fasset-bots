@@ -109,4 +109,8 @@ describe("BTC blockchain tests via indexer", async () => {
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
     });
 
+    it("Should not retrieve balance - not implemented", async () => {
+        await expect(rewiredBlockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet").and.be.an.instanceOf(Error);
+    });
+
 });
