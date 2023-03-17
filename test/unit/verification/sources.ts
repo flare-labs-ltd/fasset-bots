@@ -1,9 +1,7 @@
-import { expect } from "chai";
 import { getSourceName, SourceId, toSourceId } from "../../../src/verification/sources/sources";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require('chai-as-promised'));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 const sourceBTC = SourceId.BTC;
 const sourceNameBTC = "BTC";

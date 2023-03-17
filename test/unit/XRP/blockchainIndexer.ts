@@ -3,10 +3,9 @@ import { createWalletClient } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../../../src/verification/sources/sources";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rewire = require("rewire");
+import rewire from "rewire";
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
-const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__('BlockChainIndexerHelper');
+const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.XRP;

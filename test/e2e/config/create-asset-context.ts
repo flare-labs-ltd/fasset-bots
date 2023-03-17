@@ -1,18 +1,15 @@
-import { expect } from "chai";
 import { readFileSync } from "fs";
 import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig"
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { requireEnv } from "../../../src/utils/helpers";
 import { COSTON2_RUN_CONFIG_ADDRESS_UPDATER, COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rewire = require("rewire");
+import rewire from "rewire";
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
-const getAssetManagerAndController = createAssetContextInternal.__get__('getAssetManagerAndController');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require("chai");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 

@@ -1,10 +1,7 @@
-import { expect } from "chai";
-import { initWeb3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp, latestBlockTimestampBN } from "../../../src/utils/web3helpers";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require("chai");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 describe("web3 helper unit tests", async () => {
 

@@ -15,12 +15,9 @@ import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { Notifier } from "../../src/utils/Notifier";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 
@@ -92,18 +89,18 @@ describe("Liquidator tests", async () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
-        const spy = chai.spy.on(liquidator, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(liquidator, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await liquidator.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyLiquidation).to.have.been.called.once;
     });
 
     it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
         const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
+        const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation, perform minting and run liquidation trigger
         await createCRAndPerformMinting(minter, agentBot, 2);
         await liquidator.runStep();
@@ -125,7 +122,7 @@ describe("Liquidator tests", async () => {
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         // send notification
         await agentBot.runStep(orm.em);
-        expect(spy).to.have.been.called.once;
+        expect(spyLiquidation).to.have.been.called.once;
         // nothing is burned, liquidator does not have FAssets
         expect(fBalanceBefore.eq(fBalanceAfter)).to.be.true;
         expect(fBalanceBefore.eqn(0)).to.be.true;
@@ -134,12 +131,12 @@ describe("Liquidator tests", async () => {
     it("Should check collateral ratio after minting execution", async () => {
         const liquidator = await createTestLiquidator(runner, liquidatorAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(liquidator, 'handleMintingExecuted');
+        const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution
         await liquidator.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyMinting).to.have.been.called.once;
     });
 
     it("Should liquidate agent", async () => {

@@ -1843,6 +1843,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/chai-spies@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "@types/chai-spies@npm:1.0.3"
+  dependencies:
+    "@types/chai": "*"
+  checksum: f88b1a021c1f6c37259adf4268b00401431633027995725a49c44658b0fedf7ec09aa4e26e59fdf6564df0767a0b105b26a4a9c8a7c6acaf9ba417b06a4c9c70
+  languageName: node
+  linkType: hard
+
 "@types/chai@npm:*":
   version: 4.3.3
   resolution: "@types/chai@npm:4.3.3"
@@ -1965,6 +1974,13 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: e99fc7cc6265407987b30deda54c1c24bb1478803faf6037557a774b2f034c5b097ffd65847daa87e82a61a250d919f35c3588654b0fdaa816906650f596d1b0
+  languageName: node
+  linkType: hard
+
+"@types/rewire@npm:^2.5.28":
+  version: 2.5.28
+  resolution: "@types/rewire@npm:2.5.28"
+  checksum: c416a0f30b68c3d7aa7d67fa1297506d7ae890f831363f5e7a2ca704e0d3e2ec564efe1ce1f20a31f4f6408b3dc76a0f6ed79048ef4b7cc38905db31aeaf55df
   languageName: node
   linkType: hard
 
@@ -4817,9 +4833,11 @@ __metadata:
     "@types/bn.js": ^4.11.0
     "@types/chai": 4.3.4
     "@types/chai-as-promised": ^7.1.5
+    "@types/chai-spies": ^1.0.3
     "@types/glob": 7.2.0
     "@types/mocha": 9.1.1
     "@types/node": 18.6.3
+    "@types/rewire": ^2.5.28
     "@typescript-eslint/eslint-plugin": 5.36.1
     "@typescript-eslint/parser": 5.36.1
     axios: ^1.3.4

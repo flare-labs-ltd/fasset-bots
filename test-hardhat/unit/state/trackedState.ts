@@ -11,16 +11,12 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { convertLotsToUBA, convertAmgToUBA } from "../../../src/fasset/Conversions";
-import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { Redeemer } from "../../../src/mock/Redeemer";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+import spies from "chai-spies";
+import chaiAsPromised from "chai-as-promised";
+import { expect, spy, use } from "chai";
+use(chaiAsPromised);
+use(spies);
 
 const agentDestroyedArgs = {
     '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
@@ -136,9 +132,9 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'PriceEpochFinalized'", async () => {
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
-        const spy = chai.spy.on(trackedState, 'getPrices');
+        const spyPrices = spy.on(trackedState, 'getPrices');
         await trackedState.readUnhandledEvents()
-        expect(spy).to.have.been.called.once;
+        expect(spyPrices).to.have.been.called.once;
     });
 
     it("Should handle event 'AgentCreated'", async () => {
@@ -253,7 +249,7 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         const lots = 2;
         await createCRAndPerformMinting(minter, agentB, lots);
-        const spy = chai.spy.on(trackedState.getAgent(agentB.vaultAddress), 'handleRedemptionPerformed');
+        const spyRedemption = spy.on(trackedState.getAgent(agentB.vaultAddress)!, 'handleRedemptionPerformed');
         const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -261,7 +257,7 @@ describe("Tracked state tests", async () => {
         const tx1Hash = await agentB.performRedemptionPayment(rdReqs[0]);
         await agentB.confirmActiveRedemptionPayment(rdReqs[0], tx1Hash);
         await trackedState.readUnhandledEvents();
-        expect(spy).to.have.been.called.once;
+        expect(spyRedemption).to.have.been.called.once;
     });
 
     it("Should handle event 'CollateralReservationDeleted'", async () => {
@@ -363,7 +359,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle events 'SettingChanged' and 'SettingArrayChanged' - invalid setting", async () => {
-        const spy = chai.spy.on(console, 'error');
+        const spyError = spy.on(console, 'error');
         const settingChangedEventFail = {
             address: trackedState.context.assetManager.address,
             type: 'event',
@@ -402,7 +398,7 @@ describe("Tracked state tests", async () => {
         }
         await trackedState.registerStateEvents([settingChangedEventFail]);
         await trackedState.registerStateEvents([settingArrayChangedEventFail]);
-        expect(spy).to.have.been.called.twice;
+        expect(spyError).to.have.been.called.twice;
     });
 
 });

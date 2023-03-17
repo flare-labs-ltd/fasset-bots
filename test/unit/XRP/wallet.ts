@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
@@ -8,10 +7,9 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require('chai-as-promised'));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;

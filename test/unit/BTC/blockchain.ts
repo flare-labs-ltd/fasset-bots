@@ -1,8 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require('chai-as-promised'));
-import { expect } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 import { createBlockChainHelper } from "../../../src/config/BotConfig";
 import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { SourceId } from "../../../src/verification/sources/sources";

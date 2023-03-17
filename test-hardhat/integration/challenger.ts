@@ -23,12 +23,9 @@ import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { Notifier } from "../../src/utils/Notifier";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -102,7 +99,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge illegal payment", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'illegalTransactionChallenge');
+        const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -126,12 +123,12 @@ describe("Challenger tests", async () => {
         // check status
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
+        expect(spyChlg).to.have.been.called.once;
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'illegalTransactionChallenge');
+        const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -152,12 +149,12 @@ describe("Challenger tests", async () => {
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
+        expect(spyChlg).to.have.been.called.once;
     });
 
     it("Should challenge double payment", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -198,12 +195,12 @@ describe("Challenger tests", async () => {
         await agentBot.runStep(orm.em);
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
+        expect(spyChlg).to.have.been.called.once;
     });
 
     it("Should challenge double payment - announced withdrawal", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -227,15 +224,15 @@ describe("Challenger tests", async () => {
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
-        const spyAgent = chai.spy.on(agentBot.notifier, 'sendFullLiquidationAlert');
+        expect(spyChlg).to.have.been.called.once;
+        const spyAgent = spy.on(agentBot.notifier, 'sendFullLiquidationAlert');
         await agentBot.runStep(orm.em);
         expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -273,12 +270,12 @@ describe("Challenger tests", async () => {
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
+        expect(spyChlg).to.have.been.called.once;
     });
 
     it("Should challenge illegal/double payment - reference for already confirmed announced withdrawal", async () => {
         const challenger = await createTestChallenger(challengerAddress);
-        const spy = chai.spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         await createTestActors(ownerAddress, minterAddress, redeemerAddress, minterUnderlying, redeemerUnderlying);
         await challenger.runStep();
@@ -307,7 +304,7 @@ describe("Challenger tests", async () => {
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
-        expect(spy).to.have.been.called.once;
+        expect(spyChlg).to.have.been.called.once;
     });
 
     it("Should catch 'RedemptionPaymentFailed' event - failed underlying payment (not redeemer's address)", async () => {
@@ -400,9 +397,9 @@ describe("Challenger tests", async () => {
         // catch 'RedemptionPaymentBlocked' event
         await challenger.runStep();
         // send notification
-        const spy = chai.spy.on(agentBot.notifier, 'sendRedemptionFailedOrBlocked');
+        const spyRedemption = spy.on(agentBot.notifier, 'sendRedemptionFailedOrBlocked');
         await agentBot.runStep(orm.em);
-        expect(spy).to.have.been.called.once;
+        expect(spyRedemption).to.have.been.called.once;
     });
 
     it("Should perform free balance negative challenge", async () => {

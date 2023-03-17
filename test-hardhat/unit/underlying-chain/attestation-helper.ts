@@ -3,11 +3,9 @@ import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { expect } from "chai";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require("chai");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 const underlying1 = "UNDERLYING1";
 const underlying2 = "UNDERLYING2";

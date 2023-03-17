@@ -15,12 +15,9 @@ import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { Notifier } from "../../src/utils/Notifier";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 
@@ -92,18 +89,18 @@ describe("System keeper tests", async () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
-        const spy = chai.spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await systemKeeper.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyLiquidation).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
         const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
+        const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check agent status
@@ -138,7 +135,7 @@ describe("System keeper tests", async () => {
         assert.equal(status4, AgentStatus.NORMAL);
         // send notification
         await agentBot.runStep(orm.em);
-        expect(spy).to.have.been.called.once;
+        expect(spyLiquidation).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {
@@ -208,12 +205,12 @@ describe("System keeper tests", async () => {
     it("Should check collateral ratio after minting execution", async () => {
         const systemKeeper = await createTestSystemKeeper(runner, systemKeeperAddress, state);
         await createTestActors(ownerAddress, minterAddress, minterUnderlying, context);
-        const spy = chai.spy.on(systemKeeper, 'handleMintingExecuted');
+        const spyMinting = spy.on(systemKeeper, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot, 2);
         // check collateral ratio after minting execution
         await systemKeeper.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyMinting).to.have.been.called.once;
     });
 
 });

@@ -9,8 +9,7 @@ import { requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import { time } from "@openzeppelin/test-helpers";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chalk = require('chalk');
+import chalk from 'chalk';
 dotenv.config();
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');

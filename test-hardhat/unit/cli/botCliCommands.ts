@@ -14,14 +14,11 @@ import { Notifier } from "../../../src/utils/Notifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { artifacts } from "../../../src/utils/artifacts";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+import spies from "chai-spies";
+import chaiAsPromised from "chai-as-promised";
+import { expect, spy, use } from "chai";
+use(chaiAsPromised);
+use(spies);
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const depositAmount = toStringExp(100_000_000, 18);
@@ -85,7 +82,7 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     afterEach(function () {
-        chai.spy.restore(console);
+        spy.restore(console);
     });
 
     it("Should create agent vault", async () => {
@@ -171,32 +168,32 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should list usage commands", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         listUsageAndCommands();
         await botCliCommands.run([]);
         await botCliCommands.run(["", "", "unknownCommand"]);
-        expect(spy).to.be.called.exactly(30);
+        expect(spyLog).to.be.called.exactly(30);
     });
 
     it("Should run command 'create'", async () => {
-        const spy = chai.spy.on(botCliCommands, "createAgentVault");
+        const spyAgent = spy.on(botCliCommands, "createAgentVault");
         await botCliCommands.run(["", "", "create"]);
-        expect(spy).to.be.called.once;
+        expect(spyAgent).to.be.called.once;
 
     });
 
     it("Should run command 'deposit'", async () => {
-        const spy = chai.spy.on(botCliCommands, "depositToVault");
+        const spyDeposit = spy.on(botCliCommands, "depositToVault");
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.run(["", "", "deposit", vaultAddress, depositAmount]);
-        expect(spy).to.be.called.once;
+        expect(spyDeposit).to.be.called.once;
     });
 
     it("Should not run command 'deposit' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "deposit"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should run commands 'enter' and 'exit'", async () => {
@@ -217,15 +214,15 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not run command 'enter' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "enter"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should not run command 'exit' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "exit"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should run command 'setMinCR'", async () => {
@@ -238,9 +235,9 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not run command 'setMinCR' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "setMinCR"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should run commands 'deposit' and 'withdraw", async () => {
@@ -256,15 +253,15 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not run command 'deposit' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "deposit"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should not run command 'withdraw' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "withdraw"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should run command 'selfClose'", async () => {
@@ -286,9 +283,9 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not run command 'selfClose' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "selfClose"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
     it("Should run command 'close'", async () => {
@@ -306,9 +303,9 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not run command 'close' - missing inputs", async () => {
-        const spy = chai.spy.on(console, "log");
+        const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "close"]);
-        expect(spy).to.be.called.once;
+        expect(spyLog).to.be.called.once;
     });
 
 });

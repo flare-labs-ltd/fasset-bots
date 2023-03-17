@@ -12,12 +12,9 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { disableMccTraceManager } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
 
 const loopDelay: number = 2;
 describe("Agent bot runner tests", async () => {
@@ -69,30 +66,30 @@ describe("Agent bot runner tests", async () => {
 
     it("Should run agent bot runner until its stopped", async () => {
         const agentBotRunner = createAgentBot();
-        const spy = chai.spy.on(agentBotRunner, 'runStep');
+        const spyStep = spy.on(agentBotRunner, 'runStep');
         agentBotRunner.requestStop();
         void agentBotRunner.run();
         agentBotRunner.requestStop();
-        expect(spy).to.have.been.called.once;
+        expect(spyStep).to.have.been.called.once;
     });
 
     it("Should run agent bot runner step", async () => {
         const agentBotRunner = createAgentBot();
-        const spy = chai.spy.on(AgentBot, 'fromEntity');
+        const spyEnt = spy.on(AgentBot, 'fromEntity');
         await agentBotRunner.createMissingAgents(ownerAddress);
         await agentBotRunner.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyEnt).to.have.been.called.once;
     });
 
     it("Should run agent bot runner step - invalid source id", async () => {
         const agentBotRunner = createAgentBot();
-        const spy = chai.spy.on(console, 'warn');
+        const spyLog = spy.on(console, 'warn');
         await agentBotRunner.createMissingAgents(ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress, active: true } as FilterQuery<AgentEntity>);
         agentEnt.chainId = SourceId.BTC;
         await orm.em.persistAndFlush(agentEnt);
         await agentBotRunner.runStep();
-        expect(spy).to.have.been.called.once;
+        expect(spyLog).to.have.been.called.once;
     });
 
 });

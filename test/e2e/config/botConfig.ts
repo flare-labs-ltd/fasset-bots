@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { readFileSync } from "fs";
 import { createAttestationHelper, createBlockChainHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createBotConfig, createMccClient, createStateConnectorClient, createWalletClient, RunConfig } from "../../../src/config/BotConfig"
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
@@ -7,10 +6,9 @@ import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
 import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require("chai");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 const ATTESTER_BASE_URLS: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
 const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');

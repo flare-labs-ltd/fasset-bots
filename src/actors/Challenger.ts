@@ -64,7 +64,7 @@ export class Challenger {
     }
 
     handleUnderlyingTransaction(transaction: ITransaction): void {
-        for (const [address, amount] of transaction.inputs) {
+        for (const [address] of transaction.inputs) {
             const agent = this.state.agentsByUnderlying.get(address);
             if (!agent) continue;
             // add to list of transactions

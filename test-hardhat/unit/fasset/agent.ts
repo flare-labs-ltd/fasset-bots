@@ -10,12 +10,9 @@ import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -47,7 +44,7 @@ describe("Agent unit tests", async () => {
     });
 
     afterEach(function () {
-        chai.spy.restore(Agent);
+        spy.restore(Agent);
     });
 
     it("Should create agent", async () => {
@@ -117,11 +114,11 @@ describe("Agent unit tests", async () => {
 
     it("Should perform and confirm top up", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent.assetManager, 'confirmTopupPayment');
+        const spyAgent = spy.on(agent.assetManager, 'confirmTopupPayment');
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.confirmTopupPayment(tx);
-        expect(spy).to.have.been.called.once;
+        expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should announce, perform and confirm underlying withdrawal", async () => {
@@ -202,7 +199,7 @@ describe("Agent unit tests", async () => {
 
     it("Should unstick minting", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent.assetManager, 'unstickMinting');
+        const spyAgent = spy.on(agent.assetManager, 'unstickMinting');
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
@@ -213,7 +210,7 @@ describe("Agent unit tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         await agent.unstickMinting(crt);
-        expect(spy).to.have.been.called.once;
+        expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should execute mintingPaymentDefault", async () => {
@@ -231,7 +228,7 @@ describe("Agent unit tests", async () => {
 
     it("Should mint, redeem and confirm active redemption payment", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent.assetManager, 'confirmRedemptionPayment');
+        const spyAgent = spy.on(agent.assetManager, 'confirmRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
@@ -248,7 +245,7 @@ describe("Agent unit tests", async () => {
         const [rdReqs] = await redeemer.requestRedemption(lots);
         const tx1Hash = await agent.performRedemptionPayment(rdReqs[0]);
         await agent.confirmActiveRedemptionPayment(rdReqs[0], tx1Hash);
-        expect(spy).to.have.been.called.once;
+        expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
@@ -285,7 +282,7 @@ describe("Agent unit tests", async () => {
 
     it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {
         const agent = await Agent.create(context, ownerAddress, underlyingAddress);
-        const spy = chai.spy.on(agent.assetManager, 'confirmRedemptionPayment');
+        const spyAgent = spy.on(agent.assetManager, 'confirmRedemptionPayment');
         const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         await agent.depositCollateral(deposit);
         await agent.makeAvailable(500, 25000);
@@ -314,7 +311,7 @@ describe("Agent unit tests", async () => {
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
         const tx2Hash = await agent.performRedemptionPayment(rdReq);
         await agent.confirmDefaultedRedemptionPayment(rdReq, tx2Hash);
-        expect(spy).to.have.been.called.once;
+        expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should not perform redemption - failed underlying payment (not redeemer's address)", async () => {

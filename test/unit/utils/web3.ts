@@ -1,15 +1,12 @@
-import { expect } from "chai";
 import { readFileSync } from "fs";
 import { RunConfig } from "../../../src/config/BotConfig";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require("chai");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require("chai-as-promised"));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rewire = require("rewire");
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
+import rewire from "rewire";
 const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
 

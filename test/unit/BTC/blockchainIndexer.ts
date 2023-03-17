@@ -3,10 +3,9 @@ import { TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain
 import { requireEnv } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rewire = require("rewire");
+import rewire from "rewire";
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
-const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__('BlockChainIndexerHelper');
+const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.BTC;
 const txHash = "c627a78e6de95684787d17aacd9a6821a02b1fd309afc6767a07dffd83ea6a2e";

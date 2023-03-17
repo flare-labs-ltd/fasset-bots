@@ -17,16 +17,12 @@ import { AgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { Notifier } from "../../src/utils/Notifier";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rewire = require("rewire");
+import spies from "chai-spies";
+import { expect, spy, use } from "chai";
+use(spies);
+import rewire from "rewire";
 const rewiredAgentBot = rewire("../../src/actors/AgentBot");
-const rewiredAgentBotClass = rewiredAgentBot.__get__('AgentBot');
+const rewiredAgentBotClass = rewiredAgentBot.__get__("AgentBot");
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
@@ -439,12 +435,12 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spy = chai.spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
+        const spyTop = spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await agentBot.runStep(orm.em);
-        expect(spy).to.have.been.called.once;
+        expect(spyTop).to.have.been.called.once;
     });
 
     it("Should check collateral ratio after price changes 2", async () => {
@@ -452,7 +448,7 @@ describe("Agent bot tests", async () => {
         const agentBot2 = await rewiredAgentBotClass.create(orm.em, context, ownerAddress2);
         await agentBot2.agent.depositCollateral(toBNExp(1_000_000, 18));
         await agentBot2.agent.makeAvailable(500, 25000);
-        const spy = chai.spy.on(agentBot2, 'checkAgentForCollateralRatioAndTopUp');
+        const spyTop = spy.on(agentBot2, 'checkAgentForCollateralRatioAndTopUp');
         // create collateral reservation
         await minter.reserveCollateral(agentBot2.agent.vaultAddress, 2);
         // change price
@@ -482,7 +478,7 @@ describe("Agent bot tests", async () => {
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         await agentBot2.runStep(orm.em);
-        expect(spy).to.have.been.called.twice;
+        expect(spyTop).to.have.been.called.twice;
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {

@@ -1,15 +1,10 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as helperMethods from "../../../src/utils/helpers";
-// import { fail, formatBN, isNotNull, last, multimapAdd, multimapDelete, randomAddress, reportError, requireEnv, runAsync, sleep, systemTimestamp, toBN, toHex, toNumber, toStringExp, toWei } from "../../../src/utils/helpers";
 import Web3 from "web3";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const chai = require('chai');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-chai.use(require('chai-as-promised'));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const spies = require('chai-spies');
-chai.use(spies);
-const expect = chai.expect;
+import spies from "chai-spies";
+import chaiAsPromised from "chai-as-promised";
+import { expect, spy, use } from "chai";
+use(chaiAsPromised);
+use(spies);
 
 describe("Helpers unit tests", async () => {
 
@@ -139,23 +134,23 @@ describe("Helpers unit tests", async () => {
 
     it("Should use reportError", () => {
         const errorMessage = "This is error";
-        const spy = chai.spy.on(console, 'error');
+        const spyError = spy.on(console, 'error');
         helperMethods.reportError(errorMessage);
-        expect(spy).to.have.been.called.once;
+        expect(spyError).to.have.been.called.once;
     });
 
     it("Should use runAsync", () => {
-        const spy = chai.spy.on(helperMethods, 'runAsync');
+        const spyRun = spy.on(helperMethods, 'runAsync');
         helperMethods.runAsync(async () => {
             await helperMethods.sleep(1);
         })
-        expect(spy).to.have.been.called.once;
+        expect(spyRun).to.have.been.called.once;
     });
 
     it("Should use promiseValue", () => {
-        const spy = chai.spy.on(helperMethods, 'promiseValue');
+        const spyVal = spy.on(helperMethods, 'promiseValue');
         helperMethods.promiseValue(helperMethods.sleep(1));
-        expect(spy).to.have.been.called.once;
+        expect(spyVal).to.have.been.called.once;
     });
 
     it("Should use objectMap", () => {
