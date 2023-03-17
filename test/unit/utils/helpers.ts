@@ -2,9 +2,6 @@
 import * as helperMethods from "../../../src/utils/helpers";
 // import { fail, formatBN, isNotNull, last, multimapAdd, multimapDelete, randomAddress, reportError, requireEnv, runAsync, sleep, systemTimestamp, toBN, toHex, toNumber, toStringExp, toWei } from "../../../src/utils/helpers";
 import Web3 from "web3";
-import { MockChain } from "../../../src/mock/MockChain";
-import { toBN } from "../../../src/utils/helpers";
-import { TrackedState } from "../../../src/state/TrackedState";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chai = require('chai');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
