@@ -12,7 +12,7 @@ import { time } from "@openzeppelin/test-helpers";
 import chalk from 'chalk';
 dotenv.config();
 
-const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+const RPC_URL: string = requireEnv('RPC_URL');
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 
@@ -25,8 +25,8 @@ export class BotCliCommands {
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as RunConfig;
-        const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
-        this.botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+        const accounts = await initWeb3(RPC_URL, [OWNER_PRIVATE_KEY], null);
+        this.botConfig = await createBotConfig(runConfig);
         this.ownerAddress = accounts[0];
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
         console.log(chalk.cyan('Environment successfully initialized.'));

@@ -14,16 +14,17 @@ const ATTESTER_BASE_URLS: string[] = requireEnv('ATTESTER_BASE_URLS').split(",")
 const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
 const STATE_CONNECTOR_ADDRESS: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Bot config tests", async () => {
     let runConfig: RunConfig;
     before(async () => {
         runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
-        await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
+        await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+        const botConfig = await createBotConfig(runConfig);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
         expect(botConfig.stateConnector).to.not.be.null;

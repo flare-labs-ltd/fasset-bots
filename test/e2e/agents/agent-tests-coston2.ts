@@ -17,7 +17,7 @@ import { initWeb3, web3 } from "../../../src/utils/web3";
 import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 
-const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Agent bot tests - coston2", async () => {
     let accounts: string[];
@@ -32,10 +32,10 @@ describe("Agent bot tests - coston2", async () => {
 
     before(async () => {
         runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
-        accounts = await initWeb3(runConfig.rpcUrl, getCoston2AccountsFromEnv(), null);
+        accounts = await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
         challengerAddress = accounts[3];
-        botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+        botConfig = await createBotConfig(runConfig);
         orm = botConfig.orm;
     });
 

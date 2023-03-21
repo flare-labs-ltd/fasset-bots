@@ -19,15 +19,17 @@ import { requireEnv } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 
+const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
+const RPC_URL: string = requireEnv('RPC_URL');
+const ATTESTATION_PROVIDER_URLS: string  = requireEnv('ATTESTER_BASE_URLS');
+const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const STATE_CONNECTOR_ADDRESS: string  = requireEnv('STATE_CONNECTOR_ADDRESS');
+
 export interface RunConfig {
-    rpcUrl: string,
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
     ormOptions: CreateOrmOptions;
-    attestationProviderUrls: string[];
-    attestationClientAddress: string;
-    stateConnectorAddress: string;
     // notifierFile: string;
     // either one must be set
     addressUpdater?: string;
@@ -66,15 +68,16 @@ export interface BotChainInfo extends ChainInfo {
     fAssetSymbol?: string;
 }
 
-export async function createBotConfig(runConfig: RunConfig, ownerAddress: string): Promise<BotConfig> {
-    const stateConnector = await createStateConnectorClient(runConfig.attestationProviderUrls, runConfig.attestationClientAddress, runConfig.stateConnectorAddress, ownerAddress);
+export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
+    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
+    const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createBotConfigChain(chainInfo, orm.em));
     }
     return {
-        rpcUrl: runConfig.rpcUrl,
+        rpcUrl: RPC_URL,
         loopDelay: runConfig.loopDelay,
         stateConnector: stateConnector,
         chains: chains,

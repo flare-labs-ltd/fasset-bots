@@ -3,7 +3,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
 import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig";
+import { BotConfig, RunConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -12,7 +12,7 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, systemTimestamp, toBN, toBNExp } from "../../../src/utils/helpers";
-import { LOCAL_HARDHAT_RUN_CONFIG } from "../../test-utils/test-bot-config";
+import { createBotConfigLocal, LOCAL_HARDHAT_RUN_CONFIG } from "../../test-utils/test-bot-config";
 import { initTestWeb3 } from "../../test-utils/test-web3";
 
 describe.skip("Agent bot tests - local network", async () => {
@@ -33,7 +33,7 @@ describe.skip("Agent bot tests - local network", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
-        botConfig = await createBotConfig(runConfig, ownerAddress);
+        botConfig = await createBotConfigLocal(runConfig, ownerAddress);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         chain = checkedCast(context.chain, MockChain);

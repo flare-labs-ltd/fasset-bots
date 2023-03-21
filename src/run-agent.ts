@@ -9,11 +9,12 @@ dotenv.config();
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
+const RPC_URL: string = requireEnv('RPC_URL');
 
 toplevelRun(async () => {
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as RunConfig;
-    await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
-    const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+    await initWeb3(RPC_URL, [OWNER_PRIVATE_KEY], null);
+    const botConfig = await createBotConfig(runConfig);
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);
     await runner.createMissingAgents(OWNER_ADDRESS);
