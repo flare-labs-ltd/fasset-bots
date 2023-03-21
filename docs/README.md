@@ -1,6 +1,6 @@
 # FAsset bots documentation
 
-* [Actors](./actors.md)
+* [Actors in FAsset system](./actors.md)
 * [Configuration and run](./config.md)
-* [Command Line Interface](./cli.md)
+* [Command line interface](./cli.md)
 * [Test and debug](./testDebug.md)
