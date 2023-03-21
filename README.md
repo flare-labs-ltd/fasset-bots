@@ -1,38 +1,23 @@
 # FAsset bots
 
-## Testing
+## FAsset
+FAsset is a collateral lending system. The main actor in the system is the Agent. Agent together with its collateral pool supplies the collateral that is backing minted FAssets. Agent holds collateral in supported stable coin. Collateral pool holds collateral in WFLR/WSGB.
 
-Tests are divided into two following folders:
+*Minimal Collateral Ratio (CR)*: At all times, the Agent's CR must satisfy the minimal CR as defined by the system. If due to price changes the position doesn’t satisfy the minimal CR, the Agent gets liquidated (until he reaches “safety CR”).
 
-* `test/` These are run by command `test`.
-For example: `yarn test test/<path_to_file>/<file>.ts`.
+If the pool’s collateral ratio falls below the pool minimal CR as defined by the system, the redemption tickets the Agent is backing get liquidated against the pool collateral, until it reaches “pool safety CR”.
 
-* `test-hardhat/` These are run by command `testHH`.
-For example: `yarn testHH test-hardhat/<path_to_file>/<file>.ts`.
+There are three basic flows for the FAsset system:
 
-### Coverage:
+- Minting: the process of creating (minting) fAssets.
+- Redemption: the process of destroying (burning) fAssets.
+- Liquidation: the process of selling a part (or all) of an agent's position in a way that will have it satisfy the Min CR. Part of this operation includes burning FAssets.
 
-* Run `testHH:coverage` for coverage in `test-hardhat/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
-* Run `test:coverage` for coverage in `test/`. `html` coverage report is found in `/fasset-bots/coverage/lcov-report/index.html`
-* Run `cover` for coverage in `test-hardhat/` and `test/unit/` and `test/unit/e2e`. `html` coverage report is found in `/fasset-bots/coverage/lcov-report/index.html`
+See [FAsset repository](https://gitlab.com/flarenetwork/fasset).
 
-### Debugging:
-There are two configurations in `.vscode/launch.json` that allow to debug individual test files from folders `test/` and `test-hardhat/`.
+## FAsset bots
 
-*  To debug specific test file in `test/`, modify **Mocha individual test** configuration's `runtimeArgs` to include desired test file.
-*  To debug specific test file in `test-hardhat/`, modify **Hardhat individual test** configuration's `runtimeArgs` to include desired test file.
+The system that allows setting up an Agent and automate actions to events that require quick reactions (collateral reservation, minting, redemption, low collateral ratio).
 
-## CLI `fasset-bots-cli`
-
-Usage: `fasset-bots-cli [command] <arg>`
-
-Available commands:
-
-* `create` - create new agent vault
-* `deposit <agentVault> <feeBips>` - deposit amount to agent vault from owner's address
-* `enter <agentVault> <feeBips> <agentMinCrBips>` - enter available agent's list
-* `exit <agentVault>` - exit available agent's list
-* `setMinCr <agentVault> <agentMinCrBips>` - set agent's min CR in BIPS
-* `withdraw <agentVault> <amount>` - withdraw amount from agent vault to owner's address
-* `selfClose <agentVault> <amountUBA>` - self close agent vault with amountUBA of FAssets
-* `close <agentVault>` - close agent vault
+## Documentation
+See [documentation](docs/README.md) for more.
