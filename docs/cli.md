@@ -1,5 +1,11 @@
 # CLI `fasset-bots-cli`
 
+## Setup
+
+Configuration and environment file must be provided, before running cli commands. See [Configuration and run](./config.md) for more.
+
+## How to use
+
 Usage: `fasset-bots-cli [command] <arg>`
 
 Available commands:

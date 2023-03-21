@@ -65,4 +65,4 @@ RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
 
 First configure configuration and environment files. Than run script [`run-agent.ts`](../src/run-agent.ts).
 
-Basic operations (create agent vault, deposit to vault, enter/exit available agent's list, ...) can be done via cli [`fasset-bots-cli`](cli.md).
+Basic operations (create agent vault, deposit to vault, enter/exit available agent's list, ...) can be done via cli [`fasset-bots-cli`](./cli.md).

@@ -20,4 +20,4 @@ See [FAsset repository](https://gitlab.com/flarenetwork/fasset).
 The system that allows setting up an Agent and automate actions to events that require quick reactions (collateral reservation, minting, redemption, low collateral ratio).
 
 ## Documentation
-See [documentation](docs/README.md) for more.
+See [documentation](./docs/README.md) for more.
