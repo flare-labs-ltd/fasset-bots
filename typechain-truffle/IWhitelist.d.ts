@@ -18,7 +18,15 @@ export interface Whitelisted {
   };
 }
 
-type AllEvents = Whitelisted;
+export interface WhitelistingRevoked {
+  name: "WhitelistingRevoked";
+  args: {
+    value: string;
+    0: string;
+  };
+}
+
+type AllEvents = Whitelisted | WhitelistingRevoked;
 
 export interface IWhitelistInstance extends Truffle.ContractInstance {
   isWhitelisted(

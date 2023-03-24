@@ -17,6 +17,19 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "value",
+          "type": "address"
+        }
+      ],
+      "name": "WhitelistingRevoked",
+      "type": "event"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",

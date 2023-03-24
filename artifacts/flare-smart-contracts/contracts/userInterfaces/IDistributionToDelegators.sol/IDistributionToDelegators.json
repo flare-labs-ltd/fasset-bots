@@ -58,44 +58,6 @@
       "inputs": [
         {
           "indexed": false,
-          "internalType": "address",
-          "name": "rewardOwner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address[]",
-          "name": "recipients",
-          "type": "address[]"
-        }
-      ],
-      "name": "AllowedClaimRecipientsChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "rewardOwner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address[]",
-          "name": "executors",
-          "type": "address[]"
-        }
-      ],
-      "name": "ClaimExecutorsChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
           "internalType": "uint256",
           "name": "entitlementStartTs",
           "type": "uint256"
@@ -105,26 +67,49 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "useGoodRandom",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "maxWaitForGoodRandomSeconds",
+          "type": "uint256"
+        }
+      ],
+      "name": "UseGoodRandomSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_rewardOwners",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_month",
+          "type": "uint256"
+        }
+      ],
+      "name": "autoClaim",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
           "name": "_rewardOwner",
           "type": "address"
-        }
-      ],
-      "name": "allowedClaimRecipients",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
+        },
         {
           "internalType": "address",
           "name": "_recipient",
@@ -134,157 +119,18 @@
           "internalType": "uint256",
           "name": "_month",
           "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_wrap",
+          "type": "bool"
         }
       ],
       "name": "claim",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "_amountWei",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_recipient",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimAndWrap",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_recipient",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimAndWrapByExecutor",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_recipient",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimByExecutor",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        }
-      ],
-      "name": "claimExecutors",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimToPersonalDelegationAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "claimToPersonalDelegationAccountByExecutor",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
+          "name": "_rewardAmount",
           "type": "uint256"
         }
       ],
@@ -314,7 +160,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "account",
+          "name": "_account",
           "type": "address"
         },
         {
@@ -335,42 +181,17 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "getClaimedAmount",
+      "inputs": [],
+      "name": "getClaimableMonths",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "_amountWei",
+          "name": "_startMonth",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_account",
-          "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "_month",
-          "type": "uint256"
-        }
-      ],
-      "name": "getClaimedAmountOf",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amountWei",
+          "name": "_endMonth",
           "type": "uint256"
         }
       ],
@@ -404,19 +225,18 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "optOutOfAirdrop",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "secondsTillNextClaim",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
+        }
+      ],
+      "name": "nextClaimableMonth",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "_timetill",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -424,27 +244,8 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address[]",
-          "name": "_recipients",
-          "type": "address[]"
-        }
-      ],
-      "name": "setAllowedClaimRecipients",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address[]",
-          "name": "_executors",
-          "type": "address[]"
-        }
-      ],
-      "name": "setClaimExecutors",
+      "inputs": [],
+      "name": "optOutOfAirdrop",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

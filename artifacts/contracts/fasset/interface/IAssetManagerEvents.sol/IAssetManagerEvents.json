@@ -21,7 +21,13 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "agentMinCollateralRatioBIPS",
+          "name": "mintingClass1CollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintingPoolCollateralRatioBIPS",
           "type": "uint256"
         },
         {
@@ -60,6 +66,12 @@
           "internalType": "string",
           "name": "underlyingAddress",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "collateralPool",
+          "type": "address"
         }
       ],
       "name": "AgentCreated",
@@ -77,7 +89,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "timestamp",
+          "name": "destroyAllowedAt",
           "type": "uint256"
         }
       ],
@@ -120,6 +132,69 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "validAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentSettingChangeAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentSettingChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "exitAllowedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "AvailableAgentExitAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "agentVault",
@@ -127,6 +202,31 @@
         }
       ],
       "name": "AvailableAgentExited",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "withdrawalAllowedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "Class1WithdrawalAnnounced",
       "type": "event"
     },
     {
@@ -225,25 +325,105 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "tokenClass",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
           "internalType": "address",
-          "name": "agentVault",
+          "name": "tokenContract",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "ftsoSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "minCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ccbMinCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "safetyMinCollateralRatioBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralTokenAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "tokenClass",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenContract",
           "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "valueNATWei",
+          "name": "validUntil",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralTokenDeprecated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "tokenClass",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenContract",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "minCollateralRatioBIPS",
           "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "timestamp",
+          "name": "ccbMinCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "safetyMinCollateralRatioBIPS",
           "type": "uint256"
         }
       ],
-      "name": "CollateralWithdrawalAnnounced",
+      "name": "CollateralTokenRatiosChanged",
       "type": "event"
     },
     {
@@ -459,7 +639,13 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "receivedFeeUBA",
+          "name": "agentFeeUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolFeeUBA",
           "type": "uint256"
         }
       ],
@@ -507,6 +693,31 @@
           "type": "address"
         },
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "withdrawalAllowedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "PoolTokenRedemptionAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
           "indexed": true,
           "internalType": "address",
           "name": "redeemer",
@@ -521,7 +732,13 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "redeemedCollateralWei",
+          "name": "redeemedClass1CollateralWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redeemedPoolCollateralWei",
           "type": "uint256"
         },
         {

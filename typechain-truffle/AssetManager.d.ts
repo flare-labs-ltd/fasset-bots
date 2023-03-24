@@ -10,14 +10,19 @@ export interface AssetManagerContract
   "new"(
     _settings: {
       assetManagerController: string;
+      fAsset: string;
       agentVaultFactory: string;
+      collateralPoolFactory: string;
       whitelist: string;
+      agentWhitelist: string;
       attestationClient: string;
-      wNat: string;
+      underlyingAddressValidator: string;
+      liquidationStrategy: string;
       ftsoRegistry: string;
-      natFtsoIndex: number | BN | string;
       assetFtsoIndex: number | BN | string;
-      natFtsoSymbol: string;
+      assetDecimals: number | BN | string;
+      assetMintingDecimals: number | BN | string;
+      mintingPoolHoldingsRequiredBIPS: number | BN | string;
       assetFtsoSymbol: string;
       burnAddress: string;
       burnWithSelfDestruct: boolean;
@@ -26,30 +31,42 @@ export interface AssetManagerContract
       assetUnitUBA: number | BN | string;
       assetMintingGranularityUBA: number | BN | string;
       lotSizeAMG: number | BN | string;
+      mintingCapAMG: number | BN | string;
       maxTrustedPriceAgeSeconds: number | BN | string;
       requireEOAAddressProof: boolean;
-      minCollateralRatioBIPS: number | BN | string;
-      ccbMinCollateralRatioBIPS: number | BN | string;
-      safetyMinCollateralRatioBIPS: number | BN | string;
       underlyingBlocksForPayment: number | BN | string;
       underlyingSecondsForPayment: number | BN | string;
       redemptionFeeBIPS: number | BN | string;
-      redemptionDefaultFactorBIPS: number | BN | string;
+      redemptionDefaultFactorAgentC1BIPS: number | BN | string;
+      redemptionDefaultFactorPoolBIPS: number | BN | string;
       confirmationByOthersAfterSeconds: number | BN | string;
-      confirmationByOthersRewardNATWei: number | BN | string;
+      confirmationByOthersRewardUSD5: number | BN | string;
       maxRedeemedTickets: number | BN | string;
       paymentChallengeRewardBIPS: number | BN | string;
-      paymentChallengeRewardNATWei: number | BN | string;
+      paymentChallengeRewardUSD5: number | BN | string;
       withdrawalWaitMinSeconds: number | BN | string;
-      liquidationCollateralFactorBIPS: (number | BN | string)[];
       ccbTimeSeconds: number | BN | string;
-      liquidationStepSeconds: number | BN | string;
       attestationWindowSeconds: number | BN | string;
       minUpdateRepeatTimeSeconds: number | BN | string;
       buybackCollateralFactorBIPS: number | BN | string;
       announcedUnderlyingConfirmationMinSeconds: number | BN | string;
+      tokenInvalidationTimeMinSeconds: number | BN | string;
+      class1BuyForFlareFactorBIPS: number | BN | string;
+      agentExitAvailableTimelockSeconds: number | BN | string;
+      agentFeeChangeTimelockSeconds: number | BN | string;
+      agentCollateralRatioChangeTimelockSeconds: number | BN | string;
     },
-    _fAsset: string,
+    _initialCollateralTypes: {
+      tokenClass: number | BN | string;
+      token: string;
+      decimals: number | BN | string;
+      validUntil: number | BN | string;
+      ftsoSymbol: string;
+      minCollateralRatioBIPS: number | BN | string;
+      ccbMinCollateralRatioBIPS: number | BN | string;
+      safetyMinCollateralRatioBIPS: number | BN | string;
+    }[],
+    _initialLiquidationSettings: string,
     meta?: Truffle.TransactionDetails
   ): Promise<AssetManagerInstance>;
 }
@@ -59,12 +76,14 @@ export interface AgentAvailable {
   args: {
     agentVault: string;
     feeBIPS: BN;
-    agentMinCollateralRatioBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
     freeCollateralLots: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
+    4: BN;
   };
 }
 
@@ -75,10 +94,12 @@ export interface AgentCreated {
     agentType: BN;
     agentVault: string;
     underlyingAddress: string;
+    collateralPool: string;
     0: string;
     1: BN;
     2: string;
     3: string;
+    4: string;
   };
 }
 
@@ -86,7 +107,7 @@ export interface AgentDestroyAnnounced {
   name: "AgentDestroyAnnounced";
   args: {
     agentVault: string;
-    timestamp: BN;
+    destroyAllowedAt: BN;
     0: string;
     1: BN;
   };
@@ -110,11 +131,55 @@ export interface AgentInCCB {
   };
 }
 
+export interface AgentSettingChangeAnnounced {
+  name: "AgentSettingChangeAnnounced";
+  args: {
+    name: string;
+    value: BN;
+    validAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface AgentSettingChanged {
+  name: "AgentSettingChanged";
+  args: {
+    name: string;
+    value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AvailableAgentExitAnnounced {
+  name: "AvailableAgentExitAnnounced";
+  args: {
+    agentVault: string;
+    exitAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface AvailableAgentExited {
   name: "AvailableAgentExited";
   args: {
     agentVault: string;
     0: string;
+  };
+}
+
+export interface Class1WithdrawalAnnounced {
+  name: "Class1WithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -156,15 +221,49 @@ export interface CollateralReserved {
   };
 }
 
-export interface CollateralWithdrawalAnnounced {
-  name: "CollateralWithdrawalAnnounced";
+export interface CollateralTokenAdded {
+  name: "CollateralTokenAdded";
   args: {
-    agentVault: string;
-    valueNATWei: BN;
-    timestamp: BN;
-    0: string;
-    1: BN;
+    tokenClass: BN;
+    tokenContract: string;
+    ftsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: string;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface CollateralTokenDeprecated {
+  name: "CollateralTokenDeprecated";
+  args: {
+    tokenClass: BN;
+    tokenContract: string;
+    validUntil: BN;
+    0: BN;
+    1: string;
     2: BN;
+  };
+}
+
+export interface CollateralTokenRatiosChanged {
+  name: "CollateralTokenRatiosChanged";
+  args: {
+    tokenClass: BN;
+    tokenContract: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -269,12 +368,14 @@ export interface MintingExecuted {
     collateralReservationId: BN;
     redemptionTicketId: BN;
     mintedAmountUBA: BN;
-    receivedFeeUBA: BN;
+    agentFeeUBA: BN;
+    poolFeeUBA: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -292,19 +393,33 @@ export interface MintingPaymentDefault {
   };
 }
 
+export interface PoolTokenRedemptionAnnounced {
+  name: "PoolTokenRedemptionAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface RedemptionDefault {
   name: "RedemptionDefault";
   args: {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    redeemedCollateralWei: BN;
+    redeemedClass1CollateralWei: BN;
+    redeemedPoolCollateralWei: BN;
     requestId: BN;
     0: string;
     1: string;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -492,10 +607,16 @@ type AllEvents =
   | AgentDestroyAnnounced
   | AgentDestroyed
   | AgentInCCB
+  | AgentSettingChangeAnnounced
+  | AgentSettingChanged
+  | AvailableAgentExitAnnounced
   | AvailableAgentExited
+  | Class1WithdrawalAnnounced
   | CollateralReservationDeleted
   | CollateralReserved
-  | CollateralWithdrawalAnnounced
+  | CollateralTokenAdded
+  | CollateralTokenDeprecated
+  | CollateralTokenRatiosChanged
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
@@ -507,6 +628,7 @@ type AllEvents =
   | LiquidationStarted
   | MintingExecuted
   | MintingPaymentDefault
+  | PoolTokenRedemptionAnnounced
   | RedemptionDefault
   | RedemptionFinished
   | RedemptionPaymentBlocked
@@ -524,7 +646,112 @@ type AllEvents =
   | UnderlyingWithdrawalConfirmed;
 
 export interface AssetManagerInstance extends Truffle.ContractInstance {
-  announceCollateralWithdrawal: {
+  addCollateralToken: {
+    (
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceAgentPoolTokenRedemption: {
+    (
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceAgentSettingUpdate: {
+    (
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceClass1CollateralWithdrawal: {
     (
       _agentVault: string,
       _valueNATWei: number | BN | string,
@@ -565,6 +792,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  announceExitAvailableAgentList: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   announceUnderlyingWithdrawal: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -586,6 +831,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   assetManagerController(
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
+
+  assetPriceNatWei(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
 
   attachController: {
     (attached: boolean, txDetails?: Truffle.TransactionDetails): Promise<
@@ -637,6 +886,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  collateralDeposited: {
+    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -917,19 +1181,63 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
 
   createAgent: {
     (
-      _underlyingAddressString: string,
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _underlyingAddressString: string,
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _underlyingAddressString: string,
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _underlyingAddressString: string,
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -938,21 +1246,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
 
-  depositCollateral: {
+  deprecateCollateralToken: {
     (
-      _valueNATWei: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _valueNATWei: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _valueNATWei: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _valueNATWei: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1096,6 +1412,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  executeAgentSettingUpdate: {
+    (
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _name: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1331,23 +1670,36 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   ): Promise<{
     status: BN;
     ownerAddress: string;
+    collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
-    agentMinCollateralRatioBIPS: BN;
-    totalCollateralNATWei: BN;
-    freeCollateralNATWei: BN;
+    poolFeeShareBIPS: BN;
+    class1CollateralToken: string;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
     freeCollateralLots: BN;
-    collateralRatioBIPS: BN;
+    totalClass1CollateralWei: BN;
+    freeClass1CollateralWei: BN;
+    class1CollateralRatioBIPS: BN;
+    totalPoolCollateralNATWei: BN;
+    freePoolCollateralNATWei: BN;
+    poolCollateralRatioBIPS: BN;
+    totalAgentPoolTokensWei: BN;
+    freeAgentPoolTokensWei: BN;
     mintedUBA: BN;
     reservedUBA: BN;
     redeemingUBA: BN;
+    poolRedeemingUBA: BN;
     dustUBA: BN;
     ccbStartTimestamp: BN;
     liquidationStartTimestamp: BN;
-    lockedUnderlyingBalanceUBA: BN;
     freeUnderlyingBalanceUBA: BN;
     announcedUnderlyingWithdrawalId: BN;
+    buyFAssetByAgentFactorBIPS: BN;
+    poolExitCollateralRatioBIPS: BN;
+    poolTopupCollateralRatioBIPS: BN;
+    poolTopupTokenPriceFactorBIPS: BN;
   }>;
 
   getAvailableAgentsDetailedList(
@@ -1358,7 +1710,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     0: {
       agentVault: string;
       feeBIPS: BN;
-      agentMinCollateralRatioBIPS: BN;
+      mintingClass1CollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
       freeCollateralLots: BN;
     }[];
     1: BN;
@@ -1370,18 +1723,65 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string[]; 1: BN }>;
 
+  getCollateralPool(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getCollateralToken(
+    _tokenClass: number | BN | string,
+    _token: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    tokenClass: BN;
+    token: string;
+    decimals: BN;
+    validUntil: BN;
+    ftsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+  }>;
+
+  getCollateralTokens(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<
+    {
+      tokenClass: BN;
+      token: string;
+      decimals: BN;
+      validUntil: BN;
+      ftsoSymbol: string;
+      minCollateralRatioBIPS: BN;
+      ccbMinCollateralRatioBIPS: BN;
+      safetyMinCollateralRatioBIPS: BN;
+    }[]
+  >;
+
+  getFAssetsBackedByPool(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   getSettings(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
     assetManagerController: string;
+    fAsset: string;
     agentVaultFactory: string;
+    collateralPoolFactory: string;
     whitelist: string;
+    agentWhitelist: string;
     attestationClient: string;
-    wNat: string;
+    underlyingAddressValidator: string;
+    liquidationStrategy: string;
     ftsoRegistry: string;
-    natFtsoIndex: BN;
     assetFtsoIndex: BN;
-    natFtsoSymbol: string;
+    assetDecimals: BN;
+    assetMintingDecimals: BN;
+    mintingPoolHoldingsRequiredBIPS: BN;
     assetFtsoSymbol: string;
     burnAddress: string;
     burnWithSelfDestruct: boolean;
@@ -1390,28 +1790,30 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     assetUnitUBA: BN;
     assetMintingGranularityUBA: BN;
     lotSizeAMG: BN;
+    mintingCapAMG: BN;
     maxTrustedPriceAgeSeconds: BN;
     requireEOAAddressProof: boolean;
-    minCollateralRatioBIPS: BN;
-    ccbMinCollateralRatioBIPS: BN;
-    safetyMinCollateralRatioBIPS: BN;
     underlyingBlocksForPayment: BN;
     underlyingSecondsForPayment: BN;
     redemptionFeeBIPS: BN;
-    redemptionDefaultFactorBIPS: BN;
+    redemptionDefaultFactorAgentC1BIPS: BN;
+    redemptionDefaultFactorPoolBIPS: BN;
     confirmationByOthersAfterSeconds: BN;
-    confirmationByOthersRewardNATWei: BN;
+    confirmationByOthersRewardUSD5: BN;
     maxRedeemedTickets: BN;
     paymentChallengeRewardBIPS: BN;
-    paymentChallengeRewardNATWei: BN;
+    paymentChallengeRewardUSD5: BN;
     withdrawalWaitMinSeconds: BN;
-    liquidationCollateralFactorBIPS: BN[];
     ccbTimeSeconds: BN;
-    liquidationStepSeconds: BN;
     attestationWindowSeconds: BN;
     minUpdateRepeatTimeSeconds: BN;
     buybackCollateralFactorBIPS: BN;
     announcedUnderlyingConfirmationMinSeconds: BN;
+    tokenInvalidationTimeMinSeconds: BN;
+    class1BuyForFlareFactorBIPS: BN;
+    agentExitAvailableTimelockSeconds: BN;
+    agentFeeChangeTimelockSeconds: BN;
+    agentCollateralRatioChangeTimelockSeconds: BN;
   }>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -1479,6 +1881,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  isCollateralToken(
+    _agentVault: string,
+    _token: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   liquidate: {
     (
       _agentVault: string,
@@ -1489,7 +1897,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: BN; 1: BN }>;
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
     sendTransaction(
       _agentVault: string,
       _amountUBA: number | BN | string,
@@ -1503,28 +1911,19 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   };
 
   makeAgentAvailable: {
-    (
-      _agentVault: string,
-      _feeBIPS: number | BN | string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
     call(
       _agentVault: string,
-      _feeBIPS: number | BN | string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
-      _feeBIPS: number | BN | string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
-      _feeBIPS: number | BN | string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1709,6 +2108,64 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redeemFromAgent: {
+    (
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      _receiverUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      _receiverUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      _receiverUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      _receiverUnderlyingAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redeemFromAgentInCollateral: {
+    (
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _receiver: string,
+      _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1921,25 +2378,92 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setAgentMinCollateralRatioBIPS: {
+  setCollateralRatiosForToken: {
     (
-      _agentVault: string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _minCollateralRatioBIPS: number | BN | string,
+      _ccbMinCollateralRatioBIPS: number | BN | string,
+      _safetyMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _agentVault: string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _minCollateralRatioBIPS: number | BN | string,
+      _ccbMinCollateralRatioBIPS: number | BN | string,
+      _safetyMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _agentVault: string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _minCollateralRatioBIPS: number | BN | string,
+      _ccbMinCollateralRatioBIPS: number | BN | string,
+      _safetyMinCollateralRatioBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _agentVault: string,
-      _agentMinCollateralRatioBIPS: number | BN | string,
+      _tokenClass: number | BN | string,
+      _token: string,
+      _minCollateralRatioBIPS: number | BN | string,
+      _ccbMinCollateralRatioBIPS: number | BN | string,
+      _safetyMinCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setPoolCollateralToken: {
+    (
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _data: {
+        tokenClass: number | BN | string;
+        token: string;
+        decimals: number | BN | string;
+        validUntil: number | BN | string;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: number | BN | string;
+        ccbMinCollateralRatioBIPS: number | BN | string;
+        safetyMinCollateralRatioBIPS: number | BN | string;
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2117,27 +2641,154 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  upgradeWNatContract: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   withdrawCollateral: {
     (
+      _token: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
+      _token: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
+      _token: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
+      _token: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   methods: {
-    announceCollateralWithdrawal: {
+    addCollateralToken: {
+      (
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceAgentPoolTokenRedemption: {
+      (
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceAgentSettingUpdate: {
+      (
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceClass1CollateralWithdrawal: {
       (
         _agentVault: string,
         _valueNATWei: number | BN | string,
@@ -2178,6 +2829,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    announceExitAvailableAgentList: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     announceUnderlyingWithdrawal: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -2199,6 +2868,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     assetManagerController(
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    assetPriceNatWei(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
     attachController: {
       (attached: boolean, txDetails?: Truffle.TransactionDetails): Promise<
@@ -2250,6 +2923,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    collateralDeposited: {
+      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2532,19 +3223,63 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
 
     createAgent: {
       (
-        _underlyingAddressString: string,
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _underlyingAddressString: string,
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _underlyingAddressString: string,
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _underlyingAddressString: string,
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2553,21 +3288,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
 
-    depositCollateral: {
+    deprecateCollateralToken: {
       (
-        _valueNATWei: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _valueNATWei: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _valueNATWei: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _valueNATWei: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2711,6 +3454,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    executeAgentSettingUpdate: {
+      (
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _name: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2946,23 +3712,36 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<{
       status: BN;
       ownerAddress: string;
+      collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;
-      agentMinCollateralRatioBIPS: BN;
-      totalCollateralNATWei: BN;
-      freeCollateralNATWei: BN;
+      poolFeeShareBIPS: BN;
+      class1CollateralToken: string;
+      mintingClass1CollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
       freeCollateralLots: BN;
-      collateralRatioBIPS: BN;
+      totalClass1CollateralWei: BN;
+      freeClass1CollateralWei: BN;
+      class1CollateralRatioBIPS: BN;
+      totalPoolCollateralNATWei: BN;
+      freePoolCollateralNATWei: BN;
+      poolCollateralRatioBIPS: BN;
+      totalAgentPoolTokensWei: BN;
+      freeAgentPoolTokensWei: BN;
       mintedUBA: BN;
       reservedUBA: BN;
       redeemingUBA: BN;
+      poolRedeemingUBA: BN;
       dustUBA: BN;
       ccbStartTimestamp: BN;
       liquidationStartTimestamp: BN;
-      lockedUnderlyingBalanceUBA: BN;
       freeUnderlyingBalanceUBA: BN;
       announcedUnderlyingWithdrawalId: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
     }>;
 
     getAvailableAgentsDetailedList(
@@ -2973,7 +3752,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       0: {
         agentVault: string;
         feeBIPS: BN;
-        agentMinCollateralRatioBIPS: BN;
+        mintingClass1CollateralRatioBIPS: BN;
+        mintingPoolCollateralRatioBIPS: BN;
         freeCollateralLots: BN;
       }[];
       1: BN;
@@ -2985,18 +3765,65 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string[]; 1: BN }>;
 
+    getCollateralPool(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getCollateralToken(
+      _tokenClass: number | BN | string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      tokenClass: BN;
+      token: string;
+      decimals: BN;
+      validUntil: BN;
+      ftsoSymbol: string;
+      minCollateralRatioBIPS: BN;
+      ccbMinCollateralRatioBIPS: BN;
+      safetyMinCollateralRatioBIPS: BN;
+    }>;
+
+    getCollateralTokens(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<
+      {
+        tokenClass: BN;
+        token: string;
+        decimals: BN;
+        validUntil: BN;
+        ftsoSymbol: string;
+        minCollateralRatioBIPS: BN;
+        ccbMinCollateralRatioBIPS: BN;
+        safetyMinCollateralRatioBIPS: BN;
+      }[]
+    >;
+
+    getFAssetsBackedByPool(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     getSettings(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
       assetManagerController: string;
+      fAsset: string;
       agentVaultFactory: string;
+      collateralPoolFactory: string;
       whitelist: string;
+      agentWhitelist: string;
       attestationClient: string;
-      wNat: string;
+      underlyingAddressValidator: string;
+      liquidationStrategy: string;
       ftsoRegistry: string;
-      natFtsoIndex: BN;
       assetFtsoIndex: BN;
-      natFtsoSymbol: string;
+      assetDecimals: BN;
+      assetMintingDecimals: BN;
+      mintingPoolHoldingsRequiredBIPS: BN;
       assetFtsoSymbol: string;
       burnAddress: string;
       burnWithSelfDestruct: boolean;
@@ -3005,28 +3832,30 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       assetUnitUBA: BN;
       assetMintingGranularityUBA: BN;
       lotSizeAMG: BN;
+      mintingCapAMG: BN;
       maxTrustedPriceAgeSeconds: BN;
       requireEOAAddressProof: boolean;
-      minCollateralRatioBIPS: BN;
-      ccbMinCollateralRatioBIPS: BN;
-      safetyMinCollateralRatioBIPS: BN;
       underlyingBlocksForPayment: BN;
       underlyingSecondsForPayment: BN;
       redemptionFeeBIPS: BN;
-      redemptionDefaultFactorBIPS: BN;
+      redemptionDefaultFactorAgentC1BIPS: BN;
+      redemptionDefaultFactorPoolBIPS: BN;
       confirmationByOthersAfterSeconds: BN;
-      confirmationByOthersRewardNATWei: BN;
+      confirmationByOthersRewardUSD5: BN;
       maxRedeemedTickets: BN;
       paymentChallengeRewardBIPS: BN;
-      paymentChallengeRewardNATWei: BN;
+      paymentChallengeRewardUSD5: BN;
       withdrawalWaitMinSeconds: BN;
-      liquidationCollateralFactorBIPS: BN[];
       ccbTimeSeconds: BN;
-      liquidationStepSeconds: BN;
       attestationWindowSeconds: BN;
       minUpdateRepeatTimeSeconds: BN;
       buybackCollateralFactorBIPS: BN;
       announcedUnderlyingConfirmationMinSeconds: BN;
+      tokenInvalidationTimeMinSeconds: BN;
+      class1BuyForFlareFactorBIPS: BN;
+      agentExitAvailableTimelockSeconds: BN;
+      agentFeeChangeTimelockSeconds: BN;
+      agentCollateralRatioChangeTimelockSeconds: BN;
     }>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -3094,6 +3923,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    isCollateralToken(
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
     liquidate: {
       (
         _agentVault: string,
@@ -3104,7 +3939,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<{ 0: BN; 1: BN }>;
+      ): Promise<{ 0: BN; 1: BN; 2: BN }>;
       sendTransaction(
         _agentVault: string,
         _amountUBA: number | BN | string,
@@ -3118,28 +3953,19 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     };
 
     makeAgentAvailable: {
-      (
-        _agentVault: string,
-        _feeBIPS: number | BN | string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
       call(
         _agentVault: string,
-        _feeBIPS: number | BN | string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
-        _feeBIPS: number | BN | string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
-        _feeBIPS: number | BN | string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3324,6 +4150,64 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeemFromAgent: {
+      (
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        _receiverUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        _receiverUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        _receiverUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        _receiverUnderlyingAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeemFromAgentInCollateral: {
+      (
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _receiver: string,
+        _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3536,25 +4420,92 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setAgentMinCollateralRatioBIPS: {
+    setCollateralRatiosForToken: {
       (
-        _agentVault: string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _minCollateralRatioBIPS: number | BN | string,
+        _ccbMinCollateralRatioBIPS: number | BN | string,
+        _safetyMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _agentVault: string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _minCollateralRatioBIPS: number | BN | string,
+        _ccbMinCollateralRatioBIPS: number | BN | string,
+        _safetyMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _agentVault: string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _minCollateralRatioBIPS: number | BN | string,
+        _ccbMinCollateralRatioBIPS: number | BN | string,
+        _safetyMinCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _agentVault: string,
-        _agentMinCollateralRatioBIPS: number | BN | string,
+        _tokenClass: number | BN | string,
+        _token: string,
+        _minCollateralRatioBIPS: number | BN | string,
+        _ccbMinCollateralRatioBIPS: number | BN | string,
+        _safetyMinCollateralRatioBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setPoolCollateralToken: {
+      (
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _data: {
+          tokenClass: number | BN | string;
+          token: string;
+          decimals: number | BN | string;
+          validUntil: number | BN | string;
+          ftsoSymbol: string;
+          minCollateralRatioBIPS: number | BN | string;
+          ccbMinCollateralRatioBIPS: number | BN | string;
+          safetyMinCollateralRatioBIPS: number | BN | string;
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3732,20 +4683,42 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    upgradeWNatContract: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     withdrawCollateral: {
       (
+        _token: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
+        _token: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
+        _token: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
+        _token: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;

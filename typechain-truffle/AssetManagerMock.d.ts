@@ -13,9 +13,61 @@ export interface AssetManagerMockContract
   ): Promise<AssetManagerMockInstance>;
 }
 
-type AllEvents = never;
+export interface AgentRedemption {
+  name: "AgentRedemption";
+  args: {
+    _amountUBA: BN;
+    0: BN;
+  };
+}
+
+export interface AgentRedemptionInCollateral {
+  name: "AgentRedemptionInCollateral";
+  args: {
+    _amountUBA: BN;
+    0: BN;
+  };
+}
+
+type AllEvents = AgentRedemption | AgentRedemptionInCollateral;
 
 export interface AssetManagerMockInstance extends Truffle.ContractInstance {
+  assetPriceNatWei(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
+  callFunctionAt: {
+    (
+      _contract: string,
+      _payload: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _contract: string,
+      _payload: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _contract: string,
+      _payload: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _contract: string,
+      _payload: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  getFAssetsBackedByPool(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   payoutNAT: {
@@ -45,7 +97,119 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  redeemFromAgent: {
+    (
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      arg3: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      arg3: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      arg3: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      arg3: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redeemFromAgentInCollateral: {
+    (
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      arg0: string,
+      arg1: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  registerFAssetForCollateralPool: {
+    (_fasset: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _fasset: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _fasset: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _fasset: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
+    assetPriceNatWei(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
+    callFunctionAt: {
+      (
+        _contract: string,
+        _payload: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _contract: string,
+        _payload: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _contract: string,
+        _payload: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _contract: string,
+        _payload: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    getFAssetsBackedByPool(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     payoutNAT: {
@@ -71,6 +235,82 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _recipient: string,
         _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeemFromAgent: {
+      (
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        arg3: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        arg3: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        arg3: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        arg3: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeemFromAgentInCollateral: {
+      (
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        arg0: string,
+        arg1: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    registerFAssetForCollateralPool: {
+      (_fasset: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _fasset: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _fasset: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _fasset: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

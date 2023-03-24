@@ -19,6 +19,15 @@ type AllEvents = never;
 export interface AgentVaultInstance extends Truffle.ContractInstance {
   assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  buyCollateralPoolTokens: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   claimAirdropDistribution: {
     (
       _distribution: string,
@@ -45,43 +54,64 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
   claimFtsoRewards: {
     (
       _ftsoRewardManager: string,
-      _rewardEpochs: (number | BN | string)[],
+      _lastRewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _ftsoRewardManager: string,
-      _rewardEpochs: (number | BN | string)[],
+      _lastRewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _ftsoRewardManager: string,
-      _rewardEpochs: (number | BN | string)[],
+      _lastRewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _ftsoRewardManager: string,
-      _rewardEpochs: (number | BN | string)[],
+      _lastRewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
+  collateralDeposited: {
+    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   delegate: {
     (
+      _token: string,
       _to: string,
       _bips: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
+      _token: string,
       _to: string,
       _bips: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
+      _token: string,
       _to: string,
       _bips: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
+      _token: string,
       _to: string,
       _bips: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -103,7 +133,30 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  deposit: {
+  depositCollateral: {
+    (
+      _token: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _token: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _token: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  depositNat: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -113,18 +166,12 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
   };
 
   destroy: {
-    (_wNat: string, txDetails?: Truffle.TransactionDetails): Promise<
+    (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(_wNat: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(
-      _wNat: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _wNat: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
   optOutOfAirdrop: {
@@ -149,25 +196,25 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
   payout: {
     (
-      _wNat: string,
+      _token: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _wNat: string,
+      _token: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _wNat: string,
+      _token: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _wNat: string,
+      _token: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -176,26 +223,41 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
   payoutNAT: {
     (
-      _wNat: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _wNat: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _wNat: string,
       _recipient: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _wNat: string,
       _recipient: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redeemCollateralPoolTokens: {
+    (
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -203,23 +265,54 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
   revokeDelegationAt: {
     (
+      _token: string,
       _who: string,
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
+      _token: string,
       _who: string,
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
+      _token: string,
       _who: string,
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
+      _token: string,
       _who: string,
       _blockNumber: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setFtsoAutoClaiming: {
+    (
+      _claimSetupManager: string,
+      _executors: string[],
+      _allowedRecipients: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _claimSetupManager: string,
+      _executors: string[],
+      _allowedRecipients: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _claimSetupManager: string,
+      _executors: string[],
+      _allowedRecipients: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _claimSetupManager: string,
+      _executors: string[],
+      _allowedRecipients: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -248,12 +341,18 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
   };
 
   undelegateAll: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
+    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
   };
 
   undelegateGovernance: {
@@ -265,7 +364,77 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  withdraw: {
+  upgradeWNatContract: {
+    (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _newWNat: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _newWNat: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _newWNat: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  withdrawCollateral: {
+    (
+      _token: string,
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _token: string,
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _token: string,
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  withdrawNat: {
+    (
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _amount: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  withdrawPoolFees: {
     (
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -286,6 +455,15 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
   methods: {
     assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    buyCollateralPoolTokens: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
 
     claimAirdropDistribution: {
       (
@@ -313,43 +491,67 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     claimFtsoRewards: {
       (
         _ftsoRewardManager: string,
-        _rewardEpochs: (number | BN | string)[],
+        _lastRewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _ftsoRewardManager: string,
-        _rewardEpochs: (number | BN | string)[],
+        _lastRewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _ftsoRewardManager: string,
-        _rewardEpochs: (number | BN | string)[],
+        _lastRewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _ftsoRewardManager: string,
-        _rewardEpochs: (number | BN | string)[],
+        _lastRewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
+    collateralDeposited: {
+      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     delegate: {
       (
+        _token: string,
         _to: string,
         _bips: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
+        _token: string,
         _to: string,
         _bips: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
+        _token: string,
         _to: string,
         _bips: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
+        _token: string,
         _to: string,
         _bips: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -371,7 +573,30 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    deposit: {
+    depositCollateral: {
+      (
+        _token: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _token: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    depositNat: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -381,21 +606,12 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     };
 
     destroy: {
-      (_wNat: string, txDetails?: Truffle.TransactionDetails): Promise<
+      (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(
-        _wNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _wNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _wNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
     optOutOfAirdrop: {
@@ -420,25 +636,25 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
     payout: {
       (
-        _wNat: string,
+        _token: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _wNat: string,
+        _token: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _wNat: string,
+        _token: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _wNat: string,
+        _token: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -447,26 +663,41 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
     payoutNAT: {
       (
-        _wNat: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _wNat: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _wNat: string,
         _recipient: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _wNat: string,
         _recipient: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeemCollateralPoolTokens: {
+      (
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -474,23 +705,54 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
 
     revokeDelegationAt: {
       (
+        _token: string,
         _who: string,
         _blockNumber: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
+        _token: string,
         _who: string,
         _blockNumber: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
+        _token: string,
         _who: string,
         _blockNumber: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
+        _token: string,
         _who: string,
         _blockNumber: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setFtsoAutoClaiming: {
+      (
+        _claimSetupManager: string,
+        _executors: string[],
+        _allowedRecipients: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _claimSetupManager: string,
+        _executors: string[],
+        _allowedRecipients: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _claimSetupManager: string,
+        _executors: string[],
+        _allowedRecipients: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _claimSetupManager: string,
+        _executors: string[],
+        _allowedRecipients: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -519,12 +781,21 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     };
 
     undelegateAll: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
+      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+      call(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
     };
 
     undelegateGovernance: {
@@ -536,7 +807,77 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
-    withdraw: {
+    upgradeWNatContract: {
+      (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _newWNat: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _newWNat: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _newWNat: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    withdrawCollateral: {
+      (
+        _token: string,
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _token: string,
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    withdrawNat: {
+      (
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _amount: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    withdrawPoolFees: {
       (
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails

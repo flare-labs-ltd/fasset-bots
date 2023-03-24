@@ -4,6 +4,61 @@
   "sourceName": "contracts/fasset/interface/IAssetManager.sol",
   "abi": [
     {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "enum IAssetManager.CollateralTokenClass",
+              "name": "tokenClass",
+              "type": "uint8"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "decimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "validUntil",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "ftsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ccbMinCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "safetyMinCollateralRatioBIPS",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IAssetManager.CollateralTokenInfo",
+          "name": "_data",
+          "type": "tuple"
+        }
+      ],
+      "name": "addCollateralToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "assetManagerController",
       "outputs": [
@@ -11,6 +66,24 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "assetPriceNatWei",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_multiplier",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_divisor",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -25,6 +98,19 @@
         }
       ],
       "name": "attachController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "collateralDeposited",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -45,14 +131,88 @@
     {
       "inputs": [
         {
+          "internalType": "enum IAssetManager.CollateralTokenClass",
+          "name": "_tokenClass",
+          "type": "uint8"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
-          "name": "_valueNATWei",
+          "name": "_invalidationTimeSec",
           "type": "uint256"
         }
       ],
-      "name": "depositCollateral",
+      "name": "deprecateCollateralToken",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fAsset",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "getCollateralPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "getFAssetsBackedByPool",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLotSize",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -69,8 +229,171 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "isCollateralToken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_receiverUnderlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "redeemFromAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemFromAgentInCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "enum IAssetManager.CollateralTokenClass",
+          "name": "_tokenClass",
+          "type": "uint8"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_minCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_ccbMinCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_safetyMinCollateralRatioBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCollateralRatiosForToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "enum IAssetManager.CollateralTokenClass",
+              "name": "tokenClass",
+              "type": "uint8"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "decimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "validUntil",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "ftsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ccbMinCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "safetyMinCollateralRatioBIPS",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IAssetManager.CollateralTokenInfo",
+          "name": "_data",
+          "type": "tuple"
+        }
+      ],
+      "name": "setPoolCollateralToken",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -110,8 +433,13 @@
     {
       "inputs": [
         {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
-          "name": "_valueNATWei",
+          "name": "_amountWei",
           "type": "uint256"
         }
       ],

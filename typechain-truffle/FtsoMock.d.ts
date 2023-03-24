@@ -8,6 +8,7 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 export interface FtsoMockContract extends Truffle.Contract<FtsoMockInstance> {
   "new"(
     _symbol: string,
+    _decimals: number | BN | string,
     meta?: Truffle.TransactionDetails
   ): Promise<FtsoMockInstance>;
 }
@@ -248,6 +249,14 @@ export interface FtsoMockInstance extends Truffle.ContractInstance {
   getCurrentPriceFromTrustedProviders(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
+
+  getCurrentPriceWithDecimals(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+  getCurrentPriceWithDecimalsFromTrustedProviders(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
   getCurrentRandom(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -652,6 +661,14 @@ export interface FtsoMockInstance extends Truffle.ContractInstance {
     getCurrentPriceFromTrustedProviders(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
+
+    getCurrentPriceWithDecimals(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getCurrentPriceWithDecimalsFromTrustedProviders(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
     getCurrentRandom(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 

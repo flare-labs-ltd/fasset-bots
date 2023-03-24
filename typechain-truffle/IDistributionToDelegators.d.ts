@@ -36,26 +36,6 @@ export interface AccountOptOut {
   };
 }
 
-export interface AllowedClaimRecipientsChanged {
-  name: "AllowedClaimRecipientsChanged";
-  args: {
-    rewardOwner: string;
-    recipients: string[];
-    0: string;
-    1: string[];
-  };
-}
-
-export interface ClaimExecutorsChanged {
-  name: "ClaimExecutorsChanged";
-  args: {
-    rewardOwner: string;
-    executors: string[];
-    0: string;
-    1: string[];
-  };
-}
-
 export interface EntitlementStart {
   name: "EntitlementStart";
   args: {
@@ -64,163 +44,74 @@ export interface EntitlementStart {
   };
 }
 
+export interface UseGoodRandomSet {
+  name: "UseGoodRandomSet";
+  args: {
+    useGoodRandom: boolean;
+    maxWaitForGoodRandomSeconds: BN;
+    0: boolean;
+    1: BN;
+  };
+}
+
 type AllEvents =
   | AccountClaimed
   | AccountOptOut
-  | AllowedClaimRecipientsChanged
-  | ClaimExecutorsChanged
-  | EntitlementStart;
+  | EntitlementStart
+  | UseGoodRandomSet;
 
 export interface IDistributionToDelegatorsInstance
   extends Truffle.ContractInstance {
-  allowedClaimRecipients(
-    _rewardOwner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string[]>;
+  autoClaim: {
+    (
+      _rewardOwners: string[],
+      _month: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _rewardOwners: string[],
+      _month: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _rewardOwners: string[],
+      _month: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _rewardOwners: string[],
+      _month: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   claim: {
     (
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimAndWrap: {
-    (
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimAndWrapByExecutor: {
-    (
       _rewardOwner: string,
       _recipient: string,
       _month: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _rewardOwner: string,
       _recipient: string,
       _month: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _rewardOwner: string,
       _recipient: string,
       _month: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _rewardOwner: string,
       _recipient: string,
       _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimByExecutor: {
-    (
-      _rewardOwner: string,
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _rewardOwner: string,
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _rewardOwner: string,
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _rewardOwner: string,
-      _recipient: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimExecutors(
-    _rewardOwner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string[]>;
-
-  claimToPersonalDelegationAccount: {
-    (
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimToPersonalDelegationAccountByExecutor: {
-    (
-      _rewardOwner: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _rewardOwner: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _rewardOwner: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _rewardOwner: string,
-      _month: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -231,25 +122,23 @@ export interface IDistributionToDelegatorsInstance
   ): Promise<BN>;
 
   getClaimableAmountOf(
-    account: string,
-    _month: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  getClaimedAmount(
-    _month: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  getClaimedAmountOf(
     _account: string,
     _month: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  getClaimableMonths(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
   getCurrentMonth(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   getMonthToExpireNext(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  nextClaimableMonth(
+    _rewardOwner: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   optOutOfAirdrop: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -260,193 +149,57 @@ export interface IDistributionToDelegatorsInstance
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  secondsTillNextClaim(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  setAllowedClaimRecipients: {
-    (_recipients: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setClaimExecutors: {
-    (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
-    allowedClaimRecipients(
-      _rewardOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string[]>;
+    autoClaim: {
+      (
+        _rewardOwners: string[],
+        _month: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _rewardOwners: string[],
+        _month: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _rewardOwners: string[],
+        _month: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _rewardOwners: string[],
+        _month: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     claim: {
       (
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimAndWrap: {
-      (
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimAndWrapByExecutor: {
-      (
         _rewardOwner: string,
         _recipient: string,
         _month: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _rewardOwner: string,
         _recipient: string,
         _month: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _rewardOwner: string,
         _recipient: string,
         _month: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _rewardOwner: string,
         _recipient: string,
         _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimByExecutor: {
-      (
-        _rewardOwner: string,
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _rewardOwner: string,
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _rewardOwner: string,
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _rewardOwner: string,
-        _recipient: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimExecutors(
-      _rewardOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string[]>;
-
-    claimToPersonalDelegationAccount: {
-      (
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimToPersonalDelegationAccountByExecutor: {
-      (
-        _rewardOwner: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _rewardOwner: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _rewardOwner: string,
-        _month: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _rewardOwner: string,
-        _month: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -457,25 +210,23 @@ export interface IDistributionToDelegatorsInstance
     ): Promise<BN>;
 
     getClaimableAmountOf(
-      account: string,
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    getClaimedAmount(
-      _month: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    getClaimedAmountOf(
       _account: string,
       _month: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    getClaimableMonths(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
     getCurrentMonth(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     getMonthToExpireNext(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    nextClaimableMonth(
+      _rewardOwner: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     optOutOfAirdrop: {
       (txDetails?: Truffle.TransactionDetails): Promise<
@@ -484,44 +235,6 @@ export interface IDistributionToDelegatorsInstance
       call(txDetails?: Truffle.TransactionDetails): Promise<void>;
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    secondsTillNextClaim(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    setAllowedClaimRecipients: {
-      (_recipients: string[], txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setClaimExecutors: {
-      (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
     };
   };
 

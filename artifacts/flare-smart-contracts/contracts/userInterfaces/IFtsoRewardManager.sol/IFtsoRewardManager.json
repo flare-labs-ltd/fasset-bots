@@ -7,44 +7,6 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "address",
-          "name": "rewardOwner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address[]",
-          "name": "recipients",
-          "type": "address[]"
-        }
-      ],
-      "name": "AllowedClaimRecipientsChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "rewardOwner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address[]",
-          "name": "executors",
-          "type": "address[]"
-        }
-      ],
-      "name": "ClaimExecutorsChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
           "internalType": "address",
           "name": "dataProvider",
@@ -64,6 +26,32 @@
         }
       ],
       "name": "FeePercentageChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "ftsoRewardManager",
+          "type": "address"
+        }
+      ],
+      "name": "FtsoRewardManagerActivated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "ftsoRewardManager",
+          "type": "address"
+        }
+      ],
+      "name": "FtsoRewardManagerDeactivated",
       "type": "event"
     },
     {
@@ -195,43 +183,18 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        }
-      ],
-      "name": "allowedClaimRecipients",
-      "outputs": [
-        {
           "internalType": "address[]",
-          "name": "",
+          "name": "_rewardOwners",
           "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address payable",
-          "name": "_recipient",
-          "type": "address"
         },
         {
-          "internalType": "uint256[]",
-          "name": "_rewardEpochs",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "claimAndWrapReward",
-      "outputs": [
-        {
           "internalType": "uint256",
-          "name": "_rewardAmount",
+          "name": "_rewardEpoch",
           "type": "uint256"
         }
       ],
+      "name": "autoClaim",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -248,41 +211,17 @@
           "type": "address"
         },
         {
-          "internalType": "uint256[]",
-          "name": "_rewardEpochs",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "claimAndWrapRewardByExecutor",
-      "outputs": [
-        {
           "internalType": "uint256",
-          "name": "_rewardAmount",
+          "name": "_rewardEpoch",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address payable",
-          "name": "_recipient",
-          "type": "address"
         },
         {
-          "internalType": "uint256[]",
-          "name": "_rewardEpochs",
-          "type": "uint256[]"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_dataProviders",
-          "type": "address[]"
+          "internalType": "bool",
+          "name": "_wrap",
+          "type": "bool"
         }
       ],
-      "name": "claimAndWrapRewardFromDataProviders",
+      "name": "claim",
       "outputs": [
         {
           "internalType": "uint256",
@@ -314,9 +253,14 @@
           "internalType": "address[]",
           "name": "_dataProviders",
           "type": "address[]"
+        },
+        {
+          "internalType": "bool",
+          "name": "_wrap",
+          "type": "bool"
         }
       ],
-      "name": "claimAndWrapRewardFromDataProvidersByExecutor",
+      "name": "claimFromDataProviders",
       "outputs": [
         {
           "internalType": "uint256",
@@ -325,25 +269,6 @@
         }
       ],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_rewardOwner",
-          "type": "address"
-        }
-      ],
-      "name": "claimExecutors",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -734,27 +659,20 @@
     {
       "inputs": [
         {
-          "internalType": "address[]",
-          "name": "_recipients",
-          "type": "address[]"
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
         }
       ],
-      "name": "setAllowedClaimRecipients",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+      "name": "nextClaimableRewardEpoch",
+      "outputs": [
         {
-          "internalType": "address[]",
-          "name": "_executors",
-          "type": "address[]"
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
-      "name": "setClaimExecutors",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {

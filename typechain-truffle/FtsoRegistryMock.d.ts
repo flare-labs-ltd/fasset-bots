@@ -31,6 +31,20 @@ export interface FtsoRegistryMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  getAllCurrentPrices(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
+  getCurrentPricesByIndices(
+    _indices: (number | BN | string)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
+  getCurrentPricesBySymbols(
+    _symbols: string[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
   getFtso(
     _ftsoIndex: number | BN | string,
     txDetails?: Truffle.TransactionDetails
@@ -99,6 +113,20 @@ export interface FtsoRegistryMockInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    getAllCurrentPrices(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
+    getCurrentPricesByIndices(
+      _indices: (number | BN | string)[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
+    getCurrentPricesBySymbols(
+      _symbols: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ ftsoIndex: BN; price: BN; decimals: BN; timestamp: BN }[]>;
+
     getFtso(
       _ftsoIndex: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -159,6 +187,16 @@ export interface FtsoRegistryMockInstance extends Truffle.ContractInstance {
       _ftsoIndex: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
+
+    "getCurrentPriceWithDecimals(uint256)"(
+      _ftsoIndex: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    "getCurrentPriceWithDecimals(string)"(
+      _symbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

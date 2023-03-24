@@ -1,0 +1,54 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IAddressValidator",
+  "sourceName": "contracts/fasset/interface/IAddressValidator.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_underlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "normalize",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "_normalizedAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_uniqueHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_underlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "validate",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

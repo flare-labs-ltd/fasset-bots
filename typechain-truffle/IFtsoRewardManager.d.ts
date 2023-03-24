@@ -10,26 +10,6 @@ export interface IFtsoRewardManagerContract
   "new"(meta?: Truffle.TransactionDetails): Promise<IFtsoRewardManagerInstance>;
 }
 
-export interface AllowedClaimRecipientsChanged {
-  name: "AllowedClaimRecipientsChanged";
-  args: {
-    rewardOwner: string;
-    recipients: string[];
-    0: string;
-    1: string[];
-  };
-}
-
-export interface ClaimExecutorsChanged {
-  name: "ClaimExecutorsChanged";
-  args: {
-    rewardOwner: string;
-    executors: string[];
-    0: string;
-    1: string[];
-  };
-}
-
 export interface FeePercentageChanged {
   name: "FeePercentageChanged";
   args: {
@@ -39,6 +19,22 @@ export interface FeePercentageChanged {
     0: string;
     1: BN;
     2: BN;
+  };
+}
+
+export interface FtsoRewardManagerActivated {
+  name: "FtsoRewardManagerActivated";
+  args: {
+    ftsoRewardManager: string;
+    0: string;
+  };
+}
+
+export interface FtsoRewardManagerDeactivated {
+  name: "FtsoRewardManagerDeactivated";
+  args: {
+    ftsoRewardManager: string;
+    0: string;
   };
 }
 
@@ -99,9 +95,9 @@ export interface UnearnedRewardsAccrued {
 }
 
 type AllEvents =
-  | AllowedClaimRecipientsChanged
-  | ClaimExecutorsChanged
   | FeePercentageChanged
+  | FtsoRewardManagerActivated
+  | FtsoRewardManagerDeactivated
   | RewardClaimed
   | RewardClaimsEnabled
   | RewardClaimsExpired
@@ -111,94 +107,67 @@ type AllEvents =
 export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
   active(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
-  allowedClaimRecipients(
-    _rewardOwner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string[]>;
-
-  claimAndWrapReward: {
+  autoClaim: {
     (
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardOwners: string[],
+      _rewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardOwners: string[],
+      _rewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
+    ): Promise<void>;
     sendTransaction(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardOwners: string[],
+      _rewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardOwners: string[],
+      _rewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  claimAndWrapRewardByExecutor: {
+  claim: {
     (
       _rewardOwner: string,
       _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardEpoch: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _rewardOwner: string,
       _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardEpoch: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _rewardOwner: string,
       _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardEpoch: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _rewardOwner: string,
       _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
+      _rewardEpoch: number | BN | string,
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  claimAndWrapRewardFromDataProviders: {
-    (
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
-      _dataProviders: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
-      _dataProviders: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
-      _dataProviders: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _recipient: string,
-      _rewardEpochs: (number | BN | string)[],
-      _dataProviders: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  claimAndWrapRewardFromDataProvidersByExecutor: {
+  claimFromDataProviders: {
     (
       _rewardOwner: string,
       _recipient: string,
       _rewardEpochs: (number | BN | string)[],
       _dataProviders: string[],
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -206,6 +175,7 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
       _recipient: string,
       _rewardEpochs: (number | BN | string)[],
       _dataProviders: string[],
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
@@ -213,6 +183,7 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
       _recipient: string,
       _rewardEpochs: (number | BN | string)[],
       _dataProviders: string[],
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -220,14 +191,10 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
       _recipient: string,
       _rewardEpochs: (number | BN | string)[],
       _dataProviders: string[],
+      _wrap: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  claimExecutors(
-    _rewardOwner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string[]>;
 
   claimReward: {
     (
@@ -348,41 +315,10 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN[]; 1: boolean[]; 2: boolean }>;
 
-  setAllowedClaimRecipients: {
-    (_recipients: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _recipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setClaimExecutors: {
-    (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
+  nextClaimableRewardEpoch(
+    _rewardOwner: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   setDataProviderFeePercentage: {
     (
@@ -406,94 +342,67 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
   methods: {
     active(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
-    allowedClaimRecipients(
-      _rewardOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string[]>;
-
-    claimAndWrapReward: {
+    autoClaim: {
       (
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardOwners: string[],
+        _rewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardOwners: string[],
+        _rewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
+      ): Promise<void>;
       sendTransaction(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardOwners: string[],
+        _rewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardOwners: string[],
+        _rewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    claimAndWrapRewardByExecutor: {
+    claim: {
       (
         _rewardOwner: string,
         _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardEpoch: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _rewardOwner: string,
         _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardEpoch: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _rewardOwner: string,
         _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardEpoch: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _rewardOwner: string,
         _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
+        _rewardEpoch: number | BN | string,
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    claimAndWrapRewardFromDataProviders: {
-      (
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
-        _dataProviders: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
-        _dataProviders: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
-        _dataProviders: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _recipient: string,
-        _rewardEpochs: (number | BN | string)[],
-        _dataProviders: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    claimAndWrapRewardFromDataProvidersByExecutor: {
+    claimFromDataProviders: {
       (
         _rewardOwner: string,
         _recipient: string,
         _rewardEpochs: (number | BN | string)[],
         _dataProviders: string[],
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -501,6 +410,7 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
         _recipient: string,
         _rewardEpochs: (number | BN | string)[],
         _dataProviders: string[],
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
@@ -508,6 +418,7 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
         _recipient: string,
         _rewardEpochs: (number | BN | string)[],
         _dataProviders: string[],
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -515,14 +426,10 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
         _recipient: string,
         _rewardEpochs: (number | BN | string)[],
         _dataProviders: string[],
+        _wrap: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    claimExecutors(
-      _rewardOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string[]>;
 
     claimReward: {
       (
@@ -643,41 +550,10 @@ export interface IFtsoRewardManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN[]; 1: boolean[]; 2: boolean }>;
 
-    setAllowedClaimRecipients: {
-      (_recipients: string[], txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _recipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setClaimExecutors: {
-      (_executors: string[], txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
+    nextClaimableRewardEpoch(
+      _rewardOwner: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     setDataProviderFeePercentage: {
       (

@@ -9,6 +9,7 @@ export interface WhitelistContract extends Truffle.Contract<WhitelistInstance> {
   "new"(
     _governanceSettings: string,
     _initialGovernance: string,
+    _supportsRevoke: boolean,
     meta?: Truffle.TransactionDetails
   ): Promise<WhitelistInstance>;
 }
@@ -69,13 +70,22 @@ export interface Whitelisted {
   };
 }
 
+export interface WhitelistingRevoked {
+  name: "WhitelistingRevoked";
+  args: {
+    value: string;
+    0: string;
+  };
+}
+
 type AllEvents =
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
   | TimelockedGovernanceCallCanceled
   | TimelockedGovernanceCallExecuted
-  | Whitelisted;
+  | Whitelisted
+  | WhitelistingRevoked;
 
 export interface WhitelistInstance extends Truffle.ContractInstance {
   addAddressToWhitelist: {
@@ -189,6 +199,26 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
 
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
+  revokeAddress: {
+    (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  supportsRevoke(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
   switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -202,11 +232,6 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     arg0: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: string }>;
-
-  whitelist(
-    arg0: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
 
   methods: {
     addAddressToWhitelist: {
@@ -320,6 +345,26 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
 
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
+    revokeAddress: {
+      (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    supportsRevoke(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
     switchToProductionMode: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -333,11 +378,6 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
       arg0: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: string }>;
-
-    whitelist(
-      arg0: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

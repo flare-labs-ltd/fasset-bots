@@ -31,13 +31,13 @@
       "inputs": [
         {
           "internalType": "contract IFtsoRewardManager",
-          "name": "ftsoRewardManager",
+          "name": "_ftsoRewardManager",
           "type": "address"
         },
         {
-          "internalType": "uint256[]",
-          "name": "_rewardEpochs",
-          "type": "uint256[]"
+          "internalType": "uint256",
+          "name": "_lastRewardEpoch",
+          "type": "uint256"
         }
       ],
       "name": "claimFtsoRewards",
@@ -53,6 +53,24 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "collateralDeposited",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        },
         {
           "internalType": "address",
           "name": "_to",
@@ -83,20 +101,32 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
-      "name": "deposit",
+      "name": "depositNat",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "contract IWNat",
-          "name": "wNat",
-          "type": "address"
-        }
-      ],
+      "inputs": [],
       "name": "destroy",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -131,8 +161,8 @@
     {
       "inputs": [
         {
-          "internalType": "contract IWNat",
-          "name": "wNat",
+          "internalType": "contract IERC20",
+          "name": "_token",
           "type": "address"
         },
         {
@@ -154,11 +184,6 @@
     {
       "inputs": [
         {
-          "internalType": "contract IWNat",
-          "name": "wNat",
-          "type": "address"
-        },
-        {
           "internalType": "address payable",
           "name": "_recipient",
           "type": "address"
@@ -177,6 +202,11 @@
     {
       "inputs": [
         {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "address",
           "name": "_who",
           "type": "address"
@@ -190,6 +220,29 @@
       "name": "revokeDelegationAt",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IClaimSetupManager",
+          "name": "_claimSetupManager",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_executors",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_allowedRecipients",
+          "type": "address[]"
+        }
+      ],
+      "name": "setFtsoAutoClaiming",
+      "outputs": [],
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -211,7 +264,13 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
       "name": "undelegateAll",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -227,12 +286,66 @@
     {
       "inputs": [
         {
+          "internalType": "contract IWNat",
+          "name": "newWNat",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeWNatContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "wNat",
+      "outputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
           "name": "_amount",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_recipient",
+          "type": "address"
         }
       ],
-      "name": "withdraw",
+      "name": "withdrawCollateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawNat",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

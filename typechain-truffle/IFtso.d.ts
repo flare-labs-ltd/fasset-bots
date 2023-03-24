@@ -92,6 +92,18 @@ export interface IFtsoInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN; 4: BN }>;
 
+  getCurrentPriceFromTrustedProviders(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
+  getCurrentPriceWithDecimals(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+  getCurrentPriceWithDecimalsFromTrustedProviders(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
   getCurrentRandom(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   getEpochId(
@@ -137,6 +149,18 @@ export interface IFtsoInstance extends Truffle.ContractInstance {
     getCurrentPriceDetails(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN; 4: BN }>;
+
+    getCurrentPriceFromTrustedProviders(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
+    getCurrentPriceWithDecimals(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getCurrentPriceWithDecimalsFromTrustedProviders(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
     getCurrentRandom(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 

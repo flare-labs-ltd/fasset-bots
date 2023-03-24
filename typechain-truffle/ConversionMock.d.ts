@@ -13,26 +13,26 @@ export interface ConversionMockContract
 type AllEvents = never;
 
 export interface ConversionMockInstance extends Truffle.ContractInstance {
-  convertAmgToNATWei(
+  convertAmgToTokenWei(
     _valueAMG: number | BN | string,
     _amgToNATWeiPrice: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  convertNATWeiToAMG(
+  convertTokenWeiToAMG(
     _valueNATWei: number | BN | string,
     _amgToNATWeiPrice: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
   methods: {
-    convertAmgToNATWei(
+    convertAmgToTokenWei(
       _valueAMG: number | BN | string,
       _amgToNATWeiPrice: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    convertNATWeiToAMG(
+    convertTokenWeiToAMG(
       _valueNATWei: number | BN | string,
       _amgToNATWeiPrice: number | BN | string,
       txDetails?: Truffle.TransactionDetails

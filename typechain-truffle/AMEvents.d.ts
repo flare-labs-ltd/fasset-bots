@@ -14,12 +14,14 @@ export interface AgentAvailable {
   args: {
     agentVault: string;
     feeBIPS: BN;
-    agentMinCollateralRatioBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
     freeCollateralLots: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
+    4: BN;
   };
 }
 
@@ -30,10 +32,12 @@ export interface AgentCreated {
     agentType: BN;
     agentVault: string;
     underlyingAddress: string;
+    collateralPool: string;
     0: string;
     1: BN;
     2: string;
     3: string;
+    4: string;
   };
 }
 
@@ -41,7 +45,7 @@ export interface AgentDestroyAnnounced {
   name: "AgentDestroyAnnounced";
   args: {
     agentVault: string;
-    timestamp: BN;
+    destroyAllowedAt: BN;
     0: string;
     1: BN;
   };
@@ -65,11 +69,55 @@ export interface AgentInCCB {
   };
 }
 
+export interface AgentSettingChangeAnnounced {
+  name: "AgentSettingChangeAnnounced";
+  args: {
+    name: string;
+    value: BN;
+    validAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface AgentSettingChanged {
+  name: "AgentSettingChanged";
+  args: {
+    name: string;
+    value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AvailableAgentExitAnnounced {
+  name: "AvailableAgentExitAnnounced";
+  args: {
+    agentVault: string;
+    exitAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface AvailableAgentExited {
   name: "AvailableAgentExited";
   args: {
     agentVault: string;
     0: string;
+  };
+}
+
+export interface Class1WithdrawalAnnounced {
+  name: "Class1WithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -111,15 +159,49 @@ export interface CollateralReserved {
   };
 }
 
-export interface CollateralWithdrawalAnnounced {
-  name: "CollateralWithdrawalAnnounced";
+export interface CollateralTokenAdded {
+  name: "CollateralTokenAdded";
   args: {
-    agentVault: string;
-    valueNATWei: BN;
-    timestamp: BN;
-    0: string;
-    1: BN;
+    tokenClass: BN;
+    tokenContract: string;
+    ftsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: string;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface CollateralTokenDeprecated {
+  name: "CollateralTokenDeprecated";
+  args: {
+    tokenClass: BN;
+    tokenContract: string;
+    validUntil: BN;
+    0: BN;
+    1: string;
     2: BN;
+  };
+}
+
+export interface CollateralTokenRatiosChanged {
+  name: "CollateralTokenRatiosChanged";
+  args: {
+    tokenClass: BN;
+    tokenContract: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -224,12 +306,14 @@ export interface MintingExecuted {
     collateralReservationId: BN;
     redemptionTicketId: BN;
     mintedAmountUBA: BN;
-    receivedFeeUBA: BN;
+    agentFeeUBA: BN;
+    poolFeeUBA: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -247,19 +331,33 @@ export interface MintingPaymentDefault {
   };
 }
 
+export interface PoolTokenRedemptionAnnounced {
+  name: "PoolTokenRedemptionAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface RedemptionDefault {
   name: "RedemptionDefault";
   args: {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    redeemedCollateralWei: BN;
+    redeemedClass1CollateralWei: BN;
+    redeemedPoolCollateralWei: BN;
     requestId: BN;
     0: string;
     1: string;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -447,10 +545,16 @@ type AllEvents =
   | AgentDestroyAnnounced
   | AgentDestroyed
   | AgentInCCB
+  | AgentSettingChangeAnnounced
+  | AgentSettingChanged
+  | AvailableAgentExitAnnounced
   | AvailableAgentExited
+  | Class1WithdrawalAnnounced
   | CollateralReservationDeleted
   | CollateralReserved
-  | CollateralWithdrawalAnnounced
+  | CollateralTokenAdded
+  | CollateralTokenDeprecated
+  | CollateralTokenRatiosChanged
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
@@ -462,6 +566,7 @@ type AllEvents =
   | LiquidationStarted
   | MintingExecuted
   | MintingPaymentDefault
+  | PoolTokenRedemptionAnnounced
   | RedemptionDefault
   | RedemptionFinished
   | RedemptionPaymentBlocked

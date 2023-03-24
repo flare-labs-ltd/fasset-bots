@@ -1,0 +1,252 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ICollateralPool",
+  "sourceName": "contracts/fasset/interface/ICollateralPool.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        }
+      ],
+      "name": "destroy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_fassets",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_enterWithFullFassets",
+          "type": "bool"
+        }
+      ],
+      "name": "enter",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum ICollateralPool.TokenExitType",
+          "name": "_exitType",
+          "type": "uint8"
+        }
+      ],
+      "name": "exit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_natShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_fassetShare",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "exitCollateralRatioBIPS",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amountWei",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_agentResponsibilityWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "payout",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "poolToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum ICollateralPool.TokenExitType",
+          "name": "_exitType",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bool",
+          "name": "_redeemToCollateral",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "_redeemerUnderlyingAddress",
+          "type": "string"
+        }
+      ],
+      "name": "selfCloseExit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setExitCollateralRatioBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_poolToken",
+          "type": "address"
+        }
+      ],
+      "name": "setPoolToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTopupCollateralRatioBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTopupTokenPriceFactorBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "topupCollateralRatioBIPS",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "topupTokenPriceFactorBIPS",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "newWNat",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeWNatContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawFees",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

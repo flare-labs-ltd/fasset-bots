@@ -320,7 +320,7 @@
       ],
       "name": "depositTo",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
