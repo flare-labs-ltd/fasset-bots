@@ -17,7 +17,7 @@ See [FAsset repository](https://gitlab.com/flarenetwork/fasset).
 
 ## FAsset bots
 
-The system that allows setting up an Agent and automate actions to events that require quick reactions (collateral reservation, minting, redemption, low collateral ratio).
+The automated system that works on behalf of a user. It allows setting up an Agent and automate actions to events that require quick reactions (collateral reservation, minting, redemption, low collateral ratio).
 
 ## Documentation
 See [documentation](./docs/README.md) for more.
