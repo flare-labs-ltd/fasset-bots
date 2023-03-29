@@ -1,9 +1,9 @@
 import BN from "bn.js";
 import { AgentStatus } from "../actors/AgentBot";
-import { AgentInfo } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN } from "../utils/helpers";
+import { AgentInfo, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN, requireNotNull } from "../utils/helpers";
 import { Prices } from "./Prices";
-import { convertUBAToNATWei } from "../fasset/Conversions";
+import { convertUBAToTokenWei } from "../fasset/Conversions";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
@@ -18,13 +18,24 @@ export class TrackedAgentState {
 
     status = AgentStatus.NORMAL;
     publiclyAvailable: boolean = false;
-    feeBIPS: BN = BN_ZERO;
-    agentMinCollateralRatioBIPS: BN = BN_ZERO;
-    totalCollateralNATWei: BN = BN_ZERO;
+    totalClass1CollateralWei: BN = BN_ZERO;
     ccbStartTimestamp: BN = BN_ZERO;                // 0 - not in ccb/liquidation
     liquidationStartTimestamp: BN = BN_ZERO;        // 0 - not in liquidation
     announcedUnderlyingWithdrawalId: BN = BN_ZERO;  // 0 - not announced
 
+    // agent settings
+    agentSettings = {
+        underlyingAddressString: this.underlyingAddress,
+        class1CollateralToken: "",
+        feeBIPS: BN_ZERO,
+        poolFeeShareBIPS: BN_ZERO,
+        mintingClass1CollateralRatioBIPS: BN_ZERO,
+        mintingPoolCollateralRatioBIPS: BN_ZERO,
+        poolExitCollateralRatioBIPS: BN_ZERO,
+        buyFAssetByAgentFactorBIPS: BN_ZERO,
+        poolTopupCollateralRatioBIPS: BN_ZERO,
+        poolTopupTokenPriceFactorBIPS: BN_ZERO
+    }
 
     // aggregates
     reservedUBA: BN = BN_ZERO;
@@ -36,9 +47,7 @@ export class TrackedAgentState {
     initialize(agentInfo: AgentInfo): void {
         this.status = Number(agentInfo.status);
         this.publiclyAvailable = agentInfo.publiclyAvailable;
-        this.feeBIPS = toBN(agentInfo.feeBIPS);
-        this.agentMinCollateralRatioBIPS = toBN(agentInfo.agentMinCollateralRatioBIPS);
-        this.totalCollateralNATWei = toBN(agentInfo.totalCollateralNATWei);
+        this.totalClass1CollateralWei = toBN(agentInfo.totalClass1CollateralWei);
         this.ccbStartTimestamp = toBN(agentInfo.ccbStartTimestamp);
         this.liquidationStartTimestamp = toBN(agentInfo.liquidationStartTimestamp);
         this.announcedUnderlyingWithdrawalId = toBN(agentInfo.announcedUnderlyingWithdrawalId);
@@ -47,26 +56,36 @@ export class TrackedAgentState {
         this.redeemingUBA = toBN(agentInfo.redeemingUBA);
         this.dustUBA = toBN(agentInfo.dustUBA);
         this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
+        Object.defineProperty(this.agentSettings, 'class1CollateralToken', agentInfo.class1CollateralToken);
+        Object.defineProperty(this.agentSettings, 'feeBIPS', toBN(agentInfo.feeBIPS));
+        Object.defineProperty(this.agentSettings, 'poolFeeShareBIPS', toBN(agentInfo.poolFeeShareBIPS));
+        Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', toBN(agentInfo.mintingClass1CollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', toBN(agentInfo.mintingPoolCollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'poolExitCollateralRatioBIPS', toBN(agentInfo.poolExitCollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'buyFAssetByAgentFactorBIPS', toBN(agentInfo.buyFAssetByAgentFactorBIPS));
+        Object.defineProperty(this.agentSettings, 'poolTopupCollateralRatioBIPS', toBN(agentInfo.poolTopupCollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'poolTopupTokenPriceFactorBIPS', toBN(agentInfo.poolTopupTokenPriceFactorBIPS));
     }
 
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
         const cr = await this.collateralRatioBIPS();
         const agentStatus = this.status;
         const settings = this.parent.settings;
+        const class1TokenSettings = requireNotNull(this.parent.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.CLASS1 && c.token === this.agentSettings.class1CollateralToken));
         if (agentStatus === AgentStatus.NORMAL) {
-            if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS))) {
+            if (cr.lt(toBN(class1TokenSettings.ccbMinCollateralRatioBIPS))) {
                 return AgentStatus.LIQUIDATION;
-            } else if (cr.lt(toBN(settings.minCollateralRatioBIPS))) {
+            } else if (cr.lt(toBN(class1TokenSettings.minCollateralRatioBIPS))) {
                 return AgentStatus.CCB;
             }
         } else if (agentStatus === AgentStatus.CCB) {
-            if (cr.gte(toBN(settings.minCollateralRatioBIPS))) {
+            if (cr.gte(toBN(class1TokenSettings.minCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
-            } else if (cr.lt(toBN(settings.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
+            } else if (cr.lt(toBN(class1TokenSettings.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
                 return AgentStatus.LIQUIDATION;
             }
         } else if (agentStatus === AgentStatus.LIQUIDATION) {
-            if (cr.gte(toBN(settings.safetyMinCollateralRatioBIPS))) {
+            if (cr.gte(toBN(class1TokenSettings.safetyMinCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
             }
         }
@@ -82,8 +101,8 @@ export class TrackedAgentState {
     private collateralRatioForPriceBIPS(prices: Prices) {
         const totalUBA = this.reservedUBA.add(this.mintedUBA).add(this.redeemingUBA);
         if (totalUBA.isZero()) return MAX_UINT256;
-        const backingCollateral: BN = convertUBAToNATWei(this.parent.settings, totalUBA, prices.amgNatWei);
-        return this.totalCollateralNATWei.muln(MAX_BIPS).div(backingCollateral);
+        const backingCollateral: BN = convertUBAToTokenWei(this.parent.settings, totalUBA, prices.amgToClass1Wei[this.agentSettings.class1CollateralToken]);
+        return this.totalClass1CollateralWei.muln(MAX_BIPS).div(backingCollateral);
     }
 
     handleStatusChange(status: AgentStatus, timestamp?: BN): void {
@@ -103,7 +122,7 @@ export class TrackedAgentState {
 
     handleMintingExecuted(args: EventArgs<MintingExecuted>) {
         // update underlying free balance
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.receivedFeeUBA));
+        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.agentFeeUBA));
         // create redemption ticket
         this.mintedUBA = this.mintedUBA.add(toBN(args.mintedAmountUBA));
         // delete collateral reservation
@@ -171,8 +190,9 @@ export class TrackedAgentState {
     // handlers: agent availability
     handleAgentAvailable(args: EventArgs<AgentAvailable>) {
         this.publiclyAvailable = true;
-        this.agentMinCollateralRatioBIPS = toBN(args.agentMinCollateralRatioBIPS);
-        this.feeBIPS = toBN(args.feeBIPS);
+        Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', toBN(args.mintingClass1CollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', toBN(args.mintingPoolCollateralRatioBIPS));
+        Object.defineProperty(this.agentSettings, 'feeBIPS', toBN(args.feeBIPS));
     }
 
     handleAvailableAgentExited() {
@@ -185,12 +205,16 @@ export class TrackedAgentState {
     }
 
     // agent state changing
-    depositCollateral(value: BN) {
-        this.totalCollateralNATWei = this.totalCollateralNATWei.add(value);
+    depositClass1Collateral(key: string, value: BN): void {
+        this.totalClass1CollateralWei = this.totalClass1CollateralWei.add(value);
     }
 
-    withdrawCollateral(value: BN) {
-        this.totalCollateralNATWei = this.totalCollateralNATWei.sub(value);
+    withdrawClass1Collateral(key: string, value: BN): void {
+        this.totalClass1CollateralWei = this.totalClass1CollateralWei.sub(value);
+    }
+
+    handleAgentSettingChanged(name: string, value: string): void {
+        Object.defineProperty(this.agentSettings, name, name === 'class1CollateralToken' ? value : toBN(value));
     }
 
 }

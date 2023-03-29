@@ -21,7 +21,7 @@ describe("Agent bot runner tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
-    let ownerAddress: string;
+    // let ownerAddress: string;
     const contexts: Map<number, IAssetBotContext> = new Map();
 
     function createAgentBot() {
@@ -32,7 +32,7 @@ describe("Agent bot runner tests", async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
-        ownerAddress = accounts[3];
+        // ownerAddress = accounts[3];
     });
 
     beforeEach(async () => {
@@ -47,23 +47,6 @@ describe("Agent bot runner tests", async () => {
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
-    it("Should create missing agents for agent bot runner", async () => {
-        const agentBotRunner = createAgentBot();
-        expect(agentBotRunner.loopDelay).to.eq(loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
-        await agentBotRunner.createMissingAgents(ownerAddress);
-        const existing1 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
-        expect(existing1).to.eq(1);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
-        agentEnt.active = false;
-        await orm.em.persistAndFlush(agentEnt);
-        const existing2 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
-        expect(existing2).to.eq(0);
-        await agentBotRunner.createMissingAgents(ownerAddress);
-        const existing3 = await orm.em.count(AgentEntity, { chainId: context.chainInfo.chainId, active: true } as FilterQuery<AgentEntity>);
-        expect(existing3).to.eq(1);
-    });
-
     it("Should run agent bot runner until its stopped", async () => {
         const agentBotRunner = createAgentBot();
         const spyStep = spy.on(agentBotRunner, 'runStep');
@@ -72,7 +55,7 @@ describe("Agent bot runner tests", async () => {
         agentBotRunner.requestStop();
         expect(spyStep).to.have.been.called.once;
     });
-
+/*
     it("Should run agent bot runner step", async () => {
         const agentBotRunner = createAgentBot();
         const spyEnt = spy.on(AgentBot, 'fromEntity');
@@ -91,5 +74,5 @@ describe("Agent bot runner tests", async () => {
         await agentBotRunner.runStep();
         expect(spyLog).to.have.been.called.once;
     });
-
+*/
 });

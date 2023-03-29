@@ -94,7 +94,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        const collateral = await context.wnat.balanceOf(vaultAddress);
+        const collateral = await context.wNat.balanceOf(vaultAddress);
         expect(collateral.toString()).to.eq(depositAmount);
     });
 
@@ -102,7 +102,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        const collateral = await context.wnat.balanceOf(vaultAddress);
+        const collateral = await context.wNat.balanceOf(vaultAddress);
         expect(collateral.toString()).to.eq(depositAmount);
         const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore.publiclyAvailable).to.be.false;
@@ -118,7 +118,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        const collateralBefore = await context.wnat.balanceOf(vaultAddress);
+        const collateralBefore = await context.wNat.balanceOf(vaultAddress);
         expect(collateralBefore.toString()).to.eq(depositAmount);
         await botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
@@ -200,7 +200,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        const collateral = await context.wnat.balanceOf(vaultAddress);
+        const collateral = await context.wNat.balanceOf(vaultAddress);
         expect(collateral.toString()).to.eq(depositAmount);
         const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore.publiclyAvailable).to.be.false;
@@ -244,7 +244,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await botCliCommands.run(["", "", "deposit", vaultAddress, depositAmount]);
-        const collateralBefore = await context.wnat.balanceOf(vaultAddress);
+        const collateralBefore = await context.wNat.balanceOf(vaultAddress);
         expect(collateralBefore.toString()).to.eq(depositAmount);
         await botCliCommands.run(["", "", "withdraw", vaultAddress, withdrawAmount]);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);

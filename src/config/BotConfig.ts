@@ -68,6 +68,18 @@ export interface BotChainInfo extends ChainInfo {
     fAssetSymbol?: string;
 }
 
+export interface AgentSettingsConfig {
+    class1FtsoSymbol: string,
+    feeBIPS: string,
+    poolFeeShareBIPS: string,
+    mintingClass1CollateralRatioConstant: number,
+    mintingPoolCollateralRatioConstant: number,
+    poolExitCollateralRatioConstant: number,
+    buyFAssetByAgentFactorBIPS: number,
+    poolTopupCollateralRatioConstant: number,
+    poolTopupTokenPriceFactorBIPS: number
+}
+
 export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
     const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);

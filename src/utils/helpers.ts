@@ -62,6 +62,15 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
 }
 
 /**
+ * Check if value is non-null and throw otherwise.
+ * Returns guaranteed non-null value.
+ */
+export function requireNotNull<T>(x: T): NonNullable<T> {
+    if (x != null) return x as NonNullable<T>;
+    throw new Error("Value is null or undefined");
+}
+
+/**
  * Helper wrapper to convert number to BN
  * @param x number expressed in any reasonable type
  * @returns same number as BN
@@ -337,4 +346,12 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
     if (errorIncluded(error, expectedErrors)) return;
     throw error;    // unexpected error
+}
+
+export function toBIPS(x: number | string) {
+    if (typeof x === 'string' && x.endsWith('%')) {
+        return toBNExp(x.slice(0, x.length - 1), 2);    // x is in percent, only multiply by 100
+    } else {
+        return toBNExp(x, 4);
+    }
 }

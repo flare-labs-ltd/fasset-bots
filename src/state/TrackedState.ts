@@ -33,16 +33,16 @@ export class TrackedState {
     agentsByUnderlying: Map<string, TrackedAgentState> = new Map();    // map underlying_address => tracked agent state
 
     // event decoder
-    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager, wnat: this.context.wnat });
+    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager, wnat: this.context.wNat });
 
     // async initialization part
     async initialize(): Promise<void> {
-        this.settings = this.settings = Object.assign({}, await this.context.assetManager.getSettings());
+        this.settings = Object.assign({}, await this.context.assetManager.getSettings());
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
 
     async getPrices(): Promise<[Prices, Prices]> {
-        return await Prices.getPrices(this.context, this.settings);
+        return await Prices.getPrices(this.context, this.settings, this.context.collaterals);
     }
 
     async registerStateEvents(events: EvmEvent[]): Promise<void> {
@@ -56,6 +56,8 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'SettingArrayChanged')) {
                     if (!(event.args.name in this.settings)) assert.fail(`Invalid setting array change ${event.args.name}`);
                     (this.settings as any)[event.args.name] = web3DeepNormalize(event.args.value);
+                } else if (eventIs(event, this.context.assetManager, 'AgentSettingChanged')) {
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentSettingChanged(event.args.name, event.args.value);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingExecuted(event.args);
@@ -72,10 +74,7 @@ export class TrackedState {
                     this.createAgent(event.args.agentVault, event.args.owner, event.args.underlyingAddress);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
-                } else if (eventIs(event, this.context.wnat, 'Transfer')) {
-                    this.createAgent(event.args.agentVault, event.args.owner, event.args.underlyingAddress);
-                    this.agents.get(event.args.from)?.withdrawCollateral(toBN(event.args.value));
-                    this.agents.get(event.args.to)?.depositCollateral(toBN(event.args.value));
+                    // } else if (eventIs(event, this.context.wNat, 'Transfer')) {// TODO do we need wNat
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.CCB, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
@@ -113,6 +112,13 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
                 }
+                // stable coins events
+                Object.entries(this.context.stablecoins).forEach(([key, contract]) => {
+                    if (eventIs(event, contract, 'Transfer')) {
+                        this.agents.get(event.args.from)?.withdrawClass1Collateral(key, toBN(event.args.value));
+                        this.agents.get(event.args.to)?.depositClass1Collateral(key, toBN(event.args.value));
+                    }
+                });
             }
         } catch (error) {
             console.error(`Error handling events for state: ${error}`);
@@ -125,6 +131,17 @@ export class TrackedState {
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
         for (let lastHandled = this.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
+            // handle stable coin logs
+            Object.entries(this.context.stablecoins).forEach(async ([, contract]) => {
+                const logsStablecoin = await web3.eth.getPastLogs({
+                    address: contract.address,
+                    fromBlock: lastHandled + 1,
+                    toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                    topics: [null]
+                });
+                const eventDecoderStableCoins = new Web3EventDecoder({ stableCoin: contract });
+                events.push(...eventDecoderStableCoins.decodeEvents(logsStablecoin));
+            });
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
                 fromBlock: lastHandled + 1,
@@ -140,7 +157,7 @@ export class TrackedState {
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
             const logsWNat = await web3.eth.getPastLogs({
-                address: this.context.wnat.address,
+                address: this.context.wNat.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                 topics: [null]

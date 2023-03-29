@@ -4,9 +4,8 @@ import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionReque
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
-import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentInfo, AssetManagerSettings } from "../fasset/AssetManagerTypes";
-import { amgToNATWeiPrice, convertUBAToNATWei } from "../fasset/Conversions";
+import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentInfo, AgentSettings, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
@@ -17,6 +16,8 @@ import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANC
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import { Prices } from "../state/Prices";
+import { convertUBAToTokenWei } from "../fasset/Conversions";
 
 // status as returned from getAgentInfo
 export enum AgentStatus {
@@ -28,6 +29,8 @@ export enum AgentStatus {
 }
 
 const AgentVault = artifacts.require('AgentVault');
+const CollateralPool = artifacts.require('CollateralPool');
+const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 
 export class AgentBot {
     constructor(
@@ -38,7 +41,7 @@ export class AgentBot {
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
-    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string, notifier: Notifier): Promise<AgentBot> {
+    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string, agentSettingsConfig: AgentBotSettings, notifier: Notifier,): Promise<AgentBot> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -46,7 +49,8 @@ export class AgentBot {
             if (settings.requireEOAAddressProof) {
                 await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
             }
-            const agent = await AgentB.create(context, ownerAddress, underlyingAddress);
+            const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentSettingsConfig };
+            const agent = await AgentB.create(context, ownerAddress, agentSettings);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.ownerAddress = agent.ownerAddress;
@@ -68,7 +72,22 @@ export class AgentBot {
 
     static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
-        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, agentEntity.underlyingAddress);
+        const collateralPool = await CollateralPool.at(agentEntity.collateralPoolAddress);
+        const collateralPoolToken = await CollateralPoolToken.at(agentEntity.collateralPoolTokenAddress);
+        const agentInfo = await context.assetManager.getAgentInfo(agentEntity.vaultAddress);
+        const agentSettings = {
+            underlyingAddressString: agentEntity.underlyingAddress,
+            class1CollateralToken: agentInfo.class1CollateralToken,
+            feeBIPS: agentInfo.feeBIPS,
+            poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
+            mintingClass1CollateralRatioBIPS: agentInfo.mintingClass1CollateralRatioBIPS,
+            mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
+            poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
+            buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
+            poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
+            poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS
+        }
+        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings);
         return new AgentBot(agent, notifier);
     }
 
@@ -170,12 +189,29 @@ export class AgentBot {
                 const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForWithdrawalTimestamp));
                 const latestTimestamp = await this.latestBlockTimestamp();
                 if (waitedTime.lt(toBN(latestTimestamp))) {
-                    await this.agent.withdrawCollateral(agentEnt.waitingForWithdrawalAmount);
+                    await this.agent.withdrawClass1Collateral(agentEnt.waitingForWithdrawalAmount);
                     agentEnt.waitingForWithdrawalTimestamp = 0;
+                    agentEnt.waitingForWithdrawalAmount = BN_ZERO;
+                }
+            }
+            if (agentEnt.waitingForAgentSettingUpdateTimestamp > 0) {
+                const settingsName: string = agentEnt.waitingForAgentSettingUpdateName;
+                let timeToWait: BN = BN_ZERO;
+                if (settingsName === "feeBIPS" || settingsName == "poolFeeShareBIPS" || settingsName == "buyFAssetByAgentFactorBIPS") {
+                    timeToWait = settings.agentFeeChangeTimelockSeconds;
+                } else {
+                    timeToWait = settings.agentCollateralRatioChangeTimelockSeconds;
+                }
+                const waitedTime = toBN(timeToWait).add(toBN(agentEnt.waitingForAgentSettingUpdateTimestamp));
+                const latestTimestamp = await this.latestBlockTimestamp();
+                if (waitedTime.lt(toBN(latestTimestamp))) {
+                    await this.agent.executeAgentSettingUpdate(agentEnt.waitingForAgentSettingUpdateName);
+                    agentEnt.waitingForAgentSettingUpdateTimestamp = 0;
+                    agentEnt.waitingForAgentSettingUpdateName = "";
                 }
             }
             if (agentEnt.waitingForDestructionCleanUp) {
-                const agentInfo = await this.context.assetManager.getAgentInfo(this.agent.vaultAddress);
+                const agentInfo = await this.agent.getAgentInfo();
                 if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
                     await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = await this.latestBlockTimestamp();
@@ -476,14 +512,15 @@ export class AgentBot {
     async checkAgentForCollateralRatioAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
-        const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const class1Collateral = this.agent.class1Collateral;
+        const requiredCrBIPS = toBN(class1Collateral.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo, settings);
         if (requiredTopUp.lte(BN_ZERO)) {
             // no need for top up
             return;
         }
         try {
-            await this.agent.depositCollateral(requiredTopUp);
+            await this.agent.depositClass1Collateral(requiredTopUp);
             this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUp.toString());
         } catch (err) {
             this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUp.toString());
@@ -495,31 +532,18 @@ export class AgentBot {
     }
 
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
-        const collateral = await this.context.wnat.balanceOf(this.agent.agentVault.address);
-        const [amgToNATWeiPrice, amgToNATWeiPriceTrusted] = await this.currentAmgToNATWeiPriceWithTrusted(settings);
-        const amgToNATWei = BN.min(amgToNATWeiPrice, amgToNATWeiPriceTrusted);
+        const class1Collateral = await this.agent.class1Token.balanceOf(this.agent.vaultAddress);
+        const [amgToClass1WeiPrice, amgToClass1WeiPriceTrusted] = await this.currentAmgToClass1WeiPriceWithTrusted(settings, agentInfo.class1CollateralToken);
+        const amgToClass1Wei = BN.min(amgToClass1WeiPrice, amgToClass1WeiPriceTrusted);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
-        const backingNATWei = convertUBAToNATWei(settings, totalUBA, amgToNATWei);
-        const requiredCollateral = backingNATWei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(collateral);
+        const backingClass1Wei = convertUBAToTokenWei(settings, totalUBA, amgToClass1Wei);
+        const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
+        return requiredCollateral.sub(class1Collateral);
     }
 
-    private async currentAmgToNATWeiPriceWithTrusted(settings: AssetManagerSettings): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
-        const prices = (await this.currentPriceWithTrusted())[0];
-        const trustedPrices = (await this.currentPriceWithTrusted())[1];
-        const ftsoPrice = amgToNATWeiPrice(settings, prices.natPrice, prices.assetPrice);
-        const trustedPrice = trustedPrices.natTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.natTimestamp) &&
-            trustedPrices.assetTimestampTrusted.add(toBN(settings.maxTrustedPriceAgeSeconds)).gte(prices.assetTimestamp) ?
-            amgToNATWeiPrice(settings, trustedPrices.natPriceTrusted, trustedPrices.assetPriceTrusted) : ftsoPrice;
-        return [ftsoPrice, trustedPrice];
-    }
-
-    private async currentPriceWithTrusted(): Promise<[{ natPrice: BN, natTimestamp: BN, assetPrice: BN, assetTimestamp: BN }, { natPriceTrusted: BN, natTimestampTrusted: BN, assetPriceTrusted: BN, assetTimestampTrusted: BN }]> {
-        const { 0: natPrice, 1: natTimestamp } = await this.context.natFtso.getCurrentPrice();
-        const { 0: assetPrice, 1: assetTimestamp } = await this.context.assetFtso.getCurrentPrice();
-        const { 0: natPriceTrusted, 1: natTimestampTrusted } = await this.context.natFtso.getCurrentPriceFromTrustedProviders();
-        const { 0: assetPriceTrusted, 1: assetTimestampTrusted } = await this.context.assetFtso.getCurrentPriceFromTrustedProviders();
-        return [{ natPrice: natPrice, natTimestamp: natTimestamp, assetPrice: assetPrice, assetTimestamp: assetTimestamp },
-        { natPriceTrusted: natPriceTrusted, natTimestampTrusted: natTimestampTrusted, assetPriceTrusted: assetPriceTrusted, assetTimestampTrusted: assetTimestampTrusted }];
+    private async currentAmgToClass1WeiPriceWithTrusted(settings: AssetManagerSettings, class1Token: string): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
+        const prices = await Prices.getFtsoPrices(this.context, settings, this.context.collaterals, []);
+        const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices, []);
+        return [prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]];
     }
 }

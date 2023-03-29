@@ -9,6 +9,12 @@ export class AgentEntity {
     @PrimaryKey({ length: ADDRESS_LENGTH })
     vaultAddress!: string;
 
+    @Property({ length: ADDRESS_LENGTH })
+    collateralPoolAddress!: string;
+
+    @Property({ length: ADDRESS_LENGTH })
+    collateralPoolTokenAddress!: string;
+
     @Property()
     chainId!: number;
 
@@ -25,10 +31,16 @@ export class AgentEntity {
     lastEventBlockHandled!: number;
 
     @Property()
-    waitingForDestructionCleanUp: boolean =  false;
+    waitingForDestructionCleanUp: boolean = false;
 
     @Property()
     waitingForDestructionTimestamp: number = 0;
+
+    @Property()
+    waitingForAgentSettingUpdateTimestamp: number = 0;
+
+    @Property()
+    waitingForAgentSettingUpdateName: string = "";
 
     @Property()
     waitingForWithdrawalTimestamp: number = 0;

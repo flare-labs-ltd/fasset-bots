@@ -48,16 +48,6 @@ export class AgentBotRunner {
         }
     }
 
-    @UseRequestContext()
-    async createMissingAgents(ownerAddress: string): Promise<void> {
-        for (const [chainId, context] of this.contexts) {
-            const existing = await this.orm.em.count(AgentEntity, { chainId, active: true } as FilterQuery<AgentEntity>);
-            if (existing === 0) {
-                await AgentBot.create(this.orm.em, context, ownerAddress, this.notifier);
-            }
-        }
-    }
-
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         const contexts: Map<number, IAssetBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
