@@ -133,6 +133,12 @@
       "inputs": [
         {
           "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
           "name": "name",
           "type": "string"
@@ -156,6 +162,12 @@
     {
       "anonymous": false,
       "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
         {
           "indexed": false,
           "internalType": "string",

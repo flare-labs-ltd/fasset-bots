@@ -78,22 +78,26 @@ export interface AgentInCCB {
 export interface AgentSettingChangeAnnounced {
   name: "AgentSettingChangeAnnounced";
   args: {
+    agentVault: string;
     name: string;
     value: BN;
     validAt: BN;
     0: string;
-    1: BN;
+    1: string;
     2: BN;
+    3: BN;
   };
 }
 
 export interface AgentSettingChanged {
   name: "AgentSettingChanged";
   args: {
+    agentVault: string;
     name: string;
     value: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
