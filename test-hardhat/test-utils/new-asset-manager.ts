@@ -1,9 +1,10 @@
 import { time } from "@openzeppelin/test-helpers";
-import { AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralToken } from "../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../src/utils/artifacts";
 import { findEvent } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance } from "../../typechain-truffle";
 import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
+import { web3DeepNormalize } from "../../src/utils/web3normalize";
 
 export async function newAssetManager(
     governanceAddress: string,
@@ -12,14 +13,21 @@ export async function newAssetManager(
     symbol: string,
     decimals: number,
     assetManagerSettings: AssetManagerSettings,
+    collateralTokens: CollateralToken[],
+    encodedLiquidationStrategySettings: string,
     updateExecutor: string = governanceAddress
 ): Promise<[AssetManagerInstance, FAssetInstance]> {
     const AssetManager = await linkAssetManager();
     const FAsset = artifacts.require('FAsset');
     const fAsset = await FAsset.new(governanceAddress, name, symbol, decimals);
     const assetManagerControllerAddress = typeof assetManagerController === 'string' ? assetManagerController : assetManagerController.address;
-    assetManagerSettings = { ...assetManagerSettings, assetManagerController: assetManagerControllerAddress };
-    const assetManager = await AssetManager.new(assetManagerSettings, fAsset.address);
+    assetManagerSettings = web3DeepNormalize({
+        ...assetManagerSettings,
+        assetManagerController: assetManagerControllerAddress,
+        fAsset: fAsset.address
+    });
+    collateralTokens = web3DeepNormalize(collateralTokens);
+    const assetManager = await AssetManager.new(assetManagerSettings, collateralTokens, encodedLiquidationStrategySettings);
     if (typeof assetManagerController !== 'string') {
         const res = await assetManagerController.addAssetManager(assetManager.address, { from: governanceAddress });
         await waitForTimelock(res, assetManagerController, updateExecutor);
@@ -38,7 +46,7 @@ export async function waitForTimelock<C extends Truffle.ContractInstance>(respon
     if (timelockEvent) {
         const timelock = timelockEvent.args;
         await time.increaseTo(Number(timelock.allowedAfterTimestamp) + 1);
-        await (contract as any).executeGovernanceCall(timelock.selector, { from: executorAddress });
+        return await (contract as any).executeGovernanceCall(timelock.selector, { from: executorAddress });
     }
 }
 
@@ -46,20 +54,25 @@ export async function linkAssetManager() {
     // deploy all libraries
     const SettingsUpdater = await deployLibrary('SettingsUpdater');
     const StateUpdater = await deployLibrary('StateUpdater');
-    const Agents = await deployLibrary('Agents');
+    const CollateralTokens = await deployLibrary('CollateralTokens');
+    const AgentsExternal = await deployLibrary('AgentsExternal');
+    const AgentsCreateDestroy = await deployLibrary('AgentsCreateDestroy');
+    const AgentSettingsUpdater = await deployLibrary('AgentSettingsUpdater');
     const AvailableAgents = await deployLibrary('AvailableAgents');
     const CollateralReservations = await deployLibrary('CollateralReservations');
     const Liquidation = await deployLibrary('Liquidation');
     const Minting = await deployLibrary('Minting');
     const UnderlyingFreeBalance = await deployLibrary('UnderlyingFreeBalance');
-    const Redemption = await deployLibrary('Redemption');
+    const RedemptionRequests = await deployLibrary('RedemptionRequests');
+    const RedemptionConfirmations = await deployLibrary('RedemptionConfirmations');
+    const RedemptionFailures = await deployLibrary('RedemptionFailures');
     const UnderlyingWithdrawalAnnouncements = await deployLibrary('UnderlyingWithdrawalAnnouncements');
     const Challenges = await deployLibrary('Challenges');
     const FullAgentInfo = await deployLibrary('FullAgentInfo');
     // link AssetManagerContract
     return linkDependencies(artifacts.require('AssetManager'), {
-        SettingsUpdater, StateUpdater, Agents, AvailableAgents, CollateralReservations, Liquidation, Minting,
-        UnderlyingFreeBalance, Redemption, UnderlyingWithdrawalAnnouncements, Challenges, FullAgentInfo
+        SettingsUpdater, StateUpdater, CollateralTokens, AgentsExternal, AgentsCreateDestroy, AgentSettingsUpdater, AvailableAgents, CollateralReservations, Liquidation, Minting,
+        UnderlyingFreeBalance, RedemptionRequests, RedemptionConfirmations, RedemptionFailures, UnderlyingWithdrawalAnnouncements, Challenges, FullAgentInfo
     });
 }
 

@@ -9,7 +9,7 @@ export class TokenPrice {
         public readonly price: BN,
         public readonly timestamp: BN,
         public readonly decimals: BN,
-    ) {}
+    ) { }
 
     fresh(relativeTo: TokenPrice, maxAge: BN) {
         return this.timestamp.add(maxAge).gte(relativeTo.timestamp);
@@ -56,7 +56,12 @@ export class Prices {
     }
 
     calculateAmgToTokenWei(settings: AssetManagerSettings, collaterals: CollateralToken[], tokenClass: CollateralTokenClass, tokenAddress: string) {
-        const tokenPrice = this.stablecoinUSD[tokenAddress];
+        let tokenPrice: TokenPrice;
+        if (tokenClass === CollateralTokenClass.POOL) {
+            tokenPrice = this.natUSD;
+        } else {
+            tokenPrice = this.stablecoinUSD[tokenAddress];
+        }
         const tokenCollateral = requireNotNull(collaterals.find(c => c.tokenClass === tokenClass && c.token === tokenAddress));
         return amgToTokenWeiPrice(settings, tokenCollateral.decimals, tokenPrice.price, tokenPrice.decimals,
             this.assetUSD.price, this.assetUSD.decimals);
@@ -94,7 +99,7 @@ export class Prices {
         const stablecoinPrices: StablecoinPrices = {};
         for (const tokenKey of selectedStablecoins ?? Object.keys(context.stablecoins)) {
             const tokenAddress = context.stablecoins[tokenKey].address;
-            stablecoinPrices[tokenAddress] = await this.getTrustedPriceForFtso(context.ftsos[tokenKey], maxAge, ftsoPrices.stablecoinUSD[tokenKey]);
+            stablecoinPrices[tokenAddress] = await this.getTrustedPriceForFtso(context.ftsos[tokenKey], maxAge, ftsoPrices.stablecoinUSD[tokenAddress]);
         }
         return new Prices(context, settings, collaterals, natPrice, assetPrice, stablecoinPrices);
     }

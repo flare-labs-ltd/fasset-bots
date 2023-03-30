@@ -58,6 +58,7 @@ export class AgentBot {
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
+            agentEntity.collateralPoolAddress = agent.collateralPool.address
             em.persist(agentEntity);
             return new AgentBot(agent, notifier);
         });
@@ -72,8 +73,11 @@ export class AgentBot {
 
     static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
+        // get collateral pool
         const collateralPool = await CollateralPool.at(agentEntity.collateralPoolAddress);
-        const collateralPoolToken = await CollateralPoolToken.at(agentEntity.collateralPoolTokenAddress);
+        // get pool token
+        const poolTokenAddress = await collateralPool.poolToken();
+        const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         const agentInfo = await context.assetManager.getAgentInfo(agentEntity.vaultAddress);
         const agentSettings = {
             underlyingAddressString: agentEntity.underlyingAddress,
@@ -124,7 +128,7 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args.agentVault);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAgentForCollateralRatioAndTopUp();
+                    await this.checkAgentForClass1CollateralRatioAndTopUp();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
                     this.notifier.sendCCBAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
@@ -508,8 +512,8 @@ export class AgentBot {
         }
     }
 
-    // owner deposits flr/sgb to vault to get out of ccb or liquidation due to price changes
-    async checkAgentForCollateralRatioAndTopUp(): Promise<void> {
+    // owner deposits class1 collateral to vault to get out of ccb or liquidation due to price changes
+    async checkAgentForClass1CollateralRatioAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
         const settings = await this.context.assetManager.getSettings();
         const class1Collateral = this.agent.class1Collateral;
@@ -542,8 +546,8 @@ export class AgentBot {
     }
 
     private async currentAmgToClass1WeiPriceWithTrusted(settings: AssetManagerSettings, class1Token: string): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
-        const prices = await Prices.getFtsoPrices(this.context, settings, this.context.collaterals, []);
-        const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices, []);
+        const prices = await Prices.getFtsoPrices(this.context, settings, this.context.collaterals);
+        const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices);
         return [prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]];
     }
 }

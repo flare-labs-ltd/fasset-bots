@@ -52,9 +52,9 @@ export class Agent {
 
     class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === this.agentSettings.class1CollateralToken));
 
-    static async create(ctx: IAssetContext, ownerAddress: string, settings: AgentSettings): Promise<Agent> {
+    static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
-        const response = await ctx.assetManager.createAgent(web3DeepNormalize(settings), { from: ownerAddress });
+        const response = await ctx.assetManager.createAgent(web3DeepNormalize(agentSettings), { from: ownerAddress });
         // extract agent vault address from AgentCreated event
         const event = findRequiredEvent(response, 'AgentCreated');
         // get vault contract at agent's vault address address
@@ -65,7 +65,7 @@ export class Agent {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings);
+        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings);
     }
 
     async depositClass1Collateral(amountTokenWei: BNish) {

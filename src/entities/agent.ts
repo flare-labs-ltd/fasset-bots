@@ -12,9 +12,6 @@ export class AgentEntity {
     @Property({ length: ADDRESS_LENGTH })
     collateralPoolAddress!: string;
 
-    @Property({ length: ADDRESS_LENGTH })
-    collateralPoolTokenAddress!: string;
-
     @Property()
     chainId!: number;
 
