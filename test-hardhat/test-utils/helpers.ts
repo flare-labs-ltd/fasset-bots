@@ -2,6 +2,7 @@ import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
 import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
 import { AgentBot } from "../../src/actors/AgentBot";
+import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
@@ -43,4 +44,8 @@ export async function createAgentB(context: TestAssetBotContext, ownerAddress: s
     const agentBotSettings: AgentBotSettings = await createTestAgentBotSettings(context);
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await AgentB.create(context, ownerAddress, agentSettings);
+}
+
+export function createAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number) {
+    return new AgentBotRunner(contexts, orm, loopDelay, new Notifier());
 }
