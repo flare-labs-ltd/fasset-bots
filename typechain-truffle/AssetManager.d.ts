@@ -1278,19 +1278,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   };
 
   destroyAgent: {
-    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
+    (
+      _agentVault: string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1673,7 +1678,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
     status: BN;
-    ownerAddress: string;
+    ownerColdAddressAddress: string;
+    ownerHotAddressAddress: string;
     collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
@@ -1705,6 +1711,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     poolTopupCollateralRatioBIPS: BN;
     poolTopupTokenPriceFactorBIPS: BN;
   }>;
+
+  getAgentVaultOwner(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string; 1: string }>;
 
   getAvailableAgentsDetailedList(
     _start: number | BN | string,
@@ -1884,6 +1895,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  isAgentVaultOwner(
+    _agentVault: string,
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
 
   isCollateralToken(
     _agentVault: string,
@@ -2413,6 +2430,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _minCollateralRatioBIPS: number | BN | string,
       _ccbMinCollateralRatioBIPS: number | BN | string,
       _safetyMinCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setOwnerHotAddress: {
+    (_ownerHotAddress: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _ownerHotAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _ownerHotAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _ownerHotAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -3320,19 +3355,24 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     };
 
     destroyAgent: {
-      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
+      (
+        _agentVault: string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3715,7 +3755,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
       status: BN;
-      ownerAddress: string;
+      ownerColdAddressAddress: string;
+      ownerHotAddressAddress: string;
       collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
@@ -3747,6 +3788,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
     }>;
+
+    getAgentVaultOwner(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string; 1: string }>;
 
     getAvailableAgentsDetailedList(
       _start: number | BN | string,
@@ -3926,6 +3972,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    isAgentVaultOwner(
+      _agentVault: string,
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     isCollateralToken(
       _agentVault: string,
@@ -4455,6 +4507,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _minCollateralRatioBIPS: number | BN | string,
         _ccbMinCollateralRatioBIPS: number | BN | string,
         _safetyMinCollateralRatioBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setOwnerHotAddress: {
+      (
+        _ownerHotAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _ownerHotAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _ownerHotAddress: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _ownerHotAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

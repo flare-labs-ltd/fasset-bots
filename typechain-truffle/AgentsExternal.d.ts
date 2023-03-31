@@ -13,6 +13,11 @@ export interface AgentsExternalContract
 type AllEvents = never;
 
 export interface AgentsExternalInstance extends Truffle.ContractInstance {
+  getAgentVaultOwner(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string; 1: string }>;
+
   getFAssetsBackedByPool(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -25,6 +30,11 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
   ): Promise<boolean>;
 
   methods: {
+    getAgentVaultOwner(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string; 1: string }>;
+
     getFAssetsBackedByPool(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails

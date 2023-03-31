@@ -14,48 +14,38 @@ type AllEvents = never;
 
 export interface AgentVaultFactoryInstance extends Truffle.ContractInstance {
   create: {
-    (
-      _assetManager: string,
-      _owner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
     call(
       _assetManager: string,
-      _owner: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     sendTransaction(
       _assetManager: string,
-      _owner: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _assetManager: string,
-      _owner: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   methods: {
     create: {
-      (
-        _assetManager: string,
-        _owner: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
       call(
         _assetManager: string,
-        _owner: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       sendTransaction(
         _assetManager: string,
-        _owner: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _assetManager: string,
-        _owner: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

@@ -14,6 +14,11 @@
           "internalType": "uint256",
           "name": "_month",
           "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
         }
       ],
       "name": "claimAirdropDistribution",
@@ -38,6 +43,11 @@
           "internalType": "uint256",
           "name": "_lastRewardEpoch",
           "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
         }
       ],
       "name": "claimFtsoRewards",
@@ -126,7 +136,13 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        }
+      ],
       "name": "destroy",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -143,19 +159,6 @@
       "name": "optOutOfAirdrop",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address payable",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {

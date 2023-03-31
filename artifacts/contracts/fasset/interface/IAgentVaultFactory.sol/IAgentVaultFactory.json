@@ -9,11 +9,6 @@
           "internalType": "contract IAssetManager",
           "name": "_assetManager",
           "type": "address"
-        },
-        {
-          "internalType": "address payable",
-          "name": "_owner",
-          "type": "address"
         }
       ],
       "name": "create",

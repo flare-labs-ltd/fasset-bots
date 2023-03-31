@@ -33,8 +33,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   agentVault(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  agentVaultOwner(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   claimAirdropDistribution: {
@@ -455,8 +453,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     agentVault(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    agentVaultOwner(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

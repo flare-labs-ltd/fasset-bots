@@ -59,7 +59,27 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  collateralDeposited: {
+    (arg0: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(arg0: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  getAgentVaultOwner(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string; 1: string }>;
 
   getFAssetsBackedByPool(
     arg0: string,
@@ -69,6 +89,12 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
   getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  isAgentVaultOwner(
+    arg0: string,
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
 
   payoutNAT: {
     (
@@ -173,6 +199,21 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setCommonOwner: {
+    (_owner: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(_owner: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      _owner: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _owner: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
     assetPriceNatWei(
       txDetails?: Truffle.TransactionDetails
@@ -201,7 +242,27 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    collateralDeposited: {
+      (arg0: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(arg0: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(
+        arg0: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        arg0: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    getAgentVaultOwner(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string; 1: string }>;
 
     getFAssetsBackedByPool(
       arg0: string,
@@ -211,6 +272,12 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    isAgentVaultOwner(
+      arg0: string,
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     payoutNAT: {
       (
@@ -311,6 +378,24 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _fasset: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCommonOwner: {
+      (_owner: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _owner: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _owner: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _owner: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

@@ -133,6 +133,21 @@ export interface AddressUpdaterInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  getContractAddressByHash(
+    _nameHash: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getContractAddresses(
+    _names: string[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string[]>;
+
+  getContractAddressesByHash(
+    _nameHashes: string[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string[]>;
+
   getContractNamesAndAddresses(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string[]; 1: string[] }>;
@@ -161,6 +176,24 @@ export interface AddressUpdaterInstance extends Truffle.ContractInstance {
   };
 
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  removeContracts: {
+    (_contractNames: string[], txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _contractNames: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _contractNames: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _contractNames: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -287,6 +320,21 @@ export interface AddressUpdaterInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
+    getContractAddressByHash(
+      _nameHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getContractAddresses(
+      _names: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string[]>;
+
+    getContractAddressesByHash(
+      _nameHashes: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string[]>;
+
     getContractNamesAndAddresses(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string[]; 1: string[] }>;
@@ -315,6 +363,25 @@ export interface AddressUpdaterInstance extends Truffle.ContractInstance {
     };
 
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    removeContracts: {
+      (
+        _contractNames: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _contractNames: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _contractNames: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _contractNames: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     switchToProductionMode: {
       (txDetails?: Truffle.TransactionDetails): Promise<

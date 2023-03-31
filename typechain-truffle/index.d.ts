@@ -7,30 +7,6 @@ import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20Contract } from "./IERC20";
-import { AddressUpdaterContract } from "./AddressUpdater";
-import { CheckPointableContract } from "./CheckPointable";
-import { DelegatableContract } from "./Delegatable";
-import { DelegationHistoryContract } from "./DelegationHistory";
-import { ERC20Contract } from "./ERC20";
-import { GovernanceSettingsContract } from "./GovernanceSettings";
-import { GovernedContract } from "./Governed";
-import { GovernedBaseContract } from "./GovernedBase";
-import { IERC20Contract } from "./IERC20";
-import { IGovernanceSettingsContract } from "./IGovernanceSettings";
-import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
-import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
-import { IICleanableContract } from "./IICleanable";
-import { IIGovernanceVotePowerContract } from "./IIGovernanceVotePower";
-import { IIVPContractContract } from "./IIVPContract";
-import { IIVPTokenContract } from "./IIVPToken";
-import { IVPContractEventsContract } from "./IVPContractEvents";
-import { IVPTokenContract } from "./IVPToken";
-import { IWNatContract } from "./IWNat";
-import { PercentageDelegationContract } from "./PercentageDelegation";
-import { SuicidalMockContract } from "./SuicidalMock";
-import { VPContractContract } from "./VPContract";
-import { VPTokenContract } from "./VPToken";
-import { WNatContract } from "./WNat";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
@@ -83,10 +59,20 @@ import { GovernedMockContract } from "./GovernedMock";
 import { NativeTokenBurnerContract } from "./NativeTokenBurner";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
+import { AddressUpdaterContract } from "./AddressUpdater";
+import { CheckPointableContract } from "./CheckPointable";
+import { DelegatableContract } from "./Delegatable";
+import { DelegationHistoryContract } from "./DelegationHistory";
+import { GovernanceSettingsContract } from "./GovernanceSettings";
 import { IFlareDaemonizeContract } from "./IFlareDaemonize";
 import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoManagerContract } from "./IIFtsoManager";
 import { IIFtsoRegistryContract } from "./IIFtsoRegistry";
+import { PercentageDelegationContract } from "./PercentageDelegation";
+import { SuicidalMockContract } from "./SuicidalMock";
+import { VPContractContract } from "./VPContract";
+import { VPTokenContract } from "./VPToken";
+import { WNatContract } from "./WNat";
 import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
 import { IIFtsoContract } from "./IIFtso";
 import { IFtsoGenesisContract } from "./IFtsoGenesis";
@@ -116,30 +102,6 @@ declare global {
       require(name: "ERC20"): ERC20Contract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20"): IERC20Contract;
-      require(name: "AddressUpdater"): AddressUpdaterContract;
-      require(name: "CheckPointable"): CheckPointableContract;
-      require(name: "Delegatable"): DelegatableContract;
-      require(name: "DelegationHistory"): DelegationHistoryContract;
-      require(name: "ERC20"): ERC20Contract;
-      require(name: "GovernanceSettings"): GovernanceSettingsContract;
-      require(name: "Governed"): GovernedContract;
-      require(name: "GovernedBase"): GovernedBaseContract;
-      require(name: "IERC20"): IERC20Contract;
-      require(name: "IGovernanceSettings"): IGovernanceSettingsContract;
-      require(name: "IGovernanceVotePower"): IGovernanceVotePowerContract;
-      require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
-      require(name: "IICleanable"): IICleanableContract;
-      require(name: "IIGovernanceVotePower"): IIGovernanceVotePowerContract;
-      require(name: "IIVPContract"): IIVPContractContract;
-      require(name: "IIVPToken"): IIVPTokenContract;
-      require(name: "IVPContractEvents"): IVPContractEventsContract;
-      require(name: "IVPToken"): IVPTokenContract;
-      require(name: "IWNat"): IWNatContract;
-      require(name: "PercentageDelegation"): PercentageDelegationContract;
-      require(name: "SuicidalMock"): SuicidalMockContract;
-      require(name: "VPContract"): VPContractContract;
-      require(name: "VPToken"): VPTokenContract;
-      require(name: "WNat"): WNatContract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
@@ -196,10 +158,20 @@ declare global {
       require(name: "NativeTokenBurner"): NativeTokenBurnerContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
+      require(name: "AddressUpdater"): AddressUpdaterContract;
+      require(name: "CheckPointable"): CheckPointableContract;
+      require(name: "Delegatable"): DelegatableContract;
+      require(name: "DelegationHistory"): DelegationHistoryContract;
+      require(name: "GovernanceSettings"): GovernanceSettingsContract;
       require(name: "IFlareDaemonize"): IFlareDaemonizeContract;
       require(name: "IIAddressUpdater"): IIAddressUpdaterContract;
       require(name: "IIFtsoManager"): IIFtsoManagerContract;
       require(name: "IIFtsoRegistry"): IIFtsoRegistryContract;
+      require(name: "PercentageDelegation"): PercentageDelegationContract;
+      require(name: "SuicidalMock"): SuicidalMockContract;
+      require(name: "VPContract"): VPContractContract;
+      require(name: "VPToken"): VPTokenContract;
+      require(name: "WNat"): WNatContract;
       require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
       require(name: "IIFtso"): IIFtsoContract;
       require(name: "IFtsoGenesis"): IFtsoGenesisContract;
@@ -234,60 +206,6 @@ export {
   IERC20MetadataInstance,
 } from "./IERC20Metadata";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
-export {
-  AddressUpdaterContract,
-  AddressUpdaterInstance,
-} from "./AddressUpdater";
-export {
-  CheckPointableContract,
-  CheckPointableInstance,
-} from "./CheckPointable";
-export { DelegatableContract, DelegatableInstance } from "./Delegatable";
-export {
-  DelegationHistoryContract,
-  DelegationHistoryInstance,
-} from "./DelegationHistory";
-export { ERC20Contract, ERC20Instance } from "./ERC20";
-export {
-  GovernanceSettingsContract,
-  GovernanceSettingsInstance,
-} from "./GovernanceSettings";
-export { GovernedContract, GovernedInstance } from "./Governed";
-export { GovernedBaseContract, GovernedBaseInstance } from "./GovernedBase";
-export { IERC20Contract, IERC20Instance } from "./IERC20";
-export {
-  IGovernanceSettingsContract,
-  IGovernanceSettingsInstance,
-} from "./IGovernanceSettings";
-export {
-  IGovernanceVotePowerContract,
-  IGovernanceVotePowerInstance,
-} from "./IGovernanceVotePower";
-export {
-  IIAddressUpdatableContract,
-  IIAddressUpdatableInstance,
-} from "./IIAddressUpdatable";
-export { IICleanableContract, IICleanableInstance } from "./IICleanable";
-export {
-  IIGovernanceVotePowerContract,
-  IIGovernanceVotePowerInstance,
-} from "./IIGovernanceVotePower";
-export { IIVPContractContract, IIVPContractInstance } from "./IIVPContract";
-export { IIVPTokenContract, IIVPTokenInstance } from "./IIVPToken";
-export {
-  IVPContractEventsContract,
-  IVPContractEventsInstance,
-} from "./IVPContractEvents";
-export { IVPTokenContract, IVPTokenInstance } from "./IVPToken";
-export { IWNatContract, IWNatInstance } from "./IWNat";
-export {
-  PercentageDelegationContract,
-  PercentageDelegationInstance,
-} from "./PercentageDelegation";
-export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
-export { VPContractContract, VPContractInstance } from "./VPContract";
-export { VPTokenContract, VPTokenInstance } from "./VPToken";
-export { WNatContract, WNatInstance } from "./WNat";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
 export {
   AgentVaultFactoryContract,
@@ -446,6 +364,23 @@ export {
 } from "./SafeMath64Mock";
 export { SafePctMockContract, SafePctMockInstance } from "./SafePctMock";
 export {
+  AddressUpdaterContract,
+  AddressUpdaterInstance,
+} from "./AddressUpdater";
+export {
+  CheckPointableContract,
+  CheckPointableInstance,
+} from "./CheckPointable";
+export { DelegatableContract, DelegatableInstance } from "./Delegatable";
+export {
+  DelegationHistoryContract,
+  DelegationHistoryInstance,
+} from "./DelegationHistory";
+export {
+  GovernanceSettingsContract,
+  GovernanceSettingsInstance,
+} from "./GovernanceSettings";
+export {
   IFlareDaemonizeContract,
   IFlareDaemonizeInstance,
 } from "./IFlareDaemonize";
@@ -458,6 +393,14 @@ export {
   IIFtsoRegistryContract,
   IIFtsoRegistryInstance,
 } from "./IIFtsoRegistry";
+export {
+  PercentageDelegationContract,
+  PercentageDelegationInstance,
+} from "./PercentageDelegation";
+export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
+export { VPContractContract, VPContractInstance } from "./VPContract";
+export { VPTokenContract, VPTokenInstance } from "./VPToken";
+export { WNatContract, WNatInstance } from "./WNat";
 export {
   IIAddressUpdatableContract,
   IIAddressUpdatableInstance,

@@ -17,21 +17,25 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     (
       _distribution: string,
       _month: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _distribution: string,
       _month: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _distribution: string,
       _month: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _distribution: string,
       _month: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -40,21 +44,25 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     (
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -149,12 +157,21 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
   };
 
   destroy: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
+    (_recipient: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    call(
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
   };
 
   optOutOfAirdrop: {
@@ -174,8 +191,6 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  owner(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   payout: {
     (
@@ -403,21 +418,25 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       (
         _distribution: string,
         _month: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _distribution: string,
         _month: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _distribution: string,
         _month: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _distribution: string,
         _month: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -426,21 +445,25 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       (
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -538,12 +561,21 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     };
 
     destroy: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
+      (_recipient: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+      call(
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
     };
 
     optOutOfAirdrop: {
@@ -563,8 +595,6 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    owner(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     payout: {
       (

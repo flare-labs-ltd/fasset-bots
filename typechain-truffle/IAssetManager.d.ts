@@ -140,6 +140,11 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
 
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  getAgentVaultOwner(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string; 1: string }>;
+
   getCollateralPool(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -153,6 +158,12 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
   getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  isAgentVaultOwner(
+    _agentVault: string,
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
 
   isCollateralToken(
     _agentVault: string,
@@ -514,6 +525,11 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
 
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+    getAgentVaultOwner(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string; 1: string }>;
+
     getCollateralPool(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -527,6 +543,12 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    isAgentVaultOwner(
+      _agentVault: string,
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     isCollateralToken(
       _agentVault: string,
