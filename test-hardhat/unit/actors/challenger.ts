@@ -1,18 +1,14 @@
 import { expect } from "chai";
-import { Challenger } from "../../../src/actors/Challenger";
 import { ORM } from "../../../src/config/orm";
-import { AgentB } from "../../../src/fasset-bots/AgentB";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockChain";
-import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { assertWeb3DeepEqual } from "../../test-utils/helpers";
-import { createTestAssetContext } from "../../test-utils/test-asset-context";
+import { assertWeb3DeepEqual, createAgentB, createTestChallenger } from "../../test-utils/helpers";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 
 const underlyingAddress: string = "AGENT_UNDERLYING";
 const transaction1 = {
@@ -32,16 +28,11 @@ const transaction2 = {
 
 describe("Challenger unit tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
-    let runner: ScopedRunner;
+    let context: TestAssetBotContext;
     let challengerAddress: string;
     let ownerAddress: string;
     let orm: ORM;
     let state: TrackedState;
-
-    async function createTestChallenger(address: string): Promise<Challenger> {
-        return new Challenger(runner, address, state, await context.chain.getBlockHeight());
-    }
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -54,19 +45,18 @@ describe("Challenger unit tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
-        runner = new ScopedRunner();
         challengerAddress = accounts[10];
         ownerAddress = accounts[11];
     });
 
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress);
+        const challenger = await createTestChallenger(challengerAddress, state, context);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = await createTestChallenger(challengerAddress);
-        const agentB = await AgentB.create(context, ownerAddress, underlyingAddress);
+        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
         // add transaction
@@ -77,8 +67,8 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = await createTestChallenger(challengerAddress);
-        const agentB = await AgentB.create(context, ownerAddress, underlyingAddress);
+        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
         // add transactions

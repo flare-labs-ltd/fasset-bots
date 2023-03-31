@@ -2,9 +2,13 @@ import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
 import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
 import { AgentBot } from "../../src/actors/AgentBot";
+import { Challenger } from "../../src/actors/Challenger";
 import { ORM } from "../../src/config/orm";
+import { AgentB } from "../../src/fasset-bots/AgentB";
 import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
+import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { createTestAgentBotSettings, TestAssetBotContext } from "./test-asset-context";
@@ -29,4 +33,14 @@ export async function mintClass1ToOwner(agentBot: AgentBot, amount: BN, class1To
     const class1Token = await ERC20Mock.at(class1TokenAddress);
     await class1Token.mintAmount(ownerAddress, amount);
     await class1Token.approve(agentBot.agent.vaultAddress, amount, { from: ownerAddress });
+}
+
+export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
+    return new Challenger(new ScopedRunner(), address, state, await context.chain.getBlockHeight());
+}
+
+export async function createAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
+    const agentBotSettings: AgentBotSettings = await createTestAgentBotSettings(context);
+    const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
+    return await AgentB.create(context, ownerAddress, agentSettings);
 }

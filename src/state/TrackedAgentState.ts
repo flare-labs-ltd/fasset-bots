@@ -56,7 +56,7 @@ export class TrackedAgentState {
         this.redeemingUBA = toBN(agentInfo.redeemingUBA);
         this.dustUBA = toBN(agentInfo.dustUBA);
         this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
-        Object.defineProperty(this.agentSettings, 'class1CollateralToken', agentInfo.class1CollateralToken);
+        Object.defineProperty(this.agentSettings, 'class1CollateralToken', { value: agentInfo.class1CollateralToken });
         Object.defineProperty(this.agentSettings, 'feeBIPS', toBN(agentInfo.feeBIPS));
         Object.defineProperty(this.agentSettings, 'poolFeeShareBIPS', toBN(agentInfo.poolFeeShareBIPS));
         Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', toBN(agentInfo.mintingClass1CollateralRatioBIPS));
