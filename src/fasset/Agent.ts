@@ -117,12 +117,12 @@ export class Agent {
         return args;
     }
 
-    async redeemCollateralPoolTokens(amountWei: BNish) {
-        return await this.agentVault.redeemCollateralPoolTokens(amountWei, { from: this.ownerAddress });
+    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
+        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
     }
 
-    async withdrawPoolFees(amountUBA: BNish) {
-        await this.agentVault.withdrawPoolFees(amountUBA, { from: this.ownerAddress });
+    async withdrawPoolFees(amountUBA: BNish, recipient: string = this.ownerAddress) {
+        await this.agentVault.withdrawPoolFees(amountUBA, recipient, { from: this.ownerAddress });
     }
 
     async poolFeeBalance() {
@@ -133,8 +133,8 @@ export class Agent {
         await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
     }
 
-    async destroy() {
-        const res = await this.assetManager.destroyAgent(this.vaultAddress, { from: this.ownerAddress });
+    async destroy(recipient: string = this.ownerAddress) {
+        const res = await this.assetManager.destroyAgent(this.vaultAddress, recipient, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AgentDestroyed');
     }
 
