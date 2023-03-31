@@ -317,7 +317,7 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const amount = toBN(10000);
-        await mintClass1ToOwner(agentBot, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
+        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
         await agentBot.agent.announceClass1CollateralWithdrawal(amount);
         agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();

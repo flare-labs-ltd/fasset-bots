@@ -15,15 +15,19 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { artifacts } from "../utils/artifacts";
-import { requireEnv } from "../utils/helpers";
+import { requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
+import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { readFileSync } from "fs";
+import { CollateralTokenClass } from "../fasset/AssetManagerTypes";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
 const ATTESTATION_PROVIDER_URLS: string  = requireEnv('ATTESTER_BASE_URLS');
 const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
 const STATE_CONNECTOR_ADDRESS: string  = requireEnv('STATE_CONNECTOR_ADDRESS');
+const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
 export interface RunConfig {
     loopDelay: number;
@@ -75,9 +79,9 @@ export interface AgentSettingsConfig {
     mintingClass1CollateralRatioConstant: number,
     mintingPoolCollateralRatioConstant: number,
     poolExitCollateralRatioConstant: number,
-    buyFAssetByAgentFactorBIPS: number,
+    buyFAssetByAgentFactorBIPS: string,
     poolTopupCollateralRatioConstant: number,
-    poolTopupTokenPriceFactorBIPS: number
+    poolTopupTokenPriceFactorBIPS: string
 }
 
 export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
@@ -113,6 +117,34 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
     };
+}
+
+export async function createAgentBotSettings(context: IAssetBotContext): Promise<AgentBotSettings> {
+    const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+    const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
+        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === agentSettingsConfig.class1FtsoSymbol
+    });
+    if (!class1Token) {
+        throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
+    }
+    const poolToken = (await context.assetManager.getCollateralTokens()).find(token => {
+        return Number(token.tokenClass) === CollateralTokenClass.POOL && token.ftsoSymbol === "NAT"
+    });
+    if (!poolToken) {
+        throw Error(`Cannot find pool collateral token`);
+    }
+    const agentBotSettings: AgentBotSettings = {
+        class1CollateralToken: class1Token.token,
+        feeBIPS: toBN(agentSettingsConfig.feeBIPS),
+        poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
+        mintingClass1CollateralRatioBIPS: toBN(class1Token.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingClass1CollateralRatioConstant),
+        mintingPoolCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingPoolCollateralRatioConstant),
+        poolExitCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolExitCollateralRatioConstant),
+        buyFAssetByAgentFactorBIPS: toBN(agentSettingsConfig.buyFAssetByAgentFactorBIPS),
+        poolTopupCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolTopupCollateralRatioConstant),
+        poolTopupTokenPriceFactorBIPS: toBN(agentSettingsConfig.poolTopupTokenPriceFactorBIPS)
+    };
+    return agentBotSettings;
 }
 
 export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {

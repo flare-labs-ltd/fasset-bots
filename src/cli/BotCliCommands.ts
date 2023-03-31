@@ -2,15 +2,13 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
-import { AgentSettingsConfig, BotConfig, createBotConfig, RunConfig } from "../config/BotConfig";
+import { AgentSettingsConfig, BotConfig, createAgentBotSettings, createBotConfig, RunConfig } from "../config/BotConfig";
 import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
 import { requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
-import { time } from "@openzeppelin/test-helpers";
 import chalk from 'chalk';
-import { CollateralTokenClass } from "../fasset/AssetManagerTypes";
 dotenv.config();
 
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -37,31 +35,7 @@ export class BotCliCommands {
     }
 
     async createAgentVault(): Promise<string | null> {
-        const class1token = (await this.context.assetManager.getCollateralTokens()).find(token => {
-            return token.tokenClass.toNumber() === CollateralTokenClass.POOL && token.ftsoSymbol === this.agentSettingsConfig.class1FtsoSymbol
-        });
-        if (!class1token) {
-            console.error(`Invalid class 1 collateral token ${this.agentSettingsConfig.class1FtsoSymbol}`);
-            return null;
-        }
-        const collateralToken = (await this.context.assetManager.getCollateralTokens()).find(token => {
-            return token.tokenClass.toNumber() === CollateralTokenClass.POOL && token.ftsoSymbol === "NAT"
-        });
-        if (!collateralToken) {
-            console.error(`Cannot find pool collateral token`);
-            return null;
-        }
-        const agentBotSettings: AgentBotSettings = {
-            class1CollateralToken: class1token.token,
-            feeBIPS: toBN(this.agentSettingsConfig.feeBIPS),
-            poolFeeShareBIPS: toBN(this.agentSettingsConfig.poolFeeShareBIPS),
-            mintingClass1CollateralRatioBIPS: class1token.minCollateralRatioBIPS.muln(this.agentSettingsConfig.mintingClass1CollateralRatioConstant),
-            mintingPoolCollateralRatioBIPS: collateralToken.minCollateralRatioBIPS.muln(this.agentSettingsConfig.mintingPoolCollateralRatioConstant),
-            poolExitCollateralRatioBIPS: collateralToken.minCollateralRatioBIPS.muln(this.agentSettingsConfig.poolExitCollateralRatioConstant),
-            buyFAssetByAgentFactorBIPS: toBN(this.agentSettingsConfig.buyFAssetByAgentFactorBIPS),
-            poolTopupCollateralRatioBIPS: collateralToken.minCollateralRatioBIPS.muln(this.agentSettingsConfig.poolTopupCollateralRatioConstant),
-            poolTopupTokenPriceFactorBIPS: toBN(this.agentSettingsConfig.poolTopupTokenPriceFactorBIPS)
-        };
+        const agentBotSettings: AgentBotSettings = await createAgentBotSettings(this.context);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
         console.log(chalk.cyan(`Agent ${agentBot.agent.vaultAddress} was created.`));
         return agentBot.agent.vaultAddress;
@@ -85,18 +59,19 @@ export class BotCliCommands {
         console.log(chalk.cyan(`Agent ${agentVault} ENTERED available list.`));
     }
 
-    async exitAvailableList(agentVault: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
-        await agentBot.agent.exitAvailable();
-        console.log(chalk.cyan(`Agent ${agentVault} EXITED available list.`));
+    async announceExitAvailableList(agentVault: string): Promise<void> {
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
+        console.log(chalk.cyan(`Agent ${agentVault} successfully announced EXIT available list.`));
     }
 
     async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        await agentBot.agent.announceClass1CollateralWithdrawal(amount);
+        const withdrawalAllowedAt =  await agentBot.agent.announceClass1CollateralWithdrawal(amount);
         console.log(chalk.cyan(`Withdraw of ${amount} from agent ${agentVault} has been announced.`));
-        agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
-        agentEnt.waitingForWithdrawalAmount = toBN(amount);
+        agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+        agentEnt.withdrawalAllowedAtAmount = toBN(amount);
     }
 
     async selfClose(agentVault: string, amountUBA: string): Promise<void> {
@@ -107,16 +82,16 @@ export class BotCliCommands {
 
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        agentEnt.waitingForAgentSettingUpdateTimestamp = (await time.latest()).toNumber();
-        agentEnt.waitingForAgentSettingUpdateName = settingName;
+        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
+        agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
+        agentEnt.agentSettingUpdateValidAtName = settingName;
     }
 
     async closeVault(agentVault: string): Promise<void> {
         const agentEnt = await this.botConfig.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
         if (agentInfo.publiclyAvailable) {
-            await this.exitAvailableList(agentVault);
+            await this.announceExitAvailableList(agentVault);
         }
         agentEnt.waitingForDestructionCleanUp = true;
         await this.botConfig.orm.em.persist(agentEnt).flush();
@@ -165,7 +140,7 @@ export class BotCliCommands {
             case 'exit': {
                 const agentVaultExit = args[3];
                 if (agentVaultExit) {
-                    await this.exitAvailableList(agentVaultExit);
+                    await this.announceExitAvailableList(agentVaultExit);
                 } else {
                     console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("exit"));
                 }

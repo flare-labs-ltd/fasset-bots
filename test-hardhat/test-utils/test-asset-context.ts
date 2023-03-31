@@ -252,31 +252,3 @@ export function createTestLiquidationSettings(): LiquidationStrategyImplSettings
 export function createEncodedTestLiquidationSettings() {
     return encodeLiquidationStrategyImplSettings(createTestLiquidationSettings());
 }
-
-export async function createTestAgentBotSettings(context: TestAssetBotContext): Promise<AgentBotSettings> {
-    const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
-    const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === agentSettingsConfig.class1FtsoSymbol
-    });
-    if (!class1Token) {
-        throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
-    }
-    const poolToken = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.POOL && token.ftsoSymbol === "NAT"
-    });
-    if (!poolToken) {
-        throw Error(`Cannot find pool collateral token`);
-    }
-    const agentBotSettings: AgentBotSettings = {
-        class1CollateralToken: class1Token.token,
-        feeBIPS: toBN(agentSettingsConfig.feeBIPS),
-        poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
-        mintingClass1CollateralRatioBIPS: toBN(class1Token.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingClass1CollateralRatioConstant),
-        mintingPoolCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingPoolCollateralRatioConstant),
-        poolExitCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolExitCollateralRatioConstant),
-        buyFAssetByAgentFactorBIPS: toBN(agentSettingsConfig.buyFAssetByAgentFactorBIPS),
-        poolTopupCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolTopupCollateralRatioConstant),
-        poolTopupTokenPriceFactorBIPS: toBN(agentSettingsConfig.poolTopupTokenPriceFactorBIPS)
-    };
-    return agentBotSettings;
-}

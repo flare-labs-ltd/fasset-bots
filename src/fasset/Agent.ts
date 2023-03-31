@@ -88,7 +88,7 @@ export class Agent {
         await this.makeAvailable();
     }
 
-    async announceExitAvailable() {
+    async announceExitAvailable(): Promise<BN> {
         const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
         const args = requiredEventArgs(res, 'AvailableAgentExitAnnounced');
         return args.exitAllowedAt;
@@ -99,8 +99,10 @@ export class Agent {
         return requiredEventArgs(res, 'AvailableAgentExited');
     }
 
-    async announceClass1CollateralWithdrawal(amountWei: BNish) {
-        await this.assetManager.announceClass1CollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
+    async announceClass1CollateralWithdrawal(amountWei: BNish): Promise<BN> {
+        const res = await this.assetManager.announceClass1CollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
+        const args = requiredEventArgs(res, 'Class1WithdrawalAnnounced');
+        return args.withdrawalAllowedAt;
     }
 
     async withdrawClass1Collateral(amountWei: BNish) {
@@ -129,8 +131,10 @@ export class Agent {
         return await this.collateralPool.freeFassetOf(this.vaultAddress);
     }
 
-    async announceDestroy(): Promise<void> {
-        await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
+    async announceDestroy(): Promise<BN> {
+        const res = await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
+        const args = requiredEventArgs(res, 'AgentDestroyAnnounced');
+        return args.destroyAllowedAt;
     }
 
     async destroy(recipient: string = this.ownerAddress) {
@@ -275,8 +279,10 @@ export class Agent {
         return await this.context.assetManager.getAgentInfo(this.agentVault.address);
     }
 
-    async announceAgentSettingUpdate(settingName: string, settingValue: string): Promise<void> {
-        await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
+    async announceAgentSettingUpdate(settingName: string, settingValue: string): Promise<BN> {
+        const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
+        const args = requiredEventArgs(res, 'AgentSettingChangeAnnounced');
+        return args.validAt;
     }
 
     async executeAgentSettingUpdate(settingName: string): Promise<void> {

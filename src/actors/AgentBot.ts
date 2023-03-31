@@ -179,46 +179,41 @@ export class AgentBot {
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            const settings = await this.context.assetManager.getSettings();
-            if (agentEnt.waitingForDestructionTimestamp > 0) {
-                const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForDestructionTimestamp));
+            if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (waitedTime.lt(toBN(latestTimestamp))) {
+                if (agentEnt.waitingForDestructionTimestamp.lt(toBN(latestTimestamp))) {
                     await this.agent.destroy();
-                    agentEnt.waitingForDestructionTimestamp = 0;
+                    agentEnt.waitingForDestructionTimestamp = BN_ZERO;
                     await this.handleAgentDestruction(em, agentEnt.vaultAddress);
                 }
             }
-            if (agentEnt.waitingForWithdrawalTimestamp > 0) {
-                const waitedTime = toBN(settings.withdrawalWaitMinSeconds).add(toBN(agentEnt.waitingForWithdrawalTimestamp));
+            if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (waitedTime.lt(toBN(latestTimestamp))) {
-                    await this.agent.withdrawClass1Collateral(agentEnt.waitingForWithdrawalAmount);
-                    agentEnt.waitingForWithdrawalTimestamp = 0;
-                    agentEnt.waitingForWithdrawalAmount = BN_ZERO;
+                if (agentEnt.withdrawalAllowedAtTimestamp.lt(toBN(latestTimestamp))) {
+                    await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
+                    agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+                    agentEnt.withdrawalAllowedAtAmount = BN_ZERO;
                 }
             }
-            if (agentEnt.waitingForAgentSettingUpdateTimestamp > 0) {
-                const settingsName: string = agentEnt.waitingForAgentSettingUpdateName;
-                let timeToWait: BN = BN_ZERO;
-                if (settingsName === "feeBIPS" || settingsName == "poolFeeShareBIPS" || settingsName == "buyFAssetByAgentFactorBIPS") {
-                    timeToWait = settings.agentFeeChangeTimelockSeconds;
-                } else {
-                    timeToWait = settings.agentCollateralRatioChangeTimelockSeconds;
-                }
-                const waitedTime = toBN(timeToWait).add(toBN(agentEnt.waitingForAgentSettingUpdateTimestamp));
+            if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (waitedTime.lt(toBN(latestTimestamp))) {
-                    await this.agent.executeAgentSettingUpdate(agentEnt.waitingForAgentSettingUpdateName);
-                    agentEnt.waitingForAgentSettingUpdateTimestamp = 0;
-                    agentEnt.waitingForAgentSettingUpdateName = "";
+                if (agentEnt.agentSettingUpdateValidAtTimestamp.lt(toBN(latestTimestamp))) {
+                    await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
+                    agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
+                    agentEnt.agentSettingUpdateValidAtName = "";
                 }
             }
-            if (agentEnt.waitingForDestructionCleanUp) {
+            if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
+                const latestTimestamp = await this.latestBlockTimestamp();
+                if (agentEnt.exitAvailableAllowedAtTimestamp.lt(toBN(latestTimestamp))) {
+                    await this.agent.exitAvailable();
+                    agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+                }
+            } else if (agentEnt.waitingForDestructionCleanUp) {
                 const agentInfo = await this.agent.getAgentInfo();
                 if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
-                    await this.agent.announceDestroy();
-                    agentEnt.waitingForDestructionTimestamp = await this.latestBlockTimestamp();
+                    const destroyAllowedAt = await this.agent.announceDestroy();
+                    agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
                     agentEnt.waitingForDestructionCleanUp = false;
                 }
             }

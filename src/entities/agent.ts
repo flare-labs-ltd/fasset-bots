@@ -30,20 +30,23 @@ export class AgentEntity {
     @Property()
     waitingForDestructionCleanUp: boolean = false;
 
-    @Property()
-    waitingForDestructionTimestamp: number = 0;
-
-    @Property()
-    waitingForAgentSettingUpdateTimestamp: number = 0;
-
-    @Property()
-    waitingForAgentSettingUpdateName: string = "";
-
-    @Property()
-    waitingForWithdrawalTimestamp: number = 0;
+    @Property({ type: BNType })
+    waitingForDestructionTimestamp: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    waitingForWithdrawalAmount: BN = BN_ZERO;
+    agentSettingUpdateValidAtTimestamp: BN = BN_ZERO;
+
+    @Property()
+    agentSettingUpdateValidAtName: string = "";
+
+    @Property({ type: BNType })
+    withdrawalAllowedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    withdrawalAllowedAtAmount: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
