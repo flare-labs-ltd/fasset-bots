@@ -2,7 +2,7 @@ import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { createTestAssetContext } from "../../test-utils/test-asset-context";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { AMG_NATWEI_PRICE_SCALE, convertAmgToNATWei, convertAmgToUBA, convertLotsToAMG, convertLotsToUBA, convertNATWeiToAMG, convertUBAToAmg, convertUBAToLots, convertUBAToNATWei, lotSize } from "../../../src/fasset/Conversions";
+import { AMG_TOKENWEI_PRICE_SCALE, convertAmgToTokenWei, convertAmgToUBA, convertLotsToAMG, convertLotsToUBA, convertUBAToAmg, convertUBAToLots, convertUBAToTokenWei, lotSize, NAT_WEI } from "../../../src/fasset/Conversions";
 import { expect } from "chai";
 import { toBN, toBNExp } from "../../../src/utils/helpers";
 
@@ -59,24 +59,17 @@ describe("Conversions unit tests", async () => {
         expect(uba).to.eq(expected);
     });
 
-    it("Should convert amg to NAT wei", async () => {
-        const amg = 5;
-        const NATWei = Number(convertAmgToNATWei(amg, amgToNATWeiPrice));
-        const expected = Number(toBN(amg).mul(toBN(amgToNATWeiPrice)).div(AMG_NATWEI_PRICE_SCALE));
-        expect(NATWei).to.eq(expected);
-    });
-
     it("Should convert NAT wei to amg", async () => {
         const NATWei = toBNExp(12.5, 12);
-        const amg = Number(convertNATWeiToAMG(NATWei,amgToNATWeiPrice));
-        const expected = Number(toBN(NATWei).mul(AMG_NATWEI_PRICE_SCALE).div(toBN(amgToNATWeiPrice)));
+        const amg = Number(convertAmgToTokenWei(NATWei, amgToNATWeiPrice));
+        const expected = Number(toBN(NATWei).mul(amgToNATWeiPrice).div(toBN(AMG_TOKENWEI_PRICE_SCALE)));
         expect(amg).to.eq(expected);
     });
 
     it("Should convert uba to NAT wei", async () => {
         const uba = 5;
-        const NATWei = Number(convertUBAToNATWei(settings, uba, amgToNATWeiPrice));
-        const expected = Number(convertAmgToNATWei(convertUBAToAmg(settings, uba), amgToNATWeiPrice))
+        const NATWei = Number(convertUBAToTokenWei(settings, uba, amgToNATWeiPrice));
+        const expected = Number(convertAmgToTokenWei(convertUBAToAmg(settings, uba), amgToNATWeiPrice))
         expect(NATWei).to.eq(expected);
     });
 

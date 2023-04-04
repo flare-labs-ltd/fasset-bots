@@ -48,7 +48,3 @@ export function convertTokenWeiToAMG(valueNATWei: BNish, amgToTokenWeiPrice: BNi
 export function convertUBAToTokenWei(settings: AssetManagerSettings, valueUBA: BNish, amgToNATWeiPrice: BNish): BN {
     return convertAmgToTokenWei(convertUBAToAmg(settings, valueUBA), amgToNATWeiPrice);
 }
-
-export function convertAmgToNATWei(valueAMG: BNish, amgToNATWeiPrice: BNish) {
-    return convertAmgToTokenWei(valueAMG, amgToNATWeiPrice);
-}
