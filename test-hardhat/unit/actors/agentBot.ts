@@ -300,17 +300,17 @@ describe("Agent bot unit tests", async () => {
     it("Should destruct agent", async () => {
         const agentBot = await createAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await agentBot.agent.announceDestroy();
-        agentEnt.waitingForDestructionTimestamp = (await time.latest()).toNumber();
+        const destroyAllowedAt = await agentBot.agent.announceDestroy();
+        agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
         const skipTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
         await time.increase(skipTime);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfo.status).toNumber()).to.eq(AgentStatus.DESTROYING);
-        expect(agentEnt.waitingForDestructionTimestamp).to.be.gt(0);
+        expect(agentEnt.waitingForDestructionTimestamp.gtn(0)).to.be.true;
         await time.increase(skipTime);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
+        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
     });
 
     it("Should withdraw collateral", async () => {
@@ -319,18 +319,19 @@ describe("Agent bot unit tests", async () => {
         const amount = toBN(10000);
         await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
-        await agentBot.agent.announceClass1CollateralWithdrawal(amount);
-        agentEnt.waitingForWithdrawalTimestamp = (await time.latest()).toNumber();
-        agentEnt.waitingForWithdrawalAmount = amount;
+        const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
+        agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+        agentEnt.withdrawalAllowedAtAmount = amount;
         await orm.em.persist(agentEnt).flush();
         const skipTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
         await time.increase(skipTime);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForWithdrawalTimestamp).to.be.gt(0);
+        expect(agentEnt.withdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
         expect(((await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress)).eq(amount))).to.be.true;
         await time.increase(skipTime);
+        expect(agentEnt.withdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
+        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
         expect((await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress)).eqn(0)).to.be.true;
     });
 
@@ -342,21 +343,21 @@ describe("Agent bot unit tests", async () => {
         await time.increase(skipTime);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp).to.be.gt(0);
+        expect(agentEnt.waitingForDestructionTimestamp.gtn(0)).to.be.true;
     });
 
     it("Should run handleAgentsWaitingsAndCleanUp and change nothing", async () => {
         const agentBot = await createAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
-        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
-        expect(agentEnt.waitingForWithdrawalAmount.eq(BN_ZERO)).to.be.true;
+        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount.eqn(0)).to.be.true;
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp).to.eq(0);
-        expect(agentEnt.waitingForWithdrawalTimestamp).to.eq(0);
-        expect(agentEnt.waitingForWithdrawalAmount.eq(BN_ZERO)).to.be.true;
+        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount.eqn(0)).to.be.true;
     });
 
 });

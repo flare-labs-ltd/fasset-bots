@@ -65,9 +65,9 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNull<T>(x: T): NonNullable<T> {
+export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
     if (x != null) return x as NonNullable<T>;
-    throw new Error("Value is null or undefined");
+    throw new Error(errorMessage ?? "Value is null or undefined");
 }
 
 /**
