@@ -1,10 +1,10 @@
-import { expect } from "chai";
 import { ORM } from "../../../src/config/orm";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-const chai = require('chai');
-chai.use(require('chai-as-promised'));
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;

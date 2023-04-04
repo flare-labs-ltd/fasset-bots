@@ -1,31 +1,24 @@
 import { expect } from "chai";
 import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
-import { EM, ORM } from "../../../src/config/orm";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { MAX_UINT256, toBN, toBNExp } from "../../../src/utils/helpers";
-import { Notifier } from "../../../src/utils/Notifier";
+import { MAX_UINT256, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAssetContext } from "../../test-utils/test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/test-asset-context";
+import { createAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
 
 describe("Tracked agent state tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext; // due to ftsoManagerMock's mockFinalizePriceEpoch()
+    let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let agentBot: AgentBot;
     let trackedAgentState: TrackedAgentState;
     let trackedState: TrackedState;
-
-    async function createTestAgentBot(rootEm: EM, context: IAssetBotContext, address: string): Promise<AgentBot> {
-        const agentBot = await AgentBot.create(rootEm, context, address, new Notifier());
-        await agentBot.agent.depositCollateral(toBNExp(100_000_000, 18));
-        return agentBot;
-    }
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -36,7 +29,10 @@ describe("Tracked agent state tests", async () => {
     });
 
     beforeEach(async () => {
-        agentBot = await createTestAgentBot(orm.em, context, ownerAddress);
+        agentBot = await createAgentBot(context, orm, ownerAddress);
+        const amount = toBN(10000);
+        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
+        await agentBot.agent.depositClass1Collateral(amount);
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize();

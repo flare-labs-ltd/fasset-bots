@@ -15,12 +15,12 @@ import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { requireEnv, requireNotNull, toBN } from "../../src/utils/helpers";
+import { requireEnv, requireNotNull } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./test-asset-context";
-import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import fs from "fs";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
