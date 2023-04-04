@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ORM } from "../../../src/config/orm";
-import { BN_ZERO, checkedCast, requireNotNull, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -18,9 +18,7 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { mintClass1ToOwner } from "../../test-utils/helpers";
-import { CollateralTokenClass } from "../../../src/fasset/AssetManagerTypes";
-import { IERC20Instance } from "../../../typechain-truffle";
+import { mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -37,15 +35,6 @@ describe("Bot cli commands unit tests", async () => {
     let minterAddress: string;
     let botCliCommands: BotCliCommands;
     let chain: MockChain;
-
-    async function mintAndDepositClass1ToOwner(vaultAddress: string): Promise<IERC20Instance> {
-        const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-            return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === botCliCommands.agentSettingsConfig.class1FtsoSymbol
-        });
-        const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
-        await mintClass1ToOwner(vaultAddress, toBN(depositAmount), class1Token!.token, ownerAddress);
-        return class1TokenContract;
-    }
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -90,17 +79,6 @@ describe("Bot cli commands unit tests", async () => {
             notifier: new Notifier(),
             addressUpdater: ""
         };
-        botCliCommands.agentSettingsConfig = {
-            class1FtsoSymbol: "USDC",
-            feeBIPS: "1000",
-            poolFeeShareBIPS: "4000",
-            mintingClass1CollateralRatioConstant: 1.2,
-            mintingPoolCollateralRatioConstant: 1.2,
-            poolExitCollateralRatioConstant: 1.3,
-            buyFAssetByAgentFactorBIPS: "9000",
-            poolTopupCollateralRatioConstant: 1.1,
-            poolTopupTokenPriceFactorBIPS: "8000"
-        }
     });
 
     afterEach(function () {
@@ -115,7 +93,7 @@ describe("Bot cli commands unit tests", async () => {
     it("Should deposit to agent vault", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
-        const class1TokenContract = await mintAndDepositClass1ToOwner(vaultAddress!);
+        const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         const collateral = await class1TokenContract.balanceOf(vaultAddress!);
         expect(collateral.toString()).to.eq(depositAmount);
@@ -134,7 +112,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         // deposit to vault
-        const class1TokenContract = await mintAndDepositClass1ToOwner(vaultAddress!);
+        const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         const collateral = await class1TokenContract.balanceOf(vaultAddress!);
         expect(collateral.toString()).to.eq(depositAmount);
@@ -155,7 +133,7 @@ describe("Bot cli commands unit tests", async () => {
     it("Should deposit and withdraw from agent vault", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
-        const class1TokenContract = await mintAndDepositClass1ToOwner(vaultAddress!);
+        const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         const collateralBefore = await class1TokenContract.balanceOf(vaultAddress!);
         expect(collateralBefore.toString()).to.eq(depositAmount);
@@ -167,7 +145,7 @@ describe("Bot cli commands unit tests", async () => {
 
     it.skip("Should self close", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
-        await mintAndDepositClass1ToOwner(vaultAddress!);
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
@@ -192,7 +170,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(agentEnt1.waitingForDestructionCleanUp).to.be.true;
 
         const vaultAddress2 = await botCliCommands.createAgentVault();
-        await mintAndDepositClass1ToOwner(vaultAddress2!);
+        await mintAndDepositClass1ToOwner(context, vaultAddress2!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress2!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress2!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress2!);
@@ -220,7 +198,7 @@ describe("Bot cli commands unit tests", async () => {
         const spyDeposit = spy.on(botCliCommands, "depositToVault");
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
-        await mintAndDepositClass1ToOwner(vaultAddress!);
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.run(["", "", "deposit", vaultAddress!, depositAmount]);
         expect(spyDeposit).to.be.called.once;
     });
@@ -235,7 +213,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         // deposit to vault
-        const class1TokenContract = await mintAndDepositClass1ToOwner(vaultAddress!);
+        const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         const collateral = await class1TokenContract.balanceOf(vaultAddress!);
@@ -267,7 +245,7 @@ describe("Bot cli commands unit tests", async () => {
     it("Should run commands 'deposit' and 'withdraw", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
-        const class1TokenContract = await mintAndDepositClass1ToOwner(vaultAddress!);
+        const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.run(["", "", "deposit", vaultAddress!, depositAmount]);
         const collateralBefore = await class1TokenContract.balanceOf(vaultAddress!);
         expect(collateralBefore.toString()).to.eq(depositAmount);
@@ -291,7 +269,7 @@ describe("Bot cli commands unit tests", async () => {
 
     it.skip("Should run command 'selfClose'", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
-        await mintAndDepositClass1ToOwner(vaultAddress!);
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
@@ -322,7 +300,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(agentEnt1.waitingForDestructionCleanUp).to.be.true;
 
         const vaultAddress2 = await botCliCommands.createAgentVault();
-        await mintAndDepositClass1ToOwner(vaultAddress2!);
+        await mintAndDepositClass1ToOwner(context, vaultAddress2!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress2!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress2!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress2!);
@@ -338,3 +316,4 @@ describe("Bot cli commands unit tests", async () => {
     });
 
 });
+
