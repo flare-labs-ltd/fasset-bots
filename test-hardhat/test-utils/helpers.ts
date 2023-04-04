@@ -19,7 +19,9 @@ import { requireEnv, requireNotNull, toBN } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
-import { TestAssetBotContext } from "./test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "./test-asset-context";
+import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import fs from "fs";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
@@ -72,4 +74,11 @@ export async function mintAndDepositClass1ToOwner(context: IAssetContext, vaultA
     const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
     await mintClass1ToOwner(vaultAddress, depositAmount, class1Token!.token, ownerAddress);
     return class1TokenContract;
+}
+
+export async function createTestContext(governance: string, setMaxTrustedPriceAgeSeconds: number) {
+    const parameterFilename = `../fasset/deployment/config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
+    const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
+    parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
+    return  await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
 }

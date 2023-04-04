@@ -1,9 +1,8 @@
 import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
-import fs, { readFileSync } from "fs";
-import { AgentSettingsConfig } from "../../src/config/BotConfig";
+import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { AgentBotSettings, IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
 import { NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -12,7 +11,7 @@ import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { artifacts } from "../../src/utils/artifacts";
-import { DAYS, HOURS, MINUTES, Modify, requireEnv, toBIPS, toBN, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { DAYS, HOURS, MINUTES, Modify, requireEnv, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";
@@ -34,9 +33,11 @@ const ERC20Mock = artifacts.require("ERC20Mock");
 const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMock');
 
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
-const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
 export type TestFtsos = Record<'nat' | 'usdc' | 'usdt' | 'asset', FtsoMockInstance>;
+export const ftsoNatInitialPrice = 0.42;
+export const ftsoUsdcInitialPrice = 1.01;
+export const ftsoUsdtInitialPrice = 0.99;
 
 const nativeChainInfo: NativeChainInfo = {
     finalizationBlocks: 0,
@@ -234,9 +235,9 @@ export async function createFtsoMock(ftsoRegistry: FtsoRegistryMockInstance, fts
 
 export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, assetChainInfo: TestChainInfo): Promise<TestFtsos> {
     return {
-        nat: await createFtsoMock(ftsoRegistry, "NAT", 0.42),
-        usdc: await createFtsoMock(ftsoRegistry, "USDC", 1.01),
-        usdt: await createFtsoMock(ftsoRegistry, "USDT", 0.99),
+        nat: await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice),
+        usdc: await createFtsoMock(ftsoRegistry, "USDC", ftsoUsdcInitialPrice),
+        usdt: await createFtsoMock(ftsoRegistry, "USDT", ftsoUsdtInitialPrice),
         asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
     };
 }

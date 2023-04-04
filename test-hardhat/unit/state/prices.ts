@@ -1,20 +1,16 @@
 import { expect } from "chai";
 import { AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
 import { Prices } from "../../../src/state/Prices";
-import { sleep, toBNExp } from "../../../src/utils/helpers";
+import { sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
-import fs from "fs";
+import { TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { createTestContext } from "../../test-utils/helpers";
+import { TokenPrice } from "../../../src/state/TokenPrice";
 
 const setMaxTrustedPriceAgeSeconds = 1;
-
-async function createContext(governance: string, setMaxTrustedPriceAgeSeconds: Number) {
-    const parameterFilename = `../fasset/deployment/config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
-    const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
-    return  await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
-}
+const class1TokenKey = "usdc";
+const natFtsoPrice = 100;
+const assetFtsoPrice = toBNExp(10, 5);
 
 describe("Prices tests", async () => {
     let accounts: string[];
@@ -23,47 +19,45 @@ describe("Prices tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        context = await createContext(accounts[0], setMaxTrustedPriceAgeSeconds);
+        context = await createTestContext(accounts[0], setMaxTrustedPriceAgeSeconds);
         settings = await context.assetManager.getSettings();
     });
 
     it("Should create Prices object", async () => {
-        await context.natFtso.setCurrentPrice(100, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        const { 0: natPrice, 1: natTimestamp } = await context.natFtso.getCurrentPrice();
-        const { 0: assetPrice, 1: assetTimestamp } = await context.assetFtso.getCurrentPrice();
-        const prices = new Prices(settings, natPrice, natTimestamp, assetPrice, assetTimestamp);
+        await context.natFtso.setCurrentPrice(natFtsoPrice, 0);
+        await context.assetFtso.setCurrentPrice(assetFtsoPrice, 0);
+        const natUSD = await TokenPrice.forFtso(context.natFtso);
+        const assetUSD = await TokenPrice.forFtso(context.assetFtso);
+        const stablecoinUSD = await TokenPrice.forFtso(context.ftsos[class1TokenKey]);
+        const class1Address = context.stablecoins[class1TokenKey].address;
+        const prices = new Prices(settings, context.collaterals, natUSD, assetUSD, { [class1Address]: stablecoinUSD });
         expect(typeof prices).to.eq("object");
-        expect(prices.toString()).to.eq("(nat=0.001$, asset=10.000$, asset/nat=10000.000)");
-        expect(prices.natUSD).to.eq(0.001);
-        expect(prices.assetUSD).to.eq(10);
-        expect(prices.assetNat).to.eq(10000);
+        expect(prices.natUSD.price.eqn(natFtsoPrice)).to.be.true;
+        expect(prices.assetUSD.price.eq(assetFtsoPrice)).to.be.true;
+        expect(Object.prototype.hasOwnProperty.call(prices.amgToClass1Wei, class1Address)).to.be.true;
     });
 
     it("Should refresh Prices", async () => {
-        await context.natFtso.setCurrentPrice(100, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        const { 0: natPrice, 1: natTimestamp } = await context.natFtso.getCurrentPrice();
-        const { 0: assetPrice, 1: assetTimestamp } = await context.assetFtso.getCurrentPrice();
-        const prices = new Prices(settings, natPrice, natTimestamp, assetPrice, assetTimestamp);
+        await context.natFtso.setCurrentPrice(natFtsoPrice, 0);
+        const natUSD = await TokenPrice.forFtso(context.natFtso);
         await sleep(setMaxTrustedPriceAgeSeconds * 1000);
-        const refresh = prices.fresh(prices, setMaxTrustedPriceAgeSeconds);
+        const refresh = natUSD.fresh(natUSD, toBN(setMaxTrustedPriceAgeSeconds));
         expect(refresh).to.be.true;
     });
 
     it("Should get Prices", async () => {
-        await context.natFtso.setCurrentPrice(100, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.natFtso.setCurrentPriceFromTrustedProviders(100, 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
-        const prices = await Prices.getPrices(context, settings);
-        expect(prices.length).to.eq(2);
-        expect(prices[0].natUSD).to.eq(0.001);
-        expect(prices[0].assetUSD).to.eq(10);
-        expect(prices[0].assetNat).to.eq(10000);
-        expect(prices[1].natUSD).to.eq(0.001);
-        expect(prices[1].assetUSD).to.eq(10);
-        expect(prices[1].assetNat).to.eq(10000);
+        await context.natFtso.setCurrentPrice(natFtsoPrice, 0);
+        await context.assetFtso.setCurrentPrice(assetFtsoPrice, 0);
+        await context.natFtso.setCurrentPriceFromTrustedProviders(natFtsoPrice, 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(assetFtsoPrice, 0);
+        const natUSD = await TokenPrice.forFtso(context.natFtso);
+        const natUSDTrusted = await TokenPrice.forFtsoTrusted(context.natFtso, toBN(setMaxTrustedPriceAgeSeconds), natUSD);
+        const assetUSD = await TokenPrice.forFtso(context.assetFtso);
+        const assetUSDTrusted = await TokenPrice.forFtsoTrusted(context.assetFtso, toBN(setMaxTrustedPriceAgeSeconds), assetUSD);
+        expect(natUSD.price.eqn(natFtsoPrice)).to.be.true;
+        expect(natUSDTrusted.price.eqn(natFtsoPrice)).to.be.true;
+        expect(assetUSD.price.eq(assetFtsoPrice)).to.be.true;
+        expect(assetUSDTrusted.price.eq(assetFtsoPrice)).to.be.true;
     });
 
 });
