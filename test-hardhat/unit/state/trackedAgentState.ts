@@ -37,6 +37,7 @@ describe("Tracked agent state tests", async () => {
         trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, agentBot.agent.underlyingAddress);
+        trackedAgentState.initialize(await agentBot.agent.getAgentInfo());
     });
 
     it("Should return collateral ratio", async () => {
