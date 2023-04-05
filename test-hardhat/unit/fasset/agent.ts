@@ -6,20 +6,17 @@ import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/te
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { Agent } from "../../../src/fasset/Agent";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { Minter } from "../../../src/mock/Minter";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
-import { Redeemer } from "../../../src/mock/Redeemer";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createAgent, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createAgent, createAgentAndMakeAvailable, createMinter, createRedeemer, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 use(spies);
 
-const minterUnderlying: string = "MINTER_ADDRESS";
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
-const redeemerUnderlying: string = "REDEEMER_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
 const withdraw = toBNExp(1, 18);
+const mintAmount = toBNExp(10_000, 6);
 
 describe("Agent unit tests", async () => {
     let accounts: string[];
@@ -158,13 +155,9 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should self close", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         // execute minting
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const minter = await createMinter(context, minterAddress, chain, mintAmount); // lot is 1000 XRP
         const crt = await minter.reserveCollateral(agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -183,22 +176,14 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should exit available", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const res = await agent.exitAvailable();
         expect(res.agentVault).to.eq(agent.agentVault.address);
     });
 
     it("Should execute minting", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 3;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const txHash = await minter.performMintingPayment(crt);
@@ -209,13 +194,9 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should unstick minting", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const spyAgent = spy.on(agent.assetManager, 'unstickMinting');
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 2;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -227,12 +208,8 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should execute mintingPaymentDefault", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 2;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
@@ -242,20 +219,16 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should mint, redeem and confirm active redemption payment", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const spyAgent = spy.on(agent.assetManager, 'confirmRedemptionPayment');
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 1;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         chain.mine(chain.finalizationBlocks + 1);
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const redeemer = await createRedeemer(context, redeemerAddress);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -266,19 +239,15 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 1;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
         chain.mine(chain.finalizationBlocks + 1);
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const redeemer = await createRedeemer(context, redeemerAddress);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -300,20 +269,16 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const spyAgent = spy.on(agent.assetManager, 'confirmRedemptionPayment');
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 1;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const tx1Hash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.executeMinting(crt, tx1Hash, minter.underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const redeemer = await createRedeemer(context, redeemerAddress);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -336,19 +301,15 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should not perform redemption - failed underlying payment (not redeemer's address)", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 1;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const tx1Hash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, tx1Hash);
         chain.mine(chain.finalizationBlocks + 1);
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const redeemer = await createRedeemer(context, redeemerAddress);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -370,19 +331,15 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should not perform redemption - failed underlying payment (blocked)", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const minter = await createMinter(context, minterAddress, chain, mintAmount);
         const lots = 1;
         const crt = await minter.reserveCollateral(agent.vaultAddress, lots);
         const tx1Hash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, tx1Hash);
         chain.mine(chain.finalizationBlocks + 1);
-        const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+        const redeemer = await createRedeemer(context, redeemerAddress);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -398,14 +355,10 @@ describe("Agent unit tests", async () => {
     });
 
     it("Should self mint", async () => {
-        const agent = await createAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
-        await agent.makeAvailable();
+        const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const lots = 3;
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
-        context.chain.mint(randomUnderlyingAddress, toBNExp(10_000, 6));
+        context.chain.mint(randomUnderlyingAddress, mintAmount);
         const amountUBA = convertLotsToUBA(await context.assetManager.getSettings(), lots);
         const selfMint = await agent.selfMint(randomUnderlyingAddress, amountUBA, lots);
         assert(selfMint.mintedAmountUBA.toString(), amountUBA.toString());

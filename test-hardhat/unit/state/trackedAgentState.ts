@@ -36,7 +36,7 @@ describe("Tracked agent state tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize();
-        trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, ownerAddress, agentBot.agent.underlyingAddress);
+        trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, agentBot.agent.underlyingAddress);
     });
 
     it("Should return collateral ratio", async () => {

@@ -1,8 +1,6 @@
 import { expect } from "chai";
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
-import { checkedCast } from "../../../src/utils/helpers";
 import { createTestAssetContext } from "../../test-utils/test-asset-context";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -11,7 +9,6 @@ describe("Redeemer unit tests", async () => {
     let accounts: string[];
     let context: IAssetBotContext;
     let redeemerAddress: string;
-    let chain: MockChain;
     const redeemerUnderlyingAddress = "REDEEMER_ADDRESS";
 
     before(async () => {
@@ -20,7 +17,6 @@ describe("Redeemer unit tests", async () => {
 
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
         redeemerAddress = accounts[5];
     });
 

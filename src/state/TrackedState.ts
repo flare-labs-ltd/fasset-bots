@@ -71,7 +71,7 @@ export class TrackedState {
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    this.createAgent(event.args.agentVault, event.args.owner, event.args.underlyingAddress);
+                    this.createAgent(event.args.agentVault, event.args.underlyingAddress);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
                     // } else if (eventIs(event, this.context.wNat, 'Transfer')) {// TODO do we need wNat
@@ -173,13 +173,13 @@ export class TrackedState {
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {
         const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
-        const agent = this.createAgent(vaultAddress, agentInfo.ownerAddress, agentInfo.underlyingAddressString);
+        const agent = this.createAgent(vaultAddress, agentInfo.underlyingAddressString);
         agent.initialize(agentInfo);
         return agent;
     }
 
-    createAgent(vaultAddress: string, ownerAddress: string, underlyingAddress: string): TrackedAgentState {
-        const agent = new TrackedAgentState(this, vaultAddress, ownerAddress, underlyingAddress);
+    createAgent(vaultAddress: string, underlyingAddress: string): TrackedAgentState {
+        const agent = new TrackedAgentState(this, vaultAddress, underlyingAddress);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
         return agent;

@@ -11,7 +11,7 @@ import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { artifacts } from "../../src/utils/artifacts";
-import { DAYS, HOURS, MINUTES, Modify, requireEnv, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { DAYS, HOURS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";

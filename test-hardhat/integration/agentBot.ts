@@ -5,18 +5,15 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp, toStringExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { disableMccTraceManager } from "../test-utils/helpers";
+import { createAgentBot, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
-import { AgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import { Notifier } from "../../src/utils/Notifier";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
@@ -26,6 +23,8 @@ const rewiredAgentBotClass = rewiredAgentBot.__get__("AgentBot");
 
 const minterUnderlying: string = "MINTER_ADDRESS";
 const redeemerUnderlying: string = "REDEEMER_ADDRESS";
+
+const depositAmount = toStringExp(100_000_000, 18);
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
@@ -39,11 +38,6 @@ describe("Agent bot tests", async () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
-    let notifier: Notifier;
-
-    async function getAgentInfo(context: IAssetBotContext, vaultAddress: string): Promise<AgentInfo> {
-        return await context.assetManager.getAgentInfo(vaultAddress);
-    }
 
     before(async () => {
         disableMccTraceManager();
@@ -59,10 +53,11 @@ describe("Agent bot tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
         settings = await context.assetManager.getSettings();
-        notifier = new Notifier();
-        agentBot = await AgentBot.create(orm.em, context, ownerAddress, notifier);
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
+        agentBot = await createAgentBot(context, orm, ownerAddress);
+        await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, depositAmount, ownerAddress);
+        await agentBot.agent.depositClass1Collateral(depositAmount);
+        await agentBot.agent.buyCollateralPoolTokens(depositAmount);
+        await agentBot.agent.makeAvailable();
         minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
         chain.mine(chain.finalizationBlocks + 1);
         redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
@@ -256,13 +251,14 @@ describe("Agent bot tests", async () => {
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
-        const startBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
-        const startBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
+        const startBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
+        const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         const res = await redeemer.redemptionPaymentDefault(rdReq);
-        const endBalanceRedeemer = await context.wnat.balanceOf(redeemer.address);
-        const endBalanceAgent = await context.wnat.balanceOf(agentBot.agent.agentVault.address);
-        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedCollateralWei));
-        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedCollateralWei));
+        const endBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
+        const endBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
+        //TODO
+        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedPoolCollateralWei));
+        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedPoolCollateralWei));
         // check if redemption is done
         await agentBot.runStep(orm.em);
         orm.em.clear();
@@ -353,10 +349,10 @@ describe("Agent bot tests", async () => {
         await time.increase(settings.confirmationByOthersAfterSeconds);
         chain.mine(chain.finalizationBlocks + 1);
         const someAddress = accounts[10];
-        const startBalance = await context.wnat.balanceOf(someAddress);
+        const startBalance = await context.wNat.balanceOf(someAddress);
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
-        const endBalance = await context.wnat.balanceOf(someAddress);
+        const endBalance = await context.wNat.balanceOf(someAddress);
         assert.equal(String(endBalance.sub(startBalance)), String(settings.confirmationByOthersRewardNATWei));
     });
 
@@ -382,13 +378,13 @@ describe("Agent bot tests", async () => {
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
-        const status1 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status1 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status1, AgentStatus.NORMAL);
         await context.assetFtso.setCurrentPrice(toBNExp(3521, 50), 0);
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check agent status
-        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
     });
 
@@ -414,7 +410,7 @@ describe("Agent bot tests", async () => {
         const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
-        const status1 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status1 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status1, AgentStatus.NORMAL);
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
@@ -422,7 +418,7 @@ describe("Agent bot tests", async () => {
         // start liquidation
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         // check agent status
-        const status2 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // change price back
         const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
@@ -430,7 +426,7 @@ describe("Agent bot tests", async () => {
         // agent ends liquidation
         await agentBot.agent.endLiquidation();
         // check agent status
-        const status3 = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status3 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status3, AgentStatus.NORMAL);
     });
 
@@ -455,22 +451,22 @@ describe("Agent bot tests", async () => {
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
         // expect cr to be less than required cr
-        const crBIPSBefore = (await getAgentInfo(context, agentBot2.agent.vaultAddress)).collateralRatioBIPS;
+        const crBIPSBefore = (await agentBot2.agent.getAgentInfo()).class1CollateralRatioBIPS;
         const crRequiredBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         expect(Number(crBIPSBefore)).lt(Number(crRequiredBIPS));
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // remove some native from owner's address
         const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await getAgentInfo(context, agentBot2.agent.vaultAddress), settings);
+        const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await agentBot2.agent.getAgentInfo(), settings);
         const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
         const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
-        const agentBot3 = await AgentBot.create(orm.em, context, ownerAddress2, notifier);
-        await agentBot3.agent.depositCollateral(sub);
+        const agentBot3 = await createAgentBot(context, orm, ownerAddress2);
+        await agentBot3.agent.depositClass1Collateral(sub);
         // check collateral ratio after price changes
         await agentBot2.runStep(orm.em);
         // expect cr to be the same as required cr
-        const crBIPSAfter = (await getAgentInfo(context, agentBot2.agent.vaultAddress)).collateralRatioBIPS;
+        const crBIPSAfter = (await agentBot2.agent.getAgentInfo()).class1CollateralRatioBIPS;
         expect(Number(crBIPSAfter)).eq(Number(crRequiredBIPS));
         // change price
         const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
@@ -484,14 +480,14 @@ describe("Agent bot tests", async () => {
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
         const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress, } as FilterQuery<AgentEntity>);
         // check agent status
-        const status = Number((await getAgentInfo(context, agentBot.agent.vaultAddress)).status);
+        const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.NORMAL);
         // exit available
         await agentBot.agent.exitAvailable();
         // announce agent destruction
         await agentBot.agent.announceDestroy();
         // check agent status
-        const status2 = Number((await getAgentInfo(context, agentBot.agent.vaultAddress)).status);
+        const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
         await time.increase(settings.withdrawalWaitMinSeconds * 2);
@@ -536,7 +532,7 @@ describe("Agent bot tests", async () => {
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
         await agentBot.runStep(orm.em);
-        const status = Number((await getAgentInfo(context, agentBot.agent.agentVault.address)).status);
+        const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.DESTROYING);
     });
 

@@ -12,7 +12,6 @@ export class TrackedAgentState {
     constructor(
         public parent: TrackedState,
         public vaultAddress: string,
-        public ownerAddress: string,
         public underlyingAddress: string
     ) { }
 
@@ -68,6 +67,7 @@ export class TrackedAgentState {
     }
 
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
+        //TODO
         const cr = await this.collateralRatioBIPS();
         const agentStatus = this.status;
         const settings = this.parent.settings;

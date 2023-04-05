@@ -2,7 +2,7 @@ import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
-import { AgentBot } from "../../src/actors/AgentBot";
+import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { AgentSettingsConfig, createAgentBotSettings } from "../../src/config/BotConfig";
@@ -15,17 +15,26 @@ import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { requireEnv, requireNotNull } from "../../src/utils/helpers";
+import { BNish, requireEnv, requireNotNull, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import fs from "fs";
+import { Minter } from "../../src/mock/Minter";
+import { MockChain } from "../../src/mock/MockChain";
+import { Liquidator } from "../../src/actors/Liquidator";
+import { SystemKeeper } from "../../src/actors/SystemKeeper";
+import { Redeemer } from "../../src/mock/Redeemer";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+
+const minterUnderlying: string = "MINTER_ADDRESS";
+const redeemerUnderlying: string = "REDEEMER_ADDRESS";
+const deposit = toBNExp(1_000_000, 18);
 
 export function disableMccTraceManager() {
     TraceManager.enabled = false;
@@ -41,14 +50,22 @@ export async function createAgentBot(context: TestAssetBotContext, orm: ORM, own
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, new Notifier());
 }
 
-export async function mintClass1ToOwner(vaultAddress: string, amount: BN, class1TokenAddress: string, ownerAddress: string): Promise<void> {
+export async function mintClass1ToOwner(vaultAddress: string, amount: BNish, class1TokenAddress: string, ownerAddress: string): Promise<void> {
     const class1Token = await ERC20Mock.at(class1TokenAddress);
     await class1Token.mintAmount(ownerAddress, amount);
     await class1Token.approve(vaultAddress, amount, { from: ownerAddress });
 }
 
-export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
+export async function createChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
     return new Challenger(new ScopedRunner(), address, state, await context.chain.getBlockHeight());
+}
+
+export async function createLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
+    return new Liquidator(new ScopedRunner(), address, state);
+}
+
+export async function createSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
+    return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
 export async function createAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
@@ -63,11 +80,49 @@ export async function createAgent(context: TestAssetBotContext, ownerAddress: st
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export function createAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number) {
+export function createAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number): AgentBotRunner {
     return new AgentBotRunner(contexts, orm, loopDelay, new Notifier());
 }
 
-export async function mintAndDepositClass1ToOwner(context: IAssetContext, vaultAddress: string, depositAmount: BN, ownerAddress: string): Promise<IERC20Instance> {
+export async function createMinter(context: IAssetContext, minterAddress: string, chain: MockChain, amount: BN = deposit): Promise<Minter> {
+    const minter = await Minter.createTest(context, minterAddress, minterUnderlying, amount);
+    chain.mine(chain.finalizationBlocks + 1);
+    return minter;
+}
+
+export async function createRedeemer(context: IAssetContext, redeemerAddress: string) {
+    const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+    return redeemer;
+}
+
+export async function createAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
+    const agent = await createAgent(context, ownerAddress, underlyingAddress);
+    await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
+    await agent.depositClass1Collateral(deposit);
+    await agent.buyCollateralPoolTokens(deposit);
+    await agent.makeAvailable();
+    return agent;
+}
+
+export async function createAgentBAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
+    const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
+    await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
+    await agentB.depositClass1Collateral(deposit);
+    await agentB.buyCollateralPoolTokens(deposit);
+    await agentB.makeAvailable();
+    return agentB;
+}
+
+export async function createAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string) {
+    const agentBot = await createAgentBot(context, orm,  ownerAddress);
+    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
+    await agentBot.agent.depositClass1Collateral(deposit);
+    await agentBot.agent.buyCollateralPoolTokens(deposit);
+    await agentBot.agent.makeAvailable();
+    return agentBot;
+}
+
+export async function mintAndDepositClass1ToOwner(context: IAssetContext, vaultAddress: string, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
     const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
         return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
@@ -81,4 +136,25 @@ export async function createTestContext(governance: string, setMaxTrustedPriceAg
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
     return  await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
+}
+
+export async function createCRAndPerformMinting(minter: Minter, vaultAddress: string, lots: number, chain: MockChain) {
+    const crt = await minter.reserveCollateral(vaultAddress, lots);
+    const txHash0 = await minter.performMintingPayment(crt);
+    chain.mine(chain.finalizationBlocks + 1);
+    return await minter.executeMinting(crt, txHash0);
+}
+
+export async function createCRAndPerformMintingAndRunSteps(minter: Minter, agentBot: AgentBot, lots: number, orm: ORM, chain: MockChain): Promise<void> {
+    const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+    await agentBot.runStep(orm.em);
+    const txHash0 = await minter.performMintingPayment(crt);
+    chain.mine(chain.finalizationBlocks + 1);
+    await minter.executeMinting(crt, txHash0);
+    await agentBot.runStep(orm.em);
+}
+
+export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
+    const agentInfo = await agentBot.agent.getAgentInfo();
+    return Number(agentInfo.status) as AgentStatus;
 }

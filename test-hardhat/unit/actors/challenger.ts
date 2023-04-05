@@ -7,7 +7,7 @@ import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { assertWeb3DeepEqual, createAgentB, createTestChallenger } from "../../test-utils/helpers";
+import { assertWeb3DeepEqual, createAgentB, createChallenger } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 
 const underlyingAddress: string = "AGENT_UNDERLYING";
@@ -50,12 +50,12 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createChallenger(challengerAddress, state, context);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createChallenger(challengerAddress, state, context);
         const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -67,7 +67,7 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createChallenger(challengerAddress, state, context);
         const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
