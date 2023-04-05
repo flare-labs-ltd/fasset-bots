@@ -74,6 +74,8 @@
       "test:coverage": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration; yarn cover:report",
       "testHH": "yarn hardhat test --no-compile",
       "testHH_all": "env TEST_PATH=\"./test-hardhat/{unit,integration}\" yarn hardhat test --no-compile",
+      "testHH_all:unit": "env TEST_PATH=\"./test-hardhat/unit\" yarn hardhat test --no-compile",
+      "testHH_all:integration": "env TEST_PATH=\"./test-hardhat/integration\" yarn hardhat test --no-compile",
       "testHH:coverage": "yarn nyc yarn testHH_all",
       "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
       "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e",
