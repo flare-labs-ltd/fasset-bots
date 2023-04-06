@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ORM } from "../../../src/config/orm";
-import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands, listUsageAndCommands } from "../../../src/cli/BotCliCommands";
-import { Minter } from "../../../src/mock/Minter";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { AgentEntity } from "../../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core";
@@ -18,11 +17,10 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
-const minterUnderlying: string = "MINTER_ADDRESS";
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require('StateConnectorMock');
@@ -37,6 +35,7 @@ describe("Bot cli commands unit tests", async () => {
     let chain: MockChain;
 
     before(async () => {
+        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         // accounts
@@ -143,14 +142,14 @@ describe("Bot cli commands unit tests", async () => {
         expect(agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)).to.be.true;
     })
 
-    it.skip("Should self close", async () => {
+    it("Should self close", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
         // execute minting
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const minter = await createMinter(context, minterAddress, chain);
         const crt = await minter.reserveCollateral(vaultAddress!, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -267,14 +266,14 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyLog).to.be.called.once;
     });
 
-    it.skip("Should run command 'selfClose'", async () => {
+    it("Should run command 'selfClose'", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
         // execute minting
-        const minter = await Minter.createTest(context, minterAddress, minterUnderlying, toBNExp(10_000, 6)); // lot is 1000 XRP
+        const minter = await createMinter(context, minterAddress, chain);
         const crt = await minter.reserveCollateral(vaultAddress!, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);

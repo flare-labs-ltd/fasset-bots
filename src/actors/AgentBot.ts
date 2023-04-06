@@ -181,7 +181,7 @@ export class AgentBot {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.waitingForDestructionTimestamp.lt(toBN(latestTimestamp))) {
+                if (agentEnt.waitingForDestructionTimestamp.lte(toBN(latestTimestamp))) {
                     await this.agent.destroy();
                     agentEnt.waitingForDestructionTimestamp = BN_ZERO;
                     await this.handleAgentDestruction(em, agentEnt.vaultAddress);
@@ -189,7 +189,7 @@ export class AgentBot {
             }
             if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.withdrawalAllowedAtTimestamp.lt(toBN(latestTimestamp))) {
+                if (agentEnt.withdrawalAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
                     agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.withdrawalAllowedAtAmount = BN_ZERO;
@@ -197,7 +197,7 @@ export class AgentBot {
             }
             if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.agentSettingUpdateValidAtTimestamp.lt(toBN(latestTimestamp))) {
+                if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(toBN(latestTimestamp))) {
                     await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
                     agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                     agentEnt.agentSettingUpdateValidAtName = "";
@@ -205,7 +205,7 @@ export class AgentBot {
             }
             if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
                 const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.exitAvailableAllowedAtTimestamp.lt(toBN(latestTimestamp))) {
+                if (agentEnt.exitAvailableAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
                     await this.agent.exitAvailable();
                     agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
                 }

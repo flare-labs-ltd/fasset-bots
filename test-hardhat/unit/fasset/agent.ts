@@ -157,7 +157,7 @@ describe("Agent unit tests", async () => {
     it("Should self close", async () => {
         const agent = await createAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         // execute minting
-        const minter = await createMinter(context, minterAddress, chain); // lot is 1000 XRP
+        const minter = await createMinter(context, minterAddress, chain);
         const crt = await minter.reserveCollateral(agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
