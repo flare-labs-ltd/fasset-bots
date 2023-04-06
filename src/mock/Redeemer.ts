@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { DustChanged, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { Agent } from "../fasset/Agent";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { EventArgs } from "../utils/events/common";
@@ -42,7 +42,7 @@ export class Redeemer {
         return dustChangedEvent.dustUBA;
     }
 
-    async redemptionPaymentDefault(request: EventArgs<RedemptionRequested>) {
+    async redemptionPaymentDefault(request: EventArgs<RedemptionRequested>): Promise<EventArgs<RedemptionDefault>> {
         const proof = await this.attestationProvider.proveReferencedPaymentNonexistence(
             request.paymentAddress,
             request.paymentReference,
