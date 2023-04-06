@@ -73,6 +73,11 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  debtBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   freeBalanceOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
@@ -162,6 +167,11 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
 
     balanceOf(
       account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    debtBalanceOf(
+      _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 

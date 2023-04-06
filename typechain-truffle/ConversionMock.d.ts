@@ -13,6 +13,15 @@ export interface ConversionMockContract
 type AllEvents = never;
 
 export interface ConversionMockInstance extends Truffle.ContractInstance {
+  calcAmgToTokenWeiPrice(
+    _tokenDecimals: number | BN | string,
+    _tokenPrice: number | BN | string,
+    _tokenFtsoDecimals: number | BN | string,
+    _assetPrice: number | BN | string,
+    _assetFtsoDecimals: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   convertAmgToTokenWei(
     _valueAMG: number | BN | string,
     _amgToNATWeiPrice: number | BN | string,
@@ -25,7 +34,39 @@ export interface ConversionMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  setAssetDecimals: {
+    (
+      assetDecimals: number | BN | string,
+      assetMintingDecimals: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      assetDecimals: number | BN | string,
+      assetMintingDecimals: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      assetDecimals: number | BN | string,
+      assetMintingDecimals: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      assetDecimals: number | BN | string,
+      assetMintingDecimals: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
+    calcAmgToTokenWeiPrice(
+      _tokenDecimals: number | BN | string,
+      _tokenPrice: number | BN | string,
+      _tokenFtsoDecimals: number | BN | string,
+      _assetPrice: number | BN | string,
+      _assetFtsoDecimals: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     convertAmgToTokenWei(
       _valueAMG: number | BN | string,
       _amgToNATWeiPrice: number | BN | string,
@@ -37,6 +78,29 @@ export interface ConversionMockInstance extends Truffle.ContractInstance {
       _amgToNATWeiPrice: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    setAssetDecimals: {
+      (
+        assetDecimals: number | BN | string,
+        assetMintingDecimals: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        assetDecimals: number | BN | string,
+        assetMintingDecimals: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        assetDecimals: number | BN | string,
+        assetMintingDecimals: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        assetDecimals: number | BN | string,
+        assetMintingDecimals: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

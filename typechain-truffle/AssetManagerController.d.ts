@@ -174,16 +174,20 @@ export interface CollateralTokenAdded {
   args: {
     tokenClass: BN;
     tokenContract: string;
-    ftsoSymbol: string;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
     minCollateralRatioBIPS: BN;
     ccbMinCollateralRatioBIPS: BN;
     safetyMinCollateralRatioBIPS: BN;
     0: BN;
     1: string;
-    2: string;
-    3: BN;
-    4: BN;
+    2: boolean;
+    3: string;
+    4: string;
     5: BN;
+    6: BN;
+    7: BN;
   };
 }
 
@@ -674,7 +678,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -688,7 +694,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -702,7 +710,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -716,7 +726,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -852,51 +864,6 @@ export interface AssetManagerControllerInstance
   };
 
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
-  refreshAllFtsoIndexes: {
-    (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  refreshFtsoIndexes: {
-    (
-      _assetManagers: string[],
-      _start: number | BN | string,
-      _end: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _assetManagers: string[],
-      _start: number | BN | string,
-      _end: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      _start: number | BN | string,
-      _end: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      _start: number | BN | string,
-      _end: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
 
   removeAssetManager: {
     (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -1456,7 +1423,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1470,7 +1439,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1484,7 +1455,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1498,7 +1471,9 @@ export interface AssetManagerControllerInstance
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1799,7 +1774,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1813,7 +1790,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1827,7 +1806,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1841,7 +1822,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1978,52 +1961,6 @@ export interface AssetManagerControllerInstance
     };
 
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
-    refreshAllFtsoIndexes: {
-      (
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    refreshFtsoIndexes: {
-      (
-        _assetManagers: string[],
-        _start: number | BN | string,
-        _end: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        _start: number | BN | string,
-        _end: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        _start: number | BN | string,
-        _end: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        _start: number | BN | string,
-        _end: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
 
     removeAssetManager: {
       (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -2583,7 +2520,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2597,7 +2536,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2611,7 +2552,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2625,7 +2568,9 @@ export interface AssetManagerControllerInstance
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;

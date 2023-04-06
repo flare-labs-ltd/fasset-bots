@@ -124,7 +124,7 @@ export async function createAgentBotAndMakeAvailable(context: TestAssetBotContex
 
 export async function mintAndDepositClass1ToOwner(context: IAssetContext, vaultAddress: string, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
     const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === agentSettingsConfig.class1FtsoSymbol
+        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
     const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
     await mintClass1ToOwner(vaultAddress, depositAmount, class1Token!.token, ownerAddress);

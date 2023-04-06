@@ -28,8 +28,18 @@
               "type": "uint256"
             },
             {
+              "internalType": "bool",
+              "name": "directPricePair",
+              "type": "bool"
+            },
+            {
               "internalType": "string",
-              "name": "ftsoSymbol",
+              "name": "assetFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenFtsoSymbol",
               "type": "string"
             },
             {
@@ -416,8 +426,18 @@
               "type": "uint256"
             },
             {
+              "internalType": "bool",
+              "name": "directPricePair",
+              "type": "bool"
+            },
+            {
               "internalType": "string",
-              "name": "ftsoSymbol",
+              "name": "assetFtsoSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenFtsoSymbol",
               "type": "string"
             },
             {

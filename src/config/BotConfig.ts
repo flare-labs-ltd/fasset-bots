@@ -122,13 +122,13 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
 export async function createAgentBotSettings(context: IAssetBotContext): Promise<AgentBotSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
     const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.ftsoSymbol === agentSettingsConfig.class1FtsoSymbol
+        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
     if (!class1Token) {
         throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
     }
     const poolToken = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.POOL && token.ftsoSymbol === "NAT"
+        return Number(token.tokenClass) === CollateralTokenClass.POOL && token.tokenFtsoSymbol === "NAT"
     });
     if (!poolToken) {
         throw Error(`Cannot find pool collateral token`);

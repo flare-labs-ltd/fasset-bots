@@ -21,7 +21,9 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
       token: string;
       decimals: BN;
       validUntil: BN;
-      ftsoSymbol: string;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
       minCollateralRatioBIPS: BN;
       ccbMinCollateralRatioBIPS: BN;
       safetyMinCollateralRatioBIPS: BN;
@@ -37,7 +39,9 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
     token: string;
     decimals: BN;
     validUntil: BN;
-    ftsoSymbol: string;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
     minCollateralRatioBIPS: BN;
     ccbMinCollateralRatioBIPS: BN;
     safetyMinCollateralRatioBIPS: BN;
@@ -52,7 +56,9 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
         token: string;
         decimals: BN;
         validUntil: BN;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: BN;
         ccbMinCollateralRatioBIPS: BN;
         safetyMinCollateralRatioBIPS: BN;
@@ -68,7 +74,9 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
       token: string;
       decimals: BN;
       validUntil: BN;
-      ftsoSymbol: string;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
       minCollateralRatioBIPS: BN;
       ccbMinCollateralRatioBIPS: BN;
       safetyMinCollateralRatioBIPS: BN;

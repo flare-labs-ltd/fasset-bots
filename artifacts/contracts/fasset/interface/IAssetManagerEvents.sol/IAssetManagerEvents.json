@@ -350,8 +350,20 @@
         },
         {
           "indexed": false,
+          "internalType": "bool",
+          "name": "directPricePair",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
-          "name": "ftsoSymbol",
+          "name": "assetFtsoSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "tokenFtsoSymbol",
           "type": "string"
         },
         {

@@ -19,11 +19,9 @@ export interface AssetManagerContract
       underlyingAddressValidator: string;
       liquidationStrategy: string;
       ftsoRegistry: string;
-      assetFtsoIndex: number | BN | string;
       assetDecimals: number | BN | string;
       assetMintingDecimals: number | BN | string;
       mintingPoolHoldingsRequiredBIPS: number | BN | string;
-      assetFtsoSymbol: string;
       burnAddress: string;
       burnWithSelfDestruct: boolean;
       chainId: number | BN | string;
@@ -61,7 +59,9 @@ export interface AssetManagerContract
       token: string;
       decimals: number | BN | string;
       validUntil: number | BN | string;
-      ftsoSymbol: string;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
       minCollateralRatioBIPS: number | BN | string;
       ccbMinCollateralRatioBIPS: number | BN | string;
       safetyMinCollateralRatioBIPS: number | BN | string;
@@ -230,16 +230,20 @@ export interface CollateralTokenAdded {
   args: {
     tokenClass: BN;
     tokenContract: string;
-    ftsoSymbol: string;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
     minCollateralRatioBIPS: BN;
     ccbMinCollateralRatioBIPS: BN;
     safetyMinCollateralRatioBIPS: BN;
     0: BN;
     1: string;
-    2: string;
-    3: BN;
-    4: BN;
+    2: boolean;
+    3: string;
+    4: string;
     5: BN;
+    6: BN;
+    7: BN;
   };
 }
 
@@ -657,7 +661,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -670,7 +676,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -683,7 +691,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -696,7 +706,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -1678,8 +1690,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
     status: BN;
-    ownerColdAddressAddress: string;
-    ownerHotAddressAddress: string;
+    ownerColdWalletAddress: string;
+    ownerHotWalletAddress: string;
     collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
@@ -1752,7 +1764,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     token: string;
     decimals: BN;
     validUntil: BN;
-    ftsoSymbol: string;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
     minCollateralRatioBIPS: BN;
     ccbMinCollateralRatioBIPS: BN;
     safetyMinCollateralRatioBIPS: BN;
@@ -1766,7 +1780,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       token: string;
       decimals: BN;
       validUntil: BN;
-      ftsoSymbol: string;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
       minCollateralRatioBIPS: BN;
       ccbMinCollateralRatioBIPS: BN;
       safetyMinCollateralRatioBIPS: BN;
@@ -1777,6 +1793,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  getLiquidationSettings(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
 
   getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -1793,11 +1813,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     underlyingAddressValidator: string;
     liquidationStrategy: string;
     ftsoRegistry: string;
-    assetFtsoIndex: BN;
     assetDecimals: BN;
     assetMintingDecimals: BN;
     mintingPoolHoldingsRequiredBIPS: BN;
-    assetFtsoSymbol: string;
     burnAddress: string;
     burnWithSelfDestruct: boolean;
     chainId: BN;
@@ -2459,7 +2477,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2472,7 +2492,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2485,7 +2507,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2498,7 +2522,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: number | BN | string;
         ccbMinCollateralRatioBIPS: number | BN | string;
         safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2729,7 +2755,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2742,7 +2770,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2755,7 +2785,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -2768,7 +2800,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -3755,8 +3789,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
       status: BN;
-      ownerColdAddressAddress: string;
-      ownerHotAddressAddress: string;
+      ownerColdWalletAddress: string;
+      ownerHotWalletAddress: string;
       collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
@@ -3829,7 +3863,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       token: string;
       decimals: BN;
       validUntil: BN;
-      ftsoSymbol: string;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
       minCollateralRatioBIPS: BN;
       ccbMinCollateralRatioBIPS: BN;
       safetyMinCollateralRatioBIPS: BN;
@@ -3843,7 +3879,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         token: string;
         decimals: BN;
         validUntil: BN;
-        ftsoSymbol: string;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
         minCollateralRatioBIPS: BN;
         ccbMinCollateralRatioBIPS: BN;
         safetyMinCollateralRatioBIPS: BN;
@@ -3854,6 +3892,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    getLiquidationSettings(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
 
     getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -3870,11 +3912,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       underlyingAddressValidator: string;
       liquidationStrategy: string;
       ftsoRegistry: string;
-      assetFtsoIndex: BN;
       assetDecimals: BN;
       assetMintingDecimals: BN;
       mintingPoolHoldingsRequiredBIPS: BN;
-      assetFtsoSymbol: string;
       burnAddress: string;
       burnWithSelfDestruct: boolean;
       chainId: BN;
@@ -4537,7 +4577,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -4550,7 +4592,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -4563,7 +4607,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;
@@ -4576,7 +4622,9 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
-          ftsoSymbol: string;
+          directPricePair: boolean;
+          assetFtsoSymbol: string;
+          tokenFtsoSymbol: string;
           minCollateralRatioBIPS: number | BN | string;
           ccbMinCollateralRatioBIPS: number | BN | string;
           safetyMinCollateralRatioBIPS: number | BN | string;

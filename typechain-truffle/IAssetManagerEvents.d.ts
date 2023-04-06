@@ -171,16 +171,20 @@ export interface CollateralTokenAdded {
   args: {
     tokenClass: BN;
     tokenContract: string;
-    ftsoSymbol: string;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
     minCollateralRatioBIPS: BN;
     ccbMinCollateralRatioBIPS: BN;
     safetyMinCollateralRatioBIPS: BN;
     0: BN;
     1: string;
-    2: string;
-    3: BN;
-    4: BN;
+    2: boolean;
+    3: string;
+    4: string;
     5: BN;
+    6: BN;
+    7: BN;
   };
 }
 

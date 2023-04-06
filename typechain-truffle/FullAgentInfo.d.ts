@@ -18,8 +18,8 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
     status: BN;
-    ownerColdAddressAddress: string;
-    ownerHotAddressAddress: string;
+    ownerColdWalletAddress: string;
+    ownerHotWalletAddress: string;
     collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
@@ -58,8 +58,8 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
       status: BN;
-      ownerColdAddressAddress: string;
-      ownerHotAddressAddress: string;
+      ownerColdWalletAddress: string;
+      ownerHotWalletAddress: string;
       collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;

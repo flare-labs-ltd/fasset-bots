@@ -41,6 +41,7 @@ import { AgentVaultMockContract } from "./AgentVaultMock";
 import { AssetManagerMockContract } from "./AssetManagerMock";
 import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
 import { ERC20MockContract } from "./ERC20Mock";
+import { FAssetMockContract } from "./FAssetMock";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
@@ -138,6 +139,7 @@ declare global {
         name: "DistributionToDelegators"
       ): DistributionToDelegatorsContract;
       require(name: "ERC20Mock"): ERC20MockContract;
+      require(name: "FAssetMock"): FAssetMockContract;
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
@@ -306,6 +308,7 @@ export {
   DistributionToDelegatorsInstance,
 } from "./DistributionToDelegators";
 export { ERC20MockContract, ERC20MockInstance } from "./ERC20Mock";
+export { FAssetMockContract, FAssetMockInstance } from "./FAssetMock";
 export {
   FtsoManagerMockContract,
   FtsoManagerMockInstance,

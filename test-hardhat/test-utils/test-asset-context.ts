@@ -4,7 +4,7 @@ import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
-import { NativeChainInfo } from "../../src/fasset/ChainInfo";
+import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
@@ -115,7 +115,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // ftsos
     const ftsos = await createTestFtsos(ftsoRegistry, chainInfo);
     // collaterals
-    const collaterals = createTestCollaterals(contracts, stablecoins);
+    const collaterals = createTestCollaterals(contracts, chainInfo, stablecoins);
     // create asset manager
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
@@ -126,9 +126,9 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // indexer
     const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, chain);
     //
-    const natFtsoSymbol: string = collaterals[0].ftsoSymbol;
+    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
     const natFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
-    const assetFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(settings.assetFtsoSymbol));
+    const assetFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(chainInfo.symbol));
     // return context
     return { nativeChainInfo, chainInfo, chain, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, blockChainIndexerClient, stablecoins, collaterals, ftsos };
 }
@@ -150,8 +150,6 @@ function createAssetManagerSettings(contracts: ChainContracts, parameters: any, 
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         attestationClient: contracts.AttestationClient.address,
         ftsoRegistry: contracts.FtsoRegistry.address,
-        assetFtsoIndex: 0,      // set by contract constructor
-        assetFtsoSymbol: parameters.assetSymbol,
         burnAddress: parameters.burnAddress,
         burnWithSelfDestruct: parameters.burnWithSelfDestruct,
         chainId: bnToString(parameters.chainId),
@@ -195,13 +193,15 @@ function createAssetManagerSettings(contracts: ChainContracts, parameters: any, 
     };
 }
 
-export function createTestCollaterals(contracts: ChainContracts, stableCoins: any): CollateralToken[] {
+export function createTestCollaterals(contracts: ChainContracts, chainInfo: ChainInfo, stableCoins: any): CollateralToken[] {
     const poolCollateral: CollateralToken = {
         tokenClass: CollateralTokenClass.POOL,
         token: contracts.WNat!.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
-        ftsoSymbol: "NAT",
+        directPricePair: false,
+        assetFtsoSymbol: chainInfo.symbol,
+        tokenFtsoSymbol: "NAT",
         minCollateralRatioBIPS: toBIPS(2.0),
         ccbMinCollateralRatioBIPS: toBIPS(1.9),
         safetyMinCollateralRatioBIPS: toBIPS(2.1),
@@ -211,7 +211,9 @@ export function createTestCollaterals(contracts: ChainContracts, stableCoins: an
         token: stableCoins.usdc.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
-        ftsoSymbol: "USDC",
+        directPricePair: false,
+        assetFtsoSymbol: chainInfo.symbol,
+        tokenFtsoSymbol: "USDC",
         minCollateralRatioBIPS: toBIPS(1.4),
         ccbMinCollateralRatioBIPS: toBIPS(1.3),
         safetyMinCollateralRatioBIPS: toBIPS(1.5),
@@ -221,7 +223,9 @@ export function createTestCollaterals(contracts: ChainContracts, stableCoins: an
         token: stableCoins.usdt.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
-        ftsoSymbol: "USDT",
+        directPricePair: false,
+        assetFtsoSymbol: chainInfo.symbol,
+        tokenFtsoSymbol: "USDT",
         minCollateralRatioBIPS: toBIPS(1.5),
         ccbMinCollateralRatioBIPS: toBIPS(1.4),
         safetyMinCollateralRatioBIPS: toBIPS(1.6),
