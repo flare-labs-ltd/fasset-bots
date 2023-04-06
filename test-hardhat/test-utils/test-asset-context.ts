@@ -51,10 +51,14 @@ export type TestAssetBotContext = Modify<IAssetBotContext, {
     chain: MockChain;
 }>
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any): Promise<TestAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any, updateExecutor?: string): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
+    // add update executors
+    if (updateExecutor) {
+        await governanceSettings.setExecutors([governance, updateExecutor], { from: governance });
+    }
     // create state connector
     const stateConnector = await StateConnector.new();
     // create agent vault factory
