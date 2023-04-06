@@ -15,7 +15,7 @@ import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { createAgentB, createAgentBAndMakeAvailable, createCRAndPerformMinting, createMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
-import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
+import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 use(chaiAsPromised);
 use(spies);
@@ -36,7 +36,7 @@ const agentCreatedArgs = {
     agentType: toBN(0),
     agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     underlyingAddress: 'UNDERLYING_ACCOUNT_78988',
-    collateralPool:  '0x094f7F426E4729d967216C2468DD1d44E2396e3d'
+    collateralPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d'
 } as EventArgs<AgentCreated>;
 const deposit = toBNExp(1_000_000, 18);
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -52,7 +52,6 @@ describe("Tracked state tests", async () => {
     let trackedState: TrackedState;
     let governance: string;
     let updateExecutor: string;
-    let liquidationStrategySettings: LiquidationStrategyImplSettings;
 
     before(async () => {
         disableMccTraceManager();
@@ -68,7 +67,6 @@ describe("Tracked state tests", async () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor);
         chain = checkedCast(context.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
-        liquidationStrategySettings = createTestLiquidationSettings();
         trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize();
         // chain tunning
@@ -268,7 +266,7 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         expect(spyRedemption).to.have.been.called.once;
     });
-//TODO
+    //TODO
     it.skip("Should handle event 'CollateralReservationDeleted'", async () => {
         const agentB = await createAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createMinter(context, minterAddress, chain);
@@ -316,7 +314,7 @@ describe("Tracked state tests", async () => {
         expect(agentBefore.dustUBA.eq(toBN(0))).to.be.true;
         expect(agentAfter.dustUBA.gt(toBN(0))).to.be.true;
     });
-//TODO
+    //TODO
     it.skip("Should handle event 'LiquidationPerformed'", async () => {
         const agentB = await createAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createMinter(context, minterAddress, chain);
@@ -357,26 +355,23 @@ describe("Tracked state tests", async () => {
         expect(settingsAfter.paymentChallengeRewardBIPS.toString()).to.eq(paymentChallengeRewardBIPS_new.toString());
     });
 
-    it.skip("Should handle event 'SettingArrayChanged'", async () => {
+    it("Should handle event 'SettingArrayChanged'", async () => {
+        const encodedSettings = await context.assetManager.getLiquidationSettings();
+        const liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
         const newLiquidationStrategySettings = {
             ...liquidationStrategySettings,
-            liquidationFactorClass1BIPS: liquidationStrategySettings.liquidationFactorClass1BIPS.slice(0,2),
+            liquidationFactorClass1BIPS: liquidationStrategySettings.liquidationFactorClass1BIPS.slice(0, 2),
             liquidationCollateralFactorBIPS: [2_0000, 2_5000]
         }
-        const settingsBefore = trackedState.settings;
-        const prms = await context.assetManagerController.updateLiquidationStrategySettings([context.assetManager.address], encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings), { from: governance });
-
-
-        // let prms = assetManagerController.updateLiquidationStrategySettings([assetManager.address], encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings), { from: governance });
-        const res = await waitForTimelock(prms, context.assetManagerController, updateExecutor);
-        // expectEvent(res, "SettingArrayChanged", { name: "liquidationCollateralFactorBIPS", value: [toBN(2_0000), toBN(2_5000)] });
-
-        // const liquidationCollateralFactorBIPS_new = [2_0000, 2_5000];
-        // await context.assetManagerController.setLiquidationCollateralFactorBips([context.assetManager.address], liquidationCollateralFactorBIPS_new, { from: governance });
+        const settingsBefore = trackedState.liquidationStrategySettings;
+        expect(settingsBefore.liquidationCollateralFactorBIPS[0].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[0].toString());
+        expect(settingsBefore.liquidationCollateralFactorBIPS[1].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[1].toString());
+        const resp = await context.assetManagerController.updateLiquidationStrategySettings([context.assetManager.address], encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings), { from: governance });
+        await waitForTimelock(resp, context.assetManagerController, updateExecutor);
         await trackedState.readUnhandledEvents();
-        // const settingsAfter = trackedState.settings;
-        // expect(settingsAfter.liquidationCollateralFactorBIPS[0].toString()).to.eq(liquidationCollateralFactorBIPS_new[0].toString());
-        // expect(settingsAfter.liquidationCollateralFactorBIPS[1].toString()).to.eq(liquidationCollateralFactorBIPS_new[1].toString());
+        const settingsAfter = trackedState.liquidationStrategySettings;
+        expect(settingsAfter.liquidationCollateralFactorBIPS[0].toString()).to.eq(newLiquidationStrategySettings.liquidationCollateralFactorBIPS[0].toString());
+        expect(settingsAfter.liquidationCollateralFactorBIPS[1].toString()).to.eq(newLiquidationStrategySettings.liquidationCollateralFactorBIPS[1].toString());
     });
 
     it("Should handle events 'SettingChanged' and 'SettingArrayChanged' - invalid setting", async () => {
@@ -387,18 +382,18 @@ describe("Tracked state tests", async () => {
             signature: '0xac1fb27759c1e6f9e4a24d4f8c320be6091becb03cea5a95398fa220fca4ac0e',
             event: 'SettingChanged',
             args: {
-              '0': 'lotSizeAMGFail',
-              '1': toBN(0),
-              __length__: 2,
-              name: 'lotSizeAMGFail',
-              value: toBN(0)
+                '0': 'lotSizeAMGFail',
+                '1': toBN(0),
+                __length__: 2,
+                name: 'lotSizeAMGFail',
+                value: toBN(0)
             },
             blockHash: '0xdc0640480d61a307ad0e7b67b8b7e3586bbd20aefa52620fb5b54f4a943a299d',
             blockNumber: 39,
             logIndex: 0,
             transactionHash: '0xf5081736c212077a16a512864ed480c60dfaf8f8d4d30bd452eec74125485cd5',
             transactionIndex: 0
-          }
+        }
         const settingArrayChangedEventFail = {
             address: trackedState.context.assetManager.address,
             type: 'event',

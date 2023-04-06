@@ -1,6 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { CollateralToken, CollateralTokenClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { fail } from "../utils/helpers";

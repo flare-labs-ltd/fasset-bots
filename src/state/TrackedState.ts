@@ -11,6 +11,7 @@ import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import assert from "node:assert";
 import { AgentStatus } from "../actors/AgentBot";
+import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 
 export class TrackedState {
     constructor(
@@ -27,6 +28,7 @@ export class TrackedState {
 
     // settings
     settings!: AssetManagerSettings;
+    liquidationStrategySettings!: LiquidationStrategyImplSettings;
 
     // tracked agents
     agents: Map<string, TrackedAgentState> = new Map();                // map agent_address => tracked agent state
@@ -38,6 +40,8 @@ export class TrackedState {
     // async initialization part
     async initialize(): Promise<void> {
         this.settings = Object.assign({}, await this.context.assetManager.getSettings());
+        const encodedSettings = await this.context.assetManager.getLiquidationSettings();
+        this.liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
 
@@ -51,11 +55,16 @@ export class TrackedState {
                 if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
                     [this.prices, this.trustedPrices] = await this.getPrices();
                 } else if (eventIs(event, this.context.assetManager, 'SettingChanged')) {
-                    if (!(event.args.name in this.settings)) assert.fail(`Invalid setting change ${event.args.name}`);
-                    (this.settings as any)[event.args.name] = web3Normalize(event.args.value);
+                    if (event.args.name === 'liquidationStepSeconds') {
+                        (this.liquidationStrategySettings as any)[event.args.name] = web3Normalize(event.args.value)
+                    } else if (!(event.args.name in this.settings)) {
+                        assert.fail(`Invalid setting change ${event.args.name}`);
+                    } else {
+                        (this.settings as any)[event.args.name] = web3Normalize(event.args.value)
+                    }
                 } else if (eventIs(event, this.context.assetManager, 'SettingArrayChanged')) {
-                    if (!(event.args.name in this.settings)) assert.fail(`Invalid setting array change ${event.args.name}`);
-                    (this.settings as any)[event.args.name] = web3DeepNormalize(event.args.value);
+                    if (!(event.args.name in this.liquidationStrategySettings)) assert.fail(`Invalid setting array change ${event.args.name}`);
+                    (this.liquidationStrategySettings as any)[event.args.name] = web3DeepNormalize(event.args.value);
                 } else if (eventIs(event, this.context.assetManager, 'AgentSettingChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentSettingChanged(event.args.name, event.args.value);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
@@ -112,7 +121,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
                 }
-                // stable coins events
+                // stable coins events //TODO
                 Object.entries(this.context.stablecoins).forEach(([key, contract]) => {
                     if (eventIs(event, contract, 'Transfer')) {
                         this.agents.get(event.args.from)?.withdrawClass1Collateral(key, toBN(event.args.value));
