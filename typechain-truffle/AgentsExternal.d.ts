@@ -18,6 +18,12 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string; 1: string }>;
 
+  getAllAgents(
+    _start: number | BN | string,
+    _end: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string[]; 1: BN }>;
+
   getFAssetsBackedByPool(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -34,6 +40,12 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string; 1: string }>;
+
+    getAllAgents(
+      _start: number | BN | string,
+      _end: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string[]; 1: BN }>;
 
     getFAssetsBackedByPool(
       _agentVault: string,

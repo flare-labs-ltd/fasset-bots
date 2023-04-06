@@ -1729,6 +1729,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string; 1: string }>;
 
+  getAllAgents(
+    _start: number | BN | string,
+    _end: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string[]; 1: BN }>;
+
   getAvailableAgentsDetailedList(
     _start: number | BN | string,
     _end: number | BN | string,
@@ -3827,6 +3833,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string; 1: string }>;
+
+    getAllAgents(
+      _start: number | BN | string,
+      _end: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string[]; 1: BN }>;
 
     getAvailableAgentsDetailedList(
       _start: number | BN | string,
