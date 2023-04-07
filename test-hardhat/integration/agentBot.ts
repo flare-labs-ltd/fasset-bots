@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { createAgentBot, createAgentBotAndMakeAvailable, createMinter, createRedeemer, disableMccTraceManager } from "../test-utils/helpers";
+import { convertFromUSD5, createAgentBot, createAgentBotAndMakeAvailable, createMinter, createRedeemer, disableMccTraceManager } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -18,6 +18,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import rewire from "rewire";
+import BN from "bn.js";
 const rewiredAgentBot = rewire("../../src/actors/AgentBot");
 const rewiredAgentBotClass = rewiredAgentBot.__get__("AgentBot");
 
@@ -316,7 +317,7 @@ describe("Agent bot tests", async () => {
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
-    it.only("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
+    it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -342,30 +343,13 @@ describe("Agent bot tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         const someAddress = accounts[10];
         const startBalance = await agentBot.agent.class1Token.balanceOf(someAddress);
+        const startAgentBalance = await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress);
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
         const endBalance = await agentBot.agent.class1Token.balanceOf(someAddress);
-        console.log(startBalance.toString())
-        console.log(endBalance.toString())
-        const {0: price } = await context.ftsos[agentBot.agent.class1Collateral.tokenFtsoSymbol].getCurrentPrice();
-        // function convertFromUSD5(
-        //     uint256 _amountUSD5,
-        //     CollateralToken.Data storage _token
-        // )
-        //     internal view
-        //     returns (uint256)
-        // {
-        //     // if tokenFtsoSymbol is empty, it is assumed that the token is a USD-like stablecoin
-        //     // so `_amountUSD5` is (approximately) the correct amount of tokens
-        //     if (bytes(_token.tokenFtsoSymbol).length == 0) {
-        //         return _amountUSD5;
-        //     }
-        //     (uint256 tokenPrice,, uint256 tokenFtsoDec) = readFtsoPrice(_token.tokenFtsoSymbol, false);
-        //     uint256 expPlus = _token.decimals + tokenFtsoDec;
-        //     // 1e10 in divisor: 5 for amount decimals, 5 for price decimals
-        //     return _amountUSD5.mulDiv(tokenPrice * 10 ** expPlus, 1e10);
-        // }
-        assert.equal(String(endBalance.sub(startBalance)), String(settings.confirmationByOthersRewardUSD5));
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, agentBot.agent.class1Collateral ,context);
+        const rewardPaid = BN.min(reward, startAgentBalance);
+        assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
 
     it.skip("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {

@@ -10,12 +10,12 @@ import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
 import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
-import { CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
+import { CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
 import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, requireEnv, requireNotNull, toBNExp } from "../../src/utils/helpers";
+import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
@@ -27,6 +27,7 @@ import { MockChain } from "../../src/mock/MockChain";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
+import { TokenPrice } from "../../src/state/TokenPrice";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
@@ -157,4 +158,10 @@ export async function createCRAndPerformMintingAndRunSteps(minter: Minter, agent
 export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
     const agentInfo = await agentBot.agent.getAgentInfo();
     return Number(agentInfo.status) as AgentStatus;
+}
+
+export async function convertFromUSD5(amount: BN, collateralToken: CollateralToken, context: TestAssetBotContext): Promise<BN> {
+    const stablecoinUSD = await TokenPrice.forFtso(context.ftsos[collateralToken.tokenFtsoSymbol.toLowerCase()]);
+    const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
+    return (toBN(amount).mul(toBNExp(stablecoinUSD.price.muln(10).toString(),expPlus))).div(toBNExp(1,10));
 }
