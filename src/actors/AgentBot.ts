@@ -290,7 +290,10 @@ export class AgentBot {
         // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
-            await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress });
+            const settings = await this.context.assetManager.getSettings();
+            const amgToNatWeiPrice = await this.currentAmgToTokenWeiPriceWithTrusted(settings);
+            const burnNats = convertUBAToTokenWei(settings, minting.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+            await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
         } else {
@@ -532,17 +535,21 @@ export class AgentBot {
 
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
         const class1Collateral = await this.agent.class1Token.balanceOf(this.agent.vaultAddress);
-        const [amgToClass1WeiPrice, amgToClass1WeiPriceTrusted] = await this.currentAmgToClass1WeiPriceWithTrusted(settings, agentInfo.class1CollateralToken);
-        const amgToClass1Wei = BN.min(amgToClass1WeiPrice, amgToClass1WeiPriceTrusted);
+        const amgToClass1WeiPrice = await this.currentAmgToTokenWeiPriceWithTrusted(settings, agentInfo.class1CollateralToken);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
-        const backingClass1Wei = convertUBAToTokenWei(settings, totalUBA, amgToClass1Wei);
+        const backingClass1Wei = convertUBAToTokenWei(settings, totalUBA, amgToClass1WeiPrice);
         const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
         return requiredCollateral.sub(class1Collateral);
     }
 
-    private async currentAmgToClass1WeiPriceWithTrusted(settings: AssetManagerSettings, class1Token: string): Promise<[ftsoPrice: BN, trustedPrice: BN]> {
+    async currentAmgToTokenWeiPriceWithTrusted(settings: AssetManagerSettings, class1Token?: string): Promise<BN> {
         const prices = await Prices.getFtsoPrices(this.context, settings, this.context.collaterals);
-        const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices);
-        return [prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]];
+            const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices);
+        if (class1Token) {
+            return BN.min(prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]);
+        } else {
+            return BN.min(prices.amgToNatWei, trustedPrices.amgToNatWei);
+        }
     }
+
 }

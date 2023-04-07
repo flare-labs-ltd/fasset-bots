@@ -10,7 +10,7 @@ import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
 import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
-import { CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
 import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
@@ -28,6 +28,9 @@ import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPrice } from "../../src/state/TokenPrice";
+import { Prices } from "../../src/state/Prices";
+import { Test } from "mocha";
+import BN from "bn.js";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
@@ -164,4 +167,15 @@ export async function convertFromUSD5(amount: BN, collateralToken: CollateralTok
     const stablecoinUSD = await TokenPrice.forFtso(context.ftsos[collateralToken.tokenFtsoSymbol.toLowerCase()]);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
     return (toBN(amount).mul(toBNExp(stablecoinUSD.price.muln(10).toString(),expPlus))).div(toBNExp(1,10));
+}
+
+
+export async function currentAmgToTokenWeiPriceWithTrusted(settings: AssetManagerSettings, context: TestAssetBotContext, class1Token?: string): Promise<BN> {
+    const prices = await Prices.getFtsoPrices(context, settings, context.collaterals);
+    const trustedPrices = await Prices.getTrustedPrices(context, settings, context.collaterals, prices);
+    if (class1Token) {
+        return BN.min(prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]);
+    } else {
+        return BN.min(prices.amgToNatWei, trustedPrices.amgToNatWei);
+    }
 }

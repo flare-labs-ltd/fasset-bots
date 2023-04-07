@@ -51,7 +51,6 @@ describe("Agent bot tests", async () => {
         settings = await context.assetManager.getSettings();
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain);
-        chain.mine(chain.finalizationBlocks + 1);
         redeemer = await createTestRedeemer(context, redeemerAddress);
     });
 
@@ -169,8 +168,8 @@ describe("Agent bot tests", async () => {
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
-    //TODO unstick minting
-    it.skip("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
+
+    it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -183,8 +182,6 @@ describe("Agent bot tests", async () => {
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
-        console.log(Number(crt.lastUnderlyingTimestamp) + queryWindow)
-        console.log(Number(crt.lastUnderlyingBlock) + queryBlock)
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         await agentBot.runStep(orm.em);
@@ -195,8 +192,8 @@ describe("Agent bot tests", async () => {
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
-    //TODO unstick minting
-    it.skip("Should perform unstick minting - minter pays and time expires in indexer", async () => {
+
+    it("Should perform unstick minting - minter pays and time expires in indexer", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);

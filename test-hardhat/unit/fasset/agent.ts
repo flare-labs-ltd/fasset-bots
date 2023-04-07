@@ -1,16 +1,16 @@
 import { assert } from "chai";
 import { MockChain, MockTransactionOptionsWithFee } from "../../../src/mock/MockChain";
-import { checkedCast, QUERY_WINDOW_SECONDS, toBIPS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { Agent } from "../../../src/fasset/Agent";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { convertLotsToUBA } from "../../../src/fasset/Conversions";
+import { convertLotsToUBA, convertUBAToTokenWei } from "../../../src/fasset/Conversions";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, currentAmgToTokenWeiPriceWithTrusted, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -194,8 +194,8 @@ describe("Agent unit tests", async () => {
         chain.mine(chain.finalizationBlocks + 1);
         expect(minted.mintedAmountUBA.toString()).to.eq(convertLotsToUBA(await context.assetManager.getSettings(), lots).toString());
     });
-//TODO unstick minting
-    it.skip("Should unstick minting", async () => {
+
+    it("Should unstick minting", async () => {
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const spyAgent = spy.on(agent.assetManager, 'unstickMinting');
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -205,7 +205,10 @@ describe("Agent unit tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agent.unstickMinting(crt);
+        const settings = await context.assetManager.getSettings();
+        const amgToNatWeiPrice = await currentAmgToTokenWeiPriceWithTrusted(settings, context);
+        const burnNats = convertUBAToTokenWei(settings, crt.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        await agent.unstickMinting(crt, burnNats);
         expect(spyAgent).to.have.been.called.once;
     });
 

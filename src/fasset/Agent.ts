@@ -2,7 +2,7 @@ import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance
 import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { checkEventNotEmitted, ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, requireNotNull, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, AssetManagerSettings } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
@@ -245,9 +245,9 @@ export class Agent {
         return requiredEventArgs(res, 'MintingPaymentDefault');
     }
 
-    async unstickMinting(crt: EventArgs<CollateralReserved>): Promise<void> {
+    async unstickMinting(crt: EventArgs<CollateralReserved>, burnNats?: BN): Promise<void> {
         const proof = await this.attestationProvider.proveConfirmedBlockHeightExists();
-        await this.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: this.ownerAddress });
+        await this.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: this.ownerAddress, value: burnNats ?? BN_ZERO });
     }
 
     async selfMint(underlyingSourceAddress: string, amountUBA: BNish, lots: BNish) {
