@@ -351,7 +351,7 @@ describe("Agent bot tests", async () => {
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
-
+//TODO liquidation and price change
     it.skip("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
@@ -383,7 +383,7 @@ describe("Agent bot tests", async () => {
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
     });
-
+//TODO liquidation and price change
     it.skip("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
@@ -426,15 +426,15 @@ describe("Agent bot tests", async () => {
         assert.equal(status3, AgentStatus.NORMAL);
     });
 
-    it.skip("Should check collateral ratio after price changes", async () => {
-        const spyTop = spy.on(agentBot, 'checkAgentForCollateralRatioAndTopUp');
+    it("Should check collateral ratio after price changes", async () => {
+        const spyTop = spy.on(agentBot, 'checkAgentForClass1CollateralRatioAndTopUp');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.once;
     });
-
+//TODO  price change
     it.skip("Should check collateral ratio after price changes 2", async () => {
         const ownerAddress2 = accounts[30];
         const agentBot2 = await rewiredAgentBotClass.create(orm.em, context, ownerAddress2);
@@ -473,11 +473,18 @@ describe("Agent bot tests", async () => {
         expect(spyTop).to.have.been.called.twice;
     });
 
-    it.skip("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
+    it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
         const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress, } as FilterQuery<AgentEntity>);
         // check agent status
         const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.NORMAL);
+        // redeem pool
+        const agentInfo = await agentBot.agent.getAgentInfo();
+        const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
+        const withdrawAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
+        await time.increaseTo(withdrawAllowedAt);
+        await agentBot.agent.redeemCollateralPoolTokens(amount);
+
         // exit available
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         await time.increaseTo(exitAllowedAt);

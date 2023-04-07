@@ -116,7 +116,7 @@ export class Agent {
     async announcePoolTokenRedemption(amountWei: BNish) {
         const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.ownerAddress });
         const args = requiredEventArgs(res, 'PoolTokenRedemptionAnnounced');
-        return args;
+        return args.withdrawalAllowedAt;
     }
 
     async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
