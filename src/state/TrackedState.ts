@@ -80,7 +80,7 @@ export class TrackedState {
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    this.createAgent(event.args.agentVault, event.args.underlyingAddress);
+                    await this.getAgentTriggerAdd(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
                     // } else if (eventIs(event, this.context.wNat, 'Transfer')) {// TODO do we need wNat

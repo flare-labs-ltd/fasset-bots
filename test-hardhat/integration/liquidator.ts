@@ -5,7 +5,7 @@ import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestAgentBot, createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
+import { createTestAgentBot, createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -86,10 +86,10 @@ describe("Liquidator tests", async () => {
         expect(fBalanceBefore.eq(fBalanceAfter)).to.be.true;
         expect(fBalanceBefore.eqn(0)).to.be.true;
     });
-    //TODO
-    it.skip("Should check collateral ratio after minting execution", async () => {
+
+    it("Should check collateral ratio after minting execution", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
         // create collateral reservation and perform minting
