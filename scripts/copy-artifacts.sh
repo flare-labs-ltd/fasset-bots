@@ -24,3 +24,7 @@ cp -R typechain-truffle ${projdir}
 cp ${projdir}/scripts/types.d.ts ${projdir}/typechain-truffle
 
 cd ${projdir}
+
+rm -rf artifacts/flare-sc;
+rm -rf artifacts/flare-smart-contracts;
+rm -rf artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol
