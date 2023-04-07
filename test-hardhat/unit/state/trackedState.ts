@@ -4,17 +4,17 @@ import { AgentStatus } from "../../../src/actors/AgentBot";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
-import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { convertLotsToUBA } from "../../../src/fasset/Conversions";
+import { convertLotsToUBA, convertUBAToTokenWei } from "../../../src/fasset/Conversions";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, currentAmgToTokenWeiPriceWithTrusted, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 use(chaiAsPromised);
@@ -213,9 +213,9 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await minter.reserveCollateral(agentB.vaultAddress, 2);
-        const agentBefore = trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress);
+        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress));
         await trackedState.readUnhandledEvents();
-        const agentAfter = trackedState.getAgent(agentB.vaultAddress)!;
+        const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
         expect(agentAfter.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
     });
 
@@ -223,10 +223,10 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
-        const agentBefore = trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress);
+        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress));
         const supplyBefore = trackedState.fAssetSupply;
         await trackedState.readUnhandledEvents();
-        const agentAfter = trackedState.getAgent(agentB.vaultAddress)!;
+        const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
         const supplyAfter = trackedState.fAssetSupply;
         expect(agentAfter.freeUnderlyingBalanceUBA.gt(agentBefore.freeUnderlyingBalanceUBA)).to.be.true;
         expect(agentAfter.mintedUBA.gt(agentBefore.mintedUBA)).to.be.true;
@@ -266,8 +266,8 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         expect(spyRedemption).to.have.been.called.once;
     });
-    //TODO
-    it.skip("Should handle event 'CollateralReservationDeleted'", async () => {
+
+    it("Should handle event 'CollateralReservationDeleted'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
@@ -279,7 +279,10 @@ describe("Tracked state tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agentB.unstickMinting(crt);
+        const settings = await context.assetManager.getSettings();
+        const amgToNatWeiPrice = await currentAmgToTokenWeiPriceWithTrusted(settings, context);
+        const burnNats = convertUBAToTokenWei(settings, crt.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        await agentB.unstickMinting(crt, burnNats);
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
