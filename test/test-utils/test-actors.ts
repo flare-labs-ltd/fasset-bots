@@ -1,14 +1,20 @@
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentBotSettings, IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../src/mock/Minter";
-import { fail, requireEnv } from "../../src/utils/helpers";
+import { fail, requireEnv, toBNExp } from "../../src/utils/helpers";
 import { SourceId } from "../../src/verification/sources/sources";
 import axios from "axios";
 import { Redeemer } from "../../src/mock/Redeemer";
+import { ORM } from "../../src/config/orm";
+import { AgentBot } from "../../src/actors/AgentBot";
+import { createAgentBotSettings } from "../../src/config/BotConfig";
+import { Notifier } from "../../src/utils/Notifier";
+import { mintAndDepositClass1ToOwner } from "../../test-hardhat/test-utils/helpers";
 
 const ownerAccountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 const account1PrivateKey = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
 const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
 const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
+const deposit = toBNExp(1_000_000, 18);
 
 export async function createTestMinter(ctx: IAssetBotContext, address: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -30,3 +36,16 @@ export function getCoston2AccountsFromEnv() {
     return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey];
 }
 
+export async function createTestAgentBot(context: IAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+    const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
+    return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
+}
+
+export async function createTestAgentBotAndMakeAvailable(context: IAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()) {
+    const agentBot = await createTestAgentBot(context, orm,  ownerAddress, notifier);
+    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
+    await agentBot.agent.depositClass1Collateral(deposit);
+    await agentBot.agent.buyCollateralPoolTokens(deposit);
+    await agentBot.agent.makeAvailable();
+    return agentBot;
+}

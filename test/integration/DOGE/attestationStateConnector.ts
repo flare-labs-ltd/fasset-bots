@@ -32,7 +32,7 @@ describe.skip("DOGE attestation/state connector tests", async () => {
         //assume that fundedAddress, fundedPrivateKey, targetAddress and targetPrivateKey are stored in fasset-bots.db (running test/unit/[chain]/wallet.ts test should do the job)
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
-        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient, true);
+        attestationHelper = await createAttestationHelper(sourceId, stateConnectorClient);
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
     })

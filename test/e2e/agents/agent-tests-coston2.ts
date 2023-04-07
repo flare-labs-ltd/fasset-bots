@@ -14,7 +14,7 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import { initWeb3, web3 } from "../../../src/utils/web3";
-import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
+import { createTestAgentBot, getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -48,7 +48,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create agent bot", async () => {
-        const agentBot = await AgentBot.create(orm.em, context, ownerAddress, new Notifier());
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     });

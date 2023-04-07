@@ -14,6 +14,7 @@ import { Redeemer } from "../../../src/mock/Redeemer";
 import { checkedCast, systemTimestamp, toBN, toBNExp } from "../../../src/utils/helpers";
 import { createBotConfigLocal, LOCAL_HARDHAT_RUN_CONFIG } from "../../test-utils/test-bot-config";
 import { initTestWeb3 } from "../../test-utils/test-web3";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable } from "../../test-utils/test-actors";
 
 describe.skip("Agent bot tests - local network", async () => {
     let accounts: string[];
@@ -24,7 +25,6 @@ describe.skip("Agent bot tests - local network", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    let agentBot: AgentBot;
     let runConfig: RunConfig;
 
     before(async () => {
@@ -40,7 +40,7 @@ describe.skip("Agent bot tests - local network", async () => {
     });
 
     it("Should create agent", async () => {
-        agentBot = await AgentBot.create(orm.em, context, ownerAddress, botConfig.notifier);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, botConfig.notifier);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     })
@@ -53,8 +53,7 @@ describe.skip("Agent bot tests - local network", async () => {
     })
 
     it("Should perform minting and redemption", async () => {
-        await agentBot.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot.agent.makeAvailable(500, 25000);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, botConfig.notifier);
         const minter = await Minter.createTest(context, minterAddress, `MINTER_ADDRESS_${systemTimestamp()}`, toBNExp(10_000, 6)); // lot is 1000 XRP
         const redeemer = await Redeemer.create(context, redeemerAddress, `REDEEMER_ADDRESS_${systemTimestamp()}`);
         // perform minting
