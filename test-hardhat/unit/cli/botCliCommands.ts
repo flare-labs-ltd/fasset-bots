@@ -2,7 +2,7 @@
 import { ORM } from "../../../src/config/orm";
 import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
@@ -17,7 +17,7 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -149,7 +149,7 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
         // execute minting
-        const minter = await createMinter(context, minterAddress, chain);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const crt = await minter.reserveCollateral(vaultAddress!, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -273,7 +273,7 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress!);
         // execute minting
-        const minter = await createMinter(context, minterAddress, chain);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const crt = await minter.reserveCollateral(vaultAddress!, 2);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);

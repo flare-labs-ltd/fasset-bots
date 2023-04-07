@@ -1,7 +1,7 @@
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";

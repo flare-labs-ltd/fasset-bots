@@ -19,7 +19,7 @@ import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/util
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext } from "./test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import fs from "fs";
 import { Minter } from "../../src/mock/Minter";
@@ -46,7 +46,7 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
 }
 
-export async function createAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string): Promise<AgentBot> {
+export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string): Promise<AgentBot> {
     const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, new Notifier());
 }
@@ -57,47 +57,47 @@ export async function mintClass1ToOwner(vaultAddress: string, amount: BNish, cla
     await class1Token.approve(vaultAddress, amount, { from: ownerAddress });
 }
 
-export async function createChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
+export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
     return new Challenger(new ScopedRunner(), address, state, await context.chain.getBlockHeight());
 }
 
-export async function createLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
+export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
     return new Liquidator(new ScopedRunner(), address, state);
 }
 
-export async function createSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
+export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
     return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
-export async function createAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
+export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
     const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await AgentB.create(context, ownerAddress, agentSettings);
 }
 
-export async function createAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
+export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
     const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export function createAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number): AgentBotRunner {
+export function createTestAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number): AgentBotRunner {
     return new AgentBotRunner(contexts, orm, loopDelay, new Notifier());
 }
 
-export async function createMinter(context: IAssetContext, minterAddress: string, chain: MockChain, amount: BN = deposit): Promise<Minter> {
+export async function createTestMinter(context: IAssetContext, minterAddress: string, chain: MockChain, amount: BN = deposit): Promise<Minter> {
     const minter = await Minter.createTest(context, minterAddress, minterUnderlying, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
 }
 
-export async function createRedeemer(context: IAssetContext, redeemerAddress: string) {
+export async function createTestRedeemer(context: IAssetContext, redeemerAddress: string) {
     const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
     return redeemer;
 }
 
-export async function createAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
-    const agent = await createAgent(context, ownerAddress, underlyingAddress);
+export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
+    const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
     await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
     await agent.depositClass1Collateral(deposit);
     await agent.buyCollateralPoolTokens(deposit);
@@ -105,8 +105,8 @@ export async function createAgentAndMakeAvailable(context: TestAssetBotContext, 
     return agent;
 }
 
-export async function createAgentBAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
-    const agentB = await createAgentB(context, ownerAddress, underlyingAddress);
+export async function createTestAgentBAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<AgentB> {
+    const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
     await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
     await agentB.depositClass1Collateral(deposit);
     await agentB.buyCollateralPoolTokens(deposit);
@@ -114,8 +114,8 @@ export async function createAgentBAndMakeAvailable(context: TestAssetBotContext,
     return agentB;
 }
 
-export async function createAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string) {
-    const agentBot = await createAgentBot(context, orm,  ownerAddress);
+export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string) {
+    const agentBot = await createTestAgentBot(context, orm,  ownerAddress);
     await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
     await agentBot.agent.depositClass1Collateral(deposit);
     await agentBot.agent.buyCollateralPoolTokens(deposit);

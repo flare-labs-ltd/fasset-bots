@@ -3,7 +3,7 @@ import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
@@ -13,7 +13,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
 use(spies);
 
 describe("Agent bot unit tests", async () => {
@@ -46,13 +46,13 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should create agent bot", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
         expect(agentBot.agent.underlyingAddress).to.not.be.null;
     });
 
     it("Should read agent bot from entity", async () => {
-        const agentBotBefore = await createAgentBot(context, orm, ownerAddress);
+        const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         expect(agentBot.agent.underlyingAddress).is.not.null;
@@ -60,14 +60,14 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should top up collateral", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyTop = spy.on(agentBot, 'requiredTopUp');
         await agentBot.checkAgentForClass1CollateralRatioAndTopUp();
         expect(spyTop).to.have.been.called.once;
     });
 
     it("Should top up underlying - failed", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const ownerAmount = 100;
         context.chain.mint(ownerUnderlyingAddress, ownerAmount);
         const spyBalance = spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalanceFailed');
@@ -77,7 +77,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should top up underlying", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyBalance0 = spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalance');
         const spyBalance1 = spy.on(agentBot.notifier, 'sendLowBalanceOnUnderlyingOwnersAddress');
         const ownerAmount = 100;
@@ -90,12 +90,12 @@ describe("Agent bot unit tests", async () => {
     it("Should prove EOA address", async () => {
         const spyEOA = spy.on(AgentBot, 'proveEOAaddress');
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
-        await createAgentBot(context, orm, ownerAddress);
+        await createTestAgentBot(context, orm, ownerAddress);
         expect(spyEOA).to.have.been.called.once;
     });
 
     it("Should not do next redemption step due to invalid redemption state", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyLog = spy.on(console, 'error');
         // create redemption with invalid state
         const rd = orm.em.create(AgentRedemption, {
@@ -116,7 +116,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not do next minting step due to invalid minting state", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyLog = spy.on(console, 'error');
         // create minting with invalid state
         const mt = orm.em.create(AgentMinting, {
@@ -137,7 +137,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should return open redemptions", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         // create redemptions
         const rd1 = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.STARTED,
@@ -169,7 +169,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 1 - not finalized", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.context.attestationProvider, 'obtainReferencedPaymentNonexistenceProof');
         // create minting
         const mt = orm.em.create(AgentMinting, {
@@ -190,7 +190,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 2 - not finalized", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.context.attestationProvider, 'obtainPaymentProof');
         // create minting
         const mt = orm.em.create(AgentMinting, {
@@ -211,7 +211,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 3 - not finalized", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.context.attestationProvider, 'obtainPaymentProof');
         // create redemption
         const rd = orm.em.create(AgentRedemption, {
@@ -233,7 +233,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
         const mt = orm.em.create(AgentMinting, {
@@ -255,7 +255,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 2 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
         const mt = orm.em.create(AgentMinting, {
@@ -277,7 +277,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should not receive proof 3 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create redemption
         const rd = orm.em.create(AgentRedemption, {
@@ -298,7 +298,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should destruct agent", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const destroyAllowedAt = await agentBot.agent.announceDestroy();
         agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
@@ -310,7 +310,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should withdraw collateral", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const amount = toBN(10000);
         await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
@@ -326,7 +326,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should announce to close vault", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         agentEnt.waitingForDestructionCleanUp = true;
         const skipTime = toBN((await context.assetManager.getSettings()).withdrawalWaitMinSeconds).muln(2);
@@ -337,7 +337,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should run handleAgentsWaitingsAndCleanUp and change nothing", async () => {
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
         expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;

@@ -3,9 +3,9 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createAgentBot, createCRAndPerformMinting, createMinter, createSystemKeeper, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
+import { createTestAgentBot, createCRAndPerformMinting, createTestMinter, createTestSystemKeeper, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -46,7 +46,7 @@ describe("System keeper tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const systemKeeper = await createSystemKeeper(systemKeeperAddress, state);
+        const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const spyLiquidation = spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
@@ -56,9 +56,9 @@ describe("System keeper tests", async () => {
     });
 //TODO
     it.skip("Should check collateral ratio after minting and price changes - agent from normal -> ccb -> liquidation -> normal", async () => {
-        const systemKeeper = await createSystemKeeper(systemKeeperAddress, state);
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
-        const minter = await createMinter(context, minterAddress, chain);
+        const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
@@ -98,9 +98,9 @@ describe("System keeper tests", async () => {
     });
 //TODO
     it.skip("Should check collateral ratio after price changes - agent from normal -> liquidation -> normal -> ccb -> normal", async () => {
-        const systemKeeper = await createSystemKeeper(systemKeeperAddress, state);
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
-        const minter = await createMinter(context, minterAddress, chain);
+        const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -163,9 +163,9 @@ describe("System keeper tests", async () => {
     });
 //TODO
     it.skip("Should check collateral ratio after minting execution", async () => {
-        const systemKeeper = await createSystemKeeper(systemKeeperAddress, state);
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
-        const minter = await createMinter(context, minterAddress, chain);
+        const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const spyMinting = spy.on(systemKeeper, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);

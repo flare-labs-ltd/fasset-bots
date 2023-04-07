@@ -52,7 +52,7 @@ export const testChainInfo: Record<'eth' | 'btc' | 'xrp', TestChainInfo> = {
         name: "Ripple",
         symbol: "XRP",
         decimals: 6,
-        amgDecimals: 8,
+        amgDecimals: 6,
         startPrice: 0.53,
         blockTime: 10,
         finalizationBlocks: 6,

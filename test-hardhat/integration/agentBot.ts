@@ -7,10 +7,10 @@ import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createAgentBot, createAgentBotAndMakeAvailable, createMinter, createRedeemer, disableMccTraceManager } from "../test-utils/helpers";
+import { convertFromUSD5, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -49,10 +49,10 @@ describe("Agent bot tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.chain, MockChain);
         settings = await context.assetManager.getSettings();
-        agentBot = await createAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        minter = await createMinter(context, minterAddress, chain);
+        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        minter = await createTestMinter(context, minterAddress, chain);
         chain.mine(chain.finalizationBlocks + 1);
-        redeemer = await createRedeemer(context, redeemerAddress);
+        redeemer = await createTestRedeemer(context, redeemerAddress);
     });
 
     it("Should perform minting", async () => {
@@ -457,7 +457,7 @@ describe("Agent bot tests", async () => {
         const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await agentBot2.agent.getAgentInfo(), settings);
         const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
         const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
-        const agentBot3 = await createAgentBot(context, orm, ownerAddress2);
+        const agentBot3 = await createTestAgentBot(context, orm, ownerAddress2);
         await agentBot3.agent.depositClass1Collateral(sub);
         // check collateral ratio after price changes
         await agentBot2.runStep(orm.em);

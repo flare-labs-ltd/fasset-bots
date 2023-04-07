@@ -3,9 +3,9 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../test-utils/test-asset-context";
+import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createAgentBot, createCRAndPerformMintingAndRunSteps, createLiquidator, createMinter, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
+import { createTestAgentBot, createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -46,7 +46,7 @@ describe("Liquidator tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const liquidator = await createLiquidator(liquidatorAddress, state);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const spyLiquidation = spy.on(liquidator, 'checkAllAgentsForLiquidation');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
@@ -56,9 +56,9 @@ describe("Liquidator tests", async () => {
     });
     //TODO
     it.skip("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
-        const liquidator = await createLiquidator(liquidatorAddress, state);
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
-        const minter = await createMinter(context, minterAddress, chain);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation, perform minting and run liquidation trigger
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
@@ -88,9 +88,9 @@ describe("Liquidator tests", async () => {
     });
     //TODO
     it.skip("Should check collateral ratio after minting execution", async () => {
-        const liquidator = await createLiquidator(liquidatorAddress, state);
-        const agentBot = await createAgentBot(context, orm, ownerAddress);
-        const minter = await createMinter(context, minterAddress, chain);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
         const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
@@ -100,9 +100,9 @@ describe("Liquidator tests", async () => {
     });
     //TODO
     it.skip("Should liquidate agent", async () => {
-        const liquidator = await createLiquidator(liquidatorAddress, state);
-        const agentBot = await createAgentBot(context, orm, accounts[81]);
-        const minter = await createMinter(context, minterAddress, chain);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const agentBot = await createTestAgentBot(context, orm, accounts[81]);
+        const minter = await createTestMinter(context, minterAddress, chain);
         await liquidator.runStep();
         // check agent status
         const status1 = await getAgentStatus(agentBot);

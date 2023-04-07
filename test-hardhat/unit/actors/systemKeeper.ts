@@ -8,7 +8,7 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAssetContext } from "../../test-utils/test-asset-context";
+import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 
 
 describe("System keeper unit tests", async () => {

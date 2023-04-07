@@ -97,7 +97,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         AgentVaultFactory: newContract('AgentVaultFactory', 'AgentVaultFactory.sol', agentVaultFactory.address),
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
         CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
-        TrivialAddressValidatorMock: newContract('TrivialAddressValidatorMock', 'TrivialAddressValidatorMock.sol', addressValidator.address)
+        AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address)
     };
     // create mock chain attestation provider
     const chain = new MockChain(await time.latest());
@@ -120,7 +120,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     if (typeof requireEOAAddressProof !== 'undefined') parameters.requireEOAAddressProof = requireEOAAddressProof
-    const settings = createAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy);
+    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
     // indexer
@@ -140,50 +140,49 @@ function bnToString(x: BN | number | string) {
     return x.toString(10);
 }
 
-function createAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string): AssetManagerSettings {
+function createTestAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string, chainInfo: TestChainInfo): AssetManagerSettings {
     if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.AttestationClient) {
         throw new Error("Missing contracts");
     }
     return {
         assetManagerController: contracts.AssetManagerController.address,
+        fAsset: ZERO_ADDRESS, // replaced in newAssetManager()
         agentVaultFactory: contracts.AgentVaultFactory.address,
-        whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
+        collateralPoolFactory: contracts.CollateralPoolFactory!.address,
         attestationClient: contracts.AttestationClient.address,
+        underlyingAddressValidator: contracts.AddressValidator!.address,
+        liquidationStrategy: liquidationStrategy,
+        whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
+        agentWhitelist: contracts.agentWhitelist?.address ?? ZERO_ADDRESS,
         ftsoRegistry: contracts.FtsoRegistry.address,
         burnAddress: parameters.burnAddress,
         burnWithSelfDestruct: parameters.burnWithSelfDestruct,
-        chainId: bnToString(parameters.chainId),
-        collateralReservationFeeBIPS: bnToString(parameters.collateralReservationFeeBIPS),
-        assetMintingGranularityUBA: bnToString(toBNExp(1, parameters.assetDecimals - parameters.assetMintingDecimals)),
-        lotSizeAMG: bnToString(toBNExp(parameters.lotSize, parameters.assetMintingDecimals)),
-        maxTrustedPriceAgeSeconds: bnToString(parameters.maxTrustedPriceAgeSeconds),
-        requireEOAAddressProof: parameters.requireEOAAddressProof,
-        underlyingBlocksForPayment: bnToString(parameters.underlyingBlocksForPayment),
-        underlyingSecondsForPayment: bnToString(parameters.underlyingSecondsForPayment),
+        chainId: chainInfo.chainId,
+        collateralReservationFeeBIPS: parameters.collateralReservationFeeBIPS,
+        assetDecimals: chainInfo.decimals,
+        assetUnitUBA: toBNExp(1, chainInfo.decimals),
+        assetMintingDecimals: chainInfo.amgDecimals,
+        assetMintingGranularityUBA: toBNExp(1, chainInfo.decimals - chainInfo.amgDecimals),
+        mintingCapAMG: 0,                                   // minting cap disabled
+        lotSizeAMG: toBNExp(chainInfo.lotSize, chainInfo.amgDecimals),
+        requireEOAAddressProof: chainInfo.requireEOAProof,
+        underlyingBlocksForPayment: chainInfo.underlyingBlocksForPayment,
+        underlyingSecondsForPayment: chainInfo.underlyingBlocksForPayment,
         redemptionFeeBIPS: bnToString(parameters.redemptionFeeBIPS),
-        confirmationByOthersAfterSeconds: bnToString(parameters.confirmationByOthersAfterSeconds),
         maxRedeemedTickets: bnToString(parameters.maxRedeemedTickets),
+        redemptionDefaultFactorAgentC1BIPS: toBIPS(1.1),
+        redemptionDefaultFactorPoolBIPS: toBIPS(0.1),
+        confirmationByOthersAfterSeconds: bnToString(parameters.confirmationByOthersAfterSeconds),
+        confirmationByOthersRewardUSD5: toBNExp(100, 5),        // 100 USD
+        paymentChallengeRewardUSD5: toBNExp(300, 5),            // 300 USD
         paymentChallengeRewardBIPS: bnToString(parameters.paymentChallengeRewardBIPS),
         withdrawalWaitMinSeconds: bnToString(parameters.withdrawalWaitMinSeconds),
         ccbTimeSeconds: bnToString(parameters.ccbTimeSeconds),
-        attestationWindowSeconds: bnToString(parameters.attestationWindowSeconds),
+        maxTrustedPriceAgeSeconds: bnToString(parameters.maxTrustedPriceAgeSeconds),
         minUpdateRepeatTimeSeconds: bnToString(parameters.minUpdateRepeatTimeSeconds),
+        attestationWindowSeconds: bnToString(parameters.attestationWindowSeconds),
         buybackCollateralFactorBIPS: bnToString(parameters.buybackCollateralFactorBIPS),
         announcedUnderlyingConfirmationMinSeconds: bnToString(parameters.announcedUnderlyingConfirmationMinSeconds),
-
-        fAsset: ZERO_ADDRESS, //TODO
-        collateralPoolFactory: contracts.CollateralPoolFactory!.address,
-        underlyingAddressValidator: contracts.TrivialAddressValidatorMock!.address,
-        liquidationStrategy: liquidationStrategy,
-        agentWhitelist: contracts.agentWhitelist?.address ?? ZERO_ADDRESS,
-        assetUnitUBA: toBNExp(1, parameters.assetDecimals),
-        assetDecimals: parameters.assetDecimals,
-        assetMintingDecimals: parameters.assetMintingDecimals,
-        mintingCapAMG: 0,                                   // minting cap disabled
-        redemptionDefaultFactorAgentC1BIPS: toBIPS(1.1),
-        redemptionDefaultFactorPoolBIPS: toBIPS(0.1),
-        confirmationByOthersRewardUSD5: toBNExp(100, 5),        // 100 USD
-        paymentChallengeRewardUSD5: toBNExp(300, 5),            // 300 USD
         agentFeeChangeTimelockSeconds: 6 * HOURS,
         agentCollateralRatioChangeTimelockSeconds: 1 * HOURS,
         agentExitAvailableTimelockSeconds: 10 * MINUTES,

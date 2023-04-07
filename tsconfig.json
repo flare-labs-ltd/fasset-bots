@@ -25,7 +25,7 @@
         "test-hardhat/unit",
         "test-hardhat/integration",
         "test-hardhat/test-utils/new-asset-manager.ts",
-        "test-hardhat/test-utils/test-asset-context.ts",
+        "test-hardhat/test-utils/create-test-asset-context.ts",
         "test-hardhat/test-utils/helpers.ts"
     ],
     "ts-node": {

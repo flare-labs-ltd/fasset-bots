@@ -1,5 +1,5 @@
 import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { createTestAssetContext } from "../../test-utils/test-asset-context";
+import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AMG_TOKENWEI_PRICE_SCALE, convertAmgToTokenWei, convertAmgToUBA, convertLotsToAMG, convertLotsToUBA, convertUBAToAmg, convertUBAToLots, convertUBAToTokenWei, lotSize, NAT_WEI } from "../../../src/fasset/Conversions";

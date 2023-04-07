@@ -3,7 +3,7 @@ import { AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
 import { Prices } from "../../../src/state/Prices";
 import { sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { createTestContext } from "../../test-utils/helpers";
 import { TokenPrice } from "../../../src/state/TokenPrice";
 

@@ -3,8 +3,8 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createAgentBotRunner, disableMccTraceManager } from "../../test-utils/helpers";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/test-asset-context";
+import { createTestAgentBotRunner, disableMccTraceManager } from "../../test-utils/helpers";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
@@ -29,13 +29,13 @@ describe("Agent bot runner tests", async () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const agentBotRunner = createAgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
-        const agentBotRunner = createAgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
         const spyStep = spy.on(agentBotRunner, 'runStep');
         agentBotRunner.requestStop();
         void agentBotRunner.run();

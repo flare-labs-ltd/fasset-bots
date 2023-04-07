@@ -8,8 +8,8 @@ import { MAX_UINT256, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/test-asset-context";
-import { createAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
 
 describe("Tracked agent state tests", async () => {
     let accounts: string[];
@@ -29,7 +29,7 @@ describe("Tracked agent state tests", async () => {
     });
 
     beforeEach(async () => {
-        agentBot = await createAgentBot(context, orm, ownerAddress);
+        agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const amount = toBN(10000);
         await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
