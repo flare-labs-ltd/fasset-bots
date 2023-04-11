@@ -83,7 +83,6 @@ export class TrackedState {
                     await this.getAgentTriggerAdd(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
-                    // } else if (eventIs(event, this.context.wNat, 'Transfer')) {// TODO do we need wNat
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.CCB, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
@@ -120,12 +119,14 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalCancelled();
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
+                } else if (eventIs(event, this.context.wNat, 'Transfer')) {
+                    this.agents.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
+                    this.agents.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                 }
-                // stable coins events //TODO
-                Object.entries(this.context.stablecoins).forEach(([key, contract]) => {
+                Object.entries(this.context.stablecoins).forEach(([, contract]) => {
                     if (eventIs(event, contract, 'Transfer')) {
-                        this.agents.get(event.args.from)?.withdrawClass1Collateral(key, toBN(event.args.value));
-                        this.agents.get(event.args.to)?.depositClass1Collateral(key, toBN(event.args.value));
+                        this.agents.get(event.args.from)?.withdrawClass1Collateral(contract.address, toBN(event.args.value));
+                        this.agents.get(event.args.to)?.depositClass1Collateral(contract.address, toBN(event.args.value));
                     }
                 });
             }

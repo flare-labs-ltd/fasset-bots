@@ -311,14 +311,13 @@ describe("Tracked state tests", async () => {
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const lots = 3;
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
-        console.log("events");
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         expect(agentBefore.dustUBA.eq(toBN(0))).to.be.true;
         expect(agentAfter.dustUBA.gt(toBN(0))).to.be.true;
     });
-    //TODO
-    it.skip("Should handle event 'LiquidationPerformed'", async () => {
+
+    it("Should handle event 'LiquidationPerformed'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
@@ -327,9 +326,8 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         const lots = 3;
         const liquidatorAddress = accounts[100];
-        // price change
-        await context.natFtso.setCurrentPrice(1, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 40), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 40), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidatorAddress, minted.mintedAmountUBA, { from: minter.address });
         // liquidate agent (partially)
