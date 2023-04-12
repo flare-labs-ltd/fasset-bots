@@ -786,12 +786,6 @@
         },
         {
           "indexed": false,
-          "internalType": "int256",
-          "name": "freedUnderlyingBalanceUBA",
-          "type": "int256"
-        },
-        {
-          "indexed": false,
           "internalType": "uint64",
           "name": "requestId",
           "type": "uint64"
@@ -829,6 +823,12 @@
         },
         {
           "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
+        },
+        {
+          "indexed": false,
           "internalType": "uint64",
           "name": "requestId",
           "type": "uint64"
@@ -857,6 +857,12 @@
           "internalType": "bytes32",
           "name": "transactionHash",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
         },
         {
           "indexed": false,
@@ -898,8 +904,14 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "valueUBA",
+          "name": "redemptionAmountUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
         },
         {
           "indexed": false,
@@ -1046,6 +1058,31 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "requiredBalance",
+          "type": "uint256"
+        }
+      ],
+      "name": "UnderlyingBalanceTooLow",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": false,
           "internalType": "address",
           "name": "agentVault",
@@ -1059,25 +1096,6 @@
         }
       ],
       "name": "UnderlyingBalanceToppedUp",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "int256",
-          "name": "freeBalance",
-          "type": "int256"
-        }
-      ],
-      "name": "UnderlyingFreeBalanceNegative",
       "type": "event"
     },
     {

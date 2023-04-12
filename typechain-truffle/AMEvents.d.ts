@@ -373,11 +373,9 @@ export interface RedemptionFinished {
   name: "RedemptionFinished";
   args: {
     agentVault: string;
-    freedUnderlyingBalanceUBA: BN;
     requestId: BN;
     0: string;
     1: BN;
-    2: BN;
   };
 }
 
@@ -388,12 +386,14 @@ export interface RedemptionPaymentBlocked {
     redeemer: string;
     transactionHash: string;
     redemptionAmountUBA: BN;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     0: string;
     1: string;
     2: string;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -403,13 +403,15 @@ export interface RedemptionPaymentFailed {
     agentVault: string;
     redeemer: string;
     transactionHash: string;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     failureReason: string;
     0: string;
     1: string;
     2: string;
     3: BN;
-    4: string;
+    4: BN;
+    5: string;
   };
 }
 
@@ -419,13 +421,15 @@ export interface RedemptionPerformed {
     agentVault: string;
     redeemer: string;
     transactionHash: string;
-    valueUBA: BN;
+    redemptionAmountUBA: BN;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     0: string;
     1: string;
     2: string;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -491,21 +495,23 @@ export interface SettingChanged {
   };
 }
 
+export interface UnderlyingBalanceTooLow {
+  name: "UnderlyingBalanceTooLow";
+  args: {
+    agentVault: string;
+    balance: BN;
+    requiredBalance: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface UnderlyingBalanceToppedUp {
   name: "UnderlyingBalanceToppedUp";
   args: {
     agentVault: string;
     freeBalanceChangeUBA: BN;
-    0: string;
-    1: BN;
-  };
-}
-
-export interface UnderlyingFreeBalanceNegative {
-  name: "UnderlyingFreeBalanceNegative";
-  args: {
-    agentVault: string;
-    freeBalance: BN;
     0: string;
     1: BN;
   };
@@ -585,8 +591,8 @@ type AllEvents =
   | SelfClose
   | SettingArrayChanged
   | SettingChanged
+  | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
-  | UnderlyingFreeBalanceNegative
   | UnderlyingWithdrawalAnnounced
   | UnderlyingWithdrawalCancelled
   | UnderlyingWithdrawalConfirmed;

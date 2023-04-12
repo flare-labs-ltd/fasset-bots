@@ -786,12 +786,6 @@
         },
         {
           "indexed": false,
-          "internalType": "int256",
-          "name": "freedUnderlyingBalanceUBA",
-          "type": "int256"
-        },
-        {
-          "indexed": false,
           "internalType": "uint64",
           "name": "requestId",
           "type": "uint64"
@@ -829,6 +823,12 @@
         },
         {
           "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
+        },
+        {
+          "indexed": false,
           "internalType": "uint64",
           "name": "requestId",
           "type": "uint64"
@@ -857,6 +857,12 @@
           "internalType": "bytes32",
           "name": "transactionHash",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
         },
         {
           "indexed": false,
@@ -898,8 +904,14 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "valueUBA",
+          "name": "redemptionAmountUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceChangeUBA",
+          "type": "int256"
         },
         {
           "indexed": false,
@@ -1046,6 +1058,31 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "requiredBalance",
+          "type": "uint256"
+        }
+      ],
+      "name": "UnderlyingBalanceTooLow",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": false,
           "internalType": "address",
           "name": "agentVault",
@@ -1059,25 +1096,6 @@
         }
       ],
       "name": "UnderlyingBalanceToppedUp",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "int256",
-          "name": "freeBalance",
-          "type": "int256"
-        }
-      ],
-      "name": "UnderlyingFreeBalanceNegative",
       "type": "event"
     },
     {
@@ -1156,8 +1174,8 @@
       "type": "event"
     }
   ],
-  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122073d22b67fc6051c119605f23574b562bdc0c8538fa1159206addd6532281bcc864736f6c634300080b0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122073d22b67fc6051c119605f23574b562bdc0c8538fa1159206addd6532281bcc864736f6c634300080b0033",
+  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205ad8d5507cae7168f58caf83426a6e4ab28530a596d7aae57b08adbbc91c646064736f6c634300080b0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205ad8d5507cae7168f58caf83426a6e4ab28530a596d7aae57b08adbbc91c646064736f6c634300080b0033",
   "linkReferences": {},
   "deployedLinkReferences": {}
 }

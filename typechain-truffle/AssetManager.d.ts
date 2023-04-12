@@ -29,6 +29,7 @@ export interface AssetManagerContract
       assetUnitUBA: number | BN | string;
       assetMintingGranularityUBA: number | BN | string;
       lotSizeAMG: number | BN | string;
+      minUnderlyingBackingBIPS: number | BN | string;
       mintingCapAMG: number | BN | string;
       maxTrustedPriceAgeSeconds: number | BN | string;
       requireEOAAddressProof: boolean;
@@ -435,11 +436,9 @@ export interface RedemptionFinished {
   name: "RedemptionFinished";
   args: {
     agentVault: string;
-    freedUnderlyingBalanceUBA: BN;
     requestId: BN;
     0: string;
     1: BN;
-    2: BN;
   };
 }
 
@@ -450,12 +449,14 @@ export interface RedemptionPaymentBlocked {
     redeemer: string;
     transactionHash: string;
     redemptionAmountUBA: BN;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     0: string;
     1: string;
     2: string;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -465,13 +466,15 @@ export interface RedemptionPaymentFailed {
     agentVault: string;
     redeemer: string;
     transactionHash: string;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     failureReason: string;
     0: string;
     1: string;
     2: string;
     3: BN;
-    4: string;
+    4: BN;
+    5: string;
   };
 }
 
@@ -481,13 +484,15 @@ export interface RedemptionPerformed {
     agentVault: string;
     redeemer: string;
     transactionHash: string;
-    valueUBA: BN;
+    redemptionAmountUBA: BN;
+    underlyingBalanceChangeUBA: BN;
     requestId: BN;
     0: string;
     1: string;
     2: string;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -553,21 +558,23 @@ export interface SettingChanged {
   };
 }
 
+export interface UnderlyingBalanceTooLow {
+  name: "UnderlyingBalanceTooLow";
+  args: {
+    agentVault: string;
+    balance: BN;
+    requiredBalance: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface UnderlyingBalanceToppedUp {
   name: "UnderlyingBalanceToppedUp";
   args: {
     agentVault: string;
     freeBalanceChangeUBA: BN;
-    0: string;
-    1: BN;
-  };
-}
-
-export interface UnderlyingFreeBalanceNegative {
-  name: "UnderlyingFreeBalanceNegative";
-  args: {
-    agentVault: string;
-    freeBalance: BN;
     0: string;
     1: BN;
   };
@@ -647,8 +654,8 @@ type AllEvents =
   | SelfClose
   | SettingArrayChanged
   | SettingChanged
+  | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
-  | UnderlyingFreeBalanceNegative
   | UnderlyingWithdrawalAnnounced
   | UnderlyingWithdrawalCancelled
   | UnderlyingWithdrawalConfirmed;
@@ -1708,15 +1715,20 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     freePoolCollateralNATWei: BN;
     poolCollateralRatioBIPS: BN;
     totalAgentPoolTokensWei: BN;
+    announcedClass1WithdrawalWei: BN;
+    announcedPoolTokensWithdrawalWei: BN;
     freeAgentPoolTokensWei: BN;
     mintedUBA: BN;
     reservedUBA: BN;
     redeemingUBA: BN;
     poolRedeemingUBA: BN;
+    underlyingRedeemingUBA: BN;
     dustUBA: BN;
     ccbStartTimestamp: BN;
     liquidationStartTimestamp: BN;
+    underlyingBalanceUBA: BN;
     freeUnderlyingBalanceUBA: BN;
+    requiredUnderlyingBalanceUBA: BN;
     announcedUnderlyingWithdrawalId: BN;
     buyFAssetByAgentFactorBIPS: BN;
     poolExitCollateralRatioBIPS: BN;
@@ -1829,6 +1841,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     assetUnitUBA: BN;
     assetMintingGranularityUBA: BN;
     lotSizeAMG: BN;
+    minUnderlyingBackingBIPS: BN;
     mintingCapAMG: BN;
     maxTrustedPriceAgeSeconds: BN;
     requireEOAAddressProof: boolean;
@@ -3813,15 +3826,20 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       freePoolCollateralNATWei: BN;
       poolCollateralRatioBIPS: BN;
       totalAgentPoolTokensWei: BN;
+      announcedClass1WithdrawalWei: BN;
+      announcedPoolTokensWithdrawalWei: BN;
       freeAgentPoolTokensWei: BN;
       mintedUBA: BN;
       reservedUBA: BN;
       redeemingUBA: BN;
       poolRedeemingUBA: BN;
+      underlyingRedeemingUBA: BN;
       dustUBA: BN;
       ccbStartTimestamp: BN;
       liquidationStartTimestamp: BN;
+      underlyingBalanceUBA: BN;
       freeUnderlyingBalanceUBA: BN;
+      requiredUnderlyingBalanceUBA: BN;
       announcedUnderlyingWithdrawalId: BN;
       buyFAssetByAgentFactorBIPS: BN;
       poolExitCollateralRatioBIPS: BN;
@@ -3934,6 +3952,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       assetUnitUBA: BN;
       assetMintingGranularityUBA: BN;
       lotSizeAMG: BN;
+      minUnderlyingBackingBIPS: BN;
       mintingCapAMG: BN;
       maxTrustedPriceAgeSeconds: BN;
       requireEOAAddressProof: boolean;
