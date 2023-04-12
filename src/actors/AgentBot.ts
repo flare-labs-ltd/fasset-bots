@@ -135,7 +135,7 @@ export class AgentBot {
                     this.notifier.sendLiquidationStartAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     this.notifier.sendLiquidationWasPerformed(event.args.agentVault);
-                } else if (eventIs(event, this.context.assetManager, "UnderlyingFreeBalanceNegative")) {
+                } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);

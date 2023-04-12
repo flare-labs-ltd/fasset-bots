@@ -11,7 +11,7 @@ import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { artifacts } from "../../src/utils/artifacts";
-import { DAYS, HOURS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";
@@ -162,6 +162,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         assetUnitUBA: toBNExp(1, chainInfo.decimals),
         assetMintingDecimals: chainInfo.amgDecimals,
         assetMintingGranularityUBA: toBNExp(1, chainInfo.decimals - chainInfo.amgDecimals),
+        minUnderlyingBackingBIPS: MAX_BIPS,
         mintingCapAMG: 0,                                   // minting cap disabled
         lotSizeAMG: toBNExp(chainInfo.lotSize, chainInfo.amgDecimals),
         requireEOAAddressProof: typeof requireEOAAddressProof !== 'undefined' ? requireEOAAddressProof : chainInfo.requireEOAProof,

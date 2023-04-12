@@ -5,25 +5,19 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { CCB_LIQUIDATION_PREVENTION_FACTOR, checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
-import rewire from "rewire";
 import BN from "bn.js";
-import { Notifier } from "../../src/utils/Notifier";
-import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
-import { createAgentBotSettings } from "../../src/config/BotConfig";
-const rewiredAgentBot = rewire("../../src/actors/AgentBot");
-const rewiredAgentBotClass = rewiredAgentBot.__get__("AgentBot");
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
