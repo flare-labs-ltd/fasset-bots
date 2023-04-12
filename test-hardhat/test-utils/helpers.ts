@@ -29,7 +29,6 @@ import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPrice } from "../../src/state/TokenPrice";
 import { Prices } from "../../src/state/Prices";
-import { Test } from "mocha";
 import BN from "bn.js";
 
 const ERC20Mock = artifacts.require('ERC20Mock');

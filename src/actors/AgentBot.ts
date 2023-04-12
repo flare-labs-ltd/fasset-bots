@@ -510,6 +510,7 @@ export class AgentBot {
         }
     }
 
+    //TODO add also for the pool
     // owner deposits class1 collateral to vault to get out of ccb or liquidation due to price changes
     async checkAgentForClass1CollateralRatioAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();

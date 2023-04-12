@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager } from "../test-utils/helpers";
+import { convertFromUSD5, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -19,6 +19,9 @@ import { expect, spy, use } from "chai";
 use(spies);
 import rewire from "rewire";
 import BN from "bn.js";
+import { Notifier } from "../../src/utils/Notifier";
+import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { createAgentBotSettings } from "../../src/config/BotConfig";
 const rewiredAgentBot = rewire("../../src/actors/AgentBot");
 const rewiredAgentBotClass = rewiredAgentBot.__get__("AgentBot");
 
@@ -348,8 +351,8 @@ describe("Agent bot tests", async () => {
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
-//TODO liquidation and price change
-    it.skip("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {
+
+    it("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -373,15 +376,16 @@ describe("Agent bot tests", async () => {
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status1, AgentStatus.NORMAL);
-        await context.assetFtso.setCurrentPrice(toBNExp(3521, 50), 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check agent status
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
     });
-//TODO liquidation and price change
-    it.skip("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
+
+    it("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -408,6 +412,7 @@ describe("Agent bot tests", async () => {
         // change price
         const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice.muln(10000), 0);
         // start liquidation
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         // check agent status
@@ -416,6 +421,7 @@ describe("Agent bot tests", async () => {
         // change price back
         const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
         await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice2.divn(10000), 0);
         // agent ends liquidation
         await agentBot.agent.endLiquidation();
         // check agent status
@@ -430,44 +436,6 @@ describe("Agent bot tests", async () => {
         // check collateral ratio after price changes
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.once;
-    });
-//TODO  price change
-    it.skip("Should check collateral ratio after price changes 2", async () => {
-        const ownerAddress2 = accounts[30];
-        const agentBot2 = await rewiredAgentBotClass.create(orm.em, context, ownerAddress2);
-        await agentBot2.agent.depositCollateral(toBNExp(1_000_000, 18));
-        await agentBot2.agent.makeAvailable(500, 25000);
-        const spyTop = spy.on(agentBot2, 'checkAgentForCollateralRatioAndTopUp');
-        // create collateral reservation
-        await minter.reserveCollateral(agentBot2.agent.vaultAddress, 2);
-        // change price
-        const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
-        await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
-        // expect cr to be less than required cr
-        const crBIPSBefore = (await agentBot2.agent.getAgentInfo()).class1CollateralRatioBIPS;
-        const crRequiredBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        expect(Number(crBIPSBefore)).lt(Number(crRequiredBIPS));
-        // mock price changes
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        // remove some native from owner's address
-        const requiredCrBIPS = toBN(settings.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUp = await agentBot2.requiredTopUp(requiredCrBIPS, await agentBot2.agent.getAgentInfo(), settings);
-        const owner2Balance = toBN(await web3.eth.getBalance(ownerAddress2));
-        const sub = owner2Balance.sub(requiredTopUp).sub(NATIVE_LOW_BALANCE)
-        const agentBot3 = await createTestAgentBot(context, orm, ownerAddress2);
-        await agentBot3.agent.depositClass1Collateral(sub);
-        // check collateral ratio after price changes
-        await agentBot2.runStep(orm.em);
-        // expect cr to be the same as required cr
-        const crBIPSAfter = (await agentBot2.agent.getAgentInfo()).class1CollateralRatioBIPS;
-        expect(Number(crBIPSAfter)).eq(Number(crRequiredBIPS));
-        // change price
-        const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
-        await context.assetFtso.setCurrentPrice(assetPrice2.muln(10000), 0);
-        // mock price changes
-        await context.ftsoManager.mockFinalizePriceEpoch();
-        await agentBot2.runStep(orm.em);
-        expect(spyTop).to.have.been.called.twice;
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {

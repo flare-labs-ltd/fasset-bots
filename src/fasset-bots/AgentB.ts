@@ -1,6 +1,6 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
 import { Agent } from "../fasset/Agent";
-import { AgentSettings } from "../fasset/AssetManagerTypes";
+import { AgentSettings, CollateralTokenClass } from "../fasset/AssetManagerTypes";
 import { artifacts } from "../utils/artifacts";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { IAssetBotContext } from "./IAssetBotContext";
@@ -23,7 +23,8 @@ export class AgentB extends Agent {
         super(context, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings);
     }
 
-    class1Collateral = requireNotNull(this.context.collaterals.find(c => c.token === this.agentSettings.class1CollateralToken));
+    class1Collateral = requireNotNull(this.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.CLASS1 && c.token === this.agentSettings.class1CollateralToken));
+    poolCollateral = requireNotNull(this.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.POOL && c.token === this.context.wNat.address));
 
     static async create(ctx: IAssetBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
         // create agent

@@ -5,7 +5,7 @@ import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestAgentBot, createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable } from "../test-utils/helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -54,10 +54,10 @@ describe("Liquidator tests", async () => {
         await liquidator.runStep();
         expect(spyLiquidation).to.have.been.called.once;
     });
-    //TODO
-    it.skip("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
+
+    it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
         // create collateral reservation, perform minting and run liquidation trigger
@@ -67,8 +67,8 @@ describe("Liquidator tests", async () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.natFtso.setCurrentPrice(36, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
         // FAsset balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         // mock price changes and run liquidation trigger
@@ -98,10 +98,10 @@ describe("Liquidator tests", async () => {
         await liquidator.runStep();
         expect(spyMinting).to.have.been.called.once;
     });
-    //TODO
-    it.skip("Should liquidate agent", async () => {
+
+    it("Should liquidate agent", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
-        const agentBot = await createTestAgentBot(context, orm, accounts[81]);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
         const minter = await createTestMinter(context, minterAddress, chain);
         await liquidator.runStep();
         // check agent status
@@ -116,13 +116,13 @@ describe("Liquidator tests", async () => {
         const minted = await minter.executeMinting(crt, txHash0);
         await agentBot.runStep(orm.em);
         // price change
-        await context.natFtso.setCurrentPrice(1, 0);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
         // FAsset and collateral balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceBefore = await state.context.wNat.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await agentBot.agent.class1Token.balanceOf(liquidatorAddress);
         // liquidate agent (partially)
         const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
         await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidator.address });
@@ -132,8 +132,8 @@ describe("Liquidator tests", async () => {
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // FAsset and collateral balance
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceAfter = await state.context.wNat.balanceOf(liquidatorAddress);
-        // check FAsset balance
+        const cBalanceAfter = await agentBot.agent.class1Token.balanceOf(liquidatorAddress);
+        // check FAsset and cr balance
         expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
         expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;
     });

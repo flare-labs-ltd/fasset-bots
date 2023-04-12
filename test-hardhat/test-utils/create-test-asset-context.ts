@@ -119,8 +119,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create asset manager
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    if (typeof requireEOAAddressProof !== 'undefined') parameters.requireEOAAddressProof = requireEOAAddressProof
-    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo);
+    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo, requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
     // indexer
@@ -140,7 +139,7 @@ function bnToString(x: BN | number | string) {
     return x.toString(10);
 }
 
-function createTestAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string, chainInfo: TestChainInfo): AssetManagerSettings {
+function createTestAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean): AssetManagerSettings {
     if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.AttestationClient) {
         throw new Error("Missing contracts");
     }
@@ -165,7 +164,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         assetMintingGranularityUBA: toBNExp(1, chainInfo.decimals - chainInfo.amgDecimals),
         mintingCapAMG: 0,                                   // minting cap disabled
         lotSizeAMG: toBNExp(chainInfo.lotSize, chainInfo.amgDecimals),
-        requireEOAAddressProof: chainInfo.requireEOAProof,
+        requireEOAAddressProof: typeof requireEOAAddressProof !== 'undefined' ? requireEOAAddressProof : chainInfo.requireEOAProof,
         underlyingBlocksForPayment: chainInfo.underlyingBlocksForPayment,
         underlyingSecondsForPayment: chainInfo.underlyingBlocksForPayment,
         redemptionFeeBIPS: bnToString(parameters.redemptionFeeBIPS),
@@ -201,9 +200,9 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
         tokenFtsoSymbol: "NAT",
-        minCollateralRatioBIPS: toBIPS(2.0),
+        minCollateralRatioBIPS: toBIPS(2.2),
         ccbMinCollateralRatioBIPS: toBIPS(1.9),
-        safetyMinCollateralRatioBIPS: toBIPS(2.1),
+        safetyMinCollateralRatioBIPS: toBIPS(2.3),
     };
     const usdcCollateral: CollateralToken = {
         tokenClass: CollateralTokenClass.CLASS1,

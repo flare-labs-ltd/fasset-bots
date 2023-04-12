@@ -89,8 +89,8 @@ describe("Agent bot unit tests", async () => {
 
     it("Should prove EOA address", async () => {
         const spyEOA = spy.on(AgentBot, 'proveEOAaddress');
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
-        await createTestAgentBot(context, orm, ownerAddress);
+        const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
+        await createTestAgentBot(contextEOAProof, orm, ownerAddress);
         expect(spyEOA).to.have.been.called.once;
     });
 
