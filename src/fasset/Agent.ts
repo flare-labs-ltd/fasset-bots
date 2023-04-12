@@ -1,7 +1,7 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
 import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
-import { checkEventNotEmitted, ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
+import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, requireNotNull, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, AssetManagerSettings } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
@@ -10,6 +10,7 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { EventArgs } from "../utils/events/common";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
+import { AgentCollateral } from "./AgentCollateral";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -187,9 +188,7 @@ export class Agent {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
         findRequiredEvent(res, 'RedemptionFinished');
-        checkEventNotEmitted(res, 'RedemptionPerformed');
-        checkEventNotEmitted(res, 'RedemptionPaymentFailed');
-        checkEventNotEmitted(res, 'RedemptionPaymentBlocked');
+        return requiredEventArgs(res, 'RedemptionFinished');
     }
 
     async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]> {
@@ -289,4 +288,7 @@ export class Agent {
         await this.assetManager.executeAgentSettingUpdate(this.vaultAddress, settingName, { from: this.ownerAddress });
     }
 
+    async getAgentCollateral() {
+        return await AgentCollateral.create(this.assetManager, await this.assetManager.getSettings(), this.vaultAddress);
+    }
 }

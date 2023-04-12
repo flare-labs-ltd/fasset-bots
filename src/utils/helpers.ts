@@ -10,6 +10,7 @@ export type Dict<T> = { [key: string]: T };
 export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export const BN_ZERO = new BN(0);
+export const BN_TEN = Web3.utils.toBN(10);
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -202,6 +203,18 @@ export function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
 }
 
 /**
+ * Get value of key `key` for map. If it doesn't exists, create new value, add it to the map and return it.
+ */
+export async function getOrCreateAsync<K, V>(map: Map<K, V>, key: K, create: (key: K) => Promise<V>): Promise<V> {
+    if (map.has(key)) {
+        return map.get(key)!;
+    }
+    const value = await create(key);
+    map.set(key, value);
+    return value;
+}
+
+/**
  * Add a value to "multimap" - a map where there are several values for each key.
  */
 export function multimapAdd<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
@@ -259,6 +272,28 @@ export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN): BN;
 export function sumBN(list: Iterable<BN>): BN;
 export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN = (x: any) => x) {
     return reduce(list, BN_ZERO, (a, x) => a.add(elementValue(x)));
+}
+
+/**
+ * Return the maximum of two or more BN values.
+ */
+export function maxBN(first: BN, ...rest: BN[]) {
+    let result = first;
+    for (const x of rest) {
+        if (x.gt(result)) result = x;
+    }
+    return result;
+}
+
+/**
+ * Return the minimum of two or more BN values.
+ */
+export function minBN(first: BN, ...rest: BN[]) {
+    let result = first;
+    for (const x of rest) {
+        if (x.lt(result)) result = x;
+    }
+    return result;
 }
 
 /**
@@ -354,4 +389,9 @@ export function toBIPS(x: number | string) {
     } else {
         return toBNExp(x, 4);
     }
+}
+
+// Calculate 10 ** n as BN.
+export function exp10(n: BNish) {
+    return BN_TEN.pow(toBN(n));
 }

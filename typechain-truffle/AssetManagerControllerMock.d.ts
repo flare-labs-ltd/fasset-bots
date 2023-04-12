@@ -168,7 +168,7 @@ export interface GovernanceUpdated {
   name: "GovernanceUpdated";
   args: {
     oldGovernance: string;
-    newGoveranance: string;
+    newGovernance: string;
     0: string;
     1: string;
   };

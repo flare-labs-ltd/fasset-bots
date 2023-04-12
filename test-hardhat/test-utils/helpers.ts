@@ -27,7 +27,7 @@ import { MockChain } from "../../src/mock/MockChain";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { TokenPrice } from "../../src/state/TokenPrice";
+import { TokenPrice, TokenPriceReader } from "../../src/state/TokenPrice";
 import { Prices } from "../../src/state/Prices";
 import BN from "bn.js";
 
@@ -163,18 +163,8 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
 }
 
 export async function convertFromUSD5(amount: BN, collateralToken: CollateralToken, context: TestAssetBotContext): Promise<BN> {
-    const stablecoinUSD = await TokenPrice.forFtso(context.ftsos[collateralToken.tokenFtsoSymbol.toLowerCase()]);
+    const priceReader = new TokenPriceReader(context.ftsoRegistry);
+    const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
     return (toBN(amount).mul(toBNExp(stablecoinUSD.price.muln(10).toString(),expPlus))).div(toBNExp(1,10));
-}
-
-
-export async function currentAmgToTokenWeiPriceWithTrusted(settings: AssetManagerSettings, context: TestAssetBotContext, class1Token?: string): Promise<BN> {
-    const prices = await Prices.getFtsoPrices(context, settings, context.collaterals);
-    const trustedPrices = await Prices.getTrustedPrices(context, settings, context.collaterals, prices);
-    if (class1Token) {
-        return BN.min(prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]);
-    } else {
-        return BN.min(prices.amgToNatWei, trustedPrices.amgToNatWei);
-    }
 }

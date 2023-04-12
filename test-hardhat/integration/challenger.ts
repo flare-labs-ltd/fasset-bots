@@ -379,11 +379,14 @@ describe("Challenger tests", async () => {
         const challenger = await createTestChallenger(challengerAddress, state, context);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         await challenger.runStep();
+        const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        const tx = await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal, 100, underlyingAddress);
-        // await agentBot.agent.performPayment("underlying", 100);
+        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal, underlyingBalanceUBA, underlyingAddress);
+        await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
         chain.mine(chain.finalizationBlocks + 1);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {

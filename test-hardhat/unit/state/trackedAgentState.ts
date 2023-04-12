@@ -40,11 +40,6 @@ describe("Tracked agent state tests", async () => {
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());
     });
 
-    it("Should return collateral ratio", async () => {
-        const cr = await trackedAgentState.collateralRatioBIPS();
-        expect(cr.toString()).to.eq(MAX_UINT256.toString());
-    });
-
     it("Should return agent status", async () => {
         trackedAgentState.status = AgentStatus.DESTROYING;
         const status = await trackedAgentState.possibleLiquidationTransition(toBN(0));

@@ -16,8 +16,7 @@ import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANC
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import { Prices } from "../state/Prices";
-import { convertUBAToTokenWei } from "../fasset/Conversions";
+import { AgentCollateral } from "../fasset/AgentCollateral";
 
 // status as returned from getAgentInfo
 export enum AgentStatus {
@@ -291,8 +290,8 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
             const settings = await this.context.assetManager.getSettings();
-            const amgToNatWeiPrice = await this.currentAmgToTokenWeiPriceWithTrusted(settings);
-            const burnNats = convertUBAToTokenWei(settings, minting.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+            const agentCollateral = await AgentCollateral.create(this.context.assetManager, settings, this.agent.vaultAddress);
+            const burnNats = agentCollateral.pool.convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
@@ -535,22 +534,12 @@ export class AgentBot {
     }
 
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
+        const agentCollateral = await AgentCollateral.create(this.context.assetManager, settings, this.agent.vaultAddress);
         const class1Collateral = await this.agent.class1Token.balanceOf(this.agent.vaultAddress);
-        const amgToClass1WeiPrice = await this.currentAmgToTokenWeiPriceWithTrusted(settings, agentInfo.class1CollateralToken);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
-        const backingClass1Wei = convertUBAToTokenWei(settings, totalUBA, amgToClass1WeiPrice);
+        const backingClass1Wei = agentCollateral.class1.convertUBAToTokenWei(totalUBA);
         const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
         return requiredCollateral.sub(class1Collateral);
-    }
-
-    async currentAmgToTokenWeiPriceWithTrusted(settings: AssetManagerSettings, class1Token?: string): Promise<BN> {
-        const prices = await Prices.getFtsoPrices(this.context, settings, this.context.collaterals);
-            const trustedPrices = await Prices.getTrustedPrices(this.context, settings, this.context.collaterals, prices);
-        if (class1Token) {
-            return BN.min(prices.amgToClass1Wei[class1Token], trustedPrices.amgToClass1Wei[class1Token]);
-        } else {
-            return BN.min(prices.amgToNatWei, trustedPrices.amgToNatWei);
-        }
     }
 
 }

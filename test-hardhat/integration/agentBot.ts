@@ -18,6 +18,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import BN from "bn.js";
+import { AgentCollateral } from "../../src/fasset/AgentCollateral";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];

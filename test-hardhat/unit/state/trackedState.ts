@@ -14,9 +14,10 @@ import { Redeemer } from "../../../src/mock/Redeemer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, currentAmgToTokenWeiPriceWithTrusted, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
+import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 use(chaiAsPromised);
 use(spies);
 
@@ -280,9 +281,8 @@ describe("Tracked state tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const amgToNatWeiPrice = await currentAmgToTokenWeiPriceWithTrusted(settings, context);
-        const burnNats = convertUBAToTokenWei(settings, crt.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
-        await agentB.unstickMinting(crt, burnNats);
+        const agentCollateral = await AgentCollateral.create(context.assetManager, settings, agentB.vaultAddress);
+        const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS); await agentB.unstickMinting(crt, burnNats);
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;

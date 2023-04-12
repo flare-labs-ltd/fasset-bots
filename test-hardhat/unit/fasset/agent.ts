@@ -6,11 +6,12 @@ import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/cr
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { Agent } from "../../../src/fasset/Agent";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { convertLotsToUBA, convertUBAToTokenWei } from "../../../src/fasset/Conversions";
+import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, currentAmgToTokenWeiPriceWithTrusted, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -206,8 +207,8 @@ describe("Agent unit tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const amgToNatWeiPrice = await currentAmgToTokenWeiPriceWithTrusted(settings, context);
-        const burnNats = convertUBAToTokenWei(settings, crt.valueUBA, amgToNatWeiPrice).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const agentCollateral = await AgentCollateral.create(context.assetManager, settings, agent.vaultAddress);
+        const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
         await agent.unstickMinting(crt, burnNats);
         expect(spyAgent).to.have.been.called.once;
     });

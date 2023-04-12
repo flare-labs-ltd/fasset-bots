@@ -7,6 +7,8 @@ import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { Prices } from "./Prices";
+import { AgentCollateral } from "../fasset/AgentCollateral";
+import { CollateralData } from "../fasset/CollateralData";
 
 export class TrackedAgentState {
     constructor(
@@ -71,8 +73,9 @@ export class TrackedAgentState {
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
         const class1TokenSettings = requireNotNull(this.parent.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.CLASS1 && c.token === this.agentSettings.class1CollateralToken));
         const natTokenSettings = requireNotNull(this.parent.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.POOL));
-        const crClass1 = await this.collateralRatioBIPS(class1TokenSettings.token);
-        const crPool = await this.collateralRatioBIPS();
+        const agentCollateral = await AgentCollateral.create(this.parent.context.assetManager, this.parent.settings, this.vaultAddress);
+        const crClass1 = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
+        const crPool = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
         const agentStatus = this.status;
         const settings = this.parent.settings;
         if (agentStatus === AgentStatus.NORMAL) {
@@ -94,24 +97,6 @@ export class TrackedAgentState {
             }
         }
         return agentStatus;
-    }
-
-    async collateralRatioBIPS(tokenKey?: string): Promise<BN> {
-        const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, tokenKey);
-        const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.prices, tokenKey);
-        return BN.max(ratio, ratioFromTrusted);
-    }
-
-    private collateralRatioForPriceBIPS(prices: Prices, tokenKey?: string) {
-        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(this.redeemingUBA);
-        if (totalUBA.isZero()) return MAX_UINT256;
-        if (tokenKey) {
-            const backingCollateral: BN = convertUBAToTokenWei(this.parent.settings, totalUBA, prices.amgToClass1Wei[this.agentSettings.class1CollateralToken]);
-            return this.totalClass1CollateralWei[tokenKey].muln(MAX_BIPS).div(backingCollateral);
-        } else {
-            const backingCollateral: BN = convertUBAToTokenWei(this.parent.settings, totalUBA, prices.amgToNatWei);
-            return this.totalPoolCollateralNATWei.muln(MAX_BIPS).div(backingCollateral);
-        }
     }
 
     handleStatusChange(status: AgentStatus, timestamp?: BN): void {
@@ -156,7 +141,7 @@ export class TrackedAgentState {
     }
 
     handleRedemptionPerformed(args: EventArgs<RedemptionPerformed>): void {
-        this.redeemingUBA = this.redeemingUBA.sub(toBN(args.valueUBA));
+        this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
     }
 
     handleRedemptionPaymentBlocked(args: EventArgs<RedemptionPaymentBlocked>): void {
@@ -166,9 +151,9 @@ export class TrackedAgentState {
     handleRedemptionDefault(args: EventArgs<RedemptionDefault>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
     }
-
+//TODO
     handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.freedUnderlyingBalanceUBA));
+        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(BN_ZERO);
     }
 
     handleSelfClose(args: EventArgs<SelfClose>): void {
