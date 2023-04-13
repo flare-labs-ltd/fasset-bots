@@ -296,7 +296,7 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
         if (proof) {
             const settings = await this.context.assetManager.getSettings();
-            const agentCollateral = await AgentCollateral.create(this.context.assetManager, settings, this.agent.vaultAddress);
+            const agentCollateral = await this.agent.getAgentCollateral();
             const burnNats = agentCollateral.pool.convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
@@ -519,10 +519,9 @@ export class AgentBot {
     // owner deposits class1 collateral to vault to get out of ccb or liquidation due to price changes
     async checkAgentForClass1CollateralRatioAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
-        const settings = await this.context.assetManager.getSettings();
         const class1Collateral = this.agent.class1Collateral;
         const requiredCrBIPS = toBN(class1Collateral.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo, settings);
+        const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo);
         if (requiredTopUp.lte(BN_ZERO)) {
             // no need for top up
             return;
@@ -539,8 +538,8 @@ export class AgentBot {
         }
     }
 
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, settings: AssetManagerSettings): Promise<BN> {
-        const agentCollateral = await AgentCollateral.create(this.context.assetManager, settings, this.agent.vaultAddress);
+    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo): Promise<BN> {
+        const agentCollateral = await this.agent.getAgentCollateral();
         const class1Collateral = await this.agent.class1Token.balanceOf(this.agent.vaultAddress);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
         const backingClass1Wei = agentCollateral.class1.convertUBAToTokenWei(totalUBA);

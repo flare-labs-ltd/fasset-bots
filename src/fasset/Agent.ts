@@ -27,6 +27,8 @@ export class Agent {
     ) {
     }
 
+    class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === this.agentSettings.class1CollateralToken));
+
     get assetManager(): ContractWithEvents<AssetManagerInstance, AllEvents> {
         return this.context.assetManager;
     }
@@ -51,7 +53,13 @@ export class Agent {
         return await this.context.assetManager.getSettings();
     }
 
-    class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === this.agentSettings.class1CollateralToken));
+    async getAgentCollateral() {
+        return await AgentCollateral.create(this.assetManager, await this.assetManager.getSettings(), this.vaultAddress);
+    }
+
+    async getAgentInfo(): Promise<AgentInfo> {
+        return await this.context.assetManager.getAgentInfo(this.agentVault.address);
+    }
 
     static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
@@ -108,10 +116,6 @@ export class Agent {
 
     async withdrawClass1Collateral(amountWei: BNish) {
         return await this.agentVault.withdrawCollateral(this.class1Token.address, amountWei, this.ownerAddress, { from: this.ownerAddress });
-    }
-
-    async poolTokenBalance() {
-        return await this.collateralPoolToken.balanceOf(this.vaultAddress);
     }
 
     async announcePoolTokenRedemption(amountWei: BNish) {
@@ -274,10 +278,6 @@ export class Agent {
         await this.assetManager.buybackAgentCollateral(this.agentVault.address, { from: this.ownerAddress });
     }
 
-    async getAgentInfo(): Promise<AgentInfo> {
-        return await this.context.assetManager.getAgentInfo(this.agentVault.address);
-    }
-
     async announceAgentSettingUpdate(settingName: string, settingValue: string): Promise<BN> {
         const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
         const args = requiredEventArgs(res, 'AgentSettingChangeAnnounced');
@@ -286,9 +286,5 @@ export class Agent {
 
     async executeAgentSettingUpdate(settingName: string): Promise<void> {
         await this.assetManager.executeAgentSettingUpdate(this.vaultAddress, settingName, { from: this.ownerAddress });
-    }
-
-    async getAgentCollateral() {
-        return await AgentCollateral.create(this.assetManager, await this.assetManager.getSettings(), this.vaultAddress);
     }
 }

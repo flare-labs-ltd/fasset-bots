@@ -281,7 +281,7 @@ describe("Tracked state tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const agentCollateral = await AgentCollateral.create(context.assetManager, settings, agentB.vaultAddress);
+        const agentCollateral = await agentB.getAgentCollateral();
         const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS); await agentB.unstickMinting(crt, burnNats);
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));

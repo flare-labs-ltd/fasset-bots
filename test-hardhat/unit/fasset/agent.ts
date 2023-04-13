@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import { MockChain, MockTransactionOptionsWithFee } from "../../../src/mock/MockChain";
-import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp, toWei } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -10,7 +10,7 @@ import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 use(spies);
 
@@ -76,12 +76,32 @@ describe("Agent unit tests", async () => {
         expect(wallet).to.not.be.null;
     });
 
+    it("Should get underlying address", async () => {
+        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+        const agentsUnderlyingAddress = agent.underlyingAddress;
+        expect(agentsUnderlyingAddress).to.eq(underlyingAddress);
+    });
+
+    it("Should get asset manager settings", async () => {
+        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+        const settings = await agent.getAssetManagerSettings();
+        expect(settings).to.not.be.null;
+    });
+
+
+    it("Should get agent collateral", async () => {
+        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+        const agentCollateral = await agent.getAgentCollateral();
+        expect(agentCollateral).to.not.be.null;
+        expect(agentCollateral.class1.collateral?.token).to.eq(agent.class1Token.address);
+    });
+
     it("Should deposit collateral", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const class1TokenContract = await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
         await agent.depositClass1Collateral(deposit);
         const val = await class1TokenContract.balanceOf(agent.vaultAddress);
-        expect(Number(val)).to.eq(Number(deposit));
+        expect(val.toString()).to.eq(deposit.toString());
     });
 
     it("Should make agent available", async () => {
@@ -89,8 +109,20 @@ describe("Agent unit tests", async () => {
         await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
         await agent.depositClass1Collateral(deposit);
         await agent.buyCollateralPoolTokens(deposit);
-        const res = await agent.makeAvailable();
-        expect(res.agentVault).to.eq(agent.vaultAddress);
+        await agent.makeAvailable();
+        const agentInfo = await agent.getAgentInfo();
+        expect(agentInfo.publiclyAvailable).to.be.true;
+    });
+
+    it("Should deposit collateral and make available", async () => {
+        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+        await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);
+        await agent.depositCollateralsAndMakeAvailable(deposit, deposit);
+        const agentCollateral = await agent.getAgentCollateral();
+        expect(agentCollateral.class1.balance.eq(deposit)).to.be.true;
+        expect(agentCollateral.agentPoolTokens.balance.eq(deposit)).to.be.true;
+        const agentInfo = await agent.getAgentInfo();
+        expect(agentInfo.publiclyAvailable).to.be.true;
     });
 
     it("Should announce collateral withdrawal and withdraw", async () => {
@@ -207,7 +239,7 @@ describe("Agent unit tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const agentCollateral = await AgentCollateral.create(context.assetManager, settings, agent.vaultAddress);
+        const agentCollateral = await agent.getAgentCollateral();
         const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
         await agent.unstickMinting(crt, burnNats);
         expect(spyAgent).to.have.been.called.once;
@@ -372,6 +404,23 @@ describe("Agent unit tests", async () => {
         context.chain.mint(randomUnderlyingAddress, mintAmount);
         const selfMint = await agent.selfMint(randomUnderlyingAddress, allAmountUBA, lots);
         assert(selfMint.mintedAmountUBA.toString(), amountUBA.toString());
+    });
+
+    it("Should withdraw pool fees", async () => {
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
+        const fPoolBalanceBefore = await agent.poolFeeBalance();
+        expect(fPoolBalanceBefore.eqn(0)).to.be.true;
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await createCRAndPerformMinting(minter, agent.vaultAddress, 2, chain);
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(agent.collateralPool.address, fBalance, { from: minter.address });
+        // withdraw pool fees
+        const fPoolBalanceBeforeWithdraw = await agent.poolFeeBalance();
+        await agent.withdrawPoolFees(fBalance);
+        const fPoolBalanceAfterWithdraw = await agent.poolFeeBalance();
+        const ownerFassets = await context.fAsset.balanceOf(agent.ownerAddress);
+        expect(ownerFassets.eq(fBalance)).to.be.true;
+        expect(fPoolBalanceAfterWithdraw.toString()).to.eq(fPoolBalanceBeforeWithdraw.sub(fBalance).toString());
     });
 
 });
