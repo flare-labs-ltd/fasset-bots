@@ -18,6 +18,7 @@ import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 use(chaiAsPromised);
 use(spies);
 
@@ -176,6 +177,7 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.closeVault(vaultAddress2!);
         const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress2 } as FilterQuery<AgentEntity>);
         expect(agentEnt2.waitingForDestructionCleanUp).to.be.true;
+        expect(agentEnt2.exitAvailableAllowedAtTimestamp.gtn(0)).to.be.true;
     });
 
     it("Should list usage commands", async () => {
@@ -205,6 +207,41 @@ describe("Bot cli commands unit tests", async () => {
     it("Should not run command 'deposit' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "deposit"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'buyPoolCollateral'", async () => {
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const agentCollateral0 = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), vaultAddress!);
+        expect(agentCollateral0.agentPoolTokens.balance.eqn(0)).to.be.true;
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress!, depositAmount);
+        await botCliCommands.run(["", "", "buyPoolCollateral", vaultAddress!, depositAmount]);
+        const agentCollateral1 = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), vaultAddress!);
+        expect(agentCollateral1.agentPoolTokens.balance.eq(toBN(depositAmount))).to.be.true;
+    });
+
+    it("Should not run command 'buyPoolCollateral' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "buyPoolCollateral"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'setAgentSetting'", async () => {
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const settingName = "feeBIPS";
+        const settingValue = "1100";
+        await botCliCommands.run(["", "", "setAgentSetting", vaultAddress!, settingName, settingValue]);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEnt.agentSettingUpdateValidAtTimestamp.gtn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtName).to.eq(settingName);
+    });
+
+    it("Should not run command 'setAgentSetting' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "setAgentSetting"]);
         expect(spyLog).to.be.called.once;
     });
 

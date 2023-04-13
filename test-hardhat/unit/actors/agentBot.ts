@@ -1,7 +1,7 @@
 import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
+import { checkedCast, maxBN, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -13,7 +13,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintClass1ToOwner } from "../../test-utils/helpers";
 use(spies);
 
 describe("Agent bot unit tests", async () => {
@@ -25,6 +25,7 @@ describe("Agent bot unit tests", async () => {
     let chain: MockChain;
 
     before(async () => {
+        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
@@ -57,6 +58,12 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    });
+
+    it("Should run readUnhandledEvents", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const events = await agentBot.readUnhandledEvents(orm.em);
+        expect(events.length).to.eq(0);
     });
 
     it("Should top up collateral", async () => {
@@ -304,6 +311,10 @@ describe("Agent bot unit tests", async () => {
         agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
         const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfo.status).toNumber()).to.eq(AgentStatus.DESTROYING);
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.waitingForDestructionTimestamp.eq(destroyAllowedAt)).to.be.true;
+        // allowed
         await time.increaseTo(destroyAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
@@ -319,21 +330,48 @@ describe("Agent bot unit tests", async () => {
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
         await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.withdrawalAllowedAtTimestamp.eq(withdrawalAllowedAt)).to.be.true;
+        // allowed
         await time.increaseTo(withdrawalAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
         expect((await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress)).eqn(0)).to.be.true;
     });
 
-    it("Should announce to close vault", async () => {
+    it("Should update agent settings", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        agentEnt.waitingForDestructionCleanUp = true;
-        const skipTime = toBN((await context.assetManager.getSettings()).withdrawalWaitMinSeconds).muln(2);
-        await time.increase(skipTime);
+        const settingName = "feeBIPS";
+        const settingValue = "1100";
+        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
+        agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
+        agentEnt.agentSettingUpdateValidAtName = settingName;
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp.gtn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eq(validAt)).to.be.true;
+        // allowed
+        await time.increaseTo(validAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");
+    });
+
+    it("Should exit available", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const validAt = await agentBot.agent.announceExitAvailable();
+        agentEnt.exitAvailableAllowedAtTimestamp = validAt;
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eq(validAt)).to.be.true;
+        // allowed
+        await time.increaseTo(validAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
     });
 
     it("Should run handleAgentsWaitingsAndCleanUp and change nothing", async () => {
@@ -348,6 +386,29 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtAmount.eqn(0)).to.be.true;
+    });
+
+    it("Should exit available before closing vault", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        agentEnt.waitingForDestructionCleanUp = true;
+        const validAt = await agentBot.agent.announceExitAvailable();
+        agentEnt.exitAvailableAllowedAtTimestamp = validAt;
+        await orm.em.persist(agentEnt).flush();
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eq(validAt)).to.be.true;
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
+        // allowed
+        await time.increaseTo(validAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
+        // close vault
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
     });
 
 });

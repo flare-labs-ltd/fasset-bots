@@ -203,11 +203,9 @@ export class AgentBot {
                 }
             }
             if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
-                const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.exitAvailableAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
-                    await this.agent.exitAvailable();
-                    agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
-                }
+                await this.exitAvailable(agentEnt);
+            } else if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO)) {
+                await this.exitAvailable(agentEnt);
             } else if (agentEnt.waitingForDestructionCleanUp) {
                 const agentInfo = await this.agent.getAgentInfo();
                 if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
@@ -217,6 +215,14 @@ export class AgentBot {
                 }
             }
         });
+    }
+
+    async exitAvailable(agentEnt: AgentEntity) {
+        const latestTimestamp = await this.latestBlockTimestamp();
+        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
+            await this.agent.exitAvailable();
+            agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        }
     }
 
     async latestBlockTimestamp(): Promise<number> {
