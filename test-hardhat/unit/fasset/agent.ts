@@ -11,7 +11,6 @@ import { TX_BLOCKED } from "../../../src/underlying-chain/interfaces/IBlockChain
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
-import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";

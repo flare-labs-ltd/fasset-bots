@@ -10,7 +10,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 
-const underlyingAddress: string = "AGENT_UNDERLYING";
+const underlyingAddress: string = "AGENT_UNDERLYING_ADDRESS";
 const transaction1 = {
     hash: '0x169781d915f549c9546305746e220c80df82304f5a496de47d10e3fefd54ebcb',
     inputs: [[underlyingAddress, toBN(100)]],

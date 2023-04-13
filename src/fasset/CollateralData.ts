@@ -60,20 +60,20 @@ export class CollateralDataFactory {
         return new CollateralDataFactory(settings, priceReader);
     }
 
-    async class1(collateral: CollateralToken, agentVault: string) {
+    async class1(collateral: CollateralToken, agentVault: string): Promise<CollateralData> {
         return await this.forCollateral(collateral, agentVault);
     }
 
-    async pool(collateral: CollateralToken, collateralPoolAddress: string) {
+    async pool(collateral: CollateralToken, collateralPoolAddress: string): Promise<CollateralData> {
         return await this.forCollateral(collateral, collateralPoolAddress);
     }
 
-    async forCollateral(collateral: CollateralToken, tokenHolder: string) {
+    async forCollateral(collateral: CollateralToken, tokenHolder: string): Promise<CollateralData> {
         const collateralPrice = await CollateralPrice.forCollateral(this.priceReader, this.settings, collateral);
         return CollateralData.forCollateralPrice(collateralPrice, tokenHolder);
     }
 
-    async agentPoolTokens(poolCollateral: CollateralData, poolToken: CollateralPoolTokenInstance, agentVault: string) {
+    async agentPoolTokens(poolCollateral: CollateralData, poolToken: CollateralPoolTokenInstance, agentVault: string): Promise<CollateralData> {
         const agentPoolTokens = await poolToken.balanceOf(agentVault);
         const totalPoolTokens = await poolToken.totalSupply();
         // asset price and token price will be expressed in pool collateral (wnat)

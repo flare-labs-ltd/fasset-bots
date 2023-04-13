@@ -5,7 +5,7 @@ import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentInfo, AgentSettings, AssetManagerSettings } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
@@ -16,7 +16,6 @@ import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANC
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import { AgentCollateral } from "../fasset/AgentCollateral";
 
 // status as returned from getAgentInfo
 export enum AgentStatus {
