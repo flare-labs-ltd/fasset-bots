@@ -1,14 +1,11 @@
 import BN from "bn.js";
 import { AgentStatus } from "../actors/AgentBot";
 import { AgentInfo, CollateralTokenClass } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN, requireNotNull } from "../utils/helpers";
-import { convertUBAToTokenWei } from "../fasset/Conversions";
+import { BN_ZERO, toBN, requireNotNull } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { Prices } from "./Prices";
 import { AgentCollateral } from "../fasset/AgentCollateral";
-import { CollateralData } from "../fasset/CollateralData";
 
 export class TrackedAgentState {
     constructor(
