@@ -68,28 +68,26 @@ export class TrackedAgentState {
     }
 
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
-        const class1TokenSettings = requireNotNull(this.parent.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.CLASS1 && c.token === this.agentSettings.class1CollateralToken));
-        const natTokenSettings = requireNotNull(this.parent.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.POOL));
         const agentCollateral = await AgentCollateral.create(this.parent.context.assetManager, this.parent.settings, this.vaultAddress);
         const crClass1 = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
         const crPool = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
         const agentStatus = this.status;
         const settings = this.parent.settings;
         if (agentStatus === AgentStatus.NORMAL) {
-            if (crClass1.lt(toBN(class1TokenSettings.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(natTokenSettings.ccbMinCollateralRatioBIPS))) {
+            if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS))) {
                 return AgentStatus.LIQUIDATION;
-            } else if (crClass1.lt(toBN(class1TokenSettings.minCollateralRatioBIPS)) || crPool.lt(toBN(natTokenSettings.minCollateralRatioBIPS))) {
+            } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.CCB;
             }
 
         } else if (agentStatus === AgentStatus.CCB) {
-            if (crClass1.gte(toBN(class1TokenSettings.minCollateralRatioBIPS)) && crPool.gte(toBN(natTokenSettings.minCollateralRatioBIPS))) {
+            if (crClass1.gte(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
-            } else if (crClass1.lt(toBN(class1TokenSettings.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(natTokenSettings.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
+            } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
                 return AgentStatus.LIQUIDATION;
             }
         } else if (agentStatus === AgentStatus.LIQUIDATION) {
-            if (crClass1.gte(toBN(class1TokenSettings.safetyMinCollateralRatioBIPS)) && crPool.gte(toBN(natTokenSettings.safetyMinCollateralRatioBIPS))) {
+            if (crClass1.gte(toBN(agentCollateral.class1.collateral!.safetyMinCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.safetyMinCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
             }
         }
