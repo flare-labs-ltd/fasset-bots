@@ -33,22 +33,22 @@ describe("Notifier tests", async () => {
 
     it("Should send CCB alert", async () => {
         const spySend = spy.on(notifier, "sendCCBAlert");
-        notifier.sendCCBAlert("agentVault");
+        notifier.sendCCBAlert("agentVault", "0");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send liquidation started alert", async () => {
         const spySend = spy.on(notifier, "sendLiquidationStartAlert");
-        notifier.sendLiquidationStartAlert("agentVault");
+        notifier.sendLiquidationStartAlert("agentVault", "0");
         expect(spySend).to.have.been.called.once;
     });
 
 
     it("Should send full liquidation alert", async () => {
         const spySend = spy.on(notifier, "sendFullLiquidationAlert");
-        notifier.sendFullLiquidationAlert("agentVault", "pay1", "pay2");
-        notifier.sendFullLiquidationAlert("agentVault", "pay1");
-        notifier.sendFullLiquidationAlert("agentVault");
+        notifier.sendFullLiquidationAlert("agentVault", "0", "pay1", "pay2");
+        notifier.sendFullLiquidationAlert("agentVault", "0", "pay1");
+        notifier.sendFullLiquidationAlert("agentVault", "0");
         expect(spySend).to.have.been.called.exactly(3);
     });
 
@@ -116,7 +116,7 @@ describe("Notifier tests", async () => {
 
     it("Should send low balance on owner's address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnOwnersAddress");
-        notifier.sendLowBalanceOnOwnersAddress("ownerAddress", "1");
+        notifier.sendLowBalanceOnOwnersAddress("ownerAddress", "1", "NAT");
         expect(spySend).to.have.been.called.once;
     });
 

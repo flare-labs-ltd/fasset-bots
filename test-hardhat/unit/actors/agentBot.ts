@@ -69,8 +69,8 @@ describe("Agent bot unit tests", async () => {
     it("Should top up collateral", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyTop = spy.on(agentBot, 'requiredTopUp');
-        await agentBot.checkAgentForClass1CollateralRatioAndTopUp();
-        expect(spyTop).to.have.been.called.once;
+        await agentBot.checkAgentForCollateralRatiosAndTopUp();
+        expect(spyTop).to.have.been.called.twice;
     });
 
     it("Should top up underlying - failed", async () => {

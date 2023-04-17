@@ -12,10 +12,11 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, STABLE_COIN_LOW_BALANCE, requireEnv, toBN } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import { CollateralData } from "../fasset/CollateralData";
 
 // status as returned from getAgentInfo
 export enum AgentStatus {
@@ -29,6 +30,7 @@ export enum AgentStatus {
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
 const CollateralPoolToken = artifacts.require('CollateralPoolToken');
+const IERC20 = artifacts.require('IERC20');
 
 export class AgentBot {
     constructor(
@@ -126,19 +128,19 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args.agentVault);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    await this.checkAgentForClass1CollateralRatioAndTopUp();
+                    await this.checkAgentForCollateralRatiosAndTopUp();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
-                    this.notifier.sendCCBAlert(event.args.agentVault);
+                    this.notifier.sendCCBAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    this.notifier.sendLiquidationStartAlert(event.args.agentVault);
+                    this.notifier.sendLiquidationStartAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     this.notifier.sendLiquidationWasPerformed(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp, event.args.transactionHash1, event.args.transactionHash2);
                 } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp, event.args.transactionHash);
                 }
             }
         }).catch(error => {
@@ -514,36 +516,54 @@ export class AgentBot {
         }
     }
 
-    //TODO add also for the pool
-    // owner deposits class1 collateral to vault to get out of ccb or liquidation due to price changes
-    async checkAgentForClass1CollateralRatioAndTopUp(): Promise<void> {
+    // owner deposits class1 collateral to vault or pool to get out of ccb or liquidation due to price changes
+    async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
-        const class1Collateral = this.agent.class1Collateral;
-        const requiredCrBIPS = toBN(class1Collateral.minCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUp = await this.requiredTopUp(requiredCrBIPS, agentInfo);
-        if (requiredTopUp.lte(BN_ZERO)) {
+        const agentCollateral = await this.agent.getAgentCollateral();
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const requiredCrClass1BIPS = toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const requiredCrPoolBIPS = toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopUpClass1 = await this.requiredTopUp(requiredCrClass1BIPS, agentInfo, agentCollateral.class1);
+        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, agentCollateral.pool);
+
+        if (requiredTopUpClass1.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
             // no need for top up
-            return;
+        } else if (requiredTopUpClass1.gt(BN_ZERO)) {
+            try {
+                await this.agent.depositClass1Collateral(requiredTopUpClass1);
+                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
+            } catch (err) {
+                this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
+            }
+        } else {
+            //TODO deposit to pool?
+            try {
+                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
+            } catch (err) {
+                this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
+            }
         }
-        try {
-            await this.agent.depositClass1Collateral(requiredTopUp);
-            this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUp.toString());
-        } catch (err) {
-            this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUp.toString());
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const tokenClass1 = await IERC20.at(agentCollateral.class1.collateral!.token);
+        const ownerBalanceClass1 = await tokenClass1.balanceOf(this.agent.ownerAddress);
+        if (ownerBalanceClass1.lte(STABLE_COIN_LOW_BALANCE)) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceClass1.toString(), agentCollateral.class1.collateral!.tokenFtsoSymbol);
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
         if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
-            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString());
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), agentCollateral.pool.collateral!.tokenFtsoSymbol);
         }
     }
 
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo): Promise<BN> {
-        const agentCollateral = await this.agent.getAgentCollateral();
-        const class1Collateral = await this.agent.class1Token.balanceOf(this.agent.vaultAddress);
+    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cd: CollateralData): Promise<BN> {
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
-        const backingClass1Wei = agentCollateral.class1.convertUBAToTokenWei(totalUBA);
+        const backingClass1Wei = cd.convertUBAToTokenWei(totalUBA);
         const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(class1Collateral);
+        return requiredCollateral.sub(cd.balance);
     }
 
 }

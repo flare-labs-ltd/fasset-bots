@@ -18,7 +18,6 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import BN from "bn.js";
-import { AgentCollateral } from "../../src/fasset/AgentCollateral";
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
@@ -425,7 +424,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spyTop = spy.on(agentBot, 'checkAgentForClass1CollateralRatioAndTopUp');
+        const spyTop = spy.on(agentBot, 'checkAgentForCollateralRatiosAndTopUp');
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes

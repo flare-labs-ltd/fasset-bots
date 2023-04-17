@@ -40,6 +40,7 @@ export class AMGPrice {
     }
 
     static forTokenPrices(settings: AMGSettings, collateral: CollateralToken, assetPrice: TokenPrice, tokenPrice: TokenPrice | undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const [tokPrice, tokPriceDecimals] = collateral.directPricePair ? [1, 0] : [tokenPrice!.price, tokenPrice!.decimals];
         const amgToTokenWei = amgToTokenWeiPrice(settings, collateral.decimals, tokPrice, tokPriceDecimals, assetPrice.price, assetPrice.decimals);
         return new AMGPrice(amgToTokenWei, toBN(settings.assetMintingDecimals), toBN(settings.assetMintingGranularityUBA));
