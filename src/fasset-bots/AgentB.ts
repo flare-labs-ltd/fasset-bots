@@ -1,11 +1,10 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
 import { Agent } from "../fasset/Agent";
-import { AgentSettings, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { AgentSettings } from "../fasset/AssetManagerTypes";
 import { artifacts } from "../utils/artifacts";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { IAssetBotContext } from "./IAssetBotContext";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { requireNotNull } from "../utils/helpers";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -18,13 +17,10 @@ export class AgentB extends Agent {
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
-        public settings: AgentSettings
+        public underlyingAddress: string
     ) {
-        super(context, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings);
+        super(context, ownerAddress, agentVault, collateralPool, collateralPoolToken, underlyingAddress);
     }
-
-    class1Collateral = requireNotNull(this.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.CLASS1 && c.token === this.agentSettings.class1CollateralToken));
-    poolCollateral = requireNotNull(this.context.collaterals.find(c => c.tokenClass === CollateralTokenClass.POOL && c.token === this.context.wNat.address));
 
     static async create(ctx: IAssetBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
         // create agent
@@ -39,6 +35,6 @@ export class AgentB extends Agent {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new AgentB(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings);
+        return new AgentB(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings.underlyingAddressString);
     }
 }

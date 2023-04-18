@@ -1,6 +1,6 @@
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
-import { AgentBot, AgentStatus } from "../../src/actors/AgentBot";
+import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
@@ -18,6 +18,10 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import BN from "bn.js";
+import { artifacts } from "../../src/utils/artifacts";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+
+const IERC20 = artifacts.require('IERC20');
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
@@ -220,6 +224,8 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
+        // class1token
+        const class1Token = await IERC20.at((await agentBot.agent.getClass1CollateralToken()).token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -239,11 +245,11 @@ describe("Agent bot tests", async () => {
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
-        const startBalanceRedeemer = await agentBot.agent.class1Token.balanceOf(redeemer.address);
-        const startBalanceAgent = await agentBot.agent.class1Token.balanceOf(agentBot.agent.agentVault.address);
+        const startBalanceRedeemer = await class1Token.balanceOf(redeemer.address);
+        const startBalanceAgent = await class1Token.balanceOf(agentBot.agent.vaultAddress);
         const res = await redeemer.redemptionPaymentDefault(rdReq);
-        const endBalanceRedeemer = await agentBot.agent.class1Token.balanceOf(redeemer.address);
-        const endBalanceAgent = await agentBot.agent.class1Token.balanceOf(agentBot.agent.agentVault.address);
+        const endBalanceRedeemer = await class1Token.balanceOf(redeemer.address);
+        const endBalanceAgent = await class1Token.balanceOf(agentBot.agent.vaultAddress);
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedClass1CollateralWei));
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedClass1CollateralWei));
         // check if redemption is done
@@ -312,6 +318,9 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
+        // class1token
+        const class1CollateralToken = await agentBot.agent.getClass1CollateralToken();
+        const class1Token = await IERC20.at(class1CollateralToken.token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -336,12 +345,12 @@ describe("Agent bot tests", async () => {
         await time.increase(settings.confirmationByOthersAfterSeconds);
         chain.mine(chain.finalizationBlocks + 1);
         const someAddress = accounts[10];
-        const startBalance = await agentBot.agent.class1Token.balanceOf(someAddress);
-        const startAgentBalance = await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress);
+        const startBalance = await class1Token.balanceOf(someAddress);
+        const startAgentBalance = await class1Token.balanceOf(agentBot.agent.vaultAddress);
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
-        const endBalance = await agentBot.agent.class1Token.balanceOf(someAddress);
-        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, agentBot.agent.class1Collateral ,context);
+        const endBalance = await class1Token.balanceOf(someAddress);
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken ,context);
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });

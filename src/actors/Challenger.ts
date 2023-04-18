@@ -1,4 +1,5 @@
 import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -9,7 +10,6 @@ import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
-import { AgentStatus } from "./AgentBot";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 

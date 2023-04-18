@@ -1,11 +1,11 @@
 import BN from "bn.js";
-import { AgentStatus } from "../actors/AgentBot";
-import { AgentInfo, CollateralTokenClass } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, toBN, requireNotNull } from "../utils/helpers";
+import { AgentInfo, AgentStatus } from "../fasset/AssetManagerTypes";
+import { BN_ZERO, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { AgentCollateral } from "../fasset/AgentCollateral";
+import { web3Normalize } from "../utils/web3normalize";
 
 export class TrackedAgentState {
     constructor(
@@ -24,7 +24,6 @@ export class TrackedAgentState {
 
     // agent settings
     agentSettings = {
-        underlyingAddressString: this.underlyingAddress,
         class1CollateralToken: "",
         feeBIPS: BN_ZERO,
         poolFeeShareBIPS: BN_ZERO,
@@ -57,14 +56,14 @@ export class TrackedAgentState {
         this.dustUBA = toBN(agentInfo.dustUBA);
         this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
         Object.defineProperty(this.agentSettings, 'class1CollateralToken', { value: agentInfo.class1CollateralToken });
-        Object.defineProperty(this.agentSettings, 'feeBIPS', toBN(agentInfo.feeBIPS));
-        Object.defineProperty(this.agentSettings, 'poolFeeShareBIPS', toBN(agentInfo.poolFeeShareBIPS));
-        Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', toBN(agentInfo.mintingClass1CollateralRatioBIPS));
-        Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', toBN(agentInfo.mintingPoolCollateralRatioBIPS));
-        Object.defineProperty(this.agentSettings, 'poolExitCollateralRatioBIPS', toBN(agentInfo.poolExitCollateralRatioBIPS));
-        Object.defineProperty(this.agentSettings, 'buyFAssetByAgentFactorBIPS', toBN(agentInfo.buyFAssetByAgentFactorBIPS));
-        Object.defineProperty(this.agentSettings, 'poolTopupCollateralRatioBIPS', toBN(agentInfo.poolTopupCollateralRatioBIPS));
-        Object.defineProperty(this.agentSettings, 'poolTopupTokenPriceFactorBIPS', toBN(agentInfo.poolTopupTokenPriceFactorBIPS));
+        Object.defineProperty(this.agentSettings, 'feeBIPS', { value: toBN(agentInfo.feeBIPS) });
+        Object.defineProperty(this.agentSettings, 'poolFeeShareBIPS', { value: toBN(agentInfo.poolFeeShareBIPS) });
+        Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', { value: toBN(agentInfo.mintingClass1CollateralRatioBIPS) });
+        Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', { value: toBN(agentInfo.mintingPoolCollateralRatioBIPS) });
+        Object.defineProperty(this.agentSettings, 'poolExitCollateralRatioBIPS', { value: toBN(agentInfo.poolExitCollateralRatioBIPS) });
+        Object.defineProperty(this.agentSettings, 'buyFAssetByAgentFactorBIPS', { value: toBN(agentInfo.buyFAssetByAgentFactorBIPS) });
+        Object.defineProperty(this.agentSettings, 'poolTopupCollateralRatioBIPS', { value: toBN(agentInfo.poolTopupCollateralRatioBIPS) });
+        Object.defineProperty(this.agentSettings, 'poolTopupTokenPriceFactorBIPS', { value: toBN(agentInfo.poolTopupTokenPriceFactorBIPS) });
     }
 
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
@@ -77,7 +76,7 @@ export class TrackedAgentState {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS))) {
                 return AgentStatus.LIQUIDATION;
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.CCB;
             }
@@ -86,7 +85,7 @@ export class TrackedAgentState {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             if (crClass1.gte(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
                 return AgentStatus.LIQUIDATION;
             }
@@ -151,7 +150,7 @@ export class TrackedAgentState {
     handleRedemptionDefault(args: EventArgs<RedemptionDefault>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
     }
-//TODO
+    //TODO
     handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
         this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(BN_ZERO);
     }
@@ -216,8 +215,8 @@ export class TrackedAgentState {
         this.totalPoolCollateralNATWei = this.totalPoolCollateralNATWei.sub(value);
     }
 
-    handleAgentSettingChanged(name: string, value: string): void {
-        Object.defineProperty(this.agentSettings, name, name === 'class1CollateralToken' ? value : toBN(value));
+    handleAgentSettingChanged(name: string, value: string | BN): void {
+         (this.agentSettings as any)[name] = web3Normalize(value);
     }
 
 }

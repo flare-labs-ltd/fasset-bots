@@ -18,15 +18,6 @@ import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { CollateralData } from "../fasset/CollateralData";
 
-// status as returned from getAgentInfo
-export enum AgentStatus {
-    NORMAL = 0,             // agent is operating normally
-    CCB = 1,                // agent in collateral call band
-    LIQUIDATION = 2,        // liquidation due to collateral ratio - ends when agent is healthy
-    FULL_LIQUIDATION = 3,   // illegal payment liquidation - always liquidates all and then agent must close vault
-    DESTROYING = 4          // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
-}
-
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
 const CollateralPoolToken = artifacts.require('CollateralPoolToken');
@@ -78,20 +69,8 @@ export class AgentBot {
         // get pool token
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
-        const agentInfo = await context.assetManager.getAgentInfo(agentEntity.vaultAddress);
-        const agentSettings = {
-            underlyingAddressString: agentEntity.underlyingAddress,
-            class1CollateralToken: agentInfo.class1CollateralToken,
-            feeBIPS: agentInfo.feeBIPS,
-            poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
-            mintingClass1CollateralRatioBIPS: agentInfo.mintingClass1CollateralRatioBIPS,
-            mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
-            poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
-            buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
-            poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
-            poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS
-        }
-        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings);
+        // agent
+        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
         return new AgentBot(agent, notifier);
     }
 
@@ -525,7 +504,6 @@ export class AgentBot {
         const requiredCrPoolBIPS = toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         const requiredTopUpClass1 = await this.requiredTopUp(requiredCrClass1BIPS, agentInfo, agentCollateral.class1);
         const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, agentCollateral.pool);
-
         if (requiredTopUpClass1.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
             // no need for top up
         } else if (requiredTopUpClass1.gt(BN_ZERO)) {

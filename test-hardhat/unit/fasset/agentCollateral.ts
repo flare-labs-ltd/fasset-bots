@@ -40,7 +40,8 @@ describe("Agent collateral unit tests", async () => {
         const class1Collateral = agentCollateral.ofKind(CollateralKind.CLASS1);
         const poolCollateral = agentCollateral.ofKind(CollateralKind.POOL);
         const agentPoolTokens = agentCollateral.ofKind(CollateralKind.AGENT_POOL_TOKENS);
-        expect(class1Collateral.collateral?.token).eq(agentB.class1Token.address);
+        const class1TokenAddress = (await agentB.getClass1CollateralToken()).token;
+        expect(class1Collateral.collateral?.token).eq(class1TokenAddress);
         expect(poolCollateral.collateral?.token).eq(context.wNat.address);
         expect(agentPoolTokens.balance.eq(deposit)).to.be.true;
     });

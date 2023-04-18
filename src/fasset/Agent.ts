@@ -2,8 +2,8 @@ import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance
 import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO, BNish, requireNotNull, toBN } from "../utils/helpers";
-import { AgentInfo, AgentSettings, AssetManagerSettings } from "./AssetManagerTypes";
+import { BN_ZERO, BNish, toBN } from "../utils/helpers";
+import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralToken } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -11,6 +11,7 @@ import { EventArgs } from "../utils/events/common";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { AgentCollateral } from "./AgentCollateral";
+import { getAgentSettings } from "../utils/fasset-helpers";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -23,11 +24,9 @@ export class Agent {
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
-        public agentSettings: AgentSettings
+        public underlyingAddress: string
     ) {
     }
-
-    class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === this.agentSettings.class1CollateralToken));
 
     get assetManager(): ContractWithEvents<AssetManagerInstance, AllEvents> {
         return this.context.assetManager;
@@ -45,12 +44,13 @@ export class Agent {
         return this.context.wallet;
     }
 
-    get underlyingAddress(): string {
-        return this.agentSettings.underlyingAddressString;
-    }
-
     async getAssetManagerSettings(): Promise<AssetManagerSettings> {
         return await this.context.assetManager.getSettings();
+    }
+
+    async getAgentSettings(): Promise<AgentSettings> {
+        const agentInfo = await this.getAgentInfo();
+       return await getAgentSettings(agentInfo);
     }
 
     async getAgentCollateral() {
@@ -59,6 +59,11 @@ export class Agent {
 
     async getAgentInfo(): Promise<AgentInfo> {
         return await this.context.assetManager.getAgentInfo(this.agentVault.address);
+    }
+
+    async getClass1CollateralToken(): Promise<CollateralToken> {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return (await this.getAgentCollateral()).class1.collateral!;
     }
 
     static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
@@ -74,11 +79,12 @@ export class Agent {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings);
+        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
     }
 
     async depositClass1Collateral(amountTokenWei: BNish) {
-        return await this.agentVault.depositCollateral(this.class1Token.address, amountTokenWei, { from: this.ownerAddress });
+        const class1TokenAddress = (await this.getClass1CollateralToken()).token;
+        return await this.agentVault.depositCollateral(class1TokenAddress, amountTokenWei, { from: this.ownerAddress });
     }
 
     // adds pool collateral and agent pool tokens
@@ -115,7 +121,8 @@ export class Agent {
     }
 
     async withdrawClass1Collateral(amountWei: BNish) {
-        return await this.agentVault.withdrawCollateral(this.class1Token.address, amountWei, this.ownerAddress, { from: this.ownerAddress });
+        const class1TokenAddress = (await this.getClass1CollateralToken()).token;
+        return await this.agentVault.withdrawCollateral(class1TokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
     }
 
     async announcePoolTokenRedemption(amountWei: BNish) {
@@ -278,7 +285,7 @@ export class Agent {
         await this.assetManager.buybackAgentCollateral(this.agentVault.address, { from: this.ownerAddress });
     }
 
-    async announceAgentSettingUpdate(settingName: string, settingValue: string): Promise<BN> {
+    async announceAgentSettingUpdate(settingName: string, settingValue: BNish): Promise<BN> {
         const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
         const args = requiredEventArgs(res, 'AgentSettingChangeAnnounced');
         return args.validAt;

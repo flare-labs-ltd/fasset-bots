@@ -1,11 +1,11 @@
 import { MintingExecuted } from "../../typechain-truffle/AssetManager";
+import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentStatus } from "./AgentBot";
 
 export class Liquidator {
     constructor(

@@ -1,6 +1,5 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
-import { AgentStatus } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, sleep, toBN } from "../../src/utils/helpers";
@@ -19,6 +18,7 @@ import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };

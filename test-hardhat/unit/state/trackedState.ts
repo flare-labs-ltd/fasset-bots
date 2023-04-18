@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { time } from "@openzeppelin/test-helpers";
-import { AgentStatus } from "../../../src/actors/AgentBot";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
@@ -10,13 +9,13 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
-import { Redeemer } from "../../../src/mock/Redeemer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner, createTestRedeemer } from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
+import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 use(chaiAsPromised);
 use(spies);
 
@@ -103,7 +102,7 @@ describe("Tracked state tests", async () => {
         expect(agentUndefined).to.be.undefined;
     });
 
-    it("Should get agent and and add it if it does not exist", async () => {
+    it("Should get agent and add it if it does not exist", async () => {
         const agentBLocal = await createTestAgentB(context, accounts[0]);
         const agentUndefined = trackedState.getAgent(agentBLocal.vaultAddress);
         expect(agentUndefined).to.be.undefined;
@@ -191,7 +190,8 @@ describe("Tracked state tests", async () => {
         const supplyBefore = trackedState.fAssetSupply;
 
         const amountUBA = convertLotsToUBA(await context.assetManager.getSettings(), lots);
-        const poolFee = amountUBA.mul(toBN(agentBLocal.agentSettings.feeBIPS)).mul(toBN(agentBLocal.agentSettings.poolFeeShareBIPS))
+        const agentSettings = await agentBLocal.getAgentSettings();
+        const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
 
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
@@ -218,7 +218,7 @@ describe("Tracked state tests", async () => {
         expect(agentAfter.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
     });
 
-    it("Should handle events 'MintingExecuted'", async () => {
+    it("Should handle event 'MintingExecuted'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
@@ -416,4 +416,20 @@ describe("Tracked state tests", async () => {
         expect(spyError).to.have.been.called.twice;
     });
 
+    it("Should handle event 'AgentSettingChanged'", async () => {
+        const agentBLocal = await createTestAgentB(context, accounts[0]);
+        await trackedState.createAgentWithCurrentState(agentBLocal.vaultAddress);
+        const agentSettingsBefore = trackedState.agents.get(agentBLocal.vaultAddress)!.agentSettings;
+        const agentBLocalSettingsBefore = await agentBLocal.getAgentSettings();
+        expect(agentSettingsBefore.feeBIPS.toString()).to.eq(agentBLocalSettingsBefore.feeBIPS.toString());
+        const feeBIPSNew = 1100;
+        const allowedAt = await agentBLocal.announceAgentSettingUpdate("feeBIPS", feeBIPSNew);
+        await time.increaseTo(allowedAt);
+        await agentBLocal.executeAgentSettingUpdate("feeBIPS");
+        await trackedState.readUnhandledEvents();
+        const agentSettingsAfter = trackedState.agents.get(agentBLocal.vaultAddress)!.agentSettings;
+        const agentBLocalSettingsAfter = await agentBLocal.getAgentSettings();
+        expect(agentSettingsAfter.feeBIPS.toString()).to.eq(agentBLocalSettingsAfter.feeBIPS.toString());
+        expect(agentSettingsAfter.feeBIPS.toString()).to.eq(feeBIPSNew.toString());
+    });
 });

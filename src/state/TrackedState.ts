@@ -2,7 +2,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { TrackedAgentState } from "./TrackedAgentState";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
 import { eventIs } from "../utils/events/truffle";
@@ -10,7 +10,6 @@ import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
 import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import assert from "node:assert";
-import { AgentStatus } from "../actors/AgentBot";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 
 export class TrackedState {
@@ -60,7 +59,7 @@ export class TrackedState {
                     } else if (!(event.args.name in this.settings)) {
                         assert.fail(`Invalid setting change ${event.args.name}`);
                     } else {
-                        (this.settings as any)[event.args.name] = web3Normalize(event.args.value)
+                        (this.settings as any)[event.args.name] = web3Normalize(event.args.value);
                     }
                 } else if (eventIs(event, this.context.assetManager, 'SettingArrayChanged')) {
                     if (!(event.args.name in this.liquidationStrategySettings)) assert.fail(`Invalid setting array change ${event.args.name}`);

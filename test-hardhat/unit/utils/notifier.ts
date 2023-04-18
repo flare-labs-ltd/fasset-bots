@@ -88,14 +88,14 @@ describe("Notifier tests", async () => {
         const spySend = spy.on(notifier, "sendCollateralTopUpAlert");
         notifier.sendCollateralTopUpAlert("agentVault", "1");
         notifier.sendCollateralTopUpAlert("agentVault", "1", true);
-        expect(spySend).to.have.been.called.once;
+        expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send top up collateral failed alert", async () => {
         const spySend = spy.on(notifier, "sendCollateralTopUpFailedAlert");
         notifier.sendCollateralTopUpFailedAlert("agentVault", "1");
         notifier.sendCollateralTopUpFailedAlert("agentVault", "1", true);
-        expect(spySend).to.have.been.called.once;
+        expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send low underlying balance failed alert", async () => {

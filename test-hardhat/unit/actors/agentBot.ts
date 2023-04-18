@@ -1,7 +1,7 @@
-import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, maxBN, requireEnv, toBN } from "../../../src/utils/helpers";
+import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -14,6 +14,7 @@ import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintClass1ToOwner } from "../../test-utils/helpers";
+import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 use(spies);
 
 describe("Agent bot unit tests", async () => {
@@ -324,7 +325,8 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const amount = toBN(10000);
-        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
+        const class1TokenAddress = (await agentBot.agent.getClass1CollateralToken()).token;
+        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, class1TokenAddress, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
         const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
@@ -337,7 +339,8 @@ describe("Agent bot unit tests", async () => {
         await time.increaseTo(withdrawalAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect((await agentBot.agent.class1Token.balanceOf(agentBot.agent.vaultAddress)).eqn(0)).to.be.true;
+        const agentCollateral = await agentBot.agent.getAgentCollateral();
+        expect((agentCollateral.class1.balance).eqn(0)).to.be.true;
     });
 
     it("Should update agent settings", async () => {

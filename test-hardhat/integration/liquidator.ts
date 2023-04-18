@@ -1,4 +1,3 @@
-import { AgentStatus } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
@@ -12,7 +11,11 @@ import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { artifacts } from "../../src/utils/artifacts";
 use(spies);
+
+const IERC20 = artifacts.require('IERC20');
 
 describe("Liquidator tests", async () => {
     let accounts: string[];
@@ -102,6 +105,8 @@ describe("Liquidator tests", async () => {
     it("Should liquidate agent", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
+        // class1token
+        const class1Token = await IERC20.at((await agentBot.agent.getClass1CollateralToken()).token);
         const minter = await createTestMinter(context, minterAddress, chain);
         await liquidator.runStep();
         // check agent status
@@ -122,7 +127,7 @@ describe("Liquidator tests", async () => {
         await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
         // FAsset and collateral balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceBefore = await agentBot.agent.class1Token.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await class1Token.balanceOf(liquidatorAddress);
         // liquidate agent (partially)
         const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
         await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidator.address });
@@ -132,7 +137,7 @@ describe("Liquidator tests", async () => {
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // FAsset and collateral balance
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceAfter = await agentBot.agent.class1Token.balanceOf(liquidatorAddress);
+        const cBalanceAfter = await class1Token.balanceOf(liquidatorAddress);
         // check FAsset and cr balance
         expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
         expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;

@@ -1,15 +1,16 @@
 import { expect } from "chai";
-import { AgentBot, AgentStatus } from "../../../src/actors/AgentBot";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { MAX_UINT256, toBN } from "../../../src/utils/helpers";
+import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
+import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 
 describe("Tracked agent state tests", async () => {
     let accounts: string[];
@@ -31,7 +32,8 @@ describe("Tracked agent state tests", async () => {
     beforeEach(async () => {
         agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const amount = toBN(10000);
-        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentBot.agent.agentSettings.class1CollateralToken, ownerAddress);
+        const agentCollateral = await agentBot.agent.getAgentCollateral();
+        await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentCollateral.class1.collateral!.token, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(context, lastBlock);

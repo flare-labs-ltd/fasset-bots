@@ -91,8 +91,9 @@ describe("Agent unit tests", async () => {
     it("Should get agent collateral", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const agentCollateral = await agent.getAgentCollateral();
+        const class1TokenAddress = (await agent.getClass1CollateralToken()).token;
         expect(agentCollateral).to.not.be.null;
-        expect(agentCollateral.class1.collateral?.token).to.eq(agent.class1Token.address);
+        expect(agentCollateral.class1.collateral?.token).to.eq(class1TokenAddress);
     });
 
     it("Should deposit collateral", async () => {
@@ -395,7 +396,8 @@ describe("Agent unit tests", async () => {
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, underlyingAddress);
         const lots = 3;
         const amountUBA = convertLotsToUBA(await context.assetManager.getSettings(), lots);
-        const poolFee = amountUBA.mul(toBN(agent.agentSettings.feeBIPS)).mul(toBN(agent.agentSettings.poolFeeShareBIPS))
+        const agentSettings = await agent.getAgentSettings();
+        const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
         context.chain.mint(randomUnderlyingAddress, allAmountUBA);
