@@ -36,7 +36,8 @@
          "src/verification/attestation-types/t-00002-balance-decreasing-transaction.ts",
          "src/verification/attestation-types/t-00003-confirmed-block-height-exists.ts",
          "src/verification/attestation-types/t-00004-referenced-payment-nonexistence.ts",
-         "src/verification/attestation-types/t-00005-trustline-issuance.ts"
+         "src/verification/attestation-types/t-00005-trustline-issuance.ts",
+         "src/mock/*.ts"
       ],
       "reporter": [
          "html",
