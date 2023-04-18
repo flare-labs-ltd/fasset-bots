@@ -3,10 +3,12 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAgentBotRunner, disableMccTraceManager } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotRunner, disableMccTraceManager } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
+import { AgentEntity } from "../../../src/entities/agent";
+import { FilterQuery } from "@mikro-orm/core";
 use(spies);
 
 const loopDelay: number = 2;
@@ -14,11 +16,13 @@ describe("Agent bot runner tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
+    let ownerAddress: string;
     const contexts: Map<number, TestAssetBotContext> = new Map();
 
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
+        ownerAddress = accounts[1];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
@@ -43,4 +47,18 @@ describe("Agent bot runner tests", async () => {
         expect(spyStep).to.have.been.called.once;
     });
 
+    it("Should create agent bot runner", async () => {
+        const spyWarn = spy.on(console, 'warn');
+        await createTestAgentBot(context, orm, ownerAddress);
+        const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
+        await createTestAgentBot(otherContext, orm, ownerAddress);
+        await createTestAgentBot(context, orm, ownerAddress);
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
+        expect(agentBotRunner.loopDelay).to.eq(loopDelay);
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        await agentBotRunner.runStep();
+        const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>)
+        expect(agentEntities.length).to.eq(3);
+        expect(spyWarn).to.have.been.called.once;
+    });
 });

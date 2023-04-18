@@ -7,6 +7,9 @@ import { createTestAgentB, disableMccTraceManager } from "../../test-utils/helpe
 import { CollateralData, CollateralDataFactory, CollateralKind, POOL_TOKEN_DECIMALS } from "../../../src/fasset/CollateralData";
 import { artifacts } from "../../../src/utils/artifacts";
 import { CollateralTokenClass } from "../../../src/fasset/AssetManagerTypes";
+import { toBN } from "../../../src/utils/helpers";
+import { TokenPrice } from "../../../src/state/TokenPrice";
+import { AMGPrice } from "../../../src/state/CollateralPrice";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
@@ -47,6 +50,25 @@ describe("Agent collateral data unit tests", async () => {
         expect(class1CD.kind()).to.eq(CollateralKind.CLASS1);
         expect(poolCD.kind()).to.eq(CollateralKind.POOL);
         expect(agentPoolTokenCD.kind()).to.eq(CollateralKind.AGENT_POOL_TOKENS);
+        const invalidCollateral = {
+            tokenClass: -1 as CollateralTokenClass,
+            token: "string",
+            decimals: toBN(1),
+            validUntil: toBN(1),
+            directPricePair: false,
+            assetFtsoSymbol: "string",
+            tokenFtsoSymbol: "string",
+            minCollateralRatioBIPS: toBN(1),
+            ccbMinCollateralRatioBIPS: toBN(1),
+            safetyMinCollateralRatioBIPS: toBN(1)
+        };
+        const invalidTP = new TokenPrice(toBN(1), toBN(1), toBN(1));
+        const amgPRice = new AMGPrice(toBN(1), toBN(1), toBN(1));
+        const invalidCD = new CollateralData(invalidCollateral, toBN(1), invalidTP, undefined, amgPRice);
+        const fn = () => {
+            return invalidCD.kind();
+        };
+        expect(fn).to.throw("Invalid collateral kind");
     });
 
     it("Should get collateral decimals", async () => {

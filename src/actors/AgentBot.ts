@@ -499,7 +499,6 @@ export class AgentBot {
         }
     }
 
-
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
         const ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
         try {

@@ -3,6 +3,7 @@ import Web3 from "web3";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
+import { toBN } from "../../../src/utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -42,6 +43,19 @@ describe("Helpers unit tests", async () => {
         expect(helperMethods.toNumber(expected)).to.eq(expected);
         expect(helperMethods.toNumber("" + expected)).to.eq(expected);
         expect(helperMethods.toNumber(helperMethods.toBN(expected))).to.eq(expected);
+    });
+
+    it("Should require not null variable", async () => {
+        const errorMessage = "Should not be null";
+        expect(helperMethods.requireNotNull(1, errorMessage)).to.eq(1);
+        const fn = () => {
+            return helperMethods.requireNotNull(null, errorMessage);
+        };
+        expect(fn).to.throw(errorMessage);
+        const fn2 = () => {
+            return helperMethods.requireNotNull(null);
+        };
+        expect(fn2).to.throw("Value is null or undefined");
     });
 
     it("Should return is null", async () => {
@@ -162,13 +176,19 @@ describe("Helpers unit tests", async () => {
     });
 
     it("Should include and expect error", () => {
-        const error = { message: "ERROR"};
+        const error = { message: "ERROR" };
         expect(helperMethods.errorIncluded(error, [Error])).to.be.false;
         expect(helperMethods.errorIncluded(error, ["ERROR"])).to.be.true;
         const fn = () => {
             return helperMethods.expectErrors(error, [Error]);
         };
         expect(fn).to.throw('');
+    });
+
+    it("Should return maximal BN", () => {
+        const a = toBN(1);
+        const b = toBN(2);
+        expect(helperMethods.maxBN(a, b).toString()).to.eq(b.toString());
     });
 
 });

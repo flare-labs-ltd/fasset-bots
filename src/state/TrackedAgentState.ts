@@ -74,19 +74,24 @@ export class TrackedAgentState {
         const agentStatus = this.status;
         const settings = this.parent.settings;
         if (agentStatus === AgentStatus.NORMAL) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS))) {
                 return AgentStatus.LIQUIDATION;
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.CCB;
             }
 
         } else if (agentStatus === AgentStatus.CCB) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             if (crClass1.gte(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
                 return AgentStatus.LIQUIDATION;
             }
         } else if (agentStatus === AgentStatus.LIQUIDATION) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             if (crClass1.gte(toBN(agentCollateral.class1.collateral!.safetyMinCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.safetyMinCollateralRatioBIPS))) {
                 return AgentStatus.NORMAL;
             }
