@@ -50,7 +50,7 @@ export class Agent {
 
     async getAgentSettings(): Promise<AgentSettings> {
         const agentInfo = await this.getAgentInfo();
-       return await getAgentSettings(agentInfo);
+       return getAgentSettings(agentInfo);
     }
 
     async getAgentCollateral() {

@@ -55,15 +55,15 @@ export class TrackedAgentState {
         this.redeemingUBA = toBN(agentInfo.redeemingUBA);
         this.dustUBA = toBN(agentInfo.dustUBA);
         this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
-        Object.defineProperty(this.agentSettings, 'class1CollateralToken', { value: agentInfo.class1CollateralToken });
-        Object.defineProperty(this.agentSettings, 'feeBIPS', { value: toBN(agentInfo.feeBIPS) });
-        Object.defineProperty(this.agentSettings, 'poolFeeShareBIPS', { value: toBN(agentInfo.poolFeeShareBIPS) });
-        Object.defineProperty(this.agentSettings, 'mintingClass1CollateralRatioBIPS', { value: toBN(agentInfo.mintingClass1CollateralRatioBIPS) });
-        Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', { value: toBN(agentInfo.mintingPoolCollateralRatioBIPS) });
-        Object.defineProperty(this.agentSettings, 'poolExitCollateralRatioBIPS', { value: toBN(agentInfo.poolExitCollateralRatioBIPS) });
-        Object.defineProperty(this.agentSettings, 'buyFAssetByAgentFactorBIPS', { value: toBN(agentInfo.buyFAssetByAgentFactorBIPS) });
-        Object.defineProperty(this.agentSettings, 'poolTopupCollateralRatioBIPS', { value: toBN(agentInfo.poolTopupCollateralRatioBIPS) });
-        Object.defineProperty(this.agentSettings, 'poolTopupTokenPriceFactorBIPS', { value: toBN(agentInfo.poolTopupTokenPriceFactorBIPS) });
+        this.agentSettings.class1CollateralToken = agentInfo.class1CollateralToken;
+        this.agentSettings.feeBIPS = toBN(agentInfo.feeBIPS);
+        this.agentSettings.poolFeeShareBIPS = toBN(agentInfo.poolFeeShareBIPS);
+        this.agentSettings.mintingClass1CollateralRatioBIPS = toBN(agentInfo.mintingClass1CollateralRatioBIPS);
+        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(agentInfo.mintingPoolCollateralRatioBIPS);
+        this.agentSettings.poolExitCollateralRatioBIPS = toBN(agentInfo.poolExitCollateralRatioBIPS);
+        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
+        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
+        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
     }
 
     async possibleLiquidationTransition(timestamp: BN): Promise<number> {
