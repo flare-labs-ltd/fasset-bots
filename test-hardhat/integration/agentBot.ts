@@ -5,12 +5,12 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -515,7 +515,7 @@ describe("Agent bot tests", async () => {
     });
 
 
-    it("Should top up collateral - fails on owner side", async () => {
+    it("Should top up collateral - fails on owner side due to no Class1", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
         const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
@@ -540,6 +540,27 @@ describe("Agent bot tests", async () => {
         // send notifications: top up successful
         await agentBot.runStep(orm.em);
         expect(spyTopUp).to.have.been.called.twice;
+    });
+
+    it("Should top up collateral - fails on owner side due to no NAT", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
+        const agentB = await createTestAgentB(context, ownerAddress);
+        await agentB.buyCollateralPoolTokens(ownerBalance.sub(NATIVE_LOW_BALANCE));
+        const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
+        const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
+        const minter = await createTestMinter(context, minterAddress, chain);
+        // create collateral reservation, perform minting and run
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        // change prices
+        await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
+        // mock price changes and run
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // send notifications: top up failed and low balance on ownerAddress
+        await agentBot.runStep(orm.em);
+        expect(spyTopUpFailed).to.have.been.called.twice;
+        expect(spyLowOwnerBalance).to.have.been.called.twice;
     });
 
 });
