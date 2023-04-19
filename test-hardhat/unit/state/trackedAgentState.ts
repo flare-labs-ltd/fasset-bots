@@ -38,7 +38,7 @@ describe("Tracked agent state tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize();
-        trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, agentBot.agent.underlyingAddress);
+        trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, agentBot.agent.underlyingAddress, (await agentBot.agent.getAgentInfo()).collateralPool);
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());
     });
 

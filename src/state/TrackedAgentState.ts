@@ -11,7 +11,8 @@ export class TrackedAgentState {
     constructor(
         public parent: TrackedState,
         public vaultAddress: string,
-        public underlyingAddress: string
+        public underlyingAddress: string,
+        public collateralPoolAddress: string
     ) { }
 
     status = AgentStatus.NORMAL;

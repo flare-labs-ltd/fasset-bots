@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import { MockChain, MockTransactionOptionsWithFee } from "../../../src/mock/MockChain";
-import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp, toWei } from "../../../src/utils/helpers";
+import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";

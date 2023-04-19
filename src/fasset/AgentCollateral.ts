@@ -14,9 +14,7 @@ export class AgentCollateral {
         public class1: CollateralData,
         public pool: CollateralData,
         public agentPoolTokens: CollateralData,
-    ) {
-
-    }
+    ) {}
 
     static async create(assetManager: AssetManagerInstance, settings: AssetManagerSettings, agentVault: string): Promise<AgentCollateral> {
         const agentInfo = await assetManager.getAgentInfo(agentVault);

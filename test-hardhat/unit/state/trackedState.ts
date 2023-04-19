@@ -73,7 +73,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should create agent", async () => {
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress);
+        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
         expect(trackedState.agents.size).to.eq(1);
     });
 
@@ -87,14 +87,14 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.size).to.eq(0);
         trackedState.destroyAgent(agentDestroyedArgs);
         expect(trackedState.agents.size).to.eq(0);
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress);
+        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
         expect(trackedState.agents.size).to.eq(1);
         trackedState.destroyAgent(agentDestroyedArgs);
         expect(trackedState.agents.size).to.eq(0);
     });
 
     it("Should get agent", async () => {
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress);
+        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
         const agent = trackedState.getAgent(agentCreatedArgs.agentVault);
         expect(agent!.vaultAddress).to.eq(agentCreatedArgs.agentVault);
         expect(agent!.underlyingAddress).to.eq(agentCreatedArgs.underlyingAddress);
@@ -136,7 +136,7 @@ describe("Tracked state tests", async () => {
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
-        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress);
+        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress, (await agentBLocal.getAgentInfo()).collateralPool);
         expect(agentBefore.publiclyAvailable).to.be.false;
         await trackedState.readUnhandledEvents();
         const agentAfter = trackedState.getAgent(agentBLocal.vaultAddress)!;
@@ -150,7 +150,7 @@ describe("Tracked state tests", async () => {
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
-        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress);
+        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress, (await agentBLocal.getAgentInfo()).collateralPool);
         expect(agentBefore.publiclyAvailable).to.be.false;
         await trackedState.readUnhandledEvents();
         const agentMiddle = trackedState.getAgent(agentBLocal.vaultAddress)!;
@@ -212,7 +212,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await minter.reserveCollateral(agentB.vaultAddress, 2);
-        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress));
+        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress, (await agentB.getAgentInfo()).collateralPool));
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
         expect(agentAfter.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -222,7 +222,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
-        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress));
+        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress, (await agentB.getAgentInfo()).collateralPool));
         const supplyBefore = trackedState.fAssetSupply;
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
@@ -431,5 +431,28 @@ describe("Tracked state tests", async () => {
         const agentBLocalSettingsAfter = await agentBLocal.getAgentSettings();
         expect(agentSettingsAfter.feeBIPS.toString()).to.eq(agentBLocalSettingsAfter.feeBIPS.toString());
         expect(agentSettingsAfter.feeBIPS.toString()).to.eq(feeBIPSNew.toString());
+    });
+
+    it("Should handle event 'Transfer'", async () => {
+        const agentB = await createTestAgentB(context, ownerAddress);
+        const agentInfo = await agentB.getAgentInfo();
+        await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
+        await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
+        await agentB.depositClass1Collateral(deposit);
+        await agentB.buyCollateralPoolTokens(deposit);
+        await trackedState.readUnhandledEvents();
+        await agentB.makeAvailable();
+        await trackedState.readUnhandledEvents();
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eq(deposit)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
+        // redeem pool
+        const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
+        const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
+        await time.increaseTo(withdrawAllowedAt);
+        await agentB.redeemCollateralPoolTokens(amount);
+        await trackedState.readUnhandledEvents();
+        expect(amount.eq(deposit)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
     });
 });

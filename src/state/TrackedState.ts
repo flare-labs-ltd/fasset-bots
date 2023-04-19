@@ -32,6 +32,7 @@ export class TrackedState {
     // tracked agents
     agents: Map<string, TrackedAgentState> = new Map();                // map agent_address => tracked agent state
     agentsByUnderlying: Map<string, TrackedAgentState> = new Map();    // map underlying_address => tracked agent state
+    agentsByPool: Map<string, TrackedAgentState> = new Map();    // map pool_address => tracked agent state
 
     // event decoder
     eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager, wnat: this.context.wNat });
@@ -119,8 +120,8 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
                 } else if (eventIs(event, this.context.wNat, 'Transfer')) {
-                    this.agents.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
-                    this.agents.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
+                    this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
+                    this.agentsByPool.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                 }
                 Object.entries(this.context.stablecoins).forEach(([, contract]) => {
                     if (eventIs(event, contract, 'Transfer')) {
@@ -182,15 +183,16 @@ export class TrackedState {
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {
         const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
-        const agent = this.createAgent(vaultAddress, agentInfo.underlyingAddressString);
+        const agent = this.createAgent(vaultAddress, agentInfo.underlyingAddressString, agentInfo.collateralPool);
         agent.initialize(agentInfo);
         return agent;
     }
 
-    createAgent(vaultAddress: string, underlyingAddress: string): TrackedAgentState {
-        const agent = new TrackedAgentState(this, vaultAddress, underlyingAddress);
+    createAgent(vaultAddress: string, underlyingAddress: string, collateralPoolAddress: string): TrackedAgentState {
+        const agent = new TrackedAgentState(this, vaultAddress, underlyingAddress, collateralPoolAddress);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
+        this.agentsByPool.set(agent.collateralPoolAddress, agent);
         return agent;
     }
 
@@ -199,6 +201,7 @@ export class TrackedState {
         if (agent) {
             this.agents.delete(args.agentVault);
             this.agentsByUnderlying.delete(agent.underlyingAddress);
+            this.agentsByPool.delete(agent.collateralPoolAddress);
         }
     }
 
