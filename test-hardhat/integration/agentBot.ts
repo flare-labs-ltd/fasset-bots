@@ -474,10 +474,11 @@ describe("Agent bot tests", async () => {
         assert.equal(agentBotEnt.active, false);
     });
 
-    it.skip("Should announce to close vault only if no tickets are open for that agent", async () => {
+    it("Should announce to close vault only if no tickets are open for that agent", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // perform minting
-        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        const lots = 2;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
         await agentBot.runStep(orm.em);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -495,7 +496,7 @@ describe("Agent bot tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // request redemption
-        const [rdReqs] = await redeemer.requestRedemption(2);
+        const [rdReqs] = await redeemer.requestRedemption(lots);
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
         // run agent's steps until redemption process is finished
@@ -507,8 +508,16 @@ describe("Agent bot tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            if (redemption.state === AgentRedemptionState.DONE) break;
         }
+        await agentBot.runStep(orm.em);
+        // withdraw pool fees
+        const poolFeeBalance = await agentBot.agent.poolFeeBalance();
+        console.log("poolFeeBalance", poolFeeBalance.toString())
+        await agentBot.agent.withdrawPoolFees(poolFeeBalance);
+        // self close all received pool fees - otherwise we cannot withdraw all pool collateral
+        await agentBot.agent.selfClose(poolFeeBalance);
+        // announce destroy
         await agentBot.runStep(orm.em);
         const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.DESTROYING);
