@@ -54,7 +54,7 @@ describe("Notifier tests", async () => {
 
     it("Should send liquidation was performed alert", async () => {
         const spySend = spy.on(notifier, "sendLiquidationWasPerformed");
-        notifier.sendLiquidationWasPerformed("agentVault");
+        notifier.sendLiquidationWasPerformed("agentVault", "1000");
         expect(spySend).to.have.been.called.once;
     });
 

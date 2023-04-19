@@ -166,5 +166,5 @@ export async function convertFromUSD5(amount: BN, collateralToken: CollateralTok
     const priceReader = new TokenPriceReader(context.ftsoRegistry);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
-    return (toBN(amount).mul(toBNExp(stablecoinUSD.price.muln(10).toString(),expPlus))).div(toBNExp(1,10));
+    return (toBN(amount).mul(toBNExp(10,expPlus))).div(stablecoinUSD.price);
 }

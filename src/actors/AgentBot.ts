@@ -113,7 +113,7 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
                     this.notifier.sendLiquidationStartAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
-                    this.notifier.sendLiquidationWasPerformed(event.args.agentVault);
+                    this.notifier.sendLiquidationWasPerformed(event.args.agentVault, event.args.valueUBA);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
@@ -273,7 +273,7 @@ export class AgentBot {
 
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
         // corner case: proof expires in indexer
-        const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp);
+        const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp)
         if (proof) {
             const settings = await this.context.assetManager.getSettings();
             const agentCollateral = await this.agent.getAgentCollateral();
@@ -506,15 +506,16 @@ export class AgentBot {
         const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, agentCollateral.pool);
         if (requiredTopUpClass1.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
             // no need for top up
-        } else if (requiredTopUpClass1.gt(BN_ZERO)) {
+        }
+        if (requiredTopUpClass1.gt(BN_ZERO)) {
             try {
                 await this.agent.depositClass1Collateral(requiredTopUpClass1);
                 this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
             } catch (err) {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
             }
-        } else {
-            //TODO deposit to pool?
+        }
+        if (requiredTopUpPool.gt(BN_ZERO)) {
             try {
                 await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
                 this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);

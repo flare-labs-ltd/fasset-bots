@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -53,6 +53,9 @@ describe("Agent bot tests", async () => {
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
+        // chain tunning
+        chain.finalizationBlocks = 0;
+        chain.secondsPerBlock = 1;
     });
 
     it("Should perform minting", async () => {
@@ -350,7 +353,7 @@ describe("Agent bot tests", async () => {
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
         const endBalance = await class1Token.balanceOf(someAddress);
-        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken ,context);
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken, context);
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
@@ -509,6 +512,34 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.DESTROYING);
+    });
+
+
+    it("Should top up collateral - fails on owner side", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
+        const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
+        const spyTopUp = spy.on(agentBot.notifier, 'sendCollateralTopUpAlert');
+        const minter = await createTestMinter(context, minterAddress, chain);
+        // create collateral reservation, perform minting and run
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        // change prices
+        await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
+        // mock price changes and run
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // send notifications: top up failed and low balance on ownerAddress
+        await agentBot.runStep(orm.em);
+        expect(spyTopUpFailed).to.have.been.called.once;
+        expect(spyLowOwnerBalance).to.have.been.called.once;
+        // top up ownerAddress
+        const deposit = toBNExp(5_000_000, 18).toString();
+        await mintClass1ToOwner(agentBot.agent.vaultAddress, deposit, (await agentBot.agent.getAgentInfo()).class1CollateralToken, ownerAddress);
+        // mock price changes and run liquidation trigger
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // send notifications: top up successful
+        await agentBot.runStep(orm.em);
+        expect(spyTopUp).to.have.been.called.twice;
     });
 
 });
