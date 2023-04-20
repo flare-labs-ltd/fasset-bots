@@ -1,5 +1,5 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionFinished, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
+import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
@@ -191,28 +191,23 @@ export class Agent {
     async confirmActiveRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        findRequiredEvent(res, 'RedemptionFinished');
         return requiredEventArgs(res, 'RedemptionPerformed');
     }
 
     async confirmDefaultedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
-        const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        findRequiredEvent(res, 'RedemptionFinished');
-        return requiredEventArgs(res, 'RedemptionFinished');
+        await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
     }
 
     async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        findRequiredEvent(res, 'RedemptionFinished');
         return [requiredEventArgs(res, 'RedemptionPaymentFailed'), requiredEventArgs(res, 'RedemptionDefault')];
     }
 
     async confirmBlockedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        findRequiredEvent(res, 'RedemptionFinished');
         return requiredEventArgs(res, 'RedemptionPaymentBlocked');
     }
 
@@ -227,10 +222,10 @@ export class Agent {
         return requiredEventArgs(res, 'RedemptionDefault');
     }
 
-    async finishRedemptionWithoutPayment(request: EventArgs<RedemptionRequested>): Promise<[redemptionFinished?: EventArgs<RedemptionFinished>, redemptionDefault?: EventArgs<RedemptionDefault>]> {
+    async finishRedemptionWithoutPayment(request: EventArgs<RedemptionRequested>): Promise<EventArgs<RedemptionDefault>> {
         const proof = await this.attestationProvider.proveConfirmedBlockHeightExists();
         const res = await this.assetManager.finishRedemptionWithoutPayment(proof, request.requestId, { from: this.ownerAddress });
-        return [eventArgs(res, 'RedemptionFinished'), eventArgs(res, "RedemptionDefault")];
+        return eventArgs(res, "RedemptionDefault");
     }
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string, minterSourceAddress?: string) {
