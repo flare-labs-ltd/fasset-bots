@@ -403,16 +403,6 @@ export interface RedemptionDefault {
   };
 }
 
-export interface RedemptionFinished {
-  name: "RedemptionFinished";
-  args: {
-    agentVault: string;
-    requestId: BN;
-    0: string;
-    1: BN;
-  };
-}
-
 export interface RedemptionPaymentBlocked {
   name: "RedemptionPaymentBlocked";
   args: {
@@ -420,7 +410,7 @@ export interface RedemptionPaymentBlocked {
     redeemer: string;
     transactionHash: string;
     redemptionAmountUBA: BN;
-    underlyingBalanceChangeUBA: BN;
+    spentUnderlyingUBA: BN;
     requestId: BN;
     0: string;
     1: string;
@@ -437,7 +427,7 @@ export interface RedemptionPaymentFailed {
     agentVault: string;
     redeemer: string;
     transactionHash: string;
-    underlyingBalanceChangeUBA: BN;
+    spentUnderlyingUBA: BN;
     requestId: BN;
     failureReason: string;
     0: string;
@@ -456,7 +446,7 @@ export interface RedemptionPerformed {
     redeemer: string;
     transactionHash: string;
     redemptionAmountUBA: BN;
-    underlyingBalanceChangeUBA: BN;
+    spentUnderlyingUBA: BN;
     requestId: BN;
     0: string;
     1: string;
@@ -639,7 +629,6 @@ type AllEvents =
   | MintingPaymentDefault
   | PoolTokenRedemptionAnnounced
   | RedemptionDefault
-  | RedemptionFinished
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed
   | RedemptionPerformed
