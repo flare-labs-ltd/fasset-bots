@@ -1,4 +1,4 @@
-import { RedemptionFinished, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
@@ -12,6 +12,13 @@ import { eventIs } from "../utils/events/truffle";
 import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
+interface ActiveRedemption {
+    agentAddress: string;
+    amount: BN;
+    // underlying block and timestamp after which the redemption payment is invalid and can be challenged
+    validUntilBlock: BN;
+    validUntilTimestamp: BN;
+}
 
 export class Challenger {
     constructor(
@@ -21,7 +28,7 @@ export class Challenger {
         private lastEventUnderlyingBlockHandled: number
     ) { }
 
-    activeRedemptions = new Map<string, { agentAddress: string, amount: BN }>();    // paymentReference => { agent vault address, requested redemption amount }
+    activeRedemptions = new Map<string, ActiveRedemption>();                        // paymentReference => { agent vault address, requested redemption amount }
     transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
@@ -32,19 +39,17 @@ export class Challenger {
 
     async registerEvents(): Promise<void> {
         try {
-          // Native chain events and update state events
-          const events = await this.state.readUnhandledEvents();
+            // Native chain events and update state events
+            const events = await this.state.readUnhandledEvents();
             for (const event of events) {
                 if (eventIs(event, this.state.context.assetManager, 'RedemptionRequested')) {
                     this.handleRedemptionRequested(event.args);
-                } else if (eventIs(event, this.state.context.assetManager, 'RedemptionFinished')) {
-                    this.handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPerformed')) {
-                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
+                    await this.handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentBlocked')) {
-                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
+                    await this.handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentFailed')) {
-                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
+                    await this.handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.state.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 }
@@ -86,14 +91,22 @@ export class Challenger {
     }
 
     handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
-        this.activeRedemptions.set(args.paymentReference, { agentAddress: args.agentVault, amount: toBN(args.valueUBA) });
+        this.activeRedemptions.set(args.paymentReference, {
+            agentAddress: args.agentVault,
+            amount: toBN(args.valueUBA),
+            // see Challenges.sol for this calculation
+            validUntilBlock: toBN(args.lastUnderlyingBlock).add(toBN(this.state.settings.underlyingBlocksForPayment)),
+            validUntilTimestamp: toBN(args.lastUnderlyingTimestamp).add(toBN(this.state.settings.underlyingSecondsForPayment)),
+        });
     }
 
-    handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
+    async handleRedemptionFinished(args: { requestId: BN; agentVault: string; transactionHash: string; }): Promise<void> {
         // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediately illegal anyway
         const reference = PaymentReference.redemption(args.requestId);
         this.transactionForPaymentReference.delete(reference);
         this.activeRedemptions.delete(reference);
+        // also mark transaction as confirmed
+        await this.handleTransactionConfirmed(args.agentVault, args.transactionHash);
     }
 
     // illegal transactions

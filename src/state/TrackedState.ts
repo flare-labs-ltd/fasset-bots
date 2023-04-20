@@ -109,8 +109,6 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionDefault(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentBlocked(event.args);
-                } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
-                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionFinished(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalAnnounced')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalAnnounced(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {

@@ -1,9 +1,9 @@
 import BN from "bn.js";
 import { AgentInfo, AgentStatus } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
-import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionFinished, RedemptionPaymentBlocked, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
+import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { AgentCollateral } from "../fasset/AgentCollateral";
 import { web3Normalize } from "../utils/web3normalize";
 
@@ -41,7 +41,17 @@ export class TrackedAgentState {
     mintedUBA: BN = BN_ZERO;
     redeemingUBA: BN = BN_ZERO;
     dustUBA: BN = BN_ZERO;
-    freeUnderlyingBalanceUBA: BN = BN_ZERO;
+    underlyingBalanceUBA: BN = BN_ZERO;
+
+    // calculated getters
+    get requiredUnderlyingBalanceUBA() {
+        const backedUBA = this.mintedUBA.add(this.redeemingUBA);
+        return backedUBA.mul(toBN(this.parent.settings.minUnderlyingBackingBIPS)).divn(MAX_BIPS);
+    }
+
+    get freeUnderlyingBalanceUBA() {
+        return this, this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
+    }
 
     initialize(agentInfo: AgentInfo): void {
         this.status = Number(agentInfo.status);
@@ -55,7 +65,7 @@ export class TrackedAgentState {
         this.mintedUBA = toBN(agentInfo.mintedUBA);
         this.redeemingUBA = toBN(agentInfo.redeemingUBA);
         this.dustUBA = toBN(agentInfo.dustUBA);
-        this.freeUnderlyingBalanceUBA = toBN(agentInfo.freeUnderlyingBalanceUBA);
+        this.underlyingBalanceUBA = toBN(agentInfo.underlyingBalanceUBA);
         this.agentSettings.class1CollateralToken = agentInfo.class1CollateralToken;
         this.agentSettings.feeBIPS = toBN(agentInfo.feeBIPS);
         this.agentSettings.poolFeeShareBIPS = toBN(agentInfo.poolFeeShareBIPS);
@@ -115,14 +125,17 @@ export class TrackedAgentState {
     }
 
     handleMintingExecuted(args: EventArgs<MintingExecuted>) {
+        const mintedAmountUBA = toBN(args.mintedAmountUBA);
+        const agentFeeUBA = toBN(args.agentFeeUBA);
+        const poolFeeUBA = toBN(args.poolFeeUBA);
         // update underlying free balance
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.agentFeeUBA));
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.add(mintedAmountUBA).add(agentFeeUBA).add(poolFeeUBA);
         // create redemption ticket
-        this.mintedUBA = this.mintedUBA.add(toBN(args.mintedAmountUBA));
+        this.mintedUBA = this.mintedUBA.add(mintedAmountUBA).add(poolFeeUBA);
         // delete collateral reservation
         const collateralReservationId = Number(args.collateralReservationId);
         if (collateralReservationId > 0) {  // collateralReservationId == 0 for self-minting
-            this.reservedUBA = this.reservedUBA.sub(toBN(args.mintedAmountUBA));
+            this.reservedUBA = this.reservedUBA.sub(mintedAmountUBA);
         }
     }
 
@@ -142,29 +155,29 @@ export class TrackedAgentState {
 
     handleRedemptionPerformed(args: EventArgs<RedemptionPerformed>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
+    }
+
+    handleRedemptionPaymentFailed(args: EventArgs<RedemptionPaymentFailed>): void {
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
     }
 
     handleRedemptionPaymentBlocked(args: EventArgs<RedemptionPaymentBlocked>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
     }
 
     handleRedemptionDefault(args: EventArgs<RedemptionDefault>): void {
         this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
     }
-    //TODO
-    handleRedemptionFinished(args: EventArgs<RedemptionFinished>): void {
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(BN_ZERO);
-    }
 
     handleSelfClose(args: EventArgs<SelfClose>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.valueUBA));
     }
 
     // handlers: liquidation
     handleLiquidationPerformed(args: EventArgs<LiquidationPerformed>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.valueUBA));
     }
 
     // handlers: underlying withdrawal
@@ -173,7 +186,7 @@ export class TrackedAgentState {
     }
 
     handleUnderlyingWithdrawalConfirmed(args: EventArgs<UnderlyingWithdrawalConfirmed>): void {
-        this.freeUnderlyingBalanceUBA = this.freeUnderlyingBalanceUBA.add(toBN(args.spentUBA).neg());
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUBA);
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
     }
 
@@ -217,7 +230,7 @@ export class TrackedAgentState {
     }
 
     handleAgentSettingChanged(name: string, value: string | BN): void {
-         (this.agentSettings as any)[name] = web3Normalize(value);
+        (this.agentSettings as any)[name] = web3Normalize(value);
     }
 
 }
