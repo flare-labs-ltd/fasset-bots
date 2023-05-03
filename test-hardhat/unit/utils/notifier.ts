@@ -67,20 +67,20 @@ describe("Notifier tests", async () => {
 
     it("Should send redemption corner case alert", async () => {
         const spySend = spy.on(notifier, "sendRedemptionCornerCase");
-        notifier.sendRedemptionCornerCase("agentVault");
+        notifier.sendRedemptionCornerCase("id", "agentVault");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send redemption failed or blocked alert", async () => {
         const spySend = spy.on(notifier, "sendRedemptionFailedOrBlocked");
-        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer", "reason");
-        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer");
+        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer", "agentVault", "reason");
+        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer", "agentVault");
         expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send redemption defaulted alert", async () => {
         const spySend = spy.on(notifier, "sendRedemptionDefaulted");
-        notifier.sendRedemptionDefaulted("reqId", "txHash", "redeemer");
+        notifier.sendRedemptionDefaulted("reqId", "redeemer",  "agentVault");
         expect(spySend).to.have.been.called.once;
     });
 

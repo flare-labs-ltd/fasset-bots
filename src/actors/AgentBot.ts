@@ -95,15 +95,15 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
-                    await this.redemptionFinished(em, event.args);
-                    this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
-                } else if (eventIs(event, this.context.assetManager, 'RedemptionFinished')) {
-                    await this.redemptionFinished(em, event.args);
-                    await this.checkUnderlyingBalance(event.args.agentVault);
+                    this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer, event.args.agentVault);
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionPerformed')) {
+                    await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
-                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
+                    await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault, event.args.failureReason);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
-                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
+                    await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+                    this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     await this.handleAgentDestruction(em, event.args.agentVault);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
@@ -360,9 +360,10 @@ export class AgentBot {
         } as RequiredEntityData<AgentRedemption>, { persist: true });
     }
 
-    async redemptionFinished(em: EM, request: EventArgs<RedemptionDefault>): Promise<void> {
-        const redemption = await this.findRedemption(em, request.requestId);
+    async redemptionFinished(em: EM, requestId: BN, agentVault: string): Promise<void> {
+        const redemption = await this.findRedemption(em, requestId);
         redemption.state = AgentRedemptionState.DONE;
+        await this.checkUnderlyingBalance(agentVault);
     }
 
     async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
@@ -426,7 +427,7 @@ export class AgentBot {
         if (proof) {
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
-            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString());
+            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
             const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash ?? "");
             const blockHeight = await this.context.chain.getBlockHeight();

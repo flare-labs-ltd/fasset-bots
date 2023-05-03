@@ -7,6 +7,7 @@ const MINTING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR MINTING ALERT";
 const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
 const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
 const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED ALERT";
+const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED ALERT";
 const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION ALERT";
 const AGENT_COLLATERAL_TOP_UP_ALERT = "AGENT'S COLLATERAL TOP UP ALERT";
 const POOL_COLLATERAL_TOP_UP_ALERT = "POOL'S COLLATERAL TOP UP ALERT";
@@ -56,20 +57,24 @@ export class Notifier {
         }
     }
 
-    sendRedemptionCornerCase(requestId: string) {
-        this.send(REDEMPTION_CORNER_CASE, `Redemption ${requestId} expired in indexer. Redemption will finish without payment.`);
+    sendRedemptionCornerCase(requestId: string, agentVault: string) {
+        this.send(REDEMPTION_CORNER_CASE, `Redemption ${requestId} expired in indexer. Redemption will finish without payment for agent ${agentVault}.`);
     }
 
-    sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, failureReason?: string) {
+    sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string) {
         if (failureReason) {
-            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason}.`);
+            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${agentVault}.`);
         } else {
-            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked.`);
+            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${agentVault}.`);
         }
     }
 
-    sendRedemptionDefaulted(requestId: string, txHash: string, redeemer: string) {
-        this.send(REDEMPTION_DEFAULTED, `Redemption ${requestId} for redeemer ${redeemer} was defaulted.`);
+    sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string) {
+        this.send(REDEMPTION_DEFAULTED, `Redemption ${requestId} for redeemer ${redeemer} was defaulted for agent ${agentVault}.`);
+    }
+
+    sendRedemptionWasPerformedDefaulted(requestId: string, redeemer: string, agentVault: string) {
+        this.send(REDEMPTION_PERFORMED, `Redemption ${requestId} for redeemer ${redeemer} was performed for agent ${agentVault}.`);
     }
 
     sendCollateralTopUpAlert(agentVault: string, value: string, pool: boolean = false) {

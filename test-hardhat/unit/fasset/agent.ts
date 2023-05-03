@@ -303,7 +303,7 @@ describe("Agent unit tests", async () => {
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedPoolCollateralWei));
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedPoolCollateralWei));
         const resp = await agent.finishRedemptionWithoutPayment(rdReq);
-        assert.equal(String(resp[0]?.requestId), String(rdReq.requestId));
+        assert.equal(String(resp.requestId), String(rdReq.requestId));
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying 2", async () => {

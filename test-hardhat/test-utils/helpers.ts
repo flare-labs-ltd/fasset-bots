@@ -37,7 +37,7 @@ const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH)
 const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
 const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
-const deposit = toBNExp(1_000_000, 18);
+const deposit = toBNExp(1_000_000_000, 18);
 
 export function disableMccTraceManager() {
     TraceManager.enabled = false;
