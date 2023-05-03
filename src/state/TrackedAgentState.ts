@@ -3,7 +3,7 @@ import { AgentInfo, AgentStatus } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
-import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
+import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { AgentCollateral } from "../fasset/AgentCollateral";
 import { web3Normalize } from "../utils/web3normalize";
 
@@ -15,8 +15,11 @@ export class TrackedAgentState {
         public collateralPoolAddress: string
     ) { }
 
+    //status
     status = AgentStatus.NORMAL;
     publiclyAvailable: boolean = false;
+
+    //state
     totalClass1CollateralWei: { [key: string]: BN } = {};
     totalPoolCollateralNATWei: BN = BN_ZERO;
     ccbStartTimestamp: BN = BN_ZERO;                // 0 - not in ccb/liquidation
@@ -40,6 +43,7 @@ export class TrackedAgentState {
     reservedUBA: BN = BN_ZERO;
     mintedUBA: BN = BN_ZERO;
     redeemingUBA: BN = BN_ZERO;
+    poolRedeemingUBA: BN = BN_ZERO;
     dustUBA: BN = BN_ZERO;
     underlyingBalanceUBA: BN = BN_ZERO;
 
@@ -50,7 +54,7 @@ export class TrackedAgentState {
     }
 
     get freeUnderlyingBalanceUBA() {
-        return this, this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
+        return this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
     }
 
     initialize(agentInfo: AgentInfo): void {
@@ -64,6 +68,7 @@ export class TrackedAgentState {
         this.reservedUBA = toBN(agentInfo.reservedUBA);
         this.mintedUBA = toBN(agentInfo.mintedUBA);
         this.redeemingUBA = toBN(agentInfo.redeemingUBA);
+        this.poolRedeemingUBA = toBN(agentInfo.poolRedeemingUBA);
         this.dustUBA = toBN(agentInfo.dustUBA);
         this.underlyingBalanceUBA = toBN(agentInfo.underlyingBalanceUBA);
         this.agentSettings.class1CollateralToken = agentInfo.class1CollateralToken;
@@ -192,6 +197,10 @@ export class TrackedAgentState {
 
     handleUnderlyingWithdrawalCancelled(): void {
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
+    }
+
+    handleUnderlyingBalanceToppedUp(args: EventArgs<UnderlyingBalanceToppedUp>): void {
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.add(args.depositedUBA);
     }
 
     // handlers: agent availability

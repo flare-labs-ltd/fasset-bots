@@ -1,6 +1,5 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import BN from "bn.js";
-import { CollateralReserved, MintingExecuted, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";

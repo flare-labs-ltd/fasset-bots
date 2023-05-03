@@ -2,7 +2,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { TrackedAgentState } from "./TrackedAgentState";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings } from "../fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings, CollateralToken } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
 import { eventIs } from "../utils/events/truffle";
@@ -11,6 +11,7 @@ import { web3 } from "../utils/web3";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import assert from "node:assert";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
+import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
 
 export class TrackedState {
     constructor(
@@ -28,6 +29,9 @@ export class TrackedState {
     // settings
     settings!: AssetManagerSettings;
     liquidationStrategySettings!: LiquidationStrategyImplSettings;
+    collaterals = new CollateralList();
+    poolWNatCollateral!: CollateralToken;
+
 
     // tracked agents
     agents: Map<string, TrackedAgentState> = new Map();                // map agent_address => tracked agent state
@@ -42,6 +46,15 @@ export class TrackedState {
         this.settings = Object.assign({}, await this.context.assetManager.getSettings());
         const encodedSettings = await this.context.assetManager.getLiquidationSettings();
         this.liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
+        const collateralTokens = await this.context.assetManager.getCollateralTokens();
+        for (const collateralToken of collateralTokens) {
+            const collateral = await this.addCollateralToken(collateralToken);
+            // poolColateral will be the last active collateral of class pool
+            if (isPoolCollateral(collateral)) {
+                this.poolWNatCollateral = collateral;
+            }
+        }
+        this.fAssetSupply = await this.context.fAsset.totalSupply();
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
 
@@ -68,7 +81,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'AgentSettingChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentSettingChanged(event.args.name, event.args.value);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA));
+                    this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingExecuted(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
@@ -79,6 +92,16 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenAdded')) {
+                    void this.addCollateralToken({ ...event.args, validUntil: BN_ZERO });
+                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenRatiosChanged')) {
+                    const collateral = this.collaterals.get(event.args.tokenClass, event.args.tokenContract);
+                    collateral.minCollateralRatioBIPS = toBN(event.args.minCollateralRatioBIPS);
+                    collateral.ccbMinCollateralRatioBIPS = toBN(event.args.ccbMinCollateralRatioBIPS);
+                    collateral.safetyMinCollateralRatioBIPS = toBN(event.args.safetyMinCollateralRatioBIPS);
+                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenDeprecated')) {
+                    const collateral = this.collaterals.get(event.args.tokenClass, event.args.tokenContract);
+                    collateral.validUntil = toBN(event.args.validUntil);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
                     await this.getAgentTriggerAdd(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
@@ -109,6 +132,10 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionDefault(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentBlocked(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentFailed(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'UnderlyingBalanceToppedUp')) {
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingBalanceToppedUp(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalAnnounced')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalAnnounced(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
@@ -177,6 +204,24 @@ export class TrackedState {
         // run state events
         await this.registerStateEvents(events);
         return events;
+    }
+
+
+    private async addCollateralToken(data: CollateralToken) {
+        const collateral: CollateralToken = {
+            tokenClass: toBN(data.tokenClass),
+            token: data.token,
+            decimals: toBN(data.decimals),
+            validUntil: data.validUntil,
+            directPricePair: data.directPricePair,
+            assetFtsoSymbol: data.assetFtsoSymbol,
+            tokenFtsoSymbol: data.tokenFtsoSymbol,
+            minCollateralRatioBIPS: toBN(data.minCollateralRatioBIPS),
+            ccbMinCollateralRatioBIPS: toBN(data.ccbMinCollateralRatioBIPS),
+            safetyMinCollateralRatioBIPS: toBN(data.safetyMinCollateralRatioBIPS),
+        };
+        this.collaterals.add(collateral);
+        return collateral;
     }
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {

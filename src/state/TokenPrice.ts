@@ -1,10 +1,22 @@
-import { IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
-import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
-import { amgToTokenWeiPrice } from "../fasset/Conversions";
+import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { AMGSettings, amgToTokenWeiPrice } from "../fasset/Conversions";
 import { artifacts } from "../utils/artifacts";
+import { ContractWithEvents } from "../utils/events/truffle";
 import { BN_ZERO, BNish, exp10, getOrCreateAsync, minBN, requireNotNull, toBN } from "../utils/helpers";
+export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 
-const IFtso = artifacts.require("IFtso");
+const IFtso = artifacts.require('IFtso');
+const IFtsoRegistry = artifacts.require('IFtsoRegistry');
+const IERC20 = artifacts.require('IERC20')
+
+export async function tokenContract(tokenAddress: string) {
+    return await IERC20.at(tokenAddress) as ContractWithEvents<IERC20Instance, IERC20Events>;
+}
+
+export async function tokenBalance(tokenAddress: string, owner: string) {
+    const token = await IERC20.at(tokenAddress);
+    return await token.balanceOf(owner);
+}
 
 export class TokenPrice {
     constructor(
@@ -30,7 +42,7 @@ export class TokenPrice {
         return this.toNumber().toFixed(3);
     }
 
-    amgToTokenWei(settings: AssetManagerSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
+    amgToTokenWei(settings: AMGSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
         return amgToTokenWeiPrice(settings, tokenDecimals, this.price, this.decimals, assetUSD.price, assetUSD.decimals);
     }
 
@@ -56,6 +68,11 @@ export class TokenPriceReader {
     constructor(
         public ftsoRegistry: IFtsoRegistryInstance
     ) { }
+
+    static async create(settings: { ftsoRegistry: string }) {
+        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
+        return new TokenPriceReader(ftsoRegistry);
+    }
 
     getFtso(symbol: string) {
         return getOrCreateAsync(this.ftsoCache, symbol, async () => {
