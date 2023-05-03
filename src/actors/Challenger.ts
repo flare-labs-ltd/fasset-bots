@@ -189,7 +189,7 @@ export class Challenger {
                 this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             // due to async nature of challenging there may be some false challenges which will be rejected
             await this.state.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
-                .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough free balance', 'mult chlg: payment confirmed']));
+                .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough balance']));
         });
     }
 
