@@ -187,7 +187,7 @@ export class AgentBot {
                 await this.exitAvailable(agentEnt);
             } else if (agentEnt.waitingForDestructionCleanUp) {
                 const agentInfo = await this.agent.getAgentInfo();
-                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO)) {
+                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO) ) {
                     const destroyAllowedAt = await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
                     agentEnt.waitingForDestructionCleanUp = false;
