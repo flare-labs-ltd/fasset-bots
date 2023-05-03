@@ -44,6 +44,31 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "tokenClass",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "AgentCollateralTokenChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "owner",
@@ -51,14 +76,14 @@
         },
         {
           "indexed": false,
-          "internalType": "uint8",
-          "name": "agentType",
-          "type": "uint8"
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
         },
         {
           "indexed": false,
           "internalType": "address",
-          "name": "agentVault",
+          "name": "collateralPool",
           "type": "address"
         },
         {
@@ -70,8 +95,56 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "collateralPool",
+          "name": "class1CollateralToken",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolFeeShareBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintingClass1CollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintingPoolCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "buyFAssetByAgentFactorBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolExitCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolTopupCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolTopupTokenPriceFactorBIPS",
+          "type": "uint256"
         }
       ],
       "name": "AgentCreated",
@@ -345,8 +418,14 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "tokenContract",
+          "name": "token",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "decimals",
+          "type": "uint256"
         },
         {
           "indexed": false,
@@ -1039,6 +1118,25 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "underlyingBalanceUBA",
+          "type": "int256"
+        }
+      ],
+      "name": "UnderlyingBalanceChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "agentVault",
@@ -1046,9 +1144,9 @@
         },
         {
           "indexed": false,
-          "internalType": "uint256",
+          "internalType": "int256",
           "name": "balance",
-          "type": "uint256"
+          "type": "int256"
         },
         {
           "indexed": false,
@@ -1071,8 +1169,14 @@
         },
         {
           "indexed": false,
+          "internalType": "bytes32",
+          "name": "transactionHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
-          "name": "freeBalanceChangeUBA",
+          "name": "depositedUBA",
           "type": "uint256"
         }
       ],
@@ -1155,8 +1259,8 @@
       "type": "event"
     }
   ],
-  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220971e94674e41a343c3528c397ce4d9c019d0cb56321fa99fe16dcf765d5aa21f64736f6c634300080b0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220971e94674e41a343c3528c397ce4d9c019d0cb56321fa99fe16dcf765d5aa21f64736f6c634300080b0033",
+  "bytecode": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220300c24ca8a5f700752a97bc6efca90268925df82d7984a9aab63e4f991c8885e64736f6c634300080b0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220300c24ca8a5f700752a97bc6efca90268925df82d7984a9aab63e4f991c8885e64736f6c634300080b0033",
   "linkReferences": {},
   "deployedLinkReferences": {}
 }

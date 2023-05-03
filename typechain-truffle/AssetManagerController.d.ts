@@ -31,19 +31,47 @@ export interface AgentAvailable {
   };
 }
 
+export interface AgentCollateralTokenChanged {
+  name: "AgentCollateralTokenChanged";
+  args: {
+    agentVault: string;
+    tokenClass: BN;
+    token: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
 export interface AgentCreated {
   name: "AgentCreated";
   args: {
     owner: string;
-    agentType: BN;
     agentVault: string;
-    underlyingAddress: string;
     collateralPool: string;
+    underlyingAddress: string;
+    class1CollateralToken: string;
+    feeBIPS: BN;
+    poolFeeShareBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    buyFAssetByAgentFactorBIPS: BN;
+    poolExitCollateralRatioBIPS: BN;
+    poolTopupCollateralRatioBIPS: BN;
+    poolTopupTokenPriceFactorBIPS: BN;
     0: string;
-    1: BN;
+    1: string;
     2: string;
     3: string;
     4: string;
+    5: BN;
+    6: BN;
+    7: BN;
+    8: BN;
+    9: BN;
+    10: BN;
+    11: BN;
+    12: BN;
   };
 }
 
@@ -173,7 +201,8 @@ export interface CollateralTokenAdded {
   name: "CollateralTokenAdded";
   args: {
     tokenClass: BN;
-    tokenContract: string;
+    token: string;
+    decimals: BN;
     directPricePair: boolean;
     assetFtsoSymbol: string;
     tokenFtsoSymbol: string;
@@ -182,12 +211,13 @@ export interface CollateralTokenAdded {
     safetyMinCollateralRatioBIPS: BN;
     0: BN;
     1: string;
-    2: boolean;
-    3: string;
+    2: BN;
+    3: boolean;
     4: string;
-    5: BN;
+    5: string;
     6: BN;
     7: BN;
+    8: BN;
   };
 }
 
@@ -539,6 +569,16 @@ export interface TimelockedGovernanceCallExecuted {
   };
 }
 
+export interface UnderlyingBalanceChanged {
+  name: "UnderlyingBalanceChanged";
+  args: {
+    agentVault: string;
+    underlyingBalanceUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface UnderlyingBalanceTooLow {
   name: "UnderlyingBalanceTooLow";
   args: {
@@ -555,9 +595,11 @@ export interface UnderlyingBalanceToppedUp {
   name: "UnderlyingBalanceToppedUp";
   args: {
     agentVault: string;
-    freeBalanceChangeUBA: BN;
+    transactionHash: string;
+    depositedUBA: BN;
     0: string;
-    1: BN;
+    1: string;
+    2: BN;
   };
 }
 
@@ -599,6 +641,7 @@ export interface UnderlyingWithdrawalConfirmed {
 
 type AllEvents =
   | AgentAvailable
+  | AgentCollateralTokenChanged
   | AgentCreated
   | AgentDestroyAnnounced
   | AgentDestroyed
@@ -639,6 +682,7 @@ type AllEvents =
   | SettingChanged
   | TimelockedGovernanceCallCanceled
   | TimelockedGovernanceCallExecuted
+  | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
   | UnderlyingWithdrawalAnnounced
