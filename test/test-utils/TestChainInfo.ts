@@ -55,7 +55,7 @@ export const testChainInfo: Record<'eth' | 'btc' | 'xrp', TestChainInfo> = {
         amgDecimals: 6,
         startPrice: 0.53,
         blockTime: 10,
-        finalizationBlocks: 6,
+        finalizationBlocks: 10,
         underlyingBlocksForPayment: 10,
         lotSize: 10_000,
         requireEOAProof: false,
