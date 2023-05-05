@@ -16,8 +16,11 @@ import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformM
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
+import { artifacts } from "../../../src/utils/artifacts";
 use(chaiAsPromised);
 use(spies);
+
+const ERC20Mock = artifacts.require('ERC20Mock');
 
 const agentDestroyedArgs = {
     '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
@@ -321,6 +324,21 @@ describe("Tracked state tests", async () => {
         expect(agentAfter.announcedUnderlyingWithdrawalId.eq(toBN(0))).to.be.true;
     });
 
+    it.only("Should handle event 'UnderlyingBalanceToppedUp", async () => {
+        const agentBLocal = await createTestAgentB(context, ownerAddress);
+        const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentBLocal.vaultAddress));
+        await agentBLocal.announceUnderlyingWithdrawal();
+        await trackedState.readUnhandledEvents();
+        const agentMiddle = Object.assign({}, trackedState.getAgent(agentBLocal.vaultAddress));
+        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
+        await time.increase(skipTime);
+        const underlyingAddress: string = "UNDERLYING_ADDRESS";
+        const tx = await agentBLocal.performTopupPayment(1, underlyingAddress);
+        chain.mine(chain.finalizationBlocks + 1);
+        await agentBLocal.confirmTopupPayment(tx);
+        await trackedState.readUnhandledEvents();
+    });
+
     it("Should handle event 'DustChanged'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -476,4 +494,45 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
     });
+
+    it("Should handle event 'CollateralTokenAdded' and 'CollateralTokenDeprecated'", async () => {
+        const collateralsBefore = trackedState.collaterals.list.length;
+        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentCollateral = await agentB.getAgentCollateral();
+        const newCollateral = Object.assign({}, agentCollateral.class1.collateral);
+        newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
+        newCollateral.tokenFtsoSymbol = "NT";
+        newCollateral.assetFtsoSymbol = "NT";
+        await context.assetManagerController.addCollateralToken([context.assetManager.address], newCollateral, { from: governance });
+        await trackedState.readUnhandledEvents();
+        const collateralsAfter = trackedState.collaterals.list.length;
+        expect(collateralsAfter).to.eq(collateralsBefore + 1);
+        await trackedState.readUnhandledEvents();
+        const getCollateral0 = trackedState.collaterals.get(newCollateral.tokenClass, newCollateral.token);
+        expect(toBN(getCollateral0.validUntil).eqn(0)).to.be.true;
+        // deprecate
+        const settings = await context.assetManager.getSettings();
+        await context.assetManagerController.deprecateCollateralToken([context.assetManager.address], newCollateral.tokenClass, newCollateral.token, settings.tokenInvalidationTimeMinSeconds, { from: governance });
+        await trackedState.readUnhandledEvents();
+        const getCollateral1 = trackedState.collaterals.get(newCollateral.tokenClass, newCollateral.token);
+        expect(toBN(getCollateral1.validUntil).gtn(0)).to.be.true;
+    });
+
+    it("Should handle event 'CollateralTokenRatiosChanged'", async () => {
+        const collateral = trackedState.collaterals.list[0];
+        const newMinCollateralRatioBIPS = "23000";
+        const newCcbMinCollateralRatioBIPS = "18000";
+        const newSafetyMinCollateralRatioBIPS = "24000";
+        expect(collateral.minCollateralRatioBIPS.toString()).to.not.eq(newMinCollateralRatioBIPS);
+        expect(collateral.ccbMinCollateralRatioBIPS.toString()).to.not.eq(newCcbMinCollateralRatioBIPS);
+        expect(collateral.safetyMinCollateralRatioBIPS.toString()).to.not.eq(newSafetyMinCollateralRatioBIPS);
+        const resp = await context.assetManagerController.setCollateralRatiosForToken([context.assetManager.address], collateral.tokenClass, collateral.token, newMinCollateralRatioBIPS, newCcbMinCollateralRatioBIPS, newSafetyMinCollateralRatioBIPS, { from: governance });
+        await waitForTimelock(resp, context.assetManagerController, updateExecutor);
+        await trackedState.readUnhandledEvents();
+        const getCollateral = trackedState.collaterals.list[0];
+        expect(getCollateral.minCollateralRatioBIPS.toString()).to.eq(newMinCollateralRatioBIPS);
+        expect(getCollateral.ccbMinCollateralRatioBIPS.toString()).to.eq(newCcbMinCollateralRatioBIPS);
+        expect(getCollateral.safetyMinCollateralRatioBIPS.toString()).to.eq(newSafetyMinCollateralRatioBIPS);
+    });
+
 });
