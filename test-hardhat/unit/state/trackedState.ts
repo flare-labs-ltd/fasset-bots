@@ -17,6 +17,7 @@ import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSet
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../../src/utils/artifacts";
+import { tokenBalance } from "../../../src/state/TokenPrice";
 use(chaiAsPromised);
 use(spies);
 
@@ -324,19 +325,23 @@ describe("Tracked state tests", async () => {
         expect(agentAfter.announcedUnderlyingWithdrawalId.eq(toBN(0))).to.be.true;
     });
 
-    it.only("Should handle event 'UnderlyingBalanceToppedUp", async () => {
+    it("Should handle event 'UnderlyingBalanceToppedUp", async () => {
         const agentBLocal = await createTestAgentB(context, ownerAddress);
-        const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentBLocal.vaultAddress));
         await agentBLocal.announceUnderlyingWithdrawal();
         await trackedState.readUnhandledEvents();
-        const agentMiddle = Object.assign({}, trackedState.getAgent(agentBLocal.vaultAddress));
+        const agentBefore = trackedState.agents.get(agentBLocal.vaultAddress);
+        expect(agentBefore?.underlyingBalanceUBA.eqn(0));
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
-        const underlyingAddress: string = "UNDERLYING_ADDRESS";
-        const tx = await agentBLocal.performTopupPayment(1, underlyingAddress);
+        const underlyingAddress: string = "RANDOM_UNDERLYING_ADDRESS";
+        const deposit = toBN(200);
+        chain.mint(underlyingAddress, deposit);
+        const tx = await agentBLocal.performTopupPayment(deposit, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agentBLocal.confirmTopupPayment(tx);
         await trackedState.readUnhandledEvents();
+        const agentAfter = trackedState.agents.get(agentBLocal.vaultAddress);
+        expect(agentAfter?.underlyingBalanceUBA.eq(deposit));
     });
 
     it("Should handle event 'DustChanged'", async () => {
@@ -485,7 +490,7 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eq(deposit)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
         // redeem pool
-        const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
+        const amount = await tokenBalance(context.wNat.address, agentInfo.collateralPool);
         const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
         await agentB.redeemCollateralPoolTokens(amount);
