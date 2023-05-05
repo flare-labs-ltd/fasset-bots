@@ -8,6 +8,7 @@ import { createTestContext } from "../../test-utils/helpers";
 import { TokenPrice, TokenPriceReader } from "../../../src/state/TokenPrice";
 import { AMGPrice, CollateralPrice } from "../../../src/state/CollateralPrice";
 import { artifacts } from "../../../src/utils/artifacts";
+import { CollateralIndexedList } from "../../../src/state/CollateralIndexedList";
 
 const IFtsoRegistry = artifacts.require("IFtsoRegistry");
 const setMaxTrustedPriceAgeSeconds = 1;
@@ -56,9 +57,15 @@ describe("Prices tests", async () => {
     });
 
     it("Should create Prices", async () => {
-        const prices = new Prices([collateralPrice]);
-        expect(prices.isPoolCollateral(collateralPrice.collateral)).to.be.true;
-        expect(prices.natPrice).to.not.be.null;
+        const collateralPrices = new CollateralIndexedList<CollateralPrice>();
+        const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, poolCollateral);
+        collateralPrices.set(poolCollateral, collateralPrice);
+        const prices = new Prices(collateralPrices);
+        expect(prices.getPool(poolCollateral.token).collateral.token).to.eq(poolCollateral.token);
+        const fn = () => {
+            return prices.getClass1(poolCollateral.token);
+        };
+        expect(fn).to.throw(`Value is null or undefined`);
     });
 
     it("Should return Prices", async () => {
@@ -68,8 +75,27 @@ describe("Prices tests", async () => {
 
     it("Should return Ftso prices", async () => {
         const prices = await Prices.getFtsoPrices(priceReader, settings, [collateralPrice.collateral]);
-        expect(prices.isPoolCollateral(collateralPrice.collateral)).to.be.true;
-        expect(prices.natPrice).to.not.be.null;
+        expect(prices.getPool(poolCollateral.token).collateral.token).to.eq(poolCollateral.token);
+        const fn = () => {
+            return prices.getClass1(poolCollateral.token);
+        };
+        expect(fn).to.throw(`Value is null or undefined`);
+    });
+
+    it("Should print prices", async () => {
+        const collateralPrices = new CollateralIndexedList<CollateralPrice>();
+        const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, poolCollateral);
+        collateralPrices.set(poolCollateral, collateralPrice);
+        const prices = new Prices(collateralPrices);
+        expect(prices.toString().length).to.be.gt(1);
+
+        const poolCollateralPair = Object.assign({}, poolCollateral);
+        poolCollateralPair.directPricePair = true;
+        const collateralPricesPair = new CollateralIndexedList<CollateralPrice>();
+        const collateralPricePair = await CollateralPrice.forCollateral(priceReader, settings, poolCollateralPair);
+        collateralPricesPair.set(poolCollateralPair, collateralPricePair);
+        const pricesPair = new Prices(collateralPricesPair);
+        expect(pricesPair.toString().length).to.be.gt(1);
     });
 
 });

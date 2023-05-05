@@ -12,6 +12,7 @@ import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
 import assert from "node:assert";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
+import { tokenContract } from "./TokenPrice";
 
 export class TrackedState {
     constructor(
@@ -39,22 +40,26 @@ export class TrackedState {
     agentsByPool: Map<string, TrackedAgentState> = new Map();    // map pool_address => tracked agent state
 
     // event decoder
-    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager, wnat: this.context.wNat });
+    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
 
     // async initialization part
     async initialize(): Promise<void> {
+        // settings
         this.settings = Object.assign({}, await this.context.assetManager.getSettings());
         const encodedSettings = await this.context.assetManager.getLiquidationSettings();
         this.liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
+        // collateral tokens
         const collateralTokens = await this.context.assetManager.getCollateralTokens();
         for (const collateralToken of collateralTokens) {
             const collateral = await this.addCollateralToken(collateralToken);
-            // poolColateral will be the last active collateral of class pool
+            // poolCollateral will be the last active collateral of class pool
             if (isPoolCollateral(collateral)) {
                 this.poolWNatCollateral = collateral;
             }
         }
+        // fAsset supply
         this.fAssetSupply = await this.context.fAsset.totalSupply();
+        // prices
         [this.prices, this.trustedPrices] = await this.getPrices();
     }
 
@@ -144,16 +149,16 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingWithdrawalCancelled();
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
-                } else if (eventIs(event, this.context.wNat, 'Transfer')) {
-                    this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
-                    this.agentsByPool.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                 }
-                Object.entries(this.context.stablecoins).forEach(([, contract]) => {
+                for(const collateral of this.collaterals.list) {
+                    const contract = await tokenContract(collateral.token);
                     if (eventIs(event, contract, 'Transfer')) {
                         this.agents.get(event.args.from)?.withdrawClass1Collateral(contract.address, toBN(event.args.value));
                         this.agents.get(event.args.to)?.depositClass1Collateral(contract.address, toBN(event.args.value));
+                        this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
+                        this.agentsByPool.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                     }
-                });
+                }
             }
         } catch (error) {
             console.error(`Error handling events for state: ${error}`);
@@ -166,17 +171,19 @@ export class TrackedState {
         const lastBlock = await web3.eth.getBlockNumber() - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
         for (let lastHandled = this.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
-            // handle stable coin logs
-            Object.entries(this.context.stablecoins).forEach(async ([, contract]) => {
-                const logsStablecoin = await web3.eth.getPastLogs({
+            // handle collaterals
+            for(const collateral of this.collaterals.list) {
+                const contract = await tokenContract(collateral.token);
+                const logsCollateral = await web3.eth.getPastLogs({
                     address: contract.address,
                     fromBlock: lastHandled + 1,
                     toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                     topics: [null]
                 });
-                const eventDecoderStableCoins = new Web3EventDecoder({ stableCoin: contract });
-                events.push(...eventDecoderStableCoins.decodeEvents(logsStablecoin));
-            });
+                const eventDecoderCollaterals = new Web3EventDecoder({ collateralDecode: contract });
+                events.push(...eventDecoderCollaterals.decodeEvents(logsCollateral));
+            }
+            // handle asset manager
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
                 fromBlock: lastHandled + 1,
@@ -184,6 +191,7 @@ export class TrackedState {
                 topics: [null]
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+            // handle ftso manager
             const logsFtsoManager = await web3.eth.getPastLogs({
                 address: this.context.ftsoManager.address,
                 fromBlock: lastHandled + 1,
@@ -191,13 +199,6 @@ export class TrackedState {
                 topics: [null]
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
-            const logsWNat = await web3.eth.getPastLogs({
-                address: this.context.wNat.address,
-                fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
-                topics: [null]
-            });
-            events.push(...this.eventDecoder.decodeEvents(logsWNat));
         }
         // mark as handled
         this.lastEventBlockHandled = lastBlock;

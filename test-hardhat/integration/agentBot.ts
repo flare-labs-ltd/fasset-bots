@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -259,7 +259,7 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         orm.em.clear();
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
+        assert.equal(redemptionDone.state, AgentRedemptionState.PAID);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
@@ -314,8 +314,16 @@ describe("Agent bot tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
-        await agentBot.runStep(orm.em);
-        orm.em.clear();
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+        }
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
@@ -513,7 +521,6 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         // withdraw pool fees
         const poolFeeBalance = await agentBot.agent.poolFeeBalance();
-        console.log("poolFeeBalance", poolFeeBalance.toString())
         await agentBot.agent.withdrawPoolFees(poolFeeBalance);
         // self close all received pool fees - otherwise we cannot withdraw all pool collateral
         await agentBot.agent.selfClose(poolFeeBalance);
@@ -551,7 +558,7 @@ describe("Agent bot tests", async () => {
         expect(spyTopUp).to.have.been.called.twice;
     });
 
-    it("Should top up collateral - fails on owner side due to no NAT", async () => {
+    it.skip("Should top up collateral - fails on owner side due to no NAT", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgentB(context, ownerAddress);

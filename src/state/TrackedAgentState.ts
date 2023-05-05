@@ -1,11 +1,11 @@
 import BN from "bn.js";
-import { AgentInfo, AgentStatus } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
+import { AgentInfo, AgentStatus, CollateralToken, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { BN_ZERO, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { AgentCollateral } from "../fasset/AgentCollateral";
 import { web3Normalize } from "../utils/web3normalize";
+import { Prices } from "./Prices";
 
 export class TrackedAgentState {
     constructor(
@@ -48,12 +48,12 @@ export class TrackedAgentState {
     underlyingBalanceUBA: BN = BN_ZERO;
 
     // calculated getters
-    get requiredUnderlyingBalanceUBA() {
+    get requiredUnderlyingBalanceUBA(): BN {
         const backedUBA = this.mintedUBA.add(this.redeemingUBA);
         return backedUBA.mul(toBN(this.parent.settings.minUnderlyingBackingBIPS)).divn(MAX_BIPS);
     }
 
-    get freeUnderlyingBalanceUBA() {
+    get freeUnderlyingBalanceUBA(): BN {
         return this.underlyingBalanceUBA.sub(this.requiredUnderlyingBalanceUBA);
     }
 
@@ -80,38 +80,6 @@ export class TrackedAgentState {
         this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
         this.agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
         this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
-    }
-
-    async possibleLiquidationTransition(timestamp: BN): Promise<number> {
-        const agentCollateral = await AgentCollateral.create(this.parent.context.assetManager, this.parent.settings, this.vaultAddress);
-        const crClass1 = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
-        const crPool = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
-        const agentStatus = this.status;
-        const settings = this.parent.settings;
-        if (agentStatus === AgentStatus.NORMAL) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS))) {
-                return AgentStatus.LIQUIDATION;
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
-                return AgentStatus.CCB;
-            }
-
-        } else if (agentStatus === AgentStatus.CCB) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            if (crClass1.gte(toBN(agentCollateral.class1.collateral!.minCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.minCollateralRatioBIPS))) {
-                return AgentStatus.NORMAL;
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            } else if (crClass1.lt(toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS)) || crPool.lt(toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
-                return AgentStatus.LIQUIDATION;
-            }
-        } else if (agentStatus === AgentStatus.LIQUIDATION) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            if (crClass1.gte(toBN(agentCollateral.class1.collateral!.safetyMinCollateralRatioBIPS)) && crPool.gte(toBN(agentCollateral.pool.collateral!.safetyMinCollateralRatioBIPS))) {
-                return AgentStatus.NORMAL;
-            }
-        }
-        return agentStatus;
     }
 
     handleStatusChange(status: AgentStatus, timestamp?: BN): void {
@@ -241,5 +209,57 @@ export class TrackedAgentState {
     handleAgentSettingChanged(name: string, value: string | BN): void {
         (this.agentSettings as any)[name] = web3Normalize(value);
     }
+
+    collateralBalance(collateral: CollateralToken) {
+        return collateral.tokenClass === CollateralTokenClass.CLASS1 ? this.totalClass1CollateralWei[this.agentSettings.class1CollateralToken] : this.totalPoolCollateralNATWei;
+    }
+
+    private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralToken) {
+        const redeemingUBA = collateral.tokenClass === CollateralTokenClass.CLASS1 ? this.redeemingUBA : this.poolRedeemingUBA;
+        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(redeemingUBA);
+        if (totalUBA.isZero()) return MAX_UINT256;
+        const price = prices.get(collateral);
+        const backingCollateralWei = price.convertUBAToTokenWei(totalUBA);
+        const totalCollateralWei = this.collateralBalance(collateral);
+        return totalCollateralWei.muln(MAX_BIPS).div(backingCollateralWei);
+    }
+
+    collateralRatioBIPS(collateral: CollateralToken) {
+        const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, collateral);
+        const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.trustedPrices, collateral);
+        return maxBN(ratio, ratioFromTrusted);
+    }
+
+
+    private possibleLiquidationTransitionForCollateral(collateral: CollateralToken, timestamp: BN) {
+        const cr = this.collateralRatioBIPS(collateral);
+        const settings = this.parent.settings;
+        if (this.status === AgentStatus.NORMAL) {
+            if (cr.lt(toBN(collateral.ccbMinCollateralRatioBIPS))) {
+                return AgentStatus.LIQUIDATION;
+            } else if (cr.lt(toBN(collateral.minCollateralRatioBIPS))) {
+                return AgentStatus.CCB;
+            }
+        } else if (this.status === AgentStatus.CCB) {
+            if (cr.gte(toBN(collateral.minCollateralRatioBIPS))) {
+                return AgentStatus.NORMAL;
+            } else if (cr.lt(toBN(collateral.ccbMinCollateralRatioBIPS)) || timestamp.gte(this.ccbStartTimestamp.add(toBN(settings.ccbTimeSeconds)))) {
+                return AgentStatus.LIQUIDATION;
+            }
+        } else if (this.status === AgentStatus.LIQUIDATION) {
+            if (cr.gte(toBN(collateral.safetyMinCollateralRatioBIPS))) {
+                return AgentStatus.NORMAL;
+            }
+        }
+        return this.status;
+    }
+
+    possibleLiquidationTransition(timestamp: BN) {
+        const class1Transition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralTokenClass.CLASS1, this.agentSettings.class1CollateralToken), timestamp);
+        const poolTransition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralTokenClass.POOL, this.parent.poolWNatCollateral.token), timestamp);
+        // return the higher status (more severe)
+        return class1Transition >= poolTransition ? class1Transition : poolTransition;
+    }
+
 
 }

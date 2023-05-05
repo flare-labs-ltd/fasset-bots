@@ -44,7 +44,7 @@ describe("Tracked agent state tests", async () => {
 
     it("Should return agent status", async () => {
         trackedAgentState.status = AgentStatus.DESTROYING;
-        const status = await trackedAgentState.possibleLiquidationTransition(toBN(0));
+        const status = trackedAgentState.possibleLiquidationTransition(toBN(0));
         expect(status.toString()).to.eq(trackedAgentState.status.toString());
     });
 

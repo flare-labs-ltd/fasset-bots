@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { AgentB } from "../../../src/fasset-bots/AgentB";
 import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, toBNExp } from "../../../src/utils/helpers";
+import { checkedCast, exp10, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
@@ -133,6 +133,26 @@ describe("Agent collateral unit tests", async () => {
         expect(class1MintingBIPS[1].gtn(0)).to.be.true;
         expect(poolMintingBIPS[1].gtn(0)).to.be.true;
         expect(agentPoolTokensMintingBIPS[1].gtn(0)).to.be.true;
+    });
+
+    it("Should get collateral ratio BIPS", async () => {
+        agentB = await createTestAgentB(context, ownerAddress);
+        const agentCollateral = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), agentB.vaultAddress);
+        const crClass1BIPS = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
+        const crPoolBIPS = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
+        expect(crClass1BIPS.eq(exp10(10))).to.be.true;
+        expect(crPoolBIPS.eq(exp10(10))).to.be.true;
+        const deposit = toBNExp(1_000_000, 18);
+        await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
+        await agentB.depositClass1Collateral(deposit);
+        await agentB.buyCollateralPoolTokens(deposit);
+        await agentB.makeAvailable();
+        minter = await createTestMinter(context, minterAddress, chain);
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
+        const crClass1BIPSAfterMinting = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
+        const crPoolBIPSAfterMinting = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
+        expect(crClass1BIPSAfterMinting.gtn(0)).to.be.true;
+        expect(crPoolBIPSAfterMinting.gtn(0)).to.be.true;
     });
 
 });

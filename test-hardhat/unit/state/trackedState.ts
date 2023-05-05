@@ -26,16 +26,32 @@ const agentDestroyedArgs = {
 } as EventArgs<AgentDestroyed>;
 const agentCreatedArgs = {
     '0': '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
-    '1': toBN(0),
+    '1': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     '2': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     '3': 'UNDERLYING_ACCOUNT_78988',
     '4': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    __length__: 5,
+    '5': toBN(0),
+    '6': toBN(0),
+    '7': toBN(0),
+    '8': toBN(0),
+    '9': toBN(0),
+    '10': toBN(0),
+    '11': toBN(0),
+    '12': toBN(0),
+    __length__: 13,
     owner: '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
-    agentType: toBN(0),
     agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
+    collateralPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     underlyingAddress: 'UNDERLYING_ACCOUNT_78988',
-    collateralPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d'
+    class1CollateralToken: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
+    feeBIPS: toBN(0),
+    poolFeeShareBIPS: toBN(0),
+    mintingClass1CollateralRatioBIPS: toBN(0),
+    mintingPoolCollateralRatioBIPS: toBN(0),
+    buyFAssetByAgentFactorBIPS: toBN(0),
+    poolExitCollateralRatioBIPS: toBN(0),
+    poolTopupCollateralRatioBIPS: toBN(0),
+    poolTopupTokenPriceFactorBIPS: toBN(0)
 } as EventArgs<AgentCreated>;
 const deposit = toBNExp(1_000_000, 18);
 
@@ -224,10 +240,12 @@ describe("Tracked state tests", async () => {
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
         const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress, (await agentB.getAgentInfo()).collateralPool));
         const supplyBefore = trackedState.fAssetSupply;
+        const freeUnderlyingBalanceUBABefore = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
         const supplyAfter = trackedState.fAssetSupply;
-        expect(agentAfter.freeUnderlyingBalanceUBA.gt(agentBefore.freeUnderlyingBalanceUBA)).to.be.true;
+        const freeUnderlyingBalanceUBAAfter = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
+        expect(freeUnderlyingBalanceUBAAfter.gt(freeUnderlyingBalanceUBABefore)).to.be.true;
         expect(agentAfter.mintedUBA.gt(agentBefore.mintedUBA)).to.be.true;
         expect(supplyAfter.gt(supplyBefore)).to.be.true;
     });
@@ -321,6 +339,7 @@ describe("Tracked state tests", async () => {
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minted = await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain);
         const supplyBefore = trackedState.fAssetSupply;
+        const freeUnderlyingBalanceUBABefore = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         await trackedState.readUnhandledEvents();
         const lots = 3;
         const liquidatorAddress = accounts[100];
@@ -333,13 +352,15 @@ describe("Tracked state tests", async () => {
         await context.assetManager.liquidate(agentB.agentVault.address, liquidateMaxUBA, { from: liquidatorAddress });
         const supplyMiddle = trackedState.fAssetSupply;
         const agentMiddle = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
+        const freeUnderlyingBalanceUBAMiddle = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         await trackedState.readUnhandledEvents();
         const supplyAfter = trackedState.fAssetSupply;
+        const freeUnderlyingBalanceUBAAfter = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(supplyBefore.lt(supplyMiddle)).to.be.true;
         expect(supplyAfter.lt(supplyMiddle)).to.be.true;
-        expect(agentBefore.freeUnderlyingBalanceUBA.lt(agentMiddle.freeUnderlyingBalanceUBA)).to.be.true;
-        expect(agentMiddle.freeUnderlyingBalanceUBA.lt(agentAfter.freeUnderlyingBalanceUBA)).to.be.true;
+        expect(freeUnderlyingBalanceUBABefore.lt(freeUnderlyingBalanceUBAMiddle)).to.be.true;
+        expect(freeUnderlyingBalanceUBAMiddle.lt(freeUnderlyingBalanceUBAAfter)).to.be.true;
         expect(agentBefore.mintedUBA.lt(agentMiddle.mintedUBA)).to.be.true;
         expect(agentMiddle.mintedUBA.gt(agentAfter.mintedUBA)).to.be.true;
     });

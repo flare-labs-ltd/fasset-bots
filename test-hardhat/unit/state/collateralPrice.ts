@@ -123,4 +123,13 @@ describe("Collateral price unit tests", async () => {
         expect(valueNATWei.eq(valueUBA2)).to.be.true;
     });
 
+    it("Should get asset to token price", async () => {
+        const collateralPrice = new CollateralPrice(poolCollateral, assetPrice, tokenPrice, amgPrice);
+        expect(collateralPrice.assetToTokenPriceNum()).to.eq(assetPrice.toNumber());
+        const poolCollateralNoPair = Object.assign({}, poolCollateral);
+        poolCollateralNoPair.directPricePair = false;
+        const collateralPrice1 = CollateralPrice.forTokenPrices(amgSettings, poolCollateralNoPair, assetPrice, tokenPrice);
+        expect(collateralPrice1.assetToTokenPriceNum()).to.eq(assetPrice.toNumber() / tokenPrice.toNumber());
+    });
+
 });

@@ -48,6 +48,12 @@ describe("Token price reader unit tests", async () => {
         expect(priceReader).to.not.be.null;
     });
 
+
+    it("Should create TokenPriceReader 2", async () => {
+        const priceReader = TokenPriceReader.create({ftsoRegistry: settings.ftsoRegistry})
+        expect(priceReader).to.not.be.null;
+    });
+
     it("Should return Ftso", async () => {
         const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
         const priceReader = new TokenPriceReader(ftsoRegistry);

@@ -37,7 +37,7 @@ const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH)
 const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
 const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
-const deposit = toBNExp(1_000_000_000, 18);
+const deposit = toBNExp(1_000_000, 18);
 
 export function disableMccTraceManager() {
     TraceManager.enabled = false;
@@ -116,11 +116,11 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
     return agentB;
 }
 
-export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string) {
+export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, toDeposit: BNish = deposit) {
     const agentBot = await createTestAgentBot(context, orm,  ownerAddress);
-    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
-    await agentBot.agent.depositClass1Collateral(deposit);
-    await agentBot.agent.buyCollateralPoolTokens(deposit);
+    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, toDeposit, ownerAddress);
+    await agentBot.agent.depositClass1Collateral(toDeposit);
+    await agentBot.agent.buyCollateralPoolTokens(toDeposit);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }
