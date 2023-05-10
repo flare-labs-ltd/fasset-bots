@@ -34,7 +34,6 @@ const poolCollateral: CollateralToken = {
 
 describe("AMG price unit tests", async () => {
 
-
     it("Should create AMGPrice", async () => {
         const amgPrice = new AMGPrice(AMG_TO_TOKEN_WEI, toBN(amgSettings.assetMintingDecimals), toBN(amgSettings.assetMintingGranularityUBA));
         expect(amgPrice.amgToTokenWei.eq(AMG_TO_TOKEN_WEI)).to.be.true;
