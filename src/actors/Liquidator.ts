@@ -55,7 +55,7 @@ export class Liquidator {
 
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         const timestamp = await latestBlockTimestampBN();
-        const newStatus = await agent.possibleLiquidationTransition(timestamp);
+        const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus === AgentStatus.LIQUIDATION) {
             const fBalance = await this.state.context.fAsset.balanceOf(this.address);
             await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });

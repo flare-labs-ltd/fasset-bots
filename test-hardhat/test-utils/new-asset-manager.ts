@@ -54,7 +54,7 @@ export async function linkAssetManager() {
     // deploy all libraries
     const SettingsUpdater = await deployLibrary('SettingsUpdater');
     const StateUpdater = await deployLibrary('StateUpdater');
-    const CollateralTokens = await deployLibrary('CollateralTokens');
+    const CollateralTokens = await deployLibrary('CollateralTypes');
     const AgentsExternal = await deployLibrary('AgentsExternal');
     const AgentsCreateDestroy = await deployLibrary('AgentsCreateDestroy');
     const AgentSettingsUpdater = await deployLibrary('AgentSettingsUpdater');

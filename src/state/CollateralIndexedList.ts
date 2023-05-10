@@ -43,7 +43,7 @@ export class CollateralIndexedList<T> implements Iterable<T> {
 
 export class CollateralList extends CollateralIndexedList<CollateralType> {
     add(value: CollateralType) {
-        this.set(value, value);
+        this.set({ collateralClass: value.collateralClass, token: value.token }, value);
     }
 }
 

@@ -54,7 +54,7 @@ export class SystemKeeper {
 
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         const timestamp = await latestBlockTimestampBN();
-        const newStatus = await agent.possibleLiquidationTransition(timestamp);
+        const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus > agent.status) {
             await this.state.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
         } else if (newStatus < agent.status) {

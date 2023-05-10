@@ -17,7 +17,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<
     {
-      collateralClass: BN;
+      tokenClass: BN;
       token: string;
       decimals: BN;
       validUntil: BN;
@@ -35,7 +35,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
     _token: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
-    collateralClass: BN;
+    tokenClass: BN;
     token: string;
     decimals: BN;
     validUntil: BN;
@@ -52,7 +52,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<
       {
-        collateralClass: BN;
+        tokenClass: BN;
         token: string;
         decimals: BN;
         validUntil: BN;
@@ -70,7 +70,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
       _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
-      collateralClass: BN;
+      tokenClass: BN;
       token: string;
       decimals: BN;
       validUntil: BN;
