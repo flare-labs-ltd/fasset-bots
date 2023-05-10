@@ -70,7 +70,7 @@ describe("Bot config tests", async () => {
     it("Should create block chain indexer", async () => {
         const algo = createBlockChainIndexerHelper("", SourceId.ALGO);
         expect(algo.sourceId).to.eq(SourceId.ALGO);
-        const btc = createBlockChainIndexerHelper("", SourceId.BTC, true);
+        const btc = createBlockChainIndexerHelper("", SourceId.BTC);
         expect(btc.sourceId).to.eq(SourceId.BTC);
         const doge = createBlockChainIndexerHelper("", SourceId.DOGE);
         expect(doge.sourceId).to.eq(SourceId.DOGE);

@@ -108,7 +108,7 @@ export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> 
 export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.inTestnet, chainInfo.indexerClientApiKey);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.indexerClientApiKey);
     return {
         chainInfo: chainInfo,
         chain: chain,
@@ -237,7 +237,7 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
     }
 }
 
-export function createBlockChainIndexerHelper(indexerWebServerUrl: string, sourceId: SourceId, inTestnet?: boolean, apiKey: string = ""): BlockChainIndexerHelper {
+export function createBlockChainIndexerHelper(indexerWebServerUrl: string, sourceId: SourceId, apiKey: string = ""): BlockChainIndexerHelper {
     switch (sourceId) {
         case SourceId.ALGO:
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);

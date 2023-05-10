@@ -1,101 +1,107 @@
-import { expect } from "chai";
 import { TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { requireEnv } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
+import { createBlockChainIndexerHelper, createWalletClient } from "../../../src/config/BotConfig";
+import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.BTC;
-const txHash = "c627a78e6de95684787d17aacd9a6821a02b1fd309afc6767a07dffd83ea6a2e";
-const blockId = 2;
-const blockHash = "405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace";
+const txHash = "2820f2a842e88d427fa7dfc276dcad5d723bf55341d746006f504da57f16925a";
+const blockId = 2432291;
+const blockHash = "000000000000001fd568274ccf0a3133e6b3ec26472e2722bf29e1343f295846";
 const txReference = "0x000000000000000000000000000000000000000000000000000000fd83ea6a2e";
 const invalidTxHash = txHash.slice(2);
 
 describe("BTC blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
+    let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(requireEnv('INDEXER_WEB_SERVER_URL'), sourceId, requireEnv('INDEXER_API_KEY'));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, createWalletClient(sourceId));
+        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_BTC_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_BTC_API_KEY"));
     })
 
     it("Should retrieve transaction", async () => {
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.getTransaction(txHash);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
+        expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());
     });
 
     it("Should not retrieve transaction - invalid hash", async () => {
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.getTransaction(invalidTxHash);
+        const retrievedTransaction = await blockChainIndexerClient.getTransaction(invalidTxHash);
         expect(retrievedTransaction).to.be.null;
     });
 
     it("Should retrieve block (hash)", async () => {
-        const retrievedBlock = await rewiredBlockChainIndexerClient.getBlock(blockHash);
+        const retrievedBlock = await blockChainIndexerClient.getBlock(blockHash);
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should not retrieve block (hash) - invalid hash", async () => {
-        const retrievedBlock = await rewiredBlockChainIndexerClient.getBlock(invalidTxHash);
+        const retrievedBlock = await blockChainIndexerClient.getBlock(invalidTxHash);
         expect(retrievedBlock).to.be.null;
     });
 
     it("Should retrieve block (number)", async () => {
-        const retrievedBlock = await rewiredBlockChainIndexerClient.getBlockAt(blockId);
+        const retrievedBlock = await blockChainIndexerClient.getBlockAt(blockId);
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should not retrieve block (number) - number higher than block height", async () => {
-        const retrievedHeight = await rewiredBlockChainIndexerClient.getBlockHeight();
+        const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
         const invalidNumber = retrievedHeight * 10;
-        const retrievedBlock = await rewiredBlockChainIndexerClient.getBlockAt(invalidNumber);
+        const retrievedBlock = await blockChainIndexerClient.getBlockAt(invalidNumber);
         expect(retrievedBlock).to.be.null;
     });
 
     it("Should retrieve block (number)", async () => {
-        const retrievedBlock = await rewiredBlockChainIndexerClient.getBlockAt(blockId);
+        const retrievedBlock = await blockChainIndexerClient.getBlockAt(blockId);
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
     it("Should retrieve block height", async () => {
-        const retrievedHeight = await rewiredBlockChainIndexerClient.getBlockHeight();
+        const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
     it("Should retrieve transaction block", async () => {
-        const transactionBlock = await rewiredBlockChainIndexerClient.getTransactionBlock(txHash);
+        const transactionBlock = await blockChainIndexerClient.getTransactionBlock(txHash);
         expect(transactionBlock?.number).to.be.eq(blockId);
-        expect(transactionBlock?.hash).to.be.eq(blockHash);
+        expect(transactionBlock?.hash.toUpperCase()).to.be.eq(blockHash.toUpperCase());
     });
 
     it("Should not retrieve transaction block - invalid hash", async () => {
         const invalidHash = txHash.slice(2);
-        const transactionBlock = await rewiredBlockChainIndexerClient.getTransactionBlock(invalidHash);
+        const transactionBlock = await blockChainIndexerClient.getTransactionBlock(invalidHash);
         expect(transactionBlock).to.be.null;
     });
 
     it("Should retrieve transaction by reference", async () => {
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.getTransactionsByReference(txReference);
+        const retrievedTransaction = await blockChainIndexerClient.getTransactionsByReference(txReference);
         expect(retrievedTransaction).to.not.be.null;
     });
 
     it("Should not retrieve transaction by reference - invalid reference", async () => {
         const invalidRef = txReference.slice(2);
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.getTransactionsByReference(invalidRef);
+        const retrievedTransaction = await blockChainIndexerClient.getTransactionsByReference(invalidRef);
         expect(retrievedTransaction.length).to.eq(0);
     });
 
     it("Should not retrieve transaction by reference - random reference", async () => {
         const randomRef = web3.utils.randomHex(32);
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.getTransactionsByReference(randomRef);
+        const retrievedTransaction = await blockChainIndexerClient.getTransactionsByReference(randomRef);
         expect(retrievedTransaction.length).to.eq(0);
     });
 
     it("Should retrieve transaction by block range", async () => {
-        const retrievedTransactions0 = await rewiredBlockChainIndexerClient.getTransactionsWithinBlockRange(blockId, blockId);
+        const retrievedTransactions0 = await blockChainIndexerClient.getTransactionsWithinBlockRange(blockId, blockId, true);
         expect(retrievedTransactions0.length).to.be.gt(0);
-        const retrievedTransactions1 = await rewiredBlockChainIndexerClient.getTransactionsWithinBlockRange(blockId, blockId - 1);
+        const retrievedTransactions1 = await blockChainIndexerClient.getTransactionsWithinBlockRange(blockId, blockId - 1);
         expect(retrievedTransactions1.length).to.eq(0);
     });
 
@@ -104,12 +110,12 @@ describe("BTC blockchain tests via indexer", async () => {
     });
 
     it("Should wait for underlying transaction finalization", async () => {
-        const retrievedTransaction = await rewiredBlockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
+        const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
         expect(txHash).to.be.eq(retrievedTransaction?.hash);
     });
 
     it("Should not retrieve balance - not implemented", async () => {
-        await expect(rewiredBlockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet").and.be.an.instanceOf(Error);
+        await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet").and.be.an.instanceOf(Error);
     });
 
 });

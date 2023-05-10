@@ -1,10 +1,8 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
-import { sleep, toBN } from "../utils/helpers";
+import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";
 import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
-
-const DEFAULT_TIMEOUT = 15000;
 
 export class BlockChainIndexerHelper implements IBlockChain {
 
@@ -132,8 +130,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return txs;
     }
 
-    async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
-        const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}`);
+    async getTransactionsWithinBlockRange(from: number, to: number, returnResponse: boolean = false): Promise<ITransaction[]> {
+        const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const txs: ITransaction[] = [];

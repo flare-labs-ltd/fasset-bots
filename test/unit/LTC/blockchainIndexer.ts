@@ -14,7 +14,7 @@ describe.skip("LTC blockchain tests via indexer", async () => {
 
     before(async () => {
         //TODO no indexer yet
-        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
+        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, "");
     })
 
     it("Should retrieve transaction", async () => {

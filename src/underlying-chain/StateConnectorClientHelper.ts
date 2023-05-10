@@ -1,15 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { AttestationClientSCInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, sleep, toBN, toNumber } from "../utils/helpers";
+import { BNish, DEFAULT_TIMEOUT, sleep, toBN, toNumber } from "../utils/helpers";
 import { MerkleTree } from "../utils/MerkleTree";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence, DHType } from "../verification/generated/attestation-hash-types";
 import { encodeRequest } from "../verification/generated/attestation-request-encode";
 import { AttestationType } from "../verification/generated/attestation-types-enum";
 import { AttestationRequest, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
-
-const DEFAULT_TIMEOUT = 15000;
 
 export class StateConnectorError extends Error {
     constructor(message: string) {

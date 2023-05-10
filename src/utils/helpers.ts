@@ -30,6 +30,8 @@ export const QUERY_WINDOW_SECONDS = 86400;
 
 export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 
+export const DEFAULT_TIMEOUT = 15000;
+
 /**
  * Asynchronously wait `ms` milliseconds.
  */

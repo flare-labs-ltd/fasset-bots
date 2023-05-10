@@ -1,20 +1,22 @@
-import { expect } from "chai";
 import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
+import { requireEnv } from "../../../src/utils/helpers";
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
+use(chaiAsPromised);
 
-let blockChainIndexerClient: BlockChainIndexerHelper;
+
 const sourceId: SourceId = SourceId.DOGE;
+const txHash = "941164fe740a710aeec8ff28d03f4fc196901754866116170270756ac5530153";
+const blockId = 4640711;
+const blockHash = "af18bdd438bf9e496e8623cdddec6624df2d4f1fa7c4723d9c77469414334954";
 
-const txHash = "94a678dad4ccc05375f28c5e7bb6e8c02573a552898f50480d6af8548e731e75";
-const blockId = 4074766;
-const blockHash = "e8ee3ff71df4338b7864e99afee8123c5993aa8eafe2af152bb7c91444586c98";
-
-describe.skip("DOGE blockchain tests via indexer", async () => {
+describe("DOGE blockchain tests via indexer", async () => {
+    let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        //TODO no indexer yet
-        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
+        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_DOGE_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_DOGE_API_KEY"));
     })
 
     it("Should retrieve transaction", async () => {
@@ -23,7 +25,7 @@ describe.skip("DOGE blockchain tests via indexer", async () => {
     });
 
     it("Should not retrieve balance - not implemented", async () => {
-        await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented in indexer. Use wallet.").and.be.an.instanceOf(Error);
+        await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet.").and.be.an.instanceOf(Error);
     });
 
     it("Should retrieve block (hash)", async () => {

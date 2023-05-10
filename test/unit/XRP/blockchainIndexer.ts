@@ -1,51 +1,52 @@
 import { expect } from "chai";
-import { createWalletClient } from "../../../src/config/BotConfig";
+import { createBlockChainIndexerHelper, createWalletClient } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
+import { requireEnv } from "../../../src/utils/helpers";
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
-let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.XRP;
-
-const txHash = "60fdd6901a43f3d814db0a132b237a38c782615c8a3a71c4ce7f090e64d9eb50";
-const blockId = 2620269;
-const blockHash = "395066007a0c47adf5b5ca62a75c124b24868b12ad370f2050bc47fc18f3d88b";
+const txHash = "531f9537bb82705877cadb918ddfad9d3051b0a59a263cf2fdf6e84fcf815e10";
+const blockId = 37689276;
+const blockHash = "b9011374d69b34f948313ef843249b8063776ecb9b0ed59eb91e8f86ebbfa272";
 
 describe("XRP blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
-
+    let blockChainIndexerClient: BlockChainIndexerHelper;
     before(async () => {
         //TODO no indexer yet
         rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, createWalletClient(sourceId));
+        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_XRP_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_XRP_API_KEY"));
+        // await getTransactionAndBlockFromTestnet(sourceId);
     })
 
-    it.skip("Should retrieve transaction", async () => {
+    it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        expect(txHash.toUpperCase()).to.be.eq (retrievedTransaction?.hash.toUpperCase());
     });
 
-    it.skip("Should retrieve block (hash)", async () => {
+    it("Should retrieve block (hash)", async () => {
         const retrievedBlock = await blockChainIndexerClient.getBlock(blockHash);
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
-    it.skip("Should retrieve block (number)", async () => {
+    it("Should retrieve block (number)", async () => {
         const retrievedBlock = await blockChainIndexerClient.getBlockAt(blockId);
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
-    it.skip("Should retrieve block height", async () => {
+    it("Should retrieve block height", async () => {
         const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
     });
 
-    it.skip("Should retrieve transaction block", async () => {
+    it("Should retrieve transaction block", async () => {
         const transactionBlock = await blockChainIndexerClient.getTransactionBlock(txHash);
         expect(transactionBlock?.number).to.be.eq(blockId);
-        expect(transactionBlock?.hash).to.be.eq(blockHash);
+        expect(transactionBlock?.hash.toLocaleUpperCase()).to.be.eq(blockHash.toUpperCase());
     });
 
     it("Should return appropriate status", async () => {

@@ -8,9 +8,9 @@ import { SourceId } from "../../../src/verification/sources/sources";
 let blockChainHelper: BlockChainHelper;
 const sourceId: SourceId = SourceId.XRP;
 
-const txHash = "CA4E465B8009C315783A6005AC6B40AA083A4317C3D3A6C123E33B8A908174B2";
-const blockId = 35949684;
-const blockHash = "a8df6084a8252a0343f476d58b4ad4b4fe681c79e298928dfd5d1703610cc6da";
+const txHash = "531f9537bb82705877cadb918ddfad9d3051b0a59a263cf2fdf6e84fcf815e10";
+const blockId = 37689276;
+const blockHash = "b9011374d69b34f948313ef843249b8063776ecb9b0ed59eb91e8f86ebbfa272";
 
 describe("XRP blockchain tests", async () => {
 
@@ -20,7 +20,7 @@ describe("XRP blockchain tests", async () => {
 
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainHelper.getTransaction(txHash);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());
     });
 
     it("Should retrieve block (hash)", async () => {

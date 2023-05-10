@@ -16,7 +16,7 @@ describe.skip("ALGO blockchain tests via indexer", async () => {
 
     before(async () => {
         //TODO no indexer yet
-        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, true, "");
+        blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, "");
     })
 
     it("Should retrieve transaction", async () => {
@@ -25,7 +25,7 @@ describe.skip("ALGO blockchain tests via indexer", async () => {
     });
 
     it("Should not retrieve balance - not implemented", async () => {
-        await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented in indexer. Use wallet.").and.be.an.instanceOf(Error);
+        await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet.").and.be.an.instanceOf(Error);
     });
 
     it("Should retrieve block (hash)", async () => {
