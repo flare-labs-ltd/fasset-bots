@@ -5,7 +5,7 @@ import { AMGPrice, CollateralPrice } from "../../../src/state/CollateralPrice";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralType, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { TokenPrice, TokenPriceReader } from "../../../src/state/TokenPrice";
 import { artifacts } from "../../../src/utils/artifacts";
 use(chaiAsPromised);
@@ -19,8 +19,8 @@ const AMG_TO_TOKEN_WEI = toBNExp(1, 9)
 const price = toBN(123456);
 const timestamp = toBN(123);
 const decimals = toBN(6);
-const poolCollateral: CollateralToken = {
-    tokenClass: CollateralTokenClass.POOL,
+const poolCollateral: CollateralType = {
+    collateralClass: CollateralClass.POOL,
     token: "address",
     decimals: 18,
     validUntil: 0,  // not deprecated

@@ -1,5 +1,5 @@
 import { time } from "@openzeppelin/test-helpers";
-import { AssetManagerSettings, CollateralToken } from "../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../src/utils/artifacts";
 import { findEvent } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance } from "../../typechain-truffle";
@@ -13,7 +13,7 @@ export async function newAssetManager(
     symbol: string,
     decimals: number,
     assetManagerSettings: AssetManagerSettings,
-    collateralTokens: CollateralToken[],
+    collateralTokens: CollateralType[],
     encodedLiquidationStrategySettings: string,
     updateExecutor: string = governanceAddress
 ): Promise<[AssetManagerInstance, FAssetInstance]> {

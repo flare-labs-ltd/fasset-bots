@@ -20,7 +20,7 @@ import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
 import { readFileSync } from "fs";
-import { CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { CollateralClass } from "../fasset/AssetManagerTypes";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -121,14 +121,14 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
 
 export async function createAgentBotSettings(context: IAssetBotContext): Promise<AgentBotSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
-    const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
+    const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {
+        return Number(token.collateralClass) === CollateralClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
     if (!class1Token) {
         throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
     }
-    const poolToken = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.POOL && token.tokenFtsoSymbol === "NAT"
+    const poolToken = (await context.assetManager.getCollateralTypes()).find(token => {
+        return Number(token.collateralClass) === CollateralClass.POOL && token.tokenFtsoSymbol === "NAT"
     });
     if (!poolToken) {
         throw Error(`Cannot find pool collateral token`);

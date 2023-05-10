@@ -32,7 +32,7 @@ import { AgentsExternalContract } from "./AgentsExternal";
 import { AMEventsContract } from "./AMEvents";
 import { AvailableAgentsContract } from "./AvailableAgents";
 import { CollateralReservationsContract } from "./CollateralReservations";
-import { CollateralTokensContract } from "./CollateralTokens";
+import { CollateralTypesContract } from "./CollateralTypes";
 import { FullAgentInfoContract } from "./FullAgentInfo";
 import { LiquidationStrategyImplContract } from "./LiquidationStrategyImpl";
 import { ConversionMockContract } from "./ConversionMock";
@@ -128,7 +128,7 @@ declare global {
       require(name: "AMEvents"): AMEventsContract;
       require(name: "AvailableAgents"): AvailableAgentsContract;
       require(name: "CollateralReservations"): CollateralReservationsContract;
-      require(name: "CollateralTokens"): CollateralTokensContract;
+      require(name: "CollateralTypes"): CollateralTypesContract;
       require(name: "FullAgentInfo"): FullAgentInfoContract;
       require(name: "LiquidationStrategyImpl"): LiquidationStrategyImplContract;
       require(name: "ConversionMock"): ConversionMockContract;
@@ -279,9 +279,9 @@ export {
   CollateralReservationsInstance,
 } from "./CollateralReservations";
 export {
-  CollateralTokensContract,
-  CollateralTokensInstance,
-} from "./CollateralTokens";
+  CollateralTypesContract,
+  CollateralTypesInstance,
+} from "./CollateralTypes";
 export { FullAgentInfoContract, FullAgentInfoInstance } from "./FullAgentInfo";
 export {
   LiquidationStrategyImplContract,

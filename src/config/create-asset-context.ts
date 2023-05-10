@@ -1,6 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { CollateralToken, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { fail } from "../utils/helpers";
@@ -31,7 +31,7 @@ async function createAssetContextFromContracts(botConfig: BotConfig & { contract
     const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
-    const collaterals: CollateralToken[] = await assetManager.getCollateralTokens();
+    const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
     const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
     const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
@@ -62,7 +62,7 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
     const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
     const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-    const collaterals = await assetManager.getCollateralTokens();
+    const collaterals = await assetManager.getCollateralTypes();
     const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
     const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
@@ -119,7 +119,7 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
     throw new Error(`FAsset symbol ${fAssetSymbol} not found`);
 }
 
-async function createFtsos(collaterals: CollateralToken[], ftsoRegistry: IFtsoRegistryInstance, assetFtsoSymbol: string) {
+async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoRegistryInstance, assetFtsoSymbol: string) {
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(assetFtsoSymbol));
     const ftsos = {}
     Object.defineProperty(ftsos, 'asset', assetFtso);
@@ -131,8 +131,8 @@ async function createFtsos(collaterals: CollateralToken[], ftsoRegistry: IFtsoRe
     return ftsos;
 }
 
-async function createStableCoins(collaterals: CollateralToken[]) {
-    const stableCoinsArray = collaterals.filter(token => token.tokenClass === CollateralTokenClass.CLASS1);
+async function createStableCoins(collaterals: CollateralType[]) {
+    const stableCoinsArray = collaterals.filter(token => token.collateralClass === CollateralClass.CLASS1);
     const stableCoins = {};
     for (const collateralToken of stableCoinsArray) {
         const tokenName = collateralToken.tokenFtsoSymbol;

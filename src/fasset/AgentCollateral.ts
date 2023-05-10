@@ -1,7 +1,7 @@
 import { AssetManagerInstance } from "../../typechain-truffle";
 import { artifacts } from "../utils/artifacts";
 import { BN_ZERO, MAX_BIPS, exp10, maxBN, minBN, toBN } from "../utils/helpers";
-import { AgentInfo, AssetManagerSettings, CollateralTokenClass } from "./AssetManagerTypes";
+import { AgentInfo, AssetManagerSettings, CollateralClass } from "./AssetManagerTypes";
 import { CollateralData, CollateralDataFactory, CollateralKind } from "./CollateralData";
 
 const CollateralPool = artifacts.require("CollateralPool");
@@ -20,8 +20,8 @@ export class AgentCollateral {
         const agentInfo = await assetManager.getAgentInfo(agentVault);
         const collateralPool = await CollateralPool.at(agentInfo.collateralPool);
         const collateralPoolToken = await CollateralPoolToken.at(await collateralPool.poolToken());
-        const class1Collateral = await assetManager.getCollateralToken(CollateralTokenClass.CLASS1, agentInfo.class1CollateralToken);
-        const poolCollateral = await assetManager.getCollateralToken(CollateralTokenClass.POOL, await collateralPool.wNat());
+        const class1Collateral = await assetManager.getCollateralType(CollateralClass.CLASS1, agentInfo.class1CollateralToken);
+        const poolCollateral = await assetManager.getCollateralType(CollateralClass.POOL, await collateralPool.wNat());
         const collateralDataFactory = await CollateralDataFactory.create(settings);
         const class1CD = await collateralDataFactory.class1(class1Collateral, agentVault);
         const poolCD = await collateralDataFactory.pool(poolCollateral, collateralPool.address);

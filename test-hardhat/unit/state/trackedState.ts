@@ -500,7 +500,7 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
     });
 
-    it("Should handle event 'CollateralTokenAdded' and 'CollateralTokenDeprecated'", async () => {
+    it("Should handle event 'CollateralTypeAdded' and 'CollateralTypeDeprecated'", async () => {
         const collateralsBefore = trackedState.collaterals.list.length;
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentCollateral = await agentB.getAgentCollateral();
@@ -508,22 +508,22 @@ describe("Tracked state tests", async () => {
         newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
         newCollateral.tokenFtsoSymbol = "NT";
         newCollateral.assetFtsoSymbol = "NT";
-        await context.assetManagerController.addCollateralToken([context.assetManager.address], newCollateral, { from: governance });
+        await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
         await trackedState.readUnhandledEvents();
         const collateralsAfter = trackedState.collaterals.list.length;
         expect(collateralsAfter).to.eq(collateralsBefore + 1);
         await trackedState.readUnhandledEvents();
-        const getCollateral0 = trackedState.collaterals.get(newCollateral.tokenClass, newCollateral.token);
+        const getCollateral0 = trackedState.collaterals.get(newCollateral.collateralClass, newCollateral.token);
         expect(toBN(getCollateral0.validUntil).eqn(0)).to.be.true;
         // deprecate
         const settings = await context.assetManager.getSettings();
-        await context.assetManagerController.deprecateCollateralToken([context.assetManager.address], newCollateral.tokenClass, newCollateral.token, settings.tokenInvalidationTimeMinSeconds, { from: governance });
+        await context.assetManagerController.deprecateCollateralType([context.assetManager.address], newCollateral.collateralClass, newCollateral.token, settings.tokenInvalidationTimeMinSeconds, { from: governance });
         await trackedState.readUnhandledEvents();
-        const getCollateral1 = trackedState.collaterals.get(newCollateral.tokenClass, newCollateral.token);
+        const getCollateral1 = trackedState.collaterals.get(newCollateral.collateralClass, newCollateral.token);
         expect(toBN(getCollateral1.validUntil).gtn(0)).to.be.true;
     });
 
-    it("Should handle event 'CollateralTokenRatiosChanged'", async () => {
+    it("Should handle event 'CollateralRatiosChanged'", async () => {
         const collateral = trackedState.collaterals.list[0];
         const newMinCollateralRatioBIPS = "23000";
         const newCcbMinCollateralRatioBIPS = "18000";
@@ -531,7 +531,7 @@ describe("Tracked state tests", async () => {
         expect(collateral.minCollateralRatioBIPS.toString()).to.not.eq(newMinCollateralRatioBIPS);
         expect(collateral.ccbMinCollateralRatioBIPS.toString()).to.not.eq(newCcbMinCollateralRatioBIPS);
         expect(collateral.safetyMinCollateralRatioBIPS.toString()).to.not.eq(newSafetyMinCollateralRatioBIPS);
-        const resp = await context.assetManagerController.setCollateralRatiosForToken([context.assetManager.address], collateral.tokenClass, collateral.token, newMinCollateralRatioBIPS, newCcbMinCollateralRatioBIPS, newSafetyMinCollateralRatioBIPS, { from: governance });
+        const resp = await context.assetManagerController.setCollateralRatiosForToken([context.assetManager.address], collateral.collateralClass, collateral.token, newMinCollateralRatioBIPS, newCcbMinCollateralRatioBIPS, newSafetyMinCollateralRatioBIPS, { from: governance });
         await waitForTimelock(resp, context.assetManagerController, updateExecutor);
         await trackedState.readUnhandledEvents();
         const getCollateral = trackedState.collaterals.list[0];

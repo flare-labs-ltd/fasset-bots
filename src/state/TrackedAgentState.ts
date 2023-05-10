@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { AgentInfo, AgentStatus, CollateralToken, CollateralTokenClass } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentStatus, CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
@@ -210,12 +210,12 @@ export class TrackedAgentState {
         (this.agentSettings as any)[name] = web3Normalize(value);
     }
 
-    collateralBalance(collateral: CollateralToken) {
-        return collateral.tokenClass === CollateralTokenClass.CLASS1 ? this.totalClass1CollateralWei[this.agentSettings.class1CollateralToken] : this.totalPoolCollateralNATWei;
+    collateralBalance(collateral: CollateralType) {
+        return collateral.collateralClass === CollateralClass.CLASS1 ? this.totalClass1CollateralWei[this.agentSettings.class1CollateralToken] : this.totalPoolCollateralNATWei;
     }
 
-    private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralToken) {
-        const redeemingUBA = collateral.tokenClass === CollateralTokenClass.CLASS1 ? this.redeemingUBA : this.poolRedeemingUBA;
+    private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralType) {
+        const redeemingUBA = collateral.collateralClass === CollateralClass.CLASS1 ? this.redeemingUBA : this.poolRedeemingUBA;
         const totalUBA = this.reservedUBA.add(this.mintedUBA).add(redeemingUBA);
         if (totalUBA.isZero()) return MAX_UINT256;
         const price = prices.get(collateral);
@@ -224,14 +224,14 @@ export class TrackedAgentState {
         return totalCollateralWei.muln(MAX_BIPS).div(backingCollateralWei);
     }
 
-    collateralRatioBIPS(collateral: CollateralToken) {
+    collateralRatioBIPS(collateral: CollateralType) {
         const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, collateral);
         const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.trustedPrices, collateral);
         return maxBN(ratio, ratioFromTrusted);
     }
 
 
-    private possibleLiquidationTransitionForCollateral(collateral: CollateralToken, timestamp: BN) {
+    private possibleLiquidationTransitionForCollateral(collateral: CollateralType, timestamp: BN) {
         const cr = this.collateralRatioBIPS(collateral);
         const settings = this.parent.settings;
         if (this.status === AgentStatus.NORMAL) {
@@ -255,8 +255,8 @@ export class TrackedAgentState {
     }
 
     possibleLiquidationTransition(timestamp: BN) {
-        const class1Transition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralTokenClass.CLASS1, this.agentSettings.class1CollateralToken), timestamp);
-        const poolTransition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralTokenClass.POOL, this.parent.poolWNatCollateral.token), timestamp);
+        const class1Transition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralClass.CLASS1, this.agentSettings.class1CollateralToken), timestamp);
+        const poolTransition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralClass.POOL, this.parent.poolWNatCollateral.token), timestamp);
         // return the higher status (more severe)
         return class1Transition >= poolTransition ? class1Transition : poolTransition;
     }

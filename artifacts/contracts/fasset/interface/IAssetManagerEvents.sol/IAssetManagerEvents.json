@@ -44,7 +44,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -52,7 +52,7 @@
         {
           "indexed": false,
           "internalType": "uint8",
-          "name": "tokenClass",
+          "name": "collateralClass",
           "type": "uint8"
         },
         {
@@ -62,7 +62,7 @@
           "type": "address"
         }
       ],
-      "name": "AgentCollateralTokenChanged",
+      "name": "AgentCollateralTypeChanged",
       "type": "event"
     },
     {
@@ -205,7 +205,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -236,7 +236,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -312,6 +312,43 @@
         }
       ],
       "name": "Class1WithdrawalAnnounced",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "collateralClass",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "collateralToken",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "minCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ccbMinCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "safetyMinCollateralRatioBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralRatiosChanged",
       "type": "event"
     },
     {
@@ -412,7 +449,7 @@
         {
           "indexed": false,
           "internalType": "uint8",
-          "name": "tokenClass",
+          "name": "collateralClass",
           "type": "uint8"
         },
         {
@@ -464,7 +501,7 @@
           "type": "uint256"
         }
       ],
-      "name": "CollateralTokenAdded",
+      "name": "CollateralTypeAdded",
       "type": "event"
     },
     {
@@ -473,13 +510,13 @@
         {
           "indexed": false,
           "internalType": "uint8",
-          "name": "tokenClass",
+          "name": "collateralClass",
           "type": "uint8"
         },
         {
           "indexed": false,
           "internalType": "address",
-          "name": "tokenContract",
+          "name": "collateralToken",
           "type": "address"
         },
         {
@@ -489,44 +526,7 @@
           "type": "uint256"
         }
       ],
-      "name": "CollateralTokenDeprecated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint8",
-          "name": "tokenClass",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "tokenContract",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "minCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "ccbMinCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "safetyMinCollateralRatioBIPS",
-          "type": "uint256"
-        }
-      ],
-      "name": "CollateralTokenRatiosChanged",
+      "name": "CollateralTypeDeprecated",
       "type": "event"
     },
     {
@@ -1118,7 +1118,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -1162,7 +1162,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -1187,7 +1187,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -1212,7 +1212,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"
@@ -1231,7 +1231,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "agentVault",
           "type": "address"

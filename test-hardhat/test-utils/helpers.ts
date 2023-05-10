@@ -10,7 +10,7 @@ import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
 import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
-import { AgentStatus, CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
+import { AgentStatus, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
@@ -126,8 +126,8 @@ export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotCo
 }
 
 export async function mintAndDepositClass1ToOwner(context: IAssetContext, vaultAddress: string, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
-    const class1Token = (await context.assetManager.getCollateralTokens()).find(token => {
-        return Number(token.tokenClass) === CollateralTokenClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
+    const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {
+        return Number(token.collateralClass) === CollateralClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
     const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
     await mintClass1ToOwner(vaultAddress, depositAmount, class1Token!.token, ownerAddress);
@@ -162,7 +162,7 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
     return Number(agentInfo.status) as AgentStatus;
 }
 
-export async function convertFromUSD5(amount: BN, collateralToken: CollateralToken, context: TestAssetBotContext): Promise<BN> {
+export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, context: TestAssetBotContext): Promise<BN> {
     const priceReader = new TokenPriceReader(context.ftsoRegistry);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);

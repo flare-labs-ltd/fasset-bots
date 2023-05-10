@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralType, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { Prices } from "../../../src/state/Prices";
 import { toBIPS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
@@ -20,8 +20,8 @@ const AMG_TO_TOKEN_WEI = toBNExp(1, 9)
 const price = toBN(123456);
 const timestamp = toBN(123);
 const decimals = toBN(6);
-const poolCollateral: CollateralToken = {
-    tokenClass: CollateralTokenClass.POOL,
+const poolCollateral: CollateralType = {
+    collateralClass: CollateralClass.POOL,
     token: "address",
     decimals: 18,
     validUntil: 0,  // not deprecated
