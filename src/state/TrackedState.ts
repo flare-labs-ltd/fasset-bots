@@ -2,7 +2,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { TrackedAgentState } from "./TrackedAgentState";
 import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings, CollateralToken } from "../fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
 import { eventIs } from "../utils/events/truffle";
@@ -31,7 +31,7 @@ export class TrackedState {
     settings!: AssetManagerSettings;
     liquidationStrategySettings!: LiquidationStrategyImplSettings;
     collaterals = new CollateralList();
-    poolWNatCollateral!: CollateralToken;
+    poolWNatCollateral!: CollateralType;
 
 
     // tracked agents
@@ -49,9 +49,9 @@ export class TrackedState {
         const encodedSettings = await this.context.assetManager.getLiquidationSettings();
         this.liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
         // collateral tokens
-        const collateralTokens = await this.context.assetManager.getCollateralTokens();
+        const collateralTokens = await this.context.assetManager.getCollateralTypes();
         for (const collateralToken of collateralTokens) {
-            const collateral = await this.addCollateralToken(collateralToken);
+            const collateral = await this.addCollateralType(collateralToken);
             // poolCollateral will be the last active collateral of class pool
             if (isPoolCollateral(collateral)) {
                 this.poolWNatCollateral = collateral;
@@ -97,15 +97,15 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
-                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenAdded')) {
-                    void this.addCollateralToken({ ...event.args, validUntil: BN_ZERO });
-                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenRatiosChanged')) {
-                    const collateral = this.collaterals.get(event.args.tokenClass, event.args.tokenContract);
+                } else if (eventIs(event, this.context.assetManager, 'CollateralTypeAdded')) {
+                    void this.addCollateralType({ ...event.args, validUntil: BN_ZERO });
+                } else if (eventIs(event, this.context.assetManager, 'CollateralRatiosChanged')) {
+                    const collateral = this.collaterals.get(event.args.collateralClass, event.args.collateralToken);
                     collateral.minCollateralRatioBIPS = toBN(event.args.minCollateralRatioBIPS);
                     collateral.ccbMinCollateralRatioBIPS = toBN(event.args.ccbMinCollateralRatioBIPS);
                     collateral.safetyMinCollateralRatioBIPS = toBN(event.args.safetyMinCollateralRatioBIPS);
-                } else if (eventIs(event, this.context.assetManager, 'CollateralTokenDeprecated')) {
-                    const collateral = this.collaterals.get(event.args.tokenClass, event.args.tokenContract);
+                } else if (eventIs(event, this.context.assetManager, 'CollateralTypeDeprecated')) {
+                    const collateral = this.collaterals.get(event.args.collateralClass, event.args.collateralToken);
                     collateral.validUntil = toBN(event.args.validUntil);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
                     await this.getAgentTriggerAdd(event.args.agentVault);
@@ -208,9 +208,9 @@ export class TrackedState {
     }
 
 
-    private async addCollateralToken(data: CollateralToken) {
-        const collateral: CollateralToken = {
-            tokenClass: toBN(data.tokenClass),
+    private async addCollateralType(data: CollateralType) {
+        const collateral: CollateralType = {
+            collateralClass: toBN(data.collateralClass),
             token: data.token,
             decimals: toBN(data.decimals),
             validUntil: data.validUntil,

@@ -3,7 +3,7 @@ import { AMGPrice, AMGPriceConverter, CollateralPrice } from "../state/Collatera
 import { TokenPrice, TokenPriceReader } from "../state/TokenPrice";
 import { artifacts } from "../utils/artifacts";
 import { exp10 } from "../utils/helpers";
-import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "./AssetManagerTypes";
+import { AssetManagerSettings, CollateralType, CollateralClass } from "./AssetManagerTypes";
 import { amgToTokenWeiPrice } from "./Conversions";
 
 export const POOL_TOKEN_DECIMALS = 18;
@@ -15,7 +15,7 @@ export enum CollateralKind { CLASS1, POOL, AGENT_POOL_TOKENS }
 
 export class CollateralData extends AMGPriceConverter {
     constructor(
-        public collateral: CollateralToken | null,
+        public collateral: CollateralType | null,
         public balance: BN,
         public assetPrice: TokenPrice,
         public tokenPrice: TokenPrice | undefined,
@@ -26,9 +26,9 @@ export class CollateralData extends AMGPriceConverter {
 
     kind() {
         if (this.collateral != null) {
-            if (Number(this.collateral.tokenClass) === CollateralTokenClass.CLASS1) {
+            if (Number(this.collateral.collateralClass) === CollateralClass.CLASS1) {
                 return CollateralKind.CLASS1;
-            } else if (Number(this.collateral.tokenClass) === CollateralTokenClass.POOL) {
+            } else if (Number(this.collateral.collateralClass) === CollateralClass.POOL) {
                 return CollateralKind.POOL;
             }
             throw new Error("Invalid collateral kind");
@@ -60,15 +60,15 @@ export class CollateralDataFactory {
         return new CollateralDataFactory(settings, priceReader);
     }
 
-    async class1(collateral: CollateralToken, agentVault: string): Promise<CollateralData> {
+    async class1(collateral: CollateralType, agentVault: string): Promise<CollateralData> {
         return await this.forCollateral(collateral, agentVault);
     }
 
-    async pool(collateral: CollateralToken, collateralPoolAddress: string): Promise<CollateralData> {
+    async pool(collateral: CollateralType, collateralPoolAddress: string): Promise<CollateralData> {
         return await this.forCollateral(collateral, collateralPoolAddress);
     }
 
-    async forCollateral(collateral: CollateralToken, tokenHolder: string): Promise<CollateralData> {
+    async forCollateral(collateral: CollateralType, tokenHolder: string): Promise<CollateralData> {
         const collateralPrice = await CollateralPrice.forCollateral(this.priceReader, this.settings, collateral);
         return CollateralData.forCollateralPrice(collateralPrice, tokenHolder);
     }

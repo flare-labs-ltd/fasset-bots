@@ -1,18 +1,18 @@
 import { AssetManagerContract, AssetManagerInstance } from "../../typechain-truffle";
 
 type _AssetManagerSettings = Parameters<AssetManagerContract['new']>[0];
-export type AssetManagerSettings = _AssetManagerSettings
+export type AssetManagerSettings = _AssetManagerSettings;
 
-export enum CollateralTokenClass {
+export enum CollateralClass {
     POOL = 1,
     CLASS1 = 2,
 }
 
-type _CollateralToken = Parameters<AssetManagerContract['new']>[1][0];
-export type CollateralToken = _CollateralToken
+type _CollateralType = Parameters<AssetManagerContract['new']>[1][0];
+export type CollateralType = _CollateralType;
 
 type _AgentSettings = Parameters<AssetManagerInstance['createAgent']>[0];
-export type AgentSettings = _AgentSettings
+export type AgentSettings = _AgentSettings;
 
 // status as returned from GetAgentInfo
 export enum AgentStatus {
@@ -24,10 +24,10 @@ export enum AgentStatus {
 }
 
 type _AgentInfo = Awaited<ReturnType<AssetManagerInstance['getAgentInfo']>>;
-export type AgentInfo = _AgentInfo
+export type AgentInfo = _AgentInfo;
 
 type _AvailableAgentInfo = Awaited<ReturnType<AssetManagerInstance['getAvailableAgentsDetailedList']>>[0][0];
-export type AvailableAgentInfo = _AvailableAgentInfo
+export type AvailableAgentInfo = _AvailableAgentInfo;
 
 export type AgentSetting = "feeBIPS" | "poolFeeShareBIPS" | "mintingClass1CollateralRatioBIPS" | "mintingPoolCollateralRatioBIPS" |
     "buyFAssetByAgentFactorBIPS" | "poolExitCollateralRatioBIPS" | "poolTopupCollateralRatioBIPS" | "poolTopupTokenPriceFactorBIPS";

@@ -18,7 +18,37 @@ export interface CollateralPoolContract
   ): Promise<CollateralPoolInstance>;
 }
 
-type AllEvents = never;
+export interface Enter {
+  name: "Enter";
+  args: {
+    tokenHolder: string;
+    amountNatWei: BN;
+    receivedTokensWei: BN;
+    addedFAssetFeesUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface Exit {
+  name: "Exit";
+  args: {
+    tokenHolder: string;
+    burnedTokensWei: BN;
+    receivedNatWei: BN;
+    receviedFAssetFeesUBA: BN;
+    closedFAssetsUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+type AllEvents = Enter | Exit;
 
 export interface CollateralPoolInstance extends Truffle.ContractInstance {
   MIN_NAT_BALANCE_AFTER_EXIT(
@@ -421,6 +451,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
   ): Promise<BN>;
 
   wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  withdrawCollateral: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
 
   withdrawFees: {
     (
@@ -846,6 +885,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    withdrawCollateral: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
 
     withdrawFees: {
       (

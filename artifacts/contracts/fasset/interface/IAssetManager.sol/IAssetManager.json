@@ -8,8 +8,8 @@
         {
           "components": [
             {
-              "internalType": "enum IAssetManager.CollateralTokenClass",
-              "name": "tokenClass",
+              "internalType": "enum IAssetManager.CollateralClass",
+              "name": "collateralClass",
               "type": "uint8"
             },
             {
@@ -58,12 +58,12 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct IAssetManager.CollateralTokenInfo",
+          "internalType": "struct IAssetManager.CollateralType",
           "name": "_data",
           "type": "tuple"
         }
       ],
-      "name": "addCollateralToken",
+      "name": "addCollateralType",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -141,8 +141,8 @@
     {
       "inputs": [
         {
-          "internalType": "enum IAssetManager.CollateralTokenClass",
-          "name": "_tokenClass",
+          "internalType": "enum IAssetManager.CollateralClass",
+          "name": "_collateralClass",
           "type": "uint8"
         },
         {
@@ -156,7 +156,7 @@
           "type": "uint256"
         }
       ],
-      "name": "deprecateCollateralToken",
+      "name": "deprecateCollateralType",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -371,8 +371,8 @@
     {
       "inputs": [
         {
-          "internalType": "enum IAssetManager.CollateralTokenClass",
-          "name": "_tokenClass",
+          "internalType": "enum IAssetManager.CollateralClass",
+          "name": "_collateralClass",
           "type": "uint8"
         },
         {
@@ -406,8 +406,8 @@
         {
           "components": [
             {
-              "internalType": "enum IAssetManager.CollateralTokenClass",
-              "name": "tokenClass",
+              "internalType": "enum IAssetManager.CollateralClass",
+              "name": "collateralClass",
               "type": "uint8"
             },
             {
@@ -456,12 +456,12 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct IAssetManager.CollateralTokenInfo",
+          "internalType": "struct IAssetManager.CollateralType",
           "name": "_data",
           "type": "tuple"
         }
       ],
-      "name": "setPoolCollateralToken",
+      "name": "setPoolCollateralType",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

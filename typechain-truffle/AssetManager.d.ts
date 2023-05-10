@@ -56,7 +56,7 @@ export interface AssetManagerContract
       agentCollateralRatioChangeTimelockSeconds: number | BN | string;
     },
     _initialCollateralTypes: {
-      tokenClass: number | BN | string;
+      collateralClass: number | BN | string;
       token: string;
       decimals: number | BN | string;
       validUntil: number | BN | string;
@@ -88,11 +88,11 @@ export interface AgentAvailable {
   };
 }
 
-export interface AgentCollateralTokenChanged {
-  name: "AgentCollateralTokenChanged";
+export interface AgentCollateralTypeChanged {
+  name: "AgentCollateralTypeChanged";
   args: {
     agentVault: string;
-    tokenClass: BN;
+    collateralClass: BN;
     token: string;
     0: string;
     1: BN;
@@ -216,6 +216,22 @@ export interface Class1WithdrawalAnnounced {
   };
 }
 
+export interface CollateralRatiosChanged {
+  name: "CollateralRatiosChanged";
+  args: {
+    collateralClass: BN;
+    collateralToken: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
 export interface CollateralReservationDeleted {
   name: "CollateralReservationDeleted";
   args: {
@@ -254,10 +270,10 @@ export interface CollateralReserved {
   };
 }
 
-export interface CollateralTokenAdded {
-  name: "CollateralTokenAdded";
+export interface CollateralTypeAdded {
+  name: "CollateralTypeAdded";
   args: {
-    tokenClass: BN;
+    collateralClass: BN;
     token: string;
     decimals: BN;
     directPricePair: boolean;
@@ -278,31 +294,15 @@ export interface CollateralTokenAdded {
   };
 }
 
-export interface CollateralTokenDeprecated {
-  name: "CollateralTokenDeprecated";
+export interface CollateralTypeDeprecated {
+  name: "CollateralTypeDeprecated";
   args: {
-    tokenClass: BN;
-    tokenContract: string;
+    collateralClass: BN;
+    collateralToken: string;
     validUntil: BN;
     0: BN;
     1: string;
     2: BN;
-  };
-}
-
-export interface CollateralTokenRatiosChanged {
-  name: "CollateralTokenRatiosChanged";
-  args: {
-    tokenClass: BN;
-    tokenContract: string;
-    minCollateralRatioBIPS: BN;
-    ccbMinCollateralRatioBIPS: BN;
-    safetyMinCollateralRatioBIPS: BN;
-    0: BN;
-    1: string;
-    2: BN;
-    3: BN;
-    4: BN;
   };
 }
 
@@ -650,7 +650,7 @@ export interface UnderlyingWithdrawalConfirmed {
 
 type AllEvents =
   | AgentAvailable
-  | AgentCollateralTokenChanged
+  | AgentCollateralTypeChanged
   | AgentCreated
   | AgentDestroyAnnounced
   | AgentDestroyed
@@ -660,11 +660,11 @@ type AllEvents =
   | AvailableAgentExitAnnounced
   | AvailableAgentExited
   | Class1WithdrawalAnnounced
+  | CollateralRatiosChanged
   | CollateralReservationDeleted
   | CollateralReserved
-  | CollateralTokenAdded
-  | CollateralTokenDeprecated
-  | CollateralTokenRatiosChanged
+  | CollateralTypeAdded
+  | CollateralTypeDeprecated
   | ContractChanged
   | DuplicatePaymentConfirmed
   | DustChanged
@@ -694,10 +694,10 @@ type AllEvents =
   | UnderlyingWithdrawalConfirmed;
 
 export interface AssetManagerInstance extends Truffle.ContractInstance {
-  addCollateralToken: {
+  addCollateralType: {
     (
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -712,7 +712,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -727,7 +727,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -742,7 +742,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -1302,27 +1302,27 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
 
-  deprecateCollateralToken: {
+  deprecateCollateralType: {
     (
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _invalidationTimeSec: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1805,12 +1805,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
-  getCollateralToken(
-    _tokenClass: number | BN | string,
+  getCollateralType(
+    _collateralClass: number | BN | string,
     _token: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
-    tokenClass: BN;
+    collateralClass: BN;
     token: string;
     decimals: BN;
     validUntil: BN;
@@ -1822,11 +1822,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     safetyMinCollateralRatioBIPS: BN;
   }>;
 
-  getCollateralTokens(
+  getCollateralTypes(
     txDetails?: Truffle.TransactionDetails
   ): Promise<
     {
-      tokenClass: BN;
+      collateralClass: BN;
       token: string;
       decimals: BN;
       validUntil: BN;
@@ -2470,7 +2470,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
 
   setCollateralRatiosForToken: {
     (
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _minCollateralRatioBIPS: number | BN | string,
       _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -2478,7 +2478,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _minCollateralRatioBIPS: number | BN | string,
       _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -2486,7 +2486,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _minCollateralRatioBIPS: number | BN | string,
       _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -2494,7 +2494,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       _minCollateralRatioBIPS: number | BN | string,
       _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -2521,10 +2521,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setPoolCollateralToken: {
+  setPoolCollateralType: {
     (
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -2539,7 +2539,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -2554,7 +2554,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -2569,7 +2569,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _data: {
-        tokenClass: number | BN | string;
+        collateralClass: number | BN | string;
         token: string;
         decimals: number | BN | string;
         validUntil: number | BN | string;
@@ -2799,10 +2799,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   };
 
   methods: {
-    addCollateralToken: {
+    addCollateralType: {
       (
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -2817,7 +2817,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -2832,7 +2832,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -2847,7 +2847,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -3412,27 +3412,27 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
 
-    deprecateCollateralToken: {
+    deprecateCollateralType: {
       (
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _invalidationTimeSec: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3915,12 +3915,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
-    getCollateralToken(
-      _tokenClass: number | BN | string,
+    getCollateralType(
+      _collateralClass: number | BN | string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
-      tokenClass: BN;
+      collateralClass: BN;
       token: string;
       decimals: BN;
       validUntil: BN;
@@ -3932,11 +3932,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       safetyMinCollateralRatioBIPS: BN;
     }>;
 
-    getCollateralTokens(
+    getCollateralTypes(
       txDetails?: Truffle.TransactionDetails
     ): Promise<
       {
-        tokenClass: BN;
+        collateralClass: BN;
         token: string;
         decimals: BN;
         validUntil: BN;
@@ -4580,7 +4580,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
 
     setCollateralRatiosForToken: {
       (
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _minCollateralRatioBIPS: number | BN | string,
         _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -4588,7 +4588,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _minCollateralRatioBIPS: number | BN | string,
         _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -4596,7 +4596,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _minCollateralRatioBIPS: number | BN | string,
         _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -4604,7 +4604,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _tokenClass: number | BN | string,
+        _collateralClass: number | BN | string,
         _token: string,
         _minCollateralRatioBIPS: number | BN | string,
         _ccbMinCollateralRatioBIPS: number | BN | string,
@@ -4632,10 +4632,10 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setPoolCollateralToken: {
+    setPoolCollateralType: {
       (
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -4650,7 +4650,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -4665,7 +4665,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;
@@ -4680,7 +4680,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _data: {
-          tokenClass: number | BN | string;
+          collateralClass: number | BN | string;
           token: string;
           decimals: number | BN | string;
           validUntil: number | BN | string;

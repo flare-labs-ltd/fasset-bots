@@ -5,15 +5,15 @@
 import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
-export interface CollateralTokensContract
-  extends Truffle.Contract<CollateralTokensInstance> {
-  "new"(meta?: Truffle.TransactionDetails): Promise<CollateralTokensInstance>;
+export interface CollateralTypesContract
+  extends Truffle.Contract<CollateralTypesInstance> {
+  "new"(meta?: Truffle.TransactionDetails): Promise<CollateralTypesInstance>;
 }
 
 type AllEvents = never;
 
-export interface CollateralTokensInstance extends Truffle.ContractInstance {
-  getAllTokenInfos(
+export interface CollateralTypesInstance extends Truffle.ContractInstance {
+  getAllInfos(
     txDetails?: Truffle.TransactionDetails
   ): Promise<
     {
@@ -31,7 +31,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
   >;
 
   getInfo(
-    _tokenClass: number | BN | string,
+    _collateralClass: number | BN | string,
     _token: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
@@ -48,7 +48,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
   }>;
 
   methods: {
-    getAllTokenInfos(
+    getAllInfos(
       txDetails?: Truffle.TransactionDetails
     ): Promise<
       {
@@ -66,7 +66,7 @@ export interface CollateralTokensInstance extends Truffle.ContractInstance {
     >;
 
     getInfo(
-      _tokenClass: number | BN | string,
+      _collateralClass: number | BN | string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{

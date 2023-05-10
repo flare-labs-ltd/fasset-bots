@@ -3,7 +3,7 @@ import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, CollateralToken, CollateralTokenClass } from "../../src/fasset/AssetManagerTypes";
+import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
@@ -192,9 +192,9 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
     };
 }
 
-export function createTestCollaterals(contracts: ChainContracts, chainInfo: ChainInfo, stableCoins: any): CollateralToken[] {
-    const poolCollateral: CollateralToken = {
-        tokenClass: CollateralTokenClass.POOL,
+export function createTestCollaterals(contracts: ChainContracts, chainInfo: ChainInfo, stableCoins: any): CollateralType[] {
+    const poolCollateral: CollateralType = {
+        collateralClass: CollateralClass.POOL,
         token: contracts.WNat!.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
@@ -205,8 +205,8 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         ccbMinCollateralRatioBIPS: toBIPS(1.9),
         safetyMinCollateralRatioBIPS: toBIPS(2.3),
     };
-    const usdcCollateral: CollateralToken = {
-        tokenClass: CollateralTokenClass.CLASS1,
+    const usdcCollateral: CollateralType = {
+        collateralClass: CollateralClass.CLASS1,
         token: stableCoins.usdc.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
@@ -217,8 +217,8 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         ccbMinCollateralRatioBIPS: toBIPS(1.3),
         safetyMinCollateralRatioBIPS: toBIPS(1.5),
     };
-    const usdtCollateral: CollateralToken = {
-        tokenClass: CollateralTokenClass.CLASS1,
+    const usdtCollateral: CollateralType = {
+        collateralClass: CollateralClass.CLASS1,
         token: stableCoins.usdt.address,
         decimals: 18,
         validUntil: 0,  // not deprecated

@@ -3,7 +3,7 @@ import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault,
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
-import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralToken } from "./AssetManagerTypes";
+import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralType } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -61,7 +61,7 @@ export class Agent {
         return await this.context.assetManager.getAgentInfo(this.agentVault.address);
     }
 
-    async getClass1CollateralToken(): Promise<CollateralToken> {
+    async getClass1CollateralToken(): Promise<CollateralType> {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return (await this.getAgentCollateral()).class1.collateral!;
     }

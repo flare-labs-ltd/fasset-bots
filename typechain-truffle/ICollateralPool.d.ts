@@ -10,7 +10,37 @@ export interface ICollateralPoolContract
   "new"(meta?: Truffle.TransactionDetails): Promise<ICollateralPoolInstance>;
 }
 
-type AllEvents = never;
+export interface Enter {
+  name: "Enter";
+  args: {
+    tokenHolder: string;
+    amountNatWei: BN;
+    receivedTokensWei: BN;
+    addedFAssetFeesUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface Exit {
+  name: "Exit";
+  args: {
+    tokenHolder: string;
+    burnedTokensWei: BN;
+    receivedNatWei: BN;
+    receviedFAssetFeesUBA: BN;
+    closedFAssetsUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+type AllEvents = Enter | Exit;
 
 export interface ICollateralPoolInstance extends Truffle.ContractInstance {
   destroy: {

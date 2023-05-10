@@ -6,7 +6,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/cr
 import { createTestAgentB, disableMccTraceManager } from "../../test-utils/helpers";
 import { CollateralData, CollateralDataFactory, CollateralKind, POOL_TOKEN_DECIMALS } from "../../../src/fasset/CollateralData";
 import { artifacts } from "../../../src/utils/artifacts";
-import { CollateralTokenClass } from "../../../src/fasset/AssetManagerTypes";
+import { CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { toBN } from "../../../src/utils/helpers";
 import { TokenPrice } from "../../../src/state/TokenPrice";
 import { AMGPrice } from "../../../src/state/CollateralPrice";
@@ -36,8 +36,8 @@ describe("Agent collateral data unit tests", async () => {
         const agentInfo = await context.assetManager.getAgentInfo(agentB.vaultAddress);
         const collateralPool = await CollateralPool.at(agentInfo.collateralPool);
         const collateralPoolToken = await CollateralPoolToken.at(await collateralPool.poolToken());
-        const class1Collateral = await context.assetManager.getCollateralToken(CollateralTokenClass.CLASS1, agentInfo.class1CollateralToken);
-        const poolCollateral = await context.assetManager.getCollateralToken(CollateralTokenClass.POOL, await collateralPool.wNat());
+        const class1Collateral = await context.assetManager.getCollateralType(CollateralClass.CLASS1, agentInfo.class1CollateralToken);
+        const poolCollateral = await context.assetManager.getCollateralType(CollateralClass.POOL, await collateralPool.wNat());
         collateralDataFactory = await CollateralDataFactory.create(await context.assetManager.getSettings());
         class1CD = await collateralDataFactory.class1(class1Collateral, agentB.vaultAddress);
         poolCD = await collateralDataFactory.pool(poolCollateral, collateralPool.address);
@@ -51,7 +51,7 @@ describe("Agent collateral data unit tests", async () => {
         expect(poolCD.kind()).to.eq(CollateralKind.POOL);
         expect(agentPoolTokenCD.kind()).to.eq(CollateralKind.AGENT_POOL_TOKENS);
         const invalidCollateral = {
-            tokenClass: -1 as CollateralTokenClass,
+            collateralClass: -1 as CollateralClass,
             token: "string",
             decimals: toBN(1),
             validUntil: toBN(1),
