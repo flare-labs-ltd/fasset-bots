@@ -3,7 +3,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
-import { createBlockChainIndexerHelper, createWalletClient } from "../../../src/config/BotConfig";
+import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
@@ -120,8 +120,8 @@ describe("BTC blockchain tests via indexer", async () => {
 
     it("Should not handle inputs/outputs - wrong source id", async () => {
         const localSourceId = 200 as SourceId;
-        const localRewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", localSourceId, createWalletClient(sourceId));
-        await expect(localRewiredBlockChainIndexerClient.handleInputsOutputs({ transactionType: "payment", response: { data: {} } }, false)).to.eventually.be.rejectedWith(`Invalid SourceId: ${localSourceId}`).and.be.an.instanceOf(Error);
+        const localRewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", localSourceId, "");
+        await expect(localRewiredBlockChainIndexerClient.handleInputsOutputs({ transactionType: "payment", response: { data: {} } }, false)).to.eventually.be.rejectedWith(`Invalid SourceId: ${localSourceId}.`).and.be.an.instanceOf(Error);
     });
 
     it("Should not extract transaction ids - []", async () => {

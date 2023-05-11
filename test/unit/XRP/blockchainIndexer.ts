@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { createBlockChainIndexerHelper, createWalletClient } from "../../../src/config/BotConfig";
+import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../../../src/verification/sources/sources";
