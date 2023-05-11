@@ -34,16 +34,14 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/transaction/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status === "OK") {
-            if (data) {
-                return {
-                    hash: data.transactionId,
-                    inputs: await this.handleInputsOutputs(data, true),
-                    outputs: await this.handleInputsOutputs(data, false),
-                    reference: data.paymentReference,
-                    status: this.successStatus(data)
-                };
-            }
+        if (status === "OK" && data) {
+            return {
+                hash: data.transactionId,
+                inputs: await this.handleInputsOutputs(data, true),
+                outputs: await this.handleInputsOutputs(data, false),
+                reference: data.paymentReference,
+                status: this.successStatus(data)
+            };
         }
         return null;
     }
@@ -52,12 +50,10 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/transaction-block/${txHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status === "OK") {
-            if (data) {
-                return {
-                    hash: data.blockHash,
-                    number: data.blockNumber
-                }
+        if (status === "OK" && data) {
+            return {
+                hash: data.blockHash,
+                number: data.blockNumber
             }
         }
         return null;
@@ -71,15 +67,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/block/${blockHash}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status === "OK") {
-            if (data) {
-                return {
-                    hash: data.blockHash,
-                    number: data.blockNumber,
-                    timestamp: data.timestamp,
-                    transactions: await this.extractTransactionIds(data.blockNumber)
-                };
-            }
+        if (status === "OK" && data) {
+            return {
+                hash: data.blockHash,
+                number: data.blockNumber,
+                timestamp: data.timestamp,
+                transactions: await this.extractTransactionIds(data.blockNumber)
+            };
         }
         return null;
     }
@@ -88,15 +82,13 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/confirmed-block-at/${blockNumber}`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status === "OK") {
-            if (data) {
-                return {
-                    hash: data.blockHash,
-                    number: data.blockNumber,
-                    timestamp: data.timestamp,
-                    transactions: await this.extractTransactionIds(data.blockNumber)
-                };
-            }
+        if (status === "OK" && data) {
+            return {
+                hash: data.blockHash,
+                number: data.blockNumber,
+                timestamp: data.timestamp,
+                transactions: await this.extractTransactionIds(data.blockNumber)
+            };
         }
         return null;
     }
@@ -105,7 +97,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/block-height`);
         const status = resp.data.status;
         const data = resp.data.data;
-        if (status === "OK") {
+        if (status === "OK" && data) {
             return data;
         }
         return 0;
@@ -116,7 +108,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const txs: ITransaction[] = [];
-        if (status === "OK") {
+        if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
@@ -133,9 +125,9 @@ export class BlockChainIndexerHelper implements IBlockChain {
     async getTransactionsWithinBlockRange(from: number, to: number, returnResponse: boolean = false): Promise<ITransaction[]> {
         const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
-        const dataArray = resp.data.data;
+        const dataArray: any[] = resp.data.data;
         const txs: ITransaction[] = [];
-        if (status === "OK") {
+        if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
@@ -171,7 +163,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
-        if (status === "OK") {
+        if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
             })

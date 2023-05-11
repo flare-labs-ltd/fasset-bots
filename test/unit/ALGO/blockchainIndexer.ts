@@ -4,18 +4,22 @@ use(chaiAsPromised);
 import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
+import rewire from "rewire";
+const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
+const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
-let blockChainIndexerClient: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.ALGO;
-
 const txHash = "ae4491a8a57f45555d467a79c8a9ac70411ca0f6d2d4ce729e957a39b9c36638";
 const blockId = 24078316;
 const blockHash = "c6e59c61584b193701a0b880a6575bed9e8e434f33da8493a4eb1ff6d27fc064";
 
 describe.skip("ALGO blockchain tests via indexer", async () => {
+    //TODO - no indexer yet
+    let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
+    let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        //TODO no indexer yet
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, "");
         blockChainIndexerClient = createBlockChainIndexerHelper("", sourceId, "");
     })
 

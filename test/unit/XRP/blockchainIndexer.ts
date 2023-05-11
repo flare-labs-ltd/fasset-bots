@@ -4,7 +4,7 @@ import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChai
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
-import { requireEnv } from "../../../src/utils/helpers";
+import { requireEnv, toBN } from "../../../src/utils/helpers";
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
@@ -16,16 +16,15 @@ const blockHash = "b9011374d69b34f948313ef843249b8063776ecb9b0ed59eb91e8f86ebbfa
 describe("XRP blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
     let blockChainIndexerClient: BlockChainIndexerHelper;
+
     before(async () => {
-        //TODO no indexer yet
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, createWalletClient(sourceId));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, "");
         blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_XRP_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_XRP_API_KEY"));
-        // await getTransactionAndBlockFromTestnet(sourceId);
     })
 
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
-        expect(txHash.toUpperCase()).to.be.eq (retrievedTransaction?.hash.toUpperCase());
+        expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());
     });
 
     it("Should retrieve block (hash)", async () => {
@@ -77,6 +76,50 @@ describe("XRP blockchain tests via indexer", async () => {
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
         data.response.data.result.meta.TransactionResult = 'tecNO_PERMISSION';
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
+    });
+
+    it("Should return inputs/outputs accordingly", async () => {
+        const data = {
+            isNativePayment: true,
+            response: {
+                data: {
+                    result: {
+                        Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                        Amount: 100,
+                        Destination: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                        meta: {
+                            delivered_amount: '100'
+                        }
+                    }
+                }
+            }
+        };
+        const dataWithFee = {
+            isNativePayment: true,
+            response: {
+                data: {
+                    result: {
+                        Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                        Amount: 100,
+                        Fee: 15,
+                        meta: {
+                            delivered_amount: '100'
+                        }
+                    }
+                }
+            }
+        };
+        const inputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, true);
+        expect(inputs[0][0]).to.eq(data.response.data.result.Account);
+        expect(inputs[0][1].eqn(data.response.data.result.Amount)).to.be.true;
+
+        const inputsWithFee = rewiredBlockChainIndexerClient.XRPInputsOutputs(dataWithFee, true);
+        expect(inputsWithFee[0][0]).to.eq(dataWithFee.response.data.result.Account);
+        expect(inputsWithFee[0][1].eqn(dataWithFee.response.data.result.Amount + dataWithFee.response.data.result.Fee)).to.be.true;
+
+        const outputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, false);
+        expect(outputs[0][0]).to.eq(data.response.data.result.Account);
+        expect(outputs[0][1].eq(toBN(data.response.data.result.meta.delivered_amount))).to.be.true;
     });
 
 });

@@ -23,7 +23,7 @@ describe("BTC blockchain tests via indexer", async () => {
     let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, createWalletClient(sourceId));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(requireEnv("INDEXER_BTC_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_BTC_API_KEY"));
         blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_BTC_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_BTC_API_KEY"));
     })
 
@@ -116,6 +116,27 @@ describe("BTC blockchain tests via indexer", async () => {
 
     it("Should not retrieve balance - not implemented", async () => {
         await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet").and.be.an.instanceOf(Error);
+    });
+
+    it("Should not handle inputs/outputs - wrong source id", async () => {
+        const localSourceId = 200 as SourceId;
+        const localRewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", localSourceId, createWalletClient(sourceId));
+        await expect(localRewiredBlockChainIndexerClient.handleInputsOutputs({ transactionType: "payment", response: { data: {} } }, false)).to.eventually.be.rejectedWith(`Invalid SourceId: ${localSourceId}`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should not extract transaction ids - []", async () => {
+        const ids = await rewiredBlockChainIndexerClient.extractTransactionIds(0);
+        expect(ids.length).to.eq(0);
+    });
+
+    it("Should handle 'empty' inputs/outputs", async () => {
+        const outputs = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("", { vout: [] }, false);
+        expect(outputs[0][0]).to.eq("");
+        expect(outputs[0][1].eqn(0)).to.be.true;
+
+        const inputs = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("", { vin: [] }, true);
+        expect(inputs[0][0]).to.eq("");
+        expect(inputs[0][1].eqn(0)).to.be.true;
     });
 
 });
