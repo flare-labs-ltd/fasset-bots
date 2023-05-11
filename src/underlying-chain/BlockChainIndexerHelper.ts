@@ -2,7 +2,7 @@ import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED,
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";
-import { BTC_MDU, hexToBase32 } from "@flarenetwork/mcc";
+import { BTC_MDU } from "@flarenetwork/mcc";
 
 export class BlockChainIndexerHelper implements IBlockChain {
 
@@ -146,7 +146,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const res = data.response.data;
         switch (this.sourceId) {
             case SourceId.ALGO:
-                return this.ALGOInputsOutputs(type, res, input);
+                throw new Error("Method not implemented. No indexer for ALGO yet.");
             case SourceId.BTC:
             case SourceId.DOGE:
             case SourceId.LTC:
@@ -154,7 +154,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
             case SourceId.XRP:
                 return this.XRPInputsOutputs(data, input);
             default:
-                throw new Error(`Invalid SourceId: ${this.sourceId}`)
+                throw new Error(`Invalid SourceId: ${this.sourceId}.`)
         }
     }
 
@@ -231,34 +231,6 @@ export class BlockChainIndexerHelper implements IBlockChain {
             }
             return [["", toBN(0)]];
         }
-    }
-
-    private ALGOInputsOutputs(type: string, data: any, input: boolean): TxInputOutput[] {
-        if (input) {
-            if ((type === "pay" || type === "pay_close") && data.amt) {
-                const amount = data.amt.toString();
-                return [[hexToBase32(data.snd.data), toBN(data.fee || 0).add(toBN(amount))]];
-            }
-            return [[hexToBase32(data.snd.data), toBN(data.fee || 0)]];
-        } else {
-            if (data.amt) {
-                const amount = data.amt.toString();
-                return [[this.ALGOReceivingAddress(type, data), toBN(amount)]];
-            }
-            return [["", toBN(0)]];
-        }
-    }
-
-    private ALGOReceivingAddress(type: string, data: any): string {
-        if (type === "pay" || type === "pay_close") {
-            if (data.rcv) {
-                return hexToBase32(data.rcv.data);
-            }
-            if (data.close) {
-                return hexToBase32(data.close.data);
-            }
-        }
-        return "";
     }
 
     private successStatus(data: any): number {
