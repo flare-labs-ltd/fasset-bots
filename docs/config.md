@@ -1,7 +1,7 @@
 # Configuration
 
 ## Configuration file
-In order to run FAsset bots following must be provided (see interface `RunConfig` in [`BotConfig.ts`](../src/config/BotConfig.ts)). Path to config file should be set in `.env` as `RUN_CONFIG_PATH` variable.
+In order to run FAsset bots following configuration must be provided (see interface `RunConfig` in [`BotConfig.ts`](../src/config/BotConfig.ts)). Path to config file should be set in `.env` as `RUN_CONFIG_PATH` variable.
 
 Example:
 ```json
@@ -64,5 +64,6 @@ RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
 # How to run
 
 First configure configuration and environment files. Than run script [`run-agent.ts`](../src/run-agent.ts).
+The script will create [AgentBotRunner](../src/actors/AgentBotRunner.ts). The runner is constantly checking if any active agent stored in persistent state should handle any incoming events (see [Agent](./actors/agent.md)).
 
-Basic operations (create agent vault, deposit to vault, enter/exit available agent's list, ...) can be done via cli [`fasset-bots-cli`](./cli.md).
+Basic operations (create agent vault, deposit to vault, enter/exit available agent's list, ...) can be done via command line interface [`fasset-bots-cli`](./cli.md).

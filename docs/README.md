@@ -1,11 +1,14 @@
 # FAsset bots documentation
 
+## Requirements
+//TODO
+
 ## Actors in FAsset system
 
-* [*Agent*](./actors.md#agent): main player in the FAsset system.
-* [*Challenger*](./actors.md#challenger): essential player for maintaining the FAsset system healthy.
-* [*Liquidator*](./actors.md#liquidator): player who liquidates bad agents.
-* [*System Keeper*](./actors.md#system-keeper): player who makes sure that FAsset system is in order (opens and closes liquidations).
+* [*Agent*](./actors/agent.md): main player in the FAsset system.
+* [*Challenger*](./actors/challenger.md): essential player for maintaining the FAsset system healthy.
+* [*Liquidator*](./actors/liquidator.md): player who liquidates bad agents.
+* [*System Keeper*](./actors/system-keeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
 
 ## Configuration and run
 
