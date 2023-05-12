@@ -97,6 +97,7 @@ export class AgentBot {
                     this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPerformed')) {
                     await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+                    this.notifier.sendRedemptionWasPerformed(event.args.requestI, event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
                     await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
                     this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault, event.args.failureReason);

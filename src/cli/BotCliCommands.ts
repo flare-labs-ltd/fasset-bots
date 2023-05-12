@@ -197,8 +197,8 @@ export function listUsageAndCommands() {
     console.log('  Available commands:', "\n");
     console.log(chalk.yellow('  create'), "\t\t\t\t\t\t", "create new agent vault");
     console.log(chalk.yellow('  deposit'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "deposit class1 collateral to agent vault from owner's address");
-    console.log(chalk.yellow('  buyPoolCollateral'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "deposit class1 collateral to agent vault from owner's address");
-    console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault> <feeBips> <agentMinCrBips>'), "enter available agent's list");
+    console.log(chalk.yellow('  buyPoolCollateral'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "add pool collateral and agent pool tokens");
+    console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault>'), "enter available agent's list");
     console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list");
     console.log(chalk.yellow('  setAgentSetting'), "\t", chalk.blue('<agentVault> <agentSettingName> <agentSettingValue>'), "\t\t", "set agent's settings");
     console.log(chalk.yellow('  withdraw'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "withdraw amount from agent vault to owner's address");

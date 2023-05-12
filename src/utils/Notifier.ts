@@ -73,7 +73,7 @@ export class Notifier {
         this.send(REDEMPTION_DEFAULTED, `Redemption ${requestId} for redeemer ${redeemer} was defaulted for agent ${agentVault}.`);
     }
 
-    sendRedemptionWasPerformedDefaulted(requestId: string, redeemer: string, agentVault: string) {
+    sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string) {
         this.send(REDEMPTION_PERFORMED, `Redemption ${requestId} for redeemer ${redeemer} was performed for agent ${agentVault}.`);
     }
 
