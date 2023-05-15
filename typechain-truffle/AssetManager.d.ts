@@ -947,15 +947,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   };
 
   collateralDeposited: {
-    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    (
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
     sendTransaction(
+      _agentVault: string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
+      _agentVault: string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -1848,8 +1856,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
-  getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
   getSettings(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
@@ -1971,7 +1977,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
-  isCollateralToken(
+  isLockedVaultToken(
     _agentVault: string,
     _token: string,
     txDetails?: Truffle.TransactionDetails
@@ -1999,6 +2005,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   makeAgentAvailable: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -2611,6 +2619,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
   unpause: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -3052,18 +3062,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     };
 
     collateralDeposited: {
-      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
+      (
+        _agentVault: string,
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
+        _agentVault: string,
         _token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
+        _agentVault: string,
         _token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
+        _agentVault: string,
         _token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -3958,8 +3973,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
-    getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
     getSettings(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
@@ -4081,7 +4094,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
-    isCollateralToken(
+    isLockedVaultToken(
       _agentVault: string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
@@ -4109,6 +4122,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     makeAgentAvailable: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -4721,6 +4736,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
+
+    terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     unpause: {
       (txDetails?: Truffle.TransactionDetails): Promise<

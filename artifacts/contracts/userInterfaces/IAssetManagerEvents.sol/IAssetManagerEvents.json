@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IAssetManagerEvents",
-  "sourceName": "contracts/fasset/interface/IAssetManagerEvents.sol",
+  "sourceName": "contracts/userInterfaces/IAssetManagerEvents.sol",
   "abi": [
     {
       "anonymous": false,

@@ -434,29 +434,6 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  withdrawNat: {
-    (
-      _amount: number | BN | string,
-      _recipient: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _amount: number | BN | string,
-      _recipient: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _amount: number | BN | string,
-      _recipient: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _amount: number | BN | string,
-      _recipient: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   withdrawPoolFees: {
     (
       _amount: number | BN | string,
@@ -899,29 +876,6 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _token: string,
-        _amount: number | BN | string,
-        _recipient: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    withdrawNat: {
-      (
-        _amount: number | BN | string,
-        _recipient: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _amount: number | BN | string,
-        _recipient: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _amount: number | BN | string,
-        _recipient: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
         _amount: number | BN | string,
         _recipient: string,
         txDetails?: Truffle.TransactionDetails

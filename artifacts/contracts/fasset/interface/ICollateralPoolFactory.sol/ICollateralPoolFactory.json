@@ -6,7 +6,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IAssetManager",
+          "internalType": "contract IIAssetManager",
           "name": "_assetManager",
           "type": "address"
         },
@@ -68,7 +68,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct IAssetManager.InitialAgentSettings",
+          "internalType": "struct AgentCreateSettings.Data",
           "name": "_settings",
           "type": "tuple"
         }
@@ -76,7 +76,7 @@
       "name": "create",
       "outputs": [
         {
-          "internalType": "contract ICollateralPool",
+          "internalType": "contract IICollateralPool",
           "name": "",
           "type": "address"
         }
@@ -87,7 +87,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract ICollateralPool",
+          "internalType": "contract IICollateralPool",
           "name": "pool",
           "type": "address"
         }

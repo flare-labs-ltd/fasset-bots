@@ -111,11 +111,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  debtTokensOf(
-    _account: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   delegateCollateral: {
     (
       _to: string[],
@@ -207,17 +202,17 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  fassetDebtOf(
+  fassetFeeDebtOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  freeFassetOf(
+  fassetFeesOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  freeTokensOf(
+  lockedTokensOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
@@ -240,7 +235,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  payFeeDebt: {
+  payFAssetFeeDebt: {
     (
       _fassets: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -285,8 +280,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  poolFassetDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -427,6 +420,13 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  totalFassetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  transferableTokensOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   upgradeWNatContract: {
     (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -452,7 +452,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  withdrawCollateral: {
+  withdrawCollateralWhenFAssetTerminated: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -540,11 +540,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    debtTokensOf(
-      _account: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
 
     delegateCollateral: {
       (
@@ -639,17 +634,17 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    fassetDebtOf(
+    fassetFeeDebtOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    freeFassetOf(
+    fassetFeesOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    freeTokensOf(
+    lockedTokensOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
@@ -672,7 +667,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    payFeeDebt: {
+    payFAssetFeeDebt: {
       (
         _fassets: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -717,8 +712,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    poolFassetDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -861,6 +854,13 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    totalFassetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    transferableTokensOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     upgradeWNatContract: {
       (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -886,7 +886,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    withdrawCollateral: {
+    withdrawCollateralWhenFAssetTerminated: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;

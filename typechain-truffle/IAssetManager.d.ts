@@ -10,68 +10,751 @@ export interface IAssetManagerContract
   "new"(meta?: Truffle.TransactionDetails): Promise<IAssetManagerInstance>;
 }
 
-type AllEvents = never;
+export interface AgentAvailable {
+  name: "AgentAvailable";
+  args: {
+    agentVault: string;
+    feeBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    freeCollateralLots: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+export interface AgentCollateralTypeChanged {
+  name: "AgentCollateralTypeChanged";
+  args: {
+    agentVault: string;
+    collateralClass: BN;
+    token: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
+export interface AgentCreated {
+  name: "AgentCreated";
+  args: {
+    owner: string;
+    agentVault: string;
+    collateralPool: string;
+    underlyingAddress: string;
+    class1CollateralToken: string;
+    feeBIPS: BN;
+    poolFeeShareBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    buyFAssetByAgentFactorBIPS: BN;
+    poolExitCollateralRatioBIPS: BN;
+    poolTopupCollateralRatioBIPS: BN;
+    poolTopupTokenPriceFactorBIPS: BN;
+    0: string;
+    1: string;
+    2: string;
+    3: string;
+    4: string;
+    5: BN;
+    6: BN;
+    7: BN;
+    8: BN;
+    9: BN;
+    10: BN;
+    11: BN;
+    12: BN;
+  };
+}
+
+export interface AgentDestroyAnnounced {
+  name: "AgentDestroyAnnounced";
+  args: {
+    agentVault: string;
+    destroyAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AgentDestroyed {
+  name: "AgentDestroyed";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+export interface AgentInCCB {
+  name: "AgentInCCB";
+  args: {
+    agentVault: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AgentSettingChangeAnnounced {
+  name: "AgentSettingChangeAnnounced";
+  args: {
+    agentVault: string;
+    name: string;
+    value: BN;
+    validAt: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface AgentSettingChanged {
+  name: "AgentSettingChanged";
+  args: {
+    agentVault: string;
+    name: string;
+    value: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface AvailableAgentExitAnnounced {
+  name: "AvailableAgentExitAnnounced";
+  args: {
+    agentVault: string;
+    exitAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AvailableAgentExited {
+  name: "AvailableAgentExited";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+export interface Class1WithdrawalAnnounced {
+  name: "Class1WithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface CollateralRatiosChanged {
+  name: "CollateralRatiosChanged";
+  args: {
+    collateralClass: BN;
+    collateralToken: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+export interface CollateralReservationDeleted {
+  name: "CollateralReservationDeleted";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    reservedAmountUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface CollateralReserved {
+  name: "CollateralReserved";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    valueUBA: BN;
+    feeUBA: BN;
+    lastUnderlyingBlock: BN;
+    lastUnderlyingTimestamp: BN;
+    paymentAddress: string;
+    paymentReference: string;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+    5: BN;
+    6: BN;
+    7: string;
+    8: string;
+  };
+}
+
+export interface CollateralTypeAdded {
+  name: "CollateralTypeAdded";
+  args: {
+    collateralClass: BN;
+    token: string;
+    decimals: BN;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: boolean;
+    4: string;
+    5: string;
+    6: BN;
+    7: BN;
+    8: BN;
+  };
+}
+
+export interface CollateralTypeDeprecated {
+  name: "CollateralTypeDeprecated";
+  args: {
+    collateralClass: BN;
+    collateralToken: string;
+    validUntil: BN;
+    0: BN;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface ContractChanged {
+  name: "ContractChanged";
+  args: {
+    name: string;
+    value: string;
+    0: string;
+    1: string;
+  };
+}
+
+export interface DuplicatePaymentConfirmed {
+  name: "DuplicatePaymentConfirmed";
+  args: {
+    agentVault: string;
+    transactionHash1: string;
+    transactionHash2: string;
+    0: string;
+    1: string;
+    2: string;
+  };
+}
+
+export interface DustChanged {
+  name: "DustChanged";
+  args: {
+    agentVault: string;
+    dustUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface DustConvertedToTicket {
+  name: "DustConvertedToTicket";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface FullLiquidationStarted {
+  name: "FullLiquidationStarted";
+  args: {
+    agentVault: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface IllegalPaymentConfirmed {
+  name: "IllegalPaymentConfirmed";
+  args: {
+    agentVault: string;
+    transactionHash: string;
+    0: string;
+    1: string;
+  };
+}
+
+export interface LiquidationEnded {
+  name: "LiquidationEnded";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+export interface LiquidationPerformed {
+  name: "LiquidationPerformed";
+  args: {
+    agentVault: string;
+    liquidator: string;
+    valueUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface LiquidationStarted {
+  name: "LiquidationStarted";
+  args: {
+    agentVault: string;
+    timestamp: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface MintingExecuted {
+  name: "MintingExecuted";
+  args: {
+    agentVault: string;
+    collateralReservationId: BN;
+    redemptionTicketId: BN;
+    mintedAmountUBA: BN;
+    agentFeeUBA: BN;
+    poolFeeUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface MintingPaymentDefault {
+  name: "MintingPaymentDefault";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    reservedAmountUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface PoolTokenRedemptionAnnounced {
+  name: "PoolTokenRedemptionAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface RedemptionDefault {
+  name: "RedemptionDefault";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    redemptionAmountUBA: BN;
+    redeemedClass1CollateralWei: BN;
+    redeemedPoolCollateralWei: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface RedemptionPaymentBlocked {
+  name: "RedemptionPaymentBlocked";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    transactionHash: string;
+    redemptionAmountUBA: BN;
+    spentUnderlyingUBA: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: string;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface RedemptionPaymentFailed {
+  name: "RedemptionPaymentFailed";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    transactionHash: string;
+    spentUnderlyingUBA: BN;
+    requestId: BN;
+    failureReason: string;
+    0: string;
+    1: string;
+    2: string;
+    3: BN;
+    4: BN;
+    5: string;
+  };
+}
+
+export interface RedemptionPerformed {
+  name: "RedemptionPerformed";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    transactionHash: string;
+    redemptionAmountUBA: BN;
+    spentUnderlyingUBA: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: string;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
+export interface RedemptionRequestIncomplete {
+  name: "RedemptionRequestIncomplete";
+  args: {
+    redeemer: string;
+    remainingLots: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface RedemptionRequested {
+  name: "RedemptionRequested";
+  args: {
+    agentVault: string;
+    requestId: BN;
+    paymentAddress: string;
+    valueUBA: BN;
+    feeUBA: BN;
+    lastUnderlyingBlock: BN;
+    lastUnderlyingTimestamp: BN;
+    paymentReference: string;
+    0: string;
+    1: BN;
+    2: string;
+    3: BN;
+    4: BN;
+    5: BN;
+    6: BN;
+    7: string;
+  };
+}
+
+export interface SelfClose {
+  name: "SelfClose";
+  args: {
+    agentVault: string;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface SettingArrayChanged {
+  name: "SettingArrayChanged";
+  args: {
+    name: string;
+    value: BN[];
+    0: string;
+    1: BN[];
+  };
+}
+
+export interface SettingChanged {
+  name: "SettingChanged";
+  args: {
+    name: string;
+    value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface UnderlyingBalanceChanged {
+  name: "UnderlyingBalanceChanged";
+  args: {
+    agentVault: string;
+    underlyingBalanceUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface UnderlyingBalanceTooLow {
+  name: "UnderlyingBalanceTooLow";
+  args: {
+    agentVault: string;
+    balance: BN;
+    requiredBalance: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface UnderlyingBalanceToppedUp {
+  name: "UnderlyingBalanceToppedUp";
+  args: {
+    agentVault: string;
+    transactionHash: string;
+    depositedUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface UnderlyingWithdrawalAnnounced {
+  name: "UnderlyingWithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    announcementId: BN;
+    paymentReference: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
+export interface UnderlyingWithdrawalCancelled {
+  name: "UnderlyingWithdrawalCancelled";
+  args: {
+    agentVault: string;
+    announcementId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface UnderlyingWithdrawalConfirmed {
+  name: "UnderlyingWithdrawalConfirmed";
+  args: {
+    agentVault: string;
+    spentUBA: BN;
+    transactionHash: string;
+    announcementId: BN;
+    0: string;
+    1: BN;
+    2: string;
+    3: BN;
+  };
+}
+
+type AllEvents =
+  | AgentAvailable
+  | AgentCollateralTypeChanged
+  | AgentCreated
+  | AgentDestroyAnnounced
+  | AgentDestroyed
+  | AgentInCCB
+  | AgentSettingChangeAnnounced
+  | AgentSettingChanged
+  | AvailableAgentExitAnnounced
+  | AvailableAgentExited
+  | Class1WithdrawalAnnounced
+  | CollateralRatiosChanged
+  | CollateralReservationDeleted
+  | CollateralReserved
+  | CollateralTypeAdded
+  | CollateralTypeDeprecated
+  | ContractChanged
+  | DuplicatePaymentConfirmed
+  | DustChanged
+  | DustConvertedToTicket
+  | FullLiquidationStarted
+  | IllegalPaymentConfirmed
+  | LiquidationEnded
+  | LiquidationPerformed
+  | LiquidationStarted
+  | MintingExecuted
+  | MintingPaymentDefault
+  | PoolTokenRedemptionAnnounced
+  | RedemptionDefault
+  | RedemptionPaymentBlocked
+  | RedemptionPaymentFailed
+  | RedemptionPerformed
+  | RedemptionRequestIncomplete
+  | RedemptionRequested
+  | SelfClose
+  | SettingArrayChanged
+  | SettingChanged
+  | UnderlyingBalanceChanged
+  | UnderlyingBalanceTooLow
+  | UnderlyingBalanceToppedUp
+  | UnderlyingWithdrawalAnnounced
+  | UnderlyingWithdrawalCancelled
+  | UnderlyingWithdrawalConfirmed;
 
 export interface IAssetManagerInstance extends Truffle.ContractInstance {
-  addCollateralType: {
+  announceAgentPoolTokenRedemption: {
     (
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceAgentSettingUpdate: {
+    (
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _name: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceClass1CollateralWithdrawal: {
+    (
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceDestroyAgent: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceExitAvailableAgentList: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  announceUnderlyingWithdrawal: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -80,394 +763,1730 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
-  assetPriceNatWei(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: BN; 1: BN }>;
-
-  attachController: {
-    (attached: boolean, txDetails?: Truffle.TransactionDetails): Promise<
+  buybackAgentCollateral: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
     call(
-      attached: boolean,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      attached: boolean,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      attached: boolean,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  collateralDeposited: {
-    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+  cancelUnderlyingWithdrawal: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
     sendTransaction(
-      _token: string,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _token: string,
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  collateralReservationFee(
+    _lots: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  confirmRedemptionPayment: {
+    (
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  confirmTopupPayment: {
+    (
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  confirmUnderlyingWithdrawal: {
+    (
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   controllerAttached(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
-  deprecateCollateralType: {
-    (
-      _collateralClass: number | BN | string,
-      _token: string,
-      _invalidationTimeSec: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+  convertDustToTicket: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
     call(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _invalidationTimeSec: number | BN | string,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _invalidationTimeSec: number | BN | string,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _invalidationTimeSec: number | BN | string,
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  createAgent: {
+    (
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _settings: {
+        underlyingAddressString: string;
+        class1CollateralToken: string;
+        feeBIPS: number | BN | string;
+        poolFeeShareBIPS: number | BN | string;
+        mintingClass1CollateralRatioBIPS: number | BN | string;
+        mintingPoolCollateralRatioBIPS: number | BN | string;
+        buyFAssetByAgentFactorBIPS: number | BN | string;
+        poolExitCollateralRatioBIPS: number | BN | string;
+        poolTopupCollateralRatioBIPS: number | BN | string;
+        poolTopupTokenPriceFactorBIPS: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  currentUnderlyingBlock(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
+  destroyAgent: {
+    (
+      _agentVault: string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  doublePaymentChallenge: {
+    (
+      _payment1: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _payment2: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment1: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _payment2: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment1: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _payment2: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment1: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _payment2: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  endLiquidation: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  executeAgentSettingUpdate: {
+    (
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  executeMinting: {
+    (
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  exitAvailableAgentList: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  finishRedemptionWithoutPayment: {
+    (
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  freeBalanceNegativeChallenge: {
+    (
+      _payments: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      }[],
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payments: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      }[],
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payments: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      }[],
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payments: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      }[],
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  getAgentInfo(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    status: BN;
+    ownerColdWalletAddress: string;
+    ownerHotWalletAddress: string;
+    collateralPool: string;
+    underlyingAddressString: string;
+    publiclyAvailable: boolean;
+    feeBIPS: BN;
+    poolFeeShareBIPS: BN;
+    class1CollateralToken: string;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    freeCollateralLots: BN;
+    totalClass1CollateralWei: BN;
+    freeClass1CollateralWei: BN;
+    class1CollateralRatioBIPS: BN;
+    totalPoolCollateralNATWei: BN;
+    freePoolCollateralNATWei: BN;
+    poolCollateralRatioBIPS: BN;
+    totalAgentPoolTokensWei: BN;
+    announcedClass1WithdrawalWei: BN;
+    announcedPoolTokensWithdrawalWei: BN;
+    freeAgentPoolTokensWei: BN;
+    mintedUBA: BN;
+    reservedUBA: BN;
+    redeemingUBA: BN;
+    poolRedeemingUBA: BN;
+    dustUBA: BN;
+    ccbStartTimestamp: BN;
+    liquidationStartTimestamp: BN;
+    underlyingBalanceUBA: BN;
+    requiredUnderlyingBalanceUBA: BN;
+    freeUnderlyingBalanceUBA: BN;
+    announcedUnderlyingWithdrawalId: BN;
+    buyFAssetByAgentFactorBIPS: BN;
+    poolExitCollateralRatioBIPS: BN;
+    poolTopupCollateralRatioBIPS: BN;
+    poolTopupTokenPriceFactorBIPS: BN;
+  }>;
+
   getAgentVaultOwner(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string; 1: string }>;
+
+  getAllAgents(
+    _start: number | BN | string,
+    _end: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string[]; 1: BN }>;
+
+  getAvailableAgentsDetailedList(
+    _start: number | BN | string,
+    _end: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    0: {
+      agentVault: string;
+      feeBIPS: BN;
+      mintingClass1CollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      freeCollateralLots: BN;
+    }[];
+    1: BN;
+  }>;
+
+  getAvailableAgentsList(
+    _start: number | BN | string,
+    _end: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: string[]; 1: BN }>;
 
   getCollateralPool(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
-  getFAssetsBackedByPool(
-    _agentVault: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  isAgentVaultOwner(
-    _agentVault: string,
-    _address: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
-
-  isCollateralToken(
-    _agentVault: string,
+  getCollateralType(
+    _collateralClass: number | BN | string,
     _token: string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
+  ): Promise<{
+    collateralClass: BN;
+    token: string;
+    decimals: BN;
+    validUntil: BN;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+  }>;
 
-  pause: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
+  getCollateralTypes(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<
+    {
+      collateralClass: BN;
+      token: string;
+      decimals: BN;
+      validUntil: BN;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
+      minCollateralRatioBIPS: BN;
+      ccbMinCollateralRatioBIPS: BN;
+      safetyMinCollateralRatioBIPS: BN;
+    }[]
+  >;
+
+  getLiquidationSettings(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getSettings(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{
+    assetManagerController: string;
+    fAsset: string;
+    agentVaultFactory: string;
+    collateralPoolFactory: string;
+    whitelist: string;
+    agentWhitelist: string;
+    attestationClient: string;
+    underlyingAddressValidator: string;
+    liquidationStrategy: string;
+    ftsoRegistry: string;
+    assetDecimals: BN;
+    assetMintingDecimals: BN;
+    mintingPoolHoldingsRequiredBIPS: BN;
+    burnAddress: string;
+    burnWithSelfDestruct: boolean;
+    chainId: BN;
+    collateralReservationFeeBIPS: BN;
+    assetUnitUBA: BN;
+    assetMintingGranularityUBA: BN;
+    lotSizeAMG: BN;
+    minUnderlyingBackingBIPS: BN;
+    mintingCapAMG: BN;
+    maxTrustedPriceAgeSeconds: BN;
+    requireEOAAddressProof: boolean;
+    underlyingBlocksForPayment: BN;
+    underlyingSecondsForPayment: BN;
+    redemptionFeeBIPS: BN;
+    redemptionDefaultFactorAgentC1BIPS: BN;
+    redemptionDefaultFactorPoolBIPS: BN;
+    confirmationByOthersAfterSeconds: BN;
+    confirmationByOthersRewardUSD5: BN;
+    maxRedeemedTickets: BN;
+    paymentChallengeRewardBIPS: BN;
+    paymentChallengeRewardUSD5: BN;
+    withdrawalWaitMinSeconds: BN;
+    ccbTimeSeconds: BN;
+    attestationWindowSeconds: BN;
+    minUpdateRepeatTimeSeconds: BN;
+    buybackCollateralFactorBIPS: BN;
+    announcedUnderlyingConfirmationMinSeconds: BN;
+    tokenInvalidationTimeMinSeconds: BN;
+    class1BuyForFlareFactorBIPS: BN;
+    agentExitAvailableTimelockSeconds: BN;
+    agentFeeChangeTimelockSeconds: BN;
+    agentCollateralRatioChangeTimelockSeconds: BN;
+  }>;
+
+  illegalPaymentChallenge: {
+    (
+      _transaction: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _transaction: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _transaction: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _transaction: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        sourceAddressHash: string;
+        spentAmount: number | BN | string;
+        paymentReference: string;
+      },
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  liquidate: {
+    (
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+    sendTransaction(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  makeAgentAvailable: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  redeemFromAgent: {
-    (
-      _agentVault: string,
-      _receiver: string,
-      _amountUBA: number | BN | string,
-      _receiverUnderlyingAddress: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
-      _receiver: string,
-      _amountUBA: number | BN | string,
-      _receiverUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
-      _receiver: string,
-      _amountUBA: number | BN | string,
-      _receiverUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
-      _receiver: string,
-      _amountUBA: number | BN | string,
-      _receiverUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  redeemFromAgentInCollateral: {
+  mintingPaymentDefault: {
+    (
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  proveUnderlyingAddressEOA: {
+    (
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redeem: {
+    (
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddressString: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddressString: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddressString: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _lots: number | BN | string,
+      _redeemerUnderlyingAddressString: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  redemptionPaymentDefault: {
+    (
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        deadlineBlockNumber: number | BN | string;
+        deadlineTimestamp: number | BN | string;
+        destinationAddressHash: string;
+        paymentReference: string;
+        amount: number | BN | string;
+        lowerBoundaryBlockNumber: number | BN | string;
+        lowerBoundaryBlockTimestamp: number | BN | string;
+        firstOverflowBlockNumber: number | BN | string;
+        firstOverflowBlockTimestamp: number | BN | string;
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  reserveCollateral: {
     (
       _agentVault: string,
-      _receiver: string,
+      _lots: number | BN | string,
+      _maxMintingFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _lots: number | BN | string,
+      _maxMintingFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _lots: number | BN | string,
+      _maxMintingFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _lots: number | BN | string,
+      _maxMintingFeeBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  selfClose: {
+    (
+      _agentVault: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
-      _receiver: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
-      _receiver: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
-      _receiver: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  setCollateralRatiosForToken: {
+  selfMint: {
     (
-      _collateralClass: number | BN | string,
-      _token: string,
-      _minCollateralRatioBIPS: number | BN | string,
-      _ccbMinCollateralRatioBIPS: number | BN | string,
-      _safetyMinCollateralRatioBIPS: number | BN | string,
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _minCollateralRatioBIPS: number | BN | string,
-      _ccbMinCollateralRatioBIPS: number | BN | string,
-      _safetyMinCollateralRatioBIPS: number | BN | string,
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _minCollateralRatioBIPS: number | BN | string,
-      _ccbMinCollateralRatioBIPS: number | BN | string,
-      _safetyMinCollateralRatioBIPS: number | BN | string,
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _collateralClass: number | BN | string,
-      _token: string,
-      _minCollateralRatioBIPS: number | BN | string,
-      _ccbMinCollateralRatioBIPS: number | BN | string,
-      _safetyMinCollateralRatioBIPS: number | BN | string,
+      _payment: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        transactionHash: string;
+        inUtxo: number | BN | string;
+        utxo: number | BN | string;
+        sourceAddressHash: string;
+        receivingAddressHash: string;
+        spentAmount: number | BN | string;
+        receivedAmount: number | BN | string;
+        paymentReference: string;
+        oneToOne: boolean;
+        status: number | BN | string;
+      },
+      _agentVault: string,
+      _lots: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  setPoolCollateralType: {
-    (
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _data: {
-        collateralClass: number | BN | string;
-        token: string;
-        decimals: number | BN | string;
-        validUntil: number | BN | string;
-        directPricePair: boolean;
-        assetFtsoSymbol: string;
-        tokenFtsoSymbol: string;
-        minCollateralRatioBIPS: number | BN | string;
-        ccbMinCollateralRatioBIPS: number | BN | string;
-        safetyMinCollateralRatioBIPS: number | BN | string;
-      },
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  terminate: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
+  setOwnerHotAddress: {
+    (_ownerHotAddress: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  unpause: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  updateSettings: {
-    (
-      _method: string,
-      _params: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _method: string,
-      _params: string,
+      _ownerHotAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _method: string,
-      _params: string,
+      _ownerHotAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _method: string,
-      _params: string,
+      _ownerHotAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  withdrawCollateral: {
-    (
-      _token: string,
-      _amountWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+  startLiquidation: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
     call(
-      _token: string,
-      _amountWei: number | BN | string,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _token: string,
-      _amountWei: number | BN | string,
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _token: string,
-      _amountWei: number | BN | string,
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  unstickMinting: {
+    (
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      _collateralReservationId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  updateCurrentBlock: {
+    (
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        stateConnectorRound: number | BN | string;
+        merkleProof: string[];
+        blockNumber: number | BN | string;
+        blockTimestamp: number | BN | string;
+        numberOfConfirmations: number | BN | string;
+        averageBlockProductionTimeMs: number | BN | string;
+        lowestQueryWindowBlockNumber: number | BN | string;
+        lowestQueryWindowBlockTimestamp: number | BN | string;
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeWNatContract: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   methods: {
-    addCollateralType: {
+    announceAgentPoolTokenRedemption: {
       (
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceAgentSettingUpdate: {
+      (
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _name: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceClass1CollateralWithdrawal: {
+      (
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceDestroyAgent: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceExitAvailableAgentList: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    announceUnderlyingWithdrawal: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -476,42 +2495,292 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
-    assetPriceNatWei(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: BN; 1: BN }>;
-
-    attachController: {
-      (attached: boolean, txDetails?: Truffle.TransactionDetails): Promise<
+    buybackAgentCollateral: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
       call(
-        attached: boolean,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        attached: boolean,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        attached: boolean,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    collateralDeposited: {
-      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+    cancelUnderlyingWithdrawal: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
       call(
-        _token: string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _token: string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _token: string,
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    collateralReservationFee(
+      _lots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    confirmRedemptionPayment: {
+      (
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    confirmTopupPayment: {
+      (
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    confirmUnderlyingWithdrawal: {
+      (
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -520,291 +2789,1311 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
-    deprecateCollateralType: {
-      (
-        _collateralClass: number | BN | string,
-        _token: string,
-        _invalidationTimeSec: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    convertDustToTicket: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
       call(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _invalidationTimeSec: number | BN | string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _invalidationTimeSec: number | BN | string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _invalidationTimeSec: number | BN | string,
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    createAgent: {
+      (
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _settings: {
+          underlyingAddressString: string;
+          class1CollateralToken: string;
+          feeBIPS: number | BN | string;
+          poolFeeShareBIPS: number | BN | string;
+          mintingClass1CollateralRatioBIPS: number | BN | string;
+          mintingPoolCollateralRatioBIPS: number | BN | string;
+          buyFAssetByAgentFactorBIPS: number | BN | string;
+          poolExitCollateralRatioBIPS: number | BN | string;
+          poolTopupCollateralRatioBIPS: number | BN | string;
+          poolTopupTokenPriceFactorBIPS: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    currentUnderlyingBlock(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
+    destroyAgent: {
+      (
+        _agentVault: string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    doublePaymentChallenge: {
+      (
+        _payment1: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _payment2: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment1: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _payment2: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment1: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _payment2: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment1: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _payment2: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    endLiquidation: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    executeAgentSettingUpdate: {
+      (
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    executeMinting: {
+      (
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    exitAvailableAgentList: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+    finishRedemptionWithoutPayment: {
+      (
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    freeBalanceNegativeChallenge: {
+      (
+        _payments: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        }[],
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payments: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        }[],
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payments: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        }[],
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payments: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        }[],
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    getAgentInfo(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      status: BN;
+      ownerColdWalletAddress: string;
+      ownerHotWalletAddress: string;
+      collateralPool: string;
+      underlyingAddressString: string;
+      publiclyAvailable: boolean;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      class1CollateralToken: string;
+      mintingClass1CollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      freeCollateralLots: BN;
+      totalClass1CollateralWei: BN;
+      freeClass1CollateralWei: BN;
+      class1CollateralRatioBIPS: BN;
+      totalPoolCollateralNATWei: BN;
+      freePoolCollateralNATWei: BN;
+      poolCollateralRatioBIPS: BN;
+      totalAgentPoolTokensWei: BN;
+      announcedClass1WithdrawalWei: BN;
+      announcedPoolTokensWithdrawalWei: BN;
+      freeAgentPoolTokensWei: BN;
+      mintedUBA: BN;
+      reservedUBA: BN;
+      redeemingUBA: BN;
+      poolRedeemingUBA: BN;
+      dustUBA: BN;
+      ccbStartTimestamp: BN;
+      liquidationStartTimestamp: BN;
+      underlyingBalanceUBA: BN;
+      requiredUnderlyingBalanceUBA: BN;
+      freeUnderlyingBalanceUBA: BN;
+      announcedUnderlyingWithdrawalId: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    }>;
+
     getAgentVaultOwner(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string; 1: string }>;
+
+    getAllAgents(
+      _start: number | BN | string,
+      _end: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string[]; 1: BN }>;
+
+    getAvailableAgentsDetailedList(
+      _start: number | BN | string,
+      _end: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      0: {
+        agentVault: string;
+        feeBIPS: BN;
+        mintingClass1CollateralRatioBIPS: BN;
+        mintingPoolCollateralRatioBIPS: BN;
+        freeCollateralLots: BN;
+      }[];
+      1: BN;
+    }>;
+
+    getAvailableAgentsList(
+      _start: number | BN | string,
+      _end: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: string[]; 1: BN }>;
 
     getCollateralPool(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
-    getFAssetsBackedByPool(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    isAgentVaultOwner(
-      _agentVault: string,
-      _address: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
-
-    isCollateralToken(
-      _agentVault: string,
+    getCollateralType(
+      _collateralClass: number | BN | string,
       _token: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
+    ): Promise<{
+      collateralClass: BN;
+      token: string;
+      decimals: BN;
+      validUntil: BN;
+      directPricePair: boolean;
+      assetFtsoSymbol: string;
+      tokenFtsoSymbol: string;
+      minCollateralRatioBIPS: BN;
+      ccbMinCollateralRatioBIPS: BN;
+      safetyMinCollateralRatioBIPS: BN;
+    }>;
 
-    pause: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
+    getCollateralTypes(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<
+      {
+        collateralClass: BN;
+        token: string;
+        decimals: BN;
+        validUntil: BN;
+        directPricePair: boolean;
+        assetFtsoSymbol: string;
+        tokenFtsoSymbol: string;
+        minCollateralRatioBIPS: BN;
+        ccbMinCollateralRatioBIPS: BN;
+        safetyMinCollateralRatioBIPS: BN;
+      }[]
+    >;
+
+    getLiquidationSettings(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getSettings(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{
+      assetManagerController: string;
+      fAsset: string;
+      agentVaultFactory: string;
+      collateralPoolFactory: string;
+      whitelist: string;
+      agentWhitelist: string;
+      attestationClient: string;
+      underlyingAddressValidator: string;
+      liquidationStrategy: string;
+      ftsoRegistry: string;
+      assetDecimals: BN;
+      assetMintingDecimals: BN;
+      mintingPoolHoldingsRequiredBIPS: BN;
+      burnAddress: string;
+      burnWithSelfDestruct: boolean;
+      chainId: BN;
+      collateralReservationFeeBIPS: BN;
+      assetUnitUBA: BN;
+      assetMintingGranularityUBA: BN;
+      lotSizeAMG: BN;
+      minUnderlyingBackingBIPS: BN;
+      mintingCapAMG: BN;
+      maxTrustedPriceAgeSeconds: BN;
+      requireEOAAddressProof: boolean;
+      underlyingBlocksForPayment: BN;
+      underlyingSecondsForPayment: BN;
+      redemptionFeeBIPS: BN;
+      redemptionDefaultFactorAgentC1BIPS: BN;
+      redemptionDefaultFactorPoolBIPS: BN;
+      confirmationByOthersAfterSeconds: BN;
+      confirmationByOthersRewardUSD5: BN;
+      maxRedeemedTickets: BN;
+      paymentChallengeRewardBIPS: BN;
+      paymentChallengeRewardUSD5: BN;
+      withdrawalWaitMinSeconds: BN;
+      ccbTimeSeconds: BN;
+      attestationWindowSeconds: BN;
+      minUpdateRepeatTimeSeconds: BN;
+      buybackCollateralFactorBIPS: BN;
+      announcedUnderlyingConfirmationMinSeconds: BN;
+      tokenInvalidationTimeMinSeconds: BN;
+      class1BuyForFlareFactorBIPS: BN;
+      agentExitAvailableTimelockSeconds: BN;
+      agentFeeChangeTimelockSeconds: BN;
+      agentCollateralRatioChangeTimelockSeconds: BN;
+    }>;
+
+    illegalPaymentChallenge: {
+      (
+        _transaction: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _transaction: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _transaction: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _transaction: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          paymentReference: string;
+        },
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    liquidate: {
+      (
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+      sendTransaction(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    makeAgentAvailable: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    redeemFromAgent: {
-      (
-        _agentVault: string,
-        _receiver: string,
-        _amountUBA: number | BN | string,
-        _receiverUnderlyingAddress: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
-        _receiver: string,
-        _amountUBA: number | BN | string,
-        _receiverUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
-        _receiver: string,
-        _amountUBA: number | BN | string,
-        _receiverUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
-        _receiver: string,
-        _amountUBA: number | BN | string,
-        _receiverUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    redeemFromAgentInCollateral: {
+    mintingPaymentDefault: {
+      (
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    proveUnderlyingAddressEOA: {
+      (
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redeem: {
+      (
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddressString: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddressString: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddressString: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _lots: number | BN | string,
+        _redeemerUnderlyingAddressString: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    redemptionPaymentDefault: {
+      (
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          paymentReference: string;
+          amount: number | BN | string;
+          lowerBoundaryBlockNumber: number | BN | string;
+          lowerBoundaryBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    reserveCollateral: {
       (
         _agentVault: string,
-        _receiver: string,
+        _lots: number | BN | string,
+        _maxMintingFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _lots: number | BN | string,
+        _maxMintingFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _lots: number | BN | string,
+        _maxMintingFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _lots: number | BN | string,
+        _maxMintingFeeBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    selfClose: {
+      (
+        _agentVault: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
-        _receiver: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
-        _receiver: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
-        _receiver: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    setCollateralRatiosForToken: {
+    selfMint: {
       (
-        _collateralClass: number | BN | string,
-        _token: string,
-        _minCollateralRatioBIPS: number | BN | string,
-        _ccbMinCollateralRatioBIPS: number | BN | string,
-        _safetyMinCollateralRatioBIPS: number | BN | string,
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        _lots: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _minCollateralRatioBIPS: number | BN | string,
-        _ccbMinCollateralRatioBIPS: number | BN | string,
-        _safetyMinCollateralRatioBIPS: number | BN | string,
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        _lots: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _minCollateralRatioBIPS: number | BN | string,
-        _ccbMinCollateralRatioBIPS: number | BN | string,
-        _safetyMinCollateralRatioBIPS: number | BN | string,
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        _lots: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _collateralClass: number | BN | string,
-        _token: string,
-        _minCollateralRatioBIPS: number | BN | string,
-        _ccbMinCollateralRatioBIPS: number | BN | string,
-        _safetyMinCollateralRatioBIPS: number | BN | string,
+        _payment: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          transactionHash: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          spentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          paymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        },
+        _agentVault: string,
+        _lots: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    setPoolCollateralType: {
+    setOwnerHotAddress: {
       (
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _ownerHotAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _ownerHotAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _ownerHotAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _data: {
-          collateralClass: number | BN | string;
-          token: string;
-          decimals: number | BN | string;
-          validUntil: number | BN | string;
-          directPricePair: boolean;
-          assetFtsoSymbol: string;
-          tokenFtsoSymbol: string;
-          minCollateralRatioBIPS: number | BN | string;
-          ccbMinCollateralRatioBIPS: number | BN | string;
-          safetyMinCollateralRatioBIPS: number | BN | string;
-        },
+        _ownerHotAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    terminate: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
+    startLiquidation: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    unpause: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    updateSettings: {
-      (
-        _method: string,
-        _params: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _method: string,
-        _params: string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _method: string,
-        _params: string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _method: string,
-        _params: string,
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    withdrawCollateral: {
+    terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    unstickMinting: {
       (
-        _token: string,
-        _amountWei: number | BN | string,
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _token: string,
-        _amountWei: number | BN | string,
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _token: string,
-        _amountWei: number | BN | string,
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _token: string,
-        _amountWei: number | BN | string,
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        _collateralReservationId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    updateCurrentBlock: {
+      (
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _proof: {
+          stateConnectorRound: number | BN | string;
+          merkleProof: string[];
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          averageBlockProductionTimeMs: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeWNatContract: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

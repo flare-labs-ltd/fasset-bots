@@ -29,7 +29,7 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  isCollateralToken(
+  isLockedVaultToken(
     _agentVault: string,
     _token: string,
     txDetails?: Truffle.TransactionDetails
@@ -52,7 +52,7 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    isCollateralToken(
+    isLockedVaultToken(
       _agentVault: string,
       _token: string,
       txDetails?: Truffle.TransactionDetails

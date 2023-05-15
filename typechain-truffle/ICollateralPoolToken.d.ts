@@ -73,12 +73,9 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  debtBalanceOf(
-    _account: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
+  collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  freeBalanceOf(
+  lockedBalanceOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
@@ -135,6 +132,11 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  transferableBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   methods: {
     allowance(
       owner: string,
@@ -170,12 +172,9 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    debtBalanceOf(
-      _account: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
+    collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    freeBalanceOf(
+    lockedBalanceOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
@@ -231,6 +230,11 @@ export interface ICollateralPoolTokenInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    transferableBalanceOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

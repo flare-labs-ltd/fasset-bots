@@ -60,16 +60,24 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
   };
 
   collateralDeposited: {
-    (arg0: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(arg0: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    (
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
     sendTransaction(
       arg0: string,
+      arg1: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       arg0: string,
+      arg1: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -93,8 +101,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   isAgentVaultOwner(
@@ -102,6 +108,8 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     _address: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
+
+  lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   payoutNAT: {
     (
@@ -283,16 +291,24 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     };
 
     collateralDeposited: {
-      (arg0: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(arg0: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+      (
+        arg0: string,
+        arg1: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        arg0: string,
+        arg1: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
       sendTransaction(
         arg0: string,
+        arg1: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         arg0: string,
+        arg1: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -316,8 +332,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    getLotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     isAgentVaultOwner(
@@ -325,6 +339,8 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       _address: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
+
+    lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     payoutNAT: {
       (

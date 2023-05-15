@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "ICollateralPoolToken",
-  "sourceName": "contracts/fasset/interface/ICollateralPoolToken.sol",
+  "sourceName": "contracts/userInterfaces/ICollateralPoolToken.sol",
   "abi": [
     {
       "anonymous": false,
@@ -121,19 +121,13 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_account",
-          "type": "address"
-        }
-      ],
-      "name": "debtBalanceOf",
+      "inputs": [],
+      "name": "collateralPool",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "address",
           "name": "",
-          "type": "uint256"
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -147,7 +141,7 @@
           "type": "address"
         }
       ],
-      "name": "freeBalanceOf",
+      "name": "lockedBalanceOf",
       "outputs": [
         {
           "internalType": "uint256",
@@ -222,6 +216,25 @@
         }
       ],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "transferableBalanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ],

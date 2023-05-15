@@ -17,14 +17,12 @@ import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { FAssetContract } from "./FAsset";
 import { WhitelistContract } from "./Whitelist";
 import { IAddressValidatorContract } from "./IAddressValidator";
-import { IAgentVaultContract } from "./IAgentVault";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
-import { IAssetManagerContract } from "./IAssetManager";
-import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
-import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
-import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { IFAssetContract } from "./IFAsset";
+import { IIAgentVaultContract } from "./IIAgentVault";
+import { IIAssetManagerContract } from "./IIAssetManager";
+import { IICollateralPoolContract } from "./IICollateralPool";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IWhitelistContract } from "./IWhitelist";
 import { IWNatContract } from "./IWNat";
@@ -57,6 +55,11 @@ import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
+import { IAgentVaultContract } from "./IAgentVault";
+import { IAssetManagerContract } from "./IAssetManager";
+import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
+import { ICollateralPoolContract } from "./ICollateralPool";
+import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { NativeTokenBurnerContract } from "./NativeTokenBurner";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
@@ -113,14 +116,12 @@ declare global {
       require(name: "FAsset"): FAssetContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAddressValidator"): IAddressValidatorContract;
-      require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
-      require(name: "IAssetManager"): IAssetManagerContract;
-      require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
-      require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
-      require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
       require(name: "IFAsset"): IFAssetContract;
+      require(name: "IIAgentVault"): IIAgentVaultContract;
+      require(name: "IIAssetManager"): IIAssetManagerContract;
+      require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "IWNat"): IWNatContract;
@@ -157,6 +158,11 @@ declare global {
       require(name: "GovernedBase"): GovernedBaseContract;
       require(name: "AddressUpdatableMock"): AddressUpdatableMockContract;
       require(name: "GovernedMock"): GovernedMockContract;
+      require(name: "IAgentVault"): IAgentVaultContract;
+      require(name: "IAssetManager"): IAssetManagerContract;
+      require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
+      require(name: "ICollateralPool"): ICollateralPoolContract;
+      require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
       require(name: "NativeTokenBurner"): NativeTokenBurnerContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
@@ -236,29 +242,24 @@ export {
   IAddressValidatorContract,
   IAddressValidatorInstance,
 } from "./IAddressValidator";
-export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export {
   IAgentVaultFactoryContract,
   IAgentVaultFactoryInstance,
 } from "./IAgentVaultFactory";
-export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
-export {
-  IAssetManagerEventsContract,
-  IAssetManagerEventsInstance,
-} from "./IAssetManagerEvents";
-export {
-  ICollateralPoolContract,
-  ICollateralPoolInstance,
-} from "./ICollateralPool";
 export {
   ICollateralPoolFactoryContract,
   ICollateralPoolFactoryInstance,
 } from "./ICollateralPoolFactory";
-export {
-  ICollateralPoolTokenContract,
-  ICollateralPoolTokenInstance,
-} from "./ICollateralPoolToken";
 export { IFAssetContract, IFAssetInstance } from "./IFAsset";
+export { IIAgentVaultContract, IIAgentVaultInstance } from "./IIAgentVault";
+export {
+  IIAssetManagerContract,
+  IIAssetManagerInstance,
+} from "./IIAssetManager";
+export {
+  IICollateralPoolContract,
+  IICollateralPoolInstance,
+} from "./IICollateralPool";
 export {
   ILiquidationStrategyContract,
   ILiquidationStrategyInstance,
@@ -357,6 +358,20 @@ export {
   AddressUpdatableMockInstance,
 } from "./AddressUpdatableMock";
 export { GovernedMockContract, GovernedMockInstance } from "./GovernedMock";
+export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
+export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
+export {
+  IAssetManagerEventsContract,
+  IAssetManagerEventsInstance,
+} from "./IAssetManagerEvents";
+export {
+  ICollateralPoolContract,
+  ICollateralPoolInstance,
+} from "./ICollateralPool";
+export {
+  ICollateralPoolTokenContract,
+  ICollateralPoolTokenInstance,
+} from "./ICollateralPoolToken";
 export {
   NativeTokenBurnerContract,
   NativeTokenBurnerInstance,
