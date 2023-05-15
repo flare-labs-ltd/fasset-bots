@@ -6,7 +6,7 @@ TrackedState represents non-persistent state that monitors native events and cal
 
 ### Initialization
 Initially, the constructor takes in **assetBotContext** and **lastEventBlockHandled** as inputs:
-```
+```javascript
    constructor(
        public context: IAssetBotContext,
        private lastEventBlockHandled: number
@@ -66,7 +66,7 @@ Finally, the TrackedState populates the tracked agent variables based on the rec
 
 ### Initialization
 Firstly, **parent** (TrackedState), **agent’s vault address**, **agent’s underlying address** and **agent’s collateral pool address** are input into constructor:
-```
+```javascript
    constructor(
        public parent: TrackedState,
        public vaultAddress: string,
