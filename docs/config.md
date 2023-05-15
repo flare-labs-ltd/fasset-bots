@@ -1,7 +1,7 @@
 # Configuration
 
 ## Configuration file
-In order to run FAsset bots following configuration must be provided (see interface `RunConfig` in [`BotConfig.ts`](../src/config/BotConfig.ts)). Path to config file should be set in `.env` as `RUN_CONFIG_PATH` variable.
+In order to run FAsset bots following configuration must be provided (see interface `RunConfig` in [BotConfig.ts](../src/config/BotConfig.ts)). Path to config file should be set in `.env` as `RUN_CONFIG_PATH` variable.
 
 Example:
 ```json

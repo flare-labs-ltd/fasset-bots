@@ -3,7 +3,7 @@
 Agent is the main player in the FAsset system. Agent supplies collateral that is backing minted FAssets. Agent operate against minters and redeemers. Minter pays the Agent in underlying asset for the right to utilise Agent's collateral for minting. In this process underlying assets (BTC, XRP, ...) are paid and FAssets (FBTC, FXRP, ...) are minted on top of native chain.
 A redeemer does the opposite. It sends FAssets to the system, system burns those FAssets and redeemer receives the underlying asset in return.
 
-File [`AgentBot.ts`](../../src/actors/AgentBot.ts) contains framework for such bot AgentBot in FAsset system.
+File [AgentBot.ts](../../src/actors/AgentBot.ts) contains framework for such bot AgentBot in FAsset system.
 
 ## Prerequirements
 
@@ -62,7 +62,7 @@ RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
 # DEFAULT AGENT SETTINGS PATH
 DEFAULT_AGENT_SETTINGS_PATH="./run-config/agent-settings-config.json"
 ```
-- to run **./run-agents.ts** -> creates agent and stores relevant data to persistent state, creates asset context, and starts observing events for agents
+- to run [**./run-agents.ts**](../../src/run-agent.ts) -> creates agent and stores relevant data to persistent state, creates asset context, and starts observing events for agents
 
 
 ## Owner's methods
