@@ -36,7 +36,6 @@ export class Liquidator {
 
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
-        agent.handleMintingExecuted(args);
         this.runner.startThread(async (scope) => {
             await this.checkAgentForLiquidation(agent)
                 .catch(e => scope.exitOnExpectedError(e, []));
