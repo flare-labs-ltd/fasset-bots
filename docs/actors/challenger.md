@@ -14,7 +14,7 @@ User needs:
 
 ### Initialization
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) and **lastEventUnderlyingBlockHandled** as inputs:
-```
+```javascript
 constructor(
        public runner: ScopedRunner,
        public address: string,

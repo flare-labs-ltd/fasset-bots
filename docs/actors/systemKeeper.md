@@ -13,7 +13,7 @@ User needs:
 
 ### Initialization
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) as inputs:
-```
+```javascript
    constructor(
        public runner: ScopedRunner,
        public address: string,
