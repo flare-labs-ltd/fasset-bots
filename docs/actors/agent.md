@@ -12,7 +12,7 @@ User aka **Owner** needs:
 - **native address** with funds
 - **underlying address** with funds
 - to create [**initial agent’s settings**](../../src/config/BotConfig.ts)
-```
+```javascript
 export interface AgentSettingsConfig {
     class1FtsoSymbol: string,
     feeBIPS: string,
@@ -26,7 +26,7 @@ export interface AgentSettingsConfig {
 }
 ```
 - to create [**runConfig**](../../src/config/BotConfig.ts)
-```
+```javascript
 export interface RunConfig {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
