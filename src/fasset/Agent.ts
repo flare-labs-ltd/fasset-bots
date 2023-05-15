@@ -140,7 +140,7 @@ export class Agent {
     }
 
     async poolFeeBalance() {
-        return await this.collateralPool.freeFassetOf(this.vaultAddress);
+        return await this.collateralPool.fassetFeesOf(this.vaultAddress);
     }
 
     async announceDestroy(): Promise<BN> {
