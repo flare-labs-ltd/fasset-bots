@@ -1,5 +1,5 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AllEvents, AssetManagerInstance, CollateralReserved, RedemptionDefault, RedemptionPaymentFailed, RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/AssetManager";
+import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, CollateralReserved, LiquidationEnded, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
@@ -92,7 +92,7 @@ export class Agent {
         return await this.agentVault.buyCollateralPoolTokens({ from: this.ownerAddress, value: toBN(amountNatWei) });
     }
 
-    async makeAvailable() {
+    async makeAvailable(): Promise<EventArgs<AgentAvailable>> {
         const res = await this.assetManager.makeAgentAvailable(this.vaultAddress, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AgentAvailable');
     }
@@ -109,7 +109,7 @@ export class Agent {
         return args.exitAllowedAt;
     }
 
-    async exitAvailable() {
+    async exitAvailable(): Promise<EventArgs<AvailableAgentExited>> {
         const res = await this.assetManager.exitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AvailableAgentExited');
     }
@@ -139,7 +139,7 @@ export class Agent {
         await this.agentVault.withdrawPoolFees(amountUBA, recipient, { from: this.ownerAddress });
     }
 
-    async poolFeeBalance() {
+    async poolFeeBalance(): Promise<BN> {
         return await this.collateralPool.fassetFeesOf(this.vaultAddress);
     }
 
@@ -149,7 +149,7 @@ export class Agent {
         return args.destroyAllowedAt;
     }
 
-    async destroy(recipient: string = this.ownerAddress) {
+    async destroy(recipient: string = this.ownerAddress): Promise<EventArgs<AgentDestroyed>> {
         const res = await this.assetManager.destroyAgent(this.vaultAddress, recipient, { from: this.ownerAddress });
         return requiredEventArgs(res, 'AgentDestroyed');
     }
@@ -163,22 +163,22 @@ export class Agent {
         await this.assetManager.confirmTopupPayment(proof, this.agentVault.address, { from: this.ownerAddress });
     }
 
-    async announceUnderlyingWithdrawal() {
+    async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
         const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalAnnounced');
     }
 
-    async performUnderlyingWithdrawal(request: EventArgs<UnderlyingWithdrawalAnnounced>, amount: BNish, underlyingAddress: string): Promise<string> {
-        return await this.wallet.addTransaction(this.underlyingAddress, underlyingAddress, amount, request.paymentReference);
+    async performUnderlyingWithdrawal(paymentReference: string, amount: BNish, underlyingAddress: string): Promise<string> {
+        return await this.wallet.addTransaction(this.underlyingAddress, underlyingAddress, amount, paymentReference);
     }
 
-    async confirmUnderlyingWithdrawal(request: EventArgs<UnderlyingWithdrawalAnnounced>, transactionHash: string) {
+    async confirmUnderlyingWithdrawal(transactionHash: string): Promise<EventArgs<UnderlyingWithdrawalConfirmed>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, null);
         const res = await this.assetManager.confirmUnderlyingWithdrawal(proof, this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalConfirmed');
     }
 
-    async cancelUnderlyingWithdrawal() {
+    async cancelUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalCancelled>> {
         const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
     }
@@ -188,13 +188,13 @@ export class Agent {
         return await this.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
     }
 
-    async confirmActiveRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
+    async confirmActiveRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<EventArgs<RedemptionPerformed>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
         return requiredEventArgs(res, 'RedemptionPerformed');
     }
 
-    async confirmDefaultedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
+    async confirmDefaultedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<void> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
     }
@@ -205,13 +205,13 @@ export class Agent {
         return [requiredEventArgs(res, 'RedemptionPaymentFailed'), requiredEventArgs(res, 'RedemptionDefault')];
     }
 
-    async confirmBlockedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string) {
+    async confirmBlockedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<EventArgs<RedemptionPaymentBlocked>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
         const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
         return requiredEventArgs(res, 'RedemptionPaymentBlocked');
     }
 
-    async redemptionPaymentDefault(request: EventArgs<RedemptionRequested>) {
+    async redemptionPaymentDefault(request: EventArgs<RedemptionRequested>): Promise<EventArgs<RedemptionDefault>> {
         const proof = await this.attestationProvider.proveReferencedPaymentNonexistence(
             request.paymentAddress,
             request.paymentReference,
@@ -228,7 +228,7 @@ export class Agent {
         return eventArgs(res, "RedemptionDefault");
     }
 
-    async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string, minterSourceAddress?: string) {
+    async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string, minterSourceAddress?: string): Promise<EventArgs<MintingExecuted>> {
         if (!minterSourceAddress) {
             const tx = await this.context.chain.getTransaction(transactionHash);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-non-null-asserted-optional-chain
@@ -239,7 +239,7 @@ export class Agent {
         return requiredEventArgs(res, 'MintingExecuted');
     }
 
-    async mintingPaymentDefault(crt: EventArgs<CollateralReserved>) {
+    async mintingPaymentDefault(crt: EventArgs<CollateralReserved>): Promise<EventArgs<MintingPaymentDefault>> {
         const proof = await this.attestationProvider.proveReferencedPaymentNonexistence(
             this.underlyingAddress,
             crt.paymentReference,
@@ -255,14 +255,14 @@ export class Agent {
         await this.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: this.ownerAddress, value: burnNats ?? BN_ZERO });
     }
 
-    async selfMint(underlyingSourceAddress: string, amountUBA: BNish, lots: BNish) {
+    async selfMint(underlyingSourceAddress: string, amountUBA: BNish, lots: BNish): Promise<EventArgs<MintingExecuted>> {
         const transactionHash = await this.wallet.addTransaction(underlyingSourceAddress, this.underlyingAddress, amountUBA, PaymentReference.selfMint(this.agentVault.address));
         const proof = await this.attestationProvider.provePayment(transactionHash, null, this.underlyingAddress);
         const res = await this.assetManager.selfMint(proof, this.agentVault.address, lots, { from: this.ownerAddress });
         return requiredEventArgs(res, 'MintingExecuted');
     }
 
-    async selfClose(amountUBA: BNish) {
+    async selfClose(amountUBA: BNish): Promise<EventArgs<SelfClose>> {
         const res = await this.assetManager.selfClose(this.agentVault.address, amountUBA, { from: this.ownerAddress });
         return requiredEventArgs(res, 'SelfClose');
     }
@@ -271,7 +271,7 @@ export class Agent {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
     }
 
-    async endLiquidation() {
+    async endLiquidation(): Promise<EventArgs<LiquidationEnded>> {
         const res = await this.assetManager.endLiquidation(this.vaultAddress, { from: this.ownerAddress });
         return eventArgs(res, 'LiquidationEnded');
     }

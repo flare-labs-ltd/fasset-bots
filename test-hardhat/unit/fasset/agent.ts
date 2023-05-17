@@ -159,22 +159,22 @@ describe("Agent unit tests", async () => {
     it("Should announce, perform and confirm underlying withdrawal", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
-        const tx = await agent.performUnderlyingWithdrawal(resAnnounce, 1, underlyingAddress);
+        const tx = await agent.performUnderlyingWithdrawal(resAnnounce.paymentReference, 1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
-        const resConfirm = await agent.confirmUnderlyingWithdrawal(resAnnounce, tx);
+        const resConfirm = await agent.confirmUnderlyingWithdrawal(tx);
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
     });
 
     it("Should announce, perform and confirm underlying withdrawal", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
-        const tx = await agent.performUnderlyingWithdrawal(resAnnounce, 1, underlyingAddress);
+        const tx = await agent.performUnderlyingWithdrawal(resAnnounce.paymentReference, 1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
-        const resConfirm = await agent.confirmUnderlyingWithdrawal(resAnnounce, tx);
+        const resConfirm = await agent.confirmUnderlyingWithdrawal(tx);
         expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
     });
 

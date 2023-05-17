@@ -258,7 +258,7 @@ describe("Challenger tests", async () => {
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
         await time.increase(skipTime);
         // confirm underlying withdrawal
-        await agentBot.agent.confirmUnderlyingWithdrawal(announce, txHash);
+        await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
         // repeat the same payment
         await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.freeUnderlyingBalanceUBA).divn(2), announce.paymentReference);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
@@ -385,7 +385,7 @@ describe("Challenger tests", async () => {
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal, underlyingBalanceUBA, underlyingAddress);
+        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal.paymentReference, underlyingBalanceUBA, underlyingAddress);
         await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
         chain.mine(chain.finalizationBlocks + 1);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
