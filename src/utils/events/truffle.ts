@@ -19,17 +19,12 @@ export type ContractWithEventsForMethod<C extends Truffle.ContractInstance, M ex
     ContractWithEvents<C, EventsForMethod<C, M>>;
 
 export function contractWithEvents<T>(contract: ContractTypeFor<T>): T;
-export function contractWithEvents<C extends Truffle.ContractInstance, M extends keyof C>(contract: C, anyMethod: M): ContractWithEventsForMethod<C, M>;
-export function contractWithEvents(contract: Truffle.ContractInstance, anyMethod?: unknown) {
+export function contractWithEvents<C extends Truffle.ContractInstance, M extends keyof C>(contract: C): ContractWithEventsForMethod<C, M> {
     return contract; // ~eventMarker are just marker for correct type, no value can ever be extracted
 }
 
 export function eventIs<C extends Truffle.ContractInstance, E extends EventSelector, N extends E['name']>(event: BaseEvent, source: ContractWithEvents<C, E>, eventName: N): event is TruffleExtractEvent<E, N> {
     return event.address === source.address && event.event === eventName;
-}
-
-export function syntheticEventIs<E extends BaseEvent>(event: BaseEvent, eventName: E['event']): event is E {
-    return event.event === eventName;
 }
 
 export function filterEvents<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N): TruffleExtractEvent<E, N>[] {
@@ -46,13 +41,6 @@ export function findRequiredEvent<E extends EventSelector, N extends E['name']>(
         throw new Error(`Missing event ${name}`);
     }
     return event!;
-}
-
-export function checkEventNotEmitted<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N) {
-    const event = findEvent(response, name);
-    if (event != null) {
-        throw new Error(`Event ${name} emitted`);
-    }
 }
 
 export function eventArgs<E extends EventSelector, N extends E['name']>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> {

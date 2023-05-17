@@ -9,14 +9,13 @@ export class ScopedRunner {
 
     uncaughtErrors: any[] = [];
 
-    newScope(parentScope?: EventScope) {
-        const scope = new EventScope(parentScope);
+    newScope() {
+        const scope = new EventScope();
         this.scopes.add(scope);
         return scope;
     }
 
     finishScope(scope: EventScope) {
-        scope.finish();
         this.scopes.delete(scope);
     }
 
@@ -37,16 +36,4 @@ export class ScopedRunner {
             });
     }
 
-    async startScope(method: (scope: EventScope) => Promise<void>): Promise<void> {
-        return this.startScopeIn(undefined, method);
-    }
-
-    async startScopeIn(parentScope: EventScope | undefined, method: (scope: EventScope) => Promise<void>): Promise<void> {
-        const scope = this.newScope(parentScope);
-        try {
-            await method(scope);
-        } finally {
-            this.finishScope(scope);
-        }
-    }
 }

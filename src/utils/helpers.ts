@@ -47,17 +47,6 @@ export function systemTimestamp() {
 }
 
 /**
- * Like Array.map but for JavaScript objects.
- */
-export function objectMap<T, R>(obj: { [key: string]: T }, func: (x: T) => R): { [key: string]: R } {
-    const result: { [key: string]: R } = {};
-    for (const key of Object.keys(obj)) {
-        result[key] = func(obj[key]);
-    }
-    return result;
-}
-
-/**
  * Check if value is non-null.
  * Useful in array.filter, to return array of non-nullable types.
  */
@@ -118,36 +107,6 @@ export function toBNExp(x: number | string, exponent: number): BN {
     return toBN(toStringExp(x, exponent));
 }
 
-// convert NAT amount to base units (wei)
-export function toWei(amount: number | string) {
-    return toBNExp(amount, 18);
-}
-
-/**
- * Format large number in more readable format, using 'fixed-exponential' format, with 'e+18' suffix for very large numbers.
- * (This makes them easy to visually detect bigger/smaller numbers.)
- */
-export function formatBN(x: BN | string | number) {
-    const xs = x.toString();
-    if (xs.length >= 18) {
-        const dec = Math.max(0, 22 - xs.length);
-        const xm = (Number(xs) / 1e18).toFixed(dec);
-        return groupIntegerDigits(xm) + 'e+18';
-    } else {
-        return groupIntegerDigits(xs);
-    }
-}
-
-function groupIntegerDigits(x: string) {
-    let startP = x.indexOf('.');
-    if (startP < 0) startP = x.length;
-    const endP = x[0] === '-' ? 1 : 0;
-    for (let p = startP - 3; p > endP; p -= 3) {
-        x = x.slice(0, p) + '_' + x.slice(p); x
-    }
-    return x;
-}
-
 /**
  * Convert value to hex with 0x prefix and optional padding.
  */
@@ -159,10 +118,10 @@ export function toHex(x: string | number | BN, padToBytes?: number) {
 }
 
 /**
- * Generate random EVM address.
+ * Sum all values in an Array or Iterable of BNs.
  */
-export function randomAddress() {
-    return Web3.utils.toChecksumAddress(Web3.utils.randomHex(20))
+export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN): BN {
+    return reduce(list, BN_ZERO, (a, x) => a.add(elementValue(x)));
 }
 
 /**
@@ -171,26 +130,6 @@ export function randomAddress() {
 export function checkedCast<S, T extends S>(obj: S, cls: new (...args: any[]) => T): T {
     if (obj instanceof cls) return obj;
     throw new Error(`object not instance of ${cls.name}`);
-}
-
-/**
- * Functional style try...catch.
- */
-export function tryCatch<T>(body: () => T): T | undefined;
-export function tryCatch<T>(body: () => T, errorHandler: (err: unknown) => T): T;
-export function tryCatch<T>(body: () => T, errorHandler?: (err: unknown) => T) {
-    try {
-        return body();
-    } catch (err) {
-        return errorHandler?.(err);
-    }
-}
-
-/**
- * Run `func` in parallel. Allows nicer code in case func is an async lambda.
- */
-export function runAsync(func: () => Promise<void>) {
-    void func();
 }
 
 /**
@@ -218,37 +157,6 @@ export async function getOrCreateAsync<K, V>(map: Map<K, V>, key: K, create: (ke
 }
 
 /**
- * Add a value to "multimap" - a map where there are several values for each key.
- */
-export function multimapAdd<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
-    let set = map.get(key);
-    if (set == undefined) {
-        set = new Set();
-        map.set(key, set);
-    }
-    set.add(value);
-}
-
-/**
- * Remove a value from "multimap" - a map where there are several values for each key.
- */
-export function multimapDelete<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
-    const set = map.get(key);
-    if (set == undefined) return;
-    set.delete(value);
-    if (set.size === 0) {
-        map.delete(key);
-    }
-}
-
-/**
- * Returns last element of array or `undefined` if array is empty.
- */
-export function last<T>(array: T[]): T | undefined {
-    return array.length > 0 ? array[array.length - 1] : undefined;
-}
-
-/**
  * Like Array.reduce, but for any Iterable.
  */
 export function reduce<T, R>(list: Iterable<T>, initialValue: R, operation: (a: R, x: T) => R) {
@@ -257,24 +165,6 @@ export function reduce<T, R>(list: Iterable<T>, initialValue: R, operation: (a: 
         result = operation(result, x);
     }
     return result;
-}
-
-/**
- * Sum all values in an Array or Iterable of numbers.
- */
-export function sum<T>(list: Iterable<T>, elementValue: (x: T) => number): number;
-export function sum(list: Iterable<number>): number;
-export function sum<T>(list: Iterable<T>, elementValue: (x: T) => number = (x: any) => x) {
-    return reduce(list, 0, (a, x) => a + elementValue(x));
-}
-
-/**
- * Sum all values in an Array or Iterable of BNs.
- */
-export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN): BN;
-export function sumBN(list: Iterable<BN>): BN;
-export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN = (x: any) => x) {
-    return reduce(list, BN_ZERO, (a, x) => a.add(elementValue(x)));
 }
 
 /**
@@ -296,37 +186,6 @@ export function minBN(first: BN, ...rest: BN[]) {
     for (const x of rest) {
         if (x.lt(result)) result = x;
     }
-    return result;
-}
-
-/**
- * Return a copy of list, sorted by comparisonKey.
- */
-export function sorted<T, K>(list: Iterable<T>, comparisonKey: (e: T) => K): T[];
-export function sorted<T>(list: Iterable<T>): T[];
-export function sorted<T, K>(list: Iterable<T>, comparisonKey: (e: T) => K = (x: any) => x) {
-    const array = Array.from(list);
-    array.sort((a, b) => {
-        const aKey = comparisonKey(a), bKey = comparisonKey(b);
-        return aKey < bKey ? -1 : (aKey > bKey ? 1 : 0);
-    });
-    return array;
-}
-
-export interface PromiseValue<T> {
-    resolved: boolean;
-    value?: T;
-}
-
-/**
- * Return a struct whose `value` field is set when promise id fulfilled.
- */
-export function promiseValue<T>(promise: Promise<T>): PromiseValue<T> {
-    const result: PromiseValue<T> = { resolved: false };
-    void promise.then(value => {
-        result.resolved = true;
-        result.value = value;
-    });
     return result;
 }
 
