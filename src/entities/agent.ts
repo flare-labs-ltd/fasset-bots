@@ -47,6 +47,12 @@ export class AgentEntity {
 
     @Property({ type: BNType })
     exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    underlyingWithdrawalAnnouncedAtTimestamp: BN = BN_ZERO;
+
+    @Property()
+    underlyingWithdrawalConfirmTransaction: string = "";
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were

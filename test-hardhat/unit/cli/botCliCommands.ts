@@ -19,6 +19,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
+import { time } from "@openzeppelin/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -185,7 +186,7 @@ describe("Bot cli commands unit tests", async () => {
         listUsageAndCommands();
         await botCliCommands.run([]);
         await botCliCommands.run(["", "", "unknownCommand"]);
-        expect(spyLog).to.be.called.exactly(33);
+        expect(spyLog).to.be.called.exactly(51);
     });
 
     it("Should run command 'create'", async () => {
@@ -195,18 +196,18 @@ describe("Bot cli commands unit tests", async () => {
 
     });
 
-    it("Should run command 'deposit'", async () => {
+    it("Should run command 'depositClass1'", async () => {
         const spyDeposit = spy.on(botCliCommands, "depositToVault");
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
-        await botCliCommands.run(["", "", "deposit", vaultAddress!, depositAmount]);
+        await botCliCommands.run(["", "", "depositClass1", vaultAddress!, depositAmount]);
         expect(spyDeposit).to.be.called.once;
     });
 
-    it("Should not run command 'deposit' - missing inputs", async () => {
+    it("Should not run command 'depositClass1' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
-        await botCliCommands.run(["", "", "deposit"]);
+        await botCliCommands.run(["", "", "depositClass1"]);
         expect(spyLog).to.be.called.once;
     });
 
@@ -228,20 +229,20 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyLog).to.be.called.once;
     });
 
-    it("Should run command 'setAgentSetting'", async () => {
+    it("Should run command 'updateAgentSetting'", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         const settingName = "feeBIPS";
         const settingValue = "1100";
-        await botCliCommands.run(["", "", "setAgentSetting", vaultAddress!, settingName, settingValue]);
+        await botCliCommands.run(["", "", "updateAgentSetting", vaultAddress!, settingName, settingValue]);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.agentSettingUpdateValidAtTimestamp.gtn(0)).to.be.true;
         expect(agentEnt.agentSettingUpdateValidAtName).to.eq(settingName);
     });
 
-    it("Should not run command 'setAgentSetting' - missing inputs", async () => {
+    it("Should not run command 'updateAgentSetting' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
-        await botCliCommands.run(["", "", "setAgentSetting"]);
+        await botCliCommands.run(["", "", "updateAgentSetting"]);
         expect(spyLog).to.be.called.once;
     });
 
@@ -278,28 +279,28 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyLog).to.be.called.once;
     });
 
-    it("Should run commands 'deposit' and 'withdraw", async () => {
+    it("Should run commands 'depositClass1' and 'withdrawClass1", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
         const class1TokenContract = await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
-        await botCliCommands.run(["", "", "deposit", vaultAddress!, depositAmount]);
+        await botCliCommands.run(["", "", "depositClass1", vaultAddress!, depositAmount]);
         const collateralBefore = await class1TokenContract.balanceOf(vaultAddress!);
         expect(collateralBefore.toString()).to.eq(depositAmount);
-        await botCliCommands.run(["", "", "withdraw", vaultAddress!, withdrawAmount]);
+        await botCliCommands.run(["", "", "withdrawClass1", vaultAddress!, withdrawAmount]);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.withdrawalAllowedAtAmount.eq(toBN(withdrawAmount))).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)).to.be.true;
     });
 
-    it("Should not run command 'deposit' - missing inputs", async () => {
+    it("Should not run command 'depositClass1' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
-        await botCliCommands.run(["", "", "deposit"]);
+        await botCliCommands.run(["", "", "depositClass1"]);
         expect(spyLog).to.be.called.once;
     });
 
-    it("Should not run command 'withdraw' - missing inputs", async () => {
+    it("Should not run command 'withdrawClass1' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
-        await botCliCommands.run(["", "", "withdraw"]);
+        await botCliCommands.run(["", "", "withdrawClass1"]);
         expect(spyLog).to.be.called.once;
     });
 
@@ -348,6 +349,136 @@ describe("Bot cli commands unit tests", async () => {
     it("Should not run command 'close' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "close"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'poolFeesBalance'", async () => {
+        const spyDeposit = spy.on(botCliCommands, "poolFeesBalance");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress!, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
+        await botCliCommands.enterAvailableList(vaultAddress!);
+        // execute minting
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const crt = await minter.reserveCollateral(vaultAddress!, 2);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        // show balance
+        await botCliCommands.run(["", "", "poolFeesBalance", vaultAddress!]);
+        expect(spyDeposit).to.be.called.once;
+    });
+
+    it("Should not run command 'poolFeesBalance' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "poolFeesBalance"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'withdrawPoolFees'", async () => {
+        const spyDeposit = spy.on(botCliCommands, "withdrawPoolFees");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress!, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress!, depositAmount);
+        await botCliCommands.enterAvailableList(vaultAddress!);
+        // execute minting
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const crt = await minter.reserveCollateral(vaultAddress!, 2);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        // withdraw pool fees
+        const amount = (await botCliCommands.poolFeesBalance(vaultAddress!)).divn(2);
+        await botCliCommands.run(["", "", "withdrawPoolFees", vaultAddress!, amount.toString()]);
+        expect(spyDeposit).to.be.called.once;
+    });
+
+    it("Should not run command 'withdrawPoolFees' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "withdrawPoolFees"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'announceUnderlyingWithdrawal' and 'cancelUnderlyingWithdrawal'", async () => {
+        const spyAnnounce = spy.on(botCliCommands, "announceUnderlyingWithdrawal");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        await botCliCommands.run(["", "", "announceUnderlyingWithdrawal", vaultAddress!]);
+        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
+        expect(spyAnnounce).to.be.called.once;
+        const spyCancel = spy.on(botCliCommands, "cancelUnderlyingWithdrawal");
+        //  not enough time passed
+        await botCliCommands.run(["", "", "cancelUnderlyingWithdrawal", vaultAddress!]);
+        const agentEntCancelTooSoon = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntCancelTooSoon.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
+        // time passed
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        await botCliCommands.run(["", "", "cancelUnderlyingWithdrawal", vaultAddress!]);
+        const agentEntCancel = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntCancel.underlyingWithdrawalAnnouncedAtTimestamp.eq(BN_ZERO)).to.be.true;
+        expect(spyCancel).to.be.called.twice;
+    });
+
+    it("Should not run command 'announceUnderlyingWithdrawal' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "announceUnderlyingWithdrawal"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should not run command 'cancelUnderlyingWithdrawal' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "cancelUnderlyingWithdrawal"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'performUnderlyingWithdrawal'", async () => {
+        const spyPerform = spy.on(botCliCommands, "performUnderlyingWithdrawal");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const paymentReference = await botCliCommands.announceUnderlyingWithdrawal(vaultAddress!);
+        const amountToWithdraw = 100;
+        await botCliCommands.run(["", "", "performUnderlyingWithdrawal", vaultAddress!, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress", paymentReference]);
+        expect(spyPerform).to.be.called.once;
+    });
+
+    it("Should not run command 'performUnderlyingWithdrawal' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "performUnderlyingWithdrawal"]);
+        expect(spyLog).to.be.called.once;
+    });
+
+    it("Should run command 'confirmUnderlyingWithdrawal'", async () => {
+        const spyConfirm = spy.on(botCliCommands, "confirmUnderlyingWithdrawal");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const paymentReference = await botCliCommands.announceUnderlyingWithdrawal(vaultAddress!);
+        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
+        const amountToWithdraw = 100;
+        const txHash = await botCliCommands.performUnderlyingWithdrawal(vaultAddress!, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress", paymentReference);
+        chain.mine(chain.finalizationBlocks + 1);
+        //  not enough time passed
+        await botCliCommands.run(["", "", "confirmUnderlyingWithdrawal", vaultAddress!, txHash]);
+        const agentEntConfirmToSoon = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntConfirmToSoon.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
+        expect(agentEntConfirmToSoon.underlyingWithdrawalConfirmTransaction).to.eq(txHash);
+        // time passed
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        await botCliCommands.run(["", "", "confirmUnderlyingWithdrawal", vaultAddress!, txHash]);
+        const agentEntConfirm = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntConfirm.underlyingWithdrawalAnnouncedAtTimestamp.eq(BN_ZERO)).to.be.true;
+        expect(agentEntConfirm.underlyingWithdrawalConfirmTransaction).to.eq("");
+        expect(spyConfirm).to.be.called.twice;
+    });
+
+    it("Should not run command 'confirmUnderlyingWithdrawal' - missing inputs", async () => {
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.run(["", "", "confirmUnderlyingWithdrawal"]);
         expect(spyLog).to.be.called.once;
     });
 
