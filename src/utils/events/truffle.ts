@@ -18,8 +18,7 @@ export type EventsForMethod<C extends Truffle.ContractInstance, M extends keyof 
 export type ContractWithEventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> =
     ContractWithEvents<C, EventsForMethod<C, M>>;
 
-export function contractWithEvents<T>(contract: ContractTypeFor<T>): T;
-export function contractWithEvents<C extends Truffle.ContractInstance, M extends keyof C>(contract: C): ContractWithEventsForMethod<C, M> {
+export function contractWithEvents<T>(contract: ContractTypeFor<T>) {
     return contract; // ~eventMarker are just marker for correct type, no value can ever be extracted
 }
 

@@ -120,6 +120,20 @@ describe("XRP blockchain tests via indexer", async () => {
         const outputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, false);
         expect(outputs[0][0]).to.eq(data.response.data.result.Account);
         expect(outputs[0][1].eq(toBN(data.response.data.result.meta.delivered_amount))).to.be.true;
+
+        data.isNativePayment = false;
+        const inputsNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, true);
+        expect(inputsNotNativePayment[0][0]).to.eq(data.response.data.result.Account);
+        expect(inputsNotNativePayment[0][1].eqn(0)).to.be.true;
+
+        dataWithFee.isNativePayment = false;
+        const inputsWithFeeNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(dataWithFee, true);
+        expect(inputsWithFeeNotNativePayment[0][0]).to.eq(data.response.data.result.Account);
+        expect(inputsWithFeeNotNativePayment[0][1].eqn(dataWithFee.response.data.result.Fee)).to.be.true;
+
+        const outputsNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, false);
+        expect(outputsNotNativePayment[0][0]).to.eq("");
+        expect(outputsNotNativePayment[0][1].eqn(0)).to.be.true;
     });
 
 });

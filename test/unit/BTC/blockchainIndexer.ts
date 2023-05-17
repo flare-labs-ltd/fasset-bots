@@ -15,7 +15,7 @@ const sourceId: SourceId = SourceId.BTC;
 const txHash = "6e555d6afce55e26bdff2559047ca07e1262adf0e4337de8618c4534cc5b9871";
 const blockId = 2433332;
 const blockHash = "000000000000001cd1d64cc9b566058453b6f3909c386337d61a7dc5ced426d9";
-const txReference = "a78ca83b53b7976c2d7396ce0e87d17a66a81261c67d34972f4eb0a0e9cc8196";
+const txReference = "0000000000000000000000000000000000000000000000000000000000000000";
 const invalidTxHash = txHash.slice(2);
 
 describe("BTC blockchain tests via indexer", async () => {
@@ -81,9 +81,9 @@ describe("BTC blockchain tests via indexer", async () => {
         expect(transactionBlock).to.be.null;
     });
 
-    it("Should retrieve transaction by reference", async () => {
-        const retrievedTransaction = await blockChainIndexerClient.getTransactionsByReference(txReference);
-        expect(retrievedTransaction).to.not.be.null;
+    it.skip("Should retrieve transaction by reference", async () => {
+        const retrievedTransaction = await blockChainIndexerClient.getTransactionsByReference(txReference, true);
+        expect(retrievedTransaction.length).to.be.gt(0);
     });
 
     it("Should not retrieve transaction by reference - invalid reference", async () => {

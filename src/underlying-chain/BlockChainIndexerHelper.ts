@@ -103,12 +103,12 @@ export class BlockChainIndexerHelper implements IBlockChain {
         return 0;
     }
 
-    async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
-        const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}`);
+    async getTransactionsByReference(reference: string, returnResponse: boolean = false): Promise<ITransaction[] | []> {
+        const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const txs: ITransaction[] = [];
-        if (status === "OK" && dataArray.length > 0) {
+        if (status === "OK" && dataArray?.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,

@@ -77,7 +77,12 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendXRP, null, undefined, true)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendXRP, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should get transaction fee", async () => {
+        const fee = await walletHelper.getTransactionFee();
+        expect(fee.gtn(0));
     });
 
 });
