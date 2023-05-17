@@ -37,7 +37,9 @@
          "src/verification/attestation-types/t-00003-confirmed-block-height-exists.ts",
          "src/verification/attestation-types/t-00004-referenced-payment-nonexistence.ts",
          "src/verification/attestation-types/t-00005-trustline-issuance.ts",
-         "src/mock/*.ts"
+         "src/mock/*.ts",
+         "src/run-agent.ts",
+         "src/cli/index.ts"
       ],
       "reporter": [
          "html",
