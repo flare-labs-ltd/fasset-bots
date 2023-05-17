@@ -16,6 +16,7 @@ import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { CollateralData } from "../fasset/CollateralData";
+import { latestBlockTimestampBN } from "../utils/web3helpers";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -159,24 +160,24 @@ export class AgentBot {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
-                const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.waitingForDestructionTimestamp.lte(toBN(latestTimestamp))) {
+                const latestTimestamp = await latestBlockTimestampBN();
+                if (agentEnt.waitingForDestructionTimestamp.lte(latestTimestamp)) {
                     await this.agent.destroy();
                     agentEnt.waitingForDestructionTimestamp = BN_ZERO;
                     await this.handleAgentDestruction(em, agentEnt.vaultAddress);
                 }
             }
             if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
-                const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.withdrawalAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
+                const latestTimestamp = await latestBlockTimestampBN();
+                if (agentEnt.withdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
                     agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.withdrawalAllowedAtAmount = BN_ZERO;
                 }
             }
             if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
-                const latestTimestamp = await this.latestBlockTimestamp();
-                if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(toBN(latestTimestamp))) {
+                const latestTimestamp = await latestBlockTimestampBN();
+                if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(latestTimestamp)) {
                     await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
                     agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                     agentEnt.agentSettingUpdateValidAtName = "";
@@ -188,27 +189,39 @@ export class AgentBot {
                 await this.exitAvailable(agentEnt);
             } else if (agentEnt.waitingForDestructionCleanUp) {
                 const agentInfo = await this.agent.getAgentInfo();
-                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO) ) {
+                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
                     const destroyAllowedAt = await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
                     agentEnt.waitingForDestructionCleanUp = false;
+                }
+            }
+            if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
+                if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
+                    const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
+                    const latestTimestamp = await latestBlockTimestampBN();
+                    if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
+                        await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
+                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                        agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                    }
+                } else {
+                    const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
+                    const latestTimestamp = await latestBlockTimestampBN();
+                    if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
+                        await this.agent.cancelUnderlyingWithdrawal();
+                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                    }
                 }
             }
         });
     }
 
     async exitAvailable(agentEnt: AgentEntity) {
-        const latestTimestamp = await this.latestBlockTimestamp();
-        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(toBN(latestTimestamp))) {
+        const latestTimestamp = await latestBlockTimestampBN();
+        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(latestTimestamp)) {
             await this.agent.exitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
         }
-    }
-
-    async latestBlockTimestamp(): Promise<number> {
-        const latestBlock = await web3.eth.getBlockNumber();
-        const latestTimestamp = (await web3.eth.getBlock(latestBlock)).timestamp;
-        return Number(latestTimestamp);
     }
 
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
