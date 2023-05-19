@@ -482,5 +482,13 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyLog).to.be.called.once;
     });
 
+    it("Should run command 'listActiveAgents'", async () => {
+        await botCliCommands.createAgentVault();
+        const spyLog = spy.on(console, "log");
+        await botCliCommands.listActiveAgents();
+        await botCliCommands.run(["", "", "listAgents"]);
+        expect(spyLog).to.be.called.twice;
+    });
+
 });
 

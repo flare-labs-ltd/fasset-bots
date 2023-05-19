@@ -9,7 +9,8 @@ import { BN_ZERO, requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import chalk from 'chalk';
-import { latestBlockTimestamp, latestBlockTimestampBN } from "../utils/web3helpers";
+import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { getSourceName } from "../verification/sources/sources";
 dotenv.config();
 
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -163,6 +164,14 @@ export class BotCliCommands {
 
     }
 
+    async listActiveAgents() {
+        const query = this.botConfig.orm.em.createQueryBuilder(AgentEntity);
+        const listOfAgents = await query.where({ active: true }).getResultList();
+        for (const agent of listOfAgents) {
+            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain ${getSourceName(agent.chainId)}`);
+        }
+    }
+
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot, agentEnt: AgentEntity }> {
         const agentEnt = await this.botConfig.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier);
@@ -312,6 +321,10 @@ export class BotCliCommands {
                     }
                     break;
                 }
+                case 'listAgents': {
+                    await this.listActiveAgents();
+                    break;
+                }
                 default:
                     listUsageAndCommands();
             }
@@ -324,19 +337,20 @@ export class BotCliCommands {
 export function listUsageAndCommands() {
     console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
     console.log('  Available commands:', "\n");
-    console.log(chalk.yellow('  create'), "\t\t\t\t\t\t", "create new agent vault");
-    console.log(chalk.yellow('  depositClass1'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "deposit class1 collateral to agent vault from owner's address");
-    console.log(chalk.yellow('  buyPoolCollateral'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "add pool collateral and agent pool tokens");
-    console.log(chalk.yellow('  enter'), "\t", chalk.blue('<agentVault>'), "enter available agent's list");
-    console.log(chalk.yellow('  exit'), "\t\t", chalk.blue('<agentVault>'), "\t\t\t\t", "exit available agent's list");
-    console.log(chalk.yellow('  updateAgentSetting'), "\t", chalk.blue('<agentVault> <agentSettingName> <agentSettingValue>'), "\t\t", "set agent's settings");
-    console.log(chalk.yellow('  withdrawClass1'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "withdraw amount from agent vault to owner's address");
-    console.log(chalk.yellow('  withdrawPoolFees'), "\t", chalk.blue('<agentVault> <amount>'), "\t\t\t", "withdraw pool fees from pool to owner's address");
-    console.log(chalk.yellow('  poolFeesBalance'), "\t", chalk.blue('<agentVault>'), "\t\t\t", "pool fees balance of agent");
-    console.log(chalk.yellow('  selfClose'), "\t", chalk.blue('<agentVault> <amountUBA>'), "\t\t", "self close agent vault with amountUBA of FAssets");
-    console.log(chalk.yellow('  close'), "\t", chalk.blue('<agentVault>'), "\t\t\t\t", "close agent vault", "\n");
-    console.log(chalk.yellow('  announceUnderlyingWithdrawal'), "\t", chalk.blue('<agentVault>'), "\t\t\t", "announce underlying withdrawal and get needed payment reference");
-    console.log(chalk.yellow('  performUnderlyingWithdrawal'), "\t", chalk.blue('<agentVault> <amount> <destinationAddress> <paymentReference>'), "\t\t\t", "perform underlying withdrawal and get needed transaction hash");
-    console.log(chalk.yellow('  confirmUnderlyingWithdrawal'), "\t", chalk.blue('<agentVault> <transactionHash>'), "\t\t\t", "confirm underlying withdrawal with transaction hash");
-    console.log(chalk.yellow('  cancelUnderlyingWithdrawal'), "\t", chalk.blue('<agentVault>'), "\t\t\t", "cancel underlying withdrawal announcement");
+    console.log(chalk.yellow('  create '), "create new agent vault");
+    console.log(chalk.yellow('  depositClass1 '), chalk.blue('<agentVault> <amount> '), "deposit class1 collateral to agent vault from owner's address");
+    console.log(chalk.yellow('  buyPoolCollateral '), chalk.blue('<agentVault> <amount> '), "add pool collateral and agent pool tokens");
+    console.log(chalk.yellow('  enter '), chalk.blue('<agentVault> '), "enter available agent's list");
+    console.log(chalk.yellow('  exit '), chalk.blue('<agentVault> '), "exit available agent's list");
+    console.log(chalk.yellow('  updateAgentSetting '), chalk.blue('<agentVault> <agentSettingName> <agentSettingValue> '), "set agent's settings");
+    console.log(chalk.yellow('  withdrawClass1 '), chalk.blue('<agentVault> <amount> '), "withdraw amount from agent vault to owner's address");
+    console.log(chalk.yellow('  withdrawPoolFees '), chalk.blue('<agentVault> <amount> '), "withdraw pool fees from pool to owner's address");
+    console.log(chalk.yellow('  poolFeesBalance '), chalk.blue('<agentVault> '), "pool fees balance of agent");
+    console.log(chalk.yellow('  selfClose '), chalk.blue('<agentVault> <amountUBA> '), "self close agent vault with amountUBA of FAssets");
+    console.log(chalk.yellow('  close '), chalk.blue('<agentVault> '), "close agent vault", "\n");
+    console.log(chalk.yellow('  announceUnderlyingWithdrawal '), chalk.blue('<agentVault> '), "announce underlying withdrawal and get needed payment reference");
+    console.log(chalk.yellow('  performUnderlyingWithdrawal '), chalk.blue('<agentVault> <amount> <destinationAddress> <paymentReference> '), "perform underlying withdrawal and get needed transaction hash");
+    console.log(chalk.yellow('  confirmUnderlyingWithdrawal '), chalk.blue('<agentVault> <transactionHash> '), "confirm underlying withdrawal with transaction hash");
+    console.log(chalk.yellow('  cancelUnderlyingWithdrawal '), chalk.blue('<agentVault> '), "cancel underlying withdrawal announcement");
+    console.log(chalk.yellow('  listAgents '), "list active agent from persistent state");
 }
