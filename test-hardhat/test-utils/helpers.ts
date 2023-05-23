@@ -19,7 +19,7 @@ import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/util
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext } from "./create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import fs from "fs";
 import { Minter } from "../../src/mock/Minter";
@@ -59,7 +59,7 @@ export async function mintClass1ToOwner(vaultAddress: string, amount: BNish, cla
     await class1Token.approve(vaultAddress, amount, { from: ownerAddress });
 }
 
-export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetBotContext): Promise<Challenger> {
+export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetTrackedStateContext): Promise<Challenger> {
     return new Challenger(new ScopedRunner(), address, state, await context.chain.getBlockHeight());
 }
 

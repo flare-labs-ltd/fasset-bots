@@ -4,7 +4,7 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, sleep, toBN } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
@@ -28,6 +28,7 @@ const underlyingAddress: string = "UNDERLYING_ADDRESS";
 describe("Challenger tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let trackedStateContext: TestAssetTrackedStateContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
@@ -49,17 +50,18 @@ describe("Challenger tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(trackedStateContext.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
     });
 
     it("Should challenge illegal payment", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -89,7 +91,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -116,7 +118,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -164,7 +166,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - announced withdrawal", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -197,7 +199,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -242,7 +244,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal/double payment - reference for already confirmed announced withdrawal", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -277,7 +279,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentFailed' event - failed underlying payment (not redeemer's address)", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -339,7 +341,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentBlocked' event", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -376,7 +378,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should perform free balance negative challenge", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);

@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";

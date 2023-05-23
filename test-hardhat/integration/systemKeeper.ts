@@ -2,7 +2,7 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
+import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createCRAndPerformMinting, createTestMinter, createTestSystemKeeper, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable } from "../test-utils/helpers";
 import { assert } from "chai";
@@ -18,6 +18,7 @@ use(spies);
 describe("System keeper tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let trackedStateContext: TestAssetTrackedStateContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
@@ -37,7 +38,8 @@ describe("System keeper tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
+        chain = checkedCast(trackedStateContext.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;

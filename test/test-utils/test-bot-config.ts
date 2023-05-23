@@ -1,4 +1,4 @@
-import { BotConfig, BotConfigChain, createBotConfigChain, createStateConnectorClient, RunConfig } from "../../src/config/BotConfig";
+import { AgentBotConfig, AgentBotConfigChain, createAgentBotConfigChain, createStateConnectorClient, AgentBotRunConfig } from "../../src/config/BotConfig";
 import { CreateOrmOptions } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
@@ -32,13 +32,13 @@ export function createTestOrmOptions(testOptionsOverride: CreateOrmOptions = {})
     return { ...testOptions, ...testOptionsOverride };
 }
 
-export async function createBotConfigLocal(runConfig: RunConfig, ownerAddress: string): Promise<BotConfig> {
+export async function createBotConfigLocal(runConfig: AgentBotRunConfig, ownerAddress: string): Promise<AgentBotConfig> {
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS_LOCAL.split(",");
     const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS_LOCAL, STATE_CONNECTOR_ADDRESS_LOCAL, ownerAddress);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
-    const chains: BotConfigChain[] = [];
+    const chains: AgentBotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createBotConfigChain(chainInfo, orm.em));
+        chains.push(await createAgentBotConfigChain(chainInfo, orm.em));
     }
     return {
         rpcUrl: RPC_URL_LOCAL,

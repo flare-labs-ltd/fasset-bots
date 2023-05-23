@@ -69,7 +69,7 @@ describe("Prices tests", async () => {
     });
 
     it("Should return Prices", async () => {
-        const prices = await Prices.getPrices(context, settings, [collateralPrice.collateral]);
+        const prices = await Prices.getPrices(context.ftsoRegistry, settings, [collateralPrice.collateral]);
         expect(prices.length).to.eq(2);
     });
 

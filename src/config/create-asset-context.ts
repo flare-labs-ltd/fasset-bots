@@ -1,10 +1,10 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { fail } from "../utils/helpers";
-import { AgentBotConfig, AgentBotConfigChain } from "./BotConfig";
+import { AgentBotConfig, AgentBotConfigChain, TrackedStateConfig, TrackedStateConfigChain } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
 
 const AssetManager = artifacts.require('AssetManager');
@@ -58,6 +58,42 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
     };
 }
 
+async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateConfig & { contractsJsonFile: string }, chainConfig: TrackedStateConfigChain): Promise<IAssetTrackedStateContext> {
+    if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
+        throw new Error('Either contractsJsonFile or addressUpdater must be defined');
+    }
+    let ftsoRegistry;
+    let assetManager;
+    let ftsoManager;
+    if (trackedStateConfig.contractsJsonFile) {
+        const contracts: ChainContracts = loadContracts(trackedStateConfig.contractsJsonFile);
+        ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
+        [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
+        ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
+    } else {
+        const addressUpdater = await AddressUpdater.at(trackedStateConfig.addressUpdater!);
+        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+        [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager'));
+    }
+
+    const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
+    const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
+    await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
+    return {
+        nativeChainInfo: trackedStateConfig.nativeChainInfo,
+        chain: chainConfig.chain,
+        attestationProvider: new AttestationHelper(trackedStateConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        assetManager: assetManager,
+        ftsoRegistry: ftsoRegistry,
+        ftsoManager: ftsoManager,
+        fAsset: await FAsset.at(await assetManager.fAsset()),
+        assetFtso: assetFtso,
+        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
+        collaterals: collaterals
+    };
+}
+
 async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & { addressUpdater: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
     const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
     const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
@@ -89,7 +125,7 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
     };
 }
 
-async function getAssetManagerAndController(chainConfig: AgentBotConfigChain, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
+async function getAssetManagerAndController(chainConfig: AgentBotConfigChain | TrackedStateConfigChain, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
     if (chainConfig.assetManager) {
         const assetManager = await AssetManager.at(chainConfig.assetManager);
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());

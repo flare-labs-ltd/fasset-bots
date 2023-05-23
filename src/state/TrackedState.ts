@@ -1,7 +1,7 @@
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { TrackedAgentState } from "./TrackedAgentState";
-import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
@@ -16,7 +16,7 @@ import { tokenContract } from "./TokenPrice";
 
 export class TrackedState {
     constructor(
-        public context: IAssetBotContext,
+        public context: IAssetTrackedStateContext,
         private lastEventBlockHandled: number
     ) { }
 
@@ -64,7 +64,7 @@ export class TrackedState {
     }
 
     async getPrices(): Promise<[Prices, Prices]> {
-        return await Prices.getPrices(this.context, this.settings, this.context.collaterals);
+        return await Prices.getPrices(this.context.ftsoRegistry, this.settings, this.context.collaterals);
     }
 
     async registerStateEvents(events: EvmEvent[]): Promise<void> {

@@ -8,7 +8,7 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
+import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 
 const underlyingAddress: string = "AGENT_UNDERLYING_ADDRESS";
 const transaction1 = {
@@ -29,6 +29,7 @@ const transaction2 = {
 describe("Challenger unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let trackedStateContext: TestAssetTrackedStateContext;
     let challengerAddress: string;
     let ownerAddress: string;
     let orm: ORM;
@@ -42,8 +43,9 @@ describe("Challenger unit tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
         const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(context, lastBlock);
+        state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
         challengerAddress = accounts[10];
         ownerAddress = accounts[11];
@@ -55,7 +57,7 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -67,7 +69,7 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
         const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);

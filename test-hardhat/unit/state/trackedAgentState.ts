@@ -8,13 +8,14 @@ import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 
 describe("Tracked agent state tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let trackedStateContext: TestAssetTrackedStateContext;
     let orm: ORM;
     let ownerAddress: string;
     let agentBot: AgentBot;
@@ -27,6 +28,7 @@ describe("Tracked agent state tests", async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
     });
 
     beforeEach(async () => {
@@ -36,7 +38,7 @@ describe("Tracked agent state tests", async () => {
         await mintClass1ToOwner(agentBot.agent.vaultAddress, amount, agentCollateral.class1.collateral!.token, ownerAddress);
         await agentBot.agent.depositClass1Collateral(amount);
         const lastBlock = await web3.eth.getBlockNumber();
-        trackedState = new TrackedState(context, lastBlock);
+        trackedState = new TrackedState(trackedStateContext, lastBlock);
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentBot.agent.vaultAddress, agentBot.agent.underlyingAddress, (await agentBot.agent.getAgentInfo()).collateralPool);
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());

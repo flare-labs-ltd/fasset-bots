@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -46,6 +46,12 @@ const nativeChainInfo: NativeChainInfo = {
 
 export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     natFtso: FtsoMockInstance;
+    assetFtso: FtsoMockInstance;
+    ftsoManager: FtsoManagerMockInstance;
+    chain: MockChain;
+}>
+
+export type TestAssetTrackedStateContext = Modify<IAssetTrackedStateContext, {
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
     chain: MockChain;
@@ -130,6 +136,10 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const assetFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(chainInfo.symbol));
     // return context
     return { nativeChainInfo, chainInfo, chain, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, blockChainIndexerClient, stablecoins, collaterals, ftsos };
+}
+
+export function getTestAssetTrackedStateContext(context: TestAssetBotContext): TestAssetTrackedStateContext {
+    return { nativeChainInfo: context.nativeChainInfo, chain: context.chain, attestationProvider: context.attestationProvider, assetManager: context.assetManager, ftsoRegistry: context.ftsoRegistry, ftsoManager: context.ftsoManager, fAsset: context.fAsset, assetFtso: context.assetFtso, blockChainIndexerClient: context.blockChainIndexerClient, collaterals: context.collaterals };
 }
 
 function bnToString(x: BN | number | string) {
@@ -245,7 +255,7 @@ export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, as
         nat: await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice),
         usdc: await createFtsoMock(ftsoRegistry, "USDC", ftsoUsdcInitialPrice),
         usdt: await createFtsoMock(ftsoRegistry, "USDT", ftsoUsdtInitialPrice),
-        asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
+        asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice)
     };
 }
 

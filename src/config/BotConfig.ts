@@ -40,23 +40,38 @@ export interface AgentBotRunConfig {
     contractsJsonFile?: string;
 }
 
-export interface AgentBotConfig {
-    rpcUrl: string;
-    loopDelay: number;
-    stateConnector: IStateConnectorClient;
-    chains: AgentBotConfigChain[];
+export interface TrackedStateRunConfig {//TODO
     nativeChainInfo: NativeChainInfo;
-    orm: ORM;
-    notifier: Notifier;
+    chainInfos: BotChainInfo[];
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
 }
 
-export interface AgentBotConfigChain {
+export interface AgentBotConfig extends TrackedStateConfig{
+    loopDelay: number;
+    chains: AgentBotConfigChain[];
+    orm: ORM;
+    notifier: Notifier;
+}
+
+export interface TrackedStateConfig {
+    rpcUrl: string;
+    stateConnector: IStateConnectorClient;
+    chains: TrackedStateConfigChain[];
+    nativeChainInfo: NativeChainInfo;
+    // either one must be set
+    addressUpdater?: string;
+    contractsJsonFile?: string;
+}
+
+export interface AgentBotConfigChain extends TrackedStateConfigChain {
+    wallet: IBlockChainWallet;
+}
+
+export interface TrackedStateConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
-    wallet: IBlockChainWallet;
     blockChainIndexerClient: BlockChainIndexerHelper;
     // either one must be set
     assetManager?: string;
@@ -105,6 +120,23 @@ export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promis
     };
 }
 
+export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig): Promise<TrackedStateConfig> {
+    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
+    const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+    const chains: TrackedStateConfigChain[] = [];
+    for (const chainInfo of runConfig.chainInfos) {
+        chains.push(await createTrackedStateConfigChain(chainInfo));
+    }
+    return {
+        rpcUrl: RPC_URL,
+        stateConnector: stateConnector,
+        chains: chains,
+        nativeChainInfo: runConfig.nativeChainInfo,
+        addressUpdater: runConfig.addressUpdater,
+        contractsJsonFile: runConfig.contractsJsonFile
+    };
+}
+
 export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<AgentBotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
@@ -113,6 +145,18 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM)
         chainInfo: chainInfo,
         chain: chain,
         wallet: wallet,
+        blockChainIndexerClient: blockChainIndexerClient,
+        assetManager: chainInfo.assetManager,
+        fAssetSymbol: chainInfo.fAssetSymbol
+    };
+}
+
+export async function createTrackedStateConfigChain(chainInfo: BotChainInfo): Promise<TrackedStateConfigChain> {
+    const chain = createBlockChainHelper(chainInfo.chainId);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.indexerClientApiKey);
+    return {
+        chainInfo: chainInfo,
+        chain: chain,
         blockChainIndexerClient: blockChainIndexerClient,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol

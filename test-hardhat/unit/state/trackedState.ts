@@ -7,7 +7,7 @@ import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../.
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
+import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
@@ -62,6 +62,7 @@ const deposit = toBNExp(1_000_000, 18);
 
 describe("Tracked state tests", async () => {
     let context: TestAssetBotContext;
+    let trackedStateContext: TestAssetTrackedStateContext;
     let accounts: string[];
     let ownerAddress: string;
     let minterAddress: string;
@@ -83,9 +84,10 @@ describe("Tracked state tests", async () => {
 
     beforeEach(async () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor);
-        chain = checkedCast(context.chain, MockChain);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
+        chain = checkedCast(trackedStateContext.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
-        trackedState = new TrackedState(context, lastBlock);
+        trackedState = new TrackedState(trackedStateContext, lastBlock);
         await trackedState.initialize();
         // chain tunning
         chain.finalizationBlocks = 0;
