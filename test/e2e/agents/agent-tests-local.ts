@@ -3,11 +3,11 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
 import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { BotConfig, RunConfig } from "../../../src/config/BotConfig";
+import { AgentBotConfig, AgentBotRunConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -18,17 +18,17 @@ import { createTestAgentBot, createTestAgentBotAndMakeAvailable } from "../../te
 
 describe.skip("Agent bot tests - local network", async () => {
     let accounts: string[];
-    let botConfig: BotConfig;
-    let context: IAssetBotContext;
+    let botConfig: AgentBotConfig;
+    let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    let runConfig: RunConfig;
+    let runConfig: AgentBotRunConfig;
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(LOCAL_HARDHAT_RUN_CONFIG).toString()) as RunConfig;
+        runConfig = JSON.parse(readFileSync(LOCAL_HARDHAT_RUN_CONFIG).toString()) as AgentBotRunConfig;
         accounts = await initTestWeb3();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];

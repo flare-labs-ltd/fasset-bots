@@ -3,7 +3,7 @@ import { Agent } from "../fasset/Agent";
 import { AgentSettings } from "../fasset/AssetManagerTypes";
 import { artifacts } from "../utils/artifacts";
 import { findRequiredEvent } from "../utils/events/truffle";
-import { IAssetBotContext } from "./IAssetBotContext";
+import { IAssetAgentBotContext } from "./IAssetBotContext";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
 const AgentVault = artifacts.require('AgentVault');
@@ -12,7 +12,7 @@ const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 
 export class AgentB extends Agent {
     constructor(
-        public context: IAssetBotContext,
+        public context: IAssetAgentBotContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
@@ -22,7 +22,7 @@ export class AgentB extends Agent {
         super(context, ownerAddress, agentVault, collateralPool, collateralPoolToken, underlyingAddress);
     }
 
-    static async create(ctx: IAssetBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
+    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
         // create agent
         const response = await ctx.assetManager.createAgent(web3DeepNormalize(settings), { from: ownerAddress });
         // extract agent vault address from AgentCreated event

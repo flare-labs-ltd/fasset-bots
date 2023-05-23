@@ -18,7 +18,7 @@ import { artifacts } from "../utils/artifacts";
 import { requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
-import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { readFileSync } from "fs";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
 
@@ -29,7 +29,7 @@ const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRES
 const STATE_CONNECTOR_ADDRESS: string  = requireEnv('STATE_CONNECTOR_ADDRESS');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
-export interface RunConfig {
+export interface AgentBotRunConfig {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
@@ -40,11 +40,11 @@ export interface RunConfig {
     contractsJsonFile?: string;
 }
 
-export interface BotConfig {
+export interface AgentBotConfig {
     rpcUrl: string;
     loopDelay: number;
     stateConnector: IStateConnectorClient;
-    chains: BotConfigChain[];
+    chains: AgentBotConfigChain[];
     nativeChainInfo: NativeChainInfo;
     orm: ORM;
     notifier: Notifier;
@@ -53,7 +53,7 @@ export interface BotConfig {
     contractsJsonFile?: string;
 }
 
-export interface BotConfigChain {
+export interface AgentBotConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
     wallet: IBlockChainWallet;
@@ -84,13 +84,13 @@ export interface AgentSettingsConfig {
     poolTopupTokenPriceFactorBIPS: string
 }
 
-export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> {
+export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promise<AgentBotConfig> {
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
     const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
-    const chains: BotConfigChain[] = [];
+    const chains: AgentBotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createBotConfigChain(chainInfo, orm.em));
+        chains.push(await createAgentBotConfigChain(chainInfo, orm.em));
     }
     return {
         rpcUrl: RPC_URL,
@@ -105,7 +105,7 @@ export async function createBotConfig(runConfig: RunConfig): Promise<BotConfig> 
     };
 }
 
-export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<BotConfigChain> {
+export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<AgentBotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
     const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.indexerClientApiKey);
@@ -119,7 +119,7 @@ export async function createBotConfigChain(chainInfo: BotChainInfo, em: EM): Pro
     };
 }
 
-export async function createAgentBotSettings(context: IAssetBotContext): Promise<AgentBotSettings> {
+export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
     const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {
         return Number(token.collateralClass) === CollateralClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
@@ -133,7 +133,7 @@ export async function createAgentBotSettings(context: IAssetBotContext): Promise
     if (!poolToken) {
         throw Error(`Cannot find pool collateral token`);
     }
-    const agentBotSettings: AgentBotSettings = {
+    const agentBotSettings: AgentBotDefaultSettings = {
         class1CollateralToken: class1Token.token,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),

@@ -1,4 +1,4 @@
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -8,7 +8,7 @@ import { toBN, toBNExp } from "../../../src/utils/helpers";
 
 describe("Conversions unit tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
+    let context: IAssetAgentBotContext;
     let settings: any;
     const amgToTokenWeiPrice = toBNExp(2.5, 21);
 

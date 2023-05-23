@@ -5,10 +5,10 @@ import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_mod
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
-import { AgentSettingsConfig, createAgentBotSettings } from "../../src/config/BotConfig";
+import { AgentSettingsConfig, createAgentBotDefaultSettings } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
-import { AgentBotSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { IAssetContext } from "../../src/fasset/IAssetContext";
@@ -49,7 +49,7 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
 }
 
 export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string): Promise<AgentBot> {
-    const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, new Notifier());
 }
 
@@ -72,13 +72,13 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
 }
 
 export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<AgentB> {
-    const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await AgentB.create(context, ownerAddress, agentSettings);
 }
 
 export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }

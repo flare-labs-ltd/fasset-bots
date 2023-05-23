@@ -4,11 +4,11 @@ import { readFileSync } from "fs";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
-import { BotConfig, createBotConfig, RunConfig } from "../../../src/config/BotConfig";
+import { AgentBotConfig, AgentBotRunConfig, createAgentBotConfig } from "../../../src/config/BotConfig";
 import { createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv } from "../../../src/utils/helpers";
@@ -21,21 +21,21 @@ const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Agent bot tests - coston2", async () => {
     let accounts: string[];
-    let botConfig: BotConfig;
-    let context: IAssetBotContext;
+    let botConfig: AgentBotConfig;
+    let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
     let challengerAddress: string;
     let runner: ScopedRunner;
     let state: TrackedState;
-    let runConfig: RunConfig;
+    let runConfig: AgentBotRunConfig;
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
         accounts = await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
         ownerAddress = accounts[0];
         challengerAddress = accounts[3];
-        botConfig = await createBotConfig(runConfig);
+        botConfig = await createAgentBotConfig(runConfig);
         orm = botConfig.orm;
     });
 
@@ -54,7 +54,7 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const contexts: Map<number, IAssetBotContext> = new Map();
+        const contexts: Map<number, IAssetAgentBotContext> = new Map();
         contexts.set(context.chainInfo.chainId, context);
         const agentBotRunner = new AgentBotRunner(contexts, orm, 5, new Notifier());
         expect(agentBotRunner.loopDelay).to.eq(5);

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { IAssetBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { web3 } from "../../../src/utils/web3";
@@ -7,7 +7,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 
 describe("Redeemer unit tests", async () => {
     let accounts: string[];
-    let context: IAssetBotContext;
+    let context: IAssetAgentBotContext;
     let redeemerAddress: string;
     const redeemerUnderlyingAddress = "REDEEMER_ADDRESS";
 

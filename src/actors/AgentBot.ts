@@ -3,7 +3,7 @@ import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
-import { AgentBotSettings, IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
@@ -32,7 +32,7 @@ export class AgentBot {
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
-    static async create(rootEm: EM, context: IAssetBotContext, ownerAddress: string, agentSettingsConfig: AgentBotSettings, notifier: Notifier,): Promise<AgentBot> {
+    static async create(rootEm: EM, context: IAssetAgentBotContext, ownerAddress: string, agentSettingsConfig: AgentBotDefaultSettings, notifier: Notifier,): Promise<AgentBot> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -55,14 +55,14 @@ export class AgentBot {
         });
     }
 
-    static async proveEOAaddress(context: IAssetBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
+    static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
         await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
 
-    static async fromEntity(context: IAssetBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
+    static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         // get collateral pool
         const collateralPool = await CollateralPool.at(agentEntity.collateralPoolAddress);

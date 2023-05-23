@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -44,7 +44,7 @@ const nativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export type TestAssetBotContext = Modify<IAssetBotContext, {
+export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     natFtso: FtsoMockInstance;
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;

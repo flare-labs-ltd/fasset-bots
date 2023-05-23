@@ -1,16 +1,16 @@
 import { FilterQuery, UseRequestContext } from "@mikro-orm/core";
-import { BotConfig } from "../config/BotConfig";
+import { AgentBotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
-import { IAssetBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { sleep } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
     constructor(
-        public contexts: Map<number, IAssetBotContext>,
+        public contexts: Map<number, IAssetAgentBotContext>,
         public orm: ORM,
         public loopDelay: number,
         public notifier: Notifier
@@ -48,8 +48,8 @@ export class AgentBotRunner {
         }
     }
 
-    static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
-        const contexts: Map<number, IAssetBotContext> = new Map();
+    static async create(botConfig: AgentBotConfig): Promise<AgentBotRunner> {
+        const contexts: Map<number, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);

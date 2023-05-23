@@ -1,4 +1,4 @@
-import { AgentBotSettings, IAssetBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../src/mock/Minter";
 import { fail, requireEnv, toBNExp } from "../../src/utils/helpers";
 import { SourceId } from "../../src/verification/sources/sources";
@@ -6,7 +6,7 @@ import axios from "axios";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { ORM } from "../../src/config/orm";
 import { AgentBot } from "../../src/actors/AgentBot";
-import { createAgentBotSettings } from "../../src/config/BotConfig";
+import { createAgentBotDefaultSettings } from "../../src/config/BotConfig";
 import { Notifier } from "../../src/utils/Notifier";
 import { mintAndDepositClass1ToOwner } from "../../test-hardhat/test-utils/helpers";
 
@@ -16,7 +16,7 @@ const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
 const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
 const deposit = toBNExp(1_000_000, 18);
 
-export async function createTestMinter(ctx: IAssetBotContext, address: string) {
+export async function createTestMinter(ctx: IAssetAgentBotContext, address: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
     const resp = await axios.post("https://faucet.altnet.rippletest.net/accounts");
     if (resp.statusText === 'OK') {
@@ -27,7 +27,7 @@ export async function createTestMinter(ctx: IAssetBotContext, address: string) {
     throw new Error("Cannot get underlying address from testnet");
 }
 
-export async function createTestRedeemer(ctx: IAssetBotContext, address: string) {
+export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: string) {
     const underlyingAddress = await ctx.wallet.createAccount();
     return new Redeemer(ctx, address, underlyingAddress);
 }
@@ -36,12 +36,12 @@ export function getCoston2AccountsFromEnv() {
     return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey];
 }
 
-export async function createTestAgentBot(context: IAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
-    const agentBotSettings: AgentBotSettings = await createAgentBotSettings(context);
+export async function createTestAgentBot(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
-export async function createTestAgentBotAndMakeAvailable(context: IAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()) {
+export async function createTestAgentBotAndMakeAvailable(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()) {
     const agentBot = await createTestAgentBot(context, orm,  ownerAddress, notifier);
     await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
     await agentBot.agent.depositClass1Collateral(deposit);
