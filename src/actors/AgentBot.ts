@@ -32,7 +32,12 @@ export class AgentBot {
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
 
-    static async create(rootEm: EM, context: IAssetAgentBotContext, ownerAddress: string, agentSettingsConfig: AgentBotDefaultSettings, notifier: Notifier,): Promise<AgentBot> {
+    /**
+     *
+     * Creates AgentBot with newly created underlying address and with provided agent default settings.
+     * Certain AgentBot properties are also stored in persistent state.
+     */
+    static async create(rootEm: EM, context: IAssetAgentBotContext, ownerAddress: string, agentSettingsConfig: AgentBotDefaultSettings, notifier: Notifier): Promise<AgentBot> {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
@@ -55,13 +60,20 @@ export class AgentBot {
         });
     }
 
+    /**
+     * This method fixes the underlying address to be used by given AgentBot owner.
+     */
     static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
+        //TODO - what amount should be filled in -> 1 is not always a good fit
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
         await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
 
+    /**
+     * Create AgentBot from persistent state.
+     */
     static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         // get collateral pool
@@ -74,6 +86,12 @@ export class AgentBot {
         return new AgentBot(agent, notifier);
     }
 
+    /**
+     * This is the main method, where automatic logic is defined. In every step it firstly collects unhandled events and runs through them and handles them appropriately.
+     * Then it checks if there are any minting or redemption in persistent storage, that needs to be handled.
+     * Lastly, it checks if there are any actions ready to be handled for AgentBot in persistent state (such actions that need announcement beforehand or that are time locked).
+     * @param rootEm
+     */
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
         await this.handleOpenMintings(rootEm);
@@ -81,6 +99,9 @@ export class AgentBot {
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
     }
 
+    /**
+     * Performs appropriate actions according to received events.
+     */
     async handleEvents(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const events = await this.readUnhandledEvents(em);
@@ -128,6 +149,9 @@ export class AgentBot {
         });
     }
 
+    /**
+     * Checks is there are any new events from assetManager.
+     */
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // get all logs for this agent
@@ -156,6 +180,9 @@ export class AgentBot {
         return events;
     }
 
+    /**
+     * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
+     */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -224,6 +251,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Stores received collateral reservation as minting in persistent state.
+     */
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
         em.create(AgentMinting, {
             state: AgentMintingState.STARTED,
@@ -238,6 +268,9 @@ export class AgentBot {
         } as RequiredEntityData<AgentMinting>, { persist: true });
     }
 
+    /**
+     * Returns minting by required id from persistent state.
+     */
     async findMinting(em: EM, requestId: BN): Promise<AgentMinting> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
@@ -250,6 +283,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Returns minting with state other than DONE.
+     */
     async openMintings(em: EM, onlyIds: boolean): Promise<AgentMinting[]> {
         let query = em.createQueryBuilder(AgentMinting);
         if (onlyIds) query = query.select('id');
@@ -258,11 +294,17 @@ export class AgentBot {
             .getResultList();
     }
 
+    /**
+     * Marks stored minting in persistent state as DONE.
+     */
     async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>): Promise<void> {
         const minting = await this.findMinting(em, request.collateralReservationId);
         minting.state = AgentMintingState.DONE;
     }
 
+    /**
+     * Handles mintings stored in persistent state according to their state.
+     */
     async nextMintingStep(rootEm: EM, id: number): Promise<void> {
         await rootEm.transactional(async em => {
             const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
@@ -284,10 +326,18 @@ export class AgentBot {
         });
     }
 
+    /**
+     * When minting is in state STARTED, it checks if underlying payment proof for collateral reservation expired in indexer.
+     * If proof expired (corner case), it calls unstickMinting, sets the state of minting in persistent state as DONE and send notification to owner.
+     * If proof exists, it checks if time for payment expired on underlying. If if did not expire, then it does nothing.
+     * If time for payment expired, it checks via indexer if transaction for payment exists.
+     * If it does exists, then it requests for payment proof - see requestPaymentProofForMinting().
+     * If it does not exist, then it request non payment proof - see requestNonPaymentProofForMinting().
+     */
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
-        // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp)
         if (proof) {
+            // corner case: proof expires in indexer
             const settings = await this.context.assetManager.getSettings();
             const agentCollateral = await this.agent.getAgentCollateral();
             const burnNats = agentCollateral.pool.convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
@@ -295,10 +345,11 @@ export class AgentBot {
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
         } else {
+            // proof did not expire
             const blockHeight = await this.context.chain.getBlockHeight();
             const latestBlock = await this.context.chain.getBlockAt(blockHeight);
-            // time expires on underlying
             if (latestBlock && latestBlock.number > minting.lastUnderlyingBlock.toNumber() && latestBlock.timestamp > minting.lastUnderlyingTimestamp.toNumber()) {
+                // time for payment expired on underlying
                 const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
                     // corner case: minter pays and doesn't execute minting
@@ -315,6 +366,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Sends request for minting payment proof, sets state for minting in persistent state to REQUEST_PAYMENT_PROOF and sends notification to owner,
+     */
     async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
         minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
@@ -323,6 +377,9 @@ export class AgentBot {
         this.notifier.sendMintingCornerCase(minting.requestId.toString());
     }
 
+    /**
+     * Sends request for minting non payment proof, sets state for minting in persistent state to REQUEST_NON_PAYMENT_PROOF and sends notification to owner,
+     */
     async requestNonPaymentProofForMinting(minting: AgentMinting): Promise<void> {
         const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
             minting.agentUnderlyingAddress,
@@ -335,6 +392,10 @@ export class AgentBot {
         minting.proofRequestData = request.data;
     }
 
+    /**
+     * When minting is in state REQUEST_NON_PAYMENT_PROOF, it obtains non payment proof, calls mintingPaymentDefault and sets minting in persistent state to DONE.
+     * If proof cannot be obtained, it sends notification to owner.
+     */
     async checkNonPayment(minting: AgentMinting): Promise<void> {
         const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         if (!proof.finalized) return;
@@ -347,6 +408,10 @@ export class AgentBot {
         }
     }
 
+    /**
+     * When minting is in state REQUEST_PAYMENT_PROOF, it obtains payment proof, calls executeMinting and sets minting in persistent state to DONE.
+     * If proof cannot be obtained, it sends notification to owner.
+     */
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
         const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         if (!proof.finalized) return;
@@ -359,6 +424,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Stores received redemption request as redemption in persistent state.
+     */
     redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>): void {
         em.create(AgentRedemption, {
             state: AgentRedemptionState.STARTED,
@@ -373,12 +441,18 @@ export class AgentBot {
         } as RequiredEntityData<AgentRedemption>, { persist: true });
     }
 
+    /**
+     * Marks stored redemption in persistent state as DONE, then it checks AgentBot's and owner's underlying balance.
+     */
     async redemptionFinished(em: EM, requestId: BN, agentVault: string): Promise<void> {
         const redemption = await this.findRedemption(em, requestId);
         redemption.state = AgentRedemptionState.DONE;
         await this.checkUnderlyingBalance(agentVault);
     }
 
+    /**
+     * Returns redemption by required id from persistent state.
+     */
     async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
@@ -391,6 +465,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Returns minting with state other than DONE.
+     */
     async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
         let query = em.createQueryBuilder(AgentRedemption);
         if (onlyIds) query = query.select('id');
@@ -399,6 +476,9 @@ export class AgentBot {
             .getResultList();
     }
 
+    /**
+     * Handles redemptions stored in persistent state according to their state.
+     */
     async nextRedemptionStep(rootEm: EM, id: number): Promise<void> {
         await rootEm.transactional(async em => {
             const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
@@ -420,11 +500,18 @@ export class AgentBot {
         });
     }
 
+    /**
+     * When redemption is in state STARTED, it checks if payment proof expired in indexer.
+     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
+     * If proof exists, it performs payment and sets the state of redemption in persistent state as PAID.
+     */
     async payForRedemption(redemption: AgentRedemption): Promise<void> {
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
+            // corner case - agent did not pay
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
+            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
             const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
             // !!! TODO: what if there are too little funds on underlying address to pay for fee?
@@ -434,10 +521,15 @@ export class AgentBot {
         }
     }
 
+    /**
+     * When redemption is in state PAID, it checks if payment proof expired in indexer.
+     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
+     * If proof did not expire, it requests payment proof - see requestPaymentProof().
+     */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
-        // corner case: proof expires in indexer
         const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
         if (proof) {
+            // corner case: proof expires in indexer
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
@@ -450,6 +542,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Sends request for redemption payment proof, sets state for redemption in persistent state to REQUESTED_PROOF.
+     */
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash ?? "", this.agent.underlyingAddress, redemption.paymentAddress);
         redemption.state = AgentRedemptionState.REQUESTED_PROOF;
@@ -457,6 +552,11 @@ export class AgentBot {
         redemption.proofRequestData = request.data;
     }
 
+    /**
+     * When redemption is in state REQUESTED_PROOF, it obtains payment proof, calls confirmRedemptionPayment and sets the state of redemption in persistent state as DONE.
+     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
+     * If proof cannot be obtained, it sends notification to owner.
+     */
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
         const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound ?? 0, redemption.proofRequestData ?? "");
         if (!proof.finalized) return;
@@ -469,6 +569,9 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Checks if proof has expired in indexer.
+     */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
         const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
         const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
@@ -479,11 +582,17 @@ export class AgentBot {
         return null;
     }
 
+    /**
+     * Marks stored AgentBot in persistent state as inactive after event 'AgentDestroyed' is received.
+     */
     async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
     }
 
+    /**
+     * Checks AgentBot's and owner's underlying balance after redemption is finished. If AgentBot's balance is too low, it tries to top it up from owner's account. See 'underlyingTopUp(...)'.
+     */
     async checkUnderlyingBalance(agentVault: string): Promise<void> {
         const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
@@ -492,6 +601,10 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Tries to top up AgentBot's underlying account owner's. It notifies about successful and unsuccessful try.
+     * It also checks owner's underlying balance and notifies when it is too low.
+     */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
         const ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
         try {
@@ -508,7 +621,11 @@ export class AgentBot {
         }
     }
 
-    // owner deposits class1 collateral to vault or pool to get out of ccb or liquidation due to price changes
+    /**
+     * Checks both AgentBot's collateral ratios. In case of either being unhealthy, it tries to top up from owner's account in order to get out of Collateral Ratio Band or Liquidation due to price changes.
+     * It sends notification about successful and unsuccessful top up.
+     * At the end it also checks owner's balance and notifies when too low.
+     */
     async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
         const agentCollateral = await this.agent.getAgentCollateral();
@@ -551,6 +668,10 @@ export class AgentBot {
         }
     }
 
+    /**
+     * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
+     * If value is less than zero, top up is not needed.
+     */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cd: CollateralData): Promise<BN> {
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
         const backingClass1Wei = cd.convertUBAToTokenWei(totalUBA);
