@@ -87,10 +87,9 @@ export class AgentBot {
     }
 
     /**
-     * This is the main method, where automatic logic is defined. In every step it firstly collects unhandled events and runs through them and handles them appropriately.
+     * This is the main method, where "automatic" logic is gathered. In every step it firstly collects unhandled events and runs through them and handles them appropriately.
      * Then it checks if there are any minting or redemption in persistent storage, that needs to be handled.
      * Lastly, it checks if there are any actions ready to be handled for AgentBot in persistent state (such actions that need announcement beforehand or that are time locked).
-     * @param rootEm
      */
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);

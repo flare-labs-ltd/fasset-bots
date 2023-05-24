@@ -33,10 +33,18 @@ export class Challenger {
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
 
+    /**
+     * This is the main method, where "automatic" logic is gathered.
+     * Firstly, it collects unhandled events on native chain, runs through them and handles them appropriately.
+     * Lastly, it collects all unhandled transactions on underlying chain and handles them appropriately.
+     */
     async runStep(): Promise<void> {
         await this.registerEvents();
     }
 
+    /**
+     * Performs appropriate actions according to received native events and underlying transactions.
+     */
     async registerEvents(): Promise<void> {
         try {
             // Native chain events and update state events

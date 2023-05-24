@@ -14,10 +14,17 @@ export class Liquidator {
         public state: TrackedState
     ) { }
 
+    /**
+     * This is the main method, where "automatic" logic is gathered.
+     * It collects unhandled events on native chain, runs through them and handles them appropriately.
+     */
     async runStep(): Promise<void> {
         await this.registerEvents();
     }
 
+    /**
+     * Performs appropriate actions according to received native events and underlying transactions.
+     */
     async registerEvents(): Promise<void> {
         try {
             // Native chain events and update state events

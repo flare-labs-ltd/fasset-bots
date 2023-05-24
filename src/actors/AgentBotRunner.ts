@@ -30,6 +30,11 @@ export class AgentBotRunner {
         this.stopRequested = true;
     }
 
+    /**
+     * This is the main method, where "automatic" logic is gathered.
+     * In every step it firstly collects all active agent entities. For every entity it construct AgentBot and runs its runsStep method,
+     * which handles required events and other.
+     */
     @UseRequestContext()
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
@@ -48,6 +53,10 @@ export class AgentBotRunner {
         }
     }
 
+    /**
+     * Creates AgentBot runner from AgentBotConfig
+     * @param botConfig - configs to run bot
+     */
     static async create(botConfig: AgentBotConfig): Promise<AgentBotRunner> {
         const contexts: Map<number, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
