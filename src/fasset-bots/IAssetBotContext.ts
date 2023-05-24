@@ -24,6 +24,7 @@ export interface AgentBotDefaultSettings {
     poolTopupTokenPriceFactorBIPS: BN;
 }
 
+// lightweight context
 export interface IAssetTrackedStateContext {
     blockChainIndexerClient: BlockChainIndexerHelper;
     collaterals: CollateralType[];

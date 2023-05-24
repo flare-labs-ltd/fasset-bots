@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -20,6 +20,7 @@ use(spies);
 import BN from "bn.js";
 import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { announcePoolTokenRedemption, redeemCollateralPoolTokens } from "../../test/test-utils/test-helpers";
 
 const IERC20 = artifacts.require('IERC20');
 
@@ -437,7 +438,7 @@ describe("Agent bot tests", async () => {
         await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice2.divn(10000), 0);
         // agent ends liquidation
-        await agentBot.agent.endLiquidation();
+        await context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: agentBot.agent.ownerAddress });
         // check agent status
         const status3 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status3, AgentStatus.NORMAL);
@@ -460,9 +461,9 @@ describe("Agent bot tests", async () => {
         // redeem pool
         const agentInfo = await agentBot.agent.getAgentInfo();
         const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
-        const withdrawAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
+        const withdrawAllowedAt = await announcePoolTokenRedemption(agentBot.agent, amount);
         await time.increaseTo(withdrawAllowedAt);
-        await agentBot.agent.redeemCollateralPoolTokens(amount);
+        await redeemCollateralPoolTokens(agentBot.agent, amount);
 
         // exit available
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();

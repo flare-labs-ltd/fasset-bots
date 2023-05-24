@@ -40,7 +40,7 @@ export interface AgentBotRunConfig {
     contractsJsonFile?: string;
 }
 
-export interface TrackedStateRunConfig {//TODO
+export interface TrackedStateRunConfig {
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
     // either one must be set
@@ -99,6 +99,9 @@ export interface AgentSettingsConfig {
     poolTopupTokenPriceFactorBIPS: string
 }
 
+/**
+ * Creates AgentBot configuration from initial run config file.
+ */
 export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promise<AgentBotConfig> {
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
     const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
@@ -120,6 +123,9 @@ export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promis
     };
 }
 
+/**
+ * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
+ */
 export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig): Promise<TrackedStateConfig> {
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
     const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
@@ -163,6 +169,9 @@ export async function createTrackedStateConfigChain(chainInfo: BotChainInfo): Pr
     };
 }
 
+/**
+ * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
+ */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
     const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {

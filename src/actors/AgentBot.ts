@@ -647,7 +647,7 @@ export class AgentBot {
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
             try {
-                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);//TODO - is that ok to increase cr
                 this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
             } catch (err) {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);

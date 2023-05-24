@@ -3,7 +3,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
-import { checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
@@ -18,6 +18,9 @@ import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../../src/utils/artifacts";
 import { tokenBalance } from "../../../src/state/TokenPrice";
+import { announcePoolTokenRedemption, performRedemptionPayment, redeemCollateralPoolTokens } from "../../../test/test-utils/test-helpers";
+import { PaymentReference } from "../../../src/fasset/PaymentReference";
+import { requiredEventArgs } from "../../../src/utils/events/truffle";
 use(chaiAsPromised);
 use(spies);
 
@@ -219,7 +222,13 @@ describe("Tracked state tests", async () => {
         const allAmountUBA = amountUBA.add(poolFee);
         context.chain.mint(randomUnderlyingAddress, allAmountUBA);
 
-        const selfMint = await agentBLocal.selfMint(randomUnderlyingAddress, allAmountUBA, lots);
+        // const selfMint = await agentBLocal.selfMint(randomUnderlyingAddress, allAmountUBA, lots);
+        const transactionHash = await agentBLocal.wallet.addTransaction(randomUnderlyingAddress, agentBLocal.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBLocal.agentVault.address));
+        const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);
+        const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.ownerAddress });
+        const selfMint = requiredEventArgs(res, 'MintingExecuted');
+
+
         await trackedState.readUnhandledEvents();
         const supplyMiddle = trackedState.fAssetSupply;
         expect(selfMint.mintedAmountUBA.toString()).to.eq(amountUBA.toString());
@@ -266,7 +275,13 @@ describe("Tracked state tests", async () => {
         chain.mine(Number(crt.lastUnderlyingBlock));
         await trackedState.readUnhandledEvents();
         const agentMiddle = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
-        await agentB.mintingPaymentDefault(crt);
+        const proof = await agentB.attestationProvider.proveReferencedPaymentNonexistence(
+            agentB.underlyingAddress,
+            crt.paymentReference,
+            crt.valueUBA.add(crt.feeUBA),
+            crt.lastUnderlyingBlock.toNumber(),
+            crt.lastUnderlyingTimestamp.toNumber());
+        await agentB.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -284,8 +299,9 @@ describe("Tracked state tests", async () => {
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         const [rdReqs] = await redeemer.requestRedemption(lots);
-        const tx1Hash = await agentB.performRedemptionPayment(rdReqs[0]);
-        await agentB.confirmActiveRedemptionPayment(rdReqs[0], tx1Hash);
+        const tx1Hash = await performRedemptionPayment(agentB, rdReqs[0]);
+        const proof = await agentB.attestationProvider.provePayment(tx1Hash, agentB.underlyingAddress, rdReqs[0].paymentAddress);
+        await agentB.assetManager.confirmRedemptionPayment(proof, rdReqs[0].requestId, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         expect(spyRedemption).to.have.been.called.once;
     });
@@ -304,7 +320,9 @@ describe("Tracked state tests", async () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
         const agentCollateral = await agentB.getAgentCollateral();
-        const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS); await agentB.unstickMinting(crt, burnNats);
+        const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists();
+        await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -493,9 +511,9 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
         // redeem pool
         const amount = await tokenBalance(context.wNat.address, agentInfo.collateralPool);
-        const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
+        const withdrawAllowedAt = await announcePoolTokenRedemption(agentB, amount);
         await time.increaseTo(withdrawAllowedAt);
-        await agentB.redeemCollateralPoolTokens(amount);
+        await redeemCollateralPoolTokens(agentB, amount);
         await trackedState.readUnhandledEvents();
         expect(amount.eq(deposit)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;

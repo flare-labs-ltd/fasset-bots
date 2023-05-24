@@ -19,6 +19,7 @@ import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -147,7 +148,7 @@ describe("Challenger tests", async () => {
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
         // repeat the same payment
-        await agentBot.agent.performRedemptionPayment(reqs[0]);
+        await performRedemptionPayment(agentBot.agent, reqs[0]);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -226,7 +227,7 @@ describe("Challenger tests", async () => {
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
         // repeat the same payment (already confirmed)
-        await agentBot.agent.performRedemptionPayment(rdReq);
+        await performRedemptionPayment(agentBot.agent, rdReq);
         // run challenger's and agent's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
             await time.advanceBlock();

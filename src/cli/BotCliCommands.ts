@@ -25,6 +25,9 @@ export class BotCliCommands {
     botConfig!: AgentBotConfig;
     agentSettingsConfig!: AgentSettingsConfig;
 
+    /**
+     * Initialize asset context from AgentBotRunConfig
+     */
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotRunConfig;
@@ -172,12 +175,16 @@ export class BotCliCommands {
         }
     }
 
+    // utils
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot, agentEnt: AgentEntity }> {
         const agentEnt = await this.botConfig.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier);
         return { agentBot, agentEnt };
     }
 
+    /**
+     * Input method, that intercepts commands from command line.
+     */
     async run(args: string[]): Promise<void> {
         try {
             switch (args[2]) {
@@ -334,6 +341,7 @@ export class BotCliCommands {
     }
 }
 
+// helper
 export function listUsageAndCommands() {
     console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
     console.log('  Available commands:', "\n");

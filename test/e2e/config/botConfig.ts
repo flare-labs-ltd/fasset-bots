@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { createAttestationHelper, createBlockChainHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createBotConfig, createMccClient, createStateConnectorClient, createWalletClient, RunConfig } from "../../../src/config/BotConfig"
+import { createAttestationHelper, createBlockChainHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createAgentBotConfig, createMccClient, createStateConnectorClient, createWalletClient, AgentBotRunConfig } from "../../../src/config/BotConfig"
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -17,14 +17,14 @@ const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Bot config tests", async () => {
-    let runConfig: RunConfig;
+    let runConfig: AgentBotRunConfig;
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as RunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
         await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createBotConfig(runConfig);
+        const botConfig = await createAgentBotConfig(runConfig);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
         expect(botConfig.stateConnector).to.not.be.null;

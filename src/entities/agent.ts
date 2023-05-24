@@ -90,9 +90,8 @@ export class AgentMinting {
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 
-    // 'requestedNonPaymentProof' state data
-    // TODO - can these fields be reused for 'requestedPaymentProof' state data
-
+    // 'REQUEST_PAYMENT_PROOF' and 'REQUEST_NON_PAYMENT_PROOF' state data
+    // when in state REQUEST_PAYMENT_PROOF, it stores roundId and data to later obtain the proof
     @Property({ nullable: true })
     proofRequestRound?: number;
 
@@ -100,6 +99,8 @@ export class AgentMinting {
     proofRequestData?: string;
 }
 
+// For agent, redemption needs to be tracked, so that agent pays it, obtains proof of payment and confirms it.
+// In corner case it can happen that proof of payment does not exist anymore, in that case agent obtains the proof of it and calls finishRedemptionWithoutPayment
 @Entity()
 @Unique({ properties: ['agentAddress', 'requestId'] })
 export class AgentRedemption {
@@ -109,9 +110,7 @@ export class AgentRedemption {
     @Property()
     state!: AgentRedemptionState;
 
-    // status: 'active' | 'defaulted'
-
-    // 'start' state data
+    // 'START' state data
 
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
@@ -137,12 +136,12 @@ export class AgentRedemption {
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 
-    // 'paid' state data
+    // 'PAID' state data
 
     @Property({ nullable: true })
     txHash?: string;
 
-    // 'requestedProof' state data
+    // 'REQUESTED_PROOF' state data
 
     @Property({ nullable: true })
     proofRequestRound?: number;
@@ -150,7 +149,6 @@ export class AgentRedemption {
     @Property({ nullable: true })
     proofRequestData?: string;
 
-    // 'confirmed' state data
 }
 
 export enum AgentMintingState {

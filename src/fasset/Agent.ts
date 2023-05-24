@@ -1,9 +1,9 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, CollateralReserved, LiquidationEnded, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
+import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
-import { ContractWithEvents, eventArgs, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO, BNish, toBN } from "../utils/helpers";
-import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralType } from "./AssetManagerTypes";
+import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
+import { BNish, toBN } from "../utils/helpers";
+import { AgentInfo, AgentSettings, CollateralType } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -42,10 +42,6 @@ export class Agent {
 
     get wallet(): IBlockChainWallet {
         return this.context.wallet;
-    }
-
-    async getAssetManagerSettings(): Promise<AssetManagerSettings> {
-        return await this.context.assetManager.getSettings();
     }
 
     async getAgentSettings(): Promise<AgentSettings> {
@@ -97,12 +93,6 @@ export class Agent {
         return requiredEventArgs(res, 'AgentAvailable');
     }
 
-    async depositCollateralsAndMakeAvailable(class1Collateral: BNish, poolCollateral: BNish) {
-        await this.depositClass1Collateral(class1Collateral);
-        await this.buyCollateralPoolTokens(poolCollateral);
-        await this.makeAvailable();
-    }
-
     async announceExitAvailable(): Promise<BN> {
         const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
         const args = requiredEventArgs(res, 'AvailableAgentExitAnnounced');
@@ -123,16 +113,6 @@ export class Agent {
     async withdrawClass1Collateral(amountWei: BNish) {
         const class1TokenAddress = (await this.getClass1CollateralToken()).token;
         return await this.agentVault.withdrawCollateral(class1TokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
-    }
-
-    async announcePoolTokenRedemption(amountWei: BNish) {
-        const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'PoolTokenRedemptionAnnounced');
-        return args.withdrawalAllowedAt;
-    }
-
-    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
-        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
     }
 
     async withdrawPoolFees(amountUBA: BNish, recipient: string = this.ownerAddress) {
@@ -183,85 +163,6 @@ export class Agent {
         return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
     }
 
-    async performRedemptionPayment(request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee): Promise<string> {
-        const paymentAmount = request.valueUBA.sub(request.feeUBA);
-        return await this.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
-    }
-
-    async confirmActiveRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<EventArgs<RedemptionPerformed>> {
-        const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
-        const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'RedemptionPerformed');
-    }
-
-    async confirmDefaultedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<void> {
-        const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
-        await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-    }
-
-    async confirmFailedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<[redemptionPaymentFailed: EventArgs<RedemptionPaymentFailed>, redemptionDefault: EventArgs<RedemptionDefault>]> {
-        const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
-        const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        return [requiredEventArgs(res, 'RedemptionPaymentFailed'), requiredEventArgs(res, 'RedemptionDefault')];
-    }
-
-    async confirmBlockedRedemptionPayment(request: EventArgs<RedemptionRequested>, transactionHash: string): Promise<EventArgs<RedemptionPaymentBlocked>> {
-        const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, request.paymentAddress);
-        const res = await this.assetManager.confirmRedemptionPayment(proof, request.requestId, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'RedemptionPaymentBlocked');
-    }
-
-    async redemptionPaymentDefault(request: EventArgs<RedemptionRequested>): Promise<EventArgs<RedemptionDefault>> {
-        const proof = await this.attestationProvider.proveReferencedPaymentNonexistence(
-            request.paymentAddress,
-            request.paymentReference,
-            request.valueUBA.sub(request.feeUBA),
-            request.lastUnderlyingBlock.toNumber(),
-            request.lastUnderlyingTimestamp.toNumber());
-        const res = await this.assetManager.redemptionPaymentDefault(proof, request.requestId, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'RedemptionDefault');
-    }
-
-    async finishRedemptionWithoutPayment(request: EventArgs<RedemptionRequested>): Promise<EventArgs<RedemptionDefault>> {
-        const proof = await this.attestationProvider.proveConfirmedBlockHeightExists();
-        const res = await this.assetManager.finishRedemptionWithoutPayment(proof, request.requestId, { from: this.ownerAddress });
-        return eventArgs(res, "RedemptionDefault");
-    }
-
-    async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string, minterSourceAddress?: string): Promise<EventArgs<MintingExecuted>> {
-        if (!minterSourceAddress) {
-            const tx = await this.context.chain.getTransaction(transactionHash);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-non-null-asserted-optional-chain
-            minterSourceAddress = tx?.inputs[0][0]!;
-        }
-        const proof = await this.attestationProvider.provePayment(transactionHash, minterSourceAddress, this.underlyingAddress);
-        const res = await this.assetManager.executeMinting(proof, crt.collateralReservationId, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'MintingExecuted');
-    }
-
-    async mintingPaymentDefault(crt: EventArgs<CollateralReserved>): Promise<EventArgs<MintingPaymentDefault>> {
-        const proof = await this.attestationProvider.proveReferencedPaymentNonexistence(
-            this.underlyingAddress,
-            crt.paymentReference,
-            crt.valueUBA.add(crt.feeUBA),
-            crt.lastUnderlyingBlock.toNumber(),
-            crt.lastUnderlyingTimestamp.toNumber());
-        const res = await this.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'MintingPaymentDefault');
-    }
-
-    async unstickMinting(crt: EventArgs<CollateralReserved>, burnNats?: BN): Promise<void> {
-        const proof = await this.attestationProvider.proveConfirmedBlockHeightExists();
-        await this.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: this.ownerAddress, value: burnNats ?? BN_ZERO });
-    }
-
-    async selfMint(underlyingSourceAddress: string, amountUBA: BNish, lots: BNish): Promise<EventArgs<MintingExecuted>> {
-        const transactionHash = await this.wallet.addTransaction(underlyingSourceAddress, this.underlyingAddress, amountUBA, PaymentReference.selfMint(this.agentVault.address));
-        const proof = await this.attestationProvider.provePayment(transactionHash, null, this.underlyingAddress);
-        const res = await this.assetManager.selfMint(proof, this.agentVault.address, lots, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'MintingExecuted');
-    }
-
     async selfClose(amountUBA: BNish): Promise<EventArgs<SelfClose>> {
         const res = await this.assetManager.selfClose(this.agentVault.address, amountUBA, { from: this.ownerAddress });
         return requiredEventArgs(res, 'SelfClose');
@@ -269,15 +170,6 @@ export class Agent {
 
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee): Promise<string> {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
-    }
-
-    async endLiquidation(): Promise<EventArgs<LiquidationEnded>> {
-        const res = await this.assetManager.endLiquidation(this.vaultAddress, { from: this.ownerAddress });
-        return eventArgs(res, 'LiquidationEnded');
-    }
-
-    async buybackAgentCollateral(): Promise<void> {
-        await this.assetManager.buybackAgentCollateral(this.agentVault.address, { from: this.ownerAddress });
     }
 
     async announceAgentSettingUpdate(settingName: string, settingValue: BNish): Promise<BN> {

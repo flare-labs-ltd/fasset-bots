@@ -17,6 +17,9 @@ const IFtsoManager = artifacts.require('IFtsoManager');
 const FAsset = artifacts.require('FAsset');
 const IERC20 = artifacts.require('IERC20');
 
+/**
+ * Creates asset context needed for AgentBot.
+ */
 export async function createAssetContext(botConfig: AgentBotConfig, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
     if (botConfig.contractsJsonFile) {
         return await createAssetContextFromContracts(botConfig as AgentBotConfig & { contractsJsonFile: string }, chainConfig);
@@ -58,6 +61,40 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
     };
 }
 
+async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & { addressUpdater: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
+    const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
+    const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+    const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+    const collaterals = await assetManager.getCollateralTypes();
+    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
+    const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
+    const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
+    const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
+    const stableCoins = await createStableCoins(collaterals);
+    return {
+        nativeChainInfo: botConfig.nativeChainInfo,
+        chainInfo: chainConfig.chainInfo,
+        chain: chainConfig.chain,
+        wallet: chainConfig.wallet,
+        attestationProvider: new AttestationHelper(botConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        assetManager: assetManager,
+        assetManagerController: assetManagerController,
+        ftsoRegistry: ftsoRegistry,
+        ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
+        wNat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
+        fAsset: await FAsset.at(await assetManager.fAsset()),
+        natFtso: natFtso,
+        assetFtso: assetFtso,
+        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
+        collaterals: collaterals,
+        stablecoins: stableCoins,
+        ftsos: ftsos
+    };
+}
+
+/**
+ * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
+ */
 async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateConfig & { contractsJsonFile: string }, chainConfig: TrackedStateConfigChain): Promise<IAssetTrackedStateContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error('Either contractsJsonFile or addressUpdater must be defined');
@@ -94,36 +131,7 @@ async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateCo
     };
 }
 
-async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & { addressUpdater: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
-    const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
-    const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
-    const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-    const collaterals = await assetManager.getCollateralTypes();
-    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
-    const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
-    const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
-    const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
-    const stableCoins = await createStableCoins(collaterals);
-    return {
-        nativeChainInfo: botConfig.nativeChainInfo,
-        chainInfo: chainConfig.chainInfo,
-        chain: chainConfig.chain,
-        wallet: chainConfig.wallet,
-        attestationProvider: new AttestationHelper(botConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
-        assetManager: assetManager,
-        assetManagerController: assetManagerController,
-        ftsoRegistry: ftsoRegistry,
-        ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
-        wNat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
-        fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: natFtso,
-        assetFtso: assetFtso,
-        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
-        collaterals: collaterals,
-        stablecoins: stableCoins,
-        ftsos: ftsos
-    };
-}
+// utils
 
 async function getAssetManagerAndController(chainConfig: AgentBotConfigChain | TrackedStateConfigChain, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
     if (chainConfig.assetManager) {
