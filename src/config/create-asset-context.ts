@@ -95,7 +95,7 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
 /**
  * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
  */
-async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateConfig & { contractsJsonFile: string }, chainConfig: TrackedStateConfigChain): Promise<IAssetTrackedStateContext> {
+export async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateConfig, chainConfig: TrackedStateConfigChain): Promise<IAssetTrackedStateContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error('Either contractsJsonFile or addressUpdater must be defined');
     }

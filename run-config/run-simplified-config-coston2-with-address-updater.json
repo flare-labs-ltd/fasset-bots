@@ -1,0 +1,15 @@
+{
+  "addressUpdater": "0x248a75c6a7EB5280c75599014f88a9539c9beE48",
+  "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
+  "chainInfos": [
+    {
+      "chainId": 3,
+      "name": "Ripple",
+      "symbol": "XRP",
+      "decimals": 6,
+      "amgDecimals": 0,
+      "requireEOAProof": false,
+      "assetManager": "0x2dD8146Ad2138ac61F93E549f8F917927B47E28a"
+    }
+  ]
+}

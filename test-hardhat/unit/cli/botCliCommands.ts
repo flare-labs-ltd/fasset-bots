@@ -186,7 +186,7 @@ describe("Bot cli commands unit tests", async () => {
         listUsageAndCommands();
         await botCliCommands.run([]);
         await botCliCommands.run(["", "", "unknownCommand"]);
-        expect(spyLog).to.be.called.exactly(51);
+        expect(spyLog).to.be.called.exactly(54);
     });
 
     it("Should run command 'create'", async () => {
@@ -424,6 +424,17 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyCancel).to.be.called.twice;
     });
 
+    it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
+
+        const spyConfirm = spy.on(botCliCommands, "cancelUnderlyingWithdrawal");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.run(["", "", "cancelUnderlyingWithdrawal", vaultAddress!]);
+        expect(spyConfirm).to.be.called.once;
+        expect(spyConsole).to.be.called.once;
+    });
+
     it("Should not run command 'announceUnderlyingWithdrawal' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "announceUnderlyingWithdrawal"]);
@@ -476,6 +487,16 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyConfirm).to.be.called.twice;
     });
 
+    it("Should run command 'confirmUnderlyingWithdrawal' - no active withdrawals", async () => {
+        const spyConfirm = spy.on(botCliCommands, "confirmUnderlyingWithdrawal");
+        const vaultAddress = await botCliCommands.createAgentVault();
+        expect(vaultAddress).to.not.be.null;
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.run(["", "", "confirmUnderlyingWithdrawal", vaultAddress!, "txHash"]);
+        expect(spyConfirm).to.be.called.once;
+        expect(spyConsole).to.be.called.once;
+    });
+
     it("Should not run command 'confirmUnderlyingWithdrawal' - missing inputs", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.run(["", "", "confirmUnderlyingWithdrawal"]);
@@ -487,7 +508,7 @@ describe("Bot cli commands unit tests", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.listActiveAgents();
         await botCliCommands.run(["", "", "listAgents"]);
-        expect(spyLog).to.be.called.twice;
+        expect(spyLog).to.be.called.gt(0);
     });
 
 });

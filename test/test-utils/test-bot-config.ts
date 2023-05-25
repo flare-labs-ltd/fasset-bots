@@ -13,6 +13,8 @@ export const COSTON2_CONTRACTS_JSON = "../fasset/deployment/deploys/coston2.json
 export const LOCAL_HARDHAT_RUN_CONFIG = "./run-config/run-config-local.json";
 export const COSTON2_RUN_CONFIG_CONTRACTS = "./run-config/run-config-coston2-with-contracts.json";
 export const COSTON2_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-config-coston2-with-address-updater.json";
+export const COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./run-config/run-simplified-config-coston2-with-contracts.json";
+export const COSTON2_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-simplified-config-coston2-with-address-updater.json";
 
 const RPC_URL_LOCAL: string = requireEnv('RPC_URL_LOCAL');
 const ATTESTATION_PROVIDER_URLS_LOCAL: string  = requireEnv('ATTESTER_BASE_URLS_LOCAL');

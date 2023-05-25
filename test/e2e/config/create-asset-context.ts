@@ -1,18 +1,29 @@
 import { readFileSync } from "fs";
-import { AgentBotConfig, createAgentBotConfig, AgentBotRunConfig } from "../../../src/config/BotConfig"
-import { createAssetContext } from "../../../src/config/create-asset-context";
-import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { COSTON2_RUN_CONFIG_ADDRESS_UPDATER, COSTON2_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { AgentBotConfig, createAgentBotConfig, AgentBotRunConfig, TrackedStateConfig, TrackedStateRunConfig, createTrackedStateConfig } from "../../../src/config/BotConfig"
+import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
+import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { COSTON2_RUN_CONFIG_ADDRESS_UPDATER, COSTON2_RUN_CONFIG_CONTRACTS, COSTON2_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import rewire from "rewire";
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
+import { initWeb3 } from "../../../src/utils/web3";
+import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
+import { requireEnv } from "../../../src/utils/helpers";
 use(chaiAsPromised);
+
+const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Create asset context tests", async () => {
     let runConfig: AgentBotRunConfig;
     let botConfig: AgentBotConfig;
+    let trackedStateRunConfig: TrackedStateRunConfig;
+    let trackedStateConfig: TrackedStateConfig;
+
+    before(async () => {
+        await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
+    });
 
     it("Should create asset context from contracts", async () => {
         runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
@@ -36,6 +47,28 @@ describe("Create asset context tests", async () => {
         runConfig.contractsJsonFile = undefined;
         botConfig = await createAgentBotConfig(runConfig);
         await expect(createAssetContext(botConfig, botConfig.chains[0])).to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined").and.be.an.instanceOf(Error);
+    });
+
+    it("Should create simplified asset context from contracts", async () => {
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
+        const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);
+        expect(context).is.not.null;
+    });
+
+    it("Should create simplified asset context from address updater", async () => {
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON2_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as TrackedStateRunConfig;
+        trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
+        const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(botConfig, botConfig.chains[0]);
+        expect(context).is.not.null;
+    });
+
+    it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        trackedStateRunConfig.addressUpdater = undefined;
+        trackedStateRunConfig.contractsJsonFile = undefined;
+        trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
+        await expect(createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0])).to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined").and.be.an.instanceOf(Error);
     });
 
     it("Should not create asset context - assetManager or fAssetSymbol required in chain config", async () => {

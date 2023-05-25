@@ -172,20 +172,14 @@ export async function createTrackedStateConfigChain(chainInfo: BotChainInfo): Pr
 /**
  * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
  */
-export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext): Promise<AgentBotDefaultSettings> {
-    const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig): Promise<AgentBotDefaultSettings> {
     const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {
         return Number(token.collateralClass) === CollateralClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
     });
     if (!class1Token) {
         throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
     }
-    const poolToken = (await context.assetManager.getCollateralTypes()).find(token => {
-        return Number(token.collateralClass) === CollateralClass.POOL && token.tokenFtsoSymbol === "NAT"
-    });
-    if (!poolToken) {
-        throw Error(`Cannot find pool collateral token`);
-    }
+    const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         class1CollateralToken: class1Token.token,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
