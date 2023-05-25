@@ -1,7 +1,7 @@
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { BNish, requireNotNull } from "../utils/helpers";
 
-// this is a superinterface of CollateralType
+// this is a super interface of CollateralType
 export interface CollateralTypeId {
     collateralClass: BNish | CollateralClass;
     token: string;
@@ -14,11 +14,11 @@ export class CollateralIndexedList<T> implements Iterable<T> {
     set(token: CollateralTypeId, value: T) {
         const key = collateralTokenKey(token.collateralClass, token.token);
         const index = this.index.get(key);
-        if (index) {
-            this.list[index] = value;
-        } else {
+        if (typeof index === 'undefined') {
             this.list.push(value);
             this.index.set(key, this.list.length - 1);
+        } else {
+            this.list[index] = value;
         }
     }
 

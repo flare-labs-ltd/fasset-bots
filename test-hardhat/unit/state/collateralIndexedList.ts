@@ -1,11 +1,13 @@
 import { expect } from "chai";
-import { CollateralIndexedList, CollateralTypeId } from "../../../src/state/CollateralIndexedList";
+import { CollateralIndexedList, CollateralTypeId, collateralTokensEqual, isClass1Collateral, isPoolCollateral } from "../../../src/state/CollateralIndexedList";
+import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
+import { toBIPS } from "../../../src/utils/helpers";
 
 
 describe("Collateral indexed list unit tests", async () => {
-    const elt0 = { collateralClass: "collateralClass0", token: "token0" };
-    const elt1 = { collateralClass: "tokenClass1", token: "token1" };
-    const elt2 = { collateralClass: "tokenClass2", token: "token2" };
+    const elt0 = { collateralClass: CollateralClass.POOL, token: "token0" };
+    const elt1 = { collateralClass: CollateralClass.CLASS1, token: "token1" };
+    const elt2 = { collateralClass: CollateralClass.CLASS1, token: "token2" };
 
     function createIndexList() {
         const indexedList: CollateralIndexedList<CollateralTypeId> = new CollateralIndexedList();
@@ -27,7 +29,7 @@ describe("Collateral indexed list unit tests", async () => {
         expect(indexedList.list[1].collateralClass).to.eq(elt1.collateralClass);
         expect(indexedList.list[2].collateralClass).to.eq(elt2.collateralClass);
         indexedList.set(elt0, elt1);
-        expect(indexedList.list[3].collateralClass).to.eq(elt1.collateralClass);
+        expect(indexedList.list[0].collateralClass).to.eq(elt1.collateralClass);
     });
 
     it("Should get elements of collateral indexed list", async () => {
@@ -71,6 +73,46 @@ describe("Collateral indexed list unit tests", async () => {
                 expect(item.collateralClass).to.eq(elt2.collateralClass);
             }
         }
+    });
+
+    it("Should compare collateral tokens", async () => {
+        const indexedList = createIndexList();
+        expect(indexedList).to.not.be.null;
+        expect(indexedList.list).to.not.be.null;
+        expect(indexedList.index).to.not.be.null;
+
+        expect(collateralTokensEqual(elt0, elt1)).to.be.false;
+        expect(collateralTokensEqual(elt0, elt0)).to.be.true;
+    });
+
+    it("Should check class collateral", async () => {
+        const poolCollateral: CollateralType = {
+            collateralClass: CollateralClass.POOL,
+            token: "address",
+            decimals: 18,
+            validUntil: 0,  // not deprecated
+            directPricePair: false,
+            assetFtsoSymbol: "symbol",
+            tokenFtsoSymbol: "NAT",
+            minCollateralRatioBIPS: toBIPS(2.2),
+            ccbMinCollateralRatioBIPS: toBIPS(1.9),
+            safetyMinCollateralRatioBIPS: toBIPS(2.3),
+        };
+        const usdcCollateral: CollateralType = {
+            collateralClass: CollateralClass.CLASS1,
+            token: "address",
+            decimals: 18,
+            validUntil: 0,  // not deprecated
+            directPricePair: false,
+            assetFtsoSymbol: "symbol",
+            tokenFtsoSymbol: "USDC",
+            minCollateralRatioBIPS: toBIPS(1.4),
+            ccbMinCollateralRatioBIPS: toBIPS(1.3),
+            safetyMinCollateralRatioBIPS: toBIPS(1.5),
+        };
+
+        expect(isPoolCollateral(poolCollateral)).to.be.true;
+        expect(isClass1Collateral(usdcCollateral)).to.be.true;
     });
 
 });
