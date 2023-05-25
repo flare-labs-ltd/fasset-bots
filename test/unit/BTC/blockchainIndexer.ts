@@ -109,11 +109,6 @@ describe("BTC blockchain tests via indexer", async () => {
         expect(rewiredBlockChainIndexerClient.successStatus({})).to.eq(TX_SUCCESS);
     });
 
-    it("Should wait for underlying transaction finalization", async () => {
-        const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
-    });
-
     it("Should not retrieve balance - not implemented", async () => {
         await expect(blockChainIndexerClient.getBalance()).to.eventually.be.rejectedWith("Method not implemented on indexer. Use wallet").and.be.an.instanceOf(Error);
     });

@@ -18,10 +18,6 @@ export type EventsForMethod<C extends Truffle.ContractInstance, M extends keyof 
 export type ContractWithEventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> =
     ContractWithEvents<C, EventsForMethod<C, M>>;
 
-export function contractWithEvents<T>(contract: ContractTypeFor<T>) {
-    return contract; // ~eventMarker are just marker for correct type, no value can ever be extracted
-}
-
 export function eventIs<C extends Truffle.ContractInstance, E extends EventSelector, N extends E['name']>(event: BaseEvent, source: ContractWithEvents<C, E>, eventName: N): event is TruffleExtractEvent<E, N> {
     return event.address === source.address && event.event === eventName;
 }

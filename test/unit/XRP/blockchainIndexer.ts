@@ -136,4 +136,14 @@ describe("XRP blockchain tests via indexer", async () => {
         expect(outputsNotNativePayment[0][1].eqn(0)).to.be.true;
     });
 
+    it("Should wait for underlying transaction finalization", async () => {
+        const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
+        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+    });
+
+    it("Should wait for underlying transaction finalization 2", async () => {
+        const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization("txHash", 0);
+        expect(retrievedTransaction).to.be.null;
+    });
+
 });

@@ -196,12 +196,12 @@ describe("Agent unit tests", async () => {
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(agent.collateralPool.address, fBalance, { from: minter.address });
         // withdraw pool fees
-        const fPoolBalanceBeforeWithdraw = await agent.poolFeeBalance();
-        await agent.withdrawPoolFees(fBalance);
+        const fPoolBalance = await agent.poolFeeBalance();
+        await agent.withdrawPoolFees(fPoolBalance);
         const fPoolBalanceAfterWithdraw = await agent.poolFeeBalance();
         const ownerFassets = await context.fAsset.balanceOf(agent.ownerAddress);
-        expect(ownerFassets.eq(fBalance)).to.be.true;
-        expect(fPoolBalanceAfterWithdraw.toString()).to.eq(fPoolBalanceBeforeWithdraw.sub(fBalance).toString());
+        expect(ownerFassets.eq(fPoolBalance)).to.be.true;
+        expect(fPoolBalanceAfterWithdraw.eqn(0)).to.be.true;
     });
 
 });
