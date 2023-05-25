@@ -165,7 +165,6 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         agentWhitelist: contracts.agentWhitelist?.address ?? ZERO_ADDRESS,
         ftsoRegistry: contracts.FtsoRegistry.address,
         burnAddress: parameters.burnAddress,
-        burnWithSelfDestruct: parameters.burnWithSelfDestruct,
         chainId: chainInfo.chainId,
         collateralReservationFeeBIPS: parameters.collateralReservationFeeBIPS,
         assetDecimals: chainInfo.decimals,
