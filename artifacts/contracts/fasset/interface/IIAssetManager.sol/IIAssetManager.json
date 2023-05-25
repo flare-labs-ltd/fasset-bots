@@ -2950,11 +2950,6 @@
               "type": "address"
             },
             {
-              "internalType": "bool",
-              "name": "burnWithSelfDestruct",
-              "type": "bool"
-            },
-            {
               "internalType": "uint32",
               "name": "chainId",
               "type": "uint32"
@@ -3297,6 +3292,25 @@
       "name": "makeAgentAvailable",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "maxRedemptionFromAgent",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {

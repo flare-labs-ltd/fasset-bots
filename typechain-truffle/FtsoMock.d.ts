@@ -165,6 +165,8 @@ export interface FtsoMockInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   epochsConfiguration(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN; 4: BN; 5: BN; 6: string[] }>;
@@ -576,6 +578,8 @@ export interface FtsoMockInstance extends Truffle.ContractInstance {
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
+
+    decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     epochsConfiguration(
       txDetails?: Truffle.TransactionDetails

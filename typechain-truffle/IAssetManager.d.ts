@@ -1671,7 +1671,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     assetMintingDecimals: BN;
     mintingPoolHoldingsRequiredBIPS: BN;
     burnAddress: string;
-    burnWithSelfDestruct: boolean;
     chainId: BN;
     collateralReservationFeeBIPS: BN;
     assetUnitUBA: BN;
@@ -3405,7 +3404,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       assetMintingDecimals: BN;
       mintingPoolHoldingsRequiredBIPS: BN;
       burnAddress: string;
-      burnWithSelfDestruct: boolean;
       chainId: BN;
       collateralReservationFeeBIPS: BN;
       assetUnitUBA: BN;

@@ -12,7 +12,62 @@ export interface CollateralReservationsContract
   ): Promise<CollateralReservationsInstance>;
 }
 
-type AllEvents = never;
+export interface CollateralReservationDeleted {
+  name: "CollateralReservationDeleted";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    reservedAmountUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
+export interface CollateralReserved {
+  name: "CollateralReserved";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    valueUBA: BN;
+    feeUBA: BN;
+    lastUnderlyingBlock: BN;
+    lastUnderlyingTimestamp: BN;
+    paymentAddress: string;
+    paymentReference: string;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+    5: BN;
+    6: BN;
+    7: string;
+    8: string;
+  };
+}
+
+export interface MintingPaymentDefault {
+  name: "MintingPaymentDefault";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    reservedAmountUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
+type AllEvents =
+  | CollateralReservationDeleted
+  | CollateralReserved
+  | MintingPaymentDefault;
 
 export interface CollateralReservationsInstance
   extends Truffle.ContractInstance {

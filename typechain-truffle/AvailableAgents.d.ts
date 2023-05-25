@@ -10,7 +10,44 @@ export interface AvailableAgentsContract
   "new"(meta?: Truffle.TransactionDetails): Promise<AvailableAgentsInstance>;
 }
 
-type AllEvents = never;
+export interface AgentAvailable {
+  name: "AgentAvailable";
+  args: {
+    agentVault: string;
+    feeBIPS: BN;
+    mintingClass1CollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    freeCollateralLots: BN;
+    0: string;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+export interface AvailableAgentExitAnnounced {
+  name: "AvailableAgentExitAnnounced";
+  args: {
+    agentVault: string;
+    exitAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AvailableAgentExited {
+  name: "AvailableAgentExited";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+type AllEvents =
+  | AgentAvailable
+  | AvailableAgentExitAnnounced
+  | AvailableAgentExited;
 
 export interface AvailableAgentsInstance extends Truffle.ContractInstance {
   getList(

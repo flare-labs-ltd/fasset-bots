@@ -12,7 +12,27 @@ export interface LiquidationStrategyImplContract
   ): Promise<LiquidationStrategyImplInstance>;
 }
 
-type AllEvents = never;
+export interface SettingArrayChanged {
+  name: "SettingArrayChanged";
+  args: {
+    name: string;
+    value: BN[];
+    0: string;
+    1: BN[];
+  };
+}
+
+export interface SettingChanged {
+  name: "SettingChanged";
+  args: {
+    name: string;
+    value: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+type AllEvents = SettingArrayChanged | SettingChanged;
 
 export interface LiquidationStrategyImplInstance
   extends Truffle.ContractInstance {

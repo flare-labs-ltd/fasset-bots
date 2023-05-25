@@ -148,7 +148,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_fassets",
+          "name": "_fAssets",
           "type": "uint256"
         },
         {
@@ -212,7 +212,7 @@
           "type": "address"
         }
       ],
-      "name": "fassetFeeDebtOf",
+      "name": "fAssetFeeDebtOf",
       "outputs": [
         {
           "internalType": "uint256",
@@ -231,7 +231,7 @@
           "type": "address"
         }
       ],
-      "name": "fassetFeesOf",
+      "name": "fAssetFeesOf",
       "outputs": [
         {
           "internalType": "uint256",

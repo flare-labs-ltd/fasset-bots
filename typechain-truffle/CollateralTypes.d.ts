@@ -10,7 +10,62 @@ export interface CollateralTypesContract
   "new"(meta?: Truffle.TransactionDetails): Promise<CollateralTypesInstance>;
 }
 
-type AllEvents = never;
+export interface CollateralRatiosChanged {
+  name: "CollateralRatiosChanged";
+  args: {
+    collateralClass: BN;
+    collateralToken: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+  };
+}
+
+export interface CollateralTypeAdded {
+  name: "CollateralTypeAdded";
+  args: {
+    collateralClass: BN;
+    token: string;
+    decimals: BN;
+    directPricePair: boolean;
+    assetFtsoSymbol: string;
+    tokenFtsoSymbol: string;
+    minCollateralRatioBIPS: BN;
+    ccbMinCollateralRatioBIPS: BN;
+    safetyMinCollateralRatioBIPS: BN;
+    0: BN;
+    1: string;
+    2: BN;
+    3: boolean;
+    4: string;
+    5: string;
+    6: BN;
+    7: BN;
+    8: BN;
+  };
+}
+
+export interface CollateralTypeDeprecated {
+  name: "CollateralTypeDeprecated";
+  args: {
+    collateralClass: BN;
+    collateralToken: string;
+    validUntil: BN;
+    0: BN;
+    1: string;
+    2: BN;
+  };
+}
+
+type AllEvents =
+  | CollateralRatiosChanged
+  | CollateralTypeAdded
+  | CollateralTypeDeprecated;
 
 export interface CollateralTypesInstance extends Truffle.ContractInstance {
   getAllInfos(

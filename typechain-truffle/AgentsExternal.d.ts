@@ -10,7 +10,79 @@ export interface AgentsExternalContract
   "new"(meta?: Truffle.TransactionDetails): Promise<AgentsExternalInstance>;
 }
 
-type AllEvents = never;
+export interface AgentCollateralTypeChanged {
+  name: "AgentCollateralTypeChanged";
+  args: {
+    agentVault: string;
+    collateralClass: BN;
+    token: string;
+    0: string;
+    1: BN;
+    2: string;
+  };
+}
+
+export interface Class1WithdrawalAnnounced {
+  name: "Class1WithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface DustChanged {
+  name: "DustChanged";
+  args: {
+    agentVault: string;
+    dustUBA: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface DustConvertedToTicket {
+  name: "DustConvertedToTicket";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    valueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface LiquidationEnded {
+  name: "LiquidationEnded";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+export interface PoolTokenRedemptionAnnounced {
+  name: "PoolTokenRedemptionAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+type AllEvents =
+  | AgentCollateralTypeChanged
+  | Class1WithdrawalAnnounced
+  | DustChanged
+  | DustConvertedToTicket
+  | LiquidationEnded
+  | PoolTokenRedemptionAnnounced;
 
 export interface AgentsExternalInstance extends Truffle.ContractInstance {
   getAgentVaultOwner(

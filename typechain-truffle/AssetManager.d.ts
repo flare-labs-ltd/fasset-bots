@@ -23,7 +23,6 @@ export interface AssetManagerContract
       assetMintingDecimals: number | BN | string;
       mintingPoolHoldingsRequiredBIPS: number | BN | string;
       burnAddress: string;
-      burnWithSelfDestruct: boolean;
       chainId: number | BN | string;
       collateralReservationFeeBIPS: number | BN | string;
       assetUnitUBA: number | BN | string;
@@ -1873,7 +1872,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     assetMintingDecimals: BN;
     mintingPoolHoldingsRequiredBIPS: BN;
     burnAddress: string;
-    burnWithSelfDestruct: boolean;
     chainId: BN;
     collateralReservationFeeBIPS: BN;
     assetUnitUBA: BN;
@@ -2025,6 +2023,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  maxRedemptionFromAgent(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   mintingPaymentDefault: {
     (
@@ -3990,7 +3993,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       assetMintingDecimals: BN;
       mintingPoolHoldingsRequiredBIPS: BN;
       burnAddress: string;
-      burnWithSelfDestruct: boolean;
       chainId: BN;
       collateralReservationFeeBIPS: BN;
       assetUnitUBA: BN;
@@ -4142,6 +4144,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    maxRedemptionFromAgent(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     mintingPaymentDefault: {
       (

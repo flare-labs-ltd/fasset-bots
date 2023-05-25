@@ -161,7 +161,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_fassets",
+          "name": "_fAssets",
           "type": "uint256"
         },
         {
@@ -225,7 +225,7 @@
           "type": "address"
         }
       ],
-      "name": "fassetFeeDebtOf",
+      "name": "fAssetFeeDebtOf",
       "outputs": [
         {
           "internalType": "uint256",
@@ -239,12 +239,25 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "fAssetFeeDeposited",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_account",
           "type": "address"
         }
       ],
-      "name": "fassetFeesOf",
+      "name": "fAssetFeesOf",
       "outputs": [
         {
           "internalType": "uint256",

@@ -2794,11 +2794,6 @@
               "type": "address"
             },
             {
-              "internalType": "bool",
-              "name": "burnWithSelfDestruct",
-              "type": "bool"
-            },
-            {
               "internalType": "uint32",
               "name": "chainId",
               "type": "uint32"

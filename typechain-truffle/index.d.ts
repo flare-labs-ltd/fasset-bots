@@ -5,6 +5,7 @@
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
+import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20Contract } from "./IERC20";
 import { AgentVaultContract } from "./AgentVault";
@@ -26,15 +27,26 @@ import { IICollateralPoolContract } from "./IICollateralPool";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IWhitelistContract } from "./IWhitelist";
 import { IWNatContract } from "./IWNat";
+import { AgentsCreateDestroyContract } from "./AgentsCreateDestroy";
+import { AgentSettingsUpdaterContract } from "./AgentSettingsUpdater";
 import { AgentsExternalContract } from "./AgentsExternal";
 import { AMEventsContract } from "./AMEvents";
 import { AvailableAgentsContract } from "./AvailableAgents";
+import { ChallengesContract } from "./Challenges";
 import { CollateralReservationsContract } from "./CollateralReservations";
 import { CollateralTypesContract } from "./CollateralTypes";
 import { FullAgentInfoContract } from "./FullAgentInfo";
+import { LiquidationContract } from "./Liquidation";
 import { LiquidationStrategyImplContract } from "./LiquidationStrategyImpl";
+import { MintingContract } from "./Minting";
 import { ConversionMockContract } from "./ConversionMock";
 import { RedemptionQueueMockContract } from "./RedemptionQueueMock";
+import { RedemptionConfirmationsContract } from "./RedemptionConfirmations";
+import { RedemptionFailuresContract } from "./RedemptionFailures";
+import { RedemptionRequestsContract } from "./RedemptionRequests";
+import { SettingsUpdaterContract } from "./SettingsUpdater";
+import { UnderlyingBalanceContract } from "./UnderlyingBalance";
+import { UnderlyingWithdrawalAnnouncementsContract } from "./UnderlyingWithdrawalAnnouncements";
 import { AgentVaultMockContract } from "./AgentVaultMock";
 import { AssetManagerMockContract } from "./AssetManagerMock";
 import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
@@ -60,7 +72,6 @@ import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
 import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
-import { NativeTokenBurnerContract } from "./NativeTokenBurner";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { AddressUpdaterContract } from "./AddressUpdater";
@@ -104,6 +115,7 @@ declare global {
       require(name: "MockContract"): MockContractContract;
       require(name: "MockInterface"): MockInterfaceContract;
       require(name: "ERC20"): ERC20Contract;
+      require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "AgentVault"): AgentVaultContract;
@@ -125,15 +137,28 @@ declare global {
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "IWNat"): IWNatContract;
+      require(name: "AgentsCreateDestroy"): AgentsCreateDestroyContract;
+      require(name: "AgentSettingsUpdater"): AgentSettingsUpdaterContract;
       require(name: "AgentsExternal"): AgentsExternalContract;
       require(name: "AMEvents"): AMEventsContract;
       require(name: "AvailableAgents"): AvailableAgentsContract;
+      require(name: "Challenges"): ChallengesContract;
       require(name: "CollateralReservations"): CollateralReservationsContract;
       require(name: "CollateralTypes"): CollateralTypesContract;
       require(name: "FullAgentInfo"): FullAgentInfoContract;
+      require(name: "Liquidation"): LiquidationContract;
       require(name: "LiquidationStrategyImpl"): LiquidationStrategyImplContract;
+      require(name: "Minting"): MintingContract;
       require(name: "ConversionMock"): ConversionMockContract;
       require(name: "RedemptionQueueMock"): RedemptionQueueMockContract;
+      require(name: "RedemptionConfirmations"): RedemptionConfirmationsContract;
+      require(name: "RedemptionFailures"): RedemptionFailuresContract;
+      require(name: "RedemptionRequests"): RedemptionRequestsContract;
+      require(name: "SettingsUpdater"): SettingsUpdaterContract;
+      require(name: "UnderlyingBalance"): UnderlyingBalanceContract;
+      require(
+        name: "UnderlyingWithdrawalAnnouncements"
+      ): UnderlyingWithdrawalAnnouncementsContract;
       require(name: "AgentVaultMock"): AgentVaultMockContract;
       require(name: "AssetManagerMock"): AssetManagerMockContract;
       require(
@@ -163,7 +188,6 @@ declare global {
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
       require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
-      require(name: "NativeTokenBurner"): NativeTokenBurnerContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "AddressUpdater"): AddressUpdaterContract;
@@ -209,6 +233,7 @@ declare global {
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
+export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
@@ -267,6 +292,14 @@ export {
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export {
+  AgentsCreateDestroyContract,
+  AgentsCreateDestroyInstance,
+} from "./AgentsCreateDestroy";
+export {
+  AgentSettingsUpdaterContract,
+  AgentSettingsUpdaterInstance,
+} from "./AgentSettingsUpdater";
+export {
   AgentsExternalContract,
   AgentsExternalInstance,
 } from "./AgentsExternal";
@@ -275,6 +308,7 @@ export {
   AvailableAgentsContract,
   AvailableAgentsInstance,
 } from "./AvailableAgents";
+export { ChallengesContract, ChallengesInstance } from "./Challenges";
 export {
   CollateralReservationsContract,
   CollateralReservationsInstance,
@@ -284,10 +318,12 @@ export {
   CollateralTypesInstance,
 } from "./CollateralTypes";
 export { FullAgentInfoContract, FullAgentInfoInstance } from "./FullAgentInfo";
+export { LiquidationContract, LiquidationInstance } from "./Liquidation";
 export {
   LiquidationStrategyImplContract,
   LiquidationStrategyImplInstance,
 } from "./LiquidationStrategyImpl";
+export { MintingContract, MintingInstance } from "./Minting";
 export {
   ConversionMockContract,
   ConversionMockInstance,
@@ -296,6 +332,30 @@ export {
   RedemptionQueueMockContract,
   RedemptionQueueMockInstance,
 } from "./RedemptionQueueMock";
+export {
+  RedemptionConfirmationsContract,
+  RedemptionConfirmationsInstance,
+} from "./RedemptionConfirmations";
+export {
+  RedemptionFailuresContract,
+  RedemptionFailuresInstance,
+} from "./RedemptionFailures";
+export {
+  RedemptionRequestsContract,
+  RedemptionRequestsInstance,
+} from "./RedemptionRequests";
+export {
+  SettingsUpdaterContract,
+  SettingsUpdaterInstance,
+} from "./SettingsUpdater";
+export {
+  UnderlyingBalanceContract,
+  UnderlyingBalanceInstance,
+} from "./UnderlyingBalance";
+export {
+  UnderlyingWithdrawalAnnouncementsContract,
+  UnderlyingWithdrawalAnnouncementsInstance,
+} from "./UnderlyingWithdrawalAnnouncements";
 export {
   AgentVaultMockContract,
   AgentVaultMockInstance,
@@ -372,10 +432,6 @@ export {
   ICollateralPoolTokenContract,
   ICollateralPoolTokenInstance,
 } from "./ICollateralPoolToken";
-export {
-  NativeTokenBurnerContract,
-  NativeTokenBurnerInstance,
-} from "./NativeTokenBurner";
 export {
   SafeMath64MockContract,
   SafeMath64MockInstance,

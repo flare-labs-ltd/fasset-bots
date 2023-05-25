@@ -134,22 +134,22 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
 
   enter: {
     (
-      _fassets: number | BN | string,
+      _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _fassets: number | BN | string,
+      _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _fassets: number | BN | string,
+      _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _fassets: number | BN | string,
+      _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -180,12 +180,31 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
 
   exitCollateralRatioBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  fassetFeeDebtOf(
+  fAssetFeeDebtOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  fassetFeesOf(
+  fAssetFeeDeposited: {
+    (
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  fAssetFeesOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
@@ -529,22 +548,22 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
 
     enter: {
       (
-        _fassets: number | BN | string,
+        _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _fassets: number | BN | string,
+        _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _fassets: number | BN | string,
+        _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _fassets: number | BN | string,
+        _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -577,12 +596,31 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    fassetFeeDebtOf(
+    fAssetFeeDebtOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    fassetFeesOf(
+    fAssetFeeDeposited: {
+      (
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    fAssetFeesOf(
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
