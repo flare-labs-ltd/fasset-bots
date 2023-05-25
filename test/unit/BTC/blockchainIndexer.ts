@@ -12,9 +12,9 @@ const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/Blo
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.BTC;
-const txHash = "6e555d6afce55e26bdff2559047ca07e1262adf0e4337de8618c4534cc5b9871";
-const blockId = 2433332;
-const blockHash = "000000000000001cd1d64cc9b566058453b6f3909c386337d61a7dc5ced426d9";
+const txHash = "3f99d6f26d4f74491b761ff3f836bc16fd1e5ab9d82d943081f16426ab551097";
+const blockId = 2435271;
+const blockHash = "000000000000000c24a7fcfc560799d3d2d2636f14b70aa7b1245fca88e8ca6b";
 const txReference = "0000000000000000000000000000000000000000000000000000000000000000";
 const invalidTxHash = txHash.slice(2);
 
@@ -133,7 +133,6 @@ describe("BTC blockchain tests via indexer", async () => {
         const outputs = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("", { vout: [] }, false);
         expect(outputs[0][0]).to.eq("");
         expect(outputs[0][1].eqn(0)).to.be.true;
-
         const inputs = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("", { vin: [] }, true);
         expect(inputs[0][0]).to.eq("");
         expect(inputs[0][1].eqn(0)).to.be.true;
