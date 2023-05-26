@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { AgentInfo, AgentStatus, CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
+import { BN_ONE, BN_ZERO, BNish, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
@@ -142,11 +142,11 @@ export class TrackedAgentState {
     // handlers: redemption and self-close
     handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
-        this.redeemingUBA = this.redeemingUBA.add(toBN(args.valueUBA));
+        this.updateRedeemingUBA(args.requestId, toBN(args.valueUBA));
     }
 
     handleRedemptionPerformed(args: EventArgs<RedemptionPerformed>): void {
-        this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
+        this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
     }
 
@@ -155,16 +155,27 @@ export class TrackedAgentState {
     }
 
     handleRedemptionPaymentBlocked(args: EventArgs<RedemptionPaymentBlocked>): void {
-        this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
+        this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
     }
 
     handleRedemptionDefault(args: EventArgs<RedemptionDefault>): void {
-        this.redeemingUBA = this.redeemingUBA.sub(toBN(args.redemptionAmountUBA));
+        this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
     }
 
     handleSelfClose(args: EventArgs<SelfClose>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
+    }
+
+    private updateRedeemingUBA(requestId: BNish, valueUBA: BN) {
+        this.redeemingUBA = this.redeemingUBA.add(valueUBA);
+        if (!this.isPoolSelfCloseRedemption(requestId)) {
+            this.poolRedeemingUBA = this.poolRedeemingUBA.add(valueUBA);
+        }
+    }
+
+    protected isPoolSelfCloseRedemption(requestId: BNish) {
+        return toBN(requestId).and(BN_ONE).isZero();
     }
 
     // handlers: liquidation
