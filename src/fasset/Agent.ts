@@ -181,4 +181,14 @@ export class Agent {
     async executeAgentSettingUpdate(settingName: string): Promise<void> {
         await this.assetManager.executeAgentSettingUpdate(this.vaultAddress, settingName, { from: this.ownerAddress });
     }
+
+    async announcePoolTokenRedemption(amountWei: BNish) {
+        const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.ownerAddress });
+        const args = requiredEventArgs(res, 'PoolTokenRedemptionAnnounced');
+        return args.withdrawalAllowedAt;
+    }
+
+    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
+        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
+    }
 }

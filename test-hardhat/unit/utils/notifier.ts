@@ -129,4 +129,46 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.twice;
     });
 
+    it("Should send agent destroyed  alert", async () => {
+        const spySend = spy.on(notifier, "sendAgentDestroyed");
+        notifier.sendAgentDestroyed("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent withdrew  class1 collateral", async () => {
+        const spySend = spy.on(notifier, "sendWithdrawClass1");
+        notifier.sendWithdrawClass1("agentVault", "100");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent updated  agent setting", async () => {
+        const spySend = spy.on(notifier, "sendAgentSettingsUpdate");
+        notifier.sendAgentSettingsUpdate("agentVault", "settingName");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent exited  available", async () => {
+        const spySend = spy.on(notifier, "sendAgentExitedAvailable");
+        notifier.sendAgentExitedAvailable("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent announced destruction", async () => {
+        const spySend = spy.on(notifier, "sendAgentAnnounceDestroy");
+        notifier.sendAgentAnnounceDestroy("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent confirmed underlying withdrawal", async () => {
+        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
+        notifier.sendConfirmWithdrawUnderlying("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent redeemed pool tokens", async () => {
+        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
+        notifier.sendConfirmWithdrawUnderlying("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
 });

@@ -175,7 +175,7 @@ export class AgentBot {
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
-        events.sort((a,b) => a.blockNumber - b.blockNumber);
+        events.sort((a, b) => a.blockNumber - b.blockNumber);
         agentEnt.lastEventBlockHandled = lastBlock;
         return events;
     }
@@ -186,9 +186,9 @@ export class AgentBot {
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            const latestTimestamp = await latestBlockTimestampBN();
             if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
                 // agent waiting for destruction
-                const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.waitingForDestructionTimestamp.lte(latestTimestamp)) {
                     // agent can be destroyed
                     await this.agent.destroy();
@@ -198,7 +198,6 @@ export class AgentBot {
             }
             if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
                 // agent waiting for class1 withdrawal
-                const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.withdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
                     // agent can withdraw class1
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
@@ -209,7 +208,6 @@ export class AgentBot {
             }
             if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
                 // agent waiting for setting update
-                const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(latestTimestamp)) {
                     // agent can update setting
                     await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
@@ -219,29 +217,62 @@ export class AgentBot {
                 }
             }
             if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
-                 // agent can exit available and is agent waiting for clean up before destruction
+                // agent can exit available and is agent waiting for clean up before destruction
                 await this.exitAvailable(agentEnt);
             } else if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO)) {
                 // agent can exit available
                 await this.exitAvailable(agentEnt);
-            } else if (agentEnt.waitingForDestructionCleanUp) {
+
+            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp) {
+                // agent waiting to redeem pool tokens
+                if (agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                    // agent cane redeem pool tokens
+                    await this.agent.redeemCollateralPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = BN_ZERO;
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                    this.notifier.sendCollateralPoolTokensRedemption(agentEnt.vaultAddress);
+                }
+            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.destroyClass1WithdrawalAllowedAtTimestamp) {
+                // agent waiting to withdraw class1
+                if (agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                    // agent can withdraw class1
+                    await this.agent.redeemCollateralPoolTokens(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
+                    this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString());
+                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = BN_ZERO;
+                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = BN_ZERO;
+                }
+            } else if (agentEnt.waitingForDestructionCleanUp) { //TODO: go over with Iztok
                 // agent checks if clean up is complete
-                const agentInfo = await this.agent.getAgentInfo();
-                if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
-                    // agent checks if clean is complete, agent can announce destroy
-                    const destroyAllowedAt = await this.agent.announceDestroy();
-                    agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
-                    agentEnt.waitingForDestructionCleanUp = false;
-                    this.notifier.sendAgentAnnounceDestroy(agentEnt.vaultAddress);
+                const poolTokenBalance = await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress);
+                const class1Balance = (await this.agent.getAgentCollateral()).class1.balance;
+                if (poolTokenBalance.gt(BN_ZERO)) {
+                    // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance;
+                } else if (class1Balance.gt(BN_ZERO)) {
+                    // announce withdraw class 1
+                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = await this.agent.announceClass1CollateralWithdrawal(class1Balance);
+                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = class1Balance;
+                } else {
+                    // withdraw pool fees and wait for others to redeem
+                    const poolFeeBalance = await this.agent.poolFeeBalance();
+                    if (poolFeeBalance.gt(BN_ZERO)) await this.agent.withdrawPoolFees(poolFeeBalance);
+                    const agentInfo = await this.agent.getAgentInfo();
+                    if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
+                        // agent checks if clean is complete, agent can announce destroy
+                        const destroyAllowedAt = await this.agent.announceDestroy();
+                        agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
+                        agentEnt.waitingForDestructionCleanUp = false;
+                        this.notifier.sendAgentAnnounceDestroy(agentEnt.vaultAddress);
+                    }
                 }
             }
             if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
                 // agent waiting for underlying withdrawal
                 if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
                     const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
-                    const latestTimestamp = await latestBlockTimestampBN();
                     if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
-                         // agent can confirm underlying withdrawal
+                        // agent can confirm underlying withdrawal
                         await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
                         this.notifier.sendConfirmWithdrawUnderlying(agentEnt.vaultAddress);
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;

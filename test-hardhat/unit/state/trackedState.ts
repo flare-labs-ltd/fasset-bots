@@ -18,7 +18,7 @@ import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../../src/utils/artifacts";
 import { tokenBalance } from "../../../src/state/TokenPrice";
-import { announcePoolTokenRedemption, performRedemptionPayment, redeemCollateralPoolTokens } from "../../../test/test-utils/test-helpers";
+import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 use(chaiAsPromised);
@@ -511,9 +511,9 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalClass1CollateralWei[agentInfo.class1CollateralToken].eq(deposit)).to.be.true;
         // redeem pool
         const amount = await tokenBalance(context.wNat.address, agentInfo.collateralPool);
-        const withdrawAllowedAt = await announcePoolTokenRedemption(agentB, amount);
+        const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
-        await redeemCollateralPoolTokens(agentB, amount);
+        await agentB.redeemCollateralPoolTokens(amount);
         await trackedState.readUnhandledEvents();
         expect(amount.eq(deposit)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;

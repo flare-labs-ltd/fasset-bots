@@ -27,6 +27,8 @@ export class AgentEntity {
     @Property({ nullable: true })
     lastEventBlockHandled!: number;
 
+    // agent destroy
+
     @Property()
     waitingForDestructionCleanUp: boolean = false;
 
@@ -34,10 +36,31 @@ export class AgentEntity {
     waitingForDestructionTimestamp: BN = BN_ZERO;
 
     @Property({ type: BNType })
+    poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    poolTokenRedemptionWithdrawalAllowedAtAmount: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    destroyClass1WithdrawalAllowedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    destroyClass1WithdrawalAllowedAtAmount: BN = BN_ZERO;
+
+    // agent exit available list
+
+    @Property({ type: BNType })
+    exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
+
+    // agent update settings
+
+    @Property({ type: BNType })
     agentSettingUpdateValidAtTimestamp: BN = BN_ZERO;
 
     @Property()
     agentSettingUpdateValidAtName: string = "";
+
+    // agent withdraw class1
 
     @Property({ type: BNType })
     withdrawalAllowedAtTimestamp: BN = BN_ZERO;
@@ -45,8 +68,7 @@ export class AgentEntity {
     @Property({ type: BNType })
     withdrawalAllowedAtAmount: BN = BN_ZERO;
 
-    @Property({ type: BNType })
-    exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
+    // agent withdraw underlying
 
     @Property({ type: BNType })
     underlyingWithdrawalAnnouncedAtTimestamp: BN = BN_ZERO;
@@ -92,6 +114,7 @@ export class AgentMinting {
 
     // 'REQUEST_PAYMENT_PROOF' and 'REQUEST_NON_PAYMENT_PROOF' state data
     // when in state REQUEST_PAYMENT_PROOF, it stores roundId and data to later obtain the proof
+
     @Property({ nullable: true })
     proofRequestRound?: number;
 

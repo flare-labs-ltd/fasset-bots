@@ -22,6 +22,7 @@ const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
 const AGENT_EXIT_AVAILABLE = "AGENT EXIT AVAILABLE";
 const AGENT_ANNOUNCE_DESTROY = "AGENT ANNOUNCE DESTROY";
 const CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL";
+const REDEMPTION_POOL_TOKENS = "REDEEM POOL TOKENS";
 
 export class Notifier {
 
@@ -145,5 +146,9 @@ export class Notifier {
 
     sendConfirmWithdrawUnderlying(agentVault: string) {
         this.send(CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${agentVault} underlying withdrawal was successfully confirmed.`);
+    }
+
+    sendCollateralPoolTokensRedemption(agentVault: string) {
+        this.send(REDEMPTION_POOL_TOKENS, `Agent ${agentVault} redeemed pool tokens.`);
     }
 }

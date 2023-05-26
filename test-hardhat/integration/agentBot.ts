@@ -20,7 +20,6 @@ use(spies);
 import BN from "bn.js";
 import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
-import { announcePoolTokenRedemption, redeemCollateralPoolTokens } from "../../test/test-utils/test-helpers";
 
 const IERC20 = artifacts.require('IERC20');
 
@@ -461,9 +460,9 @@ describe("Agent bot tests", async () => {
         // redeem pool
         const agentInfo = await agentBot.agent.getAgentInfo();
         const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
-        const withdrawAllowedAt = await announcePoolTokenRedemption(agentBot.agent, amount);
+        const withdrawAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
-        await redeemCollateralPoolTokens(agentBot.agent, amount);
+        await agentBot.agent.redeemCollateralPoolTokens(amount);
 
         // exit available
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
