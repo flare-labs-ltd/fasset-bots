@@ -48,7 +48,17 @@ export interface Exit {
   };
 }
 
-type AllEvents = Enter | Exit;
+export interface IncompleteSelfCloseExit {
+  name: "IncompleteSelfCloseExit";
+  args: {
+    burnedTokensWei: BN;
+    redeemedFAssetUBA: BN;
+    0: BN;
+    1: BN;
+  };
+}
+
+type AllEvents = Enter | Exit | IncompleteSelfCloseExit;
 
 export interface CollateralPoolInstance extends Truffle.ContractInstance {
   MIN_NAT_BALANCE_AFTER_EXIT(
@@ -155,22 +165,22 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
   enter: {
     (
       _fAssets: number | BN | string,
-      _enterWithFullFassets: boolean,
+      _enterWithFullFAssets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _fAssets: number | BN | string,
-      _enterWithFullFassets: boolean,
+      _enterWithFullFAssets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _fAssets: number | BN | string,
-      _enterWithFullFassets: boolean,
+      _enterWithFullFAssets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _fAssets: number | BN | string,
-      _enterWithFullFassets: boolean,
+      _enterWithFullFAssets: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -305,28 +315,24 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
   selfCloseExit: {
     (
       _tokenShare: number | BN | string,
-      _exitType: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _tokenShare: number | BN | string,
-      _exitType: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _tokenShare: number | BN | string,
-      _exitType: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _tokenShare: number | BN | string,
-      _exitType: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
       txDetails?: Truffle.TransactionDetails
@@ -608,22 +614,22 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     enter: {
       (
         _fAssets: number | BN | string,
-        _enterWithFullFassets: boolean,
+        _enterWithFullFAssets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _fAssets: number | BN | string,
-        _enterWithFullFassets: boolean,
+        _enterWithFullFAssets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _fAssets: number | BN | string,
-        _enterWithFullFassets: boolean,
+        _enterWithFullFAssets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _fAssets: number | BN | string,
-        _enterWithFullFassets: boolean,
+        _enterWithFullFAssets: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -760,28 +766,24 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     selfCloseExit: {
       (
         _tokenShare: number | BN | string,
-        _exitType: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _tokenShare: number | BN | string,
-        _exitType: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _tokenShare: number | BN | string,
-        _exitType: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _tokenShare: number | BN | string,
-        _exitType: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
         txDetails?: Truffle.TransactionDetails

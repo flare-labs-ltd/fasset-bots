@@ -72,6 +72,25 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "burnedTokensWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redeemedFAssetUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "IncompleteSelfCloseExit",
+      "type": "event"
+    },
+    {
       "inputs": [],
       "name": "agentVault",
       "outputs": [
@@ -287,11 +306,6 @@
           "internalType": "uint256",
           "name": "_tokenShare",
           "type": "uint256"
-        },
-        {
-          "internalType": "enum ICollateralPool.TokenExitType",
-          "name": "_exitType",
-          "type": "uint8"
         },
         {
           "internalType": "bool",

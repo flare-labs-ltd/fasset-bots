@@ -111,6 +111,11 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
   lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+  maxRedemptionFromAgent(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   payoutNAT: {
     (
       _agentVault: string,
@@ -341,6 +346,11 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<boolean>;
 
     lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    maxRedemptionFromAgent(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     payoutNAT: {
       (
