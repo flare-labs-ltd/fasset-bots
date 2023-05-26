@@ -190,6 +190,7 @@ export function minBN(first: BN, ...rest: BN[]) {
 }
 
 // toplevel async function runner for node.js
+/* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {
     main().catch((error) => {
         console.error(error);
