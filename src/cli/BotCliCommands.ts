@@ -143,7 +143,7 @@ export class BotCliCommands {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 agentEnt.underlyingWithdrawalConfirmTransaction = "";
                 await this.botConfig.orm.em.persist(agentEnt).flush();
-                console.log(chalk.cyan(`Underlying withdrawal announcement for agent ${agentVault} was cancelled.`));
+                console.log(chalk.cyan(`Underlying withdrawal for agent ${agentVault} was confirmed.`));
             }
         } else {
             console.log(chalk.cyan(`No active underlying withdrawal announcement for agent ${agentVault}.`));

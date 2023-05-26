@@ -16,6 +16,12 @@ const POOL_COLLATERAL_TOP_UP_FAILED_ALERT = "POOL'S COLLATERAL TOP UP FAILED ALE
 const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
 const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
 const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS ALERT";
+const AGENT_DESTROYED = "AGENT DESTROYED";
+const WITHDRAW_CLASS1 = "WITHDRAW CLASS1";
+const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
+const AGENT_EXIT_AVAILABLE = "AGENT EXIT AVAILABLE";
+const AGENT_ANNOUNCE_DESTROY = "AGENT ANNOUNCE DESTROY";
+const CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL";
 
 export class Notifier {
 
@@ -117,4 +123,27 @@ export class Notifier {
         }
     }
 
+    sendAgentDestroyed(agentVault: string) {
+        this.send(AGENT_DESTROYED, `Agent ${agentVault} was destroyed.`);
+    }
+
+    sendWithdrawClass1(agentVault: string, amount: string) {
+        this.send(WITHDRAW_CLASS1, `Agent ${agentVault} withdrew ${amount} of Class1.`);
+    }
+
+    sendAgentSettingsUpdate(agentVault: string, settingName: string) {
+        this.send(AGENT_SETTING_UPDATE, `Agent ${agentVault} setting ${settingName} was updated.`);
+    }
+
+    sendAgentExitedAvailable(agentVault: string) {
+        this.send(AGENT_EXIT_AVAILABLE, `Agent ${agentVault} exited available list.`);
+    }
+
+    sendAgentAnnounceDestroy(agentVault: string) {
+        this.send(AGENT_ANNOUNCE_DESTROY, `Agent ${agentVault} successfully announced its DESTRUCTION.`);
+    }
+
+    sendConfirmWithdrawUnderlying(agentVault: string) {
+        this.send(CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${agentVault} underlying withdrawal was successfully confirmed.`);
+    }
 }

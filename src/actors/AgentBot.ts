@@ -187,56 +187,65 @@ export class AgentBot {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
+                // agent waiting for destruction
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.waitingForDestructionTimestamp.lte(latestTimestamp)) {
+                    // agent can be destroyed
                     await this.agent.destroy();
                     agentEnt.waitingForDestructionTimestamp = BN_ZERO;
                     await this.handleAgentDestruction(em, agentEnt.vaultAddress);
                 }
             }
             if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
+                // agent waiting for class1 withdrawal
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.withdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                    // agent can withdraw class1
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
+                    this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.withdrawalAllowedAtAmount.toString());
                     agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.withdrawalAllowedAtAmount = BN_ZERO;
                 }
             }
             if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
+                // agent waiting for setting update
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(latestTimestamp)) {
+                    // agent can update setting
                     await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
+                    this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
                     agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                     agentEnt.agentSettingUpdateValidAtName = "";
                 }
             }
             if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
+                 // agent can exit available and is agent waiting for clean up before destruction
                 await this.exitAvailable(agentEnt);
             } else if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO)) {
+                // agent can exit available
                 await this.exitAvailable(agentEnt);
             } else if (agentEnt.waitingForDestructionCleanUp) {
+                // agent checks if clean up is complete
                 const agentInfo = await this.agent.getAgentInfo();
                 if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
+                    // agent checks if clean is complete, agent can announce destroy
                     const destroyAllowedAt = await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
                     agentEnt.waitingForDestructionCleanUp = false;
+                    this.notifier.sendAgentAnnounceDestroy(agentEnt.vaultAddress);
                 }
             }
             if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
+                // agent waiting for underlying withdrawal
                 if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
                     const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
                     const latestTimestamp = await latestBlockTimestampBN();
                     if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
+                         // agent can confirm underlying withdrawal
                         await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
+                        this.notifier.sendConfirmWithdrawUnderlying(agentEnt.vaultAddress);
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                         agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                    }
-                } else {
-                    const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
-                    const latestTimestamp = await latestBlockTimestampBN();
-                    if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
-                        await this.agent.cancelUnderlyingWithdrawal();
-                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                     }
                 }
             }
@@ -248,6 +257,7 @@ export class AgentBot {
         if (agentEnt.exitAvailableAllowedAtTimestamp.lte(latestTimestamp)) {
             await this.agent.exitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+            this.notifier.sendAgentExitedAvailable(agentEnt.vaultAddress);
         }
     }
 
@@ -588,6 +598,7 @@ export class AgentBot {
     async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         agentBotEnt.active = false;
+        this.notifier.sendAgentDestroyed(vaultAddress);
     }
 
     /**

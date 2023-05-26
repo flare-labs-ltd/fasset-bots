@@ -415,22 +415,6 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
     });
 
-    it("Should cancel underlying withdrawal", async () => {
-        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        await orm.em.persist(agentEnt).flush();
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        // cancellation not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gtn(0)).to.be.true;
-        // allowed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
-    });
-
     it("Should confirm underlying withdrawal", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
