@@ -12,7 +12,7 @@ import { convertLotsToUBA } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner, createTestRedeemer } from "../../test-utils/helpers";
+import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner, createTestRedeemer, fromAgentInfoToInitialAgentData } from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
@@ -98,7 +98,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should create agent", async () => {
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
+        trackedState.createAgent(agentCreatedArgs);
         expect(trackedState.agents.size).to.eq(1);
     });
 
@@ -112,14 +112,14 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.size).to.eq(0);
         trackedState.destroyAgent(agentDestroyedArgs);
         expect(trackedState.agents.size).to.eq(0);
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
+        trackedState.createAgent(agentCreatedArgs);
         expect(trackedState.agents.size).to.eq(1);
         trackedState.destroyAgent(agentDestroyedArgs);
         expect(trackedState.agents.size).to.eq(0);
     });
 
     it("Should get agent", async () => {
-        trackedState.createAgent(agentCreatedArgs.agentVault, agentCreatedArgs.underlyingAddress, agentCreatedArgs.collateralPool);
+        trackedState.createAgent(agentCreatedArgs);
         const agent = trackedState.getAgent(agentCreatedArgs.agentVault);
         expect(agent!.vaultAddress).to.eq(agentCreatedArgs.agentVault);
         expect(agent!.underlyingAddress).to.eq(agentCreatedArgs.underlyingAddress);
@@ -161,7 +161,7 @@ describe("Tracked state tests", async () => {
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
-        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress, (await agentBLocal.getAgentInfo()).collateralPool);
+        const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
         await trackedState.readUnhandledEvents();
         const agentAfter = trackedState.getAgent(agentBLocal.vaultAddress)!;
@@ -175,7 +175,7 @@ describe("Tracked state tests", async () => {
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
-        const agentBefore = trackedState.createAgent(agentBLocal.vaultAddress, agentBLocal.underlyingAddress, (await agentBLocal.getAgentInfo()).collateralPool);
+        const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
         await trackedState.readUnhandledEvents();
         const agentMiddle = trackedState.getAgent(agentBLocal.vaultAddress)!;
@@ -243,7 +243,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await minter.reserveCollateral(agentB.vaultAddress, 2);
-        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress, (await agentB.getAgentInfo()).collateralPool));
+        const agentBefore = Object.assign({}, trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentB)));
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress)!);
         expect(agentAfter.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -253,7 +253,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
-        const agentBefore = Object.assign({}, trackedState.createAgent(agentB.vaultAddress, agentB.underlyingAddress, (await agentB.getAgentInfo()).collateralPool));
+        const agentBefore = Object.assign({}, trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentB)));
         const supplyBefore = trackedState.fAssetSupply;
         const freeUnderlyingBalanceUBABefore = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         await trackedState.readUnhandledEvents();

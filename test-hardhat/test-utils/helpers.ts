@@ -29,6 +29,7 @@ import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import BN from "bn.js";
+import { InitialAgentData } from "../../src/state/TrackedAgentState";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
@@ -117,7 +118,7 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
 }
 
 export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, toDeposit: BNish = deposit) {
-    const agentBot = await createTestAgentBot(context, orm,  ownerAddress);
+    const agentBot = await createTestAgentBot(context, orm, ownerAddress);
     await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, toDeposit, ownerAddress);
     await agentBot.agent.depositClass1Collateral(toDeposit);
     await agentBot.agent.buyCollateralPoolTokens(toDeposit);
@@ -138,7 +139,7 @@ export async function createTestContext(governance: string, setMaxTrustedPriceAg
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
-    return  await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
+    return await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
 }
 
 export async function createCRAndPerformMinting(minter: Minter, vaultAddress: string, lots: number, chain: MockChain) {
@@ -166,5 +167,25 @@ export async function convertFromUSD5(amount: BN, collateralToken: CollateralTyp
     const priceReader = new TokenPriceReader(context.ftsoRegistry);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
-    return (toBN(amount).mul(toBNExp(10,expPlus))).div(stablecoinUSD.price);
+    return (toBN(amount).mul(toBNExp(10, expPlus))).div(stablecoinUSD.price);
+}
+
+export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<InitialAgentData> {
+    const agentInfo = await agent.getAgentInfo();
+    const initialAgentData = {
+        owner: agent.ownerAddress,
+        agentVault: agent.vaultAddress,
+        collateralPool: agentInfo.collateralPool,
+        underlyingAddress: agent.underlyingAddress,
+        class1CollateralToken: agentInfo.class1CollateralToken,
+        feeBIPS: toBN(agentInfo.feeBIPS),
+        poolFeeShareBIPS: toBN(agentInfo.poolFeeShareBIPS),
+        mintingClass1CollateralRatioBIPS: toBN(agentInfo.mintingClass1CollateralRatioBIPS),
+        mintingPoolCollateralRatioBIPS: toBN(agentInfo.mintingPoolCollateralRatioBIPS),
+        buyFAssetByAgentFactorBIPS: toBN(agentInfo.buyFAssetByAgentFactorBIPS),
+        poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
+        poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
+        poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS)
+    };
+    return initialAgentData;
 }

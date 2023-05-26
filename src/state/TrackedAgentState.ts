@@ -6,14 +6,33 @@ import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
+import { AgentCreated } from "../../typechain-truffle/AssetManager";
+
+export type InitialAgentData = EventArgs<AgentCreated>;
 
 export class TrackedAgentState {
     constructor(
         public parent: TrackedState,
-        public vaultAddress: string,
-        public underlyingAddress: string,
-        public collateralPoolAddress: string
-    ) { }
+        data: InitialAgentData
+    ) {
+        this.vaultAddress = data.agentVault;
+        this.underlyingAddress = data.underlyingAddress;
+        this.collateralPoolAddress = data.collateralPool;
+        this.agentSettings.class1CollateralToken = data.class1CollateralToken;
+        this.agentSettings.feeBIPS = toBN(data.feeBIPS);
+        this.agentSettings.poolFeeShareBIPS = toBN(data.poolFeeShareBIPS);
+        this.agentSettings.mintingClass1CollateralRatioBIPS = toBN(data.mintingClass1CollateralRatioBIPS);
+        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(data.mintingPoolCollateralRatioBIPS);
+        this.agentSettings.poolExitCollateralRatioBIPS = toBN(data.poolExitCollateralRatioBIPS);
+        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.buyFAssetByAgentFactorBIPS);
+        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.poolTopupCollateralRatioBIPS);
+        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.poolTopupTokenPriceFactorBIPS);
+    }
+
+    // identifying addresses
+    vaultAddress: string;
+    underlyingAddress: string;
+    collateralPoolAddress: string;
 
     //status
     status = AgentStatus.NORMAL;
@@ -194,7 +213,7 @@ export class TrackedAgentState {
     }
 
     withdrawClass1Collateral(token: string, value: BN): void {
-        this.totalClass1CollateralWei[token] = this.totalClass1CollateralWei[token] ? this.totalClass1CollateralWei[token].sub(value) : value;
+        this.totalClass1CollateralWei[token] = this.totalClass1CollateralWei[token].sub(value);
     }
 
     // agent state changing
@@ -211,12 +230,11 @@ export class TrackedAgentState {
     }
 
     collateralBalance(collateral: CollateralType) {
-        return collateral.collateralClass === CollateralClass.CLASS1 ? this.totalClass1CollateralWei[this.agentSettings.class1CollateralToken] : this.totalPoolCollateralNATWei;
+        return Number(collateral.collateralClass) === CollateralClass.CLASS1 ? this.totalClass1CollateralWei[this.agentSettings.class1CollateralToken] : this.totalPoolCollateralNATWei;
     }
 
     private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralType) {
-        const redeemingUBA = collateral.collateralClass === CollateralClass.CLASS1 ? this.redeemingUBA : this.poolRedeemingUBA;
-        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(redeemingUBA);
+        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(this.redeemingUBA);
         if (totalUBA.isZero()) return MAX_UINT256;
         const price = prices.get(collateral);
         const backingCollateralWei = price.convertUBAToTokenWei(totalUBA);

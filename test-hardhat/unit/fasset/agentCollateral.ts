@@ -137,9 +137,9 @@ describe("Agent collateral unit tests", async () => {
 
     it("Should get collateral ratio BIPS", async () => {
         agentB = await createTestAgentB(context, ownerAddress);
-        const agentCollateral = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), agentB.vaultAddress);
-        const crClass1BIPS = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
-        const crPoolBIPS = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
+        const agentCollateralBeforeMinting = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), agentB.vaultAddress);
+        const crClass1BIPS = agentCollateralBeforeMinting.collateralRatioBIPS(agentCollateralBeforeMinting.class1);
+        const crPoolBIPS = agentCollateralBeforeMinting.collateralRatioBIPS(agentCollateralBeforeMinting.pool);
         expect(crClass1BIPS.eq(exp10(10))).to.be.true;
         expect(crPoolBIPS.eq(exp10(10))).to.be.true;
         const deposit = toBNExp(1_000_000, 18);
@@ -149,10 +149,11 @@ describe("Agent collateral unit tests", async () => {
         await agentB.makeAvailable();
         minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
-        const crClass1BIPSAfterMinting = agentCollateral.collateralRatioBIPS(agentCollateral.class1);
-        const crPoolBIPSAfterMinting = agentCollateral.collateralRatioBIPS(agentCollateral.pool);
-        expect(crClass1BIPSAfterMinting.gtn(0)).to.be.true;
-        expect(crPoolBIPSAfterMinting.gtn(0)).to.be.true;
+        const agentCollateralAfterMinting = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), agentB.vaultAddress);
+        const crClass1BIPSAfterMinting = agentCollateralAfterMinting.collateralRatioBIPS(agentCollateralAfterMinting.class1);
+        const crPoolBIPSAfterMinting = agentCollateralAfterMinting.collateralRatioBIPS(agentCollateralAfterMinting.pool);
+        expect(crClass1BIPSAfterMinting.lt(exp10(10))).to.be.true;
+        expect(crPoolBIPSAfterMinting.lt(exp10(10))).to.be.true;
     });
 
 });

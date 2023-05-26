@@ -175,6 +175,7 @@ export class AgentBot {
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
+        events.sort((a,b) => a.blockNumber - b.blockNumber);
         agentEnt.lastEventBlockHandled = lastBlock;
         return events;
     }

@@ -1,6 +1,6 @@
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
-import { TrackedAgentState } from "./TrackedAgentState";
+import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
@@ -108,7 +108,7 @@ export class TrackedState {
                     const collateral = this.collaterals.get(event.args.collateralClass, event.args.collateralToken);
                     collateral.validUntil = toBN(event.args.validUntil);
                 } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
-                    await this.getAgentTriggerAdd(event.args.agentVault);
+                    this.createAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
@@ -150,7 +150,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'DustChanged')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleDustChanged(event.args);
                 }
-                for(const collateral of this.collaterals.list) {
+                for (const collateral of this.collaterals.list) {
                     const contract = await tokenContract(collateral.token);
                     if (eventIs(event, contract, 'Transfer')) {
                         this.agents.get(event.args.from)?.withdrawClass1Collateral(contract.address, toBN(event.args.value));
@@ -172,7 +172,7 @@ export class TrackedState {
         const events: EvmEvent[] = [];
         for (let lastHandled = this.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
             // handle collaterals
-            for(const collateral of this.collaterals.list) {
+            for (const collateral of this.collaterals.list) {
                 const contract = await tokenContract(collateral.token);
                 const logsCollateral = await web3.eth.getPastLogs({
                     address: contract.address,
@@ -203,6 +203,7 @@ export class TrackedState {
         // mark as handled
         this.lastEventBlockHandled = lastBlock;
         // run state events
+        events.sort((a,b) => a.blockNumber - b.blockNumber);
         await this.registerStateEvents(events);
         return events;
     }
@@ -227,13 +228,27 @@ export class TrackedState {
 
     async createAgentWithCurrentState(vaultAddress: string): Promise<TrackedAgentState> {
         const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
-        const agent = this.createAgent(vaultAddress, agentInfo.underlyingAddressString, agentInfo.collateralPool);
+        const agent = this.createAgent({
+            agentVault: vaultAddress,
+            owner: agentInfo.ownerColdWalletAddress,
+            underlyingAddress: agentInfo.underlyingAddressString,
+            collateralPool: agentInfo.collateralPool,
+            class1CollateralToken: agentInfo.class1CollateralToken,
+            feeBIPS: agentInfo.feeBIPS,
+            poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
+            mintingClass1CollateralRatioBIPS: agentInfo.mintingClass1CollateralRatioBIPS,
+            mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
+            buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
+            poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
+            poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
+            poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS,
+        });
         agent.initialize(agentInfo);
         return agent;
     }
 
-    createAgent(vaultAddress: string, underlyingAddress: string, collateralPoolAddress: string): TrackedAgentState {
-        const agent = new TrackedAgentState(this, vaultAddress, underlyingAddress, collateralPoolAddress);
+    createAgent(data: InitialAgentData): TrackedAgentState {
+        const agent = new TrackedAgentState(this, data);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
         this.agentsByPool.set(agent.collateralPoolAddress, agent);
