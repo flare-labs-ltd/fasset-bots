@@ -234,7 +234,8 @@ export class TrackedAgentState {
     }
 
     private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralType) {
-        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(this.redeemingUBA);
+        const redeemingUBA = collateral.collateralClass === CollateralClass.CLASS1 ? this.redeemingUBA : this.poolRedeemingUBA;
+        const totalUBA = this.reservedUBA.add(this.mintedUBA).add(redeemingUBA);
         if (totalUBA.isZero()) return MAX_UINT256;
         const price = prices.get(collateral);
         const backingCollateralWei = price.convertUBAToTokenWei(totalUBA);
