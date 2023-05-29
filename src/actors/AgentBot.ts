@@ -64,7 +64,7 @@ export class AgentBot {
      * This method fixes the underlying address to be used by given AgentBot owner.
      */
     static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
-        //TODO - what amount should be filled in -> 1 is not always a good fit
+        // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
         await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
