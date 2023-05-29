@@ -38,14 +38,14 @@ export class AgentEntity {
     @Property({ type: BNType })
     poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
 
-    @Property({ type: BNType })
-    poolTokenRedemptionWithdrawalAllowedAtAmount: BN = BN_ZERO;
+    @Property()
+    poolTokenRedemptionWithdrawalAllowedAtAmount: string = "";
 
     @Property({ type: BNType })
     destroyClass1WithdrawalAllowedAtTimestamp: BN = BN_ZERO;
 
-    @Property({ type: BNType })
-    destroyClass1WithdrawalAllowedAtAmount: BN = BN_ZERO;
+    @Property()
+    destroyClass1WithdrawalAllowedAtAmount: string = "";
 
     // agent exit available list
 
@@ -65,8 +65,8 @@ export class AgentEntity {
     @Property({ type: BNType })
     withdrawalAllowedAtTimestamp: BN = BN_ZERO;
 
-    @Property({ type: BNType })
-    withdrawalAllowedAtAmount: BN = BN_ZERO;
+    @Property()
+    withdrawalAllowedAtAmount: string = "";
 
     // agent withdraw underlying
 

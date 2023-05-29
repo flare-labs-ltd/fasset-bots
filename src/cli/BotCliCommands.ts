@@ -76,7 +76,7 @@ export class BotCliCommands {
         const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
         console.log(chalk.cyan(`Class1 ${amount} withdrawal from agent ${agentVault} has been announced.`));
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.withdrawalAllowedAtAmount = toBN(amount);
+        agentEnt.withdrawalAllowedAtAmount = amount;
     }
 
     async withdrawPoolFees(agentVault: string, amount: string): Promise<void> {

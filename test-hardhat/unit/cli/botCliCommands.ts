@@ -140,7 +140,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateralBefore.toString()).to.eq(depositAmount);
         await botCliCommands.withdrawFromVault(vaultAddress!, withdrawAmount);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
-        expect(agentEnt.withdrawalAllowedAtAmount.eq(toBN(withdrawAmount))).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount).to.be.eq(withdrawAmount).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)).to.be.true;
     })
 
@@ -288,7 +288,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateralBefore.toString()).to.eq(depositAmount);
         await botCliCommands.run(["", "", "withdrawClass1", vaultAddress!, withdrawAmount]);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
-        expect(agentEnt.withdrawalAllowedAtAmount.eq(toBN(withdrawAmount))).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount).to.eq(withdrawAmount).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)).to.be.true;
     });
 

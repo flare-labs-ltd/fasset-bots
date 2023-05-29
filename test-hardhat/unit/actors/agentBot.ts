@@ -331,7 +331,7 @@ describe("Agent bot unit tests", async () => {
         await agentBot.agent.depositClass1Collateral(amount);
         const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.withdrawalAllowedAtAmount = amount;
+        agentEnt.withdrawalAllowedAtAmount = amount.toString();
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
@@ -384,12 +384,12 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
         expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.withdrawalAllowedAtAmount.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
         expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.withdrawalAllowedAtAmount.eqn(0)).to.be.true;
+        expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
     });
 
     it("Should exit available before closing vault", async () => {
@@ -409,10 +409,24 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
-        // close vault
+        // try to close vault - announce class 1 withdrawal
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
+        expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
+        // try to close vault - withdraw class 1
+        await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.eq("");
+        // try to close vault - announce pool tokens redemption
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
+        // try to close vault - redeem pool tokens redemption
+        await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.eq("");
+        // try to close vault
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
     });
 
     it("Should confirm underlying withdrawal", async () => {

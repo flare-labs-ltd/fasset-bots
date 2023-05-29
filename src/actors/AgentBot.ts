@@ -203,7 +203,7 @@ export class AgentBot {
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
                     this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.withdrawalAllowedAtAmount.toString());
                     agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.withdrawalAllowedAtAmount = BN_ZERO;
+                    agentEnt.withdrawalAllowedAtAmount = "";
                 }
             }
             if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
@@ -222,41 +222,43 @@ export class AgentBot {
             } else if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO)) {
                 // agent can exit available
                 await this.exitAvailable(agentEnt);
-
-            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp) {
-                // agent waiting to redeem pool tokens
-                if (agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
-                    // agent cane redeem pool tokens
-                    await this.agent.redeemCollateralPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = BN_ZERO;
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    this.notifier.sendCollateralPoolTokensRedemption(agentEnt.vaultAddress);
-                }
-            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.destroyClass1WithdrawalAllowedAtTimestamp) {
+            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
                 // agent waiting to withdraw class1
                 if (agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
                     // agent can withdraw class1
-                    await this.agent.redeemCollateralPoolTokens(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
+                    await this.agent.withdrawClass1Collateral(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
                     this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString());
-                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = BN_ZERO;
+                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = "";
                     agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = BN_ZERO;
                 }
-            } else if (agentEnt.waitingForDestructionCleanUp) { //TODO: go over with Iztok
+            } else if (agentEnt.waitingForDestructionCleanUp && agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
+                // agent waiting to redeem pool tokens
+                if (agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                    // agent can redeem pool tokens
+                    await this.agent.redeemCollateralPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                    this.notifier.sendCollateralPoolTokensRedemption(agentEnt.vaultAddress);
+                }
+            } else if (agentEnt.waitingForDestructionCleanUp) {
                 // agent checks if clean up is complete
-                const poolTokenBalance = await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress);
-                const class1Balance = (await this.agent.getAgentCollateral()).class1.balance;
-                if (poolTokenBalance.gt(BN_ZERO)) {
-                    // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance;
-                } else if (class1Balance.gt(BN_ZERO)) {
+                // withdraw pool fees
+                const poolFeeBalance = await this.agent.poolFeeBalance();
+                if (poolFeeBalance.gt(BN_ZERO)) { await this.agent.withdrawPoolFees(poolFeeBalance); }
+                // check poolTokens and class1Balance
+                const agentCollateral = await this.agent.getAgentCollateral();
+                const freeClass1Balance = agentCollateral.freeCollateralWei(agentCollateral.class1);
+                const freePoolTokenBalance = agentCollateral.freeCollateralWei(agentCollateral.agentPoolTokens);
+                if (freeClass1Balance.gt(BN_ZERO)) {
                     // announce withdraw class 1
-                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = await this.agent.announceClass1CollateralWithdrawal(class1Balance);
-                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = class1Balance;
+                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = await this.agent.announceClass1CollateralWithdrawal(freeClass1Balance);
+                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = freeClass1Balance.toString();
+                } else if (freePoolTokenBalance.gt(BN_ZERO)) {
+                    // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(freePoolTokenBalance);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = freePoolTokenBalance.toString();
                 } else {
-                    // withdraw pool fees and wait for others to redeem
-                    const poolFeeBalance = await this.agent.poolFeeBalance();
-                    if (poolFeeBalance.gt(BN_ZERO)) await this.agent.withdrawPoolFees(poolFeeBalance);
+                    //and wait for others to redeem
                     const agentInfo = await this.agent.getAgentInfo();
                     if (toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) && toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
                         // agent checks if clean is complete, agent can announce destroy
@@ -280,6 +282,7 @@ export class AgentBot {
                     }
                 }
             }
+            em.persist(agentEnt);
         });
     }
 
