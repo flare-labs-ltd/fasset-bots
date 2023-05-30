@@ -79,6 +79,12 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send redemption defaulted alert", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionWasPerformed");
+        notifier.sendRedemptionWasPerformed("reqId", "redeemer",  "agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption was performed", async () => {
         const spySend = spy.on(notifier, "sendRedemptionDefaulted");
         notifier.sendRedemptionDefaulted("reqId", "redeemer",  "agentVault");
         expect(spySend).to.have.been.called.once;

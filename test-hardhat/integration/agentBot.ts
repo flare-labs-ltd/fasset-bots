@@ -482,7 +482,7 @@ describe("Agent bot tests", async () => {
         assert.equal(agentBotEnt.active, false);
     });
 
-    it.skip("Should announce to close vault only if no tickets are open for that agent", async () => {
+    it("Should announce to close vault only if no tickets are open for that agent", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // perform minting
         const lots = 2;
@@ -500,10 +500,8 @@ describe("Agent bot tests", async () => {
         await time.increaseTo(exitAllowedAt);
         await agentBot.agent.exitAvailable();
         // close vault
-        console.log("h1")
         agentEnt.waitingForDestructionCleanUp = true;
         await agentBot.runStep(orm.em);
-        console.log("h2")
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(lots);
@@ -520,36 +518,15 @@ describe("Agent bot tests", async () => {
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
-        // withdraw class1
-        await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
+        // clear dust
+        await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
+        // withdraw class1 and pool tokens
+        await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
         await agentBot.runStep(orm.em);
-        // TODO why is new entity needed?
-        const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        console.log("HERE12", agentEnt2.destroyClass1WithdrawalAllowedAtTimestamp.toString());
-        await agentBot.runStep(orm.em);
-        // withdraw class1
-        await time.increaseTo(agentEnt2.destroyClass1WithdrawalAllowedAtTimestamp);
-        await agentBot.runStep(orm.em);
-        // TODO why is new entity needed?
-        const agentEnt3 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        console.log("HERE12", agentEnt3.destroyClass1WithdrawalAllowedAtTimestamp.toString());
-        await agentBot.runStep(orm.em);
-        // withdraw pool fees
-        // const poolFeeBalance = await agentBot.agent.poolFeeBalance();
-        // await agentBot.agent.withdrawPoolFees(poolFeeBalance);
-        // self close all received pool fees - otherwise we cannot withdraw all pool collateral
-        // await agentBot.agent.selfClose(poolFeeBalance);
         // announce destroy
-        // await agentBot.runStep(orm.em);
-        // console.log("HERE13", agentEnt2.destroyClass1WithdrawalAllowedAtTimestamp.toString());
-        // await time.increaseTo(agentEnt2.destroyClass1WithdrawalAllowedAtTimestamp);
-        // await agentBot.runStep(orm.em);
-        // console.log("HERE14", agentEnt2.destroyClass1WithdrawalAllowedAtTimestamp.toString());
-        // // await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
-        // await agentBot.runStep(orm.em);
-        // await agentBot.runStep(orm.em);
-        // const status = Number((await agentBot.agent.getAgentInfo()).status);
-        // assert.equal(status, AgentStatus.DESTROYING);
+        await agentBot.runStep(orm.em);
+        const status = Number((await agentBot.agent.getAgentInfo()).status);
+        assert.equal(status, AgentStatus.DESTROYING);
     });
 
 
