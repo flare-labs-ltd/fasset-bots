@@ -95,7 +95,7 @@
       "axios": "^1.3.4",
       "bn.js": "^4.12.0",
       "glob": "^7.2.3",
-      "simple-wallet": "link:../simple-wallet",
+      "simple-wallet": "file:../simple-wallet",
       "yarn": "^1.22.19"
    },
    "devDependencies": {
