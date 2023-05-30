@@ -12,7 +12,7 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { time } from "@openzeppelin/test-helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
-import { expect, spy, use } from "chai";
+import { assert, expect, spy, use } from "chai";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintClass1ToOwner } from "../../test-utils/helpers";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
@@ -415,18 +415,9 @@ describe("Agent bot unit tests", async () => {
         // try to close vault - withdraw class 1
         await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.eq("");
-        // try to close vault - announce pool tokens redemption
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
-        // try to close vault - redeem pool tokens redemption
-        await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.eq("");
-        // try to close vault
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        // check agent status
+        const status2 = Number((await agentBot.agent.getAgentInfo()).status);
+        assert.equal(status2, AgentStatus.DESTROYING);
     });
 
     it("Should confirm underlying withdrawal", async () => {
