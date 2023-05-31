@@ -1,6 +1,6 @@
 import { IFtsoRegistryInstance } from "../../typechain-truffle";
-import { AssetManagerSettings, CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
-import { IAssetContext, IFtsoRegistryEvents } from "../fasset/IAssetContext";
+import { AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
+import { IFtsoRegistryEvents } from "../fasset/IAssetContext";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { CollateralIndexedList, CollateralTypeId } from "./CollateralIndexedList";
 import { CollateralPrice } from "./CollateralPrice";
@@ -11,31 +11,10 @@ export type StablecoinPrices = { [tokenAddress: string]: TokenPrice };
 export class Prices {
     constructor(
         public collateralPrices: CollateralIndexedList<CollateralPrice>,
-    ) {
-    }
+    ) { }
 
     get(token: CollateralTypeId) {
         return this.collateralPrices.get(token);
-    }
-
-    getClass1(token: string) {
-        return this.collateralPrices.get(CollateralClass.CLASS1, token);
-    }
-
-    getPool(token: string) {
-        return this.collateralPrices.get(CollateralClass.POOL, token);
-    }
-
-    toString() {
-        const prices: Map<string, number> = new Map();
-        for (const cp of this.collateralPrices.list) {
-            prices.set(cp.collateral.assetFtsoSymbol, cp.assetPrice.toNumber());
-            if (!cp.collateral.directPricePair) {
-                prices.set(cp.collateral.tokenFtsoSymbol, cp.tokenPrice!.toNumber());
-                prices.set(`${cp.collateral.assetFtsoSymbol}/${cp.collateral.tokenFtsoSymbol}`, cp.assetPrice.toNumber()  / cp.tokenPrice!.toNumber());
-            }
-        }
-        return '(' + Array.from(prices.entries()).map(([symbol, value]) => `${symbol}=${value.toFixed(3)}`).join(', ') + ')';
     }
 
     static async getFtsoPrices(priceReader: TokenPriceReader, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>, trusted: boolean = false): Promise<Prices> {

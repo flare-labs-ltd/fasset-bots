@@ -56,30 +56,9 @@ describe("Prices tests", async () => {
         collateralPrice = new CollateralPrice(poolCollateral, assetPrice, tokenPrice, amgPrice);
     });
 
-    it("Should create Prices", async () => {
-        const collateralPrices = new CollateralIndexedList<CollateralPrice>();
-        const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, poolCollateral);
-        collateralPrices.set(poolCollateral, collateralPrice);
-        const prices = new Prices(collateralPrices);
-        expect(prices.getPool(poolCollateral.token).collateral.token).to.eq(poolCollateral.token);
-        const fn = () => {
-            return prices.getClass1(poolCollateral.token);
-        };
-        expect(fn).to.throw(`Value is null or undefined`);
-    });
-
     it("Should return Prices", async () => {
         const prices = await Prices.getPrices(context.ftsoRegistry, settings, [collateralPrice.collateral]);
         expect(prices.length).to.eq(2);
-    });
-
-    it("Should return Ftso prices", async () => {
-        const prices = await Prices.getFtsoPrices(priceReader, settings, [collateralPrice.collateral]);
-        expect(prices.getPool(poolCollateral.token).collateral.token).to.eq(poolCollateral.token);
-        const fn = () => {
-            return prices.getClass1(poolCollateral.token);
-        };
-        expect(fn).to.throw(`Value is null or undefined`);
     });
 
     it("Should print prices", async () => {

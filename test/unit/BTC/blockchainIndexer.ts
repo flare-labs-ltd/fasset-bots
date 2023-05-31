@@ -12,9 +12,9 @@ const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/Blo
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.BTC;
-const txHash = "3f99d6f26d4f74491b761ff3f836bc16fd1e5ab9d82d943081f16426ab551097";
-const blockId = 2435271;
-const blockHash = "000000000000000c24a7fcfc560799d3d2d2636f14b70aa7b1245fca88e8ca6b";
+const txHash = "ed73ecf19fe3e2d41ed2eadfbb9789729503403f63c9f17531a89d58962ea00e";
+const blockId = 2436063;
+const blockHash = "0000000000002fcb0d53827a5a486c90d2c33c41a88db3bb398b850f6530f8de";
 const txReference = "0000000000000000000000000000000000000000000000000000000000000000";
 const invalidTxHash = txHash.slice(2);
 

@@ -29,22 +29,6 @@ export class TokenPrice {
     fresh(relativeTo: TokenPrice, maxAge: BN) {
         return this.timestamp.add(maxAge).gte(relativeTo.timestamp);
     }
-
-    toNumber() {
-        return Number(this.price) * (10 ** -Number(this.decimals));
-    }
-
-    toFixed(displayDecimals: number = 3) {
-        return this.toNumber().toFixed(displayDecimals);
-    }
-
-    toString() {
-        return this.toNumber().toFixed(3);
-    }
-
-    amgToTokenWei(settings: AMGSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
-        return amgToTokenWeiPrice(settings, tokenDecimals, this.price, this.decimals, assetUSD.price, assetUSD.decimals);
-    }
 }
 
 export class TokenPriceReader {
@@ -54,11 +38,6 @@ export class TokenPriceReader {
     constructor(
         public ftsoRegistry: IFtsoRegistryInstance
     ) { }
-
-    static async create(settings: { ftsoRegistry: string }) {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        return new TokenPriceReader(ftsoRegistry);
-    }
 
     getFtso(symbol: string) {
         return getOrCreateAsync(this.ftsoCache, symbol, async () => {
