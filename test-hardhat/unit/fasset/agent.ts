@@ -76,14 +76,6 @@ describe("Agent unit tests", async () => {
         expect(agentsUnderlyingAddress).to.eq(underlyingAddress);
     });
 
-    it("Should get agent collateral", async () => {
-        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const agentCollateral = await agent.getAgentCollateral();
-        const class1TokenAddress = (await agent.getClass1CollateralToken()).token;
-        expect(agentCollateral).to.not.be.null;
-        expect(agentCollateral.class1.collateral?.token).to.eq(class1TokenAddress);
-    });
-
     it("Should deposit collateral", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const class1TokenContract = await mintAndDepositClass1ToOwner(context, agent.vaultAddress, deposit, ownerAddress);

@@ -18,7 +18,6 @@ import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
-import { AgentCollateral } from "../../../src/fasset/AgentCollateral";
 import { time } from "@openzeppelin/test-helpers";
 use(chaiAsPromised);
 use(spies);
@@ -214,13 +213,11 @@ describe("Bot cli commands unit tests", async () => {
     it("Should run command 'buyPoolCollateral'", async () => {
         const vaultAddress = await botCliCommands.createAgentVault();
         expect(vaultAddress).to.not.be.null;
-        const agentCollateral0 = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), vaultAddress!);
-        expect(agentCollateral0.agentPoolTokens.balance.eqn(0)).to.be.true;
+        expect((await context.assetManager.getAgentInfo(vaultAddress!)).totalAgentPoolTokensWei).to.eq("0");
         await mintAndDepositClass1ToOwner(context, vaultAddress!, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress!, depositAmount);
         await botCliCommands.run(["", "", "buyPoolCollateral", vaultAddress!, depositAmount]);
-        const agentCollateral1 = await AgentCollateral.create(context.assetManager, await context.assetManager.getSettings(), vaultAddress!);
-        expect(agentCollateral1.agentPoolTokens.balance.eq(toBN(depositAmount))).to.be.true;
+        expect((await context.assetManager.getAgentInfo(vaultAddress!)).totalAgentPoolTokensWei).to.eq(depositAmount);
     });
 
     it("Should not run command 'buyPoolCollateral' - missing inputs", async () => {

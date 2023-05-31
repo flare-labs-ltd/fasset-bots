@@ -319,8 +319,7 @@ describe("Tracked state tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const agentCollateral = await agentB.getAgentCollateral();
-        const burnNats = agentCollateral.pool.convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const burnNats = (await agentB.getPoolCollateralPrice()).convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
         const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists();
         await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
@@ -523,8 +522,8 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'CollateralTypeAdded' and 'CollateralTypeDeprecated'", async () => {
         const collateralsBefore = trackedState.collaterals.list.length;
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
-        const agentCollateral = await agentB.getAgentCollateral();
-        const newCollateral = Object.assign({}, agentCollateral.class1.collateral);
+        const agentClass1Collateral = await agentB.getClass1CollateralToken();
+        const newCollateral = Object.assign({}, agentClass1Collateral);
         newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
         newCollateral.tokenFtsoSymbol = "NT";
         newCollateral.assetFtsoSymbol = "NT";

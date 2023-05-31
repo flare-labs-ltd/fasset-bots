@@ -3,15 +3,16 @@ import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, Availa
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
-import { AgentInfo, AgentSettings, CollateralType } from "./AssetManagerTypes";
+import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { EventArgs } from "../utils/events/common";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { AgentCollateral } from "./AgentCollateral";
 import { getAgentSettings } from "../utils/fasset-helpers";
+import { CollateralPrice } from "../state/CollateralPrice";
+import { CollateralDataFactory } from "./CollateralData";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -46,11 +47,7 @@ export class Agent {
 
     async getAgentSettings(): Promise<AgentSettings> {
         const agentInfo = await this.getAgentInfo();
-       return getAgentSettings(agentInfo);
-    }
-
-    async getAgentCollateral() {
-        return await AgentCollateral.create(this.assetManager, await this.assetManager.getSettings(), this.vaultAddress);
+        return getAgentSettings(agentInfo);
     }
 
     async getAgentInfo(): Promise<AgentInfo> {
@@ -58,8 +55,23 @@ export class Agent {
     }
 
     async getClass1CollateralToken(): Promise<CollateralType> {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return (await this.getAgentCollateral()).class1.collateral!;
+        return await this.assetManager.getCollateralType(CollateralClass.CLASS1, (await this.getAgentSettings()).class1CollateralToken);
+    }
+
+    async getPoolCollateralToken(): Promise<CollateralType> {
+        return await this.assetManager.getCollateralType(CollateralClass.POOL, await this.assetManager.getWNat());
+    }
+
+    async getClass1CollateralPrice(): Promise<CollateralPrice> {
+        const settings = await this.assetManager.getSettings();
+        const collateralDataFactory = await CollateralDataFactory.create(settings);
+        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getClass1CollateralToken());
+    }
+
+    async getPoolCollateralPrice(): Promise<CollateralPrice>{
+        const settings = await this.assetManager.getSettings();
+        const collateralDataFactory = await CollateralDataFactory.create(settings);
+        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateralToken());
     }
 
     static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {

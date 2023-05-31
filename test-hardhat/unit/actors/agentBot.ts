@@ -340,8 +340,8 @@ describe("Agent bot unit tests", async () => {
         await time.increaseTo(withdrawalAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        const agentCollateral = await agentBot.agent.getAgentCollateral();
-        expect((agentCollateral.class1.balance).eqn(0)).to.be.true;
+        const agentClass1Balance = (await agentBot.agent.getAgentInfo()).totalClass1CollateralWei;
+        expect(agentClass1Balance).to.eq("0");
     });
 
     it("Should update agent settings", async () => {

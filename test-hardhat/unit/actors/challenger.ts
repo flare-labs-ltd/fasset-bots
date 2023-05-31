@@ -1,11 +1,8 @@
 import { expect } from "chai";
-import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
 import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
@@ -32,16 +29,13 @@ describe("Challenger unit tests", async () => {
     let trackedStateContext: TestAssetTrackedStateContext;
     let challengerAddress: string;
     let ownerAddress: string;
-    let orm: ORM;
     let state: TrackedState;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
     });
 
     beforeEach(async () => {
-        orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         const lastBlock = await web3.eth.getBlockNumber();

@@ -4,7 +4,7 @@ import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
@@ -15,8 +15,8 @@ import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANC
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import { CollateralData } from "../fasset/CollateralData";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { CollateralPrice } from "../state/CollateralPrice";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -382,8 +382,7 @@ export class AgentBot {
         if (proof) {
             // corner case: proof expires in indexer
             const settings = await this.context.assetManager.getSettings();
-            const agentCollateral = await this.agent.getAgentCollateral();
-            const burnNats = agentCollateral.pool.convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+            const burnNats = (await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
@@ -672,13 +671,13 @@ export class AgentBot {
      */
     async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
-        const agentCollateral = await this.agent.getAgentCollateral();
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const requiredCrClass1BIPS = toBN(agentCollateral.class1.collateral!.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const requiredCrPoolBIPS = toBN(agentCollateral.pool.collateral!.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUpClass1 = await this.requiredTopUp(requiredCrClass1BIPS, agentInfo, agentCollateral.class1);
-        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, agentCollateral.pool);
+        const collateralClass1Price = await this.agent.getClass1CollateralPrice();
+        const collateralPoolPrice = await this.agent.getPoolCollateralPrice();
+
+        const requiredCrClass1BIPS = toBN(collateralClass1Price.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredCrPoolBIPS = toBN(collateralPoolPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopUpClass1 = await this.requiredTopUp(requiredCrClass1BIPS, agentInfo, collateralClass1Price);
+        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, collateralPoolPrice);
         if (requiredTopUpClass1.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
             // no need for top up
         }
@@ -698,17 +697,15 @@ export class AgentBot {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
             }
         }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const tokenClass1 = await IERC20.at(agentCollateral.class1.collateral!.token);
+        const tokenClass1 = await IERC20.at(collateralClass1Price.collateral.token);
         const ownerBalanceClass1 = await tokenClass1.balanceOf(this.agent.ownerAddress);
         if (ownerBalanceClass1.lte(STABLE_COIN_LOW_BALANCE)) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceClass1.toString(), agentCollateral.class1.collateral!.tokenFtsoSymbol);
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceClass1.toString(), collateralClass1Price.collateral.tokenFtsoSymbol);
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
         if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), agentCollateral.pool.collateral!.tokenFtsoSymbol);
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), collateralPoolPrice.collateral.tokenFtsoSymbol);
         }
     }
 
@@ -716,11 +713,13 @@ export class AgentBot {
      * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
      * If value is less than zero, top up is not needed.
      */
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cd: CollateralData): Promise<BN> {
-        const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(agentInfo.redeemingUBA));
-        const backingClass1Wei = cd.convertUBAToTokenWei(totalUBA);
+    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
+        const redeemingUBA = cp.collateral.collateralClass == CollateralClass.CLASS1 ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
+        const balance = toBN(cp.collateral.collateralClass == CollateralClass.CLASS1 ? agentInfo.totalClass1CollateralWei : agentInfo.totalPoolCollateralNATWei);
+        const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
+        const backingClass1Wei = cp.convertUBAToTokenWei(totalUBA);
         const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(cd.balance);
+        return requiredCollateral.sub(balance);
     }
 
 }
