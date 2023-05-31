@@ -1477,7 +1477,7 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  setPoolCollateralType: {
+  setPoolWNatCollateralType: {
     (
       _assetManagers: string[],
       _data: {
@@ -2602,7 +2602,7 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    setPoolCollateralType: {
+    setPoolWNatCollateralType: {
       (
         _assetManagers: string[],
         _data: {
