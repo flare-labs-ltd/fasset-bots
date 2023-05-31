@@ -45,20 +45,6 @@ export class TokenPrice {
     amgToTokenWei(settings: AMGSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
         return amgToTokenWeiPrice(settings, tokenDecimals, this.price, this.decimals, assetUSD.price, assetUSD.decimals);
     }
-
-    static fromFraction(multiplier: BN, divisor: BN, timestamp: BN, decimals: BNish) {
-        decimals = toBN(decimals);
-        const price = multiplier.isZero() ? BN_ZERO : multiplier.mul(exp10(decimals)).div(divisor);
-        return new TokenPrice(price, timestamp, decimals);
-    }
-
-    priceInToken(tokenPrice: TokenPrice, decimals: BNish) {
-        decimals = toBN(decimals);
-        const multiplier = exp10(decimals.add(tokenPrice.decimals).sub(this.decimals));
-        const price = this.price.mul(multiplier).div(tokenPrice.price);
-        const timestamp = minBN(this.timestamp, tokenPrice.timestamp);
-        return new TokenPrice(price, timestamp, decimals);
-    }
 }
 
 export class TokenPriceReader {
