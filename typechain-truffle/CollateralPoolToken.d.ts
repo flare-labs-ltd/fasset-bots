@@ -195,6 +195,11 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
 
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
@@ -409,6 +414,11 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
     };
 
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

@@ -340,6 +340,11 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   transferExternalToken: {
     (
       _token: string,
@@ -784,6 +789,11 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     transferExternalToken: {
       (

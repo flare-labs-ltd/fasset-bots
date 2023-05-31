@@ -217,6 +217,11 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   supportsRevoke(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   switchToProductionMode: {
@@ -362,6 +367,11 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     supportsRevoke(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 

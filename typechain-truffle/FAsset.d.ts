@@ -598,6 +598,11 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -1330,6 +1335,11 @@ export interface FAssetInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     switchToProductionMode: {
       (txDetails?: Truffle.TransactionDetails): Promise<

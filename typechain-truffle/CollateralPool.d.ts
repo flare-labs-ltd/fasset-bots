@@ -437,6 +437,11 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   token(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   topupCollateralRatioBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
@@ -887,6 +892,11 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     token(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

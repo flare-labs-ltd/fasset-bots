@@ -1713,6 +1713,11 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   switchToProductionMode: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -2832,6 +2837,11 @@ export interface AssetManagerControllerInstance
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     switchToProductionMode: {
       (txDetails?: Truffle.TransactionDetails): Promise<

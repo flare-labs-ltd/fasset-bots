@@ -8,6 +8,7 @@ import { ERC20Contract } from "./ERC20";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20Contract } from "./IERC20";
+import { IERC165Contract } from "./IERC165";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
@@ -118,6 +119,7 @@ declare global {
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20"): IERC20Contract;
+      require(name: "IERC165"): IERC165Contract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
@@ -239,6 +241,7 @@ export {
   IERC20MetadataInstance,
 } from "./IERC20Metadata";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
+export { IERC165Contract, IERC165Instance } from "./IERC165";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
 export {
   AgentVaultFactoryContract,

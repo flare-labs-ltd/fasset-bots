@@ -105,6 +105,11 @@ export interface CollateralPoolFactoryInstance
     ): Promise<number>;
   };
 
+  supportsInterface(
+    _interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   methods: {
     create: {
       (
@@ -194,6 +199,11 @@ export interface CollateralPoolFactoryInstance
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    supportsInterface(
+      _interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;
