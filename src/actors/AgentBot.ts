@@ -714,8 +714,8 @@ export class AgentBot {
      * If value is less than zero, top up is not needed.
      */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
-        const redeemingUBA = cp.collateral.collateralClass == CollateralClass.CLASS1 ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const balance = toBN(cp.collateral.collateralClass == CollateralClass.CLASS1 ? agentInfo.totalClass1CollateralWei : agentInfo.totalPoolCollateralNATWei);
+        const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.CLASS1 ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
+        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.CLASS1 ? agentInfo.totalClass1CollateralWei : agentInfo.totalPoolCollateralNATWei);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
         const backingClass1Wei = cp.convertUBAToTokenWei(totalUBA);
         const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
