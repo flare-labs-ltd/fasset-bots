@@ -25,6 +25,7 @@ use(chaiAsPromised);
 use(spies);
 
 const ERC20Mock = artifacts.require('ERC20Mock');
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 const agentDestroyedArgs = {
     '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
@@ -288,6 +289,40 @@ describe("Tracked state tests", async () => {
         expect(agentMiddle.reservedUBA.gt(agentAfter.reservedUBA)).to.be.true;
     });
 
+    it.only("Should handle event 'RedemptionRequested", async () => {
+        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain);
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain)
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(agentB.vaultAddress, fBalance, { from: minter.address });
+        // await agentB.buyCollateralPoolTokens(toBNExp(1_000_000, 18));
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(1_000_000, 18), from: minter.address });
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(1_000_000, 18), from: minter.address });
+        const tokens = await agentB.collateralPoolToken.balanceOf(agentB.vaultAddress);
+        console.log(tokens.toString());
+        console.log(fBalance.toString());
+        console.log((await context.assetManager.lotSize()).toString());
+
+        // await context.assetManager.redeemFromAgent(agentB.vaultAddress, agentB.vaultAddress, tokens, agentB.underlyingAddress);
+        await agentB.collateralPool.selfCloseExit(tokens.divn(2), false, agentB.underlyingAddress, {from: minter.address});
+
+        await trackedState.readUnhandledEvents();
+        // const collateralPoolToken = await CollateralPoolToken.new(agentB.collateralPoolToken);
+        // const tokens = await collateralPoolToken.balanceOf(accounts[0]);
+        // it("should do a self-close exit where redemption is done in underlying asset", async () => {
+        //     await givePoolFAssetFees(ETH(100));
+        //     const natToEnter = await poolFAssetFeeNatValue();
+        //     await collateralPool.enter(0, true, { value: natToEnter });
+        //     const tokens = await collateralPoolToken.balanceOf(accounts[0]);
+        //     const resp = await collateralPool.selfCloseExit(tokens, false, "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2");
+        //     await expectEvent.inTransaction(resp.tx, assetManager, "AgentRedemption");
+        // });
+
+
+
+    });
+
     it("Should handle event 'RedemptionPerformed'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -501,8 +536,10 @@ describe("Tracked state tests", async () => {
         const agentInfo = await agentB.getAgentInfo();
         await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
         await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
-        await agentB.depositClass1Collateral(deposit);
+        await agentB.depositClass1Collateral(deposit.divn(2));
         await agentB.buyCollateralPoolTokens(deposit);
+        // deposit class1 one more time
+        await agentB.depositClass1Collateral(deposit.divn(2));
         await trackedState.readUnhandledEvents();
         await agentB.makeAvailable();
         await trackedState.readUnhandledEvents();
