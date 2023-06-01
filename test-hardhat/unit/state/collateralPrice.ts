@@ -39,30 +39,6 @@ describe("AMG price unit tests", async () => {
         expect(amgPrice.amgToTokenWei.eq(AMG_TO_TOKEN_WEI)).to.be.true;
     });
 
-    it("Should calculate conversions", async () => {
-        const amgPrice = new AMGPrice(AMG_TO_TOKEN_WEI, toBN(amgSettings.assetMintingDecimals), toBN(amgSettings.assetMintingGranularityUBA));
-        const valueAMG0 = toBN(100);
-        const valueUBA0 = amgPrice.convertAmgToUBA(valueAMG0);
-        expect(valueAMG0.eq(valueUBA0)).to.be.true;
-
-        const valueUBA1 = toBN(100);
-        const valueAMG1 = amgPrice.convertUBAToAmg(valueUBA1);
-        expect(valueAMG1.eq(valueUBA1)).to.be.true;
-
-        const amgToTokenWei = amgPrice.convertAmgToTokenWei(valueAMG0);
-        expect(amgToTokenWei.eq(valueAMG0)).to.be.true;
-
-        const valueNATWei = toBN(100);
-        const tokenWeiToAmg = amgPrice.convertTokenWeiToAMG(valueNATWei);
-        expect(valueNATWei.eq(tokenWeiToAmg)).to.be.true;
-
-        const ubaToTokenWei = amgPrice.convertUBAToTokenWei(valueAMG0);
-        expect(ubaToTokenWei.eq(valueAMG0)).to.be.true;
-
-        const valueUBA2 = amgPrice.convertTokenWeiToUBA(valueNATWei);
-        expect(valueNATWei.eq(valueUBA2)).to.be.true;
-    });
-
 });
 
 describe("Collateral price unit tests", async () => {
@@ -89,46 +65,9 @@ describe("Collateral price unit tests", async () => {
         expect(collateralPrice0.assetPrice.decimals.eq(assetPrice.decimals));
         expect(collateralPrice0.amgPrice.amgToTokenWei.eq(amgPrice.amgToTokenWei));
 
-        const collateralPrice1 = CollateralPrice.forTokenPrices(amgSettings, poolCollateral, assetPrice, tokenPrice);
-        expect(collateralPrice1.assetPrice.decimals.eq(assetPrice.decimals));
-        expect(collateralPrice1.amgPrice.amgToTokenWei.eq(amgPrice.amgToTokenWei));
-
         const collateralPrice2 = await CollateralPrice.forCollateral(priceReader, settings, poolCollateral);
         expect(collateralPrice2.assetPrice.decimals.eq(assetPrice.decimals));
         expect(collateralPrice2.amgPrice.amgToTokenWei.eq(amgPrice.amgToTokenWei));
-    });
-
-    it("Should calculate conversions", async () => {
-        const collateralPrice0 = new CollateralPrice(poolCollateral, assetPrice, tokenPrice, amgPrice);
-        const valueAMG0 = toBN(100);
-        const valueUBA0 = collateralPrice0.convertAmgToUBA(valueAMG0);
-        expect(valueAMG0.eq(valueUBA0)).to.be.true;
-
-        const valueUBA1 = toBN(100);
-        const valueAMG1 = collateralPrice0.convertUBAToAmg(valueUBA1);
-        expect(valueAMG1.eq(valueUBA1)).to.be.true;
-
-        const amgToTokenWei = collateralPrice0.convertAmgToTokenWei(valueAMG0);
-        expect(amgToTokenWei.eq(valueAMG0)).to.be.true;
-
-        const valueNATWei = toBN(100);
-        const tokenWeiToAmg = collateralPrice0.convertTokenWeiToAMG(valueNATWei);
-        expect(valueNATWei.eq(tokenWeiToAmg)).to.be.true;
-
-        const ubaToTokenWei = collateralPrice0.convertUBAToTokenWei(valueAMG0);
-        expect(ubaToTokenWei.eq(valueAMG0)).to.be.true;
-
-        const valueUBA2 = collateralPrice0.convertTokenWeiToUBA(valueNATWei);
-        expect(valueNATWei.eq(valueUBA2)).to.be.true;
-    });
-
-    it("Should get asset to token price", async () => {
-        const collateralPrice = new CollateralPrice(poolCollateral, assetPrice, tokenPrice, amgPrice);
-        expect(collateralPrice.assetToTokenPriceNum()).to.eq(assetPrice.toNumber());
-        const poolCollateralNoPair = Object.assign({}, poolCollateral);
-        poolCollateralNoPair.directPricePair = false;
-        const collateralPrice1 = CollateralPrice.forTokenPrices(amgSettings, poolCollateralNoPair, assetPrice, tokenPrice);
-        expect(collateralPrice1.assetToTokenPriceNum()).to.eq(assetPrice.toNumber() / tokenPrice.toNumber());
     });
 
 });

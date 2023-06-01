@@ -8,9 +8,9 @@ use(chaiAsPromised);
 
 
 const sourceId: SourceId = SourceId.DOGE;
-const txHash = "f2689b2f34c9acf7f6bc765863321972517c2e96cdb4aadc04834ecab799e5dd";
-const blockId = 4752697;
-const blockHash = "b6e913e223ab8d4296ee4807f5e915cdbedf034fb20da48a34fd346312dd6a95";
+const txHash = "bae6bf82646bda1b713fa64d81c691a5893b951724c9afdfa51ea636d4b4ed3c";
+const blockId = 4799617;
+const blockHash = "f9cb0022e8cac36970ae1d6cf13494ca0c4e6246efbd8b04f0b3132fccdd1c1c";
 
 describe("DOGE blockchain tests via indexer", async () => {
     let blockChainIndexerClient: BlockChainIndexerHelper;

@@ -2471,7 +2471,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setPoolCollateralType: {
+  setPoolWNatCollateralType: {
     (
       _data: {
         collateralClass: number | BN | string;
@@ -4593,7 +4593,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setPoolCollateralType: {
+    setPoolWNatCollateralType: {
       (
         _data: {
           collateralClass: number | BN | string;

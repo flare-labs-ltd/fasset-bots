@@ -8,7 +8,7 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import { convertLotsToUBA } from "../../../src/fasset/Conversions";
+import { lotSize } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
@@ -214,8 +214,8 @@ describe("Tracked state tests", async () => {
         await agentBLocal.makeAvailable();
         const lots = 3;
         const supplyBefore = trackedState.fAssetSupply;
-
-        const amountUBA = convertLotsToUBA(await context.assetManager.getSettings(), lots);
+        // convert lots in uba
+        const amountUBA = toBN(lots).mul(lotSize(await context.assetManager.getSettings()));
         const agentSettings = await agentBLocal.getAgentSettings();
         const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
 
