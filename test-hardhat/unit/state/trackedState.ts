@@ -3,7 +3,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
-import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, requireNotNull, toBN, toBNExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
@@ -25,7 +25,6 @@ use(chaiAsPromised);
 use(spies);
 
 const ERC20Mock = artifacts.require('ERC20Mock');
-const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 const agentDestroyedArgs = {
     '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
