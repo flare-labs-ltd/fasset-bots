@@ -3,7 +3,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
-import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, requireNotNull, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
@@ -289,38 +289,32 @@ describe("Tracked state tests", async () => {
         expect(agentMiddle.reservedUBA.gt(agentAfter.reservedUBA)).to.be.true;
     });
 
-    it.only("Should handle event 'RedemptionRequested", async () => {
+    it("Should handle event 'RedemptionRequested' from collateral pool self close exit", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minter = await createTestMinter(context, minterAddress, chain);
-        await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain);
-        await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain)
+        // minter enters pool
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
+        // tweak some pool settings
+        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
+        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
+        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", { from: agentB.ownerAddress });
+        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", 88600, { from: agentB.ownerAddress });
+        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
+        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", { from: agentB.ownerAddress });
+        // minter performs minting
+        const lots = 20;
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
+        // increase fAsset allowance
         const fBalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(agentB.vaultAddress, fBalance, { from: minter.address });
-        // await agentB.buyCollateralPoolTokens(toBNExp(1_000_000, 18));
-        await agentB.collateralPool.enter(0, false, { value: toBNExp(1_000_000, 18), from: minter.address });
-        await agentB.collateralPool.enter(0, false, { value: toBNExp(1_000_000, 18), from: minter.address });
-        const tokens = await agentB.collateralPoolToken.balanceOf(agentB.vaultAddress);
-        console.log(tokens.toString());
-        console.log(fBalance.toString());
-        console.log((await context.assetManager.lotSize()).toString());
-
-        // await context.assetManager.redeemFromAgent(agentB.vaultAddress, agentB.vaultAddress, tokens, agentB.underlyingAddress);
-        await agentB.collateralPool.selfCloseExit(tokens.divn(2), false, agentB.underlyingAddress, {from: minter.address});
-
+        await context.fAsset.increaseAllowance(agentB.collateralPool.address, fBalance, { from: minter.address });
+        // self close exit
+        const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
+        await agentB.collateralPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, { from: minter.address });
+        // handle events
         await trackedState.readUnhandledEvents();
-        // const collateralPoolToken = await CollateralPoolToken.new(agentB.collateralPoolToken);
-        // const tokens = await collateralPoolToken.balanceOf(accounts[0]);
-        // it("should do a self-close exit where redemption is done in underlying asset", async () => {
-        //     await givePoolFAssetFees(ETH(100));
-        //     const natToEnter = await poolFAssetFeeNatValue();
-        //     await collateralPool.enter(0, true, { value: natToEnter });
-        //     const tokens = await collateralPoolToken.balanceOf(accounts[0]);
-        //     const resp = await collateralPool.selfCloseExit(tokens, false, "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2");
-        //     await expectEvent.inTransaction(resp.tx, assetManager, "AgentRedemption");
-        // });
-
-
-
+        const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
+        expect(agentAfter.poolRedeemingUBA.gt(agentBefore.poolRedeemingUBA));
     });
 
     it("Should handle event 'RedemptionPerformed'", async () => {
