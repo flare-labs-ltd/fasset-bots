@@ -1,5 +1,6 @@
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
-import { toBN } from "./helpers";
+import { IAssetContext } from "../fasset/IAssetContext";
+import { toBN, toNumber } from "./helpers";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -13,4 +14,18 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
     agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
     return agentSettings;
+}
+
+
+/**
+ * Prove that a block with given number and timestamp exists and
+ * update the current underlying block info if the provided data higher.
+ * This method should be called by minters before minting and by agent's regularly
+ * to prevent current block being too outdated, which gives too short time for
+ * minting or redemption payment.
+ */
+export async function proveAndUpdateUnderlyingBlock(context: IAssetContext) {
+    const proof = await context.attestationProvider.proveConfirmedBlockHeightExists();
+    await context.assetManager.updateCurrentBlock(proof);
+    return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }

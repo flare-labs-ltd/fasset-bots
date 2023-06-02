@@ -179,17 +179,6 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
-/**
- * Return the minimum of two or more BN values.
- */
-export function minBN(first: BN, ...rest: BN[]) {
-    let result = first;
-    for (const x of rest) {
-        if (x.lt(result)) result = x;
-    }
-    return result;
-}
-
 // toplevel async function runner for node.js
 /* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {

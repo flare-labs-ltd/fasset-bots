@@ -1,12 +1,10 @@
 import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
-import { AMGSettings, amgToTokenWeiPrice } from "../fasset/Conversions";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents } from "../utils/events/truffle";
-import { BN_ZERO, BNish, exp10, getOrCreateAsync, minBN, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
 export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 
 const IFtso = artifacts.require('IFtso');
-const IFtsoRegistry = artifacts.require('IFtsoRegistry');
 const IERC20 = artifacts.require('IERC20')
 
 export async function tokenContract(tokenAddress: string) {

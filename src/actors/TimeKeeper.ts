@@ -1,4 +1,5 @@
 import { IAssetContext } from "../fasset/IAssetContext";
+import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 
 const delayInMs = 60000; // 1min
 export class TimeKeeper {
@@ -14,8 +15,7 @@ export class TimeKeeper {
      * minting or redemption payment.
      */
     async updateUnderlyingBlock() {
-        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
-        await this.context.assetManager.updateCurrentBlock(proof);
+        await proveAndUpdateUnderlyingBlock(this.context);
     }
 
     /**
