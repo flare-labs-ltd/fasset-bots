@@ -51,7 +51,7 @@ export class Agent {
     }
 
     async getAgentInfo(): Promise<AgentInfo> {
-        return await this.context.assetManager.getAgentInfo(this.agentVault.address);
+        return await this.assetManager.getAgentInfo(this.agentVault.address);
     }
 
     async getClass1CollateralToken(): Promise<CollateralType> {

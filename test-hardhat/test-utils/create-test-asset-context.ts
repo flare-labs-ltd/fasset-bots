@@ -11,11 +11,11 @@ import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
 import { artifacts } from "../../src/utils/artifacts";
-import { DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";
-import { newAssetManager } from "./new-asset-manager";
+import { newAssetManager, waitForTimelock } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
 const AttestationClient = artifacts.require('AttestationClientSC');
@@ -35,6 +35,7 @@ const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMo
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
 export type TestFtsos = Record<'nat' | 'usdc' | 'usdt' | 'asset', FtsoMockInstance>;
+
 export const ftsoNatInitialPrice = 0.42;
 export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
@@ -49,6 +50,7 @@ export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
     chain: MockChain;
+    ftsos: TestFtsos;
 }>
 
 export type TestAssetTrackedStateContext = Modify<IAssetTrackedStateContext, {
@@ -268,4 +270,8 @@ export function createTestLiquidationSettings(): LiquidationStrategyImplSettings
 
 export function createEncodedTestLiquidationSettings() {
     return encodeLiquidationStrategyImplSettings(createTestLiquidationSettings());
+}
+
+export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotContext, governance: string) {
+    await waitForTimelock(context.assetManagerController.setLotSizeAmg([context.assetManager.address], newLotSizeAMG, { from: governance }), context.assetManagerController, governance);
 }

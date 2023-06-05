@@ -49,8 +49,8 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
 }
 
-export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string): Promise<AgentBot> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
+export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string, options?: AgentBotDefaultSettings): Promise<AgentBot> {
+    const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, new Notifier());
 }
 
@@ -117,11 +117,11 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
     return agentB;
 }
 
-export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, toDeposit: BNish = deposit) {
-    const agentBot = await createTestAgentBot(context, orm, ownerAddress);
-    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, toDeposit, ownerAddress);
-    await agentBot.agent.depositClass1Collateral(toDeposit);
-    await agentBot.agent.buyCollateralPoolTokens(toDeposit);
+export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, options?: AgentBotDefaultSettings) {
+    const agentBot = await createTestAgentBot(context, orm, ownerAddress, options);
+    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
+    await agentBot.agent.depositClass1Collateral(deposit);
+    await agentBot.agent.buyCollateralPoolTokens(deposit);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }

@@ -306,7 +306,7 @@ describe("Tracked state tests", async () => {
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
         // increase fAsset allowance
         const fBalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.increaseAllowance(agentB.collateralPool.address, fBalance, { from: minter.address });
+        await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
         // self close exit
         const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
         await agentB.collateralPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, { from: minter.address });
