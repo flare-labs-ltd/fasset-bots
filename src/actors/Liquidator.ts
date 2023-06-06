@@ -54,7 +54,7 @@ export class Liquidator {
             try {
                 await this.checkAgentForLiquidation(agent);
             } catch (error) {
-                console.error(`Error with agent ${agent.vaultAddress}`, error);
+                console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
             }
         }
     }

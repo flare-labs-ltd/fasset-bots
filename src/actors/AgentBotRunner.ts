@@ -48,7 +48,7 @@ export class AgentBotRunner {
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
                 await agentBot.runStep(this.orm.em);
             } catch (error) {
-                console.error(`Error with agent ${agentEntity.vaultAddress}`, error);
+                console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
             }
         }
     }

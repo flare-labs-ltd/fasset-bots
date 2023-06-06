@@ -47,7 +47,7 @@ export class BlockChainHelper implements IBlockChain {
                 };
             }
         } catch (error) {
-            console.error(`Transaction with hash ${txHash} not found.`);
+            console.error(`Transaction with hash ${txHash} not found: ${error}`);
             return null;
         }
     }
@@ -73,7 +73,7 @@ export class BlockChainHelper implements IBlockChain {
                     transactions: block.transactionIds
                 };
             } catch (error) {
-                console.error(`Block with hash ${blockHash} not found.`);
+                console.error(`Block with hash ${blockHash} not found: ${error}`);
                 return null;
             }
         }
@@ -97,7 +97,7 @@ export class BlockChainHelper implements IBlockChain {
                 transactions: block.transactionIds
             }
         } catch (error) {
-            console.error(`Block with number ${blockNumber} not found.`);
+            console.error(`Block with number ${blockNumber} not found: ${error}`);
             return null;
         }
     }

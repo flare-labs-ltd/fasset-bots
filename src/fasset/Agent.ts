@@ -2,7 +2,7 @@ import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance
 import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, toBN } from "../utils/helpers";
+import { BNish, requireNotNull, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
@@ -92,6 +92,8 @@ export class Agent {
 
     async depositClass1Collateral(amountTokenWei: BNish) {
         const class1TokenAddress = (await this.getClass1CollateralToken()).token;
+        const class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === class1TokenAddress));
+        await class1Token.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
         return await this.agentVault.depositCollateral(class1TokenAddress, amountTokenWei, { from: this.ownerAddress });
     }
 

@@ -115,8 +115,12 @@ export class BotCliCommands {
         await this.botConfig.orm.em.persist(agentEnt).flush();
     }
 
-    async announceUnderlyingWithdrawal(agentVault: string): Promise<string> {
+    async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
+            console.log(chalk.cyan(`Already active underlying withdrawal announcement for agent ${agentVault}.`));
+            return null;
+        }
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await this.botConfig.orm.em.persist(agentEnt).flush();
@@ -336,7 +340,7 @@ export class BotCliCommands {
                     listUsageAndCommands();
             }
         } catch (error) {
-            console.error("Command could not be executed ", error);
+            console.error(`Command could not be executed: ${error}`);
         }
     }
 }
