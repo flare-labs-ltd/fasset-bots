@@ -111,7 +111,9 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {
                     await this.mintingExecuted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
-                    await this.mintingExecuted(em, event.args);
+                    if (!event.args.collateralReservationId.isZero()) {
+                        await this.mintingExecuted(em, event.args);
+                    }
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
@@ -364,8 +366,8 @@ export class AgentBot {
                 default:
                     console.error(`Minting state: ${minting.state} not supported`);
             }
-        }).catch(() => {
-            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}`);
+        }).catch((error) => {
+            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
         });
     }
 
@@ -537,8 +539,8 @@ export class AgentBot {
                 default:
                     console.error(`Redemption state: ${redemption.state} not supported`);
             }
-        }).catch(() => {
-            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}`);
+        }).catch((error) => {
+            console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
         });
     }
 
