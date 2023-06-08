@@ -2,14 +2,16 @@ import { AgentBot } from "../../src/actors/AgentBot";
 import { AvailableAgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
+import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { FuzzingCustomer } from "./FuzzingCustomer";
 
 export class FuzzingRunner extends ScopedRunner {
     constructor(
         public context: TestAssetBotContext,
-        public state: TrackedState,
         public avoidErrors: boolean,
+        public commonTrackedState: TrackedState,
+        public eventFormatter: EventFormatter
     ) {
         super();
     }
@@ -26,5 +28,4 @@ export class FuzzingRunner extends ScopedRunner {
     comment(comment: string) {
         console.log(comment);
     }
-
 }

@@ -7,6 +7,7 @@ export class TimeKeeper {
         public context: IAssetContext
     ) { }
 
+    interval: any;
     /**
      * Prove that a block with given number and timestamp exists and
      * update the current underlying block info if the provided data higher.
@@ -23,10 +24,17 @@ export class TimeKeeper {
      */
     /* istanbul ignore next */
     run() {
-        setInterval(async () => {
+        this.interval = setInterval(async () => {
             await this.updateUnderlyingBlock();
         }, delayInMs);
     }
 
+    /**
+     * Clear runner from 'run' function.
+     */
+    /* istanbul ignore next */
+    clear() {
+        clearInterval(this.interval);
+    }
 
 }

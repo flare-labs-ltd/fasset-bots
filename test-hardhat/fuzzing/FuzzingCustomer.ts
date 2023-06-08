@@ -30,6 +30,10 @@ export class FuzzingCustomer {
         this.redeemer = new Redeemer(runner.context, address, underlyingAddress);
     }
 
+    get name() {
+        return this.runner.eventFormatter.formatAddress(this.address);
+    }
+
     static async createTest(runner: FuzzingRunner, address: string, underlyingAddress: string, underlyingBalance: BN) {
         const chain = runner.context.chain;
         if (!(chain instanceof MockChain)) assert.fail("only for mock chains");
@@ -62,20 +66,19 @@ export class FuzzingCustomer {
     }
 
     async redemption(scope: EventScope) {
-        // const lotSize = lotSize(await this.runner.context.assetManager.getSettings());
         const lotSize = getLotSize(await this.runner.context.assetManager.getSettings());
         // request redemption
         const holdingUBA = await this.fAssetBalance();
         const holdingLots = Number(holdingUBA.div(lotSize));
         const lots = randomInt(this.runner.avoidErrors ? holdingLots : 100);
-        // this.comment(`${this.name} lots ${lots}   total minted ${mintedLots}   holding ${holdingLots}`);
+        this.runner.comment(`${this.name} lots ${lots}   total minted ${mintedLots}   holding ${holdingLots}`);
         if (this.runner.avoidErrors && lots === 0) return;
         const [tickets, remaining] = await this.redeemer.requestRedemption(lots)
             .catch(e => scope.exitOnExpectedError(e, ['Burn too big for owner', 'redeem 0 lots']));
         mintedLots -= lots - Number(remaining);
-        // this.comment(`${this.name}: Redeeming ${tickets.length} tickets, remaining ${remaining} lots`);
+        this.runner.comment(`${this.name}: Redeeming ${tickets.length} tickets, remaining ${remaining} lots`);
         // wait for all redemption payments or non-payments
-        /* TODO
+        /* // TODO
         await foreachAsyncParallel(tickets, async ticket => {
             // detect if default happened during wait
             const redemptionDefaultPromise = this.assetManagerEvent('RedemptionDefault', { requestId: ticket.requestId }).immediate().wait(scope);
@@ -89,18 +92,18 @@ export class FuzzingCustomer {
                 const [targetAddress, amountPaid] = event.args.outputs[0];
                 const expectedAmount = ticket.valueUBA.sub(ticket.feeUBA);
                 if (amountPaid.gte(expectedAmount) && targetAddress === this.underlyingAddress) {
-                    // this.comment(`${this.name}, req=${ticket.requestId}: Received redemption ${Number(amountPaid) / Number(lotSize)}`);
+                    this.runner.comment(`${this.name}, req=${ticket.requestId}: Received redemption ${Number(amountPaid) / Number(lotSize)}`);
                 } else {
-                    // this.comment(`${this.name}, req=${ticket.requestId}: Invalid redemption, paid=${formatBN(amountPaid)} expected=${expectedAmount} target=${targetAddress}`);
+                    this.runner.comment(`${this.name}, req=${ticket.requestId}: Invalid redemption, paid=${formatBN(amountPaid)} expected=${expectedAmount} target=${targetAddress}`);
                     await this.waitForPaymentTimeout(scope, ticket);    // still have to wait for timeout to be able to get non payment proof from SC
                     if (!redemptionDefault.resolved) {   // do this only if the agent has not already submitted failed payment and defaulted
                         await this.redemptionDefault(scope, ticket);
                     }
-                    // const result = await redemptionDefaultPromise; // now it must be fulfiled, by agent or by customer's default call
-                    // this.comment(`${this.name}, req=${ticket.requestId}: default received class1=${formatBN(result.redeemedClass1CollateralWei)} pool=${formatBN(result.redeemedPoolCollateralWei)}`);
+                    const result = await redemptionDefaultPromise; // now it must be fulfiled, by agent or by customer's default call
+                    this.runner.comment(`${this.name}, req=${ticket.requestId}: default received class1=${formatBN(result.redeemedClass1CollateralWei)} pool=${formatBN(result.redeemedPoolCollateralWei)}`);
                 }
             } else {
-                // this.comment(`${this.name}, req=${ticket.requestId}: Missing redemption, reference=${ticket.paymentReference}`);
+                this.runner.comment(`${this.name}, req=${ticket.requestId}: Missing redemption, reference=${ticket.paymentReference}`);
                 await this.redemptionDefault(scope, ticket);
             }
         });*/
@@ -118,22 +121,10 @@ export class FuzzingCustomer {
     }
 */
     async redemptionDefault(scope: EventScope, ticket: EventArgs<RedemptionRequested>) {
-        // this.comment(`${this.name}, req=${ticket.requestId}: starting default, block=${(this.runner.context.chain as MockChain).blockHeight()}`);
+        this.runner.comment(`${this.name}, req=${ticket.requestId}: starting default, block=${(this.runner.context.chain as MockChain).blockHeight()}`);
         const result = await this.redeemer.redemptionPaymentDefault(ticket)
             .catch(e => expectErrors(e, ['invalid request id']))    // can happen if agent confirms failed payment
             .catch(e => scope.exitOnExpectedError(e, []));
         return result;
-    }
-
-    async liquidate(scope: EventScope) {
-        const agentsInLiquidation = Array.from(this.runner.state.agents.values())
-            .filter(agent => agent.status === AgentStatus.LIQUIDATION || agent.status === AgentStatus.FULL_LIQUIDATION)
-            .map(agent => agent.vaultAddress);
-        if (agentsInLiquidation.length === 0) return;
-        const agentAddress = randomChoice(agentsInLiquidation);
-        const holdingUBA = await this.fAssetBalance();
-        if (this.runner.avoidErrors && holdingUBA.isZero()) return;
-        this.runner.context.assetManager.liquidate(agentAddress, holdingUBA, { from: this.address })
-            .catch(e => scope.exitOnExpectedError(e, []));
     }
 }

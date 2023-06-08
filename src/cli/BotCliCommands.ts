@@ -11,6 +11,7 @@ import { readFileSync } from "fs";
 import chalk from 'chalk';
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { getSourceName } from "../verification/sources/sources";
+import { Agent } from "../fasset/Agent";
 dotenv.config();
 
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -39,11 +40,11 @@ export class BotCliCommands {
         console.log(chalk.cyan('Environment successfully initialized.'));
     }
 
-    async createAgentVault(): Promise<string | null> {
+    async createAgentVault(): Promise<Agent | null> {
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
         console.log(chalk.cyan(`Agent ${agentBot.agent.vaultAddress} was created.`));
-        return agentBot.agent.vaultAddress;
+        return agentBot.agent;
     }
 
     async depositToVault(agentVault: string, amount: string): Promise<void> {

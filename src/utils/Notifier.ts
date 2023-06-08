@@ -60,7 +60,7 @@ export class Notifier {
         if (indexerExpired) {
             this.send(MINTING_CORNER_CASE, `Minting ${requestId} expired in indexer. Unstick minting was executed.`);
         } else {
-            this.send(MINTING_CORNER_CASE, `Agent requested payment proof for  minting ${requestId}.`);
+            this.send(MINTING_CORNER_CASE, `Agent requested payment proof for minting ${requestId}.`);
         }
     }
 

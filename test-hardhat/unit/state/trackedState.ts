@@ -157,7 +157,7 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AgentAvailable'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositClass1ToOwner(context, agentBLocal.vaultAddress, deposit, ownerLocal);
+        await mintAndDepositClass1ToOwner(context, agentBLocal, deposit, ownerLocal);
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
@@ -171,7 +171,7 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AvailableAgentExited'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositClass1ToOwner(context, agentBLocal.vaultAddress, deposit, ownerLocal);
+        await mintAndDepositClass1ToOwner(context, agentBLocal, deposit, ownerLocal);
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
@@ -191,7 +191,7 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AgentDestroyed'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositClass1ToOwner(context, agentBLocal.vaultAddress, deposit, ownerLocal);
+        await mintAndDepositClass1ToOwner(context, agentBLocal, deposit, ownerLocal);
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.announceDestroy();
         await trackedState.readUnhandledEvents();
@@ -207,7 +207,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'SelfClose'", async () => {
         const agentBLocal = await createTestAgentB(context, ownerAddress);
-        await mintAndDepositClass1ToOwner(context, agentBLocal.vaultAddress, deposit, ownerAddress);
+        await mintAndDepositClass1ToOwner(context, agentBLocal, deposit, ownerAddress);
         await agentBLocal.depositClass1Collateral(deposit);
         await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
@@ -528,7 +528,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentB(context, ownerAddress);
         const agentInfo = await agentB.getAgentInfo();
         await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
-        await mintAndDepositClass1ToOwner(context, agentB.vaultAddress, deposit, ownerAddress);
+        await mintAndDepositClass1ToOwner(context, agentB, deposit, ownerAddress);
         await agentB.depositClass1Collateral(deposit.divn(2));
         await agentB.buyCollateralPoolTokens(deposit);
         // deposit class1 one more time

@@ -43,7 +43,7 @@ export async function createTestAgentBot(context: IAssetAgentBotContext, orm: OR
 
 export async function createTestAgentBotAndMakeAvailable(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()) {
     const agentBot = await createTestAgentBot(context, orm,  ownerAddress, notifier);
-    await mintAndDepositClass1ToOwner(context, agentBot.agent.vaultAddress, deposit, ownerAddress);
+    await mintAndDepositClass1ToOwner(context, agentBot.agent, deposit, ownerAddress);
     await agentBot.agent.depositClass1Collateral(deposit);
     await agentBot.agent.buyCollateralPoolTokens(deposit);
     await agentBot.agent.makeAvailable();
