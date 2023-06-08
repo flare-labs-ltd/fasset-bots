@@ -284,6 +284,18 @@ export class AgentBot {
                     }
                 }
             }
+            // cancel underlying withdrawal
+            if(agentEnt.underlyingWithdrawalWaitingForCancelation) {
+                const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
+                if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
+                    // agent can confirm cancel withdrawal announcement
+                    await this.agent.cancelUnderlyingWithdrawal();
+                    this.notifier.sendCancelWithdrawUnderlying(agentEnt.vaultAddress);
+                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                    agentEnt.underlyingWithdrawalWaitingForCancelation = false;
+                }
+            }
             em.persist(agentEnt);
         });
     }

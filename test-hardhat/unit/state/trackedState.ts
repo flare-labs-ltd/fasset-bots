@@ -222,7 +222,6 @@ describe("Tracked state tests", async () => {
         const allAmountUBA = amountUBA.add(poolFee);
         context.chain.mint(randomUnderlyingAddress, allAmountUBA);
 
-        // const selfMint = await agentBLocal.selfMint(randomUnderlyingAddress, allAmountUBA, lots);
         const transactionHash = await agentBLocal.wallet.addTransaction(randomUnderlyingAddress, agentBLocal.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBLocal.agentVault.address));
         const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);
         const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.ownerAddress });

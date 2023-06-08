@@ -75,6 +75,11 @@ export class AgentEntity {
 
     @Property()
     underlyingWithdrawalConfirmTransaction: string = "";
+
+    // agent cancel underlying announcement
+
+    @Property()
+    underlyingWithdrawalWaitingForCancelation: boolean = false;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were

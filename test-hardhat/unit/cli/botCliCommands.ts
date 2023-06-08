@@ -418,6 +418,18 @@ describe("Bot cli commands unit tests", async () => {
         expect(spyCancel).to.be.called.twice;
     });
 
+    it("Should run command 'announceUnderlyingWithdrawal' - already active withdrawals", async () => {
+        const spyAnnounce = spy.on(botCliCommands, "announceUnderlyingWithdrawal");
+        const agent = await createAgent();
+        await botCliCommands.run(["", "", "announceUnderlyingWithdrawal", agent.vaultAddress]);
+        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
+        expect(spyAnnounce).to.be.called.once;
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.run(["", "", "announceUnderlyingWithdrawal", agent.vaultAddress]);
+        expect(spyConsole).to.be.called.once
+    });
+
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
         const spyConfirm = spy.on(botCliCommands, "cancelUnderlyingWithdrawal");
         const agent = await createAgent();

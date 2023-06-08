@@ -16,6 +16,9 @@ import { assert, expect, spy, use } from "chai";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintClass1ToOwner } from "../../test-utils/helpers";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
+import { getLotSize } from "../../test-utils/fuzzing-utils";
+import { PaymentReference } from "../../../src/fasset/PaymentReference";
+import { requiredEventArgs } from "../../../src/utils/events/truffle";
 use(spies);
 
 describe("Agent bot unit tests", async () => {
@@ -420,7 +423,7 @@ describe("Agent bot unit tests", async () => {
         assert.equal(status2, AgentStatus.DESTROYING);
     });
 
-    it("Should confirm underlying withdrawal", async () => {
+    it("Should confirm underlying withdrawal announcement", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // announce
@@ -438,4 +441,46 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
     });
+
+    it("Should ignore 'MintingExecuted' when self mint", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const lots = 3;
+        // convert lots in uba
+        const amountUBA = toBN(lots).mul(getLotSize(await context.assetManager.getSettings()));
+        const agentSettings = await agentBot.agent.getAgentSettings();
+        const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
+
+        const randomUnderlyingAddress = "RANDOM_UNDERLYING";
+        const allAmountUBA = amountUBA.add(poolFee);
+        context.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        // self mint
+        const transactionHash = await agentBot.agent.wallet.addTransaction(randomUnderlyingAddress, agentBot.agent.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBot.agent.vaultAddress));
+        const proof = await agentBot.agent.attestationProvider.provePayment(transactionHash, null, agentBot.agent.underlyingAddress);
+        const res = await agentBot.agent.assetManager.selfMint(proof, agentBot.agent.agentVault.address, lots, { from: agentBot.agent.ownerAddress });
+        const selfMint = requiredEventArgs(res, 'MintingExecuted');
+        expect(selfMint.collateralReservationId.isZero()).to.be.true;
+        await agentBot.runStep(orm.em);
+        // check
+        const mintings = await orm.em.createQueryBuilder(AgentMinting).where({ agentAddress: agentBot.agent.vaultAddress }).getResultList();
+        expect(mintings.length).to.eq(0);
+    });
+
+    it("Should cancel underlying withdrawal announcement", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // announce
+         await agentBot.agent.announceUnderlyingWithdrawal();
+        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
+        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+        await orm.em.persist(agentEnt).flush();
+        // cancelation not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gtn(0)).to.be.true;
+        // cancelation allowed
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
+    });
+
 });
