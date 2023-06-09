@@ -165,23 +165,23 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
 
 async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoRegistryInstance, assetFtsoSymbol: string) {
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(assetFtsoSymbol));
-    const ftsos = {}
-    Object.defineProperty(ftsos, 'asset', assetFtso);
+    const ftsos: {[key: string] : any } = {};
+    ftsos['asset'] = assetFtso;
     for (const collateralToken of collaterals) {
         const tokenName = collateralToken.tokenFtsoSymbol.toLowerCase();
         const tokenFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(collateralToken.tokenFtsoSymbol));
-        Object.defineProperty(ftsos, tokenName, tokenFtso);
+        ftsos[tokenName] = tokenFtso;
     }
     return ftsos;
 }
 
 async function createStableCoins(collaterals: CollateralType[]) {
-    const stableCoinsArray = collaterals.filter(token => token.collateralClass === CollateralClass.CLASS1);
-    const stableCoins = {};
+    const stableCoinsArray = collaterals.filter(token => Number(token.collateralClass) === CollateralClass.CLASS1);
+    const stableCoins: {[key: string] : any } = {};
     for (const collateralToken of stableCoinsArray) {
-        const tokenName = collateralToken.tokenFtsoSymbol;
+        const tokenName: string = collateralToken.tokenFtsoSymbol;
         const token = await IERC20.at(collateralToken.token);
-        Object.defineProperty(stableCoins, tokenName, token);
+        stableCoins[tokenName] =  token;
     }
     return stableCoins;
 }

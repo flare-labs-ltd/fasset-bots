@@ -9,9 +9,9 @@ const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/Blo
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.XRP;
-const txHash = "3F34D245FCC56EEEFCD59EF3853B7CBCA904136F38F06CD48A8049EF0BCC9AA0";
-const blockId = 38260022;
-const blockHash = "2A8CAC1E45882897674DDCF8D8EC3B2B01C2D869996009E45BBCCD1A69F52161";
+const txHash = "65953790eef2c6e807e4c9a95f7f84b48b59fa20f4e1ee04360c8411e93853d6".toUpperCase();
+const blockId = 38506957;
+const blockHash = "961810adfa1aab37ec9f56ee788bffb908a99f5e586bcd277e017d91e743c61e".toUpperCase();
 
 describe("XRP blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;

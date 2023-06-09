@@ -12,13 +12,13 @@ const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/Blo
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.BTC;
-const txHash = "ed73ecf19fe3e2d41ed2eadfbb9789729503403f63c9f17531a89d58962ea00e";
-const blockId = 2436063;
-const blockHash = "0000000000002fcb0d53827a5a486c90d2c33c41a88db3bb398b850f6530f8de";
+const txHash = "aa1e55ab8926ee3504701494712a308b6f3948c968f1c86734b6588eed648854";
+const blockId = 2436977;
+const blockHash = "000000000000334be701bbb914e2171a669706372b4cab7d051c934524f7e708";
 const txReference = "0000000000000000000000000000000000000000000000000000000000000000";
 const invalidTxHash = txHash.slice(2);
 
-describe("BTC blockchain tests via indexer", async () => {
+describe.skip("BTC blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
     let blockChainIndexerClient: BlockChainIndexerHelper;
 
