@@ -121,7 +121,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  delegateCollateral: {
+  delegate: {
     (
       _to: string[],
       _bips: (number | BN | string)[],
@@ -575,7 +575,7 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    delegateCollateral: {
+    delegate: {
       (
         _to: string[],
         _bips: (number | BN | string)[],
