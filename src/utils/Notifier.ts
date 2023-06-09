@@ -1,37 +1,63 @@
+import chalk from 'chalk';
+// agent status and settings
 const CCB_TITLE = "CCB ALERT";
 const LIQUIDATION_STARTED_ALERT = "LIQUIDATION STARTED ALERT";
 const FULL_LIQUIDATION_TITLE = "FULL LIQUIDATION ALERT";
 const LIQUIDATION_WAS_PERFORMED_ALERT = "LIQUIDATION WAS PERFORMED ALERT";
+const AGENT_DESTROYED = "AGENT DESTROYED";
+const AGENT_CREATED = "AGENT CREATED";
+const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
+const AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE";
+const AGENT_EXIT_AVAILABLE = "AGENT EXITED AVAILABLE";
+const AGENT_EXIT_AVAILABLE_ANNOUNCEMENT = "AGENT ANNOUNCED EXIT AVAILABLE";
+const AGENT_ANNOUNCE_DESTROY = "AGENT ANNOUNCE DESTROY";
+const SELF_CLOSE = "SELF CLOSE";
+
+// minting
 const MINTING_CORNER_CASE = "MINTING ALERT";
 const MINTING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR MINTING ALERT";
+
+// redemption
 const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
 const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
 const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED ALERT";
 const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED ALERT";
 const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION ALERT";
+
+// collateral
 const AGENT_COLLATERAL_TOP_UP_ALERT = "AGENT'S COLLATERAL TOP UP ALERT";
 const POOL_COLLATERAL_TOP_UP_ALERT = "POOL'S COLLATERAL TOP UP ALERT";
 const AGENT_COLLATERAL_TOP_UP_FAILED_ALERT = "AGENT'S COLLATERAL TOP UP FAILED ALERT";
 const POOL_COLLATERAL_TOP_UP_FAILED_ALERT = "POOL'S COLLATERAL TOP UP FAILED ALERT";
+const WITHDRAW_CLASS1 = "WITHDRAW CLASS1";
+const WITHDRAW_CLASS1_ANNOUNCEMENT = "WITHDRAW CLASS1 ANNOUNCEMENT";
+
+// underlying
 const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
 const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
 const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS ALERT";
-const AGENT_DESTROYED = "AGENT DESTROYED";
-const WITHDRAW_CLASS1 = "WITHDRAW CLASS1";
-const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
-const AGENT_EXIT_AVAILABLE = "AGENT EXIT AVAILABLE";
-const AGENT_ANNOUNCE_DESTROY = "AGENT ANNOUNCE DESTROY";
 const CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT";
 const CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT";
+const ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL";
+const NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL";
+const ANNOUNCE_WITHDRAW_UNDERLYING = "ANNOUNCE UNDERLYING WITHDRAWAL";
+const WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL";
+
+// pool
 const REDEMPTION_POOL_TOKENS = "REDEEM POOL TOKENS";
+const BUY_POOL_TOKENS = "BUY POOL TOKENS";
+const CLASS1_DEPOSIT = "CLASS1 DEPOSIT";
+const WITHDRAW_POOL_FEES = "WITHDRAW POOL FEES";
+const BALANCE_POOL_FEES = "BALANCE POOL FEES";
+
 
 export class Notifier {
 
     send(title: string, message?: string) {
         if (message) {
-            console.log(title + ": " + message);
+            console.log(chalk.cyan(title + ":") + " " + message);
         } else {
-            console.log(title);
+            console.log(chalk.cyan(title));
         }
     }
 
@@ -129,16 +155,32 @@ export class Notifier {
         this.send(AGENT_DESTROYED, `Agent ${agentVault} was destroyed.`);
     }
 
+    sendAgentCreated(agentVault: string) {
+        this.send(AGENT_CREATED, `Agent ${agentVault} was created.`);
+    }
+
     sendWithdrawClass1(agentVault: string, amount: string) {
         this.send(WITHDRAW_CLASS1, `Agent ${agentVault} withdrew ${amount} of Class1.`);
+    }
+
+    sendWithdrawClass1Announcement(agentVault: string, amount: string) {
+        this.send(WITHDRAW_CLASS1_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for Class1.`);
     }
 
     sendAgentSettingsUpdate(agentVault: string, settingName: string) {
         this.send(AGENT_SETTING_UPDATE, `Agent ${agentVault} setting ${settingName} was updated.`);
     }
 
+    sendAgentAnnouncedExitAvailable(agentVault: string) {
+        this.send(AGENT_EXIT_AVAILABLE_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED exit available list.`);
+    }
+
     sendAgentExitedAvailable(agentVault: string) {
         this.send(AGENT_EXIT_AVAILABLE, `Agent ${agentVault} exited available list.`);
+    }
+
+    sendAgentEnteredAvailable(agentVault: string) {
+        this.send(AGENT_ENTER_AVAILABLE, `Agent ${agentVault} entered available list.`);
     }
 
     sendAgentAnnounceDestroy(agentVault: string) {
@@ -155,5 +197,41 @@ export class Notifier {
 
     sendCollateralPoolTokensRedemption(agentVault: string) {
         this.send(REDEMPTION_POOL_TOKENS, `Agent ${agentVault} redeemed pool tokens.`);
+    }
+
+    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
+        this.send(BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
+    }
+
+    sendClass1Deposit(agentVault: string, amount: string) {
+        this.send(CLASS1_DEPOSIT, `Deposit of ${amount} to agent ${agentVault} was successful.`);
+    }
+
+    sendWithdrawPoolFees(agentVault: string, amount: string) {
+        this.send(WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`)
+    }
+
+    sendBalancePoolFees(agentVault: string, amount: string) {
+        this.send(BALANCE_POOL_FEES, `Agent ${agentVault} has following pool fees balance ${amount}.`)
+    }
+
+    sendSelfClose(agentVault: string) {
+        this.send(SELF_CLOSE, `Agent ${agentVault} self closed successfully.`)
+    }
+
+    sendActiveWithdrawal(agentVault: string) {
+        this.send(ACTIVE_WITHDRAWAL, `Agent ${agentVault} already has an active underlying withdrawal announcement.`);
+    }
+
+    sendNoActiveWithdrawal(agentVault: string) {
+        this.send(NO_ACTIVE_WITHDRAWAL, `Agent ${agentVault} has NO active underlying withdrawal announcement.`);
+    }
+
+    sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
+        this.send(ANNOUNCE_WITHDRAW_UNDERLYING, `Agent ${agentVault} announced underlying withdrawal with payment reference ${paymentReference}.`)
+    }
+
+    sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
+        this.send(WITHDRAW_UNDERLYING, `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`)
     }
 }

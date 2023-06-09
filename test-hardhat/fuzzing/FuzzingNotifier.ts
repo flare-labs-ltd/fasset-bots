@@ -63,14 +63,26 @@ export class FuzzingNotifier {
     sendAgentDestroyed(agentVault: string): void {
         this.notifier.sendAgentDestroyed(this.eventFormatter.formatAddress(agentVault));
     }
+    sendAgentCreated(agentVault: string) {
+        this.notifier.sendAgentCreated(this.eventFormatter.formatAddress(agentVault));
+    }
     sendWithdrawClass1(agentVault: string, amount: string): void {
         this.notifier.sendWithdrawClass1(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendWithdrawClass1Announcement(agentVault: string, amount: string) {
+        this.notifier.sendWithdrawClass1Announcement(this.eventFormatter.formatAddress(agentVault), amount);
     }
     sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
         this.notifier.sendAgentSettingsUpdate(this.eventFormatter.formatAddress(agentVault), settingName);
     }
+    sendAgentAnnouncedExitAvailable(agentVault: string) {
+        this.notifier.sendAgentAnnouncedExitAvailable(this.eventFormatter.formatAddress(agentVault));
+    }
     sendAgentExitedAvailable(agentVault: string): void {
         this.notifier.sendAgentExitedAvailable(this.eventFormatter.formatAddress(agentVault));
+    }
+    sendAgentEnteredAvailable(agentVault: string) {
+        this.notifier.sendAgentEnteredAvailable(this.eventFormatter.formatAddress(agentVault));
     }
     sendAgentAnnounceDestroy(agentVault: string): void {
         this.notifier.sendAgentAnnounceDestroy(this.eventFormatter.formatAddress(agentVault));
@@ -84,6 +96,31 @@ export class FuzzingNotifier {
     sendCollateralPoolTokensRedemption(agentVault: string): void {
         this.notifier.sendCollateralPoolTokensRedemption(this.eventFormatter.formatAddress(agentVault));
     }
-
-
+    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
+        this.notifier.sendBuyCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendClass1Deposit(agentVault: string, amount: string) {
+        this.notifier.sendClass1Deposit(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendWithdrawPoolFees(agentVault: string, amount: string) {
+        this.notifier.sendWithdrawPoolFees(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendBalancePoolFees(agentVault: string, amount: string) {
+        this.notifier.sendBalancePoolFees(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendSelfClose(agentVault: string) {
+        this.notifier.sendSelfClose(this.eventFormatter.formatAddress(agentVault));
+    }
+    sendActiveWithdrawal(agentVault: string) {
+        this.notifier.sendActiveWithdrawal(this.eventFormatter.formatAddress(agentVault));
+    }
+    sendNoActiveWithdrawal(agentVault: string) {
+        this.notifier.sendNoActiveWithdrawal(this.eventFormatter.formatAddress(agentVault));
+    }
+    sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
+        this.notifier.sendAnnounceUnderlyingWithdrawal(this.eventFormatter.formatAddress(agentVault), paymentReference);
+    }
+    sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
+        this.notifier.sendUnderlyingWithdrawalPerformed(this.eventFormatter.formatAddress(agentVault), txHash);
+    }
 }

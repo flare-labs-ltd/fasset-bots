@@ -43,39 +43,39 @@ export class BotCliCommands {
     async createAgentVault(): Promise<Agent | null> {
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
-        console.log(chalk.cyan(`Agent ${agentBot.agent.vaultAddress} was created.`));
+        this.botConfig.notifier.sendAgentCreated(agentBot.agent.vaultAddress);
         return agentBot.agent;
     }
 
     async depositToVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositClass1Collateral(amount);
-        console.log(chalk.cyan(`Deposit of ${amount} to agent ${agentVault} was successful.`));
+        this.botConfig.notifier.sendClass1Deposit(agentVault, amount);
     }
 
     async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
-        console.log(chalk.cyan(`Buying ${amount} collateral pool tokens for agent ${agentVault} was successful.`));
+        this.botConfig.notifier.sendBuyCollateralPoolTokens(agentVault, amount);
     }
 
     async enterAvailableList(agentVault: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.makeAvailable();
-        console.log(chalk.cyan(`Agent ${agentVault} ENTERED available list.`));
+        this.botConfig.notifier.sendAgentEnteredAvailable(agentVault);
     }
 
     async announceExitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
-        console.log(chalk.cyan(`Agent ${agentVault} successfully announced EXIT available list.`));
+        this.botConfig.notifier.sendAgentAnnouncedExitAvailable(agentVault);
     }
 
     async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
-        console.log(chalk.cyan(`Class1 ${amount} withdrawal from agent ${agentVault} has been announced.`));
+        this.botConfig.notifier.sendWithdrawClass1Announcement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
     }
@@ -83,20 +83,20 @@ export class BotCliCommands {
     async withdrawPoolFees(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
-        console.log(chalk.cyan(`Pool fees ${amount} have been successfully withdrawn from agent ${agentVault}.`));
+        this.botConfig.notifier.sendWithdrawPoolFees(agentVault, amount);
     }
 
     async poolFeesBalance(agentVault: string): Promise<BN> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const balance = await agentBot.agent.poolFeeBalance();
-        console.log(chalk.cyan(`Agent ${agentVault} has following pool fees balance ${balance}.`));
+        this.botConfig.notifier.sendBalancePoolFees(agentVault, balance.toString());
         return balance;
     }
 
     async selfClose(agentVault: string, amountUBA: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.selfClose(amountUBA);
-        console.log(chalk.cyan(`Agent ${agentVault} self closed successfully.`));
+        this.botConfig.notifier.sendSelfClose(agentVault);
     }
 
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
@@ -119,13 +119,13 @@ export class BotCliCommands {
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
-            console.log(chalk.cyan(`Already active underlying withdrawal announcement for agent ${agentVault}.`));
+            this.botConfig.notifier.sendActiveWithdrawal(agentVault);
             return null;
         }
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await this.botConfig.orm.em.persist(agentEnt).flush();
-        console.log(chalk.cyan(`Announcement for underlying withdrawal for agent ${agentVault} can be performed with payment reference ${announce.paymentReference}.`));
+        this.botConfig.notifier.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
         return announce.paymentReference;
     }
 
@@ -134,7 +134,7 @@ export class BotCliCommands {
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
         await this.botConfig.orm.em.persist(agentEnt).flush();
-        console.log(chalk.cyan(`Underlying withdrawal for agent ${agentVault} was performed ${txHash}.`));
+        this.botConfig.notifier.sendUnderlyingWithdrawalPerformed(agentVault, txHash);
         return txHash;
     }
 
@@ -148,10 +148,10 @@ export class BotCliCommands {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 agentEnt.underlyingWithdrawalConfirmTransaction = "";
                 await this.botConfig.orm.em.persist(agentEnt).flush();
-                console.log(chalk.cyan(`Underlying withdrawal for agent ${agentVault} was confirmed.`));
+                this.botConfig.notifier.sendConfirmWithdrawUnderlying(agentVault);
             }
         } else {
-            console.log(chalk.cyan(`No active underlying withdrawal announcement for agent ${agentVault}.`));
+            this.botConfig.notifier.sendNoActiveWithdrawal(agentVault);
         }
     }
 
@@ -164,13 +164,13 @@ export class BotCliCommands {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 await this.botConfig.orm.em.persist(agentEnt).flush();
-                console.log(chalk.cyan(`Underlying withdrawal announcement for agent ${agentVault} was cancelled.`));
+                this.botConfig.notifier.sendCancelWithdrawUnderlying(agentVault);
             } else {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 await this.botConfig.orm.em.persist(agentEnt).flush();
             }
         } else {
-            console.log(chalk.cyan(`No active underlying withdrawal announcement for agent ${agentVault}.`));
+            this.botConfig.notifier.sendNoActiveWithdrawal(agentVault);
         }
 
     }
