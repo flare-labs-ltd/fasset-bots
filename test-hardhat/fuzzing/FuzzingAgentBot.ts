@@ -10,7 +10,6 @@ import { MAX_BIPS, checkedCast, toBN } from "../../src/utils/helpers";
 import { coinFlip, formatBN, getLotSize, randomBN, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { FuzzingRunner } from "./FuzzingRunner";
 
-
 export class FuzzingAgentBot {
     constructor(
         public agentBot: AgentBot,
@@ -37,7 +36,7 @@ export class FuzzingAgentBot {
         await this.agentBot.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash); //TODO - check if it is ok
         // execute
         const proof = await this.agentBot.context.attestationProvider.provePayment(txHash, null, agent.underlyingAddress);
-        const res = await this.agentBot.context.assetManager.selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.ownerAddress })
+        await this.agentBot.context.assetManager.selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.ownerAddress })
             .catch(e => scope.exitOnExpectedError(e, ['cannot mint 0 lots', 'not enough free collateral', 'self-mint payment too small',
                 'self-mint invalid agent status', 'invalid self-mint reference', 'self-mint payment too old']));
         // 'self-mint payment too small' can happen after lot size change
@@ -45,25 +44,28 @@ export class FuzzingAgentBot {
         // 'self-mint payment too old' can happen when agent self-mints quickly after being created (typically when agent is re-created) and there is time skew
         // const args = requiredEventArgs(res, 'MintingExecuted');
         // TODO: accounting?
+        console.log((`${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)} self minted successfully.`));
     }
 
     async selfClose(scope: EventScope) {
-        // const agentInfo = await this.agentBot.agent.getAgentInfo();
-        // if (Number(agentInfo.status) !== AgentStatus.NORMAL) return;   // reduce noise in case of (full) liquidation
-        // const mintedAssets = toBN(agentInfo.mintedUBA);
-        // if (mintedAssets.isZero()) return;
+        const agentInfo = await this.agentBot.agent.getAgentInfo();
+        if (Number(agentInfo.status) !== AgentStatus.NORMAL) return;   // reduce noise in case of (full) liquidation
+        const mintedAssets = toBN(agentInfo.mintedUBA);
+        if (mintedAssets.isZero()) return;
         const ownersAssets = await this.agentBot.context.fAsset.balanceOf(this.agentBot.agent.ownerAddress);
         if (ownersAssets.isZero()) return;
         // // TODO: buy fassets
         const amountUBA = randomBN(ownersAssets);
-        // if (this.runner.avoidErrors && amountUBA.isZero()) return;
-        await this.botCliCommands.selfClose(this.agentBot.agent.vaultAddress, amountUBA.toString()).catch(e => scope.exitOnExpectedError(e, ['Burn too big for owner', 'redeem 0 lots']));
+        if (this.runner.avoidErrors && amountUBA.isZero()) return;
+        await this.agentBot.agent.selfClose(amountUBA).catch(e => scope.exitOnExpectedError(e, ['Burn too big for owner', 'redeem 0 lots']));
+        console.log((`${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)} self closed successfully.`));
     }
 
     async convertDustToTicket(scope: EventScope): Promise<void> {
         const agent = this.agentBot.agent;   // save in case agent is destroyed and re-created
         await this.agentBot.context.assetManager.convertDustToTicket(agent.vaultAddress)
             .catch(e => scope.exitOnExpectedError(e, []));
+        console.log((`${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)} converted dust to tickets successfully.`));
     }
 
 
@@ -72,7 +74,7 @@ export class FuzzingAgentBot {
         const balance = await this.agentBot.context.chain.getBalance(agent.underlyingAddress);
         if (balance.isZero()) return;
         const amount = randomBN(balance);
-        this.runner.comment(`Making illegal transaction of ${formatBN(amount)} from ${agent.underlyingAddress}`);
+        this.runner.comment(`${this.runner.eventFormatter.formatAddress(agent.vaultAddress)} is making illegal transaction of ${formatBN(amount)} from ${agent.underlyingAddress}`);
         await agent.wallet.addTransaction(agent.underlyingAddress, this.ownerUnderlyingAddress, amount, null);
     }
 
@@ -82,7 +84,7 @@ export class FuzzingAgentBot {
         if (redemptions.length === 0) return;
         const redemption = randomChoice(redemptions);
         const amount = redemption.valueUBA;
-        this.runner.comment(`Making double payment of ${formatBN(amount)} from ${agent.underlyingAddress}`);
+        this.runner.comment(`${this.runner.eventFormatter.formatAddress(agent.vaultAddress)} is making double payment of ${formatBN(amount)} from ${agent.underlyingAddress}`);
 
         await agent.wallet.addTransaction(agent.underlyingAddress, this.ownerUnderlyingAddress, amount, redemption.paymentReference);
     }
@@ -93,7 +95,6 @@ export class FuzzingAgentBot {
             .andWhere({ $not: { state: AgentRedemptionState.DONE } })
             .getResultList();
     }
-
 
     async announcedUnderlyingWithdrawal() {
         const agentInfo = await this.agentBot.agent.getAgentInfo();

@@ -28,9 +28,10 @@ import { BotCliCommands } from "../../src/cli/BotCliCommands";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { artifacts } from "../../src/utils/artifacts";
-import { Notifier } from "../../src/utils/Notifier";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
+import { FuzzingNotifier } from "./FuzzingNotifier";
+import { Notifier } from "../../src/utils/Notifier";
 
 export type MiningMode = 'auto' | 'manual'
 
@@ -78,6 +79,7 @@ describe("Fuzzing tests", async () => {
     // let logger: LogFile;
     let runner: FuzzingRunner;
     // let checkedInvariants = false;
+    let notifier: Notifier;
 
     before(async () => {
         disableMccTraceManager();
@@ -89,6 +91,7 @@ describe("Fuzzing tests", async () => {
         chain = context.chain as MockChain;
         // create interceptor
         eventFormatter = new EventFormatter();// eventDecoder = new Web3EventDecoder({});
+        notifier = new FuzzingNotifier(new Notifier, eventFormatter);
         // interceptor = new TruffleTransactionInterceptor(eventDecoder, accounts[0]);
         // interceptor.captureEvents({
         //     assetManager: context.assetManager,
@@ -138,10 +141,11 @@ describe("Fuzzing tests", async () => {
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];
+            eventFormatter.addAddress(`OWNER_ADDRESS`, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-test_' + i + '.db' }));
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, notifier, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
             botCliCommands.ownerAddress = ownerAddress;
@@ -162,7 +166,7 @@ describe("Fuzzing tests", async () => {
                     readLogsChunkSize: 0,
                 },
                 orm: orm,
-                notifier: new Notifier(),
+                notifier: notifier,
                 addressUpdater: ""
             };
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
@@ -258,7 +262,7 @@ describe("Fuzzing tests", async () => {
                 for (const keeper of keepers) {
                     await keeper.runStep();
                 }
-                runner.comment(`${runner.eventFormatter.formatAddress(challenger.address)}`);
+                // runner.comment(`${runner.eventFormatter.formatAddress(challenger.address)}`);
                 await challenger.runStep();
             } catch (e) {
                 expectErrors(e, []);
@@ -355,7 +359,6 @@ describe("Fuzzing tests", async () => {
 
     async function testSelfMint() {
         const agentBot = randomChoice(agentBots);
-        runner.comment(`${runner.eventFormatter.formatAddress(agentBot.agentBot.agent.vaultAddress)} - ${runner.eventFormatter.formatAddress(agentBot.agentBot.agent.vaultAddress)}: self mint.`);
         runner.startThread((scope) => agentBot.selfMint(scope));
     }
 
@@ -366,31 +369,26 @@ describe("Fuzzing tests", async () => {
 
     async function testSelfClose() {
         const agentBot = randomChoice(agentBots);
-        printBotInfo(agentBot.agentBot.agent.vaultAddress, "self close");
         runner.startThread((scope) => agentBot.selfClose(scope));
     }
 
     async function testUnderlyingWithdrawal() {
         const agentBot = randomChoice(agentBots);
-        printBotInfo(agentBot.agentBot.agent.vaultAddress, "announce underlying withdrawal");
         runner.startThread(() => agentBot.announcedUnderlyingWithdrawal());
     }
 
     async function testConvertDustToTicket() {
         const agentBot = randomChoice(agentBots);
-        printBotInfo(agentBot.agentBot.agent.vaultAddress, "convert dust to ticket");
         runner.startThread((scope) => agentBot.convertDustToTicket(scope));
     }
 
     async function testIllegalTransaction() {
         const agentBot = randomChoice(agentBots);
-        printBotInfo(agentBot.agentBot.agent.vaultAddress, "make illegal payment");
         runner.startThread(() => agentBot.makeIllegalTransaction());
     }
 
     async function testDoublePayment() {
         const agentBot = randomChoice(agentBots);
-        printBotInfo(agentBot.agentBot.agent.vaultAddress, "make double payment");
         runner.startThread(() => agentBot.makeDoublePayment());
     }
 
@@ -443,7 +441,4 @@ describe("Fuzzing tests", async () => {
         return Number(collateral.collateralClass) === CollateralClass.CLASS1 && Number(collateral.validUntil) === 0;
     }
 
-    function printBotInfo(vaultAddress: string, action: string) {
-        runner.comment(`${runner.eventFormatter.formatAddress(vaultAddress)} - ${vaultAddress}: ${action}`);
-    }
 });
