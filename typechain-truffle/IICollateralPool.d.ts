@@ -88,7 +88,7 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _ftsoRewardManager: string,
       _lastRewardEpoch: number | BN | string,
@@ -498,7 +498,7 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _ftsoRewardManager: string,
         _lastRewardEpoch: number | BN | string,

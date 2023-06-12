@@ -120,7 +120,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_claimedAmount",
           "type": "uint256"
         }
       ],
@@ -141,7 +141,13 @@
         }
       ],
       "name": "claimFtsoRewards",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_claimedAmount",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
