@@ -1,5 +1,5 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { disableMccTraceManager } from "../../test-utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import rewire from "rewire";
@@ -80,10 +80,7 @@ describe("Create asset context unit tests", async () => {
             rpcUrl: "rpcUrl",
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), "auto"),
             chains: [chainConfig],
-            nativeChainInfo: {
-                finalizationBlocks: 0,
-                readLogsChunkSize: 10
-            }
+            nativeChainInfo: testNativeChainInfo
         }
         await expect(createTrackedStateAssetContext(config, chainConfig)).to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`).and.be.an.instanceOf(Error);
     });

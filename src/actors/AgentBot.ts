@@ -363,7 +363,7 @@ export class AgentBot {
         if (executed) {
             this.notifier.sendMintingExecuted(minting.agentAddress, minting.requestId.toString());
         } else {
-            this.notifier.sendMintingDeleted(minting.agentAddress,  minting.requestId.toString());
+            this.notifier.sendMintingDeleted(minting.agentAddress, minting.requestId.toString());
         }
     }
 
@@ -412,7 +412,8 @@ export class AgentBot {
             // proof did not expire
             const blockHeight = await this.context.chain.getBlockHeight();
             const latestBlock = await this.context.chain.getBlockAt(blockHeight);
-            if (latestBlock && latestBlock.number > minting.lastUnderlyingBlock.toNumber() && latestBlock.timestamp > minting.lastUnderlyingTimestamp.toNumber()) {
+            // wait times expires on underlying + finalizationBlock
+            if (latestBlock && minting.lastUnderlyingBlock.toNumber() + 1 + this.context.chain.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
                 const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {

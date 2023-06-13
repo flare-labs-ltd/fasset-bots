@@ -1,9 +1,15 @@
-import { ChainInfo } from "../../src/fasset/ChainInfo";
+import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 
 export interface TestNatInfo {
     name: string;
     symbol: string;
     startPrice: number;
+}
+
+export const testNatInfo: TestNatInfo = {
+    name: "NetworkNative",
+    symbol: "NAT",
+    startPrice: 0.42,
 }
 
 export interface TestChainInfo extends ChainInfo {
@@ -14,11 +20,10 @@ export interface TestChainInfo extends ChainInfo {
     lotSize: number;
 }
 
-export const testNatInfo: TestNatInfo = {
-    name: "NetworkNative",
-    symbol: "NAT",
-    startPrice: 0.42,
-}
+export const testNativeChainInfo: NativeChainInfo = {
+    finalizationBlocks: 0,
+    readLogsChunkSize: 10,
+};
 
 export const testChainInfo: Record<'eth' | 'btc' | 'xrp', TestChainInfo> = {
     eth: {

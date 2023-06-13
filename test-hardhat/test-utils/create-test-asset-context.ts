@@ -13,7 +13,7 @@ import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper"
 import { artifacts } from "../../src/utils/artifacts";
 import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
+import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
 
@@ -39,11 +39,6 @@ export type TestFtsos = Record<'nat' | 'usdc' | 'usdt' | 'asset', FtsoMockInstan
 export const ftsoNatInitialPrice = 0.42;
 export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
-
-const nativeChainInfo: NativeChainInfo = {
-    finalizationBlocks: 0,
-    readLogsChunkSize: 10,
-};
 
 export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     natFtso: FtsoMockInstance;
@@ -136,6 +131,8 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
     const natFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
     const assetFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(chainInfo.symbol));
+    // native chain info
+    const nativeChainInfo = testNativeChainInfo;
     // return context
     return { nativeChainInfo, chainInfo, chain, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, blockChainIndexerClient, stablecoins, collaterals, ftsos };
 }

@@ -7,7 +7,7 @@ import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { expectErrors, sleep, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { Challenger } from "../../src/actors/Challenger";
-import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { assert } from "chai";
 import { FuzzingRunner } from "./FuzzingRunner";
 import { TrackedState } from "../../src/state/TrackedState";
@@ -133,10 +133,7 @@ describe("Fuzzing tests", async () => {
                     blockChainIndexerClient: new MockIndexer("", chainId, chain),
                     assetManager: "",
                 }],
-                nativeChainInfo: {
-                    finalizationBlocks: 0,
-                    readLogsChunkSize: 0,
-                },
+                nativeChainInfo: testNativeChainInfo,
                 orm: orm,
                 notifier: notifier,
                 addressUpdater: ""
@@ -203,25 +200,32 @@ describe("Fuzzing tests", async () => {
         ];
         // switch underlying chain to timed mining
         chain.automine = false;
-        chain.finalizationBlocks = 0;//TODOchainInfo.finalizationBlocks;
+        chain.finalizationBlocks = chainInfo.finalizationBlocks;
         // make sure here are enough blocks in chain for block height proof to succeed
-        while (chain.blockHeight() <= chain.finalizationBlocks) chain.mine();
+        while (chain.blockHeight() <= chain.finalizationBlocks) {
+            chain.mine();
+        }
         if (!AUTOMINE) {
             await setMiningMode('manual', 1000);
         }
         // perform actions
         for (let loop = 1; loop <= LOOPS; loop++) {
-            // run random action
+            // choose random action
             const action = weightedRandomChoice(actions);
             try {
+                // run tracked state
                 await commonTrackedState.readUnhandledEvents();
+                // run action
                 await action();
+                // execute step for every bot
                 for (const bot of agentBots) {
                     await bot.agentBot.runStep(bot.rootEm);
                 }
+                // execute step for every keeper
                 for (const keeper of keepers) {
                     await keeper.runStep();
                 }
+                // execute step for challenger
                 await challenger.runStep();
             } catch (e) {
                 expectErrors(e, []);

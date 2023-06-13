@@ -3,7 +3,7 @@ import { ORM } from "../../../src/config/orm";
 import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { BotCliCommands, listUsageAndCommands } from "../../../src/cli/BotCliCommands";
@@ -77,10 +77,7 @@ describe("Bot cli commands unit tests", async () => {
                 blockChainIndexerClient: new MockIndexer("", chainId, chain),
                 assetManager: "",
             }],
-            nativeChainInfo: {
-                finalizationBlocks: 0,
-                readLogsChunkSize: 0,
-            },
+            nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifier: new Notifier(),
             addressUpdater: ""
