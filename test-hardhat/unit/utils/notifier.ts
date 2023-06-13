@@ -178,8 +178,98 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send agent redeemed pool tokens", async () => {
-        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
-        notifier.sendConfirmWithdrawUnderlying("agentVault");
+        const spySend = spy.on(notifier, "sendCollateralPoolTokensRedemption");
+        notifier.sendCollateralPoolTokensRedemption("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent bought pool tokens", async () => {
+        const spySend = spy.on(notifier, "sendBuyCollateralPoolTokens");
+        notifier.sendBuyCollateralPoolTokens("agentVault", "amount");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send class1 was deposited to agent", async () => {
+        const spySend = spy.on(notifier, "sendClass1Deposit");
+        notifier.sendClass1Deposit("agentVault", "amount");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send pool fees were withdrawn", async () => {
+        const spySend = spy.on(notifier, "sendWithdrawPoolFees");
+        notifier.sendWithdrawPoolFees("agentVault", "amount");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send pool fees balance", async () => {
+        const spySend = spy.on(notifier, "sendBalancePoolFees");
+        notifier.sendBalancePoolFees("agentVault", "amount");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent self closed", async () => {
+        const spySend = spy.on(notifier, "sendSelfClose");
+        notifier.sendSelfClose("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send already active withdrawal", async () => {
+        const spySend = spy.on(notifier, "sendActiveWithdrawal");
+        notifier.sendActiveWithdrawal("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send already no active withdrawal", async () => {
+        const spySend = spy.on(notifier, "sendNoActiveWithdrawal");
+        notifier.sendNoActiveWithdrawal("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send underlying withdrawal was announced", async () => {
+        const spySend = spy.on(notifier, "sendAnnounceUnderlyingWithdrawal");
+        notifier.sendAnnounceUnderlyingWithdrawal("agentVault", "paymentReference");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send underlying withdrawal was performed", async () => {
+        const spySend = spy.on(notifier, "sendUnderlyingWithdrawalPerformed");
+        notifier.sendUnderlyingWithdrawalPerformed("agentVault", "txHash");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send minting was executed", async () => {
+        const spySend = spy.on(notifier, "sendMintingExecuted");
+        notifier.sendMintingExecuted("agentVault", "requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send minting was deleted", async () => {
+        const spySend = spy.on(notifier, "sendMintingDeleted");
+        notifier.sendMintingDeleted("agentVault", "requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send minting was started", async () => {
+        const spySend = spy.on(notifier, "sendMintingStared");
+        notifier.sendMintingStared("agentVault", "requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption was started", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionStarted");
+        notifier.sendRedemptionStarted("agentVault", "requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption was paid", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionPaid");
+        notifier.sendRedemptionPaid("agentVault", "requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption payment proof was requested", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionRequestPaymentProof");
+        notifier.sendRedemptionRequestPaymentProof("agentVault", "requestId");
         expect(spySend).to.have.been.called.once;
     });
 

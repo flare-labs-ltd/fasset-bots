@@ -16,6 +16,9 @@ const SELF_CLOSE = "SELF CLOSE";
 // minting
 const MINTING_CORNER_CASE = "MINTING ALERT";
 const MINTING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR MINTING ALERT";
+const MINTING_EXECUTED = "MINTING EXECUTED";
+const MINTING_DELETED = "MINTING DELETED";
+const MINTING_STARTED = "MINTING STARTED";
 
 // redemption
 const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
@@ -23,6 +26,9 @@ const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
 const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED ALERT";
 const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED ALERT";
 const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION ALERT";
+const REDEMPTION_STARTED = "REDEMPTION STARTED";
+const REDEMPTION_PAID = "REDEMPTION PAID";
+const REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED";
 
 // collateral
 const AGENT_COLLATERAL_TOP_UP_ALERT = "AGENT'S COLLATERAL TOP UP ALERT";
@@ -233,5 +239,29 @@ export class Notifier {
 
     sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
         this.send(WITHDRAW_UNDERLYING, `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`)
+    }
+
+    sendMintingExecuted(agentVault: string, requestId: string) {
+        this.send(MINTING_EXECUTED, `Minting ${requestId} executed for ${agentVault}.`);
+    }
+
+    sendMintingDeleted(agentVault: string, requestId: string) {
+        this.send(MINTING_DELETED, `Minting ${requestId} deleted for ${agentVault}.`);
+    }
+
+    sendMintingStared(agentVault: string, requestId: string) {
+        this.send(MINTING_STARTED,  `Minting ${requestId} started for ${agentVault}.`)
+    }
+
+    sendRedemptionStarted(agentVault: string, requestId: string) {
+        this.send(REDEMPTION_STARTED,  `Redemption ${requestId} started for ${agentVault}.`)
+    }
+
+    sendRedemptionPaid(agentVault: string, requestId: string) {
+        this.send(REDEMPTION_PAID,  `Redemption ${requestId} was paid for ${agentVault}.`)
+    }
+
+    sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
+        this.send(REDEMPTION_PAYMENT_PROOF,  `Payment proof for redemption ${requestId} was requested for ${agentVault}.`)
     }
 }

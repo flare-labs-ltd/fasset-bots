@@ -1,5 +1,5 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import { CollateralReserved, MintingExecuted, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
@@ -109,10 +109,12 @@ export class AgentBot {
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
                     this.mintingStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {
-                    await this.mintingExecuted(em, event.args);
+                    const minting = await this.findMinting(em, event.args.collateralReservationId);
+                    this.mintingExecuted(minting, false);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     if (!event.args.collateralReservationId.isZero()) {
-                        await this.mintingExecuted(em, event.args);
+                        const minting = await this.findMinting(em, event.args.collateralReservationId);
+                        this.mintingExecuted(minting, true);
                     }
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     this.redemptionStarted(em, event.args);
@@ -285,7 +287,7 @@ export class AgentBot {
                 }
             }
             // cancel underlying withdrawal
-            if(agentEnt.underlyingWithdrawalWaitingForCancelation) {
+            if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
                 const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
                 if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
                     // agent can confirm cancel withdrawal announcement
@@ -324,6 +326,7 @@ export class AgentBot {
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
             paymentReference: request.paymentReference,
         } as RequiredEntityData<AgentMinting>, { persist: true });
+        this.notifier.sendMintingStared(this.agent.vaultAddress, request.collateralReservationId.toString());
     }
 
     /**
@@ -355,9 +358,13 @@ export class AgentBot {
     /**
      * Marks stored minting in persistent state as DONE.
      */
-    async mintingExecuted(em: EM, request: EventArgs<MintingExecuted>): Promise<void> {
-        const minting = await this.findMinting(em, request.collateralReservationId);
+    mintingExecuted(minting: AgentMinting, executed: boolean): void {
         minting.state = AgentMintingState.DONE;
+        if (executed) {
+            this.notifier.sendMintingExecuted(minting.agentAddress, minting.requestId.toString());
+        } else {
+            this.notifier.sendMintingDeleted(minting.agentAddress,  minting.requestId.toString());
+        }
     }
 
     /**
@@ -460,6 +467,7 @@ export class AgentBot {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
             await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
+            this.mintingExecuted(minting, true);
         } else {
             this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
         }
@@ -496,6 +504,7 @@ export class AgentBot {
             lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp)
         } as RequiredEntityData<AgentRedemption>, { persist: true });
+        this.notifier.sendRedemptionStarted(this.agent.vaultAddress, request.requestId.toString());
     }
 
     /**
@@ -575,6 +584,7 @@ export class AgentBot {
             const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
             redemption.txHash = txHash;
             redemption.state = AgentRedemptionState.PAID;
+            this.notifier.sendRedemptionPaid(this.agent.vaultAddress, redemption.requestId.toString());
         }
     }
 
@@ -595,6 +605,7 @@ export class AgentBot {
             const blockHeight = await this.context.chain.getBlockHeight();
             if (txBlock != null && blockHeight - txBlock.number >= this.context.chain.finalizationBlocks) {
                 await this.requestPaymentProof(redemption);
+                this.notifier.sendRedemptionRequestPaymentProof(this.agent.vaultAddress, redemption.requestId.toString());
             }
         }
     }
