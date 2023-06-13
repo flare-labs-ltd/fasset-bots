@@ -344,19 +344,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "contract IWNat",
-          "name": "_newWNat",
-          "type": "address"
-        }
-      ],
-      "name": "upgradeWNatContract",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "wNat",
       "outputs": [

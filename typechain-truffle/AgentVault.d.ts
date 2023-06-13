@@ -392,24 +392,6 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  upgradeWNatContract: {
-    (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _newWNat: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _newWNat: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _newWNat: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   withdrawCollateral: {
@@ -843,24 +825,6 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       call(txDetails?: Truffle.TransactionDetails): Promise<void>;
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    upgradeWNatContract: {
-      (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _newWNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _newWNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _newWNat: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
     };
 
     wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
