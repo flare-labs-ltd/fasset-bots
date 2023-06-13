@@ -5,6 +5,7 @@ import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { FuzzingCustomer } from "./FuzzingCustomer";
+import chalk from 'chalk';
 
 export class FuzzingRunner extends ScopedRunner {
     constructor(
@@ -25,7 +26,12 @@ export class FuzzingRunner extends ScopedRunner {
         this.availableAgentBots = _availableAgents;
     }
 
-    comment(comment: string) {
-        console.log(comment);
+    comment(comment: string, actor?: string) {
+        if (actor) {
+            console.log(chalk.yellow(actor + ":"), comment);
+        } else {
+            console.log(comment);
+        }
+
     }
 }

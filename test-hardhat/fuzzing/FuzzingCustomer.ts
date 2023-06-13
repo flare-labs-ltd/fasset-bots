@@ -6,7 +6,7 @@ import { IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockC
 import { FuzzingRunner } from "./FuzzingRunner";
 import { EventScope } from "../../src/utils/events/ScopedEvents";
 import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { foreachAsyncParallel, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
+import { coinFlip, foreachAsyncParallel, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { EventArgs } from "../../src/utils/events/common";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { expectErrors } from "../../src/utils/helpers";
@@ -34,6 +34,10 @@ export class FuzzingCustomer {
         return this.runner.eventFormatter.formatAddress(this.address);
     }
 
+    agentName(agentVault: string) {
+        return this.runner.eventFormatter.formatAddress(agentVault);
+    }
+
     static async createTest(runner: FuzzingRunner, address: string, underlyingAddress: string, underlyingBalance: BN) {
         const chain = runner.context.chain;
         if (!(chain instanceof MockChain)) assert.fail("only for mock chains");
@@ -56,13 +60,21 @@ export class FuzzingCustomer {
         const crt = await this.minter.reserveCollateral(agent.agentVault, lots)
             .catch(e => scope.exitOnExpectedError(e, ['cannot mint 0 lots', 'not enough free collateral', 'inappropriate fee amount', 'rc: invalid agent status']));
         // pay
-        const txHash = await this.minter.performMintingPayment(crt);
-        // wait for finalization
-        await this.runner.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);//TODO check if ok, there is scope in original
-        // execute
-        await this.minter.executeMinting(crt, txHash)
-            .catch(e => scope.exitOnExpectedError(e, ['payment failed']));  // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
-        mintedLots += lots;
+        let txHash = null;
+        if (coinFlip(0.5)) {
+            txHash = await this.minter.performMintingPayment(crt);
+            // wait for finalization
+            await this.runner.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);//TODO check if ok, there is scope in original
+            // execute
+            await this.minter.executeMinting(crt, txHash)
+                .catch(e => scope.exitOnExpectedError(e, ['payment failed']));  // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
+            mintedLots += lots;
+            this.runner.comment(`minting ${crt.collateralReservationId} executed with ${this.agentName(agent.agentVault)}`, `${this.name}`);
+        } else {
+            this.runner.comment(`minting ${crt.collateralReservationId} only initiated with ${this.agentName(agent.agentVault)}`, `${this.name}`);
+            return;
+        }
+
     }
 
     async redemption(scope: EventScope) {
@@ -71,12 +83,12 @@ export class FuzzingCustomer {
         const holdingUBA = await this.fAssetBalance();
         const holdingLots = Number(holdingUBA.div(lotSize));
         const lots = randomInt(this.runner.avoidErrors ? holdingLots : 100);
-        this.runner.comment(`${this.name} lots ${lots}   total minted ${mintedLots}   holding ${holdingLots}`);
+        this.runner.comment(`lots ${lots}   total minted ${mintedLots}   holding ${holdingLots}`, `${this.name}`);
         if (this.runner.avoidErrors && lots === 0) return;
         const [tickets, remaining] = await this.redeemer.requestRedemption(lots)
             .catch(e => scope.exitOnExpectedError(e, ['Burn too big for owner', 'redeem 0 lots']));
         mintedLots -= lots - Number(remaining);
-        this.runner.comment(`${this.name}: Redeeming ${tickets.length} tickets, remaining ${remaining} lots`);
+        this.runner.comment(`redeeming ${tickets.length} tickets, remaining ${remaining} lots`, `${this.name}`);
         // wait for all redemption payments or non-payments
         /* // TODO
         await foreachAsyncParallel(tickets, async ticket => {
@@ -108,20 +120,20 @@ export class FuzzingCustomer {
             }
         });*/
     }
-/* TODO
-    private async waitForPaymentTimeout(scope: EventScope, ticket: EventArgs<RedemptionRequested>): Promise<QualifiedEvent<"timeout", null>> {
-        // both block number and timestamp must be large enough
-        await Promise.all([
-            this.timeline.underlyingBlockNumber(Number(ticket.lastUnderlyingBlock) + 1).wait(scope),
-            this.timeline.underlyingTimestamp(Number(ticket.lastUnderlyingTimestamp) + 1).wait(scope),
-        ]);
-        // after that, we have to wait for finalization
-        await this.timeline.underlyingBlocks(this.context.chain.finalizationBlocks).wait(scope);
-        return qualifiedEvent('timeout', null);
-    }
-*/
+    /* TODO
+        private async waitForPaymentTimeout(scope: EventScope, ticket: EventArgs<RedemptionRequested>): Promise<QualifiedEvent<"timeout", null>> {
+            // both block number and timestamp must be large enough
+            await Promise.all([
+                this.timeline.underlyingBlockNumber(Number(ticket.lastUnderlyingBlock) + 1).wait(scope),
+                this.timeline.underlyingTimestamp(Number(ticket.lastUnderlyingTimestamp) + 1).wait(scope),
+            ]);
+            // after that, we have to wait for finalization
+            await this.timeline.underlyingBlocks(this.context.chain.finalizationBlocks).wait(scope);
+            return qualifiedEvent('timeout', null);
+        }
+    */
     async redemptionDefault(scope: EventScope, ticket: EventArgs<RedemptionRequested>) {
-        this.runner.comment(`${this.name}, req=${ticket.requestId}: starting default, block=${(this.runner.context.chain as MockChain).blockHeight()}`);
+        this.runner.comment(`req=${ticket.requestId}: starting default, block=${(this.runner.context.chain as MockChain).blockHeight()}`, `${this.name}`);
         const result = await this.redeemer.redemptionPaymentDefault(ticket)
             .catch(e => expectErrors(e, ['invalid request id']))    // can happen if agent confirms failed payment
             .catch(e => scope.exitOnExpectedError(e, []));

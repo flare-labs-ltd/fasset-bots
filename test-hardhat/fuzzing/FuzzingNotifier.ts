@@ -123,4 +123,22 @@ export class FuzzingNotifier {
     sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
         this.notifier.sendUnderlyingWithdrawalPerformed(this.eventFormatter.formatAddress(agentVault), txHash);
     }
+    sendMintingExecuted(agentVault: string, requestId: string) {
+        this.notifier.sendMintingExecuted(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
+    sendMintingDeleted(agentVault: string, requestId: string) {
+        this.notifier.sendMintingDeleted(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
+    sendMintingStared(agentVault: string, requestId: string) {
+        this.notifier.sendMintingStared(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
+    sendRedemptionStarted(agentVault: string, requestId: string) {
+        this.notifier.sendRedemptionStarted(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
+    sendRedemptionPaid(agentVault: string, requestId: string) {
+        this.notifier.sendRedemptionPaid(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
+    sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
+        this.notifier.sendRedemptionRequestPaymentProof(this.eventFormatter.formatAddress(agentVault), requestId);
+    }
 }

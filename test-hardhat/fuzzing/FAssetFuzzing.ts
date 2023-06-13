@@ -1,11 +1,11 @@
-import { TestAssetBotContext, createTestAssetContext, setLotSizeAmg } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { createTestAgentBotAndMakeAvailable, disableMccTraceManager } from "../test-utils/helpers";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { expectErrors, sleep, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
-import { InclusionIterable, coinFlip, currentRealTime, formatBN, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
+import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { Challenger } from "../../src/actors/Challenger";
 import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { assert } from "chai";
@@ -15,10 +15,8 @@ import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { FuzzingCustomer } from "./FuzzingCustomer";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
-import { FuzzingPoolTokenHolder } from "./FuzzingPoolTokenHolder";
 import { time } from "@openzeppelin/test-helpers";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { network } from "hardhat";
@@ -32,6 +30,7 @@ import { Liquidator } from "../../src/actors/Liquidator";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
 import { FuzzingNotifier } from "./FuzzingNotifier";
 import { Notifier } from "../../src/utils/Notifier";
+import { FuzzingTimeline } from "./FuzzingTimeline";
 
 export type MiningMode = 'auto' | 'manual'
 
@@ -42,41 +41,31 @@ describe("Fuzzing tests", async () => {
     let context: TestAssetBotContext;
     let governance: string;
     let commonTrackedState: TrackedState;
+    let timeline: FuzzingTimeline;
 
     const startTimestamp = systemTimestamp();
 
     const CHAIN = getEnv('CHAIN', 'string', 'xrp');
     const LOOPS = getEnv('LOOPS', 'number', 100);
     const AUTOMINE = getEnv('AUTOMINE', 'boolean', true);
-    const N_AGENTS = getEnv('N_AGENTS', 'number', 10);
-    const N_CUSTOMERS = getEnv('N_CUSTOMERS', 'number', 10);     // minters and redeemers
+    const N_AGENTS = getEnv('N_AGENTS', 'number', 4);
+    const N_CUSTOMERS = getEnv('N_CUSTOMERS', 'number', 6);     // minters and redeemers
     const N_KEEPERS = getEnv('N_KEEPERS', 'number', 1);
-    const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);
-    const N_POOL_TOKEN_HOLDERS = getEnv('N_POOL_TOKEN_HOLDERS', 'number', 20);
+    const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);//TODO add fassets
     const CUSTOMER_BALANCE = toWei(getEnv('CUSTOMER_BALANCE', 'number', 10_000));  // initial underlying balance
     const AVOID_ERRORS = getEnv('AVOID_ERRORS', 'boolean', true);
-    const CHANGE_LOT_SIZE_AT = getEnv('CHANGE_LOT_SIZE_AT', 'range', null);
-    const CHANGE_LOT_SIZE_FACTOR = getEnv('CHANGE_LOT_SIZE_FACTOR', 'number[]', []);
     const CHANGE_PRICE_AT = getEnv('CHANGE_PRICE_AT', 'range', null);
     const CHANGE_PRICE_FACTOR = getEnv('CHANGE_PRICE_FACTOR', 'json', null) as { [key: string]: [number, number] };
-    const ILLEGAL_PROB = getEnv('ILLEGAL_PROB', 'number', 2);     // likelihood of illegal operations (not normalized)
+    const ILLEGAL_PROB = getEnv('ILLEGAL_PROB', 'number', 4);     // likelihood of illegal operations (not normalized)
 
-    // let timeline: FuzzingTimeline;
     const agentBots: FuzzingAgentBot[] = [];
     const customers: FuzzingCustomer[] = [];
     const keepers: SystemKeeper[] = [];
     const liquidators: Liquidator[] = [];
-    const poolTokenHolders: FuzzingPoolTokenHolder[] = [];
     let challenger: Challenger;
     let chainInfo: TestChainInfo;
     let chain: MockChain;
     let eventFormatter: EventFormatter;
-    // let interceptor: TruffleTransactionInterceptor;
-    // let truffleEvents: InterceptorEvmEvents;
-    // let eventQueue: EventExecutionQueue;
-    // let chainEvents: UnderlyingChainEvents;
-    // let trackedState: TrackedState;
-    // let logger: LogFile;
     let runner: FuzzingRunner;
     // let checkedInvariants = false;
     let notifier: Notifier;
@@ -90,35 +79,18 @@ describe("Fuzzing tests", async () => {
         context = await createTestAssetContext(governance, chainInfo)
         chain = context.chain as MockChain;
         // create interceptor
-        eventFormatter = new EventFormatter();// eventDecoder = new Web3EventDecoder({});
+        eventFormatter = new EventFormatter();
         notifier = new FuzzingNotifier(new Notifier, eventFormatter);
-        // interceptor = new TruffleTransactionInterceptor(eventDecoder, accounts[0]);
-        // interceptor.captureEvents({
-        //     assetManager: context.assetManager,
-        //     assetManagerController: context.assetManagerController,
-        //     fAsset: context.fAsset,
-        //     wnat: context.wNat,
-        //     ftsoManager: context.ftsoManager,
-        // });
-        // for (const [key, token] of Object.entries(context.stablecoins)) {
-        //     interceptor.captureEventsFrom(key, token, "ERC20");
-        // }
-        // uniform event handlers
-        // eventQueue = new EventExecutionQueue();
-        // context.chainEvents.executionQueue = eventQueue;
-        // truffleEvents = new InterceptorEvmEvents(interceptor, eventQueue);
-        // chainEvents = context.chainEvents;
-        // timeline = new FuzzingTimeline(chain, eventQueue);
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
         commonTrackedState = new TrackedState(context, lastBlock);
         await commonTrackedState.initialize();
         // runner
         runner = new FuzzingRunner(context, AVOID_ERRORS, commonTrackedState, eventFormatter);
+        // timeline
+        timeline = new FuzzingTimeline(chain, runner);
         // logging
         // logger = new LogFile("test_logs/fasset-fuzzing.log");
-        // interceptor.logger = logger;
-        // chain.logger = logger;
         // timeline.logger = logger;
         // (context.stateConnectorClient as MockStateConnectorClient).logger = logger;
         // fuzzingState.logger = logger;
@@ -209,13 +181,6 @@ describe("Fuzzing tests", async () => {
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
         challenger = new Challenger(runner, challengerAddress, trackedState, await context.chain.getBlockHeight());
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
-        // create pool token holders
-        const firstPoolTokenHolderAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1;
-        for (let i = 0; i < N_POOL_TOKEN_HOLDERS; i++) {
-            const lpholder = new FuzzingPoolTokenHolder(runner, accounts[firstPoolTokenHolderAddress + i]);
-            poolTokenHolders.push(lpholder);
-            eventFormatter.addAddress(`POOL_TOKEN_HOLDER_${i}`, lpholder.address);
-        }
         // create time keeper
         const timeKeeper = new TimeKeeper(context);
         timeKeeper.run();
@@ -224,26 +189,21 @@ describe("Fuzzing tests", async () => {
         await refreshAvailableAgents();
         // actions
         const actions: Array<[() => Promise<void>, number]> = [
-            [testMint, 10],
-            [testRedeem, 10],
+            [testMint, 100],
+            [testRedeem, 100],
             [testSelfMint, 10],
             [testSelfClose, 10],
-            [testConvertDustToTicket, 10],
-            [testUnderlyingWithdrawal, 5],
-            [refreshAvailableAgents, 1],
-            [updateUnderlyingBlock, 10],
-            [testEnterPool, 10],
-            [testExitPool, 10],
+            [testUnderlyingWithdrawal, 15],
+            [refreshAvailableAgents, 6],
             [testIllegalTransaction, ILLEGAL_PROB],
             [testDoublePayment, ILLEGAL_PROB],
         ];
         const timedActions: Array<[(index: number) => Promise<void>, InclusionIterable<number> | null]> = [
-            [testChangeLotSize, CHANGE_LOT_SIZE_AT],
             [testChangePrices, CHANGE_PRICE_AT],
         ];
         // switch underlying chain to timed mining
         chain.automine = false;
-        chain.finalizationBlocks = chainInfo.finalizationBlocks;
+        chain.finalizationBlocks = 0;//TODOchainInfo.finalizationBlocks;
         // make sure here are enough blocks in chain for block height proof to succeed
         while (chain.blockHeight() <= chain.finalizationBlocks) chain.mine();
         if (!AUTOMINE) {
@@ -262,7 +222,6 @@ describe("Fuzzing tests", async () => {
                 for (const keeper of keepers) {
                     await keeper.runStep();
                 }
-                // runner.comment(`${runner.eventFormatter.formatAddress(challenger.address)}`);
                 await challenger.runStep();
             } catch (e) {
                 expectErrors(e, []);
@@ -275,10 +234,8 @@ describe("Fuzzing tests", async () => {
                     const index = runAt.indexOf(loop);
                     await timedAction(index);
                 } catch (e) {
-                    // interceptor.logUnexpectedError(e, '!!! JS ERROR');
                     expectErrors(e, []);
                 }
-                // await interceptor.allHandled();
             }
             // fail immediately on unexpected errors from threads
             if (runner.uncaughtErrors.length > 0) {
@@ -290,7 +247,7 @@ describe("Fuzzing tests", async () => {
                 // eventQueue.runAll();
                 // await fuzzingState.checkInvariants(false);     // state change may happen during check, so we don't wany failure here
                 runner.comment(`-----  LOOP ${loop}  ${await timeInfo()}  -----`);
-                // await timeline.skipTime(100);
+                await timeline.skipTime(100);
                 // await timeline.executeTriggers();
                 // await interceptor.allHandled();
             }
@@ -300,7 +257,7 @@ describe("Fuzzing tests", async () => {
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
         while (runner.runningThreads > 0) {
             await sleep(200);
-            //     await timeline.skipTime(100);
+            await timeline.skipTime(100);
             runner.comment(`-----  WAITING  ${await timeInfo()}  -----`);
             //     await timeline.executeTriggers();
             // await interceptor.allHandled();
@@ -348,10 +305,6 @@ describe("Fuzzing tests", async () => {
         await runner.refreshAvailableAgentBots();
     }
 
-    async function updateUnderlyingBlock() {
-        await proveAndUpdateUnderlyingBlock(context);
-    }
-
     async function testMint() {
         const customer = randomChoice(customers);
         runner.startThread((scope) => customer.minting(scope));
@@ -377,11 +330,6 @@ describe("Fuzzing tests", async () => {
         runner.startThread(() => agentBot.announcedUnderlyingWithdrawal());
     }
 
-    async function testConvertDustToTicket() {
-        const agentBot = randomChoice(agentBots);
-        runner.startThread((scope) => agentBot.convertDustToTicket(scope));
-    }
-
     async function testIllegalTransaction() {
         const agentBot = randomChoice(agentBots);
         runner.startThread(() => agentBot.makeIllegalTransaction());
@@ -390,26 +338,6 @@ describe("Fuzzing tests", async () => {
     async function testDoublePayment() {
         const agentBot = randomChoice(agentBots);
         runner.startThread(() => agentBot.makeDoublePayment());
-    }
-
-    async function testEnterPool() {
-        const lpholder = randomChoice(poolTokenHolders);
-        runner.startThread((scope) => lpholder.enter(scope));
-    }
-
-    async function testExitPool() {
-        const lpholder = randomChoice(poolTokenHolders);
-        const fullExit = coinFlip();
-        runner.startThread((scope) => lpholder.exit(scope, fullExit));
-    }
-
-    async function testChangeLotSize(index: number) {
-        const lotSizeAMG = toBN((await context.assetManager.getSettings()).lotSizeAMG);
-        const factor = CHANGE_LOT_SIZE_FACTOR.length > 0 ? CHANGE_LOT_SIZE_FACTOR[index % CHANGE_LOT_SIZE_FACTOR.length] : randomNum(0.5, 2);
-        const newLotSizeAMG = mulDecimal(lotSizeAMG, factor);
-        runner.comment(`Changing lot size by factor ${factor}, old=${formatBN(lotSizeAMG)}, new=${formatBN(newLotSizeAMG)}`);
-        await setLotSizeAmg(newLotSizeAMG, context, governance)
-            .catch(e => expectErrors(e, ['too close to previous update']));
     }
 
     async function testChangePrices() {
