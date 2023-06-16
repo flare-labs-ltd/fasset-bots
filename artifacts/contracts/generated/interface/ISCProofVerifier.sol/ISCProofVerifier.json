@@ -1,92 +1,8 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "AttestationClientBase",
-  "sourceName": "contracts/generated/contracts/AttestationClientBase.sol",
+  "contractName": "ISCProofVerifier",
+  "sourceName": "contracts/generated/interface/ISCProofVerifier.sol",
   "abi": [
-    {
-      "inputs": [],
-      "name": "BALANCE_DECREASING_TRANSACTION",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "CONFIRMED_BLOCK_HEIGHT_EXISTS",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "PAYMENT",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "REFERENCED_PAYMENT_NONEXISTENCE",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "TRUSTLINE_ISSUANCE",
-      "outputs": [
-        {
-          "internalType": "uint16",
-          "name": "",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_stateConnectorRound",
-          "type": "uint256"
-        }
-      ],
-      "name": "merkleRootForRound",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_merkleRoot",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
     {
       "inputs": [
         {
@@ -97,14 +13,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -122,9 +38,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "uint8",
-              "name": "inUtxo",
-              "type": "uint8"
+              "internalType": "bytes32",
+              "name": "sourceAddressIndicator",
+              "type": "bytes32"
             },
             {
               "internalType": "bytes32",
@@ -142,7 +58,7 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "internalType": "struct ISCProofVerifier.BalanceDecreasingTransaction",
           "name": "_data",
           "type": "tuple"
         }
@@ -168,14 +84,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -194,11 +110,6 @@
             },
             {
               "internalType": "uint64",
-              "name": "averageBlockProductionTimeMs",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
               "name": "lowestQueryWindowBlockNumber",
               "type": "uint64"
             },
@@ -208,7 +119,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "internalType": "struct ISCProofVerifier.ConfirmedBlockHeightExists",
           "name": "_data",
           "type": "tuple"
         }
@@ -234,14 +145,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -275,7 +186,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -285,7 +206,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -304,7 +235,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_data",
           "type": "tuple"
         }
@@ -330,14 +261,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -385,68 +316,12 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ReferencedPaymentNonexistence",
+          "internalType": "struct ISCProofVerifier.ReferencedPaymentNonexistence",
           "name": "_data",
           "type": "tuple"
         }
       ],
       "name": "verifyReferencedPaymentNonexistence",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "_proved",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint32",
-          "name": "_chainId",
-          "type": "uint32"
-        },
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32[]",
-              "name": "merkleProof",
-              "type": "bytes32[]"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "tokenCurrencyCode",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenValueNominator",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenValueDenominator",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "tokenIssuer",
-              "type": "bytes32"
-            }
-          ],
-          "internalType": "struct IAttestationClient.TrustlineIssuance",
-          "name": "_data",
-          "type": "tuple"
-        }
-      ],
-      "name": "verifyTrustlineIssuance",
       "outputs": [
         {
           "internalType": "bool",

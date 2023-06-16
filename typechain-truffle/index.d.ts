@@ -7,6 +7,7 @@ import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
+import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
 import { AgentVaultContract } from "./AgentVault";
@@ -57,11 +58,11 @@ import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { TrivialAddressValidatorMockContract } from "./TrivialAddressValidatorMock";
-import { AttestationClientBaseContract } from "./AttestationClientBase";
-import { AttestationClientMockContract } from "./AttestationClientMock";
-import { AttestationClientSCContract } from "./AttestationClientSC";
+import { SCProofVerifierContract } from "./SCProofVerifier";
+import { SCProofVerifierBaseContract } from "./SCProofVerifierBase";
+import { SCProofVerifierMockContract } from "./SCProofVerifierMock";
 import { StateConnectorMockContract } from "./StateConnectorMock";
-import { IAttestationClientContract } from "./IAttestationClient";
+import { ISCProofVerifierContract } from "./ISCProofVerifier";
 import { IStateConnectorContract } from "./IStateConnector";
 import { AddressUpdatableContract } from "./AddressUpdatable";
 import { GovernedContract } from "./Governed";
@@ -118,6 +119,7 @@ declare global {
       require(name: "ERC20"): ERC20Contract;
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
+      require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
       require(name: "AgentVault"): AgentVaultContract;
@@ -174,11 +176,11 @@ declare global {
       require(
         name: "TrivialAddressValidatorMock"
       ): TrivialAddressValidatorMockContract;
-      require(name: "AttestationClientBase"): AttestationClientBaseContract;
-      require(name: "AttestationClientMock"): AttestationClientMockContract;
-      require(name: "AttestationClientSC"): AttestationClientSCContract;
+      require(name: "SCProofVerifier"): SCProofVerifierContract;
+      require(name: "SCProofVerifierBase"): SCProofVerifierBaseContract;
+      require(name: "SCProofVerifierMock"): SCProofVerifierMockContract;
       require(name: "StateConnectorMock"): StateConnectorMockContract;
-      require(name: "IAttestationClient"): IAttestationClientContract;
+      require(name: "ISCProofVerifier"): ISCProofVerifierContract;
       require(name: "IStateConnector"): IStateConnectorContract;
       require(name: "AddressUpdatable"): AddressUpdatableContract;
       require(name: "Governed"): GovernedContract;
@@ -240,6 +242,7 @@ export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
 } from "./IERC20Metadata";
+export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
@@ -387,25 +390,25 @@ export {
   TrivialAddressValidatorMockInstance,
 } from "./TrivialAddressValidatorMock";
 export {
-  AttestationClientBaseContract,
-  AttestationClientBaseInstance,
-} from "./AttestationClientBase";
+  SCProofVerifierContract,
+  SCProofVerifierInstance,
+} from "./SCProofVerifier";
 export {
-  AttestationClientMockContract,
-  AttestationClientMockInstance,
-} from "./AttestationClientMock";
+  SCProofVerifierBaseContract,
+  SCProofVerifierBaseInstance,
+} from "./SCProofVerifierBase";
 export {
-  AttestationClientSCContract,
-  AttestationClientSCInstance,
-} from "./AttestationClientSC";
+  SCProofVerifierMockContract,
+  SCProofVerifierMockInstance,
+} from "./SCProofVerifierMock";
 export {
   StateConnectorMockContract,
   StateConnectorMockInstance,
 } from "./StateConnectorMock";
 export {
-  IAttestationClientContract,
-  IAttestationClientInstance,
-} from "./IAttestationClient";
+  ISCProofVerifierContract,
+  ISCProofVerifierInstance,
+} from "./ISCProofVerifier";
 export {
   IStateConnectorContract,
   IStateConnectorInstance,

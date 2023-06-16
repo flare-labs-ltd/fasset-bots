@@ -418,6 +418,12 @@
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "firstUnderlyingBlock",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "lastUnderlyingBlock",
           "type": "uint256"
         },
@@ -1033,6 +1039,12 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "feeUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "firstUnderlyingBlock",
           "type": "uint256"
         },
         {

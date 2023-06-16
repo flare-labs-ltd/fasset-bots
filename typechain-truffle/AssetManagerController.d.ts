@@ -197,6 +197,7 @@ export interface CollateralReserved {
     collateralReservationId: BN;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentAddress: string;
@@ -208,8 +209,9 @@ export interface CollateralReserved {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
     8: string;
+    9: string;
   };
 }
 
@@ -505,6 +507,7 @@ export interface RedemptionRequested {
     paymentAddress: string;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
@@ -515,7 +518,8 @@ export interface RedemptionRequested {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
+    8: string;
   };
 }
 
@@ -1063,6 +1067,29 @@ export interface AssetManagerControllerInstance
   };
 
   setAttestationWindowSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAverageBlockTimeMS: {
     (
       _assetManagers: string[],
       _value: number | BN | string,
@@ -2188,6 +2215,29 @@ export interface AssetManagerControllerInstance
     };
 
     setAttestationWindowSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAverageBlockTimeMS: {
       (
         _assetManagers: string[],
         _value: number | BN | string,

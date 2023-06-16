@@ -418,6 +418,12 @@
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "firstUnderlyingBlock",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "lastUnderlyingBlock",
           "type": "uint256"
         },
@@ -1038,6 +1044,12 @@
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "firstUnderlyingBlock",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "lastUnderlyingBlock",
           "type": "uint256"
         },
@@ -1419,14 +1431,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -1460,7 +1472,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -1470,7 +1492,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -1489,7 +1521,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         },
@@ -1509,14 +1541,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -1550,7 +1582,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -1560,7 +1602,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -1579,7 +1631,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         },
@@ -1599,14 +1651,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -1640,7 +1692,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -1650,7 +1712,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -1669,7 +1741,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         },
@@ -1816,14 +1888,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -1841,9 +1913,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "uint8",
-              "name": "inUtxo",
-              "type": "uint8"
+              "internalType": "bytes32",
+              "name": "sourceAddressIndicator",
+              "type": "bytes32"
             },
             {
               "internalType": "bytes32",
@@ -1861,21 +1933,21 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "internalType": "struct ISCProofVerifier.BalanceDecreasingTransaction",
           "name": "_payment1",
           "type": "tuple"
         },
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -1893,9 +1965,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "uint8",
-              "name": "inUtxo",
-              "type": "uint8"
+              "internalType": "bytes32",
+              "name": "sourceAddressIndicator",
+              "type": "bytes32"
             },
             {
               "internalType": "bytes32",
@@ -1913,7 +1985,7 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "internalType": "struct ISCProofVerifier.BalanceDecreasingTransaction",
           "name": "_payment2",
           "type": "tuple"
         },
@@ -1964,14 +2036,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -2005,7 +2077,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -2015,7 +2097,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -2034,7 +2126,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         },
@@ -2080,14 +2172,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -2106,11 +2198,6 @@
             },
             {
               "internalType": "uint64",
-              "name": "averageBlockProductionTimeMs",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
               "name": "lowestQueryWindowBlockNumber",
               "type": "uint64"
             },
@@ -2120,7 +2207,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "internalType": "struct ISCProofVerifier.ConfirmedBlockHeightExists",
           "name": "_proof",
           "type": "tuple"
         },
@@ -2140,14 +2227,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -2165,9 +2252,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "uint8",
-              "name": "inUtxo",
-              "type": "uint8"
+              "internalType": "bytes32",
+              "name": "sourceAddressIndicator",
+              "type": "bytes32"
             },
             {
               "internalType": "bytes32",
@@ -2185,7 +2272,7 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction[]",
+          "internalType": "struct ISCProofVerifier.BalanceDecreasingTransaction[]",
           "name": "_payments",
           "type": "tuple[]"
         },
@@ -2769,6 +2856,11 @@
               "type": "address"
             },
             {
+              "internalType": "address payable",
+              "name": "burnAddress",
+              "type": "address"
+            },
+            {
               "internalType": "address",
               "name": "ftsoRegistry",
               "type": "address"
@@ -2785,17 +2877,17 @@
             },
             {
               "internalType": "uint32",
-              "name": "mintingPoolHoldingsRequiredBIPS",
+              "name": "chainId",
               "type": "uint32"
             },
             {
-              "internalType": "address payable",
-              "name": "burnAddress",
-              "type": "address"
+              "internalType": "uint32",
+              "name": "averageBlockTimeMS",
+              "type": "uint32"
             },
             {
               "internalType": "uint32",
-              "name": "chainId",
+              "name": "mintingPoolHoldingsRequiredBIPS",
               "type": "uint32"
             },
             {
@@ -2824,19 +2916,14 @@
               "type": "uint16"
             },
             {
-              "internalType": "uint64",
-              "name": "mintingCapAMG",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
-              "name": "maxTrustedPriceAgeSeconds",
-              "type": "uint64"
-            },
-            {
               "internalType": "bool",
               "name": "requireEOAAddressProof",
               "type": "bool"
+            },
+            {
+              "internalType": "uint64",
+              "name": "mintingCapAMG",
+              "type": "uint64"
             },
             {
               "internalType": "uint64",
@@ -2891,6 +2978,11 @@
             {
               "internalType": "uint64",
               "name": "withdrawalWaitMinSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "maxTrustedPriceAgeSeconds",
               "type": "uint64"
             },
             {
@@ -2957,14 +3049,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -2982,9 +3074,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "uint8",
-              "name": "inUtxo",
-              "type": "uint8"
+              "internalType": "bytes32",
+              "name": "sourceAddressIndicator",
+              "type": "bytes32"
             },
             {
               "internalType": "bytes32",
@@ -3002,7 +3094,7 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct IAttestationClient.BalanceDecreasingTransaction",
+          "internalType": "struct ISCProofVerifier.BalanceDecreasingTransaction",
           "name": "_transaction",
           "type": "tuple"
         },
@@ -3082,14 +3174,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3137,7 +3229,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ReferencedPaymentNonexistence",
+          "internalType": "struct ISCProofVerifier.ReferencedPaymentNonexistence",
           "name": "_proof",
           "type": "tuple"
         },
@@ -3170,14 +3262,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3211,7 +3303,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -3221,7 +3323,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -3240,7 +3352,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         }
@@ -3273,14 +3385,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3328,7 +3440,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ReferencedPaymentNonexistence",
+          "internalType": "struct ISCProofVerifier.ReferencedPaymentNonexistence",
           "name": "_proof",
           "type": "tuple"
         },
@@ -3389,14 +3501,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3430,7 +3542,17 @@
             },
             {
               "internalType": "bytes32",
+              "name": "intendedSourceAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
               "name": "receivingAddressHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "intendedReceivingAddressHash",
               "type": "bytes32"
             },
             {
@@ -3440,7 +3562,17 @@
             },
             {
               "internalType": "int256",
+              "name": "intendedSpentAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
               "name": "receivedAmount",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "intendedReceivedAmount",
               "type": "int256"
             },
             {
@@ -3459,7 +3591,7 @@
               "type": "uint8"
             }
           ],
-          "internalType": "struct IAttestationClient.Payment",
+          "internalType": "struct ISCProofVerifier.Payment",
           "name": "_payment",
           "type": "tuple"
         },
@@ -3506,6 +3638,24 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "switchClass1Collateral",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "terminated",
       "outputs": [
@@ -3523,14 +3673,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3549,11 +3699,6 @@
             },
             {
               "internalType": "uint64",
-              "name": "averageBlockProductionTimeMs",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
               "name": "lowestQueryWindowBlockNumber",
               "type": "uint64"
             },
@@ -3563,7 +3708,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "internalType": "struct ISCProofVerifier.ConfirmedBlockHeightExists",
           "name": "_proof",
           "type": "tuple"
         },
@@ -3583,14 +3728,14 @@
         {
           "components": [
             {
-              "internalType": "uint256",
-              "name": "stateConnectorRound",
-              "type": "uint256"
-            },
-            {
               "internalType": "bytes32[]",
               "name": "merkleProof",
               "type": "bytes32[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stateConnectorRound",
+              "type": "uint256"
             },
             {
               "internalType": "uint64",
@@ -3609,11 +3754,6 @@
             },
             {
               "internalType": "uint64",
-              "name": "averageBlockProductionTimeMs",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
               "name": "lowestQueryWindowBlockNumber",
               "type": "uint64"
             },
@@ -3623,7 +3763,7 @@
               "type": "uint64"
             }
           ],
-          "internalType": "struct IAttestationClient.ConfirmedBlockHeightExists",
+          "internalType": "struct ISCProofVerifier.ConfirmedBlockHeightExists",
           "name": "_proof",
           "type": "tuple"
         }

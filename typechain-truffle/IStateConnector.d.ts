@@ -10,88 +10,23 @@ export interface IStateConnectorContract
   "new"(meta?: Truffle.TransactionDetails): Promise<IStateConnectorInstance>;
 }
 
-export interface AttestationRequest {
-  name: "AttestationRequest";
-  args: {
-    sender: string;
-    timestamp: BN;
-    data: string;
-    0: string;
-    1: BN;
-    2: string;
-  };
-}
-
-export interface RoundFinalised {
-  name: "RoundFinalised";
-  args: {
-    roundId: BN;
-    merkleRoot: string;
-    0: BN;
-    1: string;
-  };
-}
-
-type AllEvents = AttestationRequest | RoundFinalised;
+type AllEvents = never;
 
 export interface IStateConnectorInstance extends Truffle.ContractInstance {
-  BUFFER_TIMESTAMP_OFFSET(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+  TOTAL_STORED_PROOFS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  BUFFER_WINDOW(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  lastFinalizedRoundId(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  merkleRoot(
-    _roundId: number | BN | string,
+  merkleRoots(
+    _index: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
-  requestAttestations: {
-    (_data: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(_data: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(
-      _data: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _data: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
-    BUFFER_TIMESTAMP_OFFSET(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
+    TOTAL_STORED_PROOFS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    BUFFER_WINDOW(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    lastFinalizedRoundId(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    merkleRoot(
-      _roundId: number | BN | string,
+    merkleRoots(
+      _index: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
-
-    requestAttestations: {
-      (_data: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

@@ -191,6 +191,7 @@ export interface CollateralReserved {
     collateralReservationId: BN;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentAddress: string;
@@ -202,8 +203,9 @@ export interface CollateralReserved {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
     8: string;
+    9: string;
   };
 }
 
@@ -471,6 +473,7 @@ export interface RedemptionRequested {
     paymentAddress: string;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
@@ -481,7 +484,8 @@ export interface RedemptionRequested {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
+    8: string;
   };
 }
 

@@ -18,20 +18,20 @@ export interface AssetManagerContract
       attestationClient: string;
       underlyingAddressValidator: string;
       liquidationStrategy: string;
+      burnAddress: string;
       ftsoRegistry: string;
       assetDecimals: number | BN | string;
       assetMintingDecimals: number | BN | string;
-      mintingPoolHoldingsRequiredBIPS: number | BN | string;
-      burnAddress: string;
       chainId: number | BN | string;
+      averageBlockTimeMS: number | BN | string;
+      mintingPoolHoldingsRequiredBIPS: number | BN | string;
       collateralReservationFeeBIPS: number | BN | string;
       assetUnitUBA: number | BN | string;
       assetMintingGranularityUBA: number | BN | string;
       lotSizeAMG: number | BN | string;
       minUnderlyingBackingBIPS: number | BN | string;
-      mintingCapAMG: number | BN | string;
-      maxTrustedPriceAgeSeconds: number | BN | string;
       requireEOAAddressProof: boolean;
+      mintingCapAMG: number | BN | string;
       underlyingBlocksForPayment: number | BN | string;
       underlyingSecondsForPayment: number | BN | string;
       redemptionFeeBIPS: number | BN | string;
@@ -43,6 +43,7 @@ export interface AssetManagerContract
       paymentChallengeRewardBIPS: number | BN | string;
       paymentChallengeRewardUSD5: number | BN | string;
       withdrawalWaitMinSeconds: number | BN | string;
+      maxTrustedPriceAgeSeconds: number | BN | string;
       ccbTimeSeconds: number | BN | string;
       attestationWindowSeconds: number | BN | string;
       minUpdateRepeatTimeSeconds: number | BN | string;
@@ -253,6 +254,7 @@ export interface CollateralReserved {
     collateralReservationId: BN;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentAddress: string;
@@ -264,8 +266,9 @@ export interface CollateralReserved {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
     8: string;
+    9: string;
   };
 }
 
@@ -533,6 +536,7 @@ export interface RedemptionRequested {
     paymentAddress: string;
     valueUBA: BN;
     feeUBA: BN;
+    firstUnderlyingBlock: BN;
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
@@ -543,7 +547,8 @@ export interface RedemptionRequested {
     4: BN;
     5: BN;
     6: BN;
-    7: string;
+    7: BN;
+    8: string;
   };
 }
 
@@ -976,17 +981,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   confirmRedemptionPayment: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -996,17 +1005,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1016,17 +1029,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1036,17 +1053,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1059,17 +1080,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   confirmTopupPayment: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1079,17 +1104,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1099,17 +1128,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1119,17 +1152,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1142,17 +1179,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   confirmUnderlyingWithdrawal: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1162,17 +1203,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1182,17 +1227,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1202,17 +1251,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1362,23 +1415,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   doublePaymentChallenge: {
     (
       _payment1: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
       },
       _payment2: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1388,23 +1441,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment1: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
       },
       _payment2: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1414,23 +1467,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment1: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
       },
       _payment2: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1440,23 +1493,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment1: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
       },
       _payment2: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1510,17 +1563,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   executeMinting: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1530,17 +1587,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1550,17 +1611,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1570,17 +1635,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -1613,12 +1682,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   finishRedemptionWithoutPayment: {
     (
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -1627,12 +1695,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -1641,12 +1708,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -1655,12 +1721,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -1672,12 +1737,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   freeBalanceNegativeChallenge: {
     (
       _payments: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1687,12 +1752,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payments: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1702,12 +1767,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payments: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1717,12 +1782,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payments: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1867,20 +1932,20 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     attestationClient: string;
     underlyingAddressValidator: string;
     liquidationStrategy: string;
+    burnAddress: string;
     ftsoRegistry: string;
     assetDecimals: BN;
     assetMintingDecimals: BN;
-    mintingPoolHoldingsRequiredBIPS: BN;
-    burnAddress: string;
     chainId: BN;
+    averageBlockTimeMS: BN;
+    mintingPoolHoldingsRequiredBIPS: BN;
     collateralReservationFeeBIPS: BN;
     assetUnitUBA: BN;
     assetMintingGranularityUBA: BN;
     lotSizeAMG: BN;
     minUnderlyingBackingBIPS: BN;
-    mintingCapAMG: BN;
-    maxTrustedPriceAgeSeconds: BN;
     requireEOAAddressProof: boolean;
+    mintingCapAMG: BN;
     underlyingBlocksForPayment: BN;
     underlyingSecondsForPayment: BN;
     redemptionFeeBIPS: BN;
@@ -1892,6 +1957,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     paymentChallengeRewardBIPS: BN;
     paymentChallengeRewardUSD5: BN;
     withdrawalWaitMinSeconds: BN;
+    maxTrustedPriceAgeSeconds: BN;
     ccbTimeSeconds: BN;
     attestationWindowSeconds: BN;
     minUpdateRepeatTimeSeconds: BN;
@@ -1909,12 +1975,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   illegalPaymentChallenge: {
     (
       _transaction: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1924,12 +1990,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _transaction: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1939,12 +2005,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _transaction: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -1954,12 +2020,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _transaction: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
-        inUtxo: number | BN | string;
+        sourceAddressIndicator: string;
         sourceAddressHash: string;
         spentAmount: number | BN | string;
         paymentReference: string;
@@ -2032,8 +2098,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   mintingPaymentDefault: {
     (
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2049,8 +2115,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2066,8 +2132,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2083,8 +2149,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2114,17 +2180,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   proveUnderlyingAddressEOA: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2133,17 +2203,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2152,17 +2226,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2171,17 +2249,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2274,8 +2356,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   redemptionPaymentDefault: {
     (
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2291,8 +2373,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2308,8 +2390,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2325,8 +2407,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         deadlineBlockNumber: number | BN | string;
         deadlineTimestamp: number | BN | string;
         destinationAddressHash: string;
@@ -2395,17 +2477,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   selfMint: {
     (
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2416,17 +2502,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2437,17 +2527,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2458,17 +2552,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _payment: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         transactionHash: string;
         inUtxo: number | BN | string;
         utxo: number | BN | string;
         sourceAddressHash: string;
+        intendedSourceAddressHash: string;
         receivingAddressHash: string;
+        intendedReceivingAddressHash: string;
         spentAmount: number | BN | string;
+        intendedSpentAmount: number | BN | string;
         receivedAmount: number | BN | string;
+        intendedReceivedAmount: number | BN | string;
         paymentReference: string;
         oneToOne: boolean;
         status: number | BN | string;
@@ -2618,6 +2716,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
+  switchClass1Collateral: {
+    (
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   terminate: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -2641,12 +2762,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   unstickMinting: {
     (
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2655,12 +2775,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2669,12 +2788,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2683,12 +2801,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2700,12 +2817,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
   updateCurrentBlock: {
     (
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2713,12 +2829,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2726,12 +2841,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -2739,12 +2853,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proof: {
-        stateConnectorRound: number | BN | string;
         merkleProof: string[];
+        stateConnectorRound: number | BN | string;
         blockNumber: number | BN | string;
         blockTimestamp: number | BN | string;
         numberOfConfirmations: number | BN | string;
-        averageBlockProductionTimeMs: number | BN | string;
         lowestQueryWindowBlockNumber: number | BN | string;
         lowestQueryWindowBlockTimestamp: number | BN | string;
       },
@@ -3100,17 +3213,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     confirmRedemptionPayment: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3120,17 +3237,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3140,17 +3261,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3160,17 +3285,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3183,17 +3312,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     confirmTopupPayment: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3203,17 +3336,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3223,17 +3360,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3243,17 +3384,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3266,17 +3411,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     confirmUnderlyingWithdrawal: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3286,17 +3435,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3306,17 +3459,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3326,17 +3483,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3488,23 +3649,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     doublePaymentChallenge: {
       (
         _payment1: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
         },
         _payment2: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3514,23 +3675,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment1: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
         },
         _payment2: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3540,23 +3701,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment1: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
         },
         _payment2: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3566,23 +3727,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment1: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
         },
         _payment2: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3636,17 +3797,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     executeMinting: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3656,17 +3821,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3676,17 +3845,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3696,17 +3869,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -3739,12 +3916,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     finishRedemptionWithoutPayment: {
       (
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -3753,12 +3929,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -3767,12 +3942,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -3781,12 +3955,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -3798,12 +3971,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     freeBalanceNegativeChallenge: {
       (
         _payments: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3813,12 +3986,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payments: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3828,12 +4001,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payments: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3843,12 +4016,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payments: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -3993,20 +4166,20 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       attestationClient: string;
       underlyingAddressValidator: string;
       liquidationStrategy: string;
+      burnAddress: string;
       ftsoRegistry: string;
       assetDecimals: BN;
       assetMintingDecimals: BN;
-      mintingPoolHoldingsRequiredBIPS: BN;
-      burnAddress: string;
       chainId: BN;
+      averageBlockTimeMS: BN;
+      mintingPoolHoldingsRequiredBIPS: BN;
       collateralReservationFeeBIPS: BN;
       assetUnitUBA: BN;
       assetMintingGranularityUBA: BN;
       lotSizeAMG: BN;
       minUnderlyingBackingBIPS: BN;
-      mintingCapAMG: BN;
-      maxTrustedPriceAgeSeconds: BN;
       requireEOAAddressProof: boolean;
+      mintingCapAMG: BN;
       underlyingBlocksForPayment: BN;
       underlyingSecondsForPayment: BN;
       redemptionFeeBIPS: BN;
@@ -4018,6 +4191,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       paymentChallengeRewardBIPS: BN;
       paymentChallengeRewardUSD5: BN;
       withdrawalWaitMinSeconds: BN;
+      maxTrustedPriceAgeSeconds: BN;
       ccbTimeSeconds: BN;
       attestationWindowSeconds: BN;
       minUpdateRepeatTimeSeconds: BN;
@@ -4035,12 +4209,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     illegalPaymentChallenge: {
       (
         _transaction: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -4050,12 +4224,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _transaction: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -4065,12 +4239,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _transaction: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -4080,12 +4254,12 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _transaction: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
-          inUtxo: number | BN | string;
+          sourceAddressIndicator: string;
           sourceAddressHash: string;
           spentAmount: number | BN | string;
           paymentReference: string;
@@ -4158,8 +4332,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     mintingPaymentDefault: {
       (
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4175,8 +4349,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4192,8 +4366,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4209,8 +4383,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4240,17 +4414,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     proveUnderlyingAddressEOA: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4259,17 +4437,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4278,17 +4460,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4297,17 +4483,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4400,8 +4590,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     redemptionPaymentDefault: {
       (
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4417,8 +4607,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4434,8 +4624,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4451,8 +4641,8 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           deadlineBlockNumber: number | BN | string;
           deadlineTimestamp: number | BN | string;
           destinationAddressHash: string;
@@ -4521,17 +4711,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     selfMint: {
       (
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4542,17 +4736,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4563,17 +4761,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4584,17 +4786,21 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _payment: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           transactionHash: string;
           inUtxo: number | BN | string;
           utxo: number | BN | string;
           sourceAddressHash: string;
+          intendedSourceAddressHash: string;
           receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
           spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
           receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
           paymentReference: string;
           oneToOne: boolean;
           status: number | BN | string;
@@ -4745,6 +4951,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
+    switchClass1Collateral: {
+      (
+        _agentVault: string,
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     terminate: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -4768,12 +4997,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     unstickMinting: {
       (
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4782,12 +5010,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4796,12 +5023,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4810,12 +5036,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4827,12 +5052,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     updateCurrentBlock: {
       (
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4840,12 +5064,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4853,12 +5076,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
@@ -4866,12 +5088,11 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proof: {
-          stateConnectorRound: number | BN | string;
           merkleProof: string[];
+          stateConnectorRound: number | BN | string;
           blockNumber: number | BN | string;
           blockTimestamp: number | BN | string;
           numberOfConfirmations: number | BN | string;
-          averageBlockProductionTimeMs: number | BN | string;
           lowestQueryWindowBlockNumber: number | BN | string;
           lowestQueryWindowBlockTimestamp: number | BN | string;
         },
