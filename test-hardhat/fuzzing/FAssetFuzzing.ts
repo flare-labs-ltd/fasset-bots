@@ -1,5 +1,5 @@
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
-import { createTestAgentBotAndMakeAvailable, disableMccTraceManager } from "../test-utils/helpers";
+import { createTestAgentBAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter, disableMccTraceManager } from "../test-utils/helpers";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { web3 } from "../../src/utils/web3";
@@ -54,8 +54,8 @@ describe("Fuzzing tests", async () => {
     const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);//TODO add fassets
     const CUSTOMER_BALANCE = toWei(getEnv('CUSTOMER_BALANCE', 'number', 10_000));  // initial underlying balance
     const AVOID_ERRORS = getEnv('AVOID_ERRORS', 'boolean', true);
-    const CHANGE_PRICE_AT = getEnv('CHANGE_PRICE_AT', 'range', null);
-    const CHANGE_PRICE_FACTOR = getEnv('CHANGE_PRICE_FACTOR', 'json', null) as { [key: string]: [number, number] };
+    const CHANGE_PRICE_AT = getEnv('CHANGE_PRICE_AT', 'range', [3, 88]);
+    const CHANGE_PRICE_FACTOR = getEnv('CHANGE_PRICE_FACTOR', 'json', { asset: [10, 12], default: [1, 1] }) as { [key: string]: [number, number] };
     const ILLEGAL_PROB = getEnv('ILLEGAL_PROB', 'number', 4);     // likelihood of illegal operations (not normalized)
 
     const agentBots: FuzzingAgentBot[] = [];
@@ -113,7 +113,7 @@ describe("Fuzzing tests", async () => {
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];
-            eventFormatter.addAddress(`OWNER_ADDRESS`, ownerAddress);
+            eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-test_' + i + '.db' }));
             const options = createAgentOptions();
@@ -169,7 +169,9 @@ describe("Fuzzing tests", async () => {
             await trackedState.initialize();
             const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], trackedState);
             liquidators.push(liquidator);
+            // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
+            await transferFassetsToLiquidator(liquidator.address);
         }
         // create challenger
         const lastBlock = await web3.eth.getBlockNumber();
@@ -221,6 +223,10 @@ describe("Fuzzing tests", async () => {
                 for (const bot of agentBots) {
                     await bot.agentBot.runStep(bot.rootEm);
                 }
+                // execute step for liquidator
+                for (const liquidator of liquidators) {
+                    await liquidator.runStep();
+                }
                 // execute step for every keeper
                 for (const keeper of keepers) {
                     await keeper.runStep();
@@ -245,7 +251,7 @@ describe("Fuzzing tests", async () => {
             if (runner.uncaughtErrors.length > 0) {
                 throw runner.uncaughtErrors[0];
             }
-            // occassionally skip some time
+            // occasionally skip some time
             if (loop % 10 === 0) {
                 // run all queued event handlers
                 // eventQueue.runAll();
@@ -281,8 +287,8 @@ describe("Fuzzing tests", async () => {
     });
 
     function createAgentOptions(): AgentBotDefaultSettings {
-        const class1Collateral = randomChoice(context.collaterals.filter(isClass1Collateral));//TODO does this work?
-        const poolCollateral = context.collaterals.filter(isPoolCollateral)[0];//TODO does this work?
+        const class1Collateral = randomChoice(context.collaterals.filter(isClass1Collateral));
+        const poolCollateral = context.collaterals.filter(isPoolCollateral)[0];
         const mintingClass1CollateralRatioBIPS = mulDecimal(toBN(class1Collateral.minCollateralRatioBIPS), randomNum(1, 1.5));
         const mintingPoolCollateralRatioBIPS = mulDecimal(toBN(poolCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));
         return {
@@ -371,6 +377,18 @@ describe("Fuzzing tests", async () => {
 
     function isClass1Collateral(collateral: CollateralType) {
         return Number(collateral.collateralClass) === CollateralClass.CLASS1 && Number(collateral.validUntil) === 0;
+    }
+
+    async function transferFassetsToLiquidator(liquidatorAddress: string): Promise<void> {
+        const agentB = await createTestAgentBAndMakeAvailable(context, accounts[1000]);
+        const minter = await createTestMinter(context, accounts[999], chain);
+        const lots = 3;
+        const crt = await minter.reserveCollateral(agentB.vaultAddress, lots);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        const minted = await minter.executeMinting(crt, txHash0);
+        // liquidator "buys" f-assets
+        await context.fAsset.transfer(liquidatorAddress, minted.mintedAmountUBA, { from: minter.address });
     }
 
 });

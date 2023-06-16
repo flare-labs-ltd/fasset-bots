@@ -246,7 +246,7 @@ type EnvConverterType = keyof (typeof envConverters);
 type EnvConverterResult<T extends EnvConverterType> = ReturnType<typeof envConverters[T]>;
 
 /**
- * Get an anvironment variable and convert it to some type.
+ * Get an environment variable and convert it to some type.
  * @param name environment variable name
  * @param type conversion type, one of "string" | "number" | "boolean" | "number[]" | "string[]" | "boolean[] | range" | "json"
  * @param defaultValue the value to return if the environment variable does not exist
