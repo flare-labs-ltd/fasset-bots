@@ -6,11 +6,10 @@ import { IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockC
 import { FuzzingRunner } from "./FuzzingRunner";
 import { EventScope } from "../../src/utils/events/ScopedEvents";
 import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { coinFlip, foreachAsyncParallel, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
+import { coinFlip, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { EventArgs } from "../../src/utils/events/common";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { expectErrors } from "../../src/utils/helpers";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 
 
 // debug state
