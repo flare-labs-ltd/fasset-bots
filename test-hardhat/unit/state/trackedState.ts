@@ -312,7 +312,7 @@ describe("Tracked state tests", async () => {
         // handle events
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
-        expect(agentAfter.poolRedeemingUBA.gt(agentBefore.poolRedeemingUBA));
+        expect(agentAfter.poolRedeemingUBA.eq(agentBefore.poolRedeemingUBA)).to.be.true;
     });
 
     it("Should handle event 'RedemptionPerformed'", async () => {
