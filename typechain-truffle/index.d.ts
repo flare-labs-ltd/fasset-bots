@@ -76,6 +76,7 @@ import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
+import { SuicidalMockContract } from "./SuicidalMock";
 import { AddressUpdaterContract } from "./AddressUpdater";
 import { CheckPointableContract } from "./CheckPointable";
 import { DelegatableContract } from "./Delegatable";
@@ -86,7 +87,6 @@ import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoManagerContract } from "./IIFtsoManager";
 import { IIFtsoRegistryContract } from "./IIFtsoRegistry";
 import { PercentageDelegationContract } from "./PercentageDelegation";
-import { SuicidalMockContract } from "./SuicidalMock";
 import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
 import { WNatContract } from "./WNat";
@@ -194,6 +194,7 @@ declare global {
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
+      require(name: "SuicidalMock"): SuicidalMockContract;
       require(name: "AddressUpdater"): AddressUpdaterContract;
       require(name: "CheckPointable"): CheckPointableContract;
       require(name: "Delegatable"): DelegatableContract;
@@ -204,7 +205,6 @@ declare global {
       require(name: "IIFtsoManager"): IIFtsoManagerContract;
       require(name: "IIFtsoRegistry"): IIFtsoRegistryContract;
       require(name: "PercentageDelegation"): PercentageDelegationContract;
-      require(name: "SuicidalMock"): SuicidalMockContract;
       require(name: "VPContract"): VPContractContract;
       require(name: "VPToken"): VPTokenContract;
       require(name: "WNat"): WNatContract;
@@ -443,6 +443,7 @@ export {
   SafeMath64MockInstance,
 } from "./SafeMath64Mock";
 export { SafePctMockContract, SafePctMockInstance } from "./SafePctMock";
+export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
 export {
   AddressUpdaterContract,
   AddressUpdaterInstance,
@@ -477,7 +478,6 @@ export {
   PercentageDelegationContract,
   PercentageDelegationInstance,
 } from "./PercentageDelegation";
-export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
 export { VPContractContract, VPContractInstance } from "./VPContract";
 export { VPTokenContract, VPTokenInstance } from "./VPToken";
 export { WNatContract, WNatInstance } from "./WNat";
