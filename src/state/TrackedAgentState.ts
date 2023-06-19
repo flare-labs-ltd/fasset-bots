@@ -7,6 +7,7 @@ import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustC
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
 import { AgentCreated } from "../../typechain-truffle/AssetManager";
+import { roundUBAToAmg } from "../fasset/Conversions";
 
 export type InitialAgentData = EventArgs<AgentCreated>;
 
@@ -113,7 +114,9 @@ export class TrackedAgentState {
 
     // handlers: minting
     handleCollateralReserved(args: EventArgs<CollateralReserved>) {
-        this.reservedUBA = this.reservedUBA.add(toBN(args.valueUBA));
+        const mintingUBA = toBN(args.valueUBA);
+        const poolFeeUBA = this.calculatePoolFee(toBN(args.feeUBA));
+        this.reservedUBA = this.reservedUBA.add(mintingUBA).add(poolFeeUBA);
     }
 
     handleMintingExecuted(args: EventArgs<MintingExecuted>) {
@@ -175,7 +178,7 @@ export class TrackedAgentState {
     }
 
     protected isPoolSelfCloseRedemption(requestId: BNish) {
-        return toBN(requestId).and(BN_ONE).isZero();
+        return !toBN(requestId).and(BN_ONE).isZero();
     }
 
     // handlers: liquidation
@@ -291,5 +294,7 @@ export class TrackedAgentState {
         return class1Transition >= poolTransition ? class1Transition : poolTransition;
     }
 
-
+    calculatePoolFee(mintingFeeUBA: BN) {
+        return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(this.agentSettings.poolFeeShareBIPS).divn(MAX_BIPS));
+    }
 }
