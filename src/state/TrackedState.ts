@@ -248,11 +248,15 @@ export class TrackedState {
     }
 
     createAgent(data: InitialAgentData): TrackedAgentState {
-        const agent = new TrackedAgentState(this, data);
+        const agent = this.newAgent(data);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
         this.agentsByPool.set(agent.collateralPoolAddress, agent);
         return agent;
+    }
+
+    protected newAgent(data: InitialAgentData): TrackedAgentState {
+        return new TrackedAgentState(this, data);
     }
 
     destroyAgent(args: EventArgs<AgentDestroyed>): void {

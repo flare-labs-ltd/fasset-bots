@@ -16,6 +16,10 @@ export function amgToTokenWeiPrice(settings: AMGSettings, tokenDecimals: BNish, 
         .div(toBN(tokenUSD).mul(assetScale));
 }
 
+export function roundUBAToAmg(settings: AMGSettings, valueUBA: BNish) {
+    return toBN(valueUBA).sub(toBN(valueUBA).mod(toBN(settings.assetMintingGranularityUBA)));
+}
+
 export function convertUBAToAmg(settings: AMGSettings, valueUBA: BNish): BN {
     return toBN(valueUBA).div(toBN(settings.assetMintingGranularityUBA));
 }

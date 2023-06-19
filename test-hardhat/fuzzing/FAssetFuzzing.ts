@@ -4,13 +4,12 @@ import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { expectErrors, sleep, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
+import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { Challenger } from "../../src/actors/Challenger";
 import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { assert } from "chai";
 import { FuzzingRunner } from "./FuzzingRunner";
-import { TrackedState } from "../../src/state/TrackedState";
 import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { FuzzingCustomer } from "./FuzzingCustomer";
@@ -31,6 +30,8 @@ import { TimeKeeper } from "../../src/actors/TimeKeeper";
 import { FuzzingNotifier } from "./FuzzingNotifier";
 import { Notifier } from "../../src/utils/Notifier";
 import { FuzzingTimeline } from "./FuzzingTimeline";
+import { FuzzingStateComparator } from "./FuzzingStateComparator";
+import { FuzzingState } from "./FuzzingState";
 
 export type MiningMode = 'auto' | 'manual'
 
@@ -40,7 +41,7 @@ describe("Fuzzing tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let governance: string;
-    let commonTrackedState: TrackedState;
+    let commonTrackedState: FuzzingState;
     let timeline: FuzzingTimeline;
 
     const startTimestamp = systemTimestamp();
@@ -51,7 +52,7 @@ describe("Fuzzing tests", async () => {
     const N_AGENTS = getEnv('N_AGENTS', 'number', 4);
     const N_CUSTOMERS = getEnv('N_CUSTOMERS', 'number', 6);     // minters and redeemers
     const N_KEEPERS = getEnv('N_KEEPERS', 'number', 1);
-    const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);//TODO add fassets
+    const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);
     const CUSTOMER_BALANCE = toWei(getEnv('CUSTOMER_BALANCE', 'number', 10_000));  // initial underlying balance
     const AVOID_ERRORS = getEnv('AVOID_ERRORS', 'boolean', true);
     const CHANGE_PRICE_AT = getEnv('CHANGE_PRICE_AT', 'range', [3, 88]);
@@ -67,7 +68,6 @@ describe("Fuzzing tests", async () => {
     let chain: MockChain;
     let eventFormatter: EventFormatter;
     let runner: FuzzingRunner;
-    // let checkedInvariants = false;
     let notifier: Notifier;
 
     before(async () => {
@@ -83,29 +83,12 @@ describe("Fuzzing tests", async () => {
         notifier = new FuzzingNotifier(new Notifier, eventFormatter);
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
-        commonTrackedState = new TrackedState(context, lastBlock);
+        commonTrackedState = new FuzzingState(context, lastBlock);
         await commonTrackedState.initialize();
         // runner
         runner = new FuzzingRunner(context, AVOID_ERRORS, commonTrackedState, eventFormatter);
         // timeline
         timeline = new FuzzingTimeline(chain, runner);
-        // logging
-        // logger = new LogFile("test_logs/fasset-fuzzing.log");
-        // timeline.logger = logger;
-        // (context.stateConnectorClient as MockStateConnectorClient).logger = logger;
-        // fuzzingState.logger = logger;
-    });
-
-    after(async () => {
-        // fuzzingState.logAllAgentActions();
-        // if (!checkedInvariants) {
-        //     await fuzzingState.checkInvariants(false).catch(e => {});
-        // }
-        // fuzzingState.logAllAgentSummaries();
-        // fuzzingState.logAllPoolSummaries();
-        // fuzzingState.logExpectationFailures();
-        // interceptor.logGasUsage();
-        // logger.close();
     });
 
     it("f-asset fuzzing test", async () => {
@@ -154,36 +137,26 @@ describe("Fuzzing tests", async () => {
         // create system keepers
         const firstKeeperAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS;
         for (let i = 0; i < N_KEEPERS; i++) {
-            const lastBlock = await web3.eth.getBlockNumber();
-            const trackedState = new TrackedState(context, lastBlock);
-            await trackedState.initialize();
-            const keeper = new SystemKeeper(runner, accounts[firstKeeperAddress + i], trackedState);
+            const keeper = new SystemKeeper(runner, accounts[firstKeeperAddress + i], commonTrackedState);
             keepers.push(keeper);
             eventFormatter.addAddress(`KEEPER_${i}`, keeper.address);
         }
         // create liquidators
         const firstLiquidatorAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS;
         for (let i = 0; i < N_LIQUIDATORS; i++) {
-            const lastBlock = await web3.eth.getBlockNumber();
-            const trackedState = new TrackedState(context, lastBlock);
-            await trackedState.initialize();
-            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], trackedState);
+            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState);
             liquidators.push(liquidator);
             // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
             await transferFassetsToLiquidator(liquidator.address);
         }
         // create challenger
-        const lastBlock = await web3.eth.getBlockNumber();
-        const trackedState = new TrackedState(context, lastBlock);
-        await trackedState.initialize();
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, trackedState, await context.chain.getBlockHeight());
+        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.chain.getBlockHeight());
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeper = new TimeKeeper(context);
         timeKeeper.run();
-        // await interceptor.allHandled();
         // init some state
         await refreshAvailableAgents();
         // actions
@@ -210,29 +183,15 @@ describe("Fuzzing tests", async () => {
         if (!AUTOMINE) {
             await setMiningMode('manual', 1000);
         }
+        // run tracked state
+        await commonTrackedState.readUnhandledEvents();
         // perform actions
         for (let loop = 1; loop <= LOOPS; loop++) {
             // choose random action
             const action = weightedRandomChoice(actions);
             try {
-                // run tracked state
-                await commonTrackedState.readUnhandledEvents();
                 // run action
                 await action();
-                // execute step for every bot
-                for (const bot of agentBots) {
-                    await bot.agentBot.runStep(bot.rootEm);
-                }
-                // execute step for liquidator
-                for (const liquidator of liquidators) {
-                    await liquidator.runStep();
-                }
-                // execute step for every keeper
-                for (const keeper of keepers) {
-                    await keeper.runStep();
-                }
-                // execute step for challenger
-                await challenger.runStep();
             } catch (e) {
                 expectErrors(e, []);
             }
@@ -247,19 +206,37 @@ describe("Fuzzing tests", async () => {
                     expectErrors(e, []);
                 }
             }
+            // run actors
+            try {
+                // execute step for every bot
+                for (const bot of agentBots) {
+                    await bot.agentBot.runStep(bot.rootEm);
+                }
+                // execute step for liquidator
+                for (const liquidator of liquidators) {
+                    await liquidator.runStep();
+                }
+                // execute step for every keeper
+                for (const keeper of keepers) {
+                    await keeper.runStep();
+                }
+                // execute step for challenger
+                await challenger.runStep();
+                // run tracked state
+                await commonTrackedState.readUnhandledEvents();
+            } catch (e) {
+                expectErrors(e, []);
+            }
+            await checkInvariants(false);
             // fail immediately on unexpected errors from threads
             if (runner.uncaughtErrors.length > 0) {
                 throw runner.uncaughtErrors[0];
             }
             // occasionally skip some time
             if (loop % 10 === 0) {
-                // run all queued event handlers
-                // eventQueue.runAll();
-                // await fuzzingState.checkInvariants(false);     // state change may happen during check, so we don't wany failure here
+                await checkInvariants(false);     // state change may happen during check, so we don't have any failure here
                 runner.comment(`-----  LOOP ${loop}  ${await timeInfo()}  -----`);
                 await timeline.skipTime(100);
-                // await timeline.executeTriggers();
-                // await interceptor.allHandled();
             }
         }
         timeKeeper.clear();
@@ -269,20 +246,14 @@ describe("Fuzzing tests", async () => {
             await sleep(200);
             await timeline.skipTime(100);
             runner.comment(`-----  WAITING  ${await timeInfo()}  -----`);
-            //     await timeline.executeTriggers();
-            // await interceptor.allHandled();
-            //     while (eventQueue.length > 0) {
-            //         eventQueue.runAll();
-            //         await interceptor.allHandled();
-            //     }
+
         }
         // fail immediately on unexpected errors from threads
         if (runner.uncaughtErrors.length > 0) {
             throw runner.uncaughtErrors[0];
         }
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
-        // checkedInvariants = true;
-        // await fuzzingState.checkInvariants(true);  // all events are flushed, state must match
+        await checkInvariants(true);  // all events are flushed, state must match
         // assert.isTrue(fuzzingState.failedExpectations.length === 0, "fuzzing state has expectation failures");
     });
 
@@ -389,6 +360,39 @@ describe("Fuzzing tests", async () => {
         const minted = await minter.executeMinting(crt, txHash0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidatorAddress, minted.mintedAmountUBA, { from: minter.address });
+        const exitAllowedAt = await agentB.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        await agentB.exitAvailable();
+    }
+
+    async function checkInvariants(failOnProblems: boolean) {
+        console.log("****************** CHECK INVARIANTS - START ******************");
+        const checker = new FuzzingStateComparator();
+        // total supply
+        const fAssetSupply = await context.fAsset.totalSupply();
+        checker.checkEquality('fAsset supply', fAssetSupply, commonTrackedState.fAssetSupply, true);
+        // // total balances
+        // const totalBalances = commonTrackedState.fAssetBalance.total();
+        // checker.checkEquality('fAsset supply / total balances', fAssetSupply, totalBalances);
+        // total minted value by all agents
+        const totalMintedUBA = sumBN(commonTrackedState.agents.values(), agent => agent.mintedUBA);
+        checker.checkEquality('fAsset supply/total minted by agents', fAssetSupply, totalMintedUBA, true);
+        // settings
+        const actualSettings = await context.assetManager.getSettings();
+        for (const [key, value] of Object.entries(actualSettings)) {
+            if (/^\d+$/.test(key)) continue;   // all properties are both named and with index
+            if (['assetManagerController'].includes(key)) continue;   // special properties, not changed in normal way
+            checker.checkEquality(`settings.${key}`, value, (commonTrackedState.settings as any)[key]);
+        }
+        // check agents' state
+        for (const agent of commonTrackedState.agents.values()) {
+            await agent.checkInvariants(checker, eventFormatter.formatAddress(agent.vaultAddress));
+        }
+        // optionally fail on differences
+        if (failOnProblems && checker.problems > 0) {
+            assert.fail("Tracked and actual state different");
+        }
+        console.log("****************** CHECK INVARIANTS - END ******************");
     }
 
 });
