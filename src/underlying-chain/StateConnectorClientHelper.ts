@@ -1,13 +1,15 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { AttestationClientSCInstance, IStateConnectorInstance } from "../../typechain-truffle";
+import { IStateConnectorInstance, SCProofVerifierInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { BNish, DEFAULT_TIMEOUT, sleep, toBN, toNumber } from "../utils/helpers";
 import { MerkleTree } from "../utils/MerkleTree";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence, DHType } from "../verification/generated/attestation-hash-types";
-import { encodeRequest } from "../verification/generated/attestation-request-encode";
 import { AttestationType } from "../verification/generated/attestation-types-enum";
-import { AttestationRequest, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
+import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
+import { ARBase } from "../verification/generated/attestation-request-types";
+import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
+import { artifacts } from "../utils/artifacts";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
@@ -18,45 +20,40 @@ export class StateConnectorError extends Error {
 export class StateConnectorClientHelper implements IStateConnectorClient {
 
     clients: AxiosInstance[] = [];
-
+    verifier: AxiosInstance;
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
-    attestationClient!: AttestationClientSCInstance;
+    attestationClient!: SCProofVerifierInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
+    definitionStore = new StaticAttestationDefinitionStore();
 
     constructor(
-        public artifacts: Truffle.Artifacts,
         public attestationProviderUrls: string[],
         public attestationClientAddress: string,
         public stateConnectorAddress: string,
+        public verifierUrl: string,
+        public verifierUrlApiKey: string,
         public account: string
     ) {
         for (const url of attestationProviderUrls) {
-            const createAxiosConfig: AxiosRequestConfig = {
-                baseURL: url,
-                timeout: DEFAULT_TIMEOUT,
-                headers: { "Content-Type": "application/json" },
-                validateStatus: function (status: number) {
-                    return (status >= 200 && status < 300) || status == 500;
-                },
-            };
             // set clients
-            this.clients.push(axios.create(createAxiosConfig));
+            this.clients.push(axios.create(this.createAxiosConfig(url, null)));
         }
+        this.verifier = axios.create(this.createAxiosConfig(verifierUrl, verifierUrlApiKey));
     }
 
     async initStateConnector(): Promise<void> {
-        const IStateConnector = this.artifacts.require("IStateConnector");
+        const IStateConnector = artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
-        const AttestationClientSC = this.artifacts.require("AttestationClientSC");
-        this.attestationClient = await AttestationClientSC.at(this.attestationClientAddress);
+        const AttestationClient = artifacts.require("SCProofVerifier");
+        this.attestationClient = await AttestationClient.at(this.attestationClientAddress);
         this.firstEpochStartTime = toNumber(await this.stateConnector.BUFFER_TIMESTAMP_OFFSET());
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
 
-    static async create(artifacts: Truffle.Artifacts, urls: string[], attestationClientAddress: string, stateConnectorAddress: string, account: string): Promise<StateConnectorClientHelper> {
-        const helper = new StateConnectorClientHelper(artifacts, urls, attestationClientAddress, stateConnectorAddress, account);
+    static async create(urls: string[], attestationClientAddress: string, stateConnectorAddress: string, verifierUrl: string, verifierUrlApiKey: string, account: string): Promise<StateConnectorClientHelper> {
+        const helper = new StateConnectorClientHelper(urls, attestationClientAddress, stateConnectorAddress, verifierUrl, verifierUrlApiKey, account);
         await helper.initStateConnector();
         return helper;
     }
@@ -77,13 +74,20 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
     }
 
-    async submitRequest(data: string): Promise<AttestationRequest> {
-        const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
-        const attReq = requiredEventArgs(txRes, 'AttestationRequest');
-        const calculated_round_id = this.timestampToRoundId(toNumber(attReq.timestamp));
-        return {
-            round: calculated_round_id,
-            data: data
+    async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
+        const response = await this.verifier.post('/query/prepareAttestation', request);
+        const status = response.data.status;
+        const data = response.data.data;
+        if (status === 'OK') {
+            const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
+            const attReq = requiredEventArgs(txRes, 'AttestationRequest');
+            const calculated_round_id = this.timestampToRoundId(toNumber(attReq.timestamp));
+            return {
+                round: calculated_round_id,
+                data: data
+            }
+        } else {
+            return null;
         }
     }
 
@@ -107,7 +111,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 // find response matching requestData
                 let matchedResponse: any = null;
                 for (const item of data) {
-                    const encoded = encodeRequest(item.request);
+                    const encoded = this.definitionStore.encodeRequest(item.request);
                     if (encoded.toUpperCase() === requestData.toUpperCase()) {
                         matchedResponse = item;
                     }
@@ -203,9 +207,13 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             inUtxo: toBN(matchedResponse.inUtxo),
             utxo: toBN(matchedResponse.utxo),
             sourceAddressHash: matchedResponse.sourceAddressHash,
+            intendedSourceAddressHash: matchedResponse.intendedSourceAddressHash,
             receivingAddressHash: matchedResponse.receivingAddressHash,
+            intendedReceivingAddressHash: matchedResponse.intendedReceivingAddressHash,
             spentAmount: toBN(matchedResponse.spentAmount),
+            intendedSpentAmount: toBN(matchedResponse.intendedSpentAmount),
             receivedAmount: toBN(matchedResponse.receivedAmount),
+            intendedReceivedAmount: toBN(matchedResponse.intendedReceivedAmount),
             paymentReference: matchedResponse.paymentReference,
             oneToOne: matchedResponse.oneToOne,
             status: toBN(matchedResponse.status)
@@ -219,7 +227,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             blockNumber: toBN(matchedResponse.blockNumber),
             blockTimestamp: toBN(matchedResponse.blockTimestamp),
             transactionHash: matchedResponse.transactionHash,
-            inUtxo: toBN(matchedResponse.inUtxo),
+            sourceAddressIndicator: matchedResponse.sourceAddressIndicator,
             sourceAddressHash: matchedResponse.sourceAddressHash,
             spentAmount: toBN(matchedResponse.spentAmount),
             paymentReference: matchedResponse.paymentReference
@@ -233,7 +241,6 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             blockNumber: toBN(matchedResponse.blockNumber),
             blockTimestamp: toBN(matchedResponse.blockTimestamp),
             numberOfConfirmations: toBN(matchedResponse.numberOfConfirmations),
-            averageBlockProductionTimeMs: toBN(matchedResponse.averageBlockProductionTimeMs),
             lowestQueryWindowBlockNumber: toBN(matchedResponse.lowestQueryWindowBlockNumber),
             lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp)
         };
@@ -257,5 +264,22 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     private lastClient(i: number): boolean {
         return i === this.clients.length - 1;
+    }
+
+    private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
+        const createAxiosConfig: AxiosRequestConfig = {
+            baseURL: url,
+            timeout: DEFAULT_TIMEOUT,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            validateStatus: function (status: number) {
+                return (status >= 200 && status < 300) || status == 500;
+            },
+        };
+        if (apiKey) {
+            Object.defineProperty(createAxiosConfig.headers, "X-API-KEY", apiKey);
+        }
+        return createAxiosConfig;
     }
 }

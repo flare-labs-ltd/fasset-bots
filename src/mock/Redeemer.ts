@@ -47,6 +47,7 @@ export class Redeemer {
             request.paymentAddress,
             request.paymentReference,
             request.valueUBA.sub(request.feeUBA),
+            request.firstUnderlyingBlock.toNumber(),
             request.lastUnderlyingBlock.toNumber(),
             request.lastUnderlyingTimestamp.toNumber());
         const res = await this.assetManager.redemptionPaymentDefault(proof, request.requestId, { from: this.address });

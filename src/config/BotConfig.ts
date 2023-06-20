@@ -14,7 +14,6 @@ import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
-import { artifacts } from "../utils/artifacts";
 import { requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
@@ -24,9 +23,9 @@ import { CollateralClass } from "../fasset/AssetManagerTypes";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
-const ATTESTATION_PROVIDER_URLS: string  = requireEnv('ATTESTER_BASE_URLS');
+const ATTESTATION_PROVIDER_URLS: string = requireEnv('ATTESTER_BASE_URLS');
 const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
-const STATE_CONNECTOR_ADDRESS: string  = requireEnv('STATE_CONNECTOR_ADDRESS');
+const STATE_CONNECTOR_ADDRESS: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
 export interface AgentBotRunConfig {
@@ -48,7 +47,7 @@ export interface TrackedStateRunConfig {
     contractsJsonFile?: string;
 }
 
-export interface AgentBotConfig extends TrackedStateConfig{
+export interface AgentBotConfig extends TrackedStateConfig {
     loopDelay: number;
     chains: AgentBotConfigChain[];
     orm: ORM;
@@ -57,7 +56,6 @@ export interface AgentBotConfig extends TrackedStateConfig{
 
 export interface TrackedStateConfig {
     rpcUrl: string;
-    stateConnector: IStateConnectorClient;
     chains: TrackedStateConfigChain[];
     nativeChainInfo: NativeChainInfo;
     // either one must be set
@@ -73,14 +71,13 @@ export interface TrackedStateConfigChain {
     chainInfo: ChainInfo;
     chain: IBlockChain;
     blockChainIndexerClient: BlockChainIndexerHelper;
+    stateConnector: IStateConnectorClient;
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
 }
 
 export interface BotChainInfo extends ChainInfo {
-    indexerClientUrl: string;
-    indexerClientApiKey?: string;
     inTestnet?: boolean;
     // either one must be set
     assetManager?: string;
@@ -103,8 +100,6 @@ export interface AgentSettingsConfig {
  * Creates AgentBot configuration from initial run config file.
  */
 export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promise<AgentBotConfig> {
-    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
-    const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: AgentBotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
@@ -113,7 +108,6 @@ export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promis
     return {
         rpcUrl: RPC_URL,
         loopDelay: runConfig.loopDelay,
-        stateConnector: stateConnector,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm,
@@ -127,15 +121,12 @@ export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promis
  * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
  */
 export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig): Promise<TrackedStateConfig> {
-    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS.split(",");
-    const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
     const chains: TrackedStateConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createTrackedStateConfigChain(chainInfo));
     }
     return {
         rpcUrl: RPC_URL,
-        stateConnector: stateConnector,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
         addressUpdater: runConfig.addressUpdater,
@@ -143,27 +134,39 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
     };
 }
 
-export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM): Promise<AgentBotConfigChain> {
+export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.indexerClientApiKey);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
+    const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
+    const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
+    const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
+    const ownerAddress = owner ? owner : OWNER_ADDRESS;
+    const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
     return {
         chainInfo: chainInfo,
         chain: chain,
         wallet: wallet,
         blockChainIndexerClient: blockChainIndexerClient,
+        stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
     };
 }
 
-export async function createTrackedStateConfigChain(chainInfo: BotChainInfo): Promise<TrackedStateConfigChain> {
+export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.indexerClientUrl, chainInfo.chainId, chainInfo.indexerClientApiKey);
+    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
+    const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
+    const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
+    const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
+    const ownerAddress = owner ? owner : OWNER_ADDRESS;
+    const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
     return {
         chainInfo: chainInfo,
         chain: chain,
         blockChainIndexerClient: blockChainIndexerClient,
+        stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
     };
@@ -284,18 +287,23 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
     }
 }
 
-export function createBlockChainIndexerHelper(indexerWebServerUrl: string, sourceId: SourceId, apiKey: string = ""): BlockChainIndexerHelper {
+export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainIndexerHelper {
     switch (sourceId) {
-        case SourceId.ALGO:
+        case SourceId.BTC: {
+            const indexerWebServerUrl = requireEnv('INDEXER_BTC_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_BTC_API_KEY');
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
-        case SourceId.BTC:
+        }
+        case SourceId.DOGE: {
+            const indexerWebServerUrl = requireEnv('INDEXER_DOGE_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_DOGE_API_KEY');
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
-        case SourceId.DOGE:
+        }
+        case SourceId.XRP: {
+            const indexerWebServerUrl = requireEnv('INDEXER_XRP_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_XRP_API_KEY');
             return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
-        case SourceId.LTC:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
-        case SourceId.XRP:
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
+        }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
@@ -335,23 +343,44 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
     }
 }
 
-export async function createAttestationHelper(sourceId: SourceId, stateConnector: StateConnectorClientHelper): Promise<AttestationHelper> {
+export async function createAttestationHelper(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<AttestationHelper> {
+
     switch (sourceId) {
-        case SourceId.ALGO:
+        case SourceId.BTC: {
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
-        case SourceId.BTC:
+        }
+        case SourceId.DOGE: {
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
-        case SourceId.DOGE:
+        }
+        case SourceId.XRP: {
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
-        case SourceId.LTC:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
-        case SourceId.XRP:
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+        }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
 }
 
-export async function createStateConnectorClient(attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
-    return await StateConnectorClientHelper.create(artifacts, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
+export async function createStateConnectorClient(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
+    switch (sourceId) {
+        case SourceId.BTC: {
+            const indexerWebServerUrl = requireEnv('INDEXER_BTC_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_BTC_API_KEY');
+            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+        }
+        case SourceId.DOGE: {
+            const indexerWebServerUrl = requireEnv('INDEXER_DOGE_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_DOGE_API_KEY');
+            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+        }
+        case SourceId.XRP: {
+            const indexerWebServerUrl = requireEnv('INDEXER_XRP_WEB_SERVER_URL');
+            const apiKey = requireEnv('INDEXER_XRP_API_KEY');
+            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+        }
+        default:
+            throw new Error(`SourceId ${sourceId} not supported.`);
+    }
 }

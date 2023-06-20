@@ -20,7 +20,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
             timeout: DEFAULT_TIMEOUT,
             headers: {
                 "Content-Type": "application/json",
-                "X-API-KEY": indexerWebServerApiKey
+                "X-API-KEY": this.indexerWebServerApiKey
             },
             validateStatus: function (status: number) {
                 return (status >= 200 && status < 300) || status == 500;
