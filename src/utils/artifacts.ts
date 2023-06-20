@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { glob } from "glob";
+import { globSync } from "glob";
 import { basename, extname } from "path";
 import Web3 from "web3";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -17,7 +17,7 @@ class ArtifactsImpl {
 
     loadArtifactMap(): void {
         this.artifactMap = new Map();
-        const paths = glob.sync("artifacts/**/*.json");
+        const paths = globSync("artifacts/**/*.json");
         for (const path of paths) {
             const name = basename(path, extname(path));
             const data: ArtifactData = { name: name, path: path };

@@ -4,7 +4,7 @@ import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
-import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
+import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
@@ -18,7 +18,7 @@ import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } f
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
-const AttestationClient = artifacts.require('AttestationClientSC');
+const AttestationClient = artifacts.require('SCProofVerifier');
 const AssetManagerController = artifacts.require('AssetManagerController');
 const AddressUpdater = artifacts.require('AddressUpdater');
 const WNat = artifacts.require('WNat');
@@ -96,7 +96,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         WNat: newContract('WNat', 'WNat.sol', wNat.address),
         FtsoRegistry: newContract('FtsoRegistry', 'FtsoRegistryMock.sol', ftsoRegistry.address),
         FtsoManager: newContract('FtsoManager', 'FtsoManagerMock.sol', ftsoManager.address),
-        AttestationClient: newContract('AttestationClient', 'AttestationClientSC.sol', attestationClient.address),
+        AttestationClient: newContract('AttestationClient', 'SCProofVerifier.sol', attestationClient.address),
         AgentVaultFactory: newContract('AgentVaultFactory', 'AgentVaultFactory.sol', agentVaultFactory.address),
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
         CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
@@ -106,7 +106,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, 'auto');
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, 'auto');
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
     const wallet = new MockChainWallet(chain);
@@ -189,6 +189,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         maxTrustedPriceAgeSeconds: bnToString(parameters.maxTrustedPriceAgeSeconds),
         minUpdateRepeatTimeSeconds: bnToString(parameters.minUpdateRepeatTimeSeconds),
         attestationWindowSeconds: bnToString(parameters.attestationWindowSeconds),
+        averageBlockTimeMS: bnToString(parameters.averageBlockTimeMS),
         buybackCollateralFactorBIPS: bnToString(parameters.buybackCollateralFactorBIPS),
         announcedUnderlyingConfirmationMinSeconds: bnToString(parameters.announcedUnderlyingConfirmationMinSeconds),
         agentFeeChangeTimelockSeconds: 6 * HOURS,

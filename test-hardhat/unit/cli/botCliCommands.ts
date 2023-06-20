@@ -62,7 +62,7 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), "auto"),
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
             chains: [{
                 chainInfo: {
                     chainId: chainId,
@@ -330,7 +330,7 @@ describe("Bot cli commands unit tests", async () => {
         const agentEnt1 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent1.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt1.waitingForDestructionCleanUp).to.be.true;
 
-        const agent2  = await createAgent();
+        const agent2 = await createAgent();
         await mintAndDepositClass1ToOwner(context, agent2, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent2.vaultAddress, depositAmount);
         await botCliCommands.buyCollateralPoolTokens(agent2.vaultAddress, depositAmount);

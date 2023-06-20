@@ -19,6 +19,7 @@ import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
+import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 use(spies);
 
 describe("Agent bot unit tests", async () => {
@@ -138,6 +139,7 @@ describe("Agent bot unit tests", async () => {
             requestId: toBN(0),
             valueUBA: toBN(0),
             feeUBA: toBN(0),
+            firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: ""
@@ -191,6 +193,7 @@ describe("Agent bot unit tests", async () => {
             requestId: toBN(0),
             valueUBA: toBN(0),
             feeUBA: toBN(0),
+            firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "",
@@ -212,6 +215,7 @@ describe("Agent bot unit tests", async () => {
             requestId: toBN(0),
             valueUBA: toBN(0),
             feeUBA: toBN(0),
+            firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "",
@@ -244,7 +248,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 1 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
@@ -255,6 +259,7 @@ describe("Agent bot unit tests", async () => {
             requestId: toBN(0),
             valueUBA: toBN(0),
             feeUBA: toBN(0),
+            firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "",
@@ -266,7 +271,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 2 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create minting
@@ -277,6 +282,7 @@ describe("Agent bot unit tests", async () => {
             requestId: toBN(0),
             valueUBA: toBN(0),
             feeUBA: toBN(0),
+            firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "",
@@ -288,7 +294,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 3 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof();
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, 'sendNoProofObtained');
         // create redemption

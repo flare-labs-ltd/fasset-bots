@@ -17,6 +17,7 @@ import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
+import { attestationWindowSeconds } from "../utils/fasset-helpers";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -322,6 +323,7 @@ export class AgentBot {
             requestId: toBN(request.collateralReservationId),
             valueUBA: toBN(request.valueUBA),
             feeUBA: toBN(request.feeUBA),
+            firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
             lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
             lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
             paymentReference: request.paymentReference,
@@ -436,10 +438,12 @@ export class AgentBot {
      */
     async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
-        minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
-        minting.proofRequestRound = request.round;
-        minting.proofRequestData = request.data;
-        this.notifier.sendMintingCornerCase(minting.requestId.toString());
+        if (request) {
+            minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
+            minting.proofRequestRound = request.round;
+            minting.proofRequestData = request.data;
+            this.notifier.sendMintingCornerCase(minting.requestId.toString());
+        }// else cannot prove request yet
     }
 
     /**
@@ -450,11 +454,14 @@ export class AgentBot {
             minting.agentUnderlyingAddress,
             minting.paymentReference,
             minting.valueUBA.add(minting.feeUBA),
+            minting.firstUnderlyingBlock.toNumber(),
             minting.lastUnderlyingBlock.toNumber(),
             minting.lastUnderlyingTimestamp.toNumber());
-        minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
-        minting.proofRequestRound = request.round;
-        minting.proofRequestData = request.data;
+        if (request) {
+            minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
+            minting.proofRequestRound = request.round;
+            minting.proofRequestData = request.data;
+        }// else cannot prove request yet
     }
 
     /**
@@ -616,9 +623,11 @@ export class AgentBot {
      */
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash ?? "", this.agent.underlyingAddress, redemption.paymentAddress);
-        redemption.state = AgentRedemptionState.REQUESTED_PROOF;
-        redemption.proofRequestRound = request.round;
-        redemption.proofRequestData = request.data;
+        if (request) {
+            redemption.state = AgentRedemptionState.REQUESTED_PROOF;
+            redemption.proofRequestRound = request.round;
+            redemption.proofRequestData = request.data;
+        } // else cannot prove request yet
     }
 
     /**
@@ -642,7 +651,7 @@ export class AgentBot {
      * Checks if proof has expired in indexer.
      */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
-        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists();
+        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
         const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
         const lqwBTimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
         if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {

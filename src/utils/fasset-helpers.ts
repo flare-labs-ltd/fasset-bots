@@ -25,7 +25,13 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * minting or redemption payment.
  */
 export async function proveAndUpdateUnderlyingBlock(context: IAssetContext) {
-    const proof = await context.attestationProvider.proveConfirmedBlockHeightExists();
+    const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
     await context.assetManager.updateCurrentBlock(proof);
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
+}
+
+
+export async function attestationWindowSeconds(context: IAssetContext) {
+    const settings = await context.assetManager.getSettings();
+    return Number(settings.attestationWindowSeconds);
 }

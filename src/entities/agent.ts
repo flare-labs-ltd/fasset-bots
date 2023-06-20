@@ -109,6 +109,9 @@ export class AgentMinting {
     feeUBA!: BN;
 
     @Property({ type: BNType })
+    firstUnderlyingBlock!: BN;
+
+    @Property({ type: BNType })
     lastUnderlyingBlock!: BN;
 
     @Property({ type: BNType })

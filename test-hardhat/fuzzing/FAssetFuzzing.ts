@@ -108,7 +108,7 @@ describe("Fuzzing tests", async () => {
             botCliCommands.botConfig = {
                 rpcUrl: "",
                 loopDelay: 0,
-                stateConnector: new MockStateConnectorClient(await StateConnector.new(), "auto"),
+                stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
                 chains: [{
                     chainInfo: chainInfo,
                     chain: chain,

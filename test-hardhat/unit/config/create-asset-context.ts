@@ -10,6 +10,7 @@ import { TrackedStateConfig, TrackedStateConfigChain } from "../../../src/config
 import { createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { artifacts } from "hardhat";
+import { MockChain } from "../../../src/mock/MockChain";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
@@ -78,7 +79,7 @@ describe("Create asset context unit tests", async () => {
         }
         const config: TrackedStateConfig = {
             rpcUrl: "rpcUrl",
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), "auto"),
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainConfig.chainInfo.chainId]: new MockChain() },  "auto"),
             chains: [chainConfig],
             nativeChainInfo: testNativeChainInfo
         }

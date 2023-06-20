@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "chai";
 import { toBN, toHex } from "../../../src/utils/helpers";
-import { MerkleTree } from "../../../src/utils/MerkleTree";
+import { MerkleTree, verifyWithMerkleProof } from "../../../src/utils/MerkleTree";
 
 describe("Merkle tree unit tests", async () => {
     const makeHashes = (i: number) => new Array(i).fill(0).map(() => toHex(Math.floor(Math.random() * 10000000000000), 32));
@@ -16,7 +16,7 @@ describe("Merkle tree unit tests", async () => {
         expect(tree.getHash(0)).to.be.null;
         expect(tree.getProof(0)).to.be.null;
         expect(tree.getProofForValue("")).to.be.null;
-        expect(tree.verify("", [])).to.be.false;
+        expect(verifyWithMerkleProof("", [], tree.root!)).to.be.false;
     });
 
     it("Should create tree", async () => {
@@ -53,7 +53,7 @@ describe("Merkle tree unit tests", async () => {
             for (let j = 0; j < tree.hashCount; j++) {
                 const leaf = tree.getHash(j);
                 const proof = tree.getProof(j);
-                const ver = tree.verify(leaf!, proof!);
+                const ver = verifyWithMerkleProof(leaf!, proof!, tree.root!);
                 expect(ver).to.be.true;
             }
         }
@@ -66,7 +66,7 @@ describe("Merkle tree unit tests", async () => {
             for (let j = 0; j < tree.hashCount; j++) {
                 const leaf = tree.getHash(j);
                 const proof = tree.getProofForValue(leaf!);
-                const ver = tree.verify(leaf!, proof!);
+                const ver = verifyWithMerkleProof(leaf!, proof!, tree.root!);
                 expect(ver).to.be.true;
             }
         }
