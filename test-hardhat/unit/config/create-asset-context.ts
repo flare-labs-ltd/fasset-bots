@@ -49,9 +49,10 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
+        const chainId = 3;
         const chainConfig: TrackedStateConfigChain = {
             chainInfo: {
-                chainId: 3,
+                chainId: chainId,
                 name: "Ripple",
                 symbol: "XRP",
                 decimals: 6,
@@ -59,15 +60,17 @@ describe("Create asset context unit tests", async () => {
                 requireEOAProof: false,
             },
             chain: context.chain,
-            blockChainIndexerClient: context.blockChainIndexerClient
+            blockChainIndexerClient: context.blockChainIndexerClient,
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto")
         }
         await expect(getAssetManagerAndController(chainConfig, null, null)).to.eventually.be.rejectedWith(`assetManager or fAssetSymbol required in chain config`).and.be.an.instanceOf(Error);
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
+        const chainId = 3;
         const chainConfig: TrackedStateConfigChain = {
             chainInfo: {
-                chainId: 3,
+                chainId: chainId,
                 name: "Ripple",
                 symbol: "XRP",
                 decimals: 6,
@@ -75,11 +78,11 @@ describe("Create asset context unit tests", async () => {
                 requireEOAProof: false,
             },
             chain: context.chain,
-            blockChainIndexerClient: context.blockChainIndexerClient
+            blockChainIndexerClient: context.blockChainIndexerClient,
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto"),
         }
         const config: TrackedStateConfig = {
             rpcUrl: "rpcUrl",
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainConfig.chainInfo.chainId]: new MockChain() },  "auto"),
             chains: [chainConfig],
             nativeChainInfo: testNativeChainInfo
         }

@@ -17,9 +17,9 @@ export const COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./run-config/run-simplif
 export const COSTON2_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-simplified-config-coston2-with-address-updater.json";
 
 const RPC_URL_LOCAL: string = requireEnv('RPC_URL_LOCAL');
-const ATTESTATION_PROVIDER_URLS_LOCAL: string  = requireEnv('ATTESTER_BASE_URLS_LOCAL');
+const ATTESTATION_PROVIDER_URLS_LOCAL: string = requireEnv('ATTESTER_BASE_URLS_LOCAL');
 const ATTESTATION_CLIENT_ADDRESS_LOCAL: string = requireEnv('ATTESTATION_CLIENT_ADDRESS_LOCAL');
-const STATE_CONNECTOR_ADDRESS_LOCAL: string  = requireEnv('STATE_CONNECTOR_ADDRESS_LOCAL');
+const STATE_CONNECTOR_ADDRESS_LOCAL: string = requireEnv('STATE_CONNECTOR_ADDRESS_LOCAL');
 
 const testOptions: CreateOrmOptions = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
@@ -35,17 +35,15 @@ export function createTestOrmOptions(testOptionsOverride: CreateOrmOptions = {})
 }
 
 export async function createBotConfigLocal(runConfig: AgentBotRunConfig, ownerAddress: string): Promise<AgentBotConfig> {
-    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS_LOCAL.split(",");
-    const stateConnector = await createStateConnectorClient(attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS_LOCAL, STATE_CONNECTOR_ADDRESS_LOCAL, ownerAddress);
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: AgentBotConfigChain[] = [];
+    const attestationProviderUrls = ATTESTATION_PROVIDER_URLS_LOCAL.split(",");
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createAgentBotConfigChain(chainInfo, orm.em));
+        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS_LOCAL, STATE_CONNECTOR_ADDRESS_LOCAL, ownerAddress));
     }
     return {
         rpcUrl: RPC_URL_LOCAL,
         loopDelay: runConfig.loopDelay,
-        stateConnector: stateConnector,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm,

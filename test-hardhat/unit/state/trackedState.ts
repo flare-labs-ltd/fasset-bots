@@ -21,6 +21,7 @@ import { tokenBalance } from "../../../src/state/TokenPrice";
 import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
+import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -278,6 +279,7 @@ describe("Tracked state tests", async () => {
             agentB.underlyingAddress,
             crt.paymentReference,
             crt.valueUBA.add(crt.feeUBA),
+            crt.firstUnderlyingBlock.toNumber(),
             crt.lastUnderlyingBlock.toNumber(),
             crt.lastUnderlyingTimestamp.toNumber());
         await agentB.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: agentB.ownerAddress });
@@ -347,7 +349,7 @@ describe("Tracked state tests", async () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
         const burnNats = (await agentB.getPoolCollateralPrice()).convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
-        const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists();
+        const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
         await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));

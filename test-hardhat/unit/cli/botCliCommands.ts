@@ -62,7 +62,6 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
             chains: [{
                 chainInfo: {
                     chainId: chainId,
@@ -75,6 +74,7 @@ describe("Bot cli commands unit tests", async () => {
                 chain: chain,
                 wallet: new MockChainWallet(chain),
                 blockChainIndexerClient: new MockIndexer("", chainId, chain),
+                stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
                 assetManager: "",
             }],
             nativeChainInfo: testNativeChainInfo,

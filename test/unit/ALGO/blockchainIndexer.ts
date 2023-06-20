@@ -13,7 +13,7 @@ describe("ALGO blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, "");
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(sourceId);
     })
 
     it("Should not return inputs/outputs - not implemented", async () => {

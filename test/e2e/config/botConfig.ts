@@ -29,14 +29,12 @@ describe("Bot config tests", async () => {
         const botConfig = await createAgentBotConfig(runConfig);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
-        expect(botConfig.stateConnector).to.not.be.null;
         expect(botConfig.orm).to.not.be.null;
     });
 
     it("Should create tracked state config", async () => {
         const trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
         expect(trackedStateConfig.contractsJsonFile).to.not.be.null;
-        expect(trackedStateConfig.stateConnector).to.not.be.null;
     });
 
     it("Should create wallet clients", async () => {
@@ -76,21 +74,17 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain indexer", async () => {
-        const algo = createBlockChainIndexerHelper("", SourceId.ALGO);
-        expect(algo.sourceId).to.eq(SourceId.ALGO);
-        const btc = createBlockChainIndexerHelper("", SourceId.BTC);
+        const btc = createBlockChainIndexerHelper(SourceId.BTC);
         expect(btc.sourceId).to.eq(SourceId.BTC);
-        const doge = createBlockChainIndexerHelper("", SourceId.DOGE);
+        const doge = createBlockChainIndexerHelper(SourceId.DOGE);
         expect(doge.sourceId).to.eq(SourceId.DOGE);
-        const ltc = createBlockChainIndexerHelper("", SourceId.LTC);
-        expect(ltc.sourceId).to.eq(SourceId.LTC);
-        const xrp = createBlockChainIndexerHelper("", SourceId.XRP);
+        const xrp = createBlockChainIndexerHelper(SourceId.XRP);
         expect(xrp.sourceId).to.eq(SourceId.XRP);
-        const invalidSourceId = -200;
+        const sourceId = SourceId.ALGO;
         const fn = () => {
-            return createBlockChainIndexerHelper("", invalidSourceId as SourceId);
+            return createBlockChainIndexerHelper(sourceId);
         };
-        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
+        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
 
     it("Should create block chain helper", async () => {
@@ -131,23 +125,18 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create attestation helper", async () => {
-        const stateConnector = await createStateConnectorClient(ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
-        const algo = await createAttestationHelper(SourceId.ALGO, stateConnector);
-        expect(algo.chainId).to.eq(SourceId.ALGO);
-        const btc = await createAttestationHelper(SourceId.BTC, stateConnector);
+        const btc = await createAttestationHelper(SourceId.BTC, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(btc.chainId).to.eq(SourceId.BTC);
-        const doge = await createAttestationHelper(SourceId.DOGE, stateConnector);
+        const doge = await createAttestationHelper(SourceId.DOGE, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(doge.chainId).to.eq(SourceId.DOGE);
-        const ltc = await createAttestationHelper(SourceId.LTC, stateConnector);
-        expect(ltc.chainId).to.eq(SourceId.LTC);
-        const xrp = await createAttestationHelper(SourceId.XRP, stateConnector);
+        const xrp = await createAttestationHelper(SourceId.XRP, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(xrp.chainId).to.eq(SourceId.XRP);
-        const invalidSourceId = -200;
-        await expect(createAttestationHelper(invalidSourceId as SourceId, stateConnector)).to.eventually.be.rejectedWith(`SourceId ${invalidSourceId} not supported.`).and.be.an.instanceOf(Error);
+        const unsupportedSourceId = SourceId.ALGO;
+        await expect(createAttestationHelper(SourceId.ALGO, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {
-        const stateConnector = await createStateConnectorClient(ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const stateConnector = await createStateConnectorClient(SourceId.BTC, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(stateConnector.account).to.eq(OWNER_ADDRESS);
     });
 

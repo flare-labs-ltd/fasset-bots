@@ -16,7 +16,7 @@ describe.skip("DOGE blockchain tests via indexer", async () => {
     let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_DOGE_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_DOGE_API_KEY"));
+        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

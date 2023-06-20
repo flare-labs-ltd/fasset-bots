@@ -1,5 +1,4 @@
 import { TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
-import { requireEnv } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
@@ -23,8 +22,8 @@ describe.skip("BTC blockchain tests via indexer", async () => {
     let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(requireEnv("INDEXER_BTC_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_BTC_API_KEY"));
-        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_BTC_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_BTC_API_KEY"));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(sourceId);
+        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {

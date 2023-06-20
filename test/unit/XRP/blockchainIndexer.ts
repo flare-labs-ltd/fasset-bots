@@ -18,8 +18,8 @@ describe("XRP blockchain tests via indexer", async () => {
     let blockChainIndexerClient: BlockChainIndexerHelper;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass("", sourceId, "");
-        blockChainIndexerClient = createBlockChainIndexerHelper(requireEnv("INDEXER_XRP_WEB_SERVER_URL"), sourceId, requireEnv("INDEXER_XRP_API_KEY"));
+        rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(sourceId);
+        blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
     })
 
     it("Should retrieve transaction", async () => {
