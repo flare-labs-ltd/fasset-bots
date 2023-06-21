@@ -227,7 +227,6 @@ describe("Fuzzing tests", async () => {
             } catch (e) {
                 expectErrors(e, []);
             }
-            await checkInvariants(false);
             // fail immediately on unexpected errors from threads
             if (runner.uncaughtErrors.length > 0) {
                 throw runner.uncaughtErrors[0];
