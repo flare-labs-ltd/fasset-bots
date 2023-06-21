@@ -58,6 +58,9 @@ export class SystemKeeper {
         }
     }
 
+    /**
+     * Checks agent's status and start or end liquidation accordingly to agent's status.
+     */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         const timestamp = await latestBlockTimestampBN();
         const newStatus = agent.possibleLiquidationTransition(timestamp);

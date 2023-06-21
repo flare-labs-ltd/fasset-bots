@@ -303,6 +303,9 @@ export class AgentBot {
         });
     }
 
+    /**
+     * AgentBot exits available if already allowed
+     */
     async exitAvailable(agentEnt: AgentEntity) {
         const latestTimestamp = await latestBlockTimestampBN();
         if (agentEnt.exitAvailableAllowedAtTimestamp.lte(latestTimestamp)) {

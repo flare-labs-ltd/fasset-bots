@@ -118,6 +118,7 @@ export class Challenger {
     }
 
     // illegal transactions
+
     checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState) {
         const transactionValid = PaymentReference.isValid(transaction.reference)
             && (this.isValidRedemptionReference(agent, transaction.reference) || this.isValidAnnouncedPaymentReference(agent, transaction.reference));
@@ -139,6 +140,7 @@ export class Challenger {
     }
 
     // double payments
+
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
         if (!PaymentReference.isValid(transaction.reference)) return;   // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
@@ -162,6 +164,7 @@ export class Challenger {
     }
 
     // free balance negative
+
     checkForNegativeFreeBalance(agent: TrackedAgentState) {
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
@@ -202,6 +205,7 @@ export class Challenger {
     }
 
     // utils
+
     isValidRedemptionReference(agent: TrackedAgentState, reference: string) {
         const redemption = this.activeRedemptions.get(reference);
         if (redemption == null) return false;

@@ -30,6 +30,9 @@ export async function createAssetContext(botConfig: AgentBotConfig, chainConfig:
     }
 }
 
+/**
+ * Creates asset context from contracts.
+ */
 async function createAssetContextFromContracts(botConfig: AgentBotConfig & { contractsJsonFile: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
     const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
@@ -61,6 +64,9 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
     };
 }
 
+/**
+ * Creates asset context from address updater.
+ */
 async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & { addressUpdater: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
     const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
     const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));

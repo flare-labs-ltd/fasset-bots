@@ -59,6 +59,9 @@ export class Liquidator {
         }
     }
 
+    /**
+     * Checks if agent's status. If status is LIQUIDATION, then liquidate agent with all of the liquidator's fAssets.
+     */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         const timestamp = await latestBlockTimestampBN();
         const newStatus = agent.possibleLiquidationTransition(timestamp);

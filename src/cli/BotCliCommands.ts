@@ -27,7 +27,7 @@ export class BotCliCommands {
     agentSettingsConfig!: AgentSettingsConfig;
 
     /**
-     * Initialize asset context from AgentBotRunConfig
+     * Initializes asset context from AgentBotRunConfig
      */
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
@@ -40,6 +40,9 @@ export class BotCliCommands {
         console.log(chalk.cyan('Environment successfully initialized.'));
     }
 
+    /**
+     * Creates agent bot.
+     */
     async createAgentVault(): Promise<Agent | null> {
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
@@ -47,24 +50,37 @@ export class BotCliCommands {
         return agentBot.agent;
     }
 
+    /**
+     * Deposits class 1 collateral to agent's vault from owner.
+     */
     async depositToVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositClass1Collateral(amount);
         this.botConfig.notifier.sendClass1Deposit(agentVault, amount);
     }
 
+    /**
+     * Buys collateral pool tokens for agent.
+     */
     async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
         this.botConfig.notifier.sendBuyCollateralPoolTokens(agentVault, amount);
     }
 
+    /**
+     * Enters agent to available list, so agent can be minted against.
+     */
     async enterAvailableList(agentVault: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.makeAvailable();
         this.botConfig.notifier.sendAgentEnteredAvailable(agentVault);
     }
 
+    /**
+     * Announces agent's exit from available list. It marks in persistent state that exit from available list
+     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async announceExitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
@@ -72,6 +88,10 @@ export class BotCliCommands {
         this.botConfig.notifier.sendAgentAnnouncedExitAvailable(agentVault);
     }
 
+    /**
+     * Announces agent's withdrawal of class 1. It marks in persistent state that withdrawal of class 1
+     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
@@ -80,12 +100,18 @@ export class BotCliCommands {
         agentEnt.withdrawalAllowedAtAmount = amount;
     }
 
+    /**
+     * Withdraws agent's pool fees.
+     */
     async withdrawPoolFees(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
         this.botConfig.notifier.sendWithdrawPoolFees(agentVault, amount);
     }
 
+    /**
+     * Returns agent's pool fee balance.
+     */
     async poolFeesBalance(agentVault: string): Promise<BN> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const balance = await agentBot.agent.poolFeeBalance();
@@ -93,12 +119,19 @@ export class BotCliCommands {
         return balance;
     }
 
+    /**
+     * Starts agent's self closing process.
+     */
     async selfClose(agentVault: string, amountUBA: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.selfClose(amountUBA);
         this.botConfig.notifier.sendSelfClose(agentVault);
     }
 
+    /**
+     * Announces agent's settings update. It marks in persistent state that agent's settings update
+     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
@@ -106,6 +139,11 @@ export class BotCliCommands {
         agentEnt.agentSettingUpdateValidAtName = settingName;
     }
 
+    /**
+     * Starts agent's close vault process. Firstly, it exits available list if necessary.
+     * Lastly it marks in persistent state that close vault process has started and it is then
+     * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async closeVault(agentVault: string): Promise<void> {
         const agentEnt = await this.botConfig.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
@@ -116,6 +154,11 @@ export class BotCliCommands {
         await this.botConfig.orm.em.persist(agentEnt).flush();
     }
 
+    /**
+     * Announces agent's underlying withdrawal. Firstly, it checks if there is any active withdrawal.
+     * Lastly, it marks in persistent state that underlying withdrawal has started and it is then
+     * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
@@ -129,6 +172,9 @@ export class BotCliCommands {
         return announce.paymentReference;
     }
 
+    /**
+     * Performs agent's underlying withdrawal.
+     */
     async performUnderlyingWithdrawal(agentVault: string, amount: string, destinationAddress: string, paymentReference: string): Promise<string> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
@@ -138,6 +184,10 @@ export class BotCliCommands {
         return txHash;
     }
 
+    /**
+     * Confirms agent's underlying withdrawal, if already allowed. Otherwise it marks in persistent state that confirmation
+     * of underlying withdrawal has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     */
     async confirmUnderlyingWithdrawal(agentVault: string, txHash: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
@@ -175,6 +225,9 @@ export class BotCliCommands {
 
     }
 
+    /**
+     * Lists active agents.
+     */
     async listActiveAgents() {
         const query = this.botConfig.orm.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
@@ -183,7 +236,9 @@ export class BotCliCommands {
         }
     }
 
-    // utils
+    /**
+     * Returns AgentBot and AgentBot entity from agent's vault address.
+     */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot, agentEnt: AgentEntity }> {
         const agentEnt = await this.botConfig.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier);
@@ -349,7 +404,9 @@ export class BotCliCommands {
     }
 }
 
-// helper
+/**
+ * Lists all commands with usage.
+ */
 export function listUsageAndCommands() {
     console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
     console.log('  Available commands:', "\n");

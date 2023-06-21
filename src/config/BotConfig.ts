@@ -134,6 +134,9 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
     };
 }
 
+/**
+ * Creates AgentBotConfigChain configuration from chain info.
+ */
 export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
@@ -154,6 +157,9 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
     };
 }
 
+/**
+ * Creates TrackedStateConfigChain configuration from chain info.
+ */
 export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
     const chain = createBlockChainHelper(chainInfo.chainId);
     const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
@@ -197,6 +203,9 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
     return agentBotSettings;
 }
 
+/**
+ * Creates wallet client.
+ */
 export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     switch (sourceId) {
         case SourceId.ALGO:
@@ -240,6 +249,9 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
     }
 }
 
+/**
+ * Creates Multi chain client. Relevant urls and api keys are provided in .env.
+ */
 export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DOGE | MCC.LTC | MCC.XRP {
     switch (sourceId) {
         case SourceId.ALGO:
@@ -287,6 +299,9 @@ export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DO
     }
 }
 
+/**
+ * Creates blockchain indexer helper. Relevant urls and api keys are provided in .env.
+ */
 export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainIndexerHelper {
     switch (sourceId) {
         case SourceId.BTC: {
@@ -309,6 +324,9 @@ export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainInd
     }
 }
 
+/**
+ * Creates blockchain helper using Multi chain client.
+ */
 export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
     switch (sourceId) {
         case SourceId.ALGO:
@@ -326,6 +344,9 @@ export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
     }
 }
 
+/**
+ * Creates blockchain wallet helper using wallet client.
+ */
 export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockChainWalletHelper {
     switch (sourceId) {
         case SourceId.ALGO:
@@ -343,6 +364,9 @@ export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManag
     }
 }
 
+/**
+ * Creates attestation helper.
+ */
 export async function createAttestationHelper(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<AttestationHelper> {
 
     switch (sourceId) {
@@ -363,6 +387,9 @@ export async function createAttestationHelper(sourceId: SourceId, attestationPro
     }
 }
 
+/**
+ * Creates state connector client
+ */
 export async function createStateConnectorClient(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
     switch (sourceId) {
         case SourceId.BTC: {
