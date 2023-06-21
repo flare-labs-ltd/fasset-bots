@@ -25,14 +25,13 @@ export interface AgentSettingsConfig {
     poolTopupTokenPriceFactorBIPS: string
 }
 ```
-- to create [**runConfig**](../../src/config/BotConfig.ts)
+- to create [**running configuration**](../../src/config/BotConfig.ts)
 ```javascript
-export interface RunConfig {
+export interface AgentBotRunConfig {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
     ormOptions: CreateOrmOptions;
-    // notifierFile: string;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
@@ -62,27 +61,34 @@ RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
 # DEFAULT AGENT SETTINGS PATH
 DEFAULT_AGENT_SETTINGS_PATH="./run-config/agent-settings-config.json"
 ```
-- to run [**./run-agents.ts**](../../src/run-agent.ts) -> creates agent and stores relevant data to persistent state, creates asset context, and starts observing events for agents
+- to run script [**./run-agents.ts**](../../src/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
 
 
 ## Owner's methods
-Via commandline interface Owner can operate with following commands:
+Via command line interface Owner can operate with following commands:
 
-- **Create** agent vault
-- **Deposit class1** to agent vault
-- **Buy pool collateral** for agent vault
-- **Add agent vault to available list**
-- **Remove agent from available list**
-- **Withdraw class1** funds from agent vault (announcement)
-- **Self close** agent vault
-- **Destroy** agent vault
-- [TODO] Perform underlying top up
-- [TODO] Redeem collateral pool tokens
+- Create agent vault
+- Deposit class1 to agent vault
+- Buy pool collateral for agent vault
+- Add agent vault to available list
+- Announce removal of agent from available list
+- Announce withdrawal class1 funds from agent vault
+- Withdraw pool fees
+- Check pool fee balance
+- Self close agent vault
+- Announce update of agent's settings
+- Close agent vault
+- Announce underlying withdrawal
+- Perform underlying withdrawal
+- Confirm underlying withdrawal
+- Cancel underlying withdrawal announcement
+- List active agents
 
+See [BotCliCommands.ts](../../src/cli/BotCliCommands.ts) for more.
 
 ## AgentBot Automation
 The **runStep** method is responsible for managing all relevant Agent events and comprises:
-- **handleEvents**: checks if there are any new events since last time the method run
+- **handleEvents**: checks if there are any new native events since last time the method run
 - **handleOpenMintings** and **handleOpenRedemptions**: checks if there are any open mintings or open redemptions that need to be handled
 - **handleAgentsWaitingsAndCleanUp** checks if there are any pending actions, which need upfront announcement, ready for an execution
 
@@ -90,12 +96,15 @@ The **runStep** method is responsible for managing all relevant Agent events and
 
 - **CollateralReserved**:
     - stores minting data in persistent state `AgentMinting`
-    -   sets minting state to `STARTED`
+    -  sets minting state to `STARTED`
+    - sends notification
 - **CollateralReservationDeleted** and **MintingExecuted**:
     - set minting state of previously stored minting to `DONE`
+    - sends notification
 - **RedemptionRequested**:
     - stores redemption data in persistent state `AgentRedemption`
     - sets redemption state to `STARTED`
+    - sends notification
 - **RedemptionDefault**:
     - sends notification about defaulted redemption
 - **RedemptionPerformed**:
@@ -107,6 +116,7 @@ The **runStep** method is responsible for managing all relevant Agent events and
     - same as in RedemptionPerformed, but sends notification about failed redemption (failed due to agent's fault or redeemer's fault).
 - **AgentDestroyed**:
     - sets Agent’s status in persistent state to `false`
+    - sends notification
 - **PriceEpochFinalized**:
     - automatically tops up both or one of the collaterals if both or either CR is too low due to price changes
     - sends notification to Owner about successful or unsuccessful collateral top up or about low founds on Owner's native address
@@ -129,9 +139,11 @@ For every minting in state `STARTED` it checks if proof expired in indexer:
         -   If transaction exists (corner case):
             - AgentBot requests for payment proof
             - Sets minting state to `REQUEST_PAYMENT_PROOF`
+            - Sends notification
         -   If transaction DOES NOT exist
-            -   AgentBot requests for referenced payment nonexistence proof proof
-            -   Sets minting state to `REQUEST_NON_PAYMENT_PROOF`
+            - AgentBot requests for referenced payment nonexistence proof proof
+            - Sets minting state to `REQUEST_NON_PAYMENT_PROOF`
+            - Sends notification
 - If proof expired (corner case)
     - AgentBot calls *unstickMinting*
     - Sets minting state to `DONE`
@@ -141,11 +153,13 @@ For every minting in state `REQUEST_PAYMENT_PROOF`:
     - AgentBot obtains payment proof
     - Calls *executesMinting*
     - Sets minting state to `DONE`
+    - Sends notification
 
 For every minting in state `REQUEST_NON_PAYMENT_PROOF`:
     - AgentBot obtains referenced payment nonexistence proof
     - Executes *mintingPaymentDefault*
     - Sets minting state to `DONE`
+    - Sends notification
 
 
 ### handleOpenRedemptions
@@ -156,27 +170,34 @@ For every redemption in state `STARTED` it checks if proof expired in indexer:
 - If proof did NOT expire:
     - AgentBot performs payment
     - Sets redemption state to `PAID`
+    - Sends notification
 - If proof did expired (corner case):
     - AgentBot *finishRedemptionWithoutPayment*
     - Sets redemption state to `DONE`
+    - Sends notification
 
 For every redemption in state `PAID` it checks if proof expired in indexer:
 - If proof did NOT expire:
     - AgentBot request payment proof
     - Sets redemption state to `REQUESTED_PROOF`
+    - Sends notification
 - If proof did expired (corner case):
     - AgentBot *finishRedemptionWithoutPayment*
     - Sets redemption state to `DONE`
+    - Sends notification
 
 For every redemption in state `REQUESTED_PROOF`:
 - AgentBot obtains payment proof
 - Calls *confirmRedemptionPayment*
 - Sets redemption state to `DONE`
+- Sends notification
 
 
 ### handleAgentsWaitingsAndCleanUp
 Due to their significant impact, some FAsset operations are subject to time locks. In this method, the AgentBot verifies if the time lock has expired and then executes any pending actions:
-- **withdraw** collateral
-- **exit Agent's available list**
-- **update Agent's setting**
-- **destroy** Agent
+- withdraw collateral
+- exit Agent's available list
+- update Agent's setting
+- destroy Agent
+- confirm underlying withdrawal
+- cancel underlying withdrawal

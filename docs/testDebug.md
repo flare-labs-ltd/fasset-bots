@@ -4,9 +4,15 @@ Tests are divided into two following folders:
 
 * `test/` These are run by command `test`.
 For example: `yarn test test/<path_to_file>/<file>.ts`.
+    - `e2e/`:  end to end tests
+    - `integration/`: integration tests
+    - `unit/`: unit tests
 
 * `test-hardhat/` These are run by command `testHH`.
 For example: `yarn testHH test-hardhat/<path_to_file>/<file>.ts`.
+    - `fuzzing/`:  fuzzing tests (main logic can be found in [`FAssetFuzzing.ts`](../test-hardhat/fuzzing/FAssetFuzzing.ts))
+    - `integration/`: integration tests
+    - `unit/`: unit tests
 
 ## Coverage:
 
