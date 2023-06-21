@@ -162,7 +162,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         response.stateConnectorRound = stateConnectorRound;
         const hash = this.definitionStore.dataHash(request, response);
         if (hash == null) {
-            throw new StateConnectorClientError(`StateConnectorClient: invalid attestation reponse`);
+            throw new StateConnectorClientError(`StateConnectorClient: invalid attestation response`);
         }
         return { attestationType: request.attestationType, sourceId: request.sourceId, data: response, hash: hash };
     }

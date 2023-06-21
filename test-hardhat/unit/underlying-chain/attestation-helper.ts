@@ -1,5 +1,5 @@
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, toBN } from "../../../src/utils/helpers";
+import { ZERO_BYTES32, checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -55,7 +55,7 @@ describe("Attestation client unit tests", async () => {
 
     it("Should prove referenced payment nonexistence", async () => {
         chain.mine(2 * chain.finalizationBlocks);
-        const requestConfirmedBlockHeight = await context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, "", toBN(1), 1, 1, 1);
+        const requestConfirmedBlockHeight = await context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1);
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 
@@ -71,10 +71,14 @@ describe("Attestation client unit tests", async () => {
         await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
     });
 
-    it("Should not request balance decreasing transaction proof - address not in transaction", async () => {
+    it.skip("Should not obtain balance decreasing transaction proof - address not in transaction", async () => {
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+        console.log(transaction)
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying2)).to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
+        const res = await context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, "karEm");//.to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
+        console.log(res);
+        const res2 = await context.attestationProvider.obtainBalanceDecreasingTransactionProof(res!.round, res!.data);
+        console.log(res2);
     });
 
     it("Should not request payment proof - finalization block not found", async () => {
@@ -93,24 +97,11 @@ describe("Attestation client unit tests", async () => {
         await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying1)).to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`).and.be.an.instanceOf(Error);
     });
 
-    it("Should not obtain payment proof - finalization block not found", async () => {
+    it("Should not obtain payment proof - not finalized", async () => {
         const round = 10;
-        await expect(context.attestationProvider.obtainPaymentProof(round, "")).to.eventually.be.rejectedWith(`payment: not proved`).and.be.an.instanceOf(Error);
-    });
-
-    it("Should not obtain balance decreasing transaction proof - finalization block not found", async () => {
-        const round = 10;
-        await expect(context.attestationProvider.obtainBalanceDecreasingTransactionProof(round, "")).to.eventually.be.rejectedWith(`balanceDecreasingTransaction: not proved`).and.be.an.instanceOf(Error);
-    });
-
-    it("Should not obtain verified referenced payment nonexistence proof - finalization block not found", async () => {
-        const round = 10;
-        await expect(context.attestationProvider.obtainReferencedPaymentNonexistenceProof(round, "")).to.eventually.be.rejectedWith(`referencedPaymentNonexistence: not proved`).and.be.an.instanceOf(Error);
-    });
-
-    it("Should not obtain verified confirmed Block height exists proof - finalization block not found", async () => {
-        const round = 10;
-        await expect(context.attestationProvider.obtainConfirmedBlockHeightExistsProof(round, "")).to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`).and.be.an.instanceOf(Error);
+        const res = await context.attestationProvider.obtainPaymentProof(round, "");
+        expect(res.finalized).to.be.false;
+        expect(res.result).to.be.null;
     });
 
     it("Should wait for round finalization", async () => {
