@@ -1,7 +1,6 @@
 import { IAssetTrackedStateContext } from "../../src/fasset-bots/IAssetBotContext";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
-import { EventFormatter } from "../test-utils/EventFormatter";
 import { FuzzingStateAgent } from "./FuzzingStateAgent";
 
 export class FuzzingState extends TrackedState {

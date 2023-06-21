@@ -19,40 +19,14 @@ export class FuzzingStateAgent extends TrackedAgentState {
         let problems = 0;
         // reserved
         problems += checker.checkEquality(`${agentName}.reservedUBA`, agentInfo.reservedUBA, this.reservedUBA);
-        // problems += checker.checkEquality(`${agentName}.reservedUBA.cumulative`, this.reservedUBA, reservedUBA);
         // minted
-        // const mintedUBA = this.calculateMintedUBA();
         problems += checker.checkEquality(`${agentName}.mintedUBA`, agentInfo.mintedUBA, this.mintedUBA);
-        // problems += checker.checkEquality(`${agentName}.mintedUBA.cumulative`, this.mintedUBA, mintedUBA);
         // redeeming
-        // const redeemingUBA = this.calculateRedeemingUBA();
         problems += checker.checkEquality(`${agentName}.redeemingUBA`, agentInfo.redeemingUBA, this.redeemingUBA);
-        // problems += checker.checkEquality(`${agentName}.redeemingUBA.cumulative`, this.redeemingUBA, redeemingUBA);
         // poolRedeeming
-        // const poolRedeemingUBA = this.calculatePoolRedeemingUBA();
         problems += checker.checkEquality(`${agentName}.poolRedeemingUBA`, agentInfo.poolRedeemingUBA, this.poolRedeemingUBA);
-        // problems += checker.checkEquality(`${agentName}.poolRedeemingUBA.cumulative`, this.poolRedeemingUBA, poolRedeemingUBA);
         // free balance
-        // const freeUnderlyingBalanceUBA = this.calculateFreeUnderlyingBalanceUBA();
         problems += checker.checkEquality(`${agentName}.underlyingFreeBalanceUBA`, agentInfo.freeUnderlyingBalanceUBA, this.freeUnderlyingBalanceUBA);
-        // problems += checker.checkEquality(`${agentName}.underlyingFreeBalanceUBA.cumulative`, this.freeUnderlyingBalanceUBA, freeUnderlyingBalanceUBA);
-        // pool fees
-        /*
-        const collateralPool = await CollateralPool.at(this.collateralPoolAddress);
-        const collateralPoolToken = await CollateralPoolToken.at(requireNotNull(this.poolTokenAddress));
-        const collateralPoolName = this.poolName();
-        problems += checker.checkEquality(`${collateralPoolName}.totalPoolFees`, await this.parent.context.fAsset.balanceOf(this.collateralPoolAddress), this.totalPoolFee);
-        problems += checker.checkEquality(`${collateralPoolName}.totalPoolTokens`, await collateralPoolToken.totalSupply(), this.poolTokenBalances.total());
-        problems += checker.checkEquality(`${collateralPoolName}.totalPoolFeeDebt`, await collateralPool.totalFAssetFeeDebt(), this.poolFeeDebt.total());
-        for (const tokenHolder of this.poolTokenBalances.keys()) {
-            const tokenHolderName = this.parent.eventFormatter.formatAddress(tokenHolder);
-            problems += checker.checkEquality(`${collateralPoolName}.poolTokensOf(${tokenHolderName})`, await collateralPoolToken.balanceOf(tokenHolder), this.poolTokenBalances.get(tokenHolder));
-            const poolFeeDebt = await collateralPool.fAssetFeeDebtOf(tokenHolder);
-            problems += checker.checkEquality(`${collateralPoolName}.poolFeeDebtOf(${tokenHolderName})`, poolFeeDebt, this.poolFeeDebt.get(tokenHolder));
-            const virtualFees = await collateralPool.virtualFAssetOf(tokenHolder);
-            problems += checker.checkEquality(`${collateralPoolName}.virtualPoolFeesOf(${tokenHolderName})`, virtualFees, this.calculateVirtualFeesOf(tokenHolder));
-            problems += checker.checkNumericDifference(`${collateralPoolName}.virtualPoolFeesOf(${tokenHolderName}) >= debt`, virtualFees, 'gte', poolFeeDebt);
-        }*/
         // minimum underlying backing (unless in full liquidation)
         if (this.status !== AgentStatus.FULL_LIQUIDATION) {
             const underlyingBalanceUBA = await this.parent.context.chain.getBalance(this.underlyingAddress);

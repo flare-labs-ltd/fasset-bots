@@ -108,13 +108,13 @@ describe("Fuzzing tests", async () => {
             botCliCommands.botConfig = {
                 rpcUrl: "",
                 loopDelay: 0,
-                stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
                 chains: [{
                     chainInfo: chainInfo,
                     chain: chain,
                     wallet: new MockChainWallet(chain),
                     blockChainIndexerClient: new MockIndexer("", chainId, chain),
-                    assetManager: "",
+                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
+                    assetManager: ""
                 }],
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
@@ -352,6 +352,7 @@ describe("Fuzzing tests", async () => {
 
     async function transferFassetsToLiquidator(liquidatorAddress: string): Promise<void> {
         const agentB = await createTestAgentBAndMakeAvailable(context, accounts[1000]);
+        eventFormatter.addAddress(`MINTER_BOT`, agentB.vaultAddress);
         const minter = await createTestMinter(context, accounts[999], chain);
         const lots = 3;
         const crt = await minter.reserveCollateral(agentB.vaultAddress, lots);

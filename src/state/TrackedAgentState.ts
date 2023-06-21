@@ -130,7 +130,7 @@ export class TrackedAgentState {
         // delete collateral reservation
         const collateralReservationId = Number(args.collateralReservationId);
         if (collateralReservationId > 0) {  // collateralReservationId == 0 for self-minting
-            this.reservedUBA = this.reservedUBA.sub(mintedAmountUBA);
+            this.reservedUBA = this.reservedUBA.sub(mintedAmountUBA).sub(poolFeeUBA);
         }
     }
 
