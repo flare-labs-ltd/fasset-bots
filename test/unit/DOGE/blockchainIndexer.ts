@@ -1,7 +1,6 @@
 import { createBlockChainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { requireEnv } from "../../../src/utils/helpers";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);

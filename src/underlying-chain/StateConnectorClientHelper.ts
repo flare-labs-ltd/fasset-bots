@@ -278,7 +278,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             },
         };
         if (apiKey) {
-            Object.defineProperty(createAxiosConfig.headers, "X-API-KEY", apiKey);
+            Object.defineProperty(createAxiosConfig.headers, "X-API-KEY", { value: apiKey });
         }
         return createAxiosConfig;
     }

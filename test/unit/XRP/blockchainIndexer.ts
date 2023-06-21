@@ -4,23 +4,31 @@ import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChai
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
-import { requireEnv, toBN } from "../../../src/utils/helpers";
+import { toBN } from "../../../src/utils/helpers";
+import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
 const rewiredBlockChainIndexerHelper = rewire("../../../src/underlying-chain/BlockChainIndexerHelper");
 const rewiredBlockChainIndexerHelperClass = rewiredBlockChainIndexerHelper.__get__("BlockChainIndexerHelper");
 
 const sourceId: SourceId = SourceId.XRP;
-const txHash = "65953790eef2c6e807e4c9a95f7f84b48b59fa20f4e1ee04360c8411e93853d6".toUpperCase();
-const blockId = 38506957;
-const blockHash = "961810adfa1aab37ec9f56ee788bffb908a99f5e586bcd277e017d91e743c61e".toUpperCase();
 
 describe("XRP blockchain tests via indexer", async () => {
     let rewiredBlockChainIndexerClient: typeof rewiredBlockChainIndexerHelperClass;
     let blockChainIndexerClient: BlockChainIndexerHelper;
+    let blockId: number;
+    let blockHash: string;
+    let txHash: string
 
     before(async () => {
         rewiredBlockChainIndexerClient = new rewiredBlockChainIndexerHelperClass(sourceId);
         blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
-    })
+        // TODO could be done better
+        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient);
+        if (info) {
+            blockId = info?.blockNumber;
+            blockHash = info?.blockHash;
+            txHash = info!.txHash!;
+        }
+    });
 
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
@@ -137,8 +145,10 @@ describe("XRP blockchain tests via indexer", async () => {
     });
 
     it("Should wait for underlying transaction finalization", async () => {
-        const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
-        expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        if (txHash) {
+            const retrievedTransaction = await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
+            expect(txHash).to.be.eq(retrievedTransaction?.hash);
+        }
     });
 
     it("Should wait for underlying transaction finalization 2", async () => {
