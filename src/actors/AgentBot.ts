@@ -412,7 +412,7 @@ export class AgentBot {
             const burnNats = (await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
             await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
-            this.notifier.sendMintingCornerCase(minting.requestId.toString(), true);
+            this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
         } else {
             // proof did not expire
             const blockHeight = await this.context.chain.getBlockHeight();
@@ -445,7 +445,7 @@ export class AgentBot {
             minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
             minting.proofRequestRound = request.round;
             minting.proofRequestData = request.data;
-            this.notifier.sendMintingCornerCase(minting.requestId.toString());
+            this.notifier.sendMintingCornerCase(minting.requestId.toString(), false, true);
         }// else cannot prove request yet
     }
 
@@ -464,6 +464,7 @@ export class AgentBot {
             minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
             minting.proofRequestRound = request.round;
             minting.proofRequestData = request.data;
+            this.notifier.sendMintingCornerCase(minting.requestId.toString(), false, false);
         }// else cannot prove request yet
     }
 

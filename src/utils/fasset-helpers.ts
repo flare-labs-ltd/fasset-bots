@@ -1,5 +1,5 @@
+import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
-import { IAssetContext } from "../fasset/IAssetContext";
 import { toBN, toNumber } from "./helpers";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
@@ -24,14 +24,14 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(context: IAssetContext) {
+export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext) {
     const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
     await context.assetManager.updateCurrentBlock(proof);
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 
 
-export async function attestationWindowSeconds(context: IAssetContext) {
+export async function attestationWindowSeconds(context: IAssetTrackedStateContext) {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }

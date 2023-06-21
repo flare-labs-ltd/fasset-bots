@@ -89,11 +89,13 @@ export class Notifier {
         this.send(LIQUIDATION_WAS_PERFORMED_ALERT, `Liquidation was performed for agent ${agentVault} with value of ${value}`);
     }
 
-    sendMintingCornerCase(requestId: string, indexerExpired: boolean = false) {
+    sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean) {
         if (indexerExpired) {
             this.send(MINTING_CORNER_CASE, `Minting ${requestId} expired in indexer. Unstick minting was executed.`);
-        } else {
+        } else if (paymentProof) {
             this.send(MINTING_CORNER_CASE, `Agent requested payment proof for minting ${requestId}.`);
+        } else {
+            this.send(MINTING_CORNER_CASE, `Agent requested non payment proof for minting ${requestId}.`);
         }
     }
 
