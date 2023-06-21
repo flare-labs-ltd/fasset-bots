@@ -17,7 +17,7 @@ describe("Time keeper unit tests", async () => {
 
     it("Should create time keeper", async () => {
         const timeKeeper = new TimeKeeper(context);
-        expect(timeKeeper.context.chainInfo.chainId).to.eq(context.chainInfo.chainId);
+        expect(timeKeeper.context.nativeChainInfo.finalizationBlocks).to.eq(context.nativeChainInfo.finalizationBlocks);
     });
 
     it("Should update underlying block", async () => {

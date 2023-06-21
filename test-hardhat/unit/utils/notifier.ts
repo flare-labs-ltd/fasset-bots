@@ -60,9 +60,10 @@ describe("Notifier tests", async () => {
 
     it("Should send minting corner case alert", async () => {
         const spySend = spy.on(notifier, "sendMintingCornerCase");
-        notifier.sendMintingCornerCase("agentVault");
-        notifier.sendMintingCornerCase("agentVault", true);
-        expect(spySend).to.have.been.called.twice;
+        notifier.sendMintingCornerCase("agentVault", true, false);
+        notifier.sendMintingCornerCase("agentVault", false, true);
+        notifier.sendMintingCornerCase("agentVault", false, false);
+        expect(spySend).to.have.been.called.exactly(3);
     });
 
     it("Should send redemption corner case alert", async () => {

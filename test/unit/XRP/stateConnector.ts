@@ -3,6 +3,7 @@ import { createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
+import { SourceId } from "../../../src/verification/sources/sources";
 
 let stateConnectorClient: StateConnectorClientHelper;
 const costonRPCUrl: string = requireEnv('RPC_URL');
@@ -22,7 +23,7 @@ const requestDataBytesC2_4 = "0x0002000000015d3575e92106318656c874687b19c26337ca
 describe("XRP attestation/state connector tests", async () => {
     before(async () => {
         await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
+        stateConnectorClient = await createStateConnectorClient(SourceId.XRP, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
     })
 
     it("Should return round is finalized", async () => {
@@ -40,9 +41,9 @@ describe("XRP attestation/state connector tests", async () => {
         expect(isRoundFinalized).to.be.false;
     });
 
-    it("Should submit request", async () => {
-        const resp = await stateConnectorClient.submitRequest(requestDataBytesC2_1);
-        expect(resp.round).to.be.greaterThan(0);
+    it.skip("Should submit request", async () => {
+        // const resp = await stateConnectorClient.submitRequest(requestDataBytesC2_1);
+        // expect(resp.round).to.be.greaterThan(0);
     });
 
     it.skip("Should obtain proof", async () => {

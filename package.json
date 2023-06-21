@@ -30,15 +30,9 @@
          "src/**/*.ts"
       ],
       "exclude": [
-         "src/verification/generated/*.ts",
-         "src/verification/attestation-types/attestation-types.ts",
-         "src/verification/attestation-types/t-00001-payment.ts",
-         "src/verification/attestation-types/t-00002-balance-decreasing-transaction.ts",
-         "src/verification/attestation-types/t-00003-confirmed-block-height-exists.ts",
-         "src/verification/attestation-types/t-00004-referenced-payment-nonexistence.ts",
-         "src/verification/attestation-types/t-00005-trustline-issuance.ts",
+         "src/verification/**/*.ts",
          "src/mock/*.ts",
-         "src/run-agent.ts",
+         "src/run/run-agent.ts",
          "src/cli/index.ts"
       ],
       "reporter": [
