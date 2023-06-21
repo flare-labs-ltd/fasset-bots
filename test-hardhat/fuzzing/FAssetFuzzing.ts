@@ -93,12 +93,12 @@ describe("Fuzzing tests", async () => {
 
     it("f-asset fuzzing test", async () => {
         // create bots
+        const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-test_fuzzing.db' }));
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
-            const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-test_' + i + '.db' }));
             const options = createAgentOptions();
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, notifier, options);
             const botCliCommands = new BotCliCommands();
