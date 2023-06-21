@@ -1,8 +1,8 @@
 import { readFileSync } from "fs";
-import { AgentBotRunner } from "./actors/AgentBotRunner";
-import { createAgentBotConfig, AgentBotRunConfig } from "./config/BotConfig";
-import { requireEnv, toplevelRun } from "./utils/helpers";
-import { initWeb3 } from "./utils/web3";
+import { AgentBotRunner } from "../actors/AgentBotRunner";
+import { createAgentBotConfig, AgentBotRunConfig } from "../config/BotConfig";
+import { requireEnv, toplevelRun } from "../utils/helpers";
+import { initWeb3 } from "../utils/web3";
 import * as dotenv from "dotenv";
 dotenv.config();
 

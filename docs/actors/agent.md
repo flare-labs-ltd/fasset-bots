@@ -61,7 +61,7 @@ RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
 # DEFAULT AGENT SETTINGS PATH
 DEFAULT_AGENT_SETTINGS_PATH="./run-config/agent-settings-config.json"
 ```
-- to run script [**./run-agents.ts**](../../src/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
+- to run script [**./run-agents.ts**](../../src/run/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
 
 
 ## Owner's methods
