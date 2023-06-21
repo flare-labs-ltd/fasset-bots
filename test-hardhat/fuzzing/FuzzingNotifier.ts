@@ -24,8 +24,8 @@ export class FuzzingNotifier {
     sendLiquidationWasPerformed(agentVault: string, value: string): void {
         this.notifier.sendLiquidationWasPerformed(this.eventFormatter.formatAddress(agentVault), value);
     }
-    sendMintingCornerCase(requestId: string, indexerExpired?: boolean): void {
-        this.notifier.sendMintingCornerCase(requestId, indexerExpired);
+    sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean): void {
+        this.notifier.sendMintingCornerCase(requestId, indexerExpired, paymentProof);
     }
     sendRedemptionCornerCase(requestId: string, agentVault: string): void {
         this.notifier.sendRedemptionCornerCase(requestId, this.eventFormatter.formatAddress(agentVault));
