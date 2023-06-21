@@ -10,6 +10,9 @@ import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
+import { RippleAddressValidatorContract } from "./RippleAddressValidator";
+import { IAddressValidatorContract } from "./IAddressValidator";
+import { TrivialAddressValidatorMockContract } from "./TrivialAddressValidatorMock";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
@@ -19,7 +22,6 @@ import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { FAssetContract } from "./FAsset";
 import { WhitelistContract } from "./Whitelist";
-import { IAddressValidatorContract } from "./IAddressValidator";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
 import { IFAssetContract } from "./IFAsset";
@@ -57,7 +59,6 @@ import { FAssetMockContract } from "./FAssetMock";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
-import { TrivialAddressValidatorMockContract } from "./TrivialAddressValidatorMock";
 import { SCProofVerifierContract } from "./SCProofVerifier";
 import { SCProofVerifierBaseContract } from "./SCProofVerifierBase";
 import { SCProofVerifierMockContract } from "./SCProofVerifierMock";
@@ -122,6 +123,11 @@ declare global {
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
+      require(name: "RippleAddressValidator"): RippleAddressValidatorContract;
+      require(name: "IAddressValidator"): IAddressValidatorContract;
+      require(
+        name: "TrivialAddressValidatorMock"
+      ): TrivialAddressValidatorMockContract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
@@ -131,7 +137,6 @@ declare global {
       require(name: "CollateralPoolToken"): CollateralPoolTokenContract;
       require(name: "FAsset"): FAssetContract;
       require(name: "Whitelist"): WhitelistContract;
-      require(name: "IAddressValidator"): IAddressValidatorContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
       require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
       require(name: "IFAsset"): IFAssetContract;
@@ -173,9 +178,6 @@ declare global {
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
-      require(
-        name: "TrivialAddressValidatorMock"
-      ): TrivialAddressValidatorMockContract;
       require(name: "SCProofVerifier"): SCProofVerifierContract;
       require(name: "SCProofVerifierBase"): SCProofVerifierBaseContract;
       require(name: "SCProofVerifierMock"): SCProofVerifierMockContract;
@@ -245,6 +247,18 @@ export {
 export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
+export {
+  RippleAddressValidatorContract,
+  RippleAddressValidatorInstance,
+} from "./RippleAddressValidator";
+export {
+  IAddressValidatorContract,
+  IAddressValidatorInstance,
+} from "./IAddressValidator";
+export {
+  TrivialAddressValidatorMockContract,
+  TrivialAddressValidatorMockInstance,
+} from "./TrivialAddressValidatorMock";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
 export {
   AgentVaultFactoryContract,
@@ -269,10 +283,6 @@ export {
 } from "./CollateralPoolToken";
 export { FAssetContract, FAssetInstance } from "./FAsset";
 export { WhitelistContract, WhitelistInstance } from "./Whitelist";
-export {
-  IAddressValidatorContract,
-  IAddressValidatorInstance,
-} from "./IAddressValidator";
 export {
   IAgentVaultFactoryContract,
   IAgentVaultFactoryInstance,
@@ -385,10 +395,6 @@ export {
   FtsoRegistryMockContract,
   FtsoRegistryMockInstance,
 } from "./FtsoRegistryMock";
-export {
-  TrivialAddressValidatorMockContract,
-  TrivialAddressValidatorMockInstance,
-} from "./TrivialAddressValidatorMock";
 export {
   SCProofVerifierContract,
   SCProofVerifierInstance,

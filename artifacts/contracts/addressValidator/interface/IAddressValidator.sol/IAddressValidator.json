@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IAddressValidator",
-  "sourceName": "contracts/fasset/interface/IAddressValidator.sol",
+  "sourceName": "contracts/addressValidator/interface/IAddressValidator.sol",
   "abi": [
     {
       "inputs": [
