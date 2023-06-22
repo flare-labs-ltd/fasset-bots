@@ -381,19 +381,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_value",
-          "type": "uint256"
-        }
-      ],
-      "name": "setExitCollateralRatioBIPS",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "contract IClaimSetupManager",
           "name": "_claimSetupManager",
           "type": "address"
@@ -404,9 +391,22 @@
           "type": "address[]"
         }
       ],
-      "name": "setFtsoAutoClaiming",
+      "name": "setAutoClaiming",
       "outputs": [],
       "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setExitCollateralRatioBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -485,6 +485,19 @@
       "name": "upgradeWNatContract",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "wNat",
+      "outputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {

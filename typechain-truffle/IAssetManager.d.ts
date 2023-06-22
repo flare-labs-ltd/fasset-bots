@@ -646,7 +646,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       _valueNATWei: number | BN | string,
@@ -671,7 +671,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       _name: string,
       _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       _name: string,
@@ -696,7 +696,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       _valueNATWei: number | BN | string,
@@ -716,7 +716,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     call(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -734,7 +734,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     call(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1155,7 +1155,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         poolTopupTokenPriceFactorBIPS: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<string>;
     sendTransaction(
       _settings: {
         underlyingAddressString: string;
@@ -1727,7 +1727,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     collateralPoolFactory: string;
     whitelist: string;
     agentWhitelist: string;
-    attestationClient: string;
+    scProofVerifier: string;
     underlyingAddressValidator: string;
     liquidationStrategy: string;
     burnAddress: string;
@@ -2052,7 +2052,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
@@ -2173,7 +2173,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _agentVault: string,
       _amountUBA: number | BN | string,
@@ -2314,7 +2314,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     call(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<{ 0: BN; 1: BN }>;
     sendTransaction(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -2485,7 +2485,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         _valueNATWei: number | BN | string,
@@ -2510,7 +2510,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         _name: string,
         _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         _name: string,
@@ -2535,7 +2535,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         _valueNATWei: number | BN | string,
@@ -2555,7 +2555,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       call(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -2573,7 +2573,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       call(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -2996,7 +2996,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
           poolTopupTokenPriceFactorBIPS: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<string>;
       sendTransaction(
         _settings: {
           underlyingAddressString: string;
@@ -3568,7 +3568,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       collateralPoolFactory: string;
       whitelist: string;
       agentWhitelist: string;
-      attestationClient: string;
+      scProofVerifier: string;
       underlyingAddressValidator: string;
       liquidationStrategy: string;
       burnAddress: string;
@@ -3893,7 +3893,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
@@ -4014,7 +4014,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _agentVault: string,
         _amountUBA: number | BN | string,
@@ -4156,7 +4156,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       call(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<{ 0: BN; 1: BN }>;
       sendTransaction(
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails

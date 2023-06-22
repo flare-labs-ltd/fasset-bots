@@ -342,7 +342,7 @@
           "type": "address[]"
         }
       ],
-      "name": "setFtsoAutoClaiming",
+      "name": "setAutoClaiming",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"

@@ -312,6 +312,29 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setAutoClaiming: {
+    (
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setExitCollateralRatioBIPS: {
     (
       _value: number | BN | string,
@@ -327,29 +350,6 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setFtsoAutoClaiming: {
-    (
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _claimSetupManager: string,
-      _executors: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -433,6 +433,8 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   withdrawCollateralWhenFAssetTerminated: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -724,6 +726,29 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    setAutoClaiming: {
+      (
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setExitCollateralRatioBIPS: {
       (
         _value: number | BN | string,
@@ -739,29 +764,6 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setFtsoAutoClaiming: {
-      (
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _claimSetupManager: string,
-        _executors: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -847,6 +849,8 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     withdrawCollateralWhenFAssetTerminated: {
       (txDetails?: Truffle.TransactionDetails): Promise<

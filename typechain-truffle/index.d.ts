@@ -59,6 +59,7 @@ import { FAssetMockContract } from "./FAssetMock";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
+import { WhitelistMockContract } from "./WhitelistMock";
 import { SCProofVerifierContract } from "./SCProofVerifier";
 import { SCProofVerifierBaseContract } from "./SCProofVerifierBase";
 import { SCProofVerifierMockContract } from "./SCProofVerifierMock";
@@ -84,7 +85,6 @@ import { DelegatableContract } from "./Delegatable";
 import { DelegationHistoryContract } from "./DelegationHistory";
 import { GovernanceSettingsContract } from "./GovernanceSettings";
 import { IFlareDaemonizeContract } from "./IFlareDaemonize";
-import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoManagerContract } from "./IIFtsoManager";
 import { IIFtsoRegistryContract } from "./IIFtsoRegistry";
 import { PercentageDelegationContract } from "./PercentageDelegation";
@@ -92,6 +92,7 @@ import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
 import { WNatContract } from "./WNat";
 import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
+import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoContract } from "./IIFtso";
 import { IFtsoGenesisContract } from "./IFtsoGenesis";
 import { IFtsoManagerGenesisContract } from "./IFtsoManagerGenesis";
@@ -178,6 +179,7 @@ declare global {
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
+      require(name: "WhitelistMock"): WhitelistMockContract;
       require(name: "SCProofVerifier"): SCProofVerifierContract;
       require(name: "SCProofVerifierBase"): SCProofVerifierBaseContract;
       require(name: "SCProofVerifierMock"): SCProofVerifierMockContract;
@@ -203,7 +205,6 @@ declare global {
       require(name: "DelegationHistory"): DelegationHistoryContract;
       require(name: "GovernanceSettings"): GovernanceSettingsContract;
       require(name: "IFlareDaemonize"): IFlareDaemonizeContract;
-      require(name: "IIAddressUpdater"): IIAddressUpdaterContract;
       require(name: "IIFtsoManager"): IIFtsoManagerContract;
       require(name: "IIFtsoRegistry"): IIFtsoRegistryContract;
       require(name: "PercentageDelegation"): PercentageDelegationContract;
@@ -211,6 +212,7 @@ declare global {
       require(name: "VPToken"): VPTokenContract;
       require(name: "WNat"): WNatContract;
       require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
+      require(name: "IIAddressUpdater"): IIAddressUpdaterContract;
       require(name: "IIFtso"): IIFtsoContract;
       require(name: "IFtsoGenesis"): IFtsoGenesisContract;
       require(name: "IFtsoManagerGenesis"): IFtsoManagerGenesisContract;
@@ -395,6 +397,7 @@ export {
   FtsoRegistryMockContract,
   FtsoRegistryMockInstance,
 } from "./FtsoRegistryMock";
+export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
 export {
   SCProofVerifierContract,
   SCProofVerifierInstance,
@@ -471,10 +474,6 @@ export {
   IFlareDaemonizeContract,
   IFlareDaemonizeInstance,
 } from "./IFlareDaemonize";
-export {
-  IIAddressUpdaterContract,
-  IIAddressUpdaterInstance,
-} from "./IIAddressUpdater";
 export { IIFtsoManagerContract, IIFtsoManagerInstance } from "./IIFtsoManager";
 export {
   IIFtsoRegistryContract,
@@ -491,6 +490,10 @@ export {
   IIAddressUpdatableContract,
   IIAddressUpdatableInstance,
 } from "./IIAddressUpdatable";
+export {
+  IIAddressUpdaterContract,
+  IIAddressUpdaterInstance,
+} from "./IIAddressUpdater";
 export { IIFtsoContract, IIFtsoInstance } from "./IIFtso";
 export { IFtsoGenesisContract, IFtsoGenesisInstance } from "./IFtsoGenesis";
 export {

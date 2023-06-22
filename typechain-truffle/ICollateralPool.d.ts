@@ -248,7 +248,7 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setFtsoAutoClaiming: {
+  setAutoClaiming: {
     (
       _claimSetupManager: string,
       _executors: string[],
@@ -503,7 +503,7 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setFtsoAutoClaiming: {
+    setAutoClaiming: {
       (
         _claimSetupManager: string,
         _executors: string[],

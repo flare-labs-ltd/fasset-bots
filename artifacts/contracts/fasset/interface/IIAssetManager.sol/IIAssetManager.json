@@ -1349,7 +1349,13 @@
         }
       ],
       "name": "announceAgentPoolTokenRedemption",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_redemptionAllowedAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1372,7 +1378,13 @@
         }
       ],
       "name": "announceAgentSettingUpdate",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_updateAllowedAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1390,7 +1402,13 @@
         }
       ],
       "name": "announceClass1CollateralWithdrawal",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_withdrawalAllowedAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1403,7 +1421,13 @@
         }
       ],
       "name": "announceDestroyAgent",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_destroyAllowedAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1416,7 +1440,13 @@
         }
       ],
       "name": "announceExitAvailableAgentList",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_exitAllowedAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1957,7 +1987,13 @@
         }
       ],
       "name": "createAgent",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -2998,7 +3034,7 @@
             },
             {
               "internalType": "address",
-              "name": "attestationClient",
+              "name": "scProofVerifier",
               "type": "address"
             },
             {
@@ -3619,7 +3655,13 @@
         }
       ],
       "name": "redeem",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_redeemedAmountUBA",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -3786,7 +3828,13 @@
         }
       ],
       "name": "selfClose",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_closedAmountUBA",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -3954,78 +4002,24 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "enum CollateralType.Class",
-              "name": "collateralClass",
-              "type": "uint8"
-            },
-            {
-              "internalType": "contract IERC20",
-              "name": "token",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "decimals",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "validUntil",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "directPricePair",
-              "type": "bool"
-            },
-            {
-              "internalType": "string",
-              "name": "assetFtsoSymbol",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "tokenFtsoSymbol",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "minCollateralRatioBIPS",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "ccbMinCollateralRatioBIPS",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "safetyMinCollateralRatioBIPS",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct CollateralType.Data",
-          "name": "_data",
-          "type": "tuple"
-        }
-      ],
-      "name": "setPoolWNatCollateralType",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
         }
       ],
       "name": "startLiquidation",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "_liquidationStatus",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_liquidationStartTs",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },

@@ -226,7 +226,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setFtsoAutoClaiming: {
+  setAutoClaiming: {
     (
       _claimSetupManager: string,
       _executors: string[],
@@ -567,7 +567,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setFtsoAutoClaiming: {
+    setAutoClaiming: {
       (
         _claimSetupManager: string,
         _executors: string[],

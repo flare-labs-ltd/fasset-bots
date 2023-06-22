@@ -339,6 +339,29 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setAutoClaiming: {
+    (
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _claimSetupManager: string,
+      _executors: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setExitCollateralRatioBIPS: {
     (
       _exitCollateralRatioBIPS: number | BN | string,
@@ -354,29 +377,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _exitCollateralRatioBIPS: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setFtsoAutoClaiming: {
-    (
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _claimSetupManager: string,
-      _executors: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _claimSetupManager: string,
-      _executors: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -795,6 +795,29 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    setAutoClaiming: {
+      (
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _claimSetupManager: string,
+        _executors: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setExitCollateralRatioBIPS: {
       (
         _exitCollateralRatioBIPS: number | BN | string,
@@ -810,29 +833,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _exitCollateralRatioBIPS: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setFtsoAutoClaiming: {
-      (
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _claimSetupManager: string,
-        _executors: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _claimSetupManager: string,
-        _executors: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
