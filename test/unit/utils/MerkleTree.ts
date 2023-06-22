@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "chai";
-import { toBN, toHex } from "../../../src/utils/helpers";
-import { MerkleTree, verifyWithMerkleProof } from "../../../src/utils/MerkleTree";
+import { ZERO_ADDRESS, toBN, toHex } from "../../../src/utils/helpers";
+import { MerkleTree, commitHash, verifyWithMerkleProof } from "../../../src/utils/MerkleTree";
 
 describe("Merkle tree unit tests", async () => {
     const makeHashes = (i: number) => new Array(i).fill(0).map(() => toHex(Math.floor(Math.random() * 10000000000000), 32));
@@ -70,6 +70,13 @@ describe("Merkle tree unit tests", async () => {
                 expect(ver).to.be.true;
             }
         }
+    });
+
+    it("Should create commit hash to be used with StateConnector.sol contract", async () => {
+        const hashes = makeHashes(10);
+        const tree = new MerkleTree(hashes);
+        const cHash = commitHash(tree.root!, hashes[0], ZERO_ADDRESS);
+        expect(cHash).to.not.be.null;
     });
 
 });

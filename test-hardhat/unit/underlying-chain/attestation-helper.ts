@@ -141,4 +141,10 @@ describe("Attestation client unit tests", async () => {
             .to.eventually.be.rejectedWith(`finalization block not found (block ${overflowBlock!.number + 1}, height ${blockHeight})`).and.be.an.instanceOf(Error);
     });
 
+    it("Should not find address index", async () => {
+        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying1)).to.eventually.be.rejectedWith(`address ${underlying1} not used in transaction`).and.be.an.instanceOf(Error);
+    });
+
 });

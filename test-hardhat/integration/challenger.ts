@@ -224,7 +224,7 @@ describe("Challenger tests", async () => {
             orm.em.clear();
             const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            if (redemption.state === AgentRedemptionState.DONE) break;
         }
         // repeat the same payment (already confirmed)
         await performRedemptionPayment(agentBot.agent, rdReq);
