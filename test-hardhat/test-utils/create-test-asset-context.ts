@@ -18,7 +18,7 @@ import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } f
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
-const AttestationClient = artifacts.require('SCProofVerifier');
+const SCProofVerifier = artifacts.require('SCProofVerifier');
 const AssetManagerController = artifacts.require('AssetManagerController');
 const AddressUpdater = artifacts.require('AddressUpdater');
 const WNat = artifacts.require('WNat');
@@ -31,6 +31,7 @@ const VPContract = artifacts.require('VPContract');
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMock');
+const WhitelistMock = artifacts.require("WhitelistMock");
 
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
@@ -67,7 +68,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create agent vault factory
     const agentVaultFactory = await AgentVaultFactory.new();
     // create attestation client
-    const attestationClient = await AttestationClient.new(stateConnector.address);
+    const scProofVerifier = await SCProofVerifier.new(stateConnector.address);
     // create asset manager controller
     const addressUpdater = await AddressUpdater.new(governance);  // don't switch to production
     const assetManagerController = await AssetManagerController.new(governanceSettings.address, governance, addressUpdater.address);
@@ -88,6 +89,8 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create liquidation strategy
     const liquidationStrategyLib = await artifacts.require("LiquidationStrategyImpl").new();
     const liquidationStrategy = liquidationStrategyLib.address;
+    // create allow-all agent whitelist
+    const agentWhitelist = await WhitelistMock.new(true);
     // set contracts
     const contracts: ChainContracts = {
         GovernanceSettings: newContract('GovernanceSettings', 'GovernanceSettings.sol', governanceSettings.address),
@@ -96,11 +99,12 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         WNat: newContract('WNat', 'WNat.sol', wNat.address),
         FtsoRegistry: newContract('FtsoRegistry', 'FtsoRegistryMock.sol', ftsoRegistry.address),
         FtsoManager: newContract('FtsoManager', 'FtsoManagerMock.sol', ftsoManager.address),
-        AttestationClient: newContract('AttestationClient', 'SCProofVerifier.sol', attestationClient.address),
+        SCProofVerifier: newContract('SCProofVerifier', 'SCProofVerifier.sol', scProofVerifier.address),
         AgentVaultFactory: newContract('AgentVaultFactory', 'AgentVaultFactory.sol', agentVaultFactory.address),
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
         CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
-        AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address)
+        AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address),
+        AgentWhiteList: newContract('WhiteList', 'WhitelistMock.sol', agentWhitelist.address)
     };
     // create mock chain attestation provider
     const chain = new MockChain(await time.latest());
@@ -149,7 +153,7 @@ function bnToString(x: BN | number | string) {
 }
 
 function createTestAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean): AssetManagerSettings {
-    if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.AttestationClient) {
+    if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.SCProofVerifier) {
         throw new Error("Missing contracts");
     }
     return {
@@ -157,11 +161,11 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         fAsset: ZERO_ADDRESS, // replaced in newAssetManager()
         agentVaultFactory: contracts.AgentVaultFactory.address,
         collateralPoolFactory: contracts.CollateralPoolFactory!.address,
-        attestationClient: contracts.AttestationClient.address,
+        scProofVerifier: contracts.SCProofVerifier.address,
         underlyingAddressValidator: contracts.AddressValidator!.address,
         liquidationStrategy: liquidationStrategy,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
-        agentWhitelist: contracts.agentWhitelist?.address ?? ZERO_ADDRESS,
+        agentWhitelist: contracts.AgentWhiteList?.address ?? ZERO_ADDRESS,
         ftsoRegistry: contracts.FtsoRegistry.address,
         burnAddress: parameters.burnAddress,
         chainId: chainInfo.chainId,

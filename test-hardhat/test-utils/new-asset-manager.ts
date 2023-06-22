@@ -52,9 +52,9 @@ export async function waitForTimelock<C extends Truffle.ContractInstance>(respon
 
 export async function linkAssetManager() {
     // deploy all libraries
-    const SettingsUpdater = await deployLibrary('SettingsUpdater');
+    const CollateralTypes = await deployLibrary('CollateralTypes');
+    const SettingsUpdater = await deployLibrary('SettingsUpdater', { CollateralTypes });
     const StateUpdater = await deployLibrary('StateUpdater');
-    const CollateralTokens = await deployLibrary('CollateralTypes');
     const AgentsExternal = await deployLibrary('AgentsExternal');
     const AgentsCreateDestroy = await deployLibrary('AgentsCreateDestroy');
     const AgentSettingsUpdater = await deployLibrary('AgentSettingsUpdater');
@@ -71,7 +71,7 @@ export async function linkAssetManager() {
     const FullAgentInfo = await deployLibrary('FullAgentInfo');
     // link AssetManagerContract
     return linkDependencies(artifacts.require('AssetManager'), {
-        SettingsUpdater, StateUpdater, CollateralTokens, AgentsExternal, AgentsCreateDestroy, AgentSettingsUpdater, AvailableAgents, CollateralReservations, Liquidation, Minting,
+        SettingsUpdater, StateUpdater, CollateralTypes, AgentsExternal, AgentsCreateDestroy, AgentSettingsUpdater, AvailableAgents, CollateralReservations, Liquidation, Minting,
         UnderlyingBalance, RedemptionRequests, RedemptionConfirmations, RedemptionFailures, UnderlyingWithdrawalAnnouncements, Challenges, FullAgentInfo
     });
 }
@@ -89,3 +89,4 @@ export function linkDependencies<T extends Truffle.Contract<any>>(contract: T, d
     }
     return contract;
 }
+

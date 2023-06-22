@@ -3,7 +3,7 @@ import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { AttestationClientError } from "../underlying-chain/AttestationHelper";
+import { AttestationHelperError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { EventArgs } from "../utils/events/common";
 import { EventScope } from "../utils/events/ScopedEvents";
@@ -231,7 +231,7 @@ export class Challenger {
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
         await this.state.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
         return await this.state.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
-            .catch(e => scope.exitOnExpectedError(e, [AttestationClientError]));
+            .catch(e => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
 
     async singleChallengePerAgent(agent: TrackedAgentState, body: () => Promise<void>) {

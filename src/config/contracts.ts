@@ -15,10 +15,13 @@ export interface ChainContracts {
     FtsoRegistry: Contract;
     FtsoManager: Contract;
     // fasset
-    AttestationClient: Contract;
+    SCProofVerifier: Contract;
     AgentVaultFactory: Contract;
     AssetManagerController: Contract;
     AssetManagerWhitelist?: Contract;
+    CollateralPoolFactory?: Contract;
+    FAssetWhitelist?: Contract;
+    FAssetAgentWhitelist?: Contract;
     // others (asset managers & fassets & everything from flare-smart-contract)
     [key: string]: Contract | undefined;
 }

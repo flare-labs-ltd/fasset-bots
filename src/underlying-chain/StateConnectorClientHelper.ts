@@ -23,14 +23,14 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     verifier: AxiosInstance;
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
-    attestationClient!: SCProofVerifierInstance;
+    scProofVerifier!: SCProofVerifierInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
     definitionStore = new StaticAttestationDefinitionStore();
 
     constructor(
         public attestationProviderUrls: string[],
-        public attestationClientAddress: string,
+        public scProofVerifierAddress: string,
         public stateConnectorAddress: string,
         public verifierUrl: string,
         public verifierUrlApiKey: string,
@@ -46,8 +46,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     async initStateConnector(): Promise<void> {
         const IStateConnector = artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
-        const AttestationClient = artifacts.require("SCProofVerifier");
-        this.attestationClient = await AttestationClient.at(this.attestationClientAddress);
+        const SCProofVerifier = artifacts.require("SCProofVerifier");
+        this.scProofVerifier = await SCProofVerifier.at(this.scProofVerifierAddress);
         this.firstEpochStartTime = toNumber(await this.stateConnector.BUFFER_TIMESTAMP_OFFSET());
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
@@ -170,13 +170,13 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         const normalizedProofData = web3DeepNormalize(proofData);
         switch (type) {
             case AttestationType.Payment:
-                return await this.attestationClient.verifyPayment(sourceId, normalizedProofData as any);
+                return await this.scProofVerifier.verifyPayment(sourceId, normalizedProofData as any);
             case AttestationType.BalanceDecreasingTransaction:
-                return await this.attestationClient.verifyBalanceDecreasingTransaction(sourceId, normalizedProofData as any);
+                return await this.scProofVerifier.verifyBalanceDecreasingTransaction(sourceId, normalizedProofData as any);
             case AttestationType.ConfirmedBlockHeightExists:
-                return await this.attestationClient.verifyConfirmedBlockHeightExists(sourceId, normalizedProofData as any);
+                return await this.scProofVerifier.verifyConfirmedBlockHeightExists(sourceId, normalizedProofData as any);
             case AttestationType.ReferencedPaymentNonexistence:
-                return await this.attestationClient.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);
+                return await this.scProofVerifier.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);
             default:
                 throw new StateConnectorError(`Invalid attestation type ${type}`);
         }
