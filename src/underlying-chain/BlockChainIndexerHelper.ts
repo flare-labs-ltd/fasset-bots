@@ -1,4 +1,4 @@
-import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
+import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS, TX_UNKNOWN } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";
@@ -112,10 +112,10 @@ export class BlockChainIndexerHelper implements IBlockChain {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
-                    inputs: await this.handleInputsOutputs(tx, true),
-                    outputs: await this.handleInputsOutputs(tx, false),
+                    inputs: returnResponse ?  await this.handleInputsOutputs(tx, true) : [],
+                    outputs: returnResponse ? await this.handleInputsOutputs(tx, false) : [],
                     reference: tx.paymentReference,
-                    status: this.successStatus(tx)
+                    status: returnResponse ? this.successStatus(tx) : TX_UNKNOWN
                 })
             }
         }
@@ -131,10 +131,10 @@ export class BlockChainIndexerHelper implements IBlockChain {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
-                    inputs: await this.handleInputsOutputs(tx, true),
-                    outputs: await this.handleInputsOutputs(tx, false),
+                    inputs: returnResponse ? await this.handleInputsOutputs(tx, true) : [],
+                    outputs: returnResponse ? await this.handleInputsOutputs(tx, false) : [],
                     reference: tx.paymentReference,
-                    status: this.successStatus(tx)
+                    status: returnResponse ? this.successStatus(tx) : TX_UNKNOWN
                 })
             }
         }
@@ -145,11 +145,8 @@ export class BlockChainIndexerHelper implements IBlockChain {
         const type = data.transactionType;
         const res = data.response.data;
         switch (this.sourceId) {
-            case SourceId.ALGO:
-                throw new Error("Method not implemented. No indexer for ALGO yet.");
             case SourceId.BTC:
             case SourceId.DOGE:
-            case SourceId.LTC:
                 return await this.UTXOInputsOutputs(type, res, input);
             case SourceId.XRP:
                 return this.XRPInputsOutputs(data, input);
@@ -234,7 +231,7 @@ export class BlockChainIndexerHelper implements IBlockChain {
     }
 
     private successStatus(data: any): number {
-        if (this.isUTXOchain || getSourceName(this.sourceId) === "ALGO") {
+        if (this.isUTXOchain) {
             return TX_SUCCESS;
         }
         // https://xrpl.org/transaction-results.html

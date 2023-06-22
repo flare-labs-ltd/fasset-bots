@@ -7,7 +7,6 @@ import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { Notifier } from "../utils/Notifier";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { BlockChainHelper } from "../underlying-chain/BlockChainHelper";
 import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
 import { BlockChainWalletHelper } from "../underlying-chain/BlockChainWalletHelper";
 import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
@@ -138,7 +137,7 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
  * Creates AgentBotConfigChain configuration from chain info.
  */
 export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
-    const chain = createBlockChainHelper(chainInfo.chainId);
+    const chain = createBlockChainIndexerHelper(chainInfo.chainId);
     const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
     const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
@@ -161,7 +160,7 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
  * Creates TrackedStateConfigChain configuration from chain info.
  */
 export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
-    const chain = createBlockChainHelper(chainInfo.chainId);
+    const chain = createBlockChainIndexerHelper(chainInfo.chainId);
     const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
     const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
@@ -325,26 +324,6 @@ export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainInd
 }
 
 /**
- * Creates blockchain helper using Multi chain client.
- */
-export function createBlockChainHelper(sourceId: SourceId): BlockChainHelper {
-    switch (sourceId) {
-        case SourceId.ALGO:
-            return new BlockChainHelper(createMccClient(sourceId));
-        case SourceId.BTC:
-            return new BlockChainHelper(createMccClient(sourceId));
-        case SourceId.DOGE:
-            return new BlockChainHelper(createMccClient(sourceId));
-        case SourceId.LTC:
-            return new BlockChainHelper(createMccClient(sourceId));
-        case SourceId.XRP:
-            return new BlockChainHelper(createMccClient(sourceId));
-        default:
-            throw new Error(`SourceId ${sourceId} not supported.`);
-    }
-}
-
-/**
  * Creates blockchain wallet helper using wallet client.
  */
 export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockChainWalletHelper {
@@ -372,15 +351,15 @@ export async function createAttestationHelper(sourceId: SourceId, attestationPro
     switch (sourceId) {
         case SourceId.BTC: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.DOGE: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.XRP: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
         }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);

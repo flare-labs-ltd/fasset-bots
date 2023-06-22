@@ -1,7 +1,6 @@
-import { createBlockChainHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
+import { createBlockChainIndexerHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { BlockChainHelper } from "../../../src/underlying-chain/BlockChainHelper";
 import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
@@ -9,12 +8,13 @@ import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
+import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
 use(chaiAsPromised);
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
 let walletHelper: BlockChainWalletHelper;
-let blockChainHelper: BlockChainHelper;
+let blockChainIndexerHelper: BlockChainIndexerHelper;
 const sourceId: SourceId = SourceId.XRP;
 
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
@@ -29,7 +29,7 @@ describe("XRP wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainHelper = createBlockChainHelper(sourceId);
+        blockChainIndexerHelper = createBlockChainIndexerHelper(sourceId);
         walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
     });
 
@@ -56,7 +56,7 @@ describe("XRP wallet tests", async () => {
         const options = { maxFee: 12 }; // maxFee in Drops
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, null, options, true);
         const balanceAfter = await walletHelper.getBalance(targetAddress);
-        const retrievedTransaction = await blockChainHelper.getTransaction(transaction);
+        const retrievedTransaction = await blockChainIndexerHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
         await removeWalletAddressFromDB(orm, fundedAddress);

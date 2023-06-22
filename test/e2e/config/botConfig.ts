@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { createAttestationHelper, createBlockChainHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createAgentBotConfig, createMccClient, createStateConnectorClient, createWalletClient, AgentBotRunConfig, TrackedStateRunConfig, createTrackedStateConfig, createAgentBotDefaultSettings } from "../../../src/config/BotConfig"
+import { createAttestationHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createAgentBotConfig, createMccClient, createStateConnectorClient, createWalletClient, AgentBotRunConfig, TrackedStateRunConfig, createTrackedStateConfig, createAgentBotDefaultSettings } from "../../../src/config/BotConfig"
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -85,24 +85,6 @@ describe("Bot config tests", async () => {
             return createBlockChainIndexerHelper(sourceId);
         };
         expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
-
-    it("Should create block chain helper", async () => {
-        const algo = createBlockChainHelper(SourceId.ALGO);
-        expect(algo.mccClient.chainType).to.eq(SourceId.ALGO);
-        const btc = createBlockChainHelper(SourceId.BTC);
-        expect(btc.mccClient.chainType).to.eq(SourceId.BTC);
-        const doge = createBlockChainHelper(SourceId.DOGE);
-        expect(doge.mccClient.chainType).to.eq(SourceId.DOGE);
-        const ltc = createBlockChainHelper(SourceId.LTC);
-        expect(ltc.mccClient.chainType).to.eq(SourceId.LTC);
-        const xrp = createBlockChainHelper(SourceId.XRP);
-        expect(xrp.mccClient.chainType).to.eq(SourceId.XRP);
-        const invalidSourceId = -200;
-        const fn = () => {
-            return createBlockChainHelper(invalidSourceId as SourceId);
-        };
-        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {

@@ -1,13 +1,13 @@
-import { FilterQuery, NullCacheAdapter } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core";
 import { ORM } from "../../src/config/orm";
 import { WalletAddress } from "../../src/entities/wallet";
 import { Agent } from "../../src/fasset/Agent";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EventArgs } from "../../src/utils/events/common";
-import { createBlockChainHelper } from "../../src/config/BotConfig";
 import { SourceId } from "../../src/verification/sources/sources";
 import { BlockChainIndexerHelper } from "../../src/underlying-chain/BlockChainIndexerHelper";
+import { createBlockChainIndexerHelper } from "../../src/config/BotConfig";
 
 
 export async function removeWalletAddressFromDB(orm: ORM, address: string) {
@@ -21,7 +21,7 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
 }
 
 export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockChainIndexerHelper): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
-    const blockChainHelper = createBlockChainHelper(sourceId);
+    const blockChainHelper = createBlockChainIndexerHelper(sourceId);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === 'OK') {
         const blockNumber = resp.data.last;
