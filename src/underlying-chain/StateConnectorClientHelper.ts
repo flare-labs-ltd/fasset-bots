@@ -174,6 +174,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             case AttestationType.BalanceDecreasingTransaction:
                 return await this.scProofVerifier.verifyBalanceDecreasingTransaction(sourceId, normalizedProofData as any);
             case AttestationType.ConfirmedBlockHeightExists:
+                console.log(proofData)
+                console.log(normalizedProofData);
                 return await this.scProofVerifier.verifyConfirmedBlockHeightExists(sourceId, normalizedProofData as any);
             case AttestationType.ReferencedPaymentNonexistence:
                 return await this.scProofVerifier.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);
@@ -193,7 +195,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             case AttestationType.ReferencedPaymentNonexistence:
                 return this.decodeReferencedPaymentNonexistence(matchedResponse, proof);
             default:
-                throw new StateConnectorError(`Invalid attestation type ${matchedResponse.request.attestationType}`);
+                throw new StateConnectorError(`Invalid attestation type ${type}`);
         }
     }
 
@@ -278,7 +280,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             },
         };
         if (apiKey) {
-            Object.defineProperty(createAxiosConfig.headers, "X-API-KEY", { value: apiKey });
+            createAxiosConfig.headers!["X-API-KEY"] = apiKey;
         }
         return createAxiosConfig;
     }
