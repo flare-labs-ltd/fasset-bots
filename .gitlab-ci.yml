@@ -123,13 +123,8 @@ build-smart-contracts:
 
 test-unit:
   extends: .test-node-sc
-  parallel:
-    matrix:
-    - TEST_PATH:
-      - ./test/unit/actors
-      - ./test/unit/state
-      - ./test/unit/cli
-
+  script:
+    - yarn testHH_all:unit
 
 test-contract-integration:
   extends: .test-node-sc
