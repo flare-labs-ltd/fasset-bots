@@ -20,11 +20,11 @@ Example:
     }
   ],
   "ormOptions": {
-    "dbName": "fasset-bots-c2.db",
+    "dbName": "fasset-bots-coston.db",
     "debug": false,
     "allowGlobalContext": true
   },
-  "contractsJsonFile": "../fasset/deployment/deploys/coston2.json"
+  "contractsJsonFile": "../fasset/deployment/deploys/coston.json"
 }
 ```
 

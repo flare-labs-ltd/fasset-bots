@@ -1,4 +1,4 @@
-import { AgentBotConfig, AgentBotConfigChain, createAgentBotConfigChain, createStateConnectorClient, AgentBotRunConfig } from "../../src/config/BotConfig";
+import { AgentBotConfig, AgentBotConfigChain, createAgentBotConfigChain, AgentBotRunConfig } from "../../src/config/BotConfig";
 import { CreateOrmOptions } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
@@ -8,13 +8,13 @@ import { Notifier } from "../../src/utils/Notifier";
 
 export const LOCAL_HARDHAT_RPC = "http://127.0.0.1:8545";
 export const HARDHAT_CONTRACTS_JSON = "../fasset/deployment/deploys/hardhat.json";
-export const COSTON2_RPC: string = requireEnv('RPC_URL');
-export const COSTON2_CONTRACTS_JSON = "../fasset/deployment/deploys/coston2.json";
+export const COSTON_RPC: string = requireEnv('RPC_URL');
+export const COSTON_CONTRACTS_JSON = "../fasset/deployment/deploys/coston.json";
 export const LOCAL_HARDHAT_RUN_CONFIG = "./run-config/run-config-local.json";
-export const COSTON2_RUN_CONFIG_CONTRACTS = "./run-config/run-config-coston2-with-contracts.json";
-export const COSTON2_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-config-coston2-with-address-updater.json";
-export const COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./run-config/run-simplified-config-coston2-with-contracts.json";
-export const COSTON2_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-simplified-config-coston2-with-address-updater.json";
+export const COSTON_RUN_CONFIG_CONTRACTS = "./run-config/run-config-coston-with-contracts.json";
+export const COSTON_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-config-coston-with-address-updater.json";
+export const COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./run-config/run-simplified-config-coston-with-contracts.json";
+export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-simplified-config-coston-with-address-updater.json";
 
 const RPC_URL_LOCAL: string = requireEnv('RPC_URL_LOCAL');
 const ATTESTATION_PROVIDER_URLS_LOCAL: string = requireEnv('ATTESTER_BASE_URLS_LOCAL');

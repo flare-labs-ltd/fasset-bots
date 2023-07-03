@@ -4,8 +4,8 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
-import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
-import { COSTON2_RUN_CONFIG_CONTRACTS, COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
+import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -20,9 +20,9 @@ describe("Bot config tests", async () => {
     let runConfig: AgentBotRunConfig;
     let trackedStateRunConfig: TrackedStateRunConfig;
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON2_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
-        trackedStateRunConfig = JSON.parse(readFileSync(COSTON2_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
-        await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), null);
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        await initWeb3(RPC_URL, getNativeAccountsFromEnv(), null);
     });
 
     it("Should create bot config", async () => {

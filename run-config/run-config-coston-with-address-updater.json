@@ -1,6 +1,6 @@
 {
   "loopDelay": 0,
-  "addressUpdater": "0x248a75c6a7EB5280c75599014f88a9539c9beE48",
+  "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
   "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
   "chainInfos": [
     {
@@ -14,7 +14,7 @@
     }
   ],
   "ormOptions": {
-    "dbName": "fasset-bots-c2.db",
+    "dbName": "fasset-bots-coston.db",
     "debug": false,
     "allowGlobalContext": true,
     "schemaUpdate": "recreate"

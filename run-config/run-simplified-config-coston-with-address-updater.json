@@ -1,6 +1,5 @@
 {
-  "loopDelay": 10000,
-  "contractsJsonFile": "../fasset/deployment/deploys/coston2.json",
+  "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
   "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
   "chainInfos": [
     {
@@ -10,12 +9,7 @@
       "decimals": 6,
       "amgDecimals": 0,
       "requireEOAProof": false,
-      "fAssetSymbol": "FtestXRP"
+      "assetManager": "0x2dD8146Ad2138ac61F93E549f8F917927B47E28a"
     }
-  ],
-  "ormOptions": {
-    "dbName": "fasset-bots-c2.db",
-    "debug": false,
-    "allowGlobalContext": true
-  }
+  ]
 }

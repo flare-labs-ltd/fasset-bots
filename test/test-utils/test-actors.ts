@@ -32,7 +32,7 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
     return new Redeemer(ctx, address, underlyingAddress);
 }
 
-export function getCoston2AccountsFromEnv() {
+export function getNativeAccountsFromEnv() {
     return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey];
 }
 

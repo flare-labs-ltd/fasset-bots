@@ -1,5 +1,5 @@
 import { initWeb3, web3 } from "../../../src/utils/web3";
-import { getCoston2AccountsFromEnv } from "../../test-utils/test-actors";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -27,8 +27,8 @@ describe("web3 unit tests", async () => {
     });
 
     it("Should create wallet accounts", async () => {
-        const accounts = await initWeb3(RPC_URL, getCoston2AccountsFromEnv(), 0);
-        expect(accounts.length).to.eq(getCoston2AccountsFromEnv().length);
+        const accounts = await initWeb3(RPC_URL, getNativeAccountsFromEnv(), 0);
+        expect(accounts.length).to.eq(getNativeAccountsFromEnv().length);
         expect(web3.eth.defaultAccount).to.eq(accounts[0]);
         web3.eth.accounts.wallet.clear();
     });

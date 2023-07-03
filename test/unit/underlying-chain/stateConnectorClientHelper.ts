@@ -14,7 +14,7 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const coston2RPCUrl: string = requireEnv('RPC_URL');
+const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
@@ -32,7 +32,7 @@ const sourceId = SourceId.XRP;
 describe("XRP attestation/state connector tests", async () => {
 
     before(async () => {
-        await initWeb3(coston2RPCUrl, [accountPrivateKey], null);
+        await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
     })
 
@@ -139,7 +139,7 @@ describe("State connector tests - decoding", async () => {
         "paymentReference": "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
     before(async () => {
-        await initWeb3(coston2RPCUrl, [accountPrivateKey], null);
+        await initWeb3(costonRPCUrl, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
         rewiredStateConnectorHelper = new rewiredStateConnectorClientHelperClass(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, "", "", ownerAddress);
     })
