@@ -5,12 +5,12 @@
   "chainInfos": [
     {
       "chainId": 3,
-      "name": "Ripple",
-      "symbol": "XRP",
+      "name": "Test XRP",
+      "symbol": "testXRP",
       "decimals": 6,
       "amgDecimals": 0,
       "requireEOAProof": false,
-      "assetManager": "0x2dD8146Ad2138ac61F93E549f8F917927B47E28a"
+      "assetManager": "0xBc9bDE568C2f072CCAF99721be1A67BCC09d2D8b"
     }
   ],
   "ormOptions": {

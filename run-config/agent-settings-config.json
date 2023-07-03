@@ -1,5 +1,5 @@
 {
-    "class1FtsoSymbol": "USDC",
+    "class1FtsoSymbol": "testUSDC",
     "feeBIPS": 1000,
     "poolFeeShareBIPS": 4000,
     "mintingClass1CollateralRatioConstant": 1.2,

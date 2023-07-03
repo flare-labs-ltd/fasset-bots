@@ -4,8 +4,8 @@
   "chainInfos": [
     {
       "chainId": 3,
-      "name": "Ripple",
-      "symbol": "XRP",
+      "name": "Test XRP",
+      "symbol": "testXRP",
       "decimals": 6,
       "amgDecimals": 0,
       "requireEOAProof": false,

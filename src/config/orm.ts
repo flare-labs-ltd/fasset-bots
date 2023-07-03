@@ -16,15 +16,13 @@ export async function createOrm(options: CreateOrmOptions): Promise<ORM> {
     const initOptions = { ...options };
     delete initOptions.schemaUpdate;    // delete extra options
     const orm = await MikroORM.init<AbstractSqlDriver>(initOptions);
-    if (options.schemaUpdate) {
-        await updateSchema(orm, options.schemaUpdate);
-    }
+    await updateSchema(orm, options.schemaUpdate); // updateSchema needs to run in order to create tables
     return orm;
 }
 
-export async function updateSchema(orm: ORM, update: SchemaUpdate): Promise<void> {
+export async function updateSchema(orm: ORM, update?: SchemaUpdate): Promise<void> {
     const generator = orm.getSchemaGenerator();
-    if (update == 'recreate') {
+    if (update && update == 'recreate') {
         await generator.dropSchema();
         await generator.updateSchema();
     } else {

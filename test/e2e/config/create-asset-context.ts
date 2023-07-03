@@ -59,7 +59,7 @@ describe("Create asset context tests", async () => {
     it("Should create simplified asset context from address updater", async () => {
         trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as TrackedStateRunConfig;
         trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
-        const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(botConfig, botConfig.chains[0]);
+        const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);
         expect(context).is.not.null;
     });
 

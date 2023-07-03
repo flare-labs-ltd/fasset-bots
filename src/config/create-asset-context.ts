@@ -38,9 +38,6 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
     const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
-    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
-    const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
-    const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
     const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
     const stableCoins = await createStableCoins(collaterals);
     return {
@@ -55,8 +52,8 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
         ftsoManager: await IFtsoManager.at(contracts.FtsoManager.address),
         wNat: await WNat.at(contracts.WNat.address),
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: natFtso,
-        assetFtso: assetFtso,
+        natFtso: ftsos['nat'],
+        assetFtso: ftsos['asset'],
         blockChainIndexerClient: chainConfig.blockChainIndexerClient,
         collaterals: collaterals,
         stablecoins: stableCoins,
@@ -72,9 +69,6 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
     const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
     const collaterals = await assetManager.getCollateralTypes();
-    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
-    const natFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
-    const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
     const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
     const stableCoins = await createStableCoins(collaterals);
     return {
@@ -89,8 +83,8 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
         ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
         wNat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: natFtso,
-        assetFtso: assetFtso,
+        natFtso: ftsos['nat'],
+        assetFtso: ftsos['asset'],
         blockChainIndexerClient: chainConfig.blockChainIndexerClient,
         collaterals: collaterals,
         stablecoins: stableCoins,
@@ -122,7 +116,6 @@ export async function createTrackedStateAssetContext(trackedStateConfig: Tracked
 
     const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
-    await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
     return {
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
         chain: chainConfig.chain,
@@ -174,9 +167,11 @@ async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoReg
     const ftsos: {[key: string] : any } = {};
     ftsos['asset'] = assetFtso;
     for (const collateralToken of collaterals) {
-        const tokenName = collateralToken.tokenFtsoSymbol.toLowerCase();
-        const tokenFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(collateralToken.tokenFtsoSymbol));
-        ftsos[tokenName] = tokenFtso;
+        let tokenName = collateralToken.tokenFtsoSymbol;
+        //TODO hack - use 'CFLR' instead of 'NAT' - only for coston
+        if (tokenName == 'NAT') tokenName = "CFLR";
+        const tokenFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(tokenName));
+        ftsos[tokenName.toLowerCase()] = tokenFtso;
     }
     return ftsos;
 }
