@@ -88,20 +88,20 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain wallet helper", async () => {
-        const orm = await overrideAndCreateOrm();
-        const algo = createBlockChainWalletHelper(SourceId.ALGO, orm.em);
+        const botConfig = await createAgentBotConfig(runConfig);
+        const algo = createBlockChainWalletHelper(SourceId.ALGO, botConfig.orm.em);
         expect(algo.walletClient.chainType).to.eq(SourceId.ALGO);
-        const btc = createBlockChainWalletHelper(SourceId.BTC, orm.em);
+        const btc = createBlockChainWalletHelper(SourceId.BTC, botConfig.orm.em);
         expect(btc.walletClient.chainType).to.eq(SourceId.BTC);
-        const doge = createBlockChainWalletHelper(SourceId.DOGE, orm.em);
+        const doge = createBlockChainWalletHelper(SourceId.DOGE, botConfig.orm.em);
         expect(doge.walletClient.chainType).to.eq(SourceId.DOGE);
-        const ltc = createBlockChainWalletHelper(SourceId.LTC, orm.em);
+        const ltc = createBlockChainWalletHelper(SourceId.LTC, botConfig.orm.em);
         expect(ltc.walletClient.chainType).to.eq(SourceId.LTC);
-        const xrp = createBlockChainWalletHelper(SourceId.XRP, orm.em);
+        const xrp = createBlockChainWalletHelper(SourceId.XRP, botConfig.orm.em);
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
         const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainWalletHelper(invalidSourceId as SourceId, orm.em);
+            return createBlockChainWalletHelper(invalidSourceId as SourceId, botConfig.orm.em);
         };
         expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
