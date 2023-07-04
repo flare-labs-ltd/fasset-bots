@@ -1,6 +1,12 @@
+import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
-import { toBN, toNumber } from "./helpers";
+import { artifacts } from "./artifacts";
+import { requireEnv, toBN, toNumber } from "./helpers";
+
+const IFtso = artifacts.require('IFtso');
+const NATIVE_TOKEN_FTSO_SYMBOL: string = requireEnv('NATIVE_TOKEN_FTSO_SYMBOL');
+const NATIVE_ASSET_FTSO_SYMBOL: string = requireEnv('NATIVE_ASSET_FTSO_SYMBOL');
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -15,7 +21,6 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
     return agentSettings;
 }
-
 
 /**
  * Prove that a block with given number and timestamp exists and
@@ -34,4 +39,11 @@ export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateC
 export async function attestationWindowSeconds(context: IAssetTrackedStateContext) {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
+}
+
+export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, symbol: string) {
+    //TODO HACK - due to assetFtsoSymbol: 'XRP' in poolcollateral
+    const tokenFtsoSymbol = symbol === "NAT" ? NATIVE_TOKEN_FTSO_SYMBOL : symbol === "XRP" ? NATIVE_ASSET_FTSO_SYMBOL : symbol;
+    const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(tokenFtsoSymbol);
+    return await IFtso.at(ftsoAddress);
 }

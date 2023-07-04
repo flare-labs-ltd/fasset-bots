@@ -11,7 +11,7 @@ const options: Options<AbstractSqlDriver> = {
     debug: false
 }
 
-export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions = {}): Promise<ORM> {
+export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions): Promise<ORM> {
     const createOptions: CreateOrmOptions = { ...options, ...optionsOverride };
     return await createOrm(createOptions);
 }

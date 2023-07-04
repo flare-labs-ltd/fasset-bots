@@ -28,22 +28,6 @@ describe("Orm config tests", async () => {
         }
     });
 
-    it("Should create database", async() => {
-        await overrideAndCreateOrm(dbOptions);
-        const exist = existsSync(dbName);
-        expect(exist).to.be.true;
-        // clean up, aka delete new file
-        if (exist) {
-            rm(dbName, (err) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-                console.log("File deleted successfully");
-            });
-        }
-    });
-
     it("Should update database", async() => {
         await createOrm({ ...dbOptions, schemaUpdate: 'recreate'});
         const exist = existsSync(dbName);

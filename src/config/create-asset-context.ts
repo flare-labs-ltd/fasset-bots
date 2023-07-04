@@ -3,6 +3,7 @@ import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../fasset-bots
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
+import { createFtsosHelper } from "../utils/fasset-helpers";
 import { fail } from "../utils/helpers";
 import { AgentBotConfig, AgentBotConfigChain, TrackedStateConfig, TrackedStateConfigChain } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
@@ -164,10 +165,8 @@ async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoReg
     const ftsos: {[key: string] : any } = {};
     ftsos['asset'] = assetFtso;
     for (const collateralToken of collaterals) {
-        let tokenName = collateralToken.tokenFtsoSymbol;
-        //TODO hack - use 'CFLR' instead of 'NAT' - only for coston
-        if (tokenName == 'NAT') tokenName = "CFLR";
-        const tokenFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(tokenName));
+        const tokenName = collateralToken.tokenFtsoSymbol;
+        const tokenFtso = await createFtsosHelper(ftsoRegistry, collateralToken.tokenFtsoSymbol);
         ftsos[tokenName.toLowerCase()] = tokenFtso;
     }
     return ftsos;

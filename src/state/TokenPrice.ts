@@ -1,6 +1,7 @@
 import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents } from "../utils/events/truffle";
+import { createFtsosHelper } from "../utils/fasset-helpers";
 import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
 export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 
@@ -39,8 +40,7 @@ export class TokenPriceReader {
 
     getFtso(symbol: string) {
         return getOrCreateAsync(this.ftsoCache, symbol, async () => {
-            const ftsoAddress = await this.ftsoRegistry.getFtsoBySymbol(symbol);
-            return await IFtso.at(ftsoAddress);
+            return await createFtsosHelper(this.ftsoRegistry, symbol);
         });
     }
 
