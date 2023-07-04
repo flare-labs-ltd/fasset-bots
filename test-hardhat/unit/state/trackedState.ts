@@ -89,7 +89,7 @@ describe("Tracked state tests", async () => {
     beforeEach(async () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor);
         trackedStateContext = getTestAssetTrackedStateContext(context);
-        chain = checkedCast(trackedStateContext.chain, MockChain);
+        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(trackedStateContext, lastBlock);
         await trackedState.initialize();
@@ -221,7 +221,7 @@ describe("Tracked state tests", async () => {
 
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
-        context.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
 
         const transactionHash = await agentBLocal.wallet.addTransaction(randomUnderlyingAddress, agentBLocal.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBLocal.agentVault.address));
         const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);

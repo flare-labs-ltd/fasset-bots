@@ -67,7 +67,7 @@ export class AgentBot {
     static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
-        await context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
+        await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
     }
@@ -415,12 +415,12 @@ export class AgentBot {
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
         } else {
             // proof did not expire
-            const blockHeight = await this.context.chain.getBlockHeight();
-            const latestBlock = await this.context.chain.getBlockAt(blockHeight);
+            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+            const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
             // wait times expires on underlying + finalizationBlock
-            if (latestBlock && minting.lastUnderlyingBlock.toNumber() + 1 + this.context.chain.finalizationBlocks < latestBlock.number) {
+            if (latestBlock && minting.lastUnderlyingBlock.toNumber() + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
-                const txs = await this.agent.context.blockChainIndexerClient.getTransactionsByReference(minting.paymentReference);
+                const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
                     // corner case: minter pays and doesn't execute minting
                     // check minter paid -> request payment proof -> execute minting
@@ -613,9 +613,9 @@ export class AgentBot {
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
-            const txBlock = await this.context.chain.getTransactionBlock(redemption.txHash ?? "");
-            const blockHeight = await this.context.chain.getBlockHeight();
-            if (txBlock != null && blockHeight - txBlock.number >= this.context.chain.finalizationBlocks) {
+            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash ?? "");
+            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
                 await this.requestPaymentProof(redemption);
                 this.notifier.sendRedemptionRequestPaymentProof(this.agent.vaultAddress, redemption.requestId.toString());
             }
@@ -697,7 +697,7 @@ export class AgentBot {
         } catch (error) {
             this.notifier.sendLowUnderlyingAgentBalanceFailed(agentVault, freeUnderlyingBalance.toString());
         }
-        const ownerUnderlyingBalance = await this.context.chain.getBalance(ownerUnderlyingAddress);
+        const ownerUnderlyingBalance = await this.context.wallet.getBalance(ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         if (ownerUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
             this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance.toString());

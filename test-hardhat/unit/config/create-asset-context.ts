@@ -14,7 +14,6 @@ import { MockChain } from "../../../src/mock/MockChain";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
-const createFtsos = createAssetContextInternal.__get__("createFtsos");
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 
@@ -30,11 +29,6 @@ describe("Create asset context unit tests", async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         collateralTypes = await context.assetManager.getCollateralTypes();
-    });
-
-    it("Should create ftsos", async () => {
-        const ftso = await createFtsos(collateralTypes, context.ftsoRegistry, context.chainInfo.symbol);
-        expect(Object.keys(ftso).length).eq(collateralTypes.length + 1);
     });
 
     it("Should create stable coins", async () => {
@@ -59,8 +53,7 @@ describe("Create asset context unit tests", async () => {
                 amgDecimals: 6,
                 requireEOAProof: false,
             },
-            chain: context.chain,
-            blockChainIndexerClient: context.blockChainIndexerClient,
+            blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto")
         }
         await expect(getAssetManagerAndController(chainConfig, null, null)).to.eventually.be.rejectedWith(`assetManager or fAssetSymbol required in chain config`).and.be.an.instanceOf(Error);
@@ -77,8 +70,7 @@ describe("Create asset context unit tests", async () => {
                 amgDecimals: 6,
                 requireEOAProof: false,
             },
-            chain: context.chain,
-            blockChainIndexerClient: context.blockChainIndexerClient,
+            blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto"),
         }
         const config: TrackedStateConfig = {

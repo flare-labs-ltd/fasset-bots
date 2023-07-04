@@ -45,14 +45,14 @@ export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     natFtso: FtsoMockInstance;
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
-    chain: MockChain;
     ftsos: TestFtsos;
+    blockchainIndexer: MockIndexer;
 }>
 
 export type TestAssetTrackedStateContext = Modify<IAssetTrackedStateContext, {
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
-    chain: MockChain;
+    blockchainIndexer: MockIndexer;
 }>
 
 export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any, updateExecutor?: string): Promise<TestAssetBotContext> {
@@ -130,7 +130,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
     // indexer
-    const blockChainIndexerClient = new MockIndexer("", chainInfo.chainId, chain);
+    const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     //
     const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
     const natFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
@@ -138,11 +138,11 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // native chain info
     const nativeChainInfo = testNativeChainInfo;
     // return context
-    return { nativeChainInfo, chainInfo, chain, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, blockChainIndexerClient, stablecoins, collaterals, ftsos };
+    return { nativeChainInfo, chainInfo, blockchainIndexer, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, stablecoins, collaterals, ftsos };
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext): TestAssetTrackedStateContext {
-    return { nativeChainInfo: context.nativeChainInfo, chain: context.chain, attestationProvider: context.attestationProvider, assetManager: context.assetManager, ftsoRegistry: context.ftsoRegistry, ftsoManager: context.ftsoManager, fAsset: context.fAsset, assetFtso: context.assetFtso, blockChainIndexerClient: context.blockChainIndexerClient, collaterals: context.collaterals };
+    return { nativeChainInfo: context.nativeChainInfo, blockchainIndexer: context.blockchainIndexer, attestationProvider: context.attestationProvider, assetManager: context.assetManager, ftsoRegistry: context.ftsoRegistry, ftsoManager: context.ftsoManager, fAsset: context.fAsset, assetFtso: context.assetFtso, collaterals: context.collaterals };
 }
 
 function bnToString(x: BN | number | string) {

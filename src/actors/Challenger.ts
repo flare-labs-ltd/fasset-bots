@@ -68,7 +68,7 @@ export class Challenger {
         // Underlying chain events
         const from = this.lastEventUnderlyingBlockHandled;
         const to = await this.getLatestUnderlyingBlock();
-        const transactions = await this.state.context.blockChainIndexerClient.getTransactionsWithinBlockRange(from, to);
+        const transactions = await this.state.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
         }
@@ -229,7 +229,7 @@ export class Challenger {
     }
 
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
-        await this.state.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);
+        await this.state.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         return await this.state.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch(e => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
@@ -248,7 +248,7 @@ export class Challenger {
     }
 
     async getLatestUnderlyingBlock(): Promise<number> {
-        const blockHeight = await this.state.context.chain.getBlockHeight();
+        const blockHeight = await this.state.context.blockchainIndexer.getBlockHeight();
         return blockHeight;
     }
 }

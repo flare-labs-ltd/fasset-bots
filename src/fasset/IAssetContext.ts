@@ -1,6 +1,6 @@
 import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IERC20Instance, IFtsoManagerInstance, IFtsoRegistryInstance, IIFtsoInstance, WNatInstance } from "../../typechain-truffle";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
+import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { ChainInfo, NativeChainInfo } from "./ChainInfo";
@@ -23,7 +23,7 @@ export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 export interface IAssetContext {
     nativeChainInfo: NativeChainInfo;
     chainInfo: ChainInfo;
-    chain: IBlockChain;
+    blockchainIndexer: BlockchainIndexerHelper;
     wallet: IBlockChainWallet;
     attestationProvider: AttestationHelper;
     // contracts

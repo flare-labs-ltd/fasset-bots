@@ -19,12 +19,12 @@ describe("Attestation client unit tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
     });
 
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
     });
 
     it("Should return round finalization", async () => {
@@ -118,8 +118,8 @@ describe("Attestation client unit tests", async () => {
         const reference = "reference";
         const amount = 1;
         await context.wallet.addTransaction(underlying1, underlying2, amount, reference);
-        const blockNumber = await context.chain.getBlockHeight();
-        const blockTimestamp = (await context.chain.getBlockAt(blockNumber))?.timestamp;
+        const blockNumber = await context.blockchainIndexer.getBlockHeight();
+        const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
         const endBlock = blockNumber + 10;
         await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!))
             .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`).and.be.an.instanceOf(Error);
@@ -130,13 +130,13 @@ describe("Attestation client unit tests", async () => {
         const reference = "reference";
         const amount = 1;
         await context.wallet.addTransaction(underlying1, underlying2, amount, reference);
-        const blockNumber = await context.chain.getBlockHeight();
-        const blockTimestamp = (await context.chain.getBlockAt(blockNumber))?.timestamp;
+        const blockNumber = await context.blockchainIndexer.getBlockHeight();
+        const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
         const endBlockNumber = blockNumber;
         const endBlockTimestamp = blockTimestamp! + 10;
         chain.mine(3);
-        const overflowBlock = await context.chain.getBlockAt(endBlockNumber + 1);
-        const blockHeight = await context.chain.getBlockHeight();
+        const overflowBlock = await context.blockchainIndexer.getBlockAt(endBlockNumber + 1);
+        const blockHeight = await context.blockchainIndexer.getBlockHeight();
         await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlockNumber, endBlockTimestamp!))
             .to.eventually.be.rejectedWith(`finalization block not found (block ${overflowBlock!.number + 1}, height ${blockHeight})`).and.be.an.instanceOf(Error);
     });

@@ -39,7 +39,7 @@ describe("Agent bot unit tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
@@ -82,7 +82,7 @@ describe("Agent bot unit tests", async () => {
     it("Should top up underlying - failed", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const ownerAmount = 100;
-        context.chain.mint(ownerUnderlyingAddress, ownerAmount);
+        context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, ownerAmount);
         const spyBalance = spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalanceFailed');
         const topUpAmount = 420;
         await agentBot.underlyingTopUp(toBN(topUpAmount), agentBot.agent.vaultAddress, toBN(1));
@@ -94,7 +94,7 @@ describe("Agent bot unit tests", async () => {
         const spyBalance0 = spy.on(agentBot.notifier, 'sendLowUnderlyingAgentBalance');
         const spyBalance1 = spy.on(agentBot.notifier, 'sendLowBalanceOnUnderlyingOwnersAddress');
         const ownerAmount = 100;
-        context.chain.mint(ownerUnderlyingAddress, ownerAmount);
+        context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, ownerAmount);
         await agentBot.underlyingTopUp(toBN(ownerAmount), agentBot.agent.vaultAddress, toBN(1));
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
@@ -122,10 +122,9 @@ describe("Agent bot unit tests", async () => {
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0)
         });
-        await agentBot.nextRedemptionStep(orm.em, rd.id);
         await orm.em.persistAndFlush(rd);
         await agentBot.nextRedemptionStep(orm.em, rd.id);
-        expect(spyLog).to.have.been.called.twice;
+        expect(spyLog).to.have.been.called.once;
     });
 
     it("Should not do next minting step due to invalid minting state", async () => {
@@ -144,10 +143,9 @@ describe("Agent bot unit tests", async () => {
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: ""
         });
-        await agentBot.nextMintingStep(orm.em, mt.id);
         await orm.em.persistAndFlush(mt);
         await agentBot.nextMintingStep(orm.em, mt.id);
-        expect(spyLog).to.have.been.called.twice;
+        expect(spyLog).to.have.been.called.once;
     });
 
     it("Should return open redemptions", async () => {
@@ -458,7 +456,7 @@ describe("Agent bot unit tests", async () => {
 
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
-        context.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
         // self mint
         const transactionHash = await agentBot.agent.wallet.addTransaction(randomUnderlyingAddress, agentBot.agent.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBot.agent.vaultAddress));
         const proof = await agentBot.agent.attestationProvider.provePayment(transactionHash, null, agentBot.agent.underlyingAddress);

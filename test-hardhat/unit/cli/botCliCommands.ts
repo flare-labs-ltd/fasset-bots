@@ -17,9 +17,10 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgent, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
+import { createTestAgentBot } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -37,8 +38,8 @@ describe("Bot cli commands unit tests", async () => {
     let chain: MockChain;
 
     async function createAgent(): Promise<Agent> {
-        const agent = await botCliCommands.createAgentVault();
-        return agent!;
+        const agentBot = await createTestAgentBot(context, botCliCommands.botConfig.orm, botCliCommands.ownerAddress);
+        return agentBot.agent;
     }
 
     before(async () => {
@@ -53,7 +54,7 @@ describe("Bot cli commands unit tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
         botCliCommands = new BotCliCommands();
         botCliCommands.context = context;
@@ -71,9 +72,8 @@ describe("Bot cli commands unit tests", async () => {
                     amgDecimals: 0,
                     requireEOAProof: false
                 },
-                chain: chain,
                 wallet: new MockChainWallet(chain),
-                blockChainIndexerClient: new MockIndexer("", chainId, chain),
+                blockchainIndexerClient: new MockIndexer("", chainId, chain),
                 stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
                 assetManager: "",
             }],
@@ -86,11 +86,6 @@ describe("Bot cli commands unit tests", async () => {
 
     afterEach(function () {
         spy.restore(console);
-    });
-
-    it("Should create agent vault", async () => {
-        const agent = await createAgent();
-        expect(agent!.vaultAddress).to.not.be.null;
     });
 
     it("Should deposit to agent vault", async () => {
@@ -502,7 +497,7 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should run command 'listActiveAgents'", async () => {
-        await botCliCommands.createAgentVault();
+        await createAgent();
         const spyLog = spy.on(console, "log");
         await botCliCommands.listActiveAgents();
         await botCliCommands.run(["", "", "listAgents"]);

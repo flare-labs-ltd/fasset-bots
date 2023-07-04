@@ -1,20 +1,20 @@
-import { createBlockChainIndexerHelper, createBlockChainWalletHelper } from "../../../src/config/BotConfig";
+import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { BlockChainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { BlockChainIndexerHelper } from "../../../src/underlying-chain/BlockChainIndexerHelper";
+import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
+import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 use(chaiAsPromised);
 
 let orm: ORM;
 let dbWallet: DBWalletKeys;
-let walletHelper: BlockChainWalletHelper;
-let blockChainIndexerHelper: BlockChainIndexerHelper;
+let walletHelper: BlockchainWalletHelper;
+let blockChainIndexerHelper: BlockchainIndexerHelper;
 
 describe("XRP wallet tests", async () => {
 
@@ -28,8 +28,8 @@ describe("XRP wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainIndexerHelper = createBlockChainIndexerHelper(sourceId);
-        walletHelper = createBlockChainWalletHelper(sourceId, orm.em);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em);
     });
 
     it("Should create account", async () => {
@@ -67,7 +67,7 @@ describe("XRP wallet tests", async () => {
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, true)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
@@ -98,7 +98,7 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, true);
     });
 
     it("Should create account", async () => {
@@ -139,8 +139,8 @@ describe("DOGE wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainIndexerHelper = createBlockChainIndexerHelper(sourceId);
-        walletHelper = createBlockChainWalletHelper(sourceId, orm.em, true);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, true);
     });
 
     it("Should create account", async () => {

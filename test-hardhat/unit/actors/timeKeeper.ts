@@ -12,7 +12,7 @@ describe("Time keeper unit tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        context.chain.finalizationBlocks = 0;
+        context.blockchainIndexer.chain.finalizationBlocks = 0;
     });
 
     it("Should create time keeper", async () => {
@@ -24,7 +24,7 @@ describe("Time keeper unit tests", async () => {
         const currentBlock = await context.assetManager.currentUnderlyingBlock();
         expect(Number(currentBlock[0])).to.eq(0);
         const blocksToMine = 2;
-        context.chain.mine(blocksToMine);
+        context.blockchainIndexer.chain.mine(blocksToMine);
         const timeKeeper = new TimeKeeper(context);
         await timeKeeper.updateUnderlyingBlock();
         const currentBlock2 = await context.assetManager.currentUnderlyingBlock();

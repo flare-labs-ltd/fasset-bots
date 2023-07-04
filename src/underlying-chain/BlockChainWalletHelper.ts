@@ -4,7 +4,7 @@ import { toBN } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
 
-export class BlockChainWalletHelper implements IBlockChainWallet {
+export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
         public walletClient: WalletClient,
         private em: EntityManager,

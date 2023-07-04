@@ -28,7 +28,7 @@ describe("Agent unit tests", async () => {
 
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         // chain tunning

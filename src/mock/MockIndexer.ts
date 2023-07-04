@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from "axios";
-import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
-import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
+import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
+import { IBlock, IBlockId, ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { SourceId } from "../verification/sources/sources";
 import { MockChain } from "./MockChain";
 
-export class MockIndexer extends BlockChainIndexerHelper {
+export class MockIndexer extends BlockchainIndexerHelper {
 
     client: AxiosInstance;
     constructor(
@@ -16,6 +16,32 @@ export class MockIndexer extends BlockChainIndexerHelper {
         this.client = axios.create({});
     }
 
+    finalizationBlocks: number = this.chain.finalizationBlocks;
+    secondsPerBlock: number = this.chain.secondsPerBlock;
+
+    async getTransaction(txHash: string): Promise<ITransaction | null> {
+        return await this.chain.getTransaction(txHash);
+    }
+
+    async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
+        return await this.chain.getTransactionBlock(txHash);
+    }
+
+    async getBalance(): Promise<BN> {
+        throw new Error("Method not implemented on indexer. Use wallet.");
+    }
+
+    async getBlock(blockHash: string): Promise<IBlock | null> {
+        return await this.chain.getBlock(blockHash);
+    }
+
+    async getBlockAt(blockNumber: number): Promise<IBlock | null> {
+        return await this.chain.getBlockAt(blockNumber);
+    }
+
+    async getBlockHeight(): Promise<number> {
+        return await this.chain.getBlockHeight();
+    }
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[] | []> {
         const blocks = this.chain.blocks;

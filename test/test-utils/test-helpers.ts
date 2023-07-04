@@ -6,8 +6,8 @@ import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EventArgs } from "../../src/utils/events/common";
 import { SourceId } from "../../src/verification/sources/sources";
-import { BlockChainIndexerHelper } from "../../src/underlying-chain/BlockChainIndexerHelper";
-import { createBlockChainIndexerHelper } from "../../src/config/BotConfig";
+import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
+import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 
 
 export async function removeWalletAddressFromDB(orm: ORM, address: string) {
@@ -20,8 +20,8 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
     return await agent.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
 }
 
-export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockChainIndexerHelper): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
-    const blockChainHelper = createBlockChainIndexerHelper(sourceId);
+export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockchainIndexerHelper): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
+    const blockChainHelper = createBlockchainIndexerHelper(sourceId);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === 'OK') {
         const blockNumber = resp.data.last;

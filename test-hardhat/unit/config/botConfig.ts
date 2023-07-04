@@ -10,7 +10,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 
-const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
+const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH_HARDHAT');
 
 describe("Config unit tests", async () => {
     let accounts: string[];
@@ -26,8 +26,8 @@ describe("Config unit tests", async () => {
     });
 
     it("Should create tracked state config", async () => {
-        const defaultAgentSettings = await createAgentBotDefaultSettings(context);
-        const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+        const defaultAgentSettings = await createAgentBotDefaultSettings(context, JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()));
+        const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()) as AgentSettingsConfig;
         expect(defaultAgentSettings.feeBIPS.toString()).to.eq(agentSettingsConfig.feeBIPS.toString());
         expect(defaultAgentSettings.poolFeeShareBIPS.toString()).to.eq(agentSettingsConfig.poolFeeShareBIPS.toString());
     });

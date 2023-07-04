@@ -174,8 +174,6 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             case AttestationType.BalanceDecreasingTransaction:
                 return await this.scProofVerifier.verifyBalanceDecreasingTransaction(sourceId, normalizedProofData as any);
             case AttestationType.ConfirmedBlockHeightExists:
-                console.log(proofData)
-                console.log(normalizedProofData);
                 return await this.scProofVerifier.verifyConfirmedBlockHeightExists(sourceId, normalizedProofData as any);
             case AttestationType.ReferencedPaymentNonexistence:
                 return await this.scProofVerifier.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);

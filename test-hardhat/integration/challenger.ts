@@ -55,7 +55,7 @@ describe("Challenger tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
-        chain = checkedCast(trackedStateContext.chain, MockChain);
+        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
@@ -300,7 +300,7 @@ describe("Challenger tests", async () => {
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
-        const agentBalance = await context.chain.getBalance(agentBot.agent.underlyingAddress);
+        const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
         redemption.valueUBA = toBN(agentBalance);
         chain.requiredFee = redemption.feeUBA;
         await agentBot.payForRedemption(redemption);

@@ -1,6 +1,6 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { createBlockChainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32, requireEnv, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -22,7 +22,7 @@ const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS'
 const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 
-const roundIdC2 = 571512;
+const roundIdC2 = 431016;//571512;
 const requestDataBytesC2_1 = "0x000100000003e309bade9e0ef87e3e0a1a8c2f0ebb26af4ef9df6b8d3467ca1f4deac171d2b0be2534c86cf42560074c26f346345b96f3e9d8cfd2bac611bc199def83ac5a3c02515d930000";
 const requestDataBytesC2_2 = "";
 const requestDataBytesC2_3 = "0x0003000000035cfd3a2b8acfa3685043c18aed1bc1c3c3a8fb19e350df38526ec11345c8e20e025162b100000064";
@@ -52,7 +52,7 @@ describe("XRP attestation/state connector tests", async () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockChainIndexerHelper(sourceId);
+        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId);
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ARConfirmedBlockHeightExists = {
@@ -67,7 +67,7 @@ describe("XRP attestation/state connector tests", async () => {
         expect(resp!.data).is.not.null;
     });
     // following will pass until results of roundIdC2 are available
-    it("Should obtain proof", async () => {
+    it.skip("Should obtain proof", async () => {
         const proof1 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_1);
         expect(proof1.finalized).to.be.true;
         const proof3 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_3);

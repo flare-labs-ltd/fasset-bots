@@ -5,6 +5,7 @@ import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { BNish, fail } from "../utils/helpers";
 import { MockChain, MockChainWallet } from "./MockChain";
+import { MockIndexer } from "./MockIndexer";
 
 export class Minter {
     constructor(
@@ -24,9 +25,9 @@ export class Minter {
     }
 
     static async createTest(ctx: IAssetContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
-        if (!(ctx.chain instanceof MockChain)) fail("only for mock chains");
-        ctx.chain.mint(underlyingAddress, underlyingBalance);
-        const wallet = new MockChainWallet(ctx.chain);
+        if (!(ctx.blockchainIndexer instanceof MockIndexer)) fail("only for mock chains");
+        ctx.blockchainIndexer.chain.mint(underlyingAddress, underlyingBalance);
+        const wallet = new MockChainWallet(ctx.blockchainIndexer.chain);
         return Minter.create(ctx, address, underlyingAddress, wallet);
     }
 

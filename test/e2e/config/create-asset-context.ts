@@ -6,6 +6,7 @@ import { COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_
 import rewire from "rewire";
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
+const createFtsos = createAssetContextInternal.__get__("createFtsos");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -93,4 +94,12 @@ describe("Create asset context tests", async () => {
         await expect(getAssetManagerAndController(botConfig.chains[0], null, null)).to.eventually.be.rejectedWith(`Either addressUpdater or contracts must be defined`).and.be.an.instanceOf(Error);
     });
 
+    it("Should create ftsos", async () => {
+        const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.chains[0]);
+        const collateralTypes = await context.assetManager.getCollateralTypes();
+        const ftso = await createFtsos(collateralTypes, context.ftsoRegistry, context.chainInfo.symbol);
+        expect(Object.keys(ftso).length).eq(collateralTypes.length + 1);
+    });
+
 });
+

@@ -8,8 +8,8 @@ export class BNType extends Type<BN, string> {
     }
 
     override convertToJSValue(value: string | BN): BN {
-        if (value instanceof BN) return value;
-        return new BN(value, 10);
+        if (typeof value == 'string') return new BN(value, 10);
+        return value;
     }
 
     override getColumnType(): string {

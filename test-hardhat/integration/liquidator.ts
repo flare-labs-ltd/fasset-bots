@@ -41,7 +41,7 @@ describe("Liquidator tests", async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
-        chain = checkedCast(trackedStateContext.chain, MockChain);
+        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;

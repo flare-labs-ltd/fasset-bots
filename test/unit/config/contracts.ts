@@ -14,6 +14,8 @@ describe("Contracts config tests", async () => {
 
     it("Should save contracts", async () => {
         const contracts = loadContracts(filename);
+        // add faulty contract to trigger branch test
+        contracts["invalidContract"] = undefined;
         saveContracts(newFilename, contracts);
         const exist = existsSync(newFilename);
         expect(exist).to.be.true;

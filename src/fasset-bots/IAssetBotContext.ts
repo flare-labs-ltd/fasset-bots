@@ -3,12 +3,10 @@ import { CollateralType } from "../fasset/AssetManagerTypes";
 import { NativeChainInfo } from "../fasset/ChainInfo";
 import { AssetManagerEvents, FAssetEvents, IAssetContext, IFtsoManagerEvents, IFtsoRegistryEvents, IIFtsoEvents } from "../fasset/IAssetContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
-import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
+import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { ContractWithEvents } from "../utils/events/truffle";
 
 export interface IAssetAgentBotContext extends IAssetContext {
-    blockChainIndexerClient: BlockChainIndexerHelper;
     collaterals: CollateralType[];
 }
 
@@ -26,10 +24,9 @@ export interface AgentBotDefaultSettings {
 
 // lightweight context
 export interface IAssetTrackedStateContext {
-    blockChainIndexerClient: BlockChainIndexerHelper;
+    blockchainIndexer: BlockchainIndexerHelper;
     collaterals: CollateralType[];
     nativeChainInfo: NativeChainInfo;
-    chain: IBlockChain;
     attestationProvider: AttestationHelper;
     // contracts
     ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>;

@@ -14,13 +14,13 @@ import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext } from "./create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Liquidator } from "../../src/actors/Liquidator";
@@ -36,6 +36,7 @@ const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
 const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
+const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH_HARDHAT');
 
 export function disableMccTraceManager() {
     TraceManager.enabled = false;
@@ -47,7 +48,7 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
 }
 
 export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier(), options?: AgentBotDefaultSettings, ): Promise<AgentBot> {
-    const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context, JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()));
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
@@ -57,7 +58,7 @@ export async function mintClass1ToOwner(vaultAddress: string, amount: BNish, cla
 }
 
 export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetTrackedStateContext): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await context.chain.getBlockHeight());
+    return new Challenger(new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
@@ -69,13 +70,13 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
 }
 
 export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<AgentB> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()));
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await AgentB.create(context, ownerAddress, agentSettings);
 }
 
 export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()));
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }

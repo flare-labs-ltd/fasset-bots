@@ -7,9 +7,7 @@ import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { Notifier } from "../utils/Notifier";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { BlockChainIndexerHelper } from "../underlying-chain/BlockChainIndexerHelper";
-import { BlockChainWalletHelper } from "../underlying-chain/BlockChainWalletHelper";
-import { IBlockChain } from "../underlying-chain/interfaces/IBlockChain";
+import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
@@ -19,6 +17,7 @@ import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { readFileSync } from "fs";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
+import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -68,8 +67,7 @@ export interface AgentBotConfigChain extends TrackedStateConfigChain {
 
 export interface TrackedStateConfigChain {
     chainInfo: ChainInfo;
-    chain: IBlockChain;
-    blockChainIndexerClient: BlockChainIndexerHelper;
+    blockchainIndexerClient: BlockchainIndexerHelper;
     stateConnector: IStateConnectorClient;
     // either one must be set
     assetManager?: string;
@@ -137,9 +135,8 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
  * Creates AgentBotConfigChain configuration from chain info.
  */
 export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
-    const chain = createBlockChainIndexerHelper(chainInfo.chainId);
-    const wallet = createBlockChainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
+    const wallet = createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
+    const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
     const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
     const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
@@ -147,9 +144,8 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
     const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
     return {
         chainInfo: chainInfo,
-        chain: chain,
         wallet: wallet,
-        blockChainIndexerClient: blockChainIndexerClient,
+        blockchainIndexerClient: blockchainIndexerClient,
         stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
@@ -160,8 +156,7 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
  * Creates TrackedStateConfigChain configuration from chain info.
  */
 export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
-    const chain = createBlockChainIndexerHelper(chainInfo.chainId);
-    const blockChainIndexerClient = createBlockChainIndexerHelper(chainInfo.chainId);
+    const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
     const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
     const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
@@ -169,8 +164,7 @@ export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, att
     const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
     return {
         chainInfo: chainInfo,
-        chain: chain,
-        blockChainIndexerClient: blockChainIndexerClient,
+        blockchainIndexerClient: blockchainIndexerClient,
         stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol
@@ -249,74 +243,24 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
 }
 
 /**
- * Creates Multi chain client. Relevant urls and api keys are provided in .env.
- */
-export function createMccClient(sourceId: SourceId): MCC.ALGO | MCC.BTC | MCC.DOGE | MCC.LTC | MCC.XRP {
-    switch (sourceId) {
-        case SourceId.ALGO:
-            return new MCC.ALGO({
-                algod: {
-                    url: requireEnv('ALGO_ALGOD_URL_MCC'),
-                    token: "",
-                },
-                indexer: {
-                    url: requireEnv('ALGO_INDEXER_URL_MCC'),
-                    token: "",
-                },
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as AlgoMccCreate);
-        case SourceId.BTC:
-            return new MCC.BTC({
-                url: requireEnv('BTC_URL_MCC'),
-                username: process.env.BTC_USERNAME_MCC || "",
-                password: process.env.BTC_PASSWORD_MCC || "",
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as UtxoMccCreate);
-        case SourceId.DOGE:
-            return new MCC.DOGE({
-                url: requireEnv('DOGE_URL_MCC'),
-                username: process.env.DOGE_USERNAME_MCC || "",
-                password: process.env.DOGE_PASSWORD_MCC || "",
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as UtxoMccCreate);
-        case SourceId.LTC:
-            return new MCC.LTC({
-                url: requireEnv('LTC_URL_MCC'),
-                username: process.env.LTC_USERNAME_MCC || "",
-                password: process.env.LTC_PASSWORD_MCC || "",
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as UtxoMccCreate);
-        case SourceId.XRP:
-            return new MCC.XRP({
-                url: requireEnv('XRP_URL_MCC'),
-                username: process.env.XRP_USERNAME_MCC || "",
-                password: process.env.XRP_PASSWORD_MCC || "",
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
-            } as XrpMccCreate);
-        default:
-            throw new Error(`SourceId ${sourceId} not supported.`);
-    }
-}
-
-/**
  * Creates blockchain indexer helper. Relevant urls and api keys are provided in .env.
  */
-export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainIndexerHelper {
+export function createBlockchainIndexerHelper(sourceId: SourceId): BlockchainIndexerHelper {
     switch (sourceId) {
         case SourceId.BTC: {
             const indexerWebServerUrl = requireEnv('INDEXER_BTC_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_BTC_API_KEY');
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
+            return new BlockchainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         }
         case SourceId.DOGE: {
             const indexerWebServerUrl = requireEnv('INDEXER_DOGE_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_DOGE_API_KEY');
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
+            return new BlockchainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         }
         case SourceId.XRP: {
             const indexerWebServerUrl = requireEnv('INDEXER_XRP_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_XRP_API_KEY');
-            return new BlockChainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
+            return new BlockchainIndexerHelper(indexerWebServerUrl, sourceId, apiKey);
         }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
@@ -326,18 +270,18 @@ export function createBlockChainIndexerHelper(sourceId: SourceId): BlockChainInd
 /**
  * Creates blockchain wallet helper using wallet client.
  */
-export function createBlockChainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockChainWalletHelper {
+export function createBlockchainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, inTestnet?: boolean): BlockchainWalletHelper {
     switch (sourceId) {
         case SourceId.ALGO:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em);
+            return new BlockchainWalletHelper(createWalletClient(sourceId), em);
         case SourceId.BTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
+            return new BlockchainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.DOGE:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
+            return new BlockchainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.LTC:
-            return new BlockChainWalletHelper(createWalletClient(sourceId, inTestnet), em);
+            return new BlockchainWalletHelper(createWalletClient(sourceId, inTestnet), em);
         case SourceId.XRP:
-            return new BlockChainWalletHelper(createWalletClient(sourceId), em);
+            return new BlockchainWalletHelper(createWalletClient(sourceId), em);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);
     }
@@ -351,15 +295,15 @@ export async function createAttestationHelper(sourceId: SourceId, attestationPro
     switch (sourceId) {
         case SourceId.BTC: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.DOGE: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.XRP: {
             const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
-            return new AttestationHelper(stateConnector, createBlockChainIndexerHelper(sourceId), sourceId);
+            return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);

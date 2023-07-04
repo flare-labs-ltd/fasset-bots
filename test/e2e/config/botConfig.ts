@@ -1,6 +1,5 @@
 import { readFileSync } from "fs";
-import { createAttestationHelper, createBlockChainIndexerHelper, createBlockChainWalletHelper, createAgentBotConfig, createMccClient, createStateConnectorClient, createWalletClient, AgentBotRunConfig, TrackedStateRunConfig, createTrackedStateConfig, createAgentBotDefaultSettings } from "../../../src/config/BotConfig"
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createAgentBotConfig, createStateConnectorClient, createWalletClient, AgentBotRunConfig, TrackedStateRunConfig, createTrackedStateConfig, createTrackedStateConfigChain, createAgentBotConfigChain } from "../../../src/config/BotConfig"
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
@@ -55,53 +54,35 @@ describe("Bot config tests", async () => {
         expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
 
-    it("Should create mcc clients", async () => {
-        const algo = createMccClient(SourceId.ALGO);
-        expect(algo.chainType).to.eq(SourceId.ALGO);
-        const btc = createMccClient(SourceId.BTC);
-        expect(btc.chainType).to.eq(SourceId.BTC);
-        const doge = createMccClient(SourceId.DOGE);
-        expect(doge.chainType).to.eq(SourceId.DOGE);
-        const ltc = createMccClient(SourceId.LTC);
-        expect(ltc.chainType).to.eq(SourceId.LTC);
-        const xrp = createMccClient(SourceId.XRP);
-        expect(xrp.chainType).to.eq(SourceId.XRP);
-        const invalidSourceId = -200;
-        const fn = () => {
-            return createMccClient(invalidSourceId as SourceId);
-        };
-        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
-    });
-
     it("Should create block chain indexer", async () => {
-        const btc = createBlockChainIndexerHelper(SourceId.BTC);
+        const btc = createBlockchainIndexerHelper(SourceId.BTC);
         expect(btc.sourceId).to.eq(SourceId.BTC);
-        const doge = createBlockChainIndexerHelper(SourceId.DOGE);
+        const doge = createBlockchainIndexerHelper(SourceId.DOGE);
         expect(doge.sourceId).to.eq(SourceId.DOGE);
-        const xrp = createBlockChainIndexerHelper(SourceId.XRP);
+        const xrp = createBlockchainIndexerHelper(SourceId.XRP);
         expect(xrp.sourceId).to.eq(SourceId.XRP);
         const sourceId = SourceId.ALGO;
         const fn = () => {
-            return createBlockChainIndexerHelper(sourceId);
+            return createBlockchainIndexerHelper(sourceId);
         };
         expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {
         const botConfig = await createAgentBotConfig(runConfig);
-        const algo = createBlockChainWalletHelper(SourceId.ALGO, botConfig.orm.em);
+        const algo = createBlockchainWalletHelper(SourceId.ALGO, botConfig.orm.em);
         expect(algo.walletClient.chainType).to.eq(SourceId.ALGO);
-        const btc = createBlockChainWalletHelper(SourceId.BTC, botConfig.orm.em);
+        const btc = createBlockchainWalletHelper(SourceId.BTC, botConfig.orm.em);
         expect(btc.walletClient.chainType).to.eq(SourceId.BTC);
-        const doge = createBlockChainWalletHelper(SourceId.DOGE, botConfig.orm.em);
+        const doge = createBlockchainWalletHelper(SourceId.DOGE, botConfig.orm.em);
         expect(doge.walletClient.chainType).to.eq(SourceId.DOGE);
-        const ltc = createBlockChainWalletHelper(SourceId.LTC, botConfig.orm.em);
+        const ltc = createBlockchainWalletHelper(SourceId.LTC, botConfig.orm.em);
         expect(ltc.walletClient.chainType).to.eq(SourceId.LTC);
-        const xrp = createBlockChainWalletHelper(SourceId.XRP, botConfig.orm.em);
+        const xrp = createBlockchainWalletHelper(SourceId.XRP, botConfig.orm.em);
         expect(xrp.walletClient.chainType).to.eq(SourceId.XRP);
         const invalidSourceId = -200;
         const fn = () => {
-            return createBlockChainWalletHelper(invalidSourceId as SourceId, botConfig.orm.em);
+            return createBlockchainWalletHelper(invalidSourceId as SourceId, botConfig.orm.em);
         };
         expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
     });
@@ -114,12 +95,27 @@ describe("Bot config tests", async () => {
         const xrp = await createAttestationHelper(SourceId.XRP, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(xrp.chainId).to.eq(SourceId.XRP);
         const unsupportedSourceId = SourceId.ALGO;
-        await expect(createAttestationHelper(SourceId.ALGO, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
+        await expect(createAttestationHelper(unsupportedSourceId, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {
         const stateConnector = await createStateConnectorClient(SourceId.BTC, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(stateConnector.account).to.eq(OWNER_ADDRESS);
+        const unsupportedSourceId = SourceId.ALGO;
+        await expect(createStateConnectorClient(unsupportedSourceId, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
+
+    it("Should create tracked state config chain", async () => {
+        const chainInfo = trackedStateRunConfig.chainInfos[0];
+        const trackedStateConfigChain = await createTrackedStateConfigChain(chainInfo, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        expect(trackedStateConfigChain.stateConnector).not.be.null;
+    })
+
+    it("Should create agent bot config chain", async () => {
+        const botConfig = await createAgentBotConfig(runConfig);
+        const chainInfo = runConfig.chainInfos[0];
+        const agentBotConfigChain = await createAgentBotConfigChain(chainInfo, botConfig.orm.em, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        expect(agentBotConfigChain.stateConnector).not.be.null;
+    })
 
 });

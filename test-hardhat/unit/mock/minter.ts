@@ -3,13 +3,12 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 
 describe("Minter unit tests", async () => {
     let accounts: string[];
-    let context: IAssetAgentBotContext;
+    let context: TestAssetBotContext;
     let minterAddress: string;
     let chain: MockChain;
     const minterUnderlyingAddress = "MINTER_ADDRESS";
@@ -20,7 +19,7 @@ describe("Minter unit tests", async () => {
 
     beforeEach(async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.chain, MockChain);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         minterAddress = accounts[4];
     });
 

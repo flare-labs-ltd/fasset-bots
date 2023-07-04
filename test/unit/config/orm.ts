@@ -2,6 +2,10 @@ import { createOrm, CreateOrmOptions } from "../../../src/config/orm";
 import { existsSync, rm } from "fs";
 import { expect } from "chai";
 import { WalletAddress } from "../../../src/entities/wallet";
+import { BNType } from "../../../src/config/orm-types";
+import { toBN } from "../../../src/utils/helpers";
+import BN from "bn.js";
+import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 
 const dbName: string = 'fasset-bots-unit-test.db';
 const dbOptions: CreateOrmOptions = { dbName: dbName, type: 'sqlite', entities: [WalletAddress] };
@@ -10,6 +14,22 @@ describe("Orm config tests", async () => {
 
     it("Should create database", async() => {
         await createOrm(dbOptions);
+        const exist = existsSync(dbName);
+        expect(exist).to.be.true;
+        // clean up, aka delete new file
+        if (exist) {
+            rm(dbName, (err) => {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+                console.log("File deleted successfully");
+            });
+        }
+    });
+
+    it("Should create database", async() => {
+        await overrideAndCreateOrm(dbOptions);
         const exist = existsSync(dbName);
         expect(exist).to.be.true;
         // clean up, aka delete new file
@@ -44,6 +64,13 @@ describe("Orm config tests", async () => {
                 console.log("File deleted successfully");
             });
         }
+    });
+
+    it("Should convert to JS value", () => {
+        const bnType = new BNType();
+        const value = "10";
+       expect(bnType.convertToJSValue(value).toString()).to.eq(new BN(value, 10).toString());
+       expect(bnType.convertToJSValue(toBN(value)).toString()).to.eq(toBN(value).toString());
     });
 
 });

@@ -4,7 +4,7 @@ import { getSourceName, SourceId } from "../verification/sources/sources";
 import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";
 import { BTC_MDU } from "@flarenetwork/mcc";
 
-export class BlockChainIndexerHelper implements IBlockChain {
+export class BlockchainIndexerHelper implements IBlockChain {
 
     finalizationBlocks: number = 0;
     secondsPerBlock: number = 0;

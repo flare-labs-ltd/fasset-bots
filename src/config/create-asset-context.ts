@@ -43,9 +43,9 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
     return {
         nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
-        chain: chainConfig.chain,
+        blockchainIndexer: chainConfig.blockchainIndexerClient,
         wallet: chainConfig.wallet,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
         assetManagerController: assetManagerController,
         ftsoRegistry: ftsoRegistry,
@@ -54,7 +54,6 @@ async function createAssetContextFromContracts(botConfig: AgentBotConfig & { con
         fAsset: await FAsset.at(await assetManager.fAsset()),
         natFtso: ftsos['nat'],
         assetFtso: ftsos['asset'],
-        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
         collaterals: collaterals,
         stablecoins: stableCoins,
         ftsos: ftsos
@@ -74,9 +73,9 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
     return {
         nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
-        chain: chainConfig.chain,
+        blockchainIndexer: chainConfig.blockchainIndexerClient,
         wallet: chainConfig.wallet,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
         assetManagerController: assetManagerController,
         ftsoRegistry: ftsoRegistry,
@@ -85,7 +84,6 @@ async function createAssetContextFromAddressUpdater(botConfig: AgentBotConfig & 
         fAsset: await FAsset.at(await assetManager.fAsset()),
         natFtso: ftsos['nat'],
         assetFtso: ftsos['asset'],
-        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
         collaterals: collaterals,
         stablecoins: stableCoins,
         ftsos: ftsos
@@ -118,14 +116,13 @@ export async function createTrackedStateAssetContext(trackedStateConfig: Tracked
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(chainConfig.chainInfo.symbol));
     return {
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
-        chain: chainConfig.chain,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.chain, chainConfig.chainInfo.chainId),
+        blockchainIndexer: chainConfig.blockchainIndexerClient,
+        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
         ftsoRegistry: ftsoRegistry,
         ftsoManager: ftsoManager,
         fAsset: await FAsset.at(await assetManager.fAsset()),
         assetFtso: assetFtso,
-        blockChainIndexerClient: chainConfig.blockChainIndexerClient,
         collaterals: collaterals
     };
 }
