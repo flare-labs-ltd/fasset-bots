@@ -16,24 +16,28 @@ describe("Attestation client unit tests", async () => {
     let context: TestAssetBotContext;
     let chain: MockChain;
 
+    async function useContext(faulty: boolean = false) {
+        if (faulty) {
+            context = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+        } else {
+            context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        }
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
+    }
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
-    });
-
-    beforeEach(async () => {
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
     });
 
     it("Should return round finalization", async () => {
+        await useContext();
         const round = 1;
         const finalized = await context.attestationProvider.roundFinalized(round);
         expect(finalized).to.be.false;
     });
 
     it("Should prove payment proof", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
         const provePayment = await context.attestationProvider.provePayment(transaction, underlying1, underlying2);
@@ -41,6 +45,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should prove balance decreasing transaction proof", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
         const proveBalanceDecreasingTransaction = await context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1);
@@ -48,30 +53,35 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should prove confirmed block height existence", async () => {
+        await useContext();
         chain.mine(chain.finalizationBlocks + 1);
         const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 
     it("Should prove referenced payment nonexistence", async () => {
+        await useContext();
         chain.mine(2 * chain.finalizationBlocks);
         const requestConfirmedBlockHeight = await context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1);
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 
     it("Should not request payment proof - transaction not found", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const invalidTransaction = transaction.slice(0, 50);
         await expect(context.attestationProvider.provePayment(invalidTransaction, underlying1, underlying2)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
     });
 
     it("Should not request balance decreasing transaction proof - transaction not found", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const invalidTransaction = transaction.slice(0, 50);
         await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
     });
 
     it.skip("Should not obtain balance decreasing transaction proof - address not in transaction", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         console.log(transaction)
         chain.mine(chain.finalizationBlocks + 1);
@@ -82,6 +92,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should not request payment proof - finalization block not found", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
         const blockHeight = await chain.getBlockHeight();
@@ -90,6 +101,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should not request balance decreasing transaction proof - finalization block not found", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
         const blockHeight = await chain.getBlockHeight();
@@ -98,6 +110,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should not obtain payment proof - not finalized", async () => {
+        await useContext();
         const round = 10;
         const res = await context.attestationProvider.obtainPaymentProof(round, "");
         expect(res.finalized).to.be.false;
@@ -105,6 +118,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should wait for round finalization", async () => {
+        await useContext();
         chain.mine(chain.finalizationBlocks + 1);
         const round = 1;
         await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
@@ -115,6 +129,7 @@ describe("Attestation client unit tests", async () => {
     })
 
     it("Should not receive referenced payment nonexistence proof - overflow block not found", async () => {
+        await useContext();
         const reference = "reference";
         const amount = 1;
         await context.wallet.addTransaction(underlying1, underlying2, amount, reference);
@@ -126,6 +141,7 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should not receive referenced payment nonexistence proof - finalization block not found", async () => {
+        await useContext();
         chain.finalizationBlocks = 10;
         const reference = "reference";
         const amount = 1;
@@ -142,9 +158,37 @@ describe("Attestation client unit tests", async () => {
     });
 
     it("Should not find address index", async () => {
+        await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
         await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying1)).to.eventually.be.rejectedWith(`address ${underlying1} not used in transaction`).and.be.an.instanceOf(Error);
     });
 
+    it("Should not prove payment proof", async () => {
+        await useContext(true);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
+        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2)).to.eventually.be.rejectedWith(`payment: not proved`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should not prove balance decreasing transaction", async () => {
+        await useContext(true);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
+        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1)).to.eventually.be.rejectedWith(`balanceDecreasingTransaction: not proved`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should prove confirmed block height existence", async () => {
+        await useContext(true);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context))).to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should not prove referenced payment nonexistence", async () => {
+        await useContext(true);
+        chain.mine(2 * chain.finalizationBlocks);
+        await expect(context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1)).to.eventually.be.rejectedWith(`referencedPaymentNonexistence: not proved`).and.be.an.instanceOf(Error);
+    });
 });

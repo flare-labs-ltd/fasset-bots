@@ -55,7 +55,7 @@ export type TestAssetTrackedStateContext = Modify<IAssetTrackedStateContext, {
     blockchainIndexer: MockIndexer;
 }>
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any, updateExecutor?: string): Promise<TestAssetBotContext> {
+export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any, updateExecutor?: string, useAlwaysFailsProver?: boolean): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -110,7 +110,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, 'auto');
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, 'auto', useAlwaysFailsProver ? useAlwaysFailsProver : false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
     const wallet = new MockChainWallet(chain);

@@ -8,6 +8,7 @@ import { DHType } from "../verification/generated/attestation-hash-types";
 import { ARBalanceDecreasingTransaction, ARBase, ARConfirmedBlockHeightExists, ARPayment, ARReferencedPaymentNonexistence } from "../verification/generated/attestation-request-types";
 import { AttestationType } from "../verification/generated/attestation-types-enum";
 import { SourceId } from "../verification/sources/sources";
+import { MockAlwaysFailsAttestationProver } from "./MockAlwaysFailsAttestationProver";
 import { MockAttestationProver, MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
 
@@ -42,6 +43,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         public stateConnector: StateConnectorMockInstance,
         public supportedChains: { [chainId: number]: MockChain },
         public finalizationType: AutoFinalizationType,
+        public useAlwaysFailsProver: boolean = false
     ) {
     }
 
@@ -171,7 +173,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         try {
             const chain = this.supportedChains[parsedRequest.sourceId];
             if (chain == null) throw new StateConnectorClientError(`StateConnectorClient: unsupported chain ${parsedRequest.sourceId}`);
-            const prover = new MockAttestationProver(chain, this.queryWindowSeconds);
+            const prover = this.useAlwaysFailsProver ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds) : new MockAttestationProver(chain, this.queryWindowSeconds);
             switch (parsedRequest.attestationType) {
                 case AttestationType.Payment: {
                     const request = parsedRequest as ARPayment;
