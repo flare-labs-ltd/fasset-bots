@@ -22,7 +22,7 @@ import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelp
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
 const ATTESTATION_PROVIDER_URLS: string = requireEnv('ATTESTER_BASE_URLS');
-const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = requireEnv('STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS');
 const STATE_CONNECTOR_ADDRESS: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
@@ -134,11 +134,11 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
 /**
  * Creates AgentBotConfigChain configuration from chain info.
  */
-export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
+export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls?: string[], scProofVerifierAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<AgentBotConfigChain> {
     const wallet = createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.inTestnet);
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
-    const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
+    const acAddress = scProofVerifierAddress ? scProofVerifierAddress : STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS;
     const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
     const ownerAddress = owner ? owner : OWNER_ADDRESS;
     const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
@@ -155,10 +155,10 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
 /**
  * Creates TrackedStateConfigChain configuration from chain info.
  */
-export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], attestationClientAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
+export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls?: string[], scProofVerifierAddress?: string, stateConnectorAddress?: string, owner?: string): Promise<TrackedStateConfigChain> {
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId);
     const apUrls = attestationProviderUrls ? attestationProviderUrls : ATTESTATION_PROVIDER_URLS.split(",");
-    const acAddress = attestationClientAddress ? attestationClientAddress : ATTESTATION_CLIENT_ADDRESS;
+    const acAddress = scProofVerifierAddress ? scProofVerifierAddress : STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS;
     const scAddress = stateConnectorAddress ? stateConnectorAddress : STATE_CONNECTOR_ADDRESS;
     const ownerAddress = owner ? owner : OWNER_ADDRESS;
     const stateConnector = await createStateConnectorClient(chainInfo.chainId, apUrls, acAddress, scAddress, ownerAddress);
@@ -290,19 +290,19 @@ export function createBlockchainWalletHelper(sourceId: SourceId, em: EntityManag
 /**
  * Creates attestation helper.
  */
-export async function createAttestationHelper(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<AttestationHelper> {
+export async function createAttestationHelper(sourceId: SourceId, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, owner: string): Promise<AttestationHelper> {
 
     switch (sourceId) {
         case SourceId.BTC: {
-            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.DOGE: {
-            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         case SourceId.XRP: {
-            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, owner);
+            const stateConnector = await createStateConnectorClient(sourceId, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
             return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId), sourceId);
         }
         default:
@@ -313,22 +313,22 @@ export async function createAttestationHelper(sourceId: SourceId, attestationPro
 /**
  * Creates state connector client
  */
-export async function createStateConnectorClient(sourceId: SourceId, attestationProviderUrls: string[], attestationClientAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
+export async function createStateConnectorClient(sourceId: SourceId, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
     switch (sourceId) {
         case SourceId.BTC: {
             const indexerWebServerUrl = requireEnv('INDEXER_BTC_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_BTC_API_KEY');
-            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+            return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
         }
         case SourceId.DOGE: {
             const indexerWebServerUrl = requireEnv('INDEXER_DOGE_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_DOGE_API_KEY');
-            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+            return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
         }
         case SourceId.XRP: {
             const indexerWebServerUrl = requireEnv('INDEXER_XRP_WEB_SERVER_URL');
             const apiKey = requireEnv('INDEXER_XRP_API_KEY');
-            return await StateConnectorClientHelper.create(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+            return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
         }
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);

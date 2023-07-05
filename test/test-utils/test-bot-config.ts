@@ -18,7 +18,7 @@ export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-si
 
 const RPC_URL_LOCAL: string = requireEnv('RPC_URL_LOCAL');
 const ATTESTATION_PROVIDER_URLS_LOCAL: string = requireEnv('ATTESTER_BASE_URLS_LOCAL');
-const ATTESTATION_CLIENT_ADDRESS_LOCAL: string = requireEnv('ATTESTATION_CLIENT_ADDRESS_LOCAL');
+const STATE_CONNECTOR_PROOF_VERIFIER_LOCAL_ADDRESS: string = requireEnv('STATE_CONNECTOR_PROOF_VERIFIER_LOCAL_ADDRESS');
 const STATE_CONNECTOR_ADDRESS_LOCAL: string = requireEnv('STATE_CONNECTOR_ADDRESS_LOCAL');
 
 const testOptions: CreateOrmOptions = {
@@ -39,7 +39,7 @@ export async function createBotConfigLocal(runConfig: AgentBotRunConfig, ownerAd
     const chains: AgentBotConfigChain[] = [];
     const attestationProviderUrls = ATTESTATION_PROVIDER_URLS_LOCAL.split(",");
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, attestationProviderUrls, ATTESTATION_CLIENT_ADDRESS_LOCAL, STATE_CONNECTOR_ADDRESS_LOCAL, ownerAddress));
+        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, attestationProviderUrls, STATE_CONNECTOR_PROOF_VERIFIER_LOCAL_ADDRESS, STATE_CONNECTOR_ADDRESS_LOCAL, ownerAddress));
     }
     return {
         rpcUrl: RPC_URL_LOCAL,

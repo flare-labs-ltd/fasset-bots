@@ -10,7 +10,7 @@ import { expect, use } from "chai";
 use(chaiAsPromised);
 
 const ATTESTER_BASE_URLS: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
-const ATTESTATION_CLIENT_ADDRESS: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = requireEnv('STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS');
 const STATE_CONNECTOR_ADDRESS: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -88,33 +88,33 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create attestation helper", async () => {
-        const btc = await createAttestationHelper(SourceId.BTC, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const btc = await createAttestationHelper(SourceId.BTC, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(btc.chainId).to.eq(SourceId.BTC);
-        const doge = await createAttestationHelper(SourceId.DOGE, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const doge = await createAttestationHelper(SourceId.DOGE, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(doge.chainId).to.eq(SourceId.DOGE);
-        const xrp = await createAttestationHelper(SourceId.XRP, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const xrp = await createAttestationHelper(SourceId.XRP, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(xrp.chainId).to.eq(SourceId.XRP);
         const unsupportedSourceId = SourceId.ALGO;
-        await expect(createAttestationHelper(unsupportedSourceId, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
+        await expect(createAttestationHelper(unsupportedSourceId, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {
-        const stateConnector = await createStateConnectorClient(SourceId.BTC, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const stateConnector = await createStateConnectorClient(SourceId.BTC, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(stateConnector.account).to.eq(OWNER_ADDRESS);
         const unsupportedSourceId = SourceId.ALGO;
-        await expect(createStateConnectorClient(unsupportedSourceId, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
+        await expect(createStateConnectorClient(unsupportedSourceId, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
     });
 
     it("Should create tracked state config chain", async () => {
         const chainInfo = trackedStateRunConfig.chainInfos[0];
-        const trackedStateConfigChain = await createTrackedStateConfigChain(chainInfo, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const trackedStateConfigChain = await createTrackedStateConfigChain(chainInfo, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(trackedStateConfigChain.stateConnector).not.be.null;
     })
 
     it("Should create agent bot config chain", async () => {
         const botConfig = await createAgentBotConfig(runConfig);
         const chainInfo = runConfig.chainInfos[0];
-        const agentBotConfigChain = await createAgentBotConfigChain(chainInfo, botConfig.orm.em, ATTESTER_BASE_URLS, ATTESTATION_CLIENT_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const agentBotConfigChain = await createAgentBotConfigChain(chainInfo, botConfig.orm.em, ATTESTER_BASE_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(agentBotConfigChain.stateConnector).not.be.null;
     })
 
