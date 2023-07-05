@@ -14,6 +14,7 @@ const ownerAccountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 const account1PrivateKey = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
 const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
 const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
+const deployPrivateKey = requireEnv('DEPLOY_PRIVATE_KEY');
 const deposit = toBNExp(1_000_000, 18);
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string) {
@@ -33,7 +34,7 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
 }
 
 export function getNativeAccountsFromEnv() {
-    return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey, deployPrivateKey];
 }
 
 export async function createTestAgentBot(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {

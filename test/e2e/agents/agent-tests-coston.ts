@@ -47,6 +47,7 @@ describe("Agent bot tests - coston", async () => {
         await state.initialize();
     });
 
+
     it.skip("Should create agent bot", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         expect(agentBot.agent.underlyingAddress).is.not.null;
