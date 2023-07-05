@@ -260,7 +260,7 @@ export class MockChainWallet implements IBlockChainWallet {
         } else if (options.gasLimit != null) {
             return toBN(options.gasLimit).mul(toBN(options.gasPrice ?? this.chain.estimatedGasPrice));
         } else {
-            return this.chain.requiredFee;
+            return toBN(this.chain.requiredFee);
         }
     }
 }

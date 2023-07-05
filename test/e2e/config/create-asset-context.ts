@@ -12,8 +12,9 @@ import { expect, use } from "chai";
 import { initWeb3 } from "../../../src/utils/web3";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import { requireEnv } from "../../../src/utils/helpers";
+import { artifacts } from "../../../src/utils/artifacts";
 use(chaiAsPromised);
-
+const AddressUpdater = artifacts.require('AddressUpdater')
 const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Create asset context tests", async () => {
@@ -99,6 +100,17 @@ describe("Create asset context tests", async () => {
         const collateralTypes = await context.assetManager.getCollateralTypes();
         const ftso = await createFtsos(collateralTypes, context.ftsoRegistry, context.chainInfo.symbol);
         expect(Object.keys(ftso).length).eq(collateralTypes.length + 1);
+    });
+//skip until verified in explorer AssetManagerController
+    it.skip("Should get asset manager and controller with address updater", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as AgentBotRunConfig;
+        botConfig = await createAgentBotConfig(runConfig);
+        botConfig.chains[0].assetManager = undefined;
+        botConfig.chains[0].fAssetSymbol =  "FtestXRP";
+        const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
+        const [assetManager, assetManagerController] = await getAssetManagerAndController(botConfig.chains[0], addressUpdater, null)
+        expect(assetManager).to.not.be.null;
+        expect(assetManagerController).to.not.be.null;
     });
 
 });

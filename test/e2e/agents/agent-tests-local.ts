@@ -36,7 +36,7 @@ describe.skip("Agent bot tests - local network", async () => {
         botConfig = await createBotConfigLocal(runConfig, ownerAddress);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
-        chain = checkedCast(context.chain, MockChain);
+        // chain = checkedCast(context.blockchainIndexer, MockChain);
     });
 
     it("Should create agent", async () => {
@@ -52,7 +52,7 @@ describe.skip("Agent bot tests - local network", async () => {
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     })
 
-    it("Should perform minting and redemption", async () => {
+    it.skip("Should perform minting and redemption", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, botConfig.notifier);
         const minter = await Minter.createTest(context, minterAddress, `MINTER_ADDRESS_${systemTimestamp()}`, toBNExp(10_000, 6)); // lot is 1000 XRP
         const redeemer = await Redeemer.create(context, redeemerAddress, `REDEEMER_ADDRESS_${systemTimestamp()}`);

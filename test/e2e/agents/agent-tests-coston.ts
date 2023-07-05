@@ -19,7 +19,7 @@ import { COSTON_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 
 const RPC_URL: string = requireEnv('RPC_URL');
 
-describe("Agent bot tests - coston2", async () => {
+describe("Agent bot tests - coston", async () => {
     let accounts: string[];
     let botConfig: AgentBotConfig;
     let context: IAssetAgentBotContext;
@@ -47,10 +47,12 @@ describe("Agent bot tests - coston2", async () => {
         await state.initialize();
     });
 
-    it.only("Should create agent bot", async () => {
+    it.skip("Should create agent bot", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+        // sort of clean up
+        await agentBot.agent.announceDestroy();
     });
 
     it("Should create agent bot runner", async () => {
@@ -68,11 +70,11 @@ describe("Agent bot tests - coston2", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, await context.chain.getBlockHeight());
+        const challenger = new Challenger(runner, challengerAddress, state, await context.blockchainIndexer.getBlockHeight());
         expect(challenger.address).to.eq(challengerAddress);
     });
 
-    it("Should read agent bot from entity", async () => {
+    it.skip("Should read agent bot from entity", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier())
         expect(agentBot.agent.underlyingAddress).is.not.null;

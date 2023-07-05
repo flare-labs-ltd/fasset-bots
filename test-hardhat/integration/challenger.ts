@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast, sleep, toBN } from "../../src/utils/helpers";
+import { sleep, toBN } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -55,10 +55,10 @@ describe("Challenger tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
-        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
+        chain = context.blockchainIndexer.chain;
         // chain tunning
-        chain.finalizationBlocks = 0;
-        chain.secondsPerBlock = 1;
+        chain.finalizationBlocks = context.blockchainIndexer.finalizationBlocks = 0;
+        chain.secondsPerBlock = context.blockchainIndexer.secondsPerBlock = 1;
     });
 
     it("Should challenge illegal payment", async () => {
@@ -302,7 +302,7 @@ describe("Challenger tests", async () => {
         redemption.paymentAddress = minter.underlyingAddress;
         const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
         redemption.valueUBA = toBN(agentBalance);
-        chain.requiredFee = redemption.feeUBA;
+        chain.requiredFee = toBN(redemption.feeUBA);
         await agentBot.payForRedemption(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available

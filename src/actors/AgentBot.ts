@@ -192,18 +192,18 @@ export class AgentBot {
         await rootEm.transactional(async em => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (agentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
+            if (toBN(agentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
                 // agent waiting for destruction
-                if (agentEnt.waitingForDestructionTimestamp.lte(latestTimestamp)) {
+                if (toBN(agentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
                     // agent can be destroyed
                     await this.agent.destroy();
                     agentEnt.waitingForDestructionTimestamp = BN_ZERO;
                     await this.handleAgentDestruction(em, agentEnt.vaultAddress);
                 }
             }
-            if (agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)) {
+            if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
                 // agent waiting for class1 withdrawal
-                if (agentEnt.withdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                if (toBN(agentEnt.withdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
                     // agent can withdraw class1
                     await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
                     this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.withdrawalAllowedAtAmount.toString());
@@ -211,9 +211,9 @@ export class AgentBot {
                     agentEnt.withdrawalAllowedAtAmount = "";
                 }
             }
-            if (agentEnt.agentSettingUpdateValidAtTimestamp.gt(BN_ZERO)) {
+            if (toBN(agentEnt.agentSettingUpdateValidAtTimestamp).gt(BN_ZERO)) {
                 // agent waiting for setting update
-                if (agentEnt.agentSettingUpdateValidAtTimestamp.lte(latestTimestamp)) {
+                if (toBN(agentEnt.agentSettingUpdateValidAtTimestamp).lte(latestTimestamp)) {
                     // agent can update setting
                     await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
                     this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
@@ -221,15 +221,15 @@ export class AgentBot {
                     agentEnt.agentSettingUpdateValidAtName = "";
                 }
             }
-            if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
+            if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
                 // agent can exit available and is agent waiting for clean up before destruction
                 await this.exitAvailable(agentEnt);
-            } else if (agentEnt.exitAvailableAllowedAtTimestamp.gt(BN_ZERO)) {
+            } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
                 // agent can exit available
                 await this.exitAvailable(agentEnt);
-            } else if (agentEnt.waitingForDestructionCleanUp && (agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gt(BN_ZERO) || agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.gt(BN_ZERO))) {
+            } else if (agentEnt.waitingForDestructionCleanUp && (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) || toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
                 // agent waiting to withdraw class1 or to redeem pool tokens
-                if (agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                if (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
                     // agent can withdraw class1
                     await this.agent.withdrawClass1Collateral(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
                     this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString());
@@ -237,7 +237,7 @@ export class AgentBot {
                     agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = BN_ZERO;
                 }
                 // agent waiting to redeem pool tokens
-                if (agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.gt(BN_ZERO) && agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp.lte(latestTimestamp)) {
+                if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
                     // agent can redeem pool tokens
                     await this.agent.redeemCollateralPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
                     agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
@@ -274,7 +274,7 @@ export class AgentBot {
                 }
             }
             // confirm underlying withdrawal
-            if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
+            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
                 // agent waiting for underlying withdrawal
                 if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
                     const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
@@ -290,7 +290,7 @@ export class AgentBot {
             // cancel underlying withdrawal
             if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
                 const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
-                if ((agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
+                if ((toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds)).lt(latestTimestamp)) {
                     // agent can confirm cancel withdrawal announcement
                     await this.agent.cancelUnderlyingWithdrawal();
                     this.notifier.sendCancelWithdrawUnderlying(agentEnt.vaultAddress);
@@ -405,12 +405,12 @@ export class AgentBot {
      * If it does not exist, then it request non payment proof - see requestNonPaymentProofForMinting().
      */
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(minting.lastUnderlyingBlock, minting.lastUnderlyingTimestamp)
+        const proof = await this.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp))
         if (proof) {
             // corner case: proof expires in indexer
             const settings = await this.context.assetManager.getSettings();
-            const burnNats = (await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(minting.valueUBA).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
-            await this.context.assetManager.unstickMinting(proof, minting.requestId, { from: this.agent.ownerAddress, value: burnNats });
+            const burnNats = (await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
+            await this.context.assetManager.unstickMinting(proof, toBN(minting.requestId), { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
         } else {
@@ -418,7 +418,7 @@ export class AgentBot {
             const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
             const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
             // wait times expires on underlying + finalizationBlock
-            if (latestBlock && minting.lastUnderlyingBlock.toNumber() + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
+            if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
                 const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
                 if (txs.length === 1) {
@@ -427,7 +427,7 @@ export class AgentBot {
                     const txHash = txs[0].hash;
                     // TODO is it ok to check first address in UTXO chains?
                     const sourceAddress = txs[0].inputs[0][0];
-                    await this.requestPaymentProofForMinting(minting, txHash, sourceAddress)
+                    await this.requestPaymentProofForMinting(minting, txHash, sourceAddress);
                 } else if (txs.length === 0) {
                     // minter did not pay -> request non payment proof -> unstick minting
                     await this.requestNonPaymentProofForMinting(minting);
@@ -456,10 +456,10 @@ export class AgentBot {
         const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
             minting.agentUnderlyingAddress,
             minting.paymentReference,
-            minting.valueUBA.add(minting.feeUBA),
-            minting.firstUnderlyingBlock.toNumber(),
-            minting.lastUnderlyingBlock.toNumber(),
-            minting.lastUnderlyingTimestamp.toNumber());
+            toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
+            Number(minting.firstUnderlyingBlock),
+            Number(minting.lastUnderlyingBlock),
+            Number(minting.lastUnderlyingTimestamp));
         if (request) {
             minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
             minting.proofRequestRound = request.round;
@@ -584,14 +584,14 @@ export class AgentBot {
      * If proof exists, it performs payment and sets the state of redemption in persistent state as PAID.
      */
     async payForRedemption(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
+        const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
         if (proof) {
             // corner case - agent did not pay
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
-            const paymentAmount = redemption.valueUBA.sub(redemption.feeUBA);
+            const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
             // !!! TODO: what if there are too little funds on underlying address to pay for fee?
             const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
             redemption.txHash = txHash;
@@ -606,7 +606,7 @@ export class AgentBot {
      * If proof did not expire, it requests payment proof - see requestPaymentProof().
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(redemption.lastUnderlyingBlock, redemption.lastUnderlyingTimestamp)
+        const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
         if (proof) {
             // corner case: proof expires in indexer
             await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });

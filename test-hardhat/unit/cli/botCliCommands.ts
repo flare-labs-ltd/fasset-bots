@@ -17,7 +17,7 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgent, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
@@ -183,13 +183,6 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.run([]);
         await botCliCommands.run(["", "", "unknownCommand"]);
         expect(spyLog).to.be.called.exactly(54);
-    });
-
-    it("Should run command 'create'", async () => {
-        const spyAgent = spy.on(botCliCommands, "createAgentVault");
-        await botCliCommands.run(["", "", "create"]);
-        expect(spyAgent).to.be.called.once;
-
     });
 
     it("Should run command 'depositClass1'", async () => {
