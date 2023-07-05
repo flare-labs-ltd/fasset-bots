@@ -6,7 +6,7 @@ import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
-import { AgentCreated } from "../../typechain-truffle/AssetManager";
+import { AgentCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";
 import { roundUBAToAmg } from "../fasset/Conversions";
 
 export type InitialAgentData = EventArgs<AgentCreated>;
@@ -166,6 +166,10 @@ export class TrackedAgentState {
         this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
     }
 
+    handleRedeemedInCollateral(args: EventArgs<RedeemedInCollateral>): void {
+        this.mintedUBA = this.mintedUBA.sub(toBN(args.redemptionAmountUBA));
+    }
+
     handleSelfClose(args: EventArgs<SelfClose>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
     }
@@ -295,6 +299,6 @@ export class TrackedAgentState {
     }
 
     calculatePoolFee(mintingFeeUBA: BN) {
-        return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(this.agentSettings.poolFeeShareBIPS).divn(MAX_BIPS));
+        return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(toBN(this.agentSettings.poolFeeShareBIPS)).divn(MAX_BIPS));
     }
 }

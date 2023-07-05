@@ -317,6 +317,34 @@ describe("Tracked state tests", async () => {
         expect(agentAfter.poolRedeemingUBA.eq(agentBefore.poolRedeemingUBA)).to.be.true;
     });
 
+    it("Should handle event 'RedeemedInCollateral' from collateral pool self close exit", async () => {
+        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
+        const minter = await createTestMinter(context, minterAddress, chain);
+        // minter enters pool
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
+        // tweak some pool settings
+        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
+        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
+        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", { from: agentB.ownerAddress });
+        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", 88600, { from: agentB.ownerAddress });
+        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
+        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", { from: agentB.ownerAddress });
+        // minter performs minting
+        const lots = 20;
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
+        // increase fAsset allowance
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
+        // self close exit
+        const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
+        await agentB.collateralPool.selfCloseExit(tokensMinter, true, minter.underlyingAddress, { from: minter.address });
+        // handle events
+        await trackedState.readUnhandledEvents();
+        const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
+        expect(agentAfter.poolRedeemingUBA.eq(agentBefore.poolRedeemingUBA)).to.be.true;
+    });
+
     it("Should handle event 'RedemptionPerformed'", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);

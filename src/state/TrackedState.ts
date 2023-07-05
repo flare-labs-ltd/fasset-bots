@@ -139,6 +139,8 @@ export class TrackedState {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentBlocked(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionPaymentFailed(event.args);
+                } else if (eventIs(event, this.context.assetManager, 'RedeemedInCollateral')) {
+                    (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedeemedInCollateral(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingBalanceToppedUp')) {
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleUnderlyingBalanceToppedUp(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'UnderlyingWithdrawalAnnounced')) {
@@ -203,7 +205,7 @@ export class TrackedState {
         // mark as handled
         this.lastEventBlockHandled = lastBlock;
         // run state events
-        events.sort((a,b) => a.blockNumber - b.blockNumber);
+        events.sort((a, b) => a.blockNumber - b.blockNumber);
         await this.registerStateEvents(events);
         return events;
     }
