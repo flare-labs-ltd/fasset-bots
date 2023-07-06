@@ -180,7 +180,7 @@ describe("Attestation client unit tests", async () => {
         await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1)).to.eventually.be.rejectedWith(`balanceDecreasingTransaction: not proved`).and.be.an.instanceOf(Error);
     });
 
-    it("Should prove confirmed block height existence", async () => {
+    it("Should not prove confirmed block height existence", async () => {
         await useContext(true);
         chain.mine(chain.finalizationBlocks + 1);
         await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context))).to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`).and.be.an.instanceOf(Error);

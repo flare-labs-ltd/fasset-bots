@@ -142,6 +142,12 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send agent created  alert", async () => {
+        const spySend = spy.on(notifier, "sendAgentCreated");
+        notifier.sendAgentCreated("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
     it("Should send agent withdrew  class1 collateral", async () => {
         const spySend = spy.on(notifier, "sendWithdrawClass1");
         notifier.sendWithdrawClass1("agentVault", "100");
