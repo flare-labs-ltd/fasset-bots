@@ -22,6 +22,7 @@ import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 use(spies);
 
+const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
@@ -454,7 +455,6 @@ describe("Agent bot unit tests", async () => {
         const agentSettings = await agentBot.agent.getAgentSettings();
         const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
 
-        const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
         context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
         // self mint
@@ -473,7 +473,7 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // announce
-         await agentBot.agent.announceUnderlyingWithdrawal();
+        await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         agentEnt.underlyingWithdrawalWaitingForCancelation = true;
         await orm.em.persist(agentEnt).flush();
@@ -487,4 +487,49 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
+    it("Should not request proofs - cannot prove requests yet", async () => {
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
+        // chain tunning
+        chain.finalizationBlocks = 0;
+        chain.secondsPerBlock = 1;
+        chain.mine(3);
+        // minting
+        const minting = {
+            id: 3,
+            state: AgentMintingState.STARTED,
+            agentAddress: '0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59',
+            agentUnderlyingAddress: 'UNDERLYING_ACCOUNT_25377',
+            requestId: toBN(232),
+            valueUBA: toBN(20000000000),
+            feeUBA: toBN(2000000000),
+            firstUnderlyingBlock: toBN(0),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: '0x46425052664100010000000000000000000000000000000000000000000000e8',
+        };
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        await agentBot.requestNonPaymentProofForMinting(minting);
+        expect(minting.state).to.eq('started');
+        const transactionHash = await agentBot.agent.wallet.addTransaction(randomUnderlyingAddress, agentBot.agent.underlyingAddress, 1, PaymentReference.selfMint(agentBot.agent.vaultAddress));
+        await agentBot.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress);
+        expect(minting.state).to.eq('started');
+        const transactionHash1 = await agentBot.agent.wallet.addTransaction(agentBot.agent.underlyingAddress, randomUnderlyingAddress, 1, PaymentReference.selfMint(agentBot.agent.vaultAddress));
+        // redemption
+        const redemption = {
+            id: 3,
+            state: AgentRedemptionState.PAID,
+            agentAddress: '0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59',
+            paymentAddress: randomUnderlyingAddress,
+            requestId: toBN(232),
+            valueUBA: toBN(20000000000),
+            feeUBA: toBN(2000000000),
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            paymentReference: '0x46425052664100010000000000000000000000000000000000000000000000e8',
+            txHash: transactionHash1
+        };
+        await agentBot.requestPaymentProof(redemption);
+        expect(redemption.state).to.eq('paid');
+    });
 });
