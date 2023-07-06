@@ -17,7 +17,7 @@ import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { readFileSync } from "fs";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
-import { BlockchainWalletHelper } from "../underlying-chain/BlockChainWalletHelper";
+import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
@@ -207,7 +207,7 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
                     url: requireEnv('ALGO_ALGOD_URL_WALLET'),
                     token: ""
                 },
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY
             } as AlgoMccCreate);
         case SourceId.BTC:
             return new WALLET.BTC({
@@ -235,7 +235,7 @@ export function createWalletClient(sourceId: SourceId, inTestnet?: boolean): WAL
                 url: requireEnv('XRP_URL_WALLET'),
                 username: "",
                 password: "",
-                apiTokenKey: process.env.FLARE_API_PORTAL_KEY || ""
+                apiTokenKey: process.env.FLARE_API_PORTAL_KEY
             } as XrpMccCreate);
         default:
             throw new Error(`SourceId ${sourceId} not supported.`);

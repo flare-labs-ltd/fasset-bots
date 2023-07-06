@@ -77,6 +77,11 @@ describe("System keeper tests", async () => {
         // check agent status
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
+        // check again to fulfill branch test
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await systemKeeper.runStep();
+        const status2_again = await getAgentStatus(agentBot);
+        assert.equal(status2_again, AgentStatus.CCB);
         // change prices
         await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
@@ -86,6 +91,11 @@ describe("System keeper tests", async () => {
         // check agent status
         const status3 = await getAgentStatus(agentBot);
         assert.equal(status3, AgentStatus.LIQUIDATION);
+        // check again to fulfill branch test
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await systemKeeper.runStep();
+        const status3_again = await getAgentStatus(agentBot);
+        assert.equal(status3_again, AgentStatus.LIQUIDATION);
         // change prices
         await context.assetFtso.setCurrentPrice(toBNExp(10, 4), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 4), 0);
@@ -123,6 +133,8 @@ describe("System keeper tests", async () => {
         // increase time to get liquidation
         const settings = await context.assetManager.getSettings();
         await time.increase(settings.ccbTimeSeconds);
+        // add trigger to execute
+        await context.ftsoManager.mockFinalizePriceEpoch();
         await systemKeeper.runStep();
         const status3 = await getAgentStatus(agentBot);
         assert.equal(status3, AgentStatus.LIQUIDATION);

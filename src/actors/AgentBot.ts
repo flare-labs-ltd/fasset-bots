@@ -473,7 +473,7 @@ export class AgentBot {
      * If proof cannot be obtained, it sends notification to owner.
      */
     async checkNonPayment(minting: AgentMinting): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
@@ -481,7 +481,7 @@ export class AgentBot {
             minting.state = AgentMintingState.DONE;
             this.mintingExecuted(minting, true);
         } else {
-            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -490,14 +490,14 @@ export class AgentBot {
      * If proof cannot be obtained, it sends notification to owner.
      */
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound ?? 0, minting.proofRequestData ?? "");
+            this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -613,7 +613,7 @@ export class AgentBot {
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
-            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash ?? "");
+            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
             const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
             if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
                 await this.requestPaymentProof(redemption);
@@ -626,7 +626,7 @@ export class AgentBot {
      * Sends request for redemption payment proof, sets state for redemption in persistent state to REQUESTED_PROOF.
      */
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash ?? "", this.agent.underlyingAddress, redemption.paymentAddress);
+        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_PROOF;
             redemption.proofRequestRound = request.round;
@@ -640,14 +640,14 @@ export class AgentBot {
      * If proof cannot be obtained, it sends notification to owner.
      */
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound ?? 0, redemption.proofRequestData ?? "");
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
             await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
-            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound ?? 0, redemption.proofRequestData ?? "", true);
+            this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!, true);
         }
     }
 
