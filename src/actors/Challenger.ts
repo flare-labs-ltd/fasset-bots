@@ -68,7 +68,7 @@ export class Challenger {
         // Underlying chain events
         const from = this.lastEventUnderlyingBlockHandled;
         const to = await this.getLatestUnderlyingBlock();
-        const transactions = await this.state.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
+        const transactions = await this.state.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to, true);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
         }

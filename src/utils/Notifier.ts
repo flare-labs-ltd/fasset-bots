@@ -75,13 +75,13 @@ export class Notifier {
         this.send(LIQUIDATION_STARTED_ALERT, `Liquidation has started for agent ${agentVault} at ${timestamp}.`);
     }
 
-    sendFullLiquidationAlert(agentVault: string, timestamp: string, payment1?: string, payment2?: string) {
+    sendFullLiquidationAlert(agentVault: string, payment1?: string, payment2?: string) {
         if (payment1 && payment2) {
-            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation since ${timestamp} due to duplicate payment: ${payment1} and ${payment2}.`);
+            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to duplicate payment: ${payment1} and ${payment2}.`);
         } else if (payment1) {
-            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation since ${timestamp} due to illegal payment: ${payment1}.`);
+            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to illegal payment: ${payment1}.`);
         } else {
-            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation since ${timestamp} due to negative underlying free balance.`);
+            this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to negative underlying free balance.`);
         }
     }
 

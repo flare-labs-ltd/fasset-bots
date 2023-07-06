@@ -46,9 +46,9 @@ describe("Notifier tests", async () => {
 
     it("Should send full liquidation alert", async () => {
         const spySend = spy.on(notifier, "sendFullLiquidationAlert");
-        notifier.sendFullLiquidationAlert("agentVault", "0", "pay1", "pay2");
-        notifier.sendFullLiquidationAlert("agentVault", "0", "pay1");
-        notifier.sendFullLiquidationAlert("agentVault", "0");
+        notifier.sendFullLiquidationAlert("agentVault", "pay1", "pay2");
+        notifier.sendFullLiquidationAlert("agentVault", "pay1");
+        notifier.sendFullLiquidationAlert("agentVault");
         expect(spySend).to.have.been.called.exactly(3);
     });
 

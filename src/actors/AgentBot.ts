@@ -141,11 +141,11 @@ export class AgentBot {
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     this.notifier.sendLiquidationWasPerformed(event.args.agentVault, event.args.valueUBA);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp, event.args.transactionHash1, event.args.transactionHash2);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
                 } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
-                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.timestamp, event.args.transactionHash);
+                    this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
                 }
             }
         }).catch(error => {
