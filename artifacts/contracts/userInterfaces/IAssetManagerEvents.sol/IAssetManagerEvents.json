@@ -841,37 +841,6 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "paidClass1Wei",
-          "type": "uint256"
-        }
-      ],
-      "name": "RedeemedInCollateral",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "redeemer",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "redemptionAmountUBA",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
           "name": "redeemedClass1CollateralWei",
           "type": "uint256"
         },
@@ -1046,12 +1015,6 @@
           "indexed": true,
           "internalType": "address",
           "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "redeemer",
           "type": "address"
         },
         {
