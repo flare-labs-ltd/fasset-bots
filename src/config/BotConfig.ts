@@ -17,7 +17,7 @@ import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { readFileSync } from "fs";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
-import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
+import { BlockchainWalletHelper } from "../underlying-chain/BlockChainWalletHelper";
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');

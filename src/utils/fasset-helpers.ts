@@ -2,11 +2,9 @@ import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { artifacts } from "./artifacts";
-import { requireEnv, toBN, toNumber } from "./helpers";
+import { toBN, toNumber } from "./helpers";
 
 const IFtso = artifacts.require('IFtso');
-const NATIVE_TOKEN_FTSO_SYMBOL: string = requireEnv('NATIVE_TOKEN_FTSO_SYMBOL');
-const NATIVE_ASSET_FTSO_SYMBOL: string = requireEnv('NATIVE_ASSET_FTSO_SYMBOL');
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -42,8 +40,6 @@ export async function attestationWindowSeconds(context: IAssetTrackedStateContex
 }
 
 export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, symbol: string) {
-    //TODO HACK - due to assetFtsoSymbol: 'XRP' in poolcollateral
-    const tokenFtsoSymbol = symbol === "NAT" ? NATIVE_TOKEN_FTSO_SYMBOL : symbol === "XRP" ? NATIVE_ASSET_FTSO_SYMBOL : symbol;
-    const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(tokenFtsoSymbol);
+    const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(symbol);
     return await IFtso.at(ftsoAddress);
 }

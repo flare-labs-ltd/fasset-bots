@@ -18,7 +18,7 @@ const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 
 const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
-const attestationClientAddress: string = requireEnv('ATTESTATION_CLIENT_ADDRESS');
+const attestationClientAddress: string = requireEnv('STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS');
 const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
 const ownerAddress: string = requireEnv('OWNER_ADDRESS');
 

@@ -5,7 +5,6 @@ import { createFtsosHelper } from "../utils/fasset-helpers";
 import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
 export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 
-const IFtso = artifacts.require('IFtso');
 const IERC20 = artifacts.require('IERC20')
 
 export async function tokenContract(tokenAddress: string) {

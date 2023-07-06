@@ -8,7 +8,7 @@ import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
-import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
+import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockChainWalletHelper";
 use(chaiAsPromised);
 
 let orm: ORM;

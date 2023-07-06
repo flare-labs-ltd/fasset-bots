@@ -29,7 +29,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(botCliCommands.ownerAddress).to.not.be.null;
     });
 
-    it.skip("Should create agent bot via bot cli commands", async () => {
+    it("Should create agent bot via bot cli commands", async () => {
         const agent = await botCliCommands.createAgentVault();
         expect(agent!.underlyingAddress).is.not.null;
         expect(agent!.ownerAddress).to.eq(ownerAddress);
@@ -37,7 +37,7 @@ describe("Bot cli commands unit tests", async () => {
         await agent!.announceDestroy();
     });
 
-    it.skip("Should run command 'create'", async () => {
+    it("Should run command 'create'", async () => {
         const spyAgent = spy.on(botCliCommands, "createAgentVault");
         await botCliCommands.run(["", "", "create"]);
         expect(spyAgent).to.be.called.once;

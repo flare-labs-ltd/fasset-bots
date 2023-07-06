@@ -16,6 +16,7 @@ import { Notifier } from "../../../src/utils/Notifier";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { requiredEventArgs } from "../../../src/utils/events/truffle";
 
 const RPC_URL: string = requireEnv('RPC_URL');
 
@@ -37,21 +38,25 @@ describe("Agent bot tests - coston", async () => {
         challengerAddress = accounts[3];
         botConfig = await createAgentBotConfig(runConfig);
         orm = botConfig.orm;
+        context = await createAssetContext(botConfig, botConfig.chains[0]);
     });
 
     beforeEach(async () => {
-        context = await createAssetContext(botConfig, botConfig.chains[0]);
         runner = new ScopedRunner();
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
     });
 
-
-    it.skip("Should create agent bot", async () => {
+    it("Should create agent bot", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+        // read from entity
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new Notifier())
+        expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
+        expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
         await agentBot.agent.announceDestroy();
     });
@@ -75,11 +80,26 @@ describe("Agent bot tests - coston", async () => {
         expect(challenger.address).to.eq(challengerAddress);
     });
 
-    it.skip("Should read agent bot from entity", async () => {
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier())
-        expect(agentBot.agent.underlyingAddress).is.not.null;
-        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+    it.skip("Clean agents if allowed", async () => {
+        const list = await context.assetManager.getAllAgents(0, 20);
+        for (const agentAddress of list[0]) {
+            try {
+                const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentAddress, active: true } as FilterQuery<AgentEntity>);
+                const res = await context.assetManager.destroyAgent(agentAddress, ownerAddress, { from: ownerAddress });
+                const eventArgs = requiredEventArgs(res, 'AgentDestroyed');
+                if (eventArgs) {
+                    agentEnt.active = false;
+                    await orm.em.persistAndFlush(agentEnt);
+                }
+            } catch (e) {
+                if (e instanceof Error) {
+                    console.log(e.message);
+                    if (e.message.includes('destroy not announced')) {
+                        await context.assetManager.announceDestroyAgent(agentAddress, { from: ownerAddress });
+                    }
+                }
+            }
+        }
     });
 
 });
