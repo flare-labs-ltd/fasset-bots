@@ -446,6 +446,20 @@ export interface PoolTokenRedemptionAnnounced {
   };
 }
 
+export interface RedeemedInCollateral {
+  name: "RedeemedInCollateral";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    redemptionAmountUBA: BN;
+    paidClass1Wei: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
 export interface RedemptionDefault {
   name: "RedemptionDefault";
   args: {
@@ -532,6 +546,7 @@ export interface RedemptionRequested {
   name: "RedemptionRequested";
   args: {
     agentVault: string;
+    redeemer: string;
     requestId: BN;
     paymentAddress: string;
     valueUBA: BN;
@@ -541,14 +556,15 @@ export interface RedemptionRequested {
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
     0: string;
-    1: BN;
-    2: string;
-    3: BN;
+    1: string;
+    2: BN;
+    3: string;
     4: BN;
     5: BN;
     6: BN;
     7: BN;
-    8: string;
+    8: BN;
+    9: string;
   };
 }
 
@@ -681,6 +697,7 @@ type AllEvents =
   | MintingExecuted
   | MintingPaymentDefault
   | PoolTokenRedemptionAnnounced
+  | RedeemedInCollateral
   | RedemptionDefault
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed

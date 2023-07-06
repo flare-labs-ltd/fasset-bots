@@ -241,6 +241,11 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  fAssetRequiredForSelfCloseExit(
+    _tokenAmountWei: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   lockedTokensOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
@@ -694,6 +699,11 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     fAssetFeesOf(
       _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    fAssetRequiredForSelfCloseExit(
+      _tokenAmountWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
