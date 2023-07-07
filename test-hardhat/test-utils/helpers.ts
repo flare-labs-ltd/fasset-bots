@@ -52,7 +52,7 @@ export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM,
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
-export async function mintClass1ToOwner(vaultAddress: string, amount: BNish, class1TokenAddress: string, ownerAddress: string): Promise<void> {
+export async function mintClass1ToOwner(amount: BNish, class1TokenAddress: string, ownerAddress: string): Promise<void> {
     const class1Token = await ERC20Mock.at(class1TokenAddress);
     await class1Token.mintAmount(ownerAddress, amount);
 }
@@ -126,7 +126,7 @@ export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotCo
 export async function mintAndDepositClass1ToOwner(context: IAssetContext, agent: Agent, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
     const class1Token = await agent.getClass1CollateralToken();
     const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
-    await mintClass1ToOwner(agent.vaultAddress, depositAmount, class1Token!.token, ownerAddress);
+    await mintClass1ToOwner(depositAmount, class1Token!.token, ownerAddress);
     return class1TokenContract;
 }
 

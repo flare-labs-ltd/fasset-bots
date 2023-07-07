@@ -549,7 +549,7 @@ describe("Agent bot tests", async () => {
         expect(spyLowOwnerBalance).to.have.been.called.once;
         // top up ownerAddress
         const deposit = toBNExp(5_000_000, 18).toString();
-        await mintClass1ToOwner(agentBot.agent.vaultAddress, deposit, (await agentBot.agent.getAgentInfo()).class1CollateralToken, ownerAddress);
+        await mintClass1ToOwner(deposit, (await agentBot.agent.getAgentInfo()).class1CollateralToken, ownerAddress);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
         // send notifications: top up successful
