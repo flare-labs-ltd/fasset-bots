@@ -1,4 +1,5 @@
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { MockChainWallet } from "../../src/mock/MockChain";
 import { InitialAgentData, TrackedAgentState } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
@@ -8,6 +9,7 @@ export class FuzzingStateAgent extends TrackedAgentState {
     constructor(
         parent: TrackedState,
         data: InitialAgentData,
+        public wallet: MockChainWallet
     ) {
         super(parent, data);
     }
@@ -29,7 +31,7 @@ export class FuzzingStateAgent extends TrackedAgentState {
         problems += checker.checkEquality(`${agentName}.underlyingFreeBalanceUBA`, agentInfo.freeUnderlyingBalanceUBA, this.freeUnderlyingBalanceUBA);
         // minimum underlying backing (unless in full liquidation)
         if (this.status !== AgentStatus.FULL_LIQUIDATION) {
-            const underlyingBalanceUBA = await this.parent.context.chain.getBalance(this.underlyingAddress);
+            const underlyingBalanceUBA = await this.wallet.getBalance(this.underlyingAddress);
             problems += checker.checkNumericDifference(`${agentName}.underlyingBalanceUBA`, underlyingBalanceUBA, 'gte', this.mintedUBA.add(this.freeUnderlyingBalanceUBA));
         }
         // dust

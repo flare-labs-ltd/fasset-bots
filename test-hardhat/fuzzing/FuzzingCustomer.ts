@@ -38,7 +38,7 @@ export class FuzzingCustomer {
     }
 
     static async createTest(runner: FuzzingRunner, address: string, underlyingAddress: string, underlyingBalance: BN) {
-        const chain = runner.context.chain;
+        const chain = runner.context.blockchainIndexer.chain;
         if (!(chain instanceof MockChain)) assert.fail("only for mock chains");
         chain.mint(underlyingAddress, underlyingBalance);
         const wallet = new MockChainWallet(chain);
@@ -63,7 +63,7 @@ export class FuzzingCustomer {
         if (coinFlip(0.5)) {
             txHash = await this.minter.performMintingPayment(crt);
             // wait for finalization
-            await this.runner.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash);//TODO check if ok, there is scope in original
+            await this.runner.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);//TODO check if ok, there is scope in original
             // execute
             await this.minter.executeMinting(crt, txHash)
                 .catch(e => scope.exitOnExpectedError(e, ['payment failed']));  // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
@@ -132,7 +132,7 @@ export class FuzzingCustomer {
         }
     */
     async redemptionDefault(scope: EventScope, ticket: EventArgs<RedemptionRequested>) {
-        this.runner.comment(`req=${ticket.requestId}: starting default, block=${(this.runner.context.chain as MockChain).blockHeight()}`, `${this.name}`);
+        this.runner.comment(`req=${ticket.requestId}: starting default, block=${(this.runner.context.blockchainIndexer.chain as MockChain).blockHeight()}`, `${this.name}`);
         const result = await this.redeemer.redemptionPaymentDefault(ticket)
             .catch(e => expectErrors(e, ['invalid request id']))    // can happen if agent confirms failed payment
             .catch(e => scope.exitOnExpectedError(e, []));

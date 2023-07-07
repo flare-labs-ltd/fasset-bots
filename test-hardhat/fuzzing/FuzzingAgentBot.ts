@@ -20,7 +20,7 @@ export class FuzzingAgentBot {
     ) {
     }
 
-    async selfMint(scope: EventScope) {
+    async selfMint(scope: EventScope, chain: MockChain) {
         const agent = this.agentBot.agent;   // save in case it is destroyed and re-created
         const agentInfo = await this.agentBot.context.assetManager.getAgentInfo(agent.vaultAddress);
         const lotSize = getLotSize(await this.agentBot.context.assetManager.getSettings());
@@ -30,10 +30,10 @@ export class FuzzingAgentBot {
         const poolFeeUBA = mintedAmountUBA.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS).mul(toBN(agentInfo.poolFeeShareBIPS)).divn(MAX_BIPS);
         const mintingUBA = mintedAmountUBA.add(poolFeeUBA);
         // perform payment
-        checkedCast(this.agentBot.context.chain, MockChain).mint(this.ownerUnderlyingAddress, mintingUBA);
+        checkedCast(chain, MockChain).mint(this.ownerUnderlyingAddress, mintingUBA);
         const txHash = await agent.wallet.addTransaction(this.ownerUnderlyingAddress, agent.underlyingAddress, mintingUBA, PaymentReference.selfMint(agent.vaultAddress));
         // wait for finalization
-        await this.agentBot.context.blockChainIndexerClient.waitForUnderlyingTransactionFinalization(txHash); //TODO - check if it is ok
+        await this.agentBot.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO - check if it is ok
         // execute
         const proof = await this.agentBot.context.attestationProvider.provePayment(txHash, null, agent.underlyingAddress);
         await this.agentBot.context.assetManager.selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.ownerAddress })
@@ -71,7 +71,7 @@ export class FuzzingAgentBot {
 
     async makeIllegalTransaction(): Promise<void> {
         const agent = this.agentBot.agent;   // save in case it is destroyed and re-created
-        const balance = await this.agentBot.context.chain.getBalance(agent.underlyingAddress);
+        const balance = await this.agentBot.context.wallet.getBalance(agent.underlyingAddress);
         if (balance.isZero()) return;
         const amount = randomBN(balance);
         this.runner.comment(`is making illegal transaction of ${formatBN(amount)} from ${agent.underlyingAddress}`, `${this.runner.eventFormatter.formatAddress(agent.vaultAddress)}`);
@@ -105,7 +105,8 @@ export class FuzzingAgentBot {
         // announce
         const reference = await this.botCliCommands.announceUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);
         if (coinFlip(0.8) && reference) {
-            await this.botCliCommands.performUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, amount.toString(), this.ownerUnderlyingAddress, reference);
+            const txHash = await this.botCliCommands.performUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, amount.toString(), this.ownerUnderlyingAddress, reference);
+            await this.botCliCommands.confirmUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, txHash);
         } else if(reference) {
             // cancel withdrawal
             await this.botCliCommands.cancelUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);

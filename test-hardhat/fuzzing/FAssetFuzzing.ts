@@ -77,13 +77,13 @@ describe("Fuzzing tests", async () => {
         // create context
         chainInfo = testChainInfo[CHAIN as keyof typeof testChainInfo] ?? assert.fail(`Invalid chain ${CHAIN}`);
         context = await createTestAssetContext(governance, chainInfo)
-        chain = context.chain as MockChain;
+        chain = context.blockchainIndexer.chain as MockChain;
         // create interceptor
         eventFormatter = new EventFormatter();
         notifier = new FuzzingNotifier(new Notifier, eventFormatter);
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
-        commonTrackedState = new FuzzingState(context, lastBlock);
+        commonTrackedState = new FuzzingState(context, lastBlock, new MockChainWallet(chain));
         await commonTrackedState.initialize();
         // runner
         runner = new FuzzingRunner(context, AVOID_ERRORS, commonTrackedState, eventFormatter);
@@ -110,9 +110,8 @@ describe("Fuzzing tests", async () => {
                 loopDelay: 0,
                 chains: [{
                     chainInfo: chainInfo,
-                    chain: chain,
                     wallet: new MockChainWallet(chain),
-                    blockChainIndexerClient: new MockIndexer("", chainId, chain),
+                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
                     stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
                     assetManager: ""
                 }],
@@ -152,7 +151,7 @@ describe("Fuzzing tests", async () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.chain.getBlockHeight());
+        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight());
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeper = new TimeKeeper(context);
@@ -161,11 +160,11 @@ describe("Fuzzing tests", async () => {
         await refreshAvailableAgents();
         // actions
         const actions: Array<[() => Promise<void>, number]> = [
-            [testMint, 100],
-            [testRedeem, 100],
+            [testMint, 50],
+            [testRedeem, 50],
             [testSelfMint, 10],
             [testSelfClose, 10],
-            [testUnderlyingWithdrawal, 15],
+            [testUnderlyingWithdrawal, 40],
             [refreshAvailableAgents, 6],
             [testIllegalTransaction, ILLEGAL_PROB],
             [testDoublePayment, ILLEGAL_PROB],
@@ -236,6 +235,7 @@ describe("Fuzzing tests", async () => {
                 await checkInvariants(false);     // state change may happen during check, so we don't have any failure here
                 runner.comment(`-----  LOOP ${loop}  ${await timeInfo()}  -----`);
                 await timeline.skipTime(100);
+                await commonTrackedState.readUnhandledEvents();
             }
         }
         timeKeeper.clear();
@@ -292,7 +292,7 @@ describe("Fuzzing tests", async () => {
 
     async function testSelfMint() {
         const agentBot = randomChoice(agentBots);
-        runner.startThread((scope) => agentBot.selfMint(scope));
+        runner.startThread((scope) => agentBot.selfMint(scope, chain));
     }
 
     async function testRedeem() {

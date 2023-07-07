@@ -18,8 +18,8 @@ export class FuzzingNotifier {
     sendLiquidationStartAlert(agentVault: string, timestamp: string): void {
         this.notifier.sendLiquidationStartAlert(this.eventFormatter.formatAddress(agentVault), timestamp);
     }
-    sendFullLiquidationAlert(agentVault: string, timestamp: string, payment1?: string | undefined, payment2?: string | undefined): void {
-        this.notifier.sendFullLiquidationAlert(this.eventFormatter.formatAddress(agentVault), timestamp, payment1, payment2);
+    sendFullLiquidationAlert(agentVault: string, payment1?: string | undefined, payment2?: string | undefined): void {
+        this.notifier.sendFullLiquidationAlert(this.eventFormatter.formatAddress(agentVault), payment1, payment2);
     }
     sendLiquidationWasPerformed(agentVault: string, value: string): void {
         this.notifier.sendLiquidationWasPerformed(this.eventFormatter.formatAddress(agentVault), value);
