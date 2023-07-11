@@ -18,6 +18,8 @@ import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/I
 import { readFileSync } from "fs";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const RPC_URL: string = requireEnv('RPC_URL');
