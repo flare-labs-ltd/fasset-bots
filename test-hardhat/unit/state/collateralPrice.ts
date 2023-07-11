@@ -7,10 +7,8 @@ import { createTestAssetContext } from "../../test-utils/create-test-asset-conte
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { TokenPrice, TokenPriceReader } from "../../../src/state/TokenPrice";
-import { artifacts } from "../../../src/utils/artifacts";
 use(chaiAsPromised);
 
-const IFtsoRegistry = artifacts.require("IFtsoRegistry");
 const amgSettings = {
     assetMintingDecimals: 6,
     assetMintingGranularityUBA: 1
@@ -43,7 +41,6 @@ describe("AMG price unit tests", async () => {
 
 describe("Collateral price unit tests", async () => {
     let settings: AssetManagerSettings;
-    let ftsoRegistry;
     let priceReader: TokenPriceReader;
     let assetPrice: TokenPrice;
     let tokenPrice: TokenPrice;
@@ -53,8 +50,7 @@ describe("Collateral price unit tests", async () => {
         const accounts = await web3.eth.getAccounts();
         const context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         settings = await context.assetManager.getSettings();
-        ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        priceReader = new TokenPriceReader(ftsoRegistry);
+        priceReader = await TokenPriceReader.create(settings);
         assetPrice = new TokenPrice(price, timestamp, decimals);
         tokenPrice = assetPrice;
         amgPrice = new AMGPrice(AMG_TO_TOKEN_WEI, toBN(amgSettings.assetMintingDecimals), toBN(amgSettings.assetMintingGranularityUBA));

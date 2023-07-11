@@ -64,7 +64,7 @@ export class TrackedState {
     }
 
     async getPrices(): Promise<[Prices, Prices]> {
-        return await Prices.getPrices(this.context.ftsoRegistry, this.settings, this.context.collaterals);
+        return await Prices.getPrices(this.settings, this.context.collaterals);
     }
 
     async registerStateEvents(events: EvmEvent[]): Promise<void> {

@@ -2,14 +2,11 @@ import { CollateralData } from "../../test/test-utils/CollateralData";
 import { CollateralPoolTokenInstance } from "../../typechain-truffle/CollateralPoolToken";
 import { AMGPrice, CollateralPrice } from "../state/CollateralPrice";
 import { TokenPrice, TokenPriceReader } from "../state/TokenPrice";
-import { artifacts } from "../utils/artifacts";
 import { exp10 } from "../utils/helpers";
 import { AssetManagerSettings, CollateralType } from "./AssetManagerTypes";
 import { amgToTokenWeiPrice } from "./Conversions";
 
 export const POOL_TOKEN_DECIMALS = 18;
-
-const IFtsoRegistry = artifacts.require("IFtsoRegistry") ;
 
 export enum CollateralKind { CLASS1, POOL, AGENT_POOL_TOKENS }
 
@@ -20,8 +17,7 @@ export class CollateralDataFactory {
     ) { }
 
     static async create(settings: AssetManagerSettings) {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        const priceReader = new TokenPriceReader(ftsoRegistry);
+        const priceReader = await TokenPriceReader.create(settings);
         return new CollateralDataFactory(settings, priceReader);
     }
 

@@ -361,7 +361,7 @@ describe("Agent bot tests", async () => {
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
         const endBalance = await class1Token.balanceOf(someAddress);
-        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken, context);
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken, settings);
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
@@ -522,9 +522,18 @@ describe("Agent bot tests", async () => {
         await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
         // withdraw class1 and pool tokens
         await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
-        await agentBot.runStep(orm.em);
-        // announce destroy
-        await agentBot.runStep(orm.em);
+        // run agent's steps until destroy is announced
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);
+            if (agentEnt.waitingForDestructionCleanUp === false) break;
+        }
+        // await agentBot.runStep(orm.em);
         const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.DESTROYING);
     });

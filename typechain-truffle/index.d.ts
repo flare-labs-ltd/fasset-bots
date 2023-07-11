@@ -20,15 +20,19 @@ import { AssetManagerControllerContract } from "./AssetManagerController";
 import { CollateralPoolContract } from "./CollateralPool";
 import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
+import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
 import { FAssetContract } from "./FAsset";
+import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
+import { ICollateralPoolTokenFactoryContract } from "./ICollateralPoolTokenFactory";
 import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
+import { IPriceReaderContract } from "./IPriceReader";
 import { IWhitelistContract } from "./IWhitelist";
 import { IWNatContract } from "./IWNat";
 import { AgentsCreateDestroyContract } from "./AgentsCreateDestroy";
@@ -136,15 +140,23 @@ declare global {
       require(name: "CollateralPool"): CollateralPoolContract;
       require(name: "CollateralPoolFactory"): CollateralPoolFactoryContract;
       require(name: "CollateralPoolToken"): CollateralPoolTokenContract;
+      require(
+        name: "CollateralPoolTokenFactory"
+      ): CollateralPoolTokenFactoryContract;
       require(name: "FAsset"): FAssetContract;
+      require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
       require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
+      require(
+        name: "ICollateralPoolTokenFactory"
+      ): ICollateralPoolTokenFactoryContract;
       require(name: "IFAsset"): IFAssetContract;
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
+      require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "IWNat"): IWNatContract;
       require(name: "AgentsCreateDestroy"): AgentsCreateDestroyContract;
@@ -283,7 +295,15 @@ export {
   CollateralPoolTokenContract,
   CollateralPoolTokenInstance,
 } from "./CollateralPoolToken";
+export {
+  CollateralPoolTokenFactoryContract,
+  CollateralPoolTokenFactoryInstance,
+} from "./CollateralPoolTokenFactory";
 export { FAssetContract, FAssetInstance } from "./FAsset";
+export {
+  FtsoV1PriceReaderContract,
+  FtsoV1PriceReaderInstance,
+} from "./FtsoV1PriceReader";
 export { WhitelistContract, WhitelistInstance } from "./Whitelist";
 export {
   IAgentVaultFactoryContract,
@@ -293,6 +313,10 @@ export {
   ICollateralPoolFactoryContract,
   ICollateralPoolFactoryInstance,
 } from "./ICollateralPoolFactory";
+export {
+  ICollateralPoolTokenFactoryContract,
+  ICollateralPoolTokenFactoryInstance,
+} from "./ICollateralPoolTokenFactory";
 export { IFAssetContract, IFAssetInstance } from "./IFAsset";
 export { IIAgentVaultContract, IIAgentVaultInstance } from "./IIAgentVault";
 export {
@@ -307,6 +331,7 @@ export {
   ILiquidationStrategyContract,
   ILiquidationStrategyInstance,
 } from "./ILiquidationStrategy";
+export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export {

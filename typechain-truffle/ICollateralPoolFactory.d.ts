@@ -87,21 +87,6 @@ export interface ICollateralPoolFactoryInstance
     ): Promise<number>;
   };
 
-  createPoolToken: {
-    (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(pool: string, txDetails?: Truffle.TransactionDetails): Promise<string>;
-    sendTransaction(
-      pool: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      pool: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
     create: {
       (
@@ -170,24 +155,6 @@ export interface ICollateralPoolFactoryInstance
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
         },
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    createPoolToken: {
-      (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        pool: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      sendTransaction(
-        pool: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        pool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

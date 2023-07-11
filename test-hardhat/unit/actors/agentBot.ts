@@ -423,6 +423,9 @@ describe("Agent bot unit tests", async () => {
         // try to close vault - withdraw class 1
         await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        // try to close vault - close
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // check agent status
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.DESTROYING);
