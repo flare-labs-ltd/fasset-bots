@@ -29,9 +29,11 @@ const StateConnector = artifacts.require('StateConnectorMock');
 const GovernanceSettings = artifacts.require('GovernanceSettings');
 const VPContract = artifacts.require('VPContract');
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
+const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMock');
 const WhitelistMock = artifacts.require("WhitelistMock");
+const PriceReader = artifacts.require("FtsoV1PriceReader");
 
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
@@ -82,8 +84,11 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const ftsoRegistry = await FtsoRegistryMock.new();
     // await ftsoRegistry.addFtso(natFtso.address);
     const ftsoManager = await FtsoManagerMock.new();
+    // create price reader
+    const priceReader = await PriceReader.new(addressUpdater.address, ftsoRegistry.address);
     // create collateral pool factory
     const collateralPoolFactory = await CollateralPoolFactory.new();
+    const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new();
     // create address validator
     const addressValidator = await TrivialAddressValidatorMock.new();
     // create liquidation strategy
@@ -104,7 +109,9 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
         CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
         AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address),
-        AgentWhiteList: newContract('WhiteList', 'WhitelistMock.sol', agentWhitelist.address)
+        AgentWhiteList: newContract('WhiteList', 'WhitelistMock.sol', agentWhitelist.address),
+        CollateralPoolTokenFactory: newContract('CollateralPoolTokenFactory', 'CollateralPoolTokenFactory.sol', collateralPoolTokenFactory.address),
+        PriceReader: newContract('PriceReader', 'PriceReader.sol', priceReader.address),
     };
     // create mock chain attestation provider
     const chain = new MockChain(await time.latest());
@@ -160,13 +167,14 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         assetManagerController: contracts.AssetManagerController.address,
         fAsset: ZERO_ADDRESS, // replaced in newAssetManager()
         agentVaultFactory: contracts.AgentVaultFactory.address,
-        collateralPoolFactory: contracts.CollateralPoolFactory!.address,
+        collateralPoolFactory: contracts.CollateralPoolFactory.address,
+        collateralPoolTokenFactory: contracts.CollateralPoolTokenFactory.address,
         scProofVerifier: contracts.SCProofVerifier.address,
+        priceReader: contracts.PriceReader.address,
         underlyingAddressValidator: contracts.AddressValidator!.address,
         liquidationStrategy: liquidationStrategy,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         agentWhitelist: contracts.AgentWhiteList?.address ?? ZERO_ADDRESS,
-        ftsoRegistry: contracts.FtsoRegistry.address,
         burnAddress: parameters.burnAddress,
         chainId: chainInfo.chainId,
         collateralReservationFeeBIPS: parameters.collateralReservationFeeBIPS,

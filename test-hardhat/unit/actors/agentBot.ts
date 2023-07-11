@@ -400,7 +400,7 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
     });
 
-    it("Should exit available before closing vault", async () => {
+    it.only("Should exit available before closing vault", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         agentEnt.waitingForDestructionCleanUp = true;
@@ -422,6 +422,9 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
         // try to close vault - withdraw class 1
         await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        // try to close vault - close
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // check agent status
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);

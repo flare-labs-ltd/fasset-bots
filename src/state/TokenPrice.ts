@@ -1,4 +1,4 @@
-import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance, IPriceReaderInstance } from "../../typechain-truffle";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { createFtsosHelper } from "../utils/fasset-helpers";
@@ -6,6 +6,7 @@ import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers"
 export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
 
 const IERC20 = artifacts.require('IERC20')
+const IPriceReader = artifacts.require("IPriceReader");
 
 export async function tokenContract(tokenAddress: string) {
     return await IERC20.at(tokenAddress) as ContractWithEvents<IERC20Instance, IERC20Events>;
@@ -34,20 +35,18 @@ export class TokenPriceReader {
     priceCache: Map<string, TokenPrice> = new Map();
 
     constructor(
-        public ftsoRegistry: IFtsoRegistryInstance
+        public priceReader: IPriceReaderInstance
     ) { }
 
-    getFtso(symbol: string) {
-        return getOrCreateAsync(this.ftsoCache, symbol, async () => {
-            return await createFtsosHelper(this.ftsoRegistry, symbol);
-        });
+    static async create(settings: { priceReader: string }) {
+        const priceReader = await IPriceReader.at(settings.priceReader);
+        return new TokenPriceReader(priceReader);
     }
 
     getRawPrice(symbol: string, trusted: boolean) {
         return getOrCreateAsync(this.priceCache, `${symbol}::trusted=${trusted}`, async () => {
-            const ftso = await this.getFtso(symbol);
             const { 0: price, 1: timestamp, 2: decimals } =
-                trusted ? await ftso.getCurrentPriceWithDecimals() : await ftso.getCurrentPriceWithDecimalsFromTrustedProviders();
+                trusted ? await this.priceReader.getPrice(symbol) : await this.priceReader.getPriceFromTrustedProviders(symbol);
             return new TokenPrice(toBN(price), toBN(timestamp), toBN(decimals));
         });
     }

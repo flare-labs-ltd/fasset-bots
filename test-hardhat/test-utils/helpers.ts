@@ -9,7 +9,7 @@ import { ORM } from "../../src/config/orm";
 import { AgentB } from "../../src/fasset-bots/AgentB";
 import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
-import { AgentStatus, CollateralType } from "../../src/fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { IAssetContext } from "../../src/fasset/IAssetContext";
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
@@ -158,8 +158,8 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
     return Number(agentInfo.status) as AgentStatus;
 }
 
-export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, context: TestAssetBotContext): Promise<BN> {
-    const priceReader = new TokenPriceReader(context.ftsoRegistry);
+export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
+    const priceReader = await TokenPriceReader.create(settings);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
     return (toBN(amount).mul(toBNExp(10, expPlus))).div(stablecoinUSD.price);
