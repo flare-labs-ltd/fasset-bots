@@ -4,7 +4,7 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { BNish, fail } from "../utils/helpers";
-import { MockChain, MockChainWallet } from "./MockChain";
+import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
 
 export class Minter {

@@ -248,14 +248,3 @@ export function toBIPS(x: number | string) {
 export function exp10(n: BNish) {
     return BN_TEN.pow(toBN(n));
 }
-
-/**
- * Return the minimum of two or more BN values.
- */
-export function minBN(first: BN, ...rest: BN[]) {
-    let result = first;
-    for (const x of rest) {
-        if (x.lt(result)) result = x;
-    }
-    return result;
-}

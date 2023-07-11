@@ -10,9 +10,9 @@ const createFtsos = createAssetContextInternal.__get__("createFtsos");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { initWeb3 } from "../../../src/utils/web3";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import { requireEnv } from "../../../src/utils/helpers";
 import { artifacts } from "../../../src/utils/artifacts";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 const AddressUpdater = artifacts.require('AddressUpdater')
 const RPC_URL: string = requireEnv('RPC_URL');

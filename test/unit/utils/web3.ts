@@ -1,10 +1,10 @@
 import { initWeb3, web3 } from "../../../src/utils/web3";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import rewire from "rewire";
 import { requireEnv } from "../../../src/utils/helpers";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
 

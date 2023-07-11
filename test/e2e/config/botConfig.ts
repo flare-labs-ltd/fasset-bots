@@ -3,10 +3,10 @@ import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchai
 import { requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
-import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
 const ATTESTER_BASE_URLS: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");

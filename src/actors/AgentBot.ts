@@ -43,7 +43,6 @@ export class AgentBot {
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
             const settings = await context.assetManager.getSettings();
-            console.log(settings.requireEOAAddressProof)
             if (settings.requireEOAAddressProof) {
                 await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
             }
@@ -309,7 +308,7 @@ export class AgentBot {
      */
     async exitAvailable(agentEnt: AgentEntity) {
         const latestTimestamp = await latestBlockTimestampBN();
-        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(latestTimestamp)) {
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).lte(latestTimestamp)) {
             await this.agent.exitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
             this.notifier.sendAgentExitedAvailable(agentEnt.vaultAddress);

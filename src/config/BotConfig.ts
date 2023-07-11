@@ -1,4 +1,4 @@
-import { AlgoMccCreate, MCC, UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
+import { AlgoMccCreate, UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { EntityManager } from "@mikro-orm/core/EntityManager";

@@ -1,9 +1,9 @@
 import { expect, spy, use } from "chai";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
 import { initWeb3 } from "../../../src/utils/web3";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-actors";
 import { requireEnv } from "../../../src/utils/helpers";
 import spies from "chai-spies";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(spies);
 
 const RPC_URL: string = requireEnv('RPC_URL');

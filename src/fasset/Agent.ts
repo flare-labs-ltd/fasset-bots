@@ -13,7 +13,6 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { getAgentSettings } from "../utils/fasset-helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
-import { AgentCollateral } from "../../test/test-utils/AgentCollateral";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -44,10 +43,6 @@ export class Agent {
 
     get wallet(): IBlockChainWallet {
         return this.context.wallet;
-    }
-
-    async getAgentCollateral() {
-        return await AgentCollateral.create(this.assetManager, await this.context.assetManager.getSettings(), this.vaultAddress);
     }
 
     async getAgentSettings(): Promise<AgentSettings> {

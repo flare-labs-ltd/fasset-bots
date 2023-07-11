@@ -1,9 +1,9 @@
-import { AgentInfo, AssetManagerSettings, CollateralClass } from "../../src/fasset/AssetManagerTypes";
-import { CollateralDataFactory, CollateralKind } from "../../src/fasset/CollateralData";
-import { artifacts } from "../../src/utils/artifacts";
-import { BN_ZERO, MAX_BIPS, exp10, maxBN, minBN, toBN } from "../../src/utils/helpers";
-import { AssetManagerInstance } from "../../typechain-truffle/AssetManager";
-import { CollateralData } from "./CollateralData";
+import { AgentInfo, AssetManagerSettings, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
+import { artifacts } from "../../../src/utils/artifacts";
+import { BN_ZERO, MAX_BIPS, exp10, maxBN, toBN } from "../../../src/utils/helpers";
+import { AssetManagerInstance } from "../../../typechain-truffle";
+import { CollateralData, CollateralDataFactory, CollateralKind } from "./CollateralData";
+import { minBN } from "./helpers";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
@@ -45,19 +45,19 @@ export class AgentCollateral {
 
     freeCollateralLots() {
         const class1Lots = this.freeSingleCollateralLots(this.class1);
-        console.log("class1Lots", class1Lots.toString());
+        console.log("class1Lots", class1Lots.toString())
         const poolLots = this.freeSingleCollateralLots(this.pool);
-        console.log("poolLots", poolLots.toString());
+        console.log("poolLots", poolLots.toString())
         const agentPoolLots = this.freeSingleCollateralLots(this.agentPoolTokens);
-        console.log("agentPoolLots", agentPoolLots.toString());
+        console.log("agentPoolLots", agentPoolLots.toString())
         return minBN(class1Lots, poolLots, agentPoolLots);
     }
 
     freeSingleCollateralLots(data: CollateralData): BN {
         const collateralWei = this.freeCollateralWei(data);
-        console.log("collateralWei", collateralWei.toString());
         const lotWei = this.mintingLotCollateralWei(data);
-        console.log("lotWei", lotWei.toString());
+        console.log("collateralWei", collateralWei.toString())
+        console.log("lotWei", lotWei.toString())
         return collateralWei.div(lotWei);
     }
 

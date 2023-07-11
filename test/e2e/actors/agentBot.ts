@@ -10,12 +10,12 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
 import { Notifier } from "../../../src/utils/Notifier";
-import { initWeb3, web3 } from "../../../src/utils/web3";
-import { balanceOfClass1, cleanUp, createTestAgentBot, depositClass1Amount, getNativeAccountsFromEnv, mintClass1ToOwner } from "../../test-utils/test-actors";
+import { initWeb3 } from "../../../src/utils/web3";
+import { createTestAgentBot } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { balanceOfClass1, cleanUp, depositClass1Amount, getNativeAccountsFromEnv, mintClass1ToOwner } from "../../test-utils/test-helpers";
 
 const RPC_URL: string = requireEnv('RPC_URL');
 const buyPoolTokens = toBNExp(1600, 18);
@@ -26,8 +26,6 @@ describe("Agent bot tests - coston", async () => {
     let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let challengerAddress: string;
-    let runner: ScopedRunner;
     let state: TrackedState;
     let runConfig: AgentBotRunConfig;
     let class1TokenAddress: string;
@@ -36,20 +34,12 @@ describe("Agent bot tests - coston", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
         accounts = await initWeb3(RPC_URL, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
-        challengerAddress = accounts[3];
         botConfig = await createAgentBotConfig(runConfig);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
         class1TokenAddress = agentBotSettings.class1CollateralToken;
         await mintClass1ToOwner(class1TokenAddress, ownerAddress);
-    });
-
-    beforeEach(async () => {
-        runner = new ScopedRunner();
-        const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(context, lastBlock);
-        await state.initialize();
     });
 
     after(async () => {
@@ -90,11 +80,6 @@ describe("Agent bot tests - coston", async () => {
         const agentBotRunner = await AgentBotRunner.create(botConfig)
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
-    });
-
-    it("Should create challenger", async () => {
-        const challenger = new Challenger(runner, challengerAddress, state, await context.blockchainIndexer.getBlockHeight());
-        expect(challenger.address).to.eq(challengerAddress);
     });
 
 });

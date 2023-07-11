@@ -1,11 +1,13 @@
-import { IERC20Events } from "../fasset/IAssetContext";
-import { IERC20Instance, IFtsoInstance, IPriceReaderInstance } from "../../typechain-truffle";
-import { artifacts } from "../utils/artifacts";
-import { ContractWithEvents } from "../utils/events/truffle";
-import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
+import { AMGSettings, amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
+import { IERC20Events } from "../../../src/fasset/IAssetContext";
+import { artifacts } from "../../../src/utils/artifacts";
+import { ContractWithEvents } from "../../../src/utils/events/truffle";
+import { BN_ZERO, BNish, exp10, getOrCreateAsync, requireNotNull, toBN } from "../../../src/utils/helpers";
+import { IERC20Instance, IPriceReaderInstance } from "../../../typechain-truffle";
+import { minBN } from "./helpers";
 
-const IERC20 = artifacts.require('IERC20')
 const IPriceReader = artifacts.require("IPriceReader");
+const IERC20 = artifacts.require('IERC20');
 
 export async function tokenContract(tokenAddress: string) {
     return await IERC20.at(tokenAddress) as ContractWithEvents<IERC20Instance, IERC20Events>;
@@ -27,10 +29,39 @@ export class TokenPrice {
     fresh(relativeTo: TokenPrice, maxAge: BN) {
         return this.timestamp.add(maxAge).gte(relativeTo.timestamp);
     }
+
+    toNumber() {
+        return Number(this.price) * (10 ** -Number(this.decimals));
+    }
+
+    toFixed(displayDecimals: number = 3) {
+        return this.toNumber().toFixed(displayDecimals);
+    }
+
+    toString() {
+        return this.toNumber().toFixed(3);
+    }
+
+    amgToTokenWei(settings: AMGSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
+        return amgToTokenWeiPrice(settings, tokenDecimals, this.price, this.decimals, assetUSD.price, assetUSD.decimals);
+    }
+
+    static fromFraction(multiplier: BN, divisor: BN, timestamp: BN, decimals: BNish) {
+        decimals = toBN(decimals);
+        const price = multiplier.isZero() ? BN_ZERO : multiplier.mul(exp10(decimals)).div(divisor);
+        return new TokenPrice(price, timestamp, decimals);
+    }
+
+    priceInToken(tokenPrice: TokenPrice, decimals: BNish) {
+        decimals = toBN(decimals);
+        const multiplier = exp10(decimals.add(tokenPrice.decimals).sub(this.decimals));
+        const price = this.price.mul(multiplier).div(tokenPrice.price);
+        const timestamp = minBN(this.timestamp, tokenPrice.timestamp);
+        return new TokenPrice(price, timestamp, decimals);
+    }
 }
 
 export class TokenPriceReader {
-    ftsoCache: Map<string, IFtsoInstance> = new Map();
     priceCache: Map<string, TokenPrice> = new Map();
 
     constructor(
@@ -62,4 +93,3 @@ export class TokenPriceReader {
         }
     }
 }
-

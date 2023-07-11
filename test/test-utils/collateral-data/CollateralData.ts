@@ -1,9 +1,10 @@
-import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
-import { amgToTokenWeiPrice } from "../../src/fasset/Conversions";
-import { AMGPrice, AMGPriceConverter, CollateralPrice } from "../../src/state/CollateralPrice";
-import { TokenPrice, TokenPriceReader, tokenBalance } from "../../src/state/TokenPrice";
-import { exp10 } from "../../src/utils/helpers";
-import { CollateralPoolTokenInstance } from "../../typechain-truffle/CollateralPoolToken";
+import { AssetManagerSettings, CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
+import { amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
+import { exp10 } from "../../../src/utils/helpers";
+import { CollateralPoolTokenInstance } from "../../../typechain-truffle";
+import { AMGPrice, AMGPriceConverter, CollateralPrice } from "./CollateralPrice";
+import { TokenPrice, TokenPriceReader, tokenBalance } from "./TokenPrice";
+
 
 export const POOL_TOKEN_DECIMALS = 18;
 
