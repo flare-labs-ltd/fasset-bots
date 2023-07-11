@@ -265,7 +265,7 @@ export class AgentBot {
                 }
                 const agentInfoForDestroy = await this.agent.getAgentInfo();
                 //and wait for others to redeem
-                if (toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)) {
+                if (freePoolTokenBalance.eq(BN_ZERO) && freeClass1Balance.eq(BN_ZERO) && toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)) {
                     // agent checks if clean is complete, agent can announce destroy
                     const destroyAllowedAt = await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
