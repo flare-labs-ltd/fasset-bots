@@ -3061,6 +3061,11 @@
             },
             {
               "internalType": "address",
+              "name": "collateralPoolTokenFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
               "name": "whitelist",
               "type": "address"
             },
@@ -3091,7 +3096,7 @@
             },
             {
               "internalType": "address",
-              "name": "ftsoRegistry",
+              "name": "priceReader",
               "type": "address"
             },
             {

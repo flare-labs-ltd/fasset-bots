@@ -224,6 +224,11 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  lockedTokensOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   optOutOfAirdrop: {
     (_distribution: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -418,6 +423,11 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
   topupCollateralRatioBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   topupTokenPriceFactorBIPS(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  transferableTokensOf(
+    _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
@@ -643,6 +653,11 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    lockedTokensOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     optOutOfAirdrop: {
       (_distribution: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -839,6 +854,11 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<BN>;
 
     topupTokenPriceFactorBIPS(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    transferableTokensOf(
+      _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
