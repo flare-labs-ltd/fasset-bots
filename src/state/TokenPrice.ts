@@ -1,11 +1,13 @@
-import { IERC20Instance, IFtsoInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { IERC20Contract, IERC20Instance, IFtsoContract, IFtsoInstance, IFtsoRegistryContract, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { AMGSettings, amgToTokenWeiPrice } from "../fasset/Conversions";
+import { IERC20Events } from "../fasset/IAssetContext";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents } from "../utils/events/truffle";
-import { createFtsosHelper } from "../utils/fasset-helpers";
-import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
-export type IERC20Events = import('../../typechain-truffle/IERC20').AllEvents;
+import { BN_ZERO, BNish, exp10, getOrCreateAsync, minBN, requireNotNull, toBN } from "../utils/helpers";
 
-const IERC20 = artifacts.require('IERC20')
+const IFtso = artifacts.require("IFtso");
+const IFtsoRegistry = artifacts.require("IFtsoRegistry");
+const IERC20 = artifacts.require('IERC20');
 
 export async function tokenContract(tokenAddress: string) {
     return await IERC20.at(tokenAddress) as ContractWithEvents<IERC20Instance, IERC20Events>;
@@ -27,6 +29,36 @@ export class TokenPrice {
     fresh(relativeTo: TokenPrice, maxAge: BN) {
         return this.timestamp.add(maxAge).gte(relativeTo.timestamp);
     }
+
+    toNumber() {
+        return Number(this.price) * (10 ** -Number(this.decimals));
+    }
+
+    toFixed(displayDecimals: number = 3) {
+        return this.toNumber().toFixed(displayDecimals);
+    }
+
+    toString() {
+        return this.toNumber().toFixed(3);
+    }
+
+    amgToTokenWei(settings: AMGSettings, tokenDecimals: BNish, assetUSD: TokenPrice) {
+        return amgToTokenWeiPrice(settings, tokenDecimals, this.price, this.decimals, assetUSD.price, assetUSD.decimals);
+    }
+
+    static fromFraction(multiplier: BN, divisor: BN, timestamp: BN, decimals: BNish) {
+        decimals = toBN(decimals);
+        const price = multiplier.isZero() ? BN_ZERO : multiplier.mul(exp10(decimals)).div(divisor);
+        return new TokenPrice(price, timestamp, decimals);
+    }
+
+    priceInToken(tokenPrice: TokenPrice, decimals: BNish) {
+        decimals = toBN(decimals);
+        const multiplier = exp10(decimals.add(tokenPrice.decimals).sub(this.decimals));
+        const price = this.price.mul(multiplier).div(tokenPrice.price);
+        const timestamp = minBN(this.timestamp, tokenPrice.timestamp);
+        return new TokenPrice(price, timestamp, decimals);
+    }
 }
 
 export class TokenPriceReader {
@@ -37,9 +69,15 @@ export class TokenPriceReader {
         public ftsoRegistry: IFtsoRegistryInstance
     ) { }
 
+    static async create(settings: { ftsoRegistry: string }) {
+        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
+        return new TokenPriceReader(ftsoRegistry);
+    }
+
     getFtso(symbol: string) {
         return getOrCreateAsync(this.ftsoCache, symbol, async () => {
-            return await createFtsosHelper(this.ftsoRegistry, symbol);
+            const ftsoAddress = await this.ftsoRegistry.getFtsoBySymbol(symbol);
+            return await IFtso.at(ftsoAddress);
         });
     }
 
@@ -64,3 +102,4 @@ export class TokenPriceReader {
         }
     }
 }
+

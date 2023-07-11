@@ -32,11 +32,15 @@ export class BotCliCommands {
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotRunConfig;
+        // console.log(runConfig);
         const accounts = await initWeb3(RPC_URL, [OWNER_PRIVATE_KEY], null);
         this.agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+        // console.log(this.agentSettingsConfig);
         this.botConfig = await createAgentBotConfig(runConfig);
+        // console.log(this.botConfig );
         this.ownerAddress = accounts[0];
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
+        console.log(await this.context.assetManager.getSettings())
         console.log(chalk.cyan('Environment successfully initialized.'));
     }
 

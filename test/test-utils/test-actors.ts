@@ -21,6 +21,7 @@ const deployPrivateKey = requireEnv('DEPLOY_PRIVATE_KEY');
 export const depositClass1Amount = toBNExp(1_000_000, 18);
 
 const ERC20Mock = artifacts.require('ERC20Mock');
+const Whitelist = artifacts.require('Whitelist');
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -39,6 +40,8 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
 }
 
 export function getNativeAccountsFromEnv() {
+    // owner is always first in array
+    // deployer account / current coston governance in always last in array
     return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey, deployPrivateKey];
 }
 
@@ -88,8 +91,6 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     const agentInfoForAnnounce = await context.assetManager.getAgentInfo(agentAddress);
     const freeClass1Balance = toBN(agentInfoForAnnounce.freeClass1CollateralWei);
     const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);
-    const wNAtBalance = await context.wNat.balanceOf(ownerAddress);
-    console.log(wNAtBalance.toString())
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     if (freeClass1Balance.gt(BN_ZERO)) {
         // announce withdraw class 1
@@ -116,3 +117,9 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     }
 }
 
+export async function whitelistAgent(accounts: string[], ownerAddress: string, agentVault: string) {
+    const deployerAddress = accounts[accounts.length - 1];
+    const Whitelist = artifacts.require('Whitelist');
+    const agentWhitelist = await Whitelist.at(agentVault);
+    await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
+}

@@ -1,5 +1,5 @@
 import { AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
-import { AMGSettings, amgToTokenWeiPrice, convertUBAToTokenWei } from "../fasset/Conversions";
+import { AMGSettings, amgToTokenWeiPrice, convertAmgToTokenWei, convertUBAToTokenWei } from "../fasset/Conversions";
 import { BNish, toBN } from "../utils/helpers";
 import { TokenPrice, TokenPriceReader } from "./TokenPrice";
 
@@ -11,9 +11,17 @@ export class AMGPrice {
     ) {
     }
 
+    convertAmgToTokenWei(valueAMG: BNish) {
+        return convertAmgToTokenWei(valueAMG, this.amgToTokenWei);
+    }
+
 
     convertUBAToTokenWei(valueUBA: BNish) {
         return convertUBAToTokenWei(this, valueUBA, this.amgToTokenWei);
+    }
+
+    static forAmgPrice(settings: AMGSettings, amgToTokenWei: BN) {
+        return new AMGPrice(amgToTokenWei, toBN(settings.assetMintingDecimals), toBN(settings.assetMintingGranularityUBA));
     }
 
     static forTokenPrices(settings: AMGSettings, collateral: CollateralType, assetPrice: TokenPrice, tokenPrice: TokenPrice | undefined) {
@@ -25,6 +33,10 @@ export class AMGPrice {
 
 export abstract class AMGPriceConverter {
     abstract amgPrice: AMGPrice;
+
+    convertAmgToTokenWei(valueAMG: BNish) {
+        return this.amgPrice.convertAmgToTokenWei(valueAMG);
+    }
 
     convertUBAToTokenWei(valueUBA: BNish) {
         return this.amgPrice.convertUBAToTokenWei(valueUBA);

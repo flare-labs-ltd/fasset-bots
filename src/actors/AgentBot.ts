@@ -43,6 +43,7 @@ export class AgentBot {
         return await rootEm.transactional(async em => {
             const underlyingAddress = await context.wallet.createAccount();
             const settings = await context.assetManager.getSettings();
+            console.log(settings.requireEOAAddressProof)
             if (settings.requireEOAAddressProof) {
                 await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
             }

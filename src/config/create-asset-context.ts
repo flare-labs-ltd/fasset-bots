@@ -23,6 +23,7 @@ const IERC20 = artifacts.require('IERC20');
  */
 export async function createAssetContext(botConfig: AgentBotConfig, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
     if (botConfig.contractsJsonFile) {
+        console.log("contracts")
         return await createAssetContextFromContracts(botConfig as AgentBotConfig & { contractsJsonFile: string }, chainConfig);
     } else if (botConfig.addressUpdater) {
         return await createAssetContextFromAddressUpdater(botConfig as AgentBotConfig & { addressUpdater: string }, chainConfig);
@@ -35,6 +36,7 @@ export async function createAssetContext(botConfig: AgentBotConfig, chainConfig:
  * Creates asset context from contracts.
  */
 async function createAssetContextFromContracts(botConfig: AgentBotConfig & { contractsJsonFile: string }, chainConfig: AgentBotConfigChain): Promise<IAssetAgentBotContext> {
+console.log("CONTRACTS?")
     const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
     const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
     const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
@@ -140,6 +142,7 @@ async function getAssetManagerAndController(chainConfig: AgentBotConfigChain | T
             addressUpdater != null ? await addressUpdater.getContractAddress('AssetManagerController') :
                 contracts != null ? contracts.AssetManagerController.address :
                     fail('Either addressUpdater or contracts must be defined');
+        console.log("controllerAddress", controllerAddress, chainConfig.fAssetSymbol);
         const assetManagerController = await AssetManagerController.at(controllerAddress);
         const assetManager = await findAssetManager(assetManagerController, chainConfig.fAssetSymbol);
         return [assetManager, assetManagerController] as const;
@@ -154,6 +157,7 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
         const assetManager = await AssetManager.at(addr);
         const fAsset = await FAsset.at(await assetManager.fAsset());
         if (await fAsset.symbol() === fAssetSymbol) {
+            console.log("await assetManager.fAsset()", await assetManager.fAsset(), addr);
             return assetManager;
         }
     }

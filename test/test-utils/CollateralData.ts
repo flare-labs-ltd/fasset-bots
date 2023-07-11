@@ -1,17 +1,47 @@
-import { CollateralData } from "../../test/test-utils/CollateralData";
+import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
+import { amgToTokenWeiPrice } from "../../src/fasset/Conversions";
+import { AMGPrice, AMGPriceConverter, CollateralPrice } from "../../src/state/CollateralPrice";
+import { TokenPrice, TokenPriceReader, tokenBalance } from "../../src/state/TokenPrice";
+import { exp10 } from "../../src/utils/helpers";
 import { CollateralPoolTokenInstance } from "../../typechain-truffle/CollateralPoolToken";
-import { AMGPrice, CollateralPrice } from "../state/CollateralPrice";
-import { TokenPrice, TokenPriceReader } from "../state/TokenPrice";
-import { artifacts } from "../utils/artifacts";
-import { exp10 } from "../utils/helpers";
-import { AssetManagerSettings, CollateralType } from "./AssetManagerTypes";
-import { amgToTokenWeiPrice } from "./Conversions";
 
 export const POOL_TOKEN_DECIMALS = 18;
 
-const IFtsoRegistry = artifacts.require("IFtsoRegistry") ;
-
 export enum CollateralKind { CLASS1, POOL, AGENT_POOL_TOKENS }
+
+export class CollateralData extends AMGPriceConverter {
+    constructor(
+        public collateral: CollateralType | null,
+        public balance: BN,
+        public assetPrice: TokenPrice,
+        public tokenPrice: TokenPrice | undefined,
+        public amgPrice: AMGPrice,
+    ) {
+        super();
+    }
+
+    kind() {
+        if (this.collateral != null) {
+            if (Number(this.collateral.collateralClass) === CollateralClass.CLASS1) {
+                return CollateralKind.CLASS1;
+            } else if (Number(this.collateral.collateralClass) === CollateralClass.POOL) {
+                return CollateralKind.POOL;
+            }
+            throw new Error("Invalid collateral kind");
+        } else {
+            return CollateralKind.AGENT_POOL_TOKENS;
+        }
+    }
+
+    tokenDecimals() {
+        return this.collateral?.decimals ?? POOL_TOKEN_DECIMALS;
+    }
+
+    static async forCollateralPrice(collateralPrice: CollateralPrice, tokenHolder: string) {
+        const balance = await tokenBalance(collateralPrice.collateral.token, tokenHolder);
+        return new CollateralData(collateralPrice.collateral, balance, collateralPrice.assetPrice, collateralPrice.tokenPrice, collateralPrice.amgPrice);
+    }
+}
 
 export class CollateralDataFactory {
     constructor(
@@ -20,8 +50,7 @@ export class CollateralDataFactory {
     ) { }
 
     static async create(settings: AssetManagerSettings) {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        const priceReader = new TokenPriceReader(ftsoRegistry);
+        const priceReader = await TokenPriceReader.create(settings);
         return new CollateralDataFactory(settings, priceReader);
     }
 
