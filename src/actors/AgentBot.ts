@@ -245,7 +245,6 @@ export class AgentBot {
                     this.notifier.sendCollateralPoolTokensRedemption(agentEnt.vaultAddress);
                 }
             } else if (agentEnt.waitingForDestructionCleanUp) {
-                console.log("H0")
                 // agent checks if clean up is complete
                 // withdraw pool fees
                 const poolFeeBalance = await this.agent.poolFeeBalance();

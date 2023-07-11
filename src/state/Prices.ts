@@ -1,6 +1,6 @@
 import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
-import { IFtsoRegistryEvents } from "../fasset/IAssetContext";
+import { IAssetContext, IFtsoRegistryEvents } from "../fasset/IAssetContext";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { CollateralIndexedList, CollateralTypeId } from "./CollateralIndexedList";
 import { CollateralPrice } from "./CollateralPrice";
@@ -17,7 +17,7 @@ export class Prices {
         return this.collateralPrices.get(token);
     }
 
-    static async getFtsoPrices(priceReader: TokenPriceReader, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>, trusted: boolean): Promise<Prices> {
+    static async getFtsoPrices(priceReader: TokenPriceReader, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>, trusted: boolean = false): Promise<Prices> {
         const collateralPrices = new CollateralIndexedList<CollateralPrice>();
         for (const collateral of collaterals) {
             const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, collateral, trusted);
@@ -26,8 +26,8 @@ export class Prices {
         return new Prices(collateralPrices);
     }
 
-    static async getPrices(ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>): Promise<[Prices, Prices]> {
-        const priceReader = new TokenPriceReader(ftsoRegistry);
+    static async getPrices(settings: AssetManagerSettings, collaterals: Iterable<CollateralType>): Promise<[Prices, Prices]> {
+        const priceReader = await TokenPriceReader.create(settings);
         const ftsoPrices = await this.getFtsoPrices(priceReader, settings, collaterals, false);
         const trustedPrices = await this.getFtsoPrices(priceReader, settings, collaterals, true);
         return [ftsoPrices, trustedPrices];

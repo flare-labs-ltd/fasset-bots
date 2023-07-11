@@ -400,7 +400,7 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
     });
 
-    it.only("Should exit available before closing vault", async () => {
+    it("Should exit available before closing vault", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         agentEnt.waitingForDestructionCleanUp = true;

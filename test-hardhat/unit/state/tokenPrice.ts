@@ -3,13 +3,10 @@ import { toBN } from "../../../src/utils/helpers";
 import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { artifacts } from "../../../src/utils/artifacts";
 import { AssetManagerSettings } from "../../../src/fasset/AssetManagerTypes";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
-
-const IFtsoRegistry = artifacts.require("IFtsoRegistry");
 
 describe("Token price unit tests", async () => {
 
@@ -33,23 +30,12 @@ describe("Token price reader unit tests", async () => {
     });
 
     it("Should create TokenPriceReader", async () => {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        const priceReader = new TokenPriceReader(ftsoRegistry);
+        const priceReader = await TokenPriceReader.create(settings);
         expect(priceReader).to.not.be.null;
     });
 
-    it("Should return Ftso", async () => {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        const priceReader = new TokenPriceReader(ftsoRegistry);
-        const ftsoSymbol = "NAT";
-        const ftso = await priceReader.getFtso(ftsoSymbol);
-        expect(await ftso.symbol()).to.eq(ftsoSymbol);
-        await expect(priceReader.getFtso("NOT")).to.eventually.be.rejected.and.be.an.instanceOf(Error);
-    });
-
     it("Should return price", async () => {
-        const ftsoRegistry = await IFtsoRegistry.at(settings.ftsoRegistry);
-        const priceReader = new TokenPriceReader(ftsoRegistry);
+        const priceReader = await TokenPriceReader.create(settings);
         const ftsoSymbol = "NAT";
         const price0 = await priceReader.getPrice(ftsoSymbol);
         const price1 = await priceReader.getPrice(ftsoSymbol, false, toBN(0));
