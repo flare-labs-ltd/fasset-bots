@@ -8,9 +8,9 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
 import { Notifier } from "../../../src/utils/Notifier";
 
-export async function createTestMinter(ctx: IAssetAgentBotContext, address: string) {
+export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
-    const underlyingAddress = await ctx.wallet.createAccount();
+    const underlyingAddress = useUnderlyingAddress ? useUnderlyingAddress : await ctx.wallet.createAccount();
     return Minter.create(ctx, address, underlyingAddress, ctx.wallet);
 }
 
