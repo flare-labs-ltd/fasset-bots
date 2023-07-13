@@ -27,6 +27,7 @@ coverage.json
 coverage/
 
 .env
+.env.temp
 
 *.tgz
 
