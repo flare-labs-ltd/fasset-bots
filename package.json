@@ -59,7 +59,7 @@
       "publish": "echo npm publish",
       "pack": "npm pack",
       "---------BUILD---SCRIPTS": "",
-      "prebuild": "rm -r dist",
+      "prebuild": "rm -rf dist",
       "build": "tsc --allowJs",
       "watch": "tsc --allowJs --watch --noEmit",
       "---------LINT---SCRIPTS": "",
