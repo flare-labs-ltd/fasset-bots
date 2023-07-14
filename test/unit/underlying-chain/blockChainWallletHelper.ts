@@ -25,7 +25,7 @@ describe("XRP wallet tests", async () => {
     const fundedPrivateKey = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0E3A1622";
     const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
     const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
-    const amountToSendXRP = 1;
+    const amountToSendDrops = 1000000;
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
@@ -55,7 +55,7 @@ describe("XRP wallet tests", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const balanceBefore = await walletHelper.getBalance(targetAddress);
         const options = { maxFee: 12 }; // maxFee in Drops
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, null, options, true);
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDrops, null, options, true);
         const balanceAfter = await walletHelper.getBalance(targetAddress);
         const retrievedTransaction = await blockChainIndexerHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
@@ -69,7 +69,7 @@ describe("XRP wallet tests", async () => {
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendXRP, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDrops, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
@@ -78,7 +78,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendXRP, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendDrops, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
     });
 
     it("Should get transaction fee", async () => {
@@ -96,7 +96,6 @@ describe("BTC wallet tests", async () => {
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
     const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
-    const amountToSendBTC = 0.00001;
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
@@ -121,13 +120,6 @@ describe("BTC wallet tests", async () => {
         await removeWalletAddressFromDB(orm, targetAddress);
     });
 
-    it.skip("Should send funds", async () => {
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendBTC, "TestNote", undefined, false);
-        expect(transaction).to.not.be.null;
-        await removeWalletAddressFromDB(orm, fundedAddress);
-    });
-
 });
 
 describe("DOGE wallet tests", async () => {
@@ -139,7 +131,7 @@ describe("DOGE wallet tests", async () => {
     const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
     const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
     const targetPrivateKey = "ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9";
-    const amountToSendDOGE = 1;
+    const amountToSendSatoshies = 100000000;
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
@@ -165,14 +157,10 @@ describe("DOGE wallet tests", async () => {
         await removeWalletAddressFromDB(orm, targetAddress);
     });
 
-    it.skip("Should send funds and retrieve transaction", async () => {
+    it("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const balanceBefore = await walletHelper.getBalance(targetAddress);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDOGE, "TestNote", undefined, true);
-        const balanceAfter = await walletHelper.getBalance(targetAddress);
-        const retrievedTransaction = await blockChainIndexerHelper.getTransaction(transaction);
-        expect(transaction).to.equal(retrievedTransaction?.hash);
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined, false);
+        expect(transaction).to.not.be.null;
         await removeWalletAddressFromDB(orm, fundedAddress);
     });
 
