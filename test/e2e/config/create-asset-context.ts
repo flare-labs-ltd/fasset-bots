@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { AgentBotConfig, createAgentBotConfig, AgentBotRunConfig, TrackedStateConfig, TrackedStateRunConfig, createTrackedStateConfig } from "../../../src/config/BotConfig"
 import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import rewire from "rewire";
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
@@ -10,12 +10,10 @@ const createFtsos = createAssetContextInternal.__get__("createFtsos");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { initWeb3 } from "../../../src/utils/web3";
-import { requireEnv } from "../../../src/utils/helpers";
 import { artifacts } from "../../../src/utils/artifacts";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 const AddressUpdater = artifacts.require('AddressUpdater')
-const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Create asset context tests", async () => {
     let runConfig: AgentBotRunConfig;
@@ -24,7 +22,7 @@ describe("Create asset context tests", async () => {
     let trackedStateConfig: TrackedStateConfig;
 
     before(async () => {
-        await initWeb3(RPC_URL, getNativeAccountsFromEnv(), null);
+        await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
     });
 
     it("Should create asset context from contracts", async () => {

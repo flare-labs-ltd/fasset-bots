@@ -1,0 +1,11 @@
+{
+    "class1FtsoSymbol": "USDC",
+    "feeBIPS": 1000,
+    "poolFeeShareBIPS": 4000,
+    "mintingClass1CollateralRatioConstant": 1.2,
+    "mintingPoolCollateralRatioConstant": 1.2,
+    "poolExitCollateralRatioConstant": 1.3,
+    "buyFAssetByAgentFactorBIPS": 9000,
+    "poolTopupCollateralRatioConstant": 1.1,
+    "poolTopupTokenPriceFactorBIPS": 8000
+}

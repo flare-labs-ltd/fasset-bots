@@ -19,6 +19,8 @@ let blockChainIndexerHelper: BlockchainIndexerHelper;
 describe("XRP wallet tests", async () => {
 
     const sourceId: SourceId = SourceId.XRP;
+    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/xrp/";
+    const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
     const fundedPrivateKey = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0E3A1622";
     const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
@@ -28,8 +30,8 @@ describe("XRP wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -89,6 +91,7 @@ describe("XRP wallet tests", async () => {
 describe("BTC wallet tests", async () => {
 
     const sourceId: SourceId = SourceId.BTC;
+    const walletUrl: string = "https://api.bitcore.io/api/BTC/testnet/";
     const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
     const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
@@ -98,7 +101,7 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });
 
     it("Should create account", async () => {
@@ -130,6 +133,8 @@ describe("BTC wallet tests", async () => {
 describe("DOGE wallet tests", async () => {
 
     const sourceId: SourceId = SourceId.DOGE;
+    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/doge/";
+    const walletUrl: string = "https://api.bitcore.io/api/DOGE/testnet/";
     const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
     const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
     const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
@@ -139,8 +144,8 @@ describe("DOGE wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
         dbWallet = new DBWalletKeys(orm.em);
-        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, true);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });
 
     it("Should create account", async () => {

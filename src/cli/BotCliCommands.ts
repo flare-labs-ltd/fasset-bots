@@ -2,7 +2,7 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
-import { AgentSettingsConfig, AgentBotConfig, createAgentBotDefaultSettings, createAgentBotConfig, AgentBotRunConfig } from "../config/BotConfig";
+import { AgentBotConfig, createAgentBotDefaultSettings, createAgentBotConfig, AgentBotRunConfig } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
 import { BN_ZERO, requireEnv, toBN } from "../utils/helpers";
@@ -14,17 +14,15 @@ import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 dotenv.config();
 
-const RPC_URL: string = requireEnv('RPC_URL');
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
-const DEFAULT_AGENT_SETTINGS_PATH: string = requireEnv('DEFAULT_AGENT_SETTINGS_PATH');
 
 export class BotCliCommands {
 
     context!: IAssetAgentBotContext;
     ownerAddress!: string;
     botConfig!: AgentBotConfig;
-    agentSettingsConfig!: AgentSettingsConfig;
+    agentSettingsPath!: string;
 
     /**
      * Initializes asset context from AgentBotRunConfig
@@ -32,8 +30,8 @@ export class BotCliCommands {
     async initEnvironment(): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotRunConfig;
-        const accounts = await initWeb3(RPC_URL, [OWNER_PRIVATE_KEY], null);
-        this.agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH).toString()) as AgentSettingsConfig;
+        const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
+        this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createAgentBotConfig(runConfig);
         this.ownerAddress = accounts[0];
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
@@ -44,7 +42,7 @@ export class BotCliCommands {
      * Creates agent bot.
      */
     async createAgentVault(): Promise<Agent | null> {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context);
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
         this.botConfig.notifier.sendAgentCreated(agentBot.agent.vaultAddress);
         return agentBot.agent;

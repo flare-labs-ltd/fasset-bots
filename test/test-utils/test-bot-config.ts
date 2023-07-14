@@ -1,14 +1,21 @@
 import { CreateOrmOptions } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
-import { requireEnv } from "../../src/utils/helpers";
 
-export const COSTON_RPC: string = requireEnv('RPC_URL');
-export const COSTON_CONTRACTS_JSON = "../fasset/deployment/deploys/coston.json";
-export const COSTON_RUN_CONFIG_CONTRACTS = "./run-config/run-config-coston-with-contracts.json";
-export const COSTON_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-config-coston-with-address-updater.json";
-export const COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./run-config/run-simplified-config-coston-with-contracts.json";
-export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./run-config/run-simplified-config-coston-with-address-updater.json";
+export const OWNER_ADDRESS: string = "0x56597Fa74890E002Aa4F36E90beEb4E69c7Bae7D";
+export const COSTON_RPC: string = "https://coston-api.flare.network/ext/C/rpc";
+export const COSTON_RUN_CONFIG_CONTRACTS = "./run-config/run-config-agent-coston-testxrp.json";
+export const COSTON_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/run-config-test/run-config-coston-with-address-updater.json";
+export const COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./test/test-utils/run-config-test/run-simplified-config-coston-with-contracts.json";
+export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/run-config-test/run-simplified-config-coston-with-address-updater.json";
+export const AGENT_DEFAULT_CONFIG_PATH = "./run-config/agent-settings-config.json";
+
+export const INDEXER_URL_XRP: string = "https://attestation-coston2.aflabs.net/verifier/xrp/";
+export const ATTESTATION_PROVIDER_URLS: string[] = [
+    "https://attestation-coston.aflabs.net/attestation-client/api-doc"
+  ];
+export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0xFdd0daaC0dc2eb8bD35eBdD8611d5322281fC527";
+export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 
 const testOptions: CreateOrmOptions = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],

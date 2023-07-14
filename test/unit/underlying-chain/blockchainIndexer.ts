@@ -15,6 +15,7 @@ use(chaiAsPromised);
 
 describe("XRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.XRP;
+    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/xrp/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -23,9 +24,9 @@ describe("XRP blockchain tests via indexer", async () => {
 
     before(async () => {
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        blockchainIndexerClient = createBlockchainIndexerHelper(sourceId);
+        blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockchainIndexerClient);
+        const info = await receiveBlockAndTransaction(sourceId, blockchainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -202,7 +203,7 @@ describe("LTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.LTC;
     it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
         const fn = () => {
-            return createBlockchainIndexerHelper(sourceId);
+            return createBlockchainIndexerHelper(sourceId, "");
         };
         expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
@@ -216,6 +217,7 @@ describe("LTC blockchain tests via indexer", async () => {
 
 describe("DOGE blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.DOGE;
+    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/doge/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -224,9 +226,9 @@ describe("DOGE blockchain tests via indexer", async () => {
 
     before(async () => {
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId);
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient);
+        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -268,6 +270,7 @@ describe("DOGE blockchain tests via indexer", async () => {
 
 describe("BTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.BTC;
+    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/btc/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -275,10 +278,10 @@ describe("BTC blockchain tests via indexer", async () => {
     let txHash: string
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(requireEnv('INDEXER_BTC_WEB_SERVER_URL'), sourceId, requireEnv('INDEXER_BTC_API_KEY'));
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, sourceId, requireEnv('INDEXER_API_KEY'));
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient);
+        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;

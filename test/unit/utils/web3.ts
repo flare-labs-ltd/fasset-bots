@@ -3,12 +3,10 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import rewire from "rewire";
-import { requireEnv } from "../../../src/utils/helpers";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { COSTON_RPC } from "../../test-utils/test-bot-config";
 const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
-
-const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("web3 unit tests", async () => {
 
@@ -27,14 +25,14 @@ describe("web3 unit tests", async () => {
     });
 
     it("Should create wallet accounts", async () => {
-        const accounts = await initWeb3(RPC_URL, getNativeAccountsFromEnv(), 0);
+        const accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), 0);
         expect(accounts.length).to.eq(getNativeAccountsFromEnv().length);
         expect(web3.eth.defaultAccount).to.eq(accounts[0]);
         web3.eth.accounts.wallet.clear();
     });
 
     it("Should create wallet accounts 2", async () => {
-        const accounts = await initWeb3(RPC_URL, null, null);
+        const accounts = await initWeb3(COSTON_RPC, null, null);
         expect(accounts.length).to.eq(0);
         web3.eth.accounts.wallet.clear();
     });

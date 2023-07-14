@@ -1,0 +1,26 @@
+{
+  "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
+  "nativeChainInfo": {
+    "finalizationBlocks": 0,
+    "readLogsChunkSize": 10
+  },
+  "chainInfos": [
+    {
+      "chainId": 3,
+      "name": "Test XRP",
+      "symbol": "testXRP",
+      "decimals": 6,
+      "amgDecimals": 0,
+      "requireEOAProof": false,
+      "assetManager": "0x68F6322BFf80978eB5b7F672404bC3D0ad77eF32",
+      "indexerUrl": "https://attestation-coston2.aflabs.net/verifier/xrp/"
+    }
+  ],
+  "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+  "attestationProviderUrls": [
+    "https://attestation-coston.aflabs.net/attestation-client/api-doc"
+  ],
+  "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
+  "stateConnectorProofVerifierAddress": "0xFdd0daaC0dc2eb8bD35eBdD8611d5322281fC527",
+  "ownerAddress": "0x56597Fa74890E002Aa4F36E90beEb4E69c7Bae7D"
+}

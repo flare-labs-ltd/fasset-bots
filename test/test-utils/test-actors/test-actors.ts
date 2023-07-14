@@ -19,8 +19,8 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
     return new Redeemer(ctx, address, underlyingAddress);
 }
 
-export async function createTestAgentBot(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context);
+export async function createTestAgentBot(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, defaultAgentConfigPath: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 

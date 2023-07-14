@@ -10,30 +10,25 @@ use(chaiAsPromised);
 import { AttestationType } from "../../../src/verification/generated/attestation-types-enum";
 import { ARConfirmedBlockHeightExists } from "../../../src/verification/generated/attestation-request-types";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const costonRPCUrl: string = requireEnv('RPC_URL');
 const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
-
-const attestationProviderUrls: string[] = requireEnv('ATTESTER_BASE_URLS').split(",");
-const attestationClientAddress: string = requireEnv('STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS');
-const stateConnectorAddress: string = requireEnv('STATE_CONNECTOR_ADDRESS');
-const ownerAddress: string = requireEnv('OWNER_ADDRESS');
-
-const roundIdC2 = 431016;//571512;
-const requestDataBytesC2_1 = "0x000100000003e309bade9e0ef87e3e0a1a8c2f0ebb26af4ef9df6b8d3467ca1f4deac171d2b0be2534c86cf42560074c26f346345b96f3e9d8cfd2bac611bc199def83ac5a3c02515d930000";
-const requestDataBytesC2_2 = "";
-const requestDataBytesC2_3 = "0x0003000000035cfd3a2b8acfa3685043c18aed1bc1c3c3a8fb19e350df38526ec11345c8e20e025162b100000064";
-const requestDataBytesC2_4 = "0x00040000000393ae948c1819fa43b86545320c9d7a6b6b49bd8b9b58cc4e68410c856ae9a86602515bd302515c376494f98aa46380794889e4f65f8c19b6aaee2645c07633bb61f8e2ca08d93f056c6710b15a2cc94a7a6901817c2a0abe99ad73a82c4fa247f84b676d5deedaf23ee15c2f2d5f5cdd63c9fbddfc5a7ace02705275";
 const sourceId = SourceId.XRP;
 
 describe("XRP attestation/state connector tests", async () => {
+    const roundIdC2 = 431016;//571512;
+    const requestDataBytesC2_1 = "0x000100000003e309bade9e0ef87e3e0a1a8c2f0ebb26af4ef9df6b8d3467ca1f4deac171d2b0be2534c86cf42560074c26f346345b96f3e9d8cfd2bac611bc199def83ac5a3c02515d930000";
+    const requestDataBytesC2_2 = "";
+    const requestDataBytesC2_3 = "0x0003000000035cfd3a2b8acfa3685043c18aed1bc1c3c3a8fb19e350df38526ec11345c8e20e025162b100000064";
+    const requestDataBytesC2_4 = "0x00040000000393ae948c1819fa43b86545320c9d7a6b6b49bd8b9b58cc4e68410c856ae9a86602515bd302515c376494f98aa46380794889e4f65f8c19b6aaee2645c07633bb61f8e2ca08d93f056c6710b15a2cc94a7a6901817c2a0abe99ad73a82c4fa247f84b676d5deedaf23ee15c2f2d5f5cdd63c9fbddfc5a7ace02705275";
+
 
     before(async () => {
-        await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
+        await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        stateConnectorClient = await createStateConnectorClient(INDEXER_URL_XRP, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
     })
 
     it("Should return round is finalized", async () => {
@@ -52,7 +47,7 @@ describe("XRP attestation/state connector tests", async () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId);
+        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP);
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ARConfirmedBlockHeightExists = {
@@ -139,9 +134,9 @@ describe("State connector tests - decoding", async () => {
         "paymentReference": "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
     before(async () => {
-        await initWeb3(costonRPCUrl, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient(sourceId, attestationProviderUrls, attestationClientAddress, stateConnectorAddress, ownerAddress);
-        rewiredStateConnectorHelper = new rewiredStateConnectorClientHelperClass(attestationProviderUrls, attestationClientAddress, stateConnectorAddress, "", "", ownerAddress);
+        await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        stateConnectorClient = await createStateConnectorClient(INDEXER_URL_XRP, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        rewiredStateConnectorHelper = new rewiredStateConnectorClientHelperClass(ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, "", "", OWNER_ADDRESS);
     })
 
     it("Should decode proofs - payment", async () => {

@@ -41,8 +41,8 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
     return await agent.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
 }
 
-export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockchainIndexerHelper): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(sourceId);
+export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockchainIndexerHelper, indexerUrl: string): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
+    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === 'OK') {
         const blockNumber = resp.data.last;

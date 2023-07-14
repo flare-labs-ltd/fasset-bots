@@ -1,12 +1,10 @@
 import { expect, spy, use } from "chai";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
 import { initWeb3 } from "../../../src/utils/web3";
-import { requireEnv } from "../../../src/utils/helpers";
 import spies from "chai-spies";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { COSTON_RPC } from "../../test-utils/test-bot-config";
 use(spies);
-
-const RPC_URL: string = requireEnv('RPC_URL');
 
 describe("Bot cli commands unit tests", async () => {
     let botCliCommands: BotCliCommands;
@@ -14,7 +12,7 @@ describe("Bot cli commands unit tests", async () => {
     let ownerAddress: string;
 
     before(async () => {
-        accounts = await initWeb3(RPC_URL, getNativeAccountsFromEnv(), null);
+        accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
     });
 

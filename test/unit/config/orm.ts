@@ -5,7 +5,6 @@ import { WalletAddress } from "../../../src/entities/wallet";
 import { BNType } from "../../../src/config/orm-types";
 import { toBN } from "../../../src/utils/helpers";
 import BN from "bn.js";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 
 const dbName: string = 'fasset-bots-unit-test.db';
 const dbOptions: CreateOrmOptions = { dbName: dbName, type: 'sqlite', entities: [WalletAddress] };
