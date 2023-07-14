@@ -14,7 +14,7 @@ export const INDEXER_URL_XRP: string = "https://attestation-coston2.aflabs.net/v
 export const ATTESTATION_PROVIDER_URLS: string[] = [
     "https://attestation-coston.aflabs.net/attestation-client/api-doc"
   ];
-export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0xFdd0daaC0dc2eb8bD35eBdD8611d5322281fC527";
+export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x3551096766115b622bD02EF156b151A9D996Fb6E";
 export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 
 const testOptions: CreateOrmOptions = {
