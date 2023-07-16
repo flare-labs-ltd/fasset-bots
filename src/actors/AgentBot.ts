@@ -685,7 +685,7 @@ export class AgentBot {
     }
 
     /**
-     * Tries to top up AgentBot's underlying account owner's. It notifies about successful and unsuccessful try.
+     * Tries to top up AgentBot's underlying account from owner's. It notifies about successful and unsuccessful try.
      * It also checks owner's underlying balance and notifies when it is too low.
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {

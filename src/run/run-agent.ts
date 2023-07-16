@@ -7,6 +7,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
+const OWNER_UNDERLYING_ADDRESS: string = requireEnv('OWNER_UNDERLYING_ADDRESS');
+const OWNER_UNDERLYING_PRIVATE_KEY: string = requireEnv('OWNER_UNDERLYING_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 const RPC_URL: string = requireEnv('RPC_URL');
 
@@ -16,6 +18,10 @@ toplevelRun(async () => {
     const botConfig = await createAgentBotConfig(runConfig);
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);
+    // store owner's underlying address
+    for(const ctxMap of runner.contexts) {
+        await ctxMap[1].wallet.addExistingAccount(OWNER_UNDERLYING_ADDRESS, OWNER_UNDERLYING_PRIVATE_KEY);
+    }
     // run
     console.log("Agent bot started, press CTRL+C to end");
     process.on('SIGINT', () => {
