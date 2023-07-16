@@ -54,6 +54,7 @@ Finally, the TrackedState populates the tracked agent variables based on the rec
 - RedemptionDefault
 - RedemptionPaymentBlocked
 - RedemptionPaymentFailed
+- RedeemedInCollateral
 - UnderlyingBalanceToppedUp
 - UnderlyingWithdrawalAnnounced
 - UnderlyingWithdrawalConfirmed
@@ -65,13 +66,11 @@ Finally, the TrackedState populates the tracked agent variables based on the rec
 # TrackedAgentState
 
 ### Initialization
-Firstly, **parent** (TrackedState), **agent’s vault address**, **agent’s underlying address** and **agent’s collateral pool address** are input into constructor:
+Firstly, **parent** (TrackedState) and **data** (InitialAgentData: agentVault, underlyingAddress, collateralPool, class1CollateralToken, feeBIPS, poolFeeShareBIPS, mintingClass1CollateralRatioBIPS, mintingPoolCollateralRatioBIPS, poolExitCollateralRatioBIPS, buyFAssetByAgentFactorBIPS, poolTopupCollateralRatioBIPS, poolTopupTokenPriceFactorBIPS) are input into constructor:
 ```javascript
    constructor(
        public parent: TrackedState,
-       public vaultAddress: string,
-       public underlyingAddress: string,
-       public collateralPoolAddress: string
+       data: InitialAgentData
    ) { }
 ```
 

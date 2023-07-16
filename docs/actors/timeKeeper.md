@@ -6,16 +6,23 @@ File [TimeKeeper.ts](../src/actors/TimeKeeper.ts) contains framework for such ac
 
 ## Prerequirements
 User needs:
-- to create [**running configuration**](../../src/config/BotConfig.ts)
+- To create [**running configuration**](../../src/config/BotConfig.ts).
 ```javascript
 export interface TrackedStateRunConfig {
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
+    rpcUrl: string,
+    attestationProviderUrls: string[],
+    stateConnectorAddress: string,
+    stateConnectorProofVerifierAddress: string,
+    ownerAddress: string,
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
+}
 ```
-- to set environment **.env** in root directory
+- To set environment **.env** in root directory.
+For more see [configuration part](../config.md).
 ```
 # XRP
 XRP_URL_WALLET=https://s.altnet.rippletest.net:51234

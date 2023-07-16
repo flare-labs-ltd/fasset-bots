@@ -1,4 +1,4 @@
-import { AlgoMccCreate, UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
+import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
@@ -24,12 +24,8 @@ dotenv.config();
 export interface AgentBotRunConfig extends TrackedStateRunConfig {
     loopDelay: number;
     ormOptions: CreateOrmOptions;
-    walletUrl: string,
     defaultAgentSettingsPath: string,
     // notifierFile: string;
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
 }
 
 export interface TrackedStateRunConfig {

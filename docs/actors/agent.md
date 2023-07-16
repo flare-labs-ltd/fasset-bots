@@ -9,9 +9,9 @@ File [AgentBot.ts](../../src/actors/AgentBot.ts) contains framework for such bot
 
 User aka **Owner** needs:
 
-- **native address** with funds
-- **underlying address** with funds
-- to create [**initial agent’s settings**](../../src/config/BotConfig.ts)
+- **native address** with funds.
+- **underlying address** with funds.
+- To create [**initial agent’s settings**](../../src/config/BotConfig.ts).
 ```javascript
 export interface AgentSettingsConfig {
     class1FtsoSymbol: string,
@@ -25,43 +25,11 @@ export interface AgentSettingsConfig {
     poolTopupTokenPriceFactorBIPS: string
 }
 ```
-- to create [**running configuration**](../../src/config/BotConfig.ts)
-```javascript
-export interface AgentBotRunConfig {
-    loopDelay: number;
-    nativeChainInfo: NativeChainInfo;
-    chainInfos: BotChainInfo[];
-    ormOptions: CreateOrmOptions;
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
-}
-```
-- to set environment **.env** in root directory
-```
-# XRP
-XRP_URL_WALLET=https://s.altnet.rippletest.net:51234
-# DB ENCRYPTION
-WALLET_ENCRYPTION_PASSWORD=
-# NATIVE CHAIN i.e. COSTON2
-ATTESTER_BASE_URLS="https://attestation-coston2.aflabs.net/attestation-client/"
-RPC_URL=https://coston2-api.flare.network/ext/bc/C/rpc
-STATE_CONNECTOR_ADDRESS=0x1000000000000000000000000000000000000001
-STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS=0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf
-OWNER_ADDRESS=
-OWNER_PRIVATE_KEY=
-# INDEXERS
-INDEXER_XRP_WEB_SERVER_URL=
-INDEXER_XRP_API_KEY=
-# UNDERLYING CHAIN
-OWNER_UNDERLYING_ADDRESS="OwnerUnderlyingAddress"
-OWNER_UNDERLYING_PRIVATE_KEY="OwnerUnderlyingPrivateKey"
-# RUN CONFIG PATH
-RUN_CONFIG_PATH="./run-config/run-config-coston2-with-contracts.json"
-# DEFAULT AGENT SETTINGS PATH
-DEFAULT_AGENT_SETTINGS_PATH="./run-config/agent-settings-config.json"
-```
-- to run script [**./run-agents.ts**](../../src/run/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
+- To create [**running configuration**](../../src/config/BotConfig.ts)
+For more see [configuration part](../config.md).
+- To set environment **.env** in root directory.
+For more see [configuration part](../config.md).
+- To run script [**./run-agents.ts**](../../src/run/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
 
 
 ## Owner's methods

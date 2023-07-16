@@ -4,34 +4,25 @@ File [Liquidator.ts](../../src/actors/Liquidator.ts) contains framework for such
 
 ## Prerequirements
 User needs:
-- **native address**
+- **native address**.
 - **fAssets**
-- to create [**running configuration**](../../src/config/BotConfig.ts)
+- To create [**running configuration**](../../src/config/BotConfig.ts).
 ```javascript
 export interface TrackedStateRunConfig {
     nativeChainInfo: NativeChainInfo;
     chainInfos: BotChainInfo[];
+    rpcUrl: string,
+    attestationProviderUrls: string[],
+    stateConnectorAddress: string,
+    stateConnectorProofVerifierAddress: string,
+    ownerAddress: string,
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
+}
 ```
-- to set environment **.env** in root directory
-```
-# XRP
-XRP_URL_WALLET=https://s.altnet.rippletest.net:51234
-# DB ENCRYPTION
-WALLET_ENCRYPTION_PASSWORD=
-# NATIVE CHAIN i.e. COSTON2
-ATTESTER_BASE_URLS="https://attestation-coston2.aflabs.net/attestation-client/"
-RPC_URL=https://coston2-api.flare.network/ext/bc/C/rpc
-STATE_CONNECTOR_ADDRESS=0x1000000000000000000000000000000000000001
-STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS=0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf
-# INDEXERS
-INDEXER_XRP_WEB_SERVER_URL=
-INDEXER_XRP_API_KEY=
-# RUN CONFIG PATH
-RUN_CONFIG_PATH="./run-config/run-simplified-config-coston2-with-contracts.json"
-```
+- To set environment **.env** in root directory.
+For more see [configuration part](../config.md).
 
 ### Initialization
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) as inputs:
