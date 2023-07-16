@@ -24,18 +24,19 @@ dotenv.config();
 export interface AgentBotRunConfig extends TrackedStateRunConfig {
     loopDelay: number;
     ormOptions: CreateOrmOptions;
-    defaultAgentSettingsPath: string,
+    defaultAgentSettingsPath: string;
+    chainInfos: BotChainInfo[];
     // notifierFile: string;
 }
 
 export interface TrackedStateRunConfig {
     nativeChainInfo: NativeChainInfo;
-    chainInfos: BotChainInfo[];
-    rpcUrl: string,
-    attestationProviderUrls: string[],
-    stateConnectorAddress: string,
-    stateConnectorProofVerifierAddress: string,
-    ownerAddress: string,
+    chainInfos: TrackedChainInfo[];
+    rpcUrl: string;
+    attestationProviderUrls: string[];
+    stateConnectorAddress: string;
+    stateConnectorProofVerifierAddress: string;
+    ownerAddress: string;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
@@ -70,25 +71,28 @@ export interface TrackedStateConfigChain {
     fAssetSymbol?: string;
 }
 
-export interface BotChainInfo extends ChainInfo {
-    indexerUrl: string,
-    walletUrl: string,
+export interface BotChainInfo extends TrackedChainInfo {
+    walletUrl: string;
     inTestnet?: boolean;
+}
+
+export interface TrackedChainInfo extends ChainInfo {
+    indexerUrl: string;
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
 }
 
 export interface AgentSettingsConfig {
-    class1FtsoSymbol: string,
-    feeBIPS: string,
-    poolFeeShareBIPS: string,
-    mintingClass1CollateralRatioConstant: number,
-    mintingPoolCollateralRatioConstant: number,
-    poolExitCollateralRatioConstant: number,
-    buyFAssetByAgentFactorBIPS: string,
-    poolTopupCollateralRatioConstant: number,
-    poolTopupTokenPriceFactorBIPS: string
+    class1FtsoSymbol: string;
+    feeBIPS: string;
+    poolFeeShareBIPS: string;
+    mintingClass1CollateralRatioConstant: number;
+    mintingPoolCollateralRatioConstant: number;
+    poolExitCollateralRatioConstant: number;
+    buyFAssetByAgentFactorBIPS: string;
+    poolTopupCollateralRatioConstant: number;
+    poolTopupTokenPriceFactorBIPS: string;
 }
 
 /**
@@ -144,7 +148,7 @@ export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM,
 /**
  * Creates TrackedStateConfigChain configuration from chain info.
  */
-export async function createTrackedStateConfigChain(chainInfo: BotChainInfo, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<TrackedStateConfigChain> {
+export async function createTrackedStateConfigChain(chainInfo: TrackedChainInfo, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<TrackedStateConfigChain> {
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl);
     const stateConnector = await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
