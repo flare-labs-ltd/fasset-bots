@@ -25,7 +25,7 @@ export class Challenger {
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
-        private lastEventUnderlyingBlockHandled: number
+        public lastEventUnderlyingBlockHandled: number
     ) { }
 
     activeRedemptions = new Map<string, ActiveRedemption>();                        // paymentReference => { agent vault address, requested redemption amount }
