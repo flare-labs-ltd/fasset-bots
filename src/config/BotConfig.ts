@@ -36,6 +36,7 @@ export interface TrackedStateRunConfig {
     attestationProviderUrls: string[];
     stateConnectorAddress: string;
     stateConnectorProofVerifierAddress: string;
+    // in case of tracked state actors (challenger, ...) this address should be native address that is going to be used for that actor
     ownerAddress: string;
     // either one must be set
     addressUpdater?: string;
