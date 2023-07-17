@@ -12,11 +12,11 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 * [*SystemKeeper*](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
 * [*TimeKeeper*](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
 
-## Configuration and running Agent Bot
+## Configurations
 
 For needed prerequirements, environment variables and other configurations see [here](./docs/config.md).
 
-# How to run
+## How to run Agent bot
 
 In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `npx ts-node src/run/run-agent.ts`.
 

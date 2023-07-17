@@ -1,6 +1,6 @@
 # TrackedState
 
-Files [TrackedState](../src/state/TrackedState.ts) and [TrackedAgentState](../src/state/TrackedAgentState.ts) contain framework for such state tracking.
+Files [TrackedState](../src/state/TrackedState.ts) and [TrackedAgentState](../src/state/TrackedAgentState.ts) contain framework for non-persistent state tracking.
 
 TrackedState represents non-persistent state that monitors native events and calculates and sets specific variables essential for the *challenger* and *liquidator* to respond appropriately.
 
@@ -21,12 +21,13 @@ Secondly, TrackedState is initialized, and the following variables are set:
 - prices
 - trustedPrices
 
-Finally, the TrackedState populates the tracked agent variables based on the received events:
+Finally, the TrackedState populates the tracked agent variables and tracked agent state variables ([see below](#trackedAgentState)) based on the received events:
 - **agents**: agent_address => TrackedAgentState
 - **agentsByUnderlying**: underlying_address => TrackedAgentState
 - **agentsByPool**: pool_address => TrackedAgentState
 
 ### registerStateEvents
+`registerStateEvents` method checks if there are any new native events since last time the method run. Checked events are following:
 - PriceEpochFinalized
 - SettingChanged
 - SettingArrayChanged
@@ -97,3 +98,5 @@ Secondly, TrackedAgentState is initialized and following variables are set from 
 - agentSettings.buyFAssetByAgentFactorBIPS
 - agentSettings.poolTopupCollateralRatioBIPS
 - agentSettings.poolTopupTokenPriceFactorBIPS
+
+Lastly, TrackedAgentState variables are appropriately calculate and stored after every intercepted event in TrackedState.

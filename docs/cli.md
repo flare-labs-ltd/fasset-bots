@@ -2,7 +2,7 @@
 
 ## Setup
 
-Configuration and environment file must be provided, before running cli commands. See [Configuration and run](./config.md) for more.
+Configuration and environment file must be provided, before running cli commands. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
 
 ## How to use
 
@@ -30,6 +30,8 @@ Available commands:
 
 
 ### Agent's settings:
+
+For more about agent's settings check [AgentSettings.sol](https://gitlab.com/flarenetwork/fasset/-/blob/main/contracts/userInterfaces/data/AgentSettings.sol) in Fasset repository.
 
 *   feeBIPS
 *   poolFeeShareBIPS
