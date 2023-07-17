@@ -63,7 +63,7 @@ export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainI
 
 export async function mintClass1ToOwner(class1TokenAddress: string, ownerAddress: string, amount: BNish = depositClass1Amount): Promise<void> {
     const class1Token = await ERC20Mock.at(class1TokenAddress);
-    await class1Token.mintAmount(ownerAddress, amount, { from: ownerAddress});
+    await class1Token.mintAmount(ownerAddress, amount, { from: ownerAddress });
 }
 
 export async function balanceOfClass1(class1TokenAddress: string, address: string): Promise<BN> {
@@ -72,9 +72,14 @@ export async function balanceOfClass1(class1TokenAddress: string, address: strin
 }
 
 export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string) {
+    // TODO - do not destroy yet list - this agents are still used in some tests.
+    const doNotDestroyYetList = ["0xBd1266020CaA3428599a247076bF84a7b20Fde0A"];
     const list = await context.assetManager.getAllAgents(0, 100);
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of list[0]) {
+        if (doNotDestroyYetList.includes(agentAddress)) {
+            continue;
+        }
         try {
             await destroyAgent(context, orm, agentAddress, ownerAddress);
         } catch (e) {
@@ -88,7 +93,7 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
                     await sleep(Number(toBN(waitingTime).muln(1000)));
                     await destroyAgent(context, orm, agentAddress, ownerAddress);
                 }
-                if(e.message.includes('AgentEntity not found')) { continue; }
+                if (e.message.includes('AgentEntity not found')) { continue; }
                 console.log(e.message, agentAddress);
             }
         }
@@ -133,7 +138,7 @@ export async function whitelistAgent(accounts: string[], ownerAddress: string, w
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
-export async function  findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
+export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVaultAddress, active: true } as FilterQuery<AgentEntity>);
     return await AgentBot.fromEntity(context, agentEnt, new Notifier());
 }
