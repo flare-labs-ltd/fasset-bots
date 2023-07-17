@@ -78,6 +78,7 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of list[0]) {
         if (doNotDestroyYetList.includes(agentAddress)) {
+            console.log("Agent", agentAddress, "is not going to be destroying, because it is on doNotDestroyYetList.")
             continue;
         }
         try {
