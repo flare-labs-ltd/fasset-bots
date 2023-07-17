@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 import { toplevelRun } from "../utils/helpers";
 import { BotCliCommands } from "./BotCliCommands";
 

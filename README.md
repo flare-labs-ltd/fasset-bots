@@ -2,10 +2,38 @@
 
 ## FAsset bots
 
-The automated system of FAsset system, which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up an Agent and automate actions to events that require quick reactions (collateral reservation, minting, redemption, low collateral ratio).
+The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
 
-To learn more about FAsset see [FAsset repository](https://gitlab.com/flarenetwork/fasset).
+## Actors in FAsset system
 
-## Documentation
-See FAsset bots [documentation](./docs/README.md) for more.
+* [*Agent*](./docs/actors/agent.md): main player in the FAsset system.
+* [*Challenger*](./docs/actors/challenger.md): essential player for maintaining the FAsset system healthy.
+* [*Liquidator*](./docs/actors/liquidator.md): player who liquidates bad agents.
+* [*SystemKeeper*](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
+* [*TimeKeeper*](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
+
+## Configuration and running Agent Bot
+
+For needed prerequirements, environment variables and other configurations see [here](./docs/config.md).
+
+# How to run
+
+In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `npx ts-node src/run/run-agent.ts`.
+
+The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The runner will initiate needed context and connect to native network (Flare/Songbird). Then it will constantly check if any active agent stored in persistent state should handle any incoming events (see [Agent](./docs/actors/agent.md)).
+
+In order to create new agent, deposit funds and some do some other manual operations, command line interface is provided [`fasset-bots-cli`](./docs/cli.md). You can access it with opening another terminal and run command `yarn fasset-bots-cli`.
+
+## Command line interface `fasset-bots-cli`
+
+Command line interface can be access by running command `yarn fasset-bots-cli`. For more see [here](./docs/cli.md).
+
+## Helpers
+
+In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [*TrackedState*](./src/state/TrackedState.ts) and [*TrackedAgentState*](./src/state/TrackedAgentState.ts).
+See [here](./docs/trackState.md).
+
+## Test and debug
+
+See [here](./docs/testDebug.md).
 
