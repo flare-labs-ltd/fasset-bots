@@ -9,6 +9,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentEntity } from "../../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core";
+import { FaultyNotifier } from "../../test-utils/FaultyNotifier";
 use(spies);
 
 const loopDelay: number = 2;
@@ -47,18 +48,29 @@ describe("Agent bot runner tests", async () => {
         expect(spyStep).to.have.been.called.once;
     });
 
-    it("Should create agent bot runner", async () => {
+    it("Should create agent bot runner and run it", async () => {
         const spyWarn = spy.on(console, 'warn');
+        const spyError = spy.on(console, 'error');
+        // create agents
         await createTestAgentBot(context, orm, ownerAddress);
         const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
         await createTestAgentBot(otherContext, orm, ownerAddress);
         await createTestAgentBot(context, orm, ownerAddress);
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
+        // create runner
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay, new FaultyNotifier());
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
-        await agentBotRunner.runStep();
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>)
+        // make faulty entity
+        const agentEnt = agentEntities[0];
+        agentEnt.vaultAddress = "someString";
+        await orm.em.persistAndFlush(agentEnt);
+        // run
+        await agentBotRunner.runStep();
         expect(agentEntities.length).to.eq(3);
         expect(spyWarn).to.have.been.called.once;
+        expect(spyError).to.have.been.called.once;
+        agentBotRunner.requestStop();
     });
+
 });

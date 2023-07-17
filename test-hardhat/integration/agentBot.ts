@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, mintClass1ToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -20,6 +20,7 @@ use(spies);
 import BN from "bn.js";
 import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 
 const IERC20 = artifacts.require('IERC20');
 
@@ -538,6 +539,27 @@ describe("Agent bot tests", async () => {
         assert.equal(status, AgentStatus.DESTROYING);
     });
 
+    it("Should fail to send notification - 'faulty notifier", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, new FaultyNotifier());
+        const spyConsole = spy.on(console, 'error');
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        // check agent status
+        const status1 = await getAgentStatus(agentBot);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // change prices
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        // mock price changes and run liquidation trigger
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.assetManager.startLiquidation(agentBot.agent.vaultAddress, { from: minter.address });
+        // check agent status
+        const status2 = await getAgentStatus(agentBot);
+        assert.equal(status2, AgentStatus.CCB);
+        // run bot
+        await agentBot.runStep(orm.em);
+        expect(spyConsole).to.have.been.called.once;
+    });
 
     it("Should top up collateral - fails on owner side due to no Class1", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);

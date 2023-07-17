@@ -81,8 +81,8 @@ export async function createTestAgent(context: TestAssetBotContext, ownerAddress
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export function createTestAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, loopDelay, new Notifier());
+export function createTestAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number, notifier: Notifier = new Notifier()): AgentBotRunner {
+    return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
 
 export async function createTestMinter(context: IAssetContext, minterAddress: string, chain: MockChain, amount: BN = deposit): Promise<Minter> {

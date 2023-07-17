@@ -128,6 +128,13 @@ describe("Agent bot unit tests", async () => {
         expect(spyLog).to.have.been.called.once;
     });
 
+    it("Should not do next redemption step due to redemption not found in db", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const spyLog = spy.on(console, 'error');
+        await agentBot.nextRedemptionStep(orm.em, 1000);
+        expect(spyLog).to.have.been.called.once;
+    });
+
     it("Should not do next minting step due to invalid minting state", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyLog = spy.on(console, 'error');
@@ -146,6 +153,13 @@ describe("Agent bot unit tests", async () => {
         });
         await orm.em.persistAndFlush(mt);
         await agentBot.nextMintingStep(orm.em, mt.id);
+        expect(spyLog).to.have.been.called.once;
+    });
+
+    it("Should not do next minting step due to minting not found in db", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const spyLog = spy.on(console, 'error');
+        await agentBot.nextMintingStep(orm.em, 1000);
         expect(spyLog).to.have.been.called.once;
     });
 
@@ -535,4 +549,5 @@ describe("Agent bot unit tests", async () => {
         await agentBot.requestPaymentProof(redemption);
         expect(redemption.state).to.eq('paid');
     });
+
 });

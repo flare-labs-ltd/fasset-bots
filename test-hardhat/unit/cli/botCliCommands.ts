@@ -21,6 +21,7 @@ import { createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner }
 import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
+import { FaultyNotifier } from "../../test-utils/FaultyNotifier";
 use(chaiAsPromised);
 use(spies);
 
@@ -495,6 +496,14 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.listActiveAgents();
         await botCliCommands.run(["", "", "listAgents"]);
         expect(spyLog).to.be.called.gt(0);
+    });
+
+    it("Should not execute command 'faulty notifier'", async () => {
+        const faultyBotCliCommands = botCliCommands;
+        faultyBotCliCommands.botConfig.notifier = new FaultyNotifier();
+        const agent = await createAgent();
+        await mintAndDepositClass1ToOwner(context, agent!, toBN(depositAmount), ownerAddress);
+        await expect(faultyBotCliCommands.depositToVault(agent!.vaultAddress!, depositAmount)).to.eventually.be.rejectedWith(`Method not implemented.`).and.be.an.instanceOf(Error);
     });
 
 });
