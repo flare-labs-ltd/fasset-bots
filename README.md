@@ -24,7 +24,7 @@ The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The run
 
 In order to create new agent, deposit funds and some do some other manual operations, command line interface is provided [`fasset-bots-cli`](./docs/cli.md). You can access it with opening another terminal and run command `yarn fasset-bots-cli`.
 
-## Command line interface `fasset-bots-cli`
+## Command line interface for Agent bots `fasset-bots-cli`
 
 Command line interface can be access by running command `yarn fasset-bots-cli`. For more see [here](./docs/cli.md).
 
