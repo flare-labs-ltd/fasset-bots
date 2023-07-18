@@ -17,15 +17,16 @@ let dbWallet: DBWalletKeys;
 let walletHelper: BlockchainWalletHelper;
 let blockChainIndexerHelper: BlockchainIndexerHelper;
 
+export const fundedAddressXRP = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
+export const fundedPrivateKeyXRP = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0E3A1622";
+export const targetAddressXRP = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
+export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
+
 describe("XRP wallet tests", async () => {
 
     const sourceId: SourceId = SourceId.XRP;
-    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/xrp/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp/";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
-    const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
-    const fundedPrivateKey = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0E3A1622";
-    const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
-    const targetPrivateKey = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
     const amountToSendDrops = 1000000;
 
     before(async () => {
@@ -42,38 +43,38 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add account", async () => {
-        const account0 = await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        const account0 = await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const privateKey0 = await dbWallet.getKey(account0);
-        expect(privateKey0).to.eq(fundedPrivateKey);
-        const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
+        expect(privateKey0).to.eq(fundedPrivateKeyXRP);
+        const account1 = await walletHelper.addExistingAccount(targetAddressXRP, targetPrivateKeyXRP);
         const privateKey1 = await dbWallet.getKey(account1);
-        expect(privateKey1).to.eq(targetPrivateKey);
-        await removeWalletAddressFromDB(orm, fundedAddress);
-        await removeWalletAddressFromDB(orm, targetAddress);
+        expect(privateKey1).to.eq(targetPrivateKeyXRP);
+        await removeWalletAddressFromDB(orm, fundedAddressXRP);
+        await removeWalletAddressFromDB(orm, targetAddressXRP);
     });
 
     it("Should send funds and retrieve transaction", async () => {
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const balanceBefore = await walletHelper.getBalance(targetAddress);
+        await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
+        const balanceBefore = await walletHelper.getBalance(targetAddressXRP);
         const options = { maxFee: 12 }; // maxFee in Drops
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDrops, null, options, true);
-        const balanceAfter = await walletHelper.getBalance(targetAddress);
+        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, null, options, true);
+        const balanceAfter = await walletHelper.getBalance(targetAddressXRP);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
         // wait for transaction to get into indexer
         await sleep(2000);
         const retrievedTransaction = await blockChainIndexerHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
-        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
 
     it("Should not send funds: fee > maxFee", async () => {
-        await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
+        await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDrops, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
-        await removeWalletAddressFromDB(orm, fundedAddress);
+        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+        await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
 
     it("Should not add multi transaction - method not implemented", async () => {
@@ -81,7 +82,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddress, fundedAddress, amountToSendDrops, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddress}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`).and.be.an.instanceOf(Error);
     });
 
     it("Should get transaction fee", async () => {
@@ -128,7 +129,7 @@ describe("BTC wallet tests", async () => {
 describe("DOGE wallet tests", async () => {
 
     const sourceId: SourceId = SourceId.DOGE;
-    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/doge/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
     const walletUrl: string = "https://api.bitcore.io/api/DOGE/testnet/";
     const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
     const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
