@@ -23,7 +23,7 @@ Example:
         "amgDecimals": 0,
         "requireEOAProof": false,
         "fAssetSymbol": "FtestXRP",
-        "indexerUrl": "https://attestation-coston2.aflabs.net/verifier/xrp/",
+        "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/",
         "walletUrl": "https://s.altnet.rippletest.net:51234"
       }
     ],
@@ -34,7 +34,7 @@ Example:
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": [
-      "https://attestation-coston.aflabs.net/attestation-client/api-doc"
+      "https://attestation-coston.aflabs.net/attestation-client"
     ],
     "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
     "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
@@ -88,12 +88,12 @@ Example:
       "amgDecimals": 0,
       "requireEOAProof": false,
       "fAssetSymbol": "FtestXRP",
-      "indexerUrl": "https://attestation-coston2.aflabs.net/verifier/xrp/"
+      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/"
     }
   ],
   "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
   "attestationProviderUrls": [
-    "https://attestation-coston.aflabs.net/attestation-client/api-doc"
+    "https://attestation-coston.aflabs.net/attestation-client"
   ],
   "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
   "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",

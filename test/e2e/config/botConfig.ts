@@ -8,9 +8,9 @@ import { expect, use } from "chai";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
-const indexerBTCUrl = "https://attestation-coston2.aflabs.net/verifier/btc/";
-const indexerDOGEUrl = "https://attestation-coston2.aflabs.net/verifier/doge/";
-const indexerXRPUrl = "https://attestation-coston2.aflabs.net/verifier/xrp/";
+const indexerBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
+const indexerDOGEUrl = "https://attestation-coston.aflabs.net/verifier/doge/";
+const indexerXRPUrl = "https://attestation-coston.aflabs.net/verifier/xrp/";
 const walletBTCUrl = "https://api.bitcore.io/api/BTC/testnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/testnet/";
 const walletXRPUrl = "https://s.altnet.rippletest.net:51234";

@@ -15,7 +15,7 @@ use(chaiAsPromised);
 
 describe("XRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.XRP;
-    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/xrp/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -217,7 +217,7 @@ describe("LTC blockchain tests via indexer", async () => {
 
 describe("DOGE blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.DOGE;
-    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/doge/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -270,7 +270,7 @@ describe("DOGE blockchain tests via indexer", async () => {
 
 describe("BTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.BTC;
-    const indexerUrl: string = "https://attestation-coston2.aflabs.net/verifier/btc/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
