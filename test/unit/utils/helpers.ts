@@ -7,6 +7,12 @@ import { toBN } from "../../../src/utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
+class SmallError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
 describe("Helpers unit tests", async () => {
 
     it("Should sleep for x seconds", async () => {
@@ -105,12 +111,15 @@ describe("Helpers unit tests", async () => {
 
     it("Should include and expect error", () => {
         const error = { message: "ERROR" };
+        const smallError = new SmallError("Small Error");
         expect(helperMethods.errorIncluded(error, [Error])).to.be.false;
         expect(helperMethods.errorIncluded(error, ["ERROR"])).to.be.true;
+        expect(helperMethods.errorIncluded(undefined, ["ERROR"])).to.be.false;
+        expect(helperMethods.errorIncluded(smallError, [SmallError])).to.be.true;
         const fn = () => {
             return helperMethods.expectErrors(error, [Error]);
         };
-        expect(fn).to.throw('');
+        expect(fn).to.throw(error.message);
     });
 
     it("Should return maximal BN", () => {

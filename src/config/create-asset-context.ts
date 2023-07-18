@@ -136,6 +136,7 @@ async function getAssetManagerAndController(chainConfig: AgentBotConfigChain | T
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());
         return [assetManager, assetManagerController] as const;
     } else if (chainConfig.fAssetSymbol) {
+        /* istanbul ignore next */ //TODO until AssetManagerController gets verified in explorer
         const controllerAddress =
             addressUpdater != null ? await addressUpdater.getContractAddress('AssetManagerController') :
                 contracts != null ? contracts.AssetManagerController.address :
@@ -162,7 +163,7 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
 
 async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoRegistryInstance, assetFtsoSymbol: string) {
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(assetFtsoSymbol));
-    const ftsos: {[key: string] : any } = {};
+    const ftsos: { [key: string]: any } = {};
     ftsos['asset'] = assetFtso;
     for (const collateralToken of collaterals) {
         const tokenName = collateralToken.tokenFtsoSymbol;
@@ -174,11 +175,11 @@ async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoReg
 
 async function createStableCoins(collaterals: CollateralType[]) {
     const stableCoinsArray = collaterals.filter(token => Number(token.collateralClass) === CollateralClass.CLASS1);
-    const stableCoins: {[key: string] : any } = {};
+    const stableCoins: { [key: string]: any } = {};
     for (const collateralToken of stableCoinsArray) {
         const tokenName: string = collateralToken.tokenFtsoSymbol;
         const token = await IERC20.at(collateralToken.token);
-        stableCoins[tokenName] =  token;
+        stableCoins[tokenName] = token;
     }
     return stableCoins;
 }

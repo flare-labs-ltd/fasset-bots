@@ -116,7 +116,7 @@ export class MerkleTree {
    */
   get sortedHashes() {
     const n = this.hashCount;
-    return this._tree.slice(this.hashCount - 1);
+    return this._tree.slice(n - 1);
   }
 
   /**

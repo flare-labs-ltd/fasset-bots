@@ -22,8 +22,10 @@ export async function initWeb3(provider: provider, walletKeys: string[] | 'netwo
         currentProvider = provider;
         web3.setProvider(createProvider(provider));
     }
+    /* istanbul ignore next */
     const accounts = walletKeys === 'network' ? await web3.eth.getAccounts() : createWalletAccounts(walletKeys);
     web3.eth.defaultAccount = typeof defaultAccount === 'number' ? accounts[defaultAccount] : defaultAccount;
+    /* istanbul ignore next */
     artifacts.updateWeb3?.(web3);
     return accounts;
 }

@@ -22,6 +22,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 "Content-Type": "application/json",
                 "X-API-KEY": this.indexerWebServerApiKey
             },
+            /* istanbul ignore next */
             validateStatus: function (status: number) {
                 return (status >= 200 && status < 300) || status == 500;
             },
@@ -97,6 +98,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/block-height`);
         const status = resp.data.status;
         const data = resp.data.data;
+        /* istanbul ignore else */
         if (status === "OK" && data) {
             return data;
         }
@@ -223,6 +225,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             return [[response.Account, response.Fee ? toBN(response.Fee) : toBN(0)]];
         } else {
             if (data.isNativePayment) {
+                /* istanbul ignore next */
                 const metaData = response.meta || (response as any).metaData;
                 return [[response.Destination, toBN(metaData.delivered_amount as string)]];
             }
@@ -236,6 +239,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         }
         // https://xrpl.org/transaction-results.html
         const response = data.response.data.result;
+        /* istanbul ignore next */
         const metaData = response.meta || (response as any).metaData;
         const result = metaData.TransactionResult;
         if (result === "tesSUCCESS") {

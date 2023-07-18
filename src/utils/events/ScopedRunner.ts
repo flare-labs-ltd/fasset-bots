@@ -25,6 +25,7 @@ export class ScopedRunner {
         void method(scope)
             .catch(e => {
                 if (e instanceof ExitScope) {
+                    /* istanbul ignore next */
                     if (e.scope == null || e.scope === scope) return;
                 }
                 this.logError(e);

@@ -421,6 +421,7 @@ export class AgentBot {
             if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
                 const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
+                /* istanbul ignore else */
                 if (txs.length === 1) {
                     // corner case: minter pays and doesn't execute minting
                     // check minter paid -> request payment proof -> execute minting

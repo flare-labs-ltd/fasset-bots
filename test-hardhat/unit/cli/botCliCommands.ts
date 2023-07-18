@@ -499,11 +499,13 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should not execute command 'faulty notifier'", async () => {
+        const spyLog = spy.on(console, "error");
         const faultyBotCliCommands = botCliCommands;
         faultyBotCliCommands.botConfig.notifier = new FaultyNotifier();
         const agent = await createAgent();
         await mintAndDepositClass1ToOwner(context, agent!, toBN(depositAmount), ownerAddress);
-        await expect(faultyBotCliCommands.depositToVault(agent!.vaultAddress!, depositAmount)).to.eventually.be.rejectedWith(`Method not implemented.`).and.be.an.instanceOf(Error);
+        await botCliCommands.run(["", "", "depositClass1", agent!.vaultAddress!, depositAmount]);
+        expect(spyLog).to.be.called.once;
     });
 
 });

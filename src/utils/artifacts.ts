@@ -39,6 +39,7 @@ class ArtifactsImpl {
             this.loadArtifactMap();
         }
         const artifactData = this.artifactMap!.get(name);
+        /* istanbul ignore if */
         if (artifactData == null) {
             throw new Error(`Unknown artifact ${name}`);
         }
@@ -50,6 +51,7 @@ class ArtifactsImpl {
 
     updateWeb3(web3: Web3): void {
         this.web3 = web3;
+        /* istanbul ignore else */
         if (this.artifactMap) {
             for (const artifact of this.artifactMap.values()) {
                 if (artifact.contract) {

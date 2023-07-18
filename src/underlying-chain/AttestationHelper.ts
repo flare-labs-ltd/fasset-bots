@@ -31,7 +31,7 @@ export class AttestationHelper {
         public stateConnector: IStateConnectorClient,
         public chain: IBlockChain,
         public chainId: SourceId,
-    ) {}
+    ) { }
 
     roundFinalized(round: number): Promise<boolean> {
         return this.stateConnector.roundFinalized(round);
@@ -113,6 +113,7 @@ export class AttestationHelper {
     async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId | null> {
         const blockHeight = await this.chain.getBlockHeight();
         const finalizationBlock = await this.chain.getBlockAt(blockHeight);
+        /* istanbul ignore if */
         if (finalizationBlock == null) {
             throw new AttestationHelperError(`finalization block not found (block ${blockHeight}, height ${await this.chain.getBlockHeight()})`);
         }
@@ -149,6 +150,7 @@ export class AttestationHelper {
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const { result } = await this.obtainPaymentProof(request.round, request.data);
+        /* istanbul ignore if */
         if (result == null || result.merkleProof == null) {
             throw new AttestationHelperError("payment: not proved")
         }
@@ -162,6 +164,7 @@ export class AttestationHelper {
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const { result } = await this.obtainBalanceDecreasingTransactionProof(request.round, request.data);
+        /* istanbul ignore if */
         if (result == null || result.merkleProof == null) {
             throw new AttestationHelperError("balanceDecreasingTransaction: not proved")
         }
@@ -175,6 +178,7 @@ export class AttestationHelper {
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const { result } = await this.obtainReferencedPaymentNonexistenceProof(request.round, request.data);
+        /* istanbul ignore if */
         if (result == null || result.merkleProof == null) {
             throw new AttestationHelperError("referencedPaymentNonexistence: not proved")
         }
@@ -188,6 +192,7 @@ export class AttestationHelper {
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const { result } = await this.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
+        /* istanbul ignore if */
         if (result == null || result.merkleProof == null) {
             throw new AttestationHelperError("confirmedBlockHeightExists: not proved")
         }

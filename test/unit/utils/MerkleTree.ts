@@ -79,4 +79,13 @@ describe("Merkle tree unit tests", async () => {
         expect(cHash).to.not.be.null;
     });
 
+    it("Should build a tree from leave hashes", async () => {
+        const hashes = makeHashes(10);
+        const tree = new MerkleTree(hashes);
+        const sortedHashes = tree.sortedHashes;
+        const doubleLeaves = sortedHashes.concat(sortedHashes);
+        tree.build(doubleLeaves);
+        expect(tree.root).eq(new MerkleTree(hashes).root);
+    });
+
 });

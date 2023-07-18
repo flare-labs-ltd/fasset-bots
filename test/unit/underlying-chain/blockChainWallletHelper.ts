@@ -9,6 +9,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
+import { sleep } from "../../../src/utils/helpers";
 use(chaiAsPromised);
 
 let orm: ORM;
@@ -57,9 +58,11 @@ describe("XRP wallet tests", async () => {
         const options = { maxFee: 12 }; // maxFee in Drops
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendDrops, null, options, true);
         const balanceAfter = await walletHelper.getBalance(targetAddress);
+        expect(balanceAfter.gt(balanceBefore)).to.be.true;
+        // wait for transaction to get into indexer
+        await sleep(2000);
         const retrievedTransaction = await blockChainIndexerHelper.getTransaction(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
-        expect(balanceAfter.gt(balanceBefore)).to.be.true;
         await removeWalletAddressFromDB(orm, fundedAddress);
     });
 

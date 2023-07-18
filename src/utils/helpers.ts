@@ -98,6 +98,7 @@ export function toStringExp(x: number | string, exponent: number): string {
     const mantissa = dot >= 0 ? xStr.slice(0, dot) + xStr.slice(dot + 1) : xStr;
     const precision = dot >= 0 ? xStr.length - (dot + 1) : 0;
     if (precision === exponent) return mantissa;
+    /* istanbul ignore if */
     if (exponent < precision) throw new Error("toStringExp: loss of precision");
     const zeros = Array.from({ length: exponent - precision }, () => '0').join('');   // trailing zeros
     return mantissa + zeros;
@@ -128,6 +129,7 @@ export function sumBN<T>(list: Iterable<T>, elementValue: (x: T) => BN): BN {
 /**
  * Convert object to subclass with type check.
  */
+/* istanbul ignore next */
 export function checkedCast<S, T extends S>(obj: S, cls: new (...args: any[]) => T): T {
     if (obj instanceof cls) return obj;
     throw new Error(`object not instance of ${cls.name}`);

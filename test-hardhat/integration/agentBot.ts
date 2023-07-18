@@ -561,7 +561,7 @@ describe("Agent bot tests", async () => {
         expect(spyConsole).to.have.been.called.once;
     });
 
-    it("Should top up collateral - fails on owner side due to no Class1", async () => {
+    it("Should not top up collateral - fails on owner side due to no Class1", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
         const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
@@ -588,11 +588,12 @@ describe("Agent bot tests", async () => {
         expect(spyTopUp).to.have.been.called.twice;
     });
 
-    it.skip("Should top up collateral - fails on owner side due to no NAT", async () => {
+    it("Should not top up collateral - fails on owner side due to no NAT", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgentB(context, ownerAddress);
-        await agentB.buyCollateralPoolTokens(ownerBalance.sub(NATIVE_LOW_BALANCE));
+        const deposit = ownerBalance.sub(NATIVE_LOW_BALANCE);
+        await agentB.buyCollateralPoolTokens(deposit);
         const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
         const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -607,6 +608,38 @@ describe("Agent bot tests", async () => {
         await agentBot.runStep(orm.em);
         expect(spyTopUpFailed).to.have.been.called.twice;
         expect(spyLowOwnerBalance).to.have.been.called.twice;
+        // redeem pool tokens
+        const redeemAt = await agentB.announcePoolTokenRedemption(deposit);
+        await time.increaseTo(redeemAt);
+        await agentB.redeemCollateralPoolTokens(deposit);
+        const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
+        expect(ownerBalanceAfter.gte(deposit)).to.be.true;
+    });
+
+    it("Should not top up collateral - fails on owner side due to no NAT", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        // create collateral reservation, perform minting and run
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await agentBot.runStep(orm.em)
+        // change prices
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        // create another agent and buy pool tokens
+        const agent = await createTestAgentB(context, ownerAddress);
+        const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
+        const forDeposit = ownerBalance.sub(ownerBalance.divn(1000000));
+        await agent.buyCollateralPoolTokens(forDeposit);
+        // check for top up collateral
+        await agentBot.runStep(orm.em)
+        // redeem pool tokens
+        const redeemAt = await agent.announcePoolTokenRedemption(forDeposit);
+        await time.increaseTo(redeemAt);
+        await agent.redeemCollateralPoolTokens(forDeposit);
+        const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
+        expect(ownerBalanceAfter.gte(forDeposit)).to.be.true;
     });
 
 });

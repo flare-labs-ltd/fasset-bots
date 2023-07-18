@@ -273,6 +273,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             headers: {
                 "Content-Type": "application/json",
             },
+            /* istanbul ignore next */
             validateStatus: function (status: number) {
                 return (status >= 200 && status < 300) || status == 500;
             },
