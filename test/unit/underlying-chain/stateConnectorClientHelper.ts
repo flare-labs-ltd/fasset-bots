@@ -19,12 +19,7 @@ const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
 const sourceId = SourceId.XRP;
 
 describe("XRP attestation/state connector tests", async () => {
-    const roundIdC2 = 431016;//571512;
-    const requestDataBytesC2_1 = "0x000100000003e309bade9e0ef87e3e0a1a8c2f0ebb26af4ef9df6b8d3467ca1f4deac171d2b0be2534c86cf42560074c26f346345b96f3e9d8cfd2bac611bc199def83ac5a3c02515d930000";
-    const requestDataBytesC2_2 = "";
-    const requestDataBytesC2_3 = "0x0003000000035cfd3a2b8acfa3685043c18aed1bc1c3c3a8fb19e350df38526ec11345c8e20e025162b100000064";
-    const requestDataBytesC2_4 = "0x00040000000393ae948c1819fa43b86545320c9d7a6b6b49bd8b9b58cc4e68410c856ae9a86602515bd302515c376494f98aa46380794889e4f65f8c19b6aaee2645c07633bb61f8e2ca08d93f056c6710b15a2cc94a7a6901817c2a0abe99ad73a82c4fa247f84b676d5deedaf23ee15c2f2d5f5cdd63c9fbddfc5a7ace02705275";
-
+    const roundId = 571512;
 
     before(async () => {
         await initWeb3(COSTON_RPC, [accountPrivateKey], null);
@@ -32,16 +27,16 @@ describe("XRP attestation/state connector tests", async () => {
     })
 
     it("Should return round is finalized", async () => {
-        const isRoundFinalized = await stateConnectorClient.roundFinalized(roundIdC2);
+        const isRoundFinalized = await stateConnectorClient.roundFinalized(roundId);
         expect(isRoundFinalized).to.be.true;
     });
 
     it("Should wait for round finalization", async () => {
-        await stateConnectorClient.waitForRoundFinalization(roundIdC2);
+        await stateConnectorClient.waitForRoundFinalization(roundId);
     });
 
     it("Should return round is not finalized", async () => {
-        const round = roundIdC2 + 1000000000000;
+        const round = roundId + 1000000000000;
         const isRoundFinalized = await stateConnectorClient.roundFinalized(round);
         expect(isRoundFinalized).to.be.false;
     });
@@ -60,15 +55,6 @@ describe("XRP attestation/state connector tests", async () => {
         const resp = await stateConnectorClient.submitRequest(request);
         expect(resp!.round).to.be.greaterThan(0);
         expect(resp!.data).is.not.null;
-    });
-    // following will pass until results of roundIdC2 are available
-    it.skip("Should obtain proof", async () => {
-        const proof1 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_1);
-        expect(proof1.finalized).to.be.true;
-        const proof3 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_3);
-        expect(proof3.finalized).to.be.true;
-        const proof4 = await stateConnectorClient.obtainProof(roundIdC2, requestDataBytesC2_4);
-        expect(proof4.finalized).to.be.true;
     });
 
     it("Should convert from timestamp to roundId",async () => {
