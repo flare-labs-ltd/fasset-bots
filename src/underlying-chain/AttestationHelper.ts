@@ -6,6 +6,7 @@ import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
 import { web3 } from "../utils/web3";
 import { ZERO_BYTES32 } from "../utils/helpers";
+import { prefix0x, toHex } from "../verification/attestation-types/attestation-types-utils";
 
 // Attestation provider data that is always proved (i.e. contains Merkle proof).
 export type ProvedDH<T extends DHType> = T & { merkleProof: string };
@@ -56,7 +57,7 @@ export class AttestationHelper {
             sourceId: this.chainId,
             inUtxo: findAddressIndex(transaction.inputs, sourceAddress, 0),
             utxo: findAddressIndex(transaction.outputs, receivingAddress, 0),
-            id: transactionHash,
+            id: prefix0x(transactionHash),
             blockNumber: block.number,
             messageIntegrityCode: ZERO_BYTES32,
         };
@@ -77,10 +78,11 @@ export class AttestationHelper {
             attestationType: AttestationType.BalanceDecreasingTransaction,
             sourceId: this.chainId,
             sourceAddressIndicator: web3.utils.keccak256(sourceAddress),
-            id: transactionHash,
+            id: prefix0x(transactionHash),
             blockNumber: block.number,
             messageIntegrityCode: ZERO_BYTES32,
         };
+        console.log(request);
         return await this.stateConnector.submitRequest(request);
     }
 
@@ -103,9 +105,9 @@ export class AttestationHelper {
             deadlineBlockNumber: endBlock,
             deadlineTimestamp: endTimestamp,
             destinationAddressHash: web3.utils.keccak256(destinationAddress),
-            amount: amount,
+            amount: toHex(amount),
             paymentReference: paymentReference,
-            messageIntegrityCode: ZERO_BYTES32,
+            messageIntegrityCode: ZERO_BYTES32
         };
         return await this.stateConnector.submitRequest(request);
     }
