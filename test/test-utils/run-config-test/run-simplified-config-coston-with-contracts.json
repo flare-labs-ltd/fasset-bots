@@ -10,7 +10,7 @@
       "amgDecimals": 0,
       "requireEOAProof": false,
       "fAssetSymbol": "FtestXRP",
-      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/"
+      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
     }
   ],
   "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",

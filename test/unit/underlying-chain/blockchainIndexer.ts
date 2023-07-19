@@ -15,7 +15,7 @@ use(chaiAsPromised);
 
 describe("XRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.XRP;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp/";
+    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;

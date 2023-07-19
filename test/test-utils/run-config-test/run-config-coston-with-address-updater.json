@@ -11,7 +11,7 @@
       "amgDecimals": 0,
       "requireEOAProof": false,
       "assetManager": "0x68F6322BFf80978eB5b7F672404bC3D0ad77eF32",
-      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/",
+      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
       "walletUrl": "https://s.altnet.rippletest.net:51234"
     }
   ],

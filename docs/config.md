@@ -23,7 +23,7 @@ Example:
         "amgDecimals": 0,
         "requireEOAProof": false,
         "fAssetSymbol": "FtestXRP",
-        "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/",
+        "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
         "walletUrl": "https://s.altnet.rippletest.net:51234"
       }
     ],
@@ -88,7 +88,7 @@ Example:
       "amgDecimals": 0,
       "requireEOAProof": false,
       "fAssetSymbol": "FtestXRP",
-      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp/"
+      "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
     }
   ],
   "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
