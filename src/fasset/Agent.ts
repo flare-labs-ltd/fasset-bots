@@ -154,7 +154,7 @@ export class Agent {
 
     async confirmTopupPayment(transactionHash: string): Promise<void> {
         const proof = await this.attestationProvider.provePayment(transactionHash, null, this.underlyingAddress);
-        await this.assetManager.confirmTopupPayment(proof, this.agentVault.address, { from: this.ownerAddress });
+        await this.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agentVault.address, { from: this.ownerAddress });
     }
 
     async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
@@ -168,7 +168,7 @@ export class Agent {
 
     async confirmUnderlyingWithdrawal(transactionHash: string): Promise<EventArgs<UnderlyingWithdrawalConfirmed>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, null);
-        const res = await this.assetManager.confirmUnderlyingWithdrawal(proof, this.agentVault.address, { from: this.ownerAddress });
+        const res = await this.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agentVault.address, { from: this.ownerAddress });
         return requiredEventArgs(res, 'UnderlyingWithdrawalConfirmed');
     }
 

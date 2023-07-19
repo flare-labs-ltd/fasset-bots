@@ -10,6 +10,7 @@ import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
+import { web3DeepNormalize } from "../utils/web3normalize";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 interface ActiveRedemption {
@@ -134,7 +135,7 @@ export class Challenger {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             // due to async nature of challenging (and the fact that challenger might start tracking agent later), there may be some false challenges which will be rejected
             // this is perfectly safe for the system, but the errors must be caught
-            await this.state.context.assetManager.illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address })
+            await this.state.context.assetManager.illegalPaymentChallenge(web3DeepNormalize(proof), agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['chlg: already liquidating', 'chlg: transaction confirmed', 'matching redemption active', 'matching ongoing announced pmt']));
         });
     }
@@ -158,7 +159,7 @@ export class Challenger {
                 this.waitForDecreasingBalanceProof(scope, tx2hash, agent.underlyingAddress),
             ]);
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
+            await this.state.context.assetManager.doublePaymentChallenge(web3DeepNormalize(proof1), web3DeepNormalize(proof2), agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['chlg dbl: already liquidating']));
         });
     }
@@ -199,7 +200,7 @@ export class Challenger {
             const proofs = await Promise.all(transactionHashes.map(txHash =>
                 this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
+            await this.state.context.assetManager.freeBalanceNegativeChallenge(web3DeepNormalize(proofs), agent.vaultAddress, { from: this.address })
                 .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough balance']));
         });
     }

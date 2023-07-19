@@ -18,6 +18,7 @@ import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistenc
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { attestationWindowSeconds } from "../utils/fasset-helpers";
+import { web3DeepNormalize } from "../utils/web3normalize";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -69,7 +70,7 @@ export class AgentBot {
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
-        await context.assetManager.proveUnderlyingAddressEOA(proof, { from: ownerAddress });
+        await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: ownerAddress });
     }
 
     /**
@@ -409,8 +410,8 @@ export class AgentBot {
         if (proof) {
             // corner case: proof expires in indexer
             const settings = await this.context.assetManager.getSettings();
-            const burnNats = (await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS);
-            await this.context.assetManager.unstickMinting(proof, toBN(minting.requestId), { from: this.agent.ownerAddress, value: burnNats });
+            const burnNats = toBN((await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS));
+            await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
         } else {
@@ -478,7 +479,7 @@ export class AgentBot {
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
-            await this.context.assetManager.mintingPaymentDefault(nonPaymentProof, minting.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
             this.mintingExecuted(minting, true);
         } else {
@@ -495,7 +496,7 @@ export class AgentBot {
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
-            await this.context.assetManager.executeMinting(paymentProof, minting.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
         } else {
             this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
@@ -588,7 +589,7 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
         if (proof) {
             // corner case - agent did not pay
-            await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
@@ -610,7 +611,7 @@ export class AgentBot {
         const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
         if (proof) {
             // corner case: proof expires in indexer
-            await this.context.assetManager.finishRedemptionWithoutPayment(proof, redemption.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
         } else {
@@ -645,7 +646,7 @@ export class AgentBot {
         if (!proof.finalized) return;
         if (proof.result && proof.result.merkleProof) {
             const paymentProof = proof.result as ProvedDH<DHPayment>;
-            await this.context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
         } else {
             this.notifier.sendNoProofObtained(redemption.agentAddress, redemption.requestId.toString(), redemption.proofRequestRound!, redemption.proofRequestData!, true);
