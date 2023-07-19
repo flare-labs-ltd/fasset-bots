@@ -22,8 +22,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 "Content-Type": "application/json",
                 "X-API-KEY": this.indexerWebServerApiKey
             },
-            /* istanbul ignore next */
+
             validateStatus: function (status: number) {
+                /* istanbul ignore next */
                 return (status >= 200 && status < 300) || status == 500;
             },
         };
