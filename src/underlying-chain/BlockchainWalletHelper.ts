@@ -3,6 +3,7 @@ import { WalletClient } from "simple-wallet";
 import { toBN } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
+import { unPrefix0x } from "../verification/attestation-types/attestation-types-utils";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
@@ -15,7 +16,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const value = amount as number;
         const fee = undefined;
         const maxFee = options?.maxFee ? Number(options.maxFee) : undefined;
-        const note = reference ? reference : undefined;
+        const note = reference ? unPrefix0x(reference) : undefined;
         const tr = await this.walletClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee);
         const privateKey = await walletKeys.getKey(sourceAddress);
         if (privateKey) {
