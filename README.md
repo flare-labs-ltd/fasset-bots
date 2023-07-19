@@ -37,3 +37,21 @@ See [here](./docs/trackState.md).
 
 See [here](./docs/testDebug.md).
 
+## What to be aware of when testing on Coston and testnet XRP
+
+- Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts)  before reserving collateral, before redeeming, ...
+- Newly created testnet XRP account should get initial deposit of at least 10 XRP. Otherwise payment to this account will be rejected by tecNO_DST_INSUF_XRP.
+
+
+### Testnet faucets
+
+- testnet XRP
+    - https://yusufsahinhamza.github.io/xrp-testnet-faucet/ - 980 XRP (not limited per day)
+    - https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
+
+- Coston
+    - https://coston1-faucet.towolabs.com/ - 100 CFLR per day
+
+
+
+
