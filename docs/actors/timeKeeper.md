@@ -1,11 +1,12 @@
 # TimeKeeperBot
 
-Time keeper proves that underlying block with given number and timestamp exists and updates the current underlying block info if the provided data is higher. This bot should be used by minters before minting and by agent's regularly to prevent current block being too outdated, which gives too short time for minting or redemption payment.
+Time keeper proves that underlying block with given number and timestamp exists and updates the current underlying block info if the provided data is higher. This bot should be used by **minters** before minting and by **agents** regularly to prevent current block being too outdated, which gives too short time for minting or redemption payment.
 
 File [TimeKeeper.ts](../src/actors/TimeKeeper.ts) contains framework for such actor in FAsset system.
 
 ## Prerequirements
 User needs:
+- **native address**.
 - To create [**running configuration**](../../src/config/BotConfig.ts).
 ```javascript
 export interface TrackedStateRunConfig {
@@ -25,9 +26,10 @@ export interface TrackedStateRunConfig {
 For more see [configuration part](../config.md).
 
 ### Initialization
-The constructor takes in **asset context** (IAssetTrackedStateContext) input:
+The constructor takes in **address** (native address) and **asset context** (IAssetTrackedStateContext) as inputs:
 ```javascript
    constructor(
+        public address: string,
        public context: IAssetTrackedStateContext
    ) { }
 ```

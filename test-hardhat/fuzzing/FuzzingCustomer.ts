@@ -51,7 +51,7 @@ export class FuzzingCustomer {
     }
 
     async minting(scope: EventScope) {
-        await proveAndUpdateUnderlyingBlock(this.runner.context);
+        await proveAndUpdateUnderlyingBlock(this.runner.context, this.address);
         // create CR
         const agent = randomChoice(this.runner.availableAgentBots);
         const lots = randomInt(Number(agent.freeCollateralLots));

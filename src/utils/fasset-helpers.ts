@@ -3,6 +3,7 @@ import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { artifacts } from "./artifacts";
 import { toBN, toNumber } from "./helpers";
+import { web3DeepNormalize } from "./web3normalize";
 
 const IFtso = artifacts.require('IFtso');
 
@@ -27,9 +28,9 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext) {
+export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext, caller: string) {
     const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
-    await context.assetManager.updateCurrentBlock(proof);
+    await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller});
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 

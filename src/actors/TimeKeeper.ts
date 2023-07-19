@@ -4,6 +4,7 @@ import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 const delayInMs = 60000; // 1min
 export class TimeKeeper {
     constructor(
+        public address: string,
         public context: IAssetTrackedStateContext
     ) { }
 
@@ -16,7 +17,7 @@ export class TimeKeeper {
      * minting or redemption payment.
      */
     async updateUnderlyingBlock() {
-        await proveAndUpdateUnderlyingBlock(this.context);
+        await proveAndUpdateUnderlyingBlock(this.context, this.address);
     }
 
     /**
