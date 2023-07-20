@@ -15,6 +15,12 @@ import { createTestAgentBot, createTestChallenger, createTestLiquidator, createT
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { balanceOfClass1, cleanUp, depositClass1Amount, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { TrackedState } from "../../../src/state/TrackedState";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
+import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
+import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { Liquidator } from "../../../src/actors/Liquidator";
+import { Challenger } from "../../../src/actors/Challenger";
 
 const buyPoolTokens = toBNExp(500, 18);
 
@@ -118,6 +124,24 @@ describe("Actor tests - coston", async () => {
     it("Should create systemKeeper", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         expect(systemKeeper.address).to.eq(systemKeeperAddress);
+    });
+
+    it("Should create actor bot runner from  config", async () => {
+        const actorBaseRunner1 = await ActorBaseRunner.create(trackedStateConfig, challengerAddress, ActorBaseKind.CHALLENGER);
+        expect(actorBaseRunner1.loopDelay).to.eq(trackedStateConfig.loopDelay);
+        expect(actorBaseRunner1.actor.address).to.eq(challengerAddress);
+        expect(actorBaseRunner1.actor instanceof Challenger).to.be.true;
+
+
+        const actorBaseRunner2 = await ActorBaseRunner.create(trackedStateConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR);
+        expect(actorBaseRunner2.loopDelay).to.eq(trackedStateConfig.loopDelay);
+        expect(actorBaseRunner2.actor.address).to.eq(liquidatorAddress);
+        expect(actorBaseRunner2.actor instanceof Liquidator).to.be.true;
+
+        const actorBaseRunner3 = await ActorBaseRunner.create(trackedStateConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER);
+        expect(actorBaseRunner3.loopDelay).to.eq(trackedStateConfig.loopDelay);
+        expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
+        expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
     });
 
 });

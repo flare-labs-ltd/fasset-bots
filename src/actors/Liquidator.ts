@@ -1,4 +1,5 @@
 import { MintingExecuted } from "../../typechain-truffle/AssetManager";
+import { ActorBase } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -7,18 +8,20 @@ import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 
-export class Liquidator {
+export class Liquidator extends ActorBase {
     constructor(
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState
-    ) { }
+    ) {
+        super(runner, address, state);
+     }
 
     /**
      * This is the main method, where "automatic" logic is gathered.
      * It collects unhandled events on native chain, runs through them and handles them appropriately.
      */
-    async runStep(): Promise<void> {
+    override async runStep(): Promise<void> {
         await this.registerEvents();
     }
 

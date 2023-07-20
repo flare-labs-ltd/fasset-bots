@@ -1,4 +1,5 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { ActorBase } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
@@ -21,13 +22,15 @@ interface ActiveRedemption {
     validUntilTimestamp: BN;
 }
 
-export class Challenger {
+export class Challenger extends ActorBase {
     constructor(
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
         public lastEventUnderlyingBlockHandled: number
-    ) { }
+    ) {
+        super(runner, address, state);
+     }
 
     activeRedemptions = new Map<string, ActiveRedemption>();                        // paymentReference => { agent vault address, requested redemption amount }
     transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash
@@ -39,7 +42,7 @@ export class Challenger {
      * Firstly, it collects unhandled events on native chain, runs through them and handles them appropriately.
      * Lastly, it collects all unhandled transactions on underlying chain and handles them appropriately.
      */
-    async runStep(): Promise<void> {
+    override async runStep(): Promise<void> {
         await this.registerEvents();
     }
 
