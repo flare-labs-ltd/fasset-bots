@@ -33,6 +33,7 @@
          "src/verification/**/*.ts",
          "src/mock/*.ts",
          "src/run/run-agent.ts",
+         "src/run/run-challenger.ts",
          "src/cli/index.ts"
       ],
       "reporter": [
