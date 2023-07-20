@@ -13,14 +13,14 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 
-export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useUnderlyingAddress?: string) {
+export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
-    const underlyingAddress = useUnderlyingAddress ? useUnderlyingAddress : await ctx.wallet.createAccount();
+    const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return Minter.create(ctx, address, underlyingAddress, ctx.wallet);
 }
 
-export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: string) {
-    const underlyingAddress = await ctx.wallet.createAccount();
+export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
+    const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return new Redeemer(ctx, address, underlyingAddress);
 }
 
