@@ -42,7 +42,6 @@ See [here](./docs/testDebug.md).
 - Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts)  before reserving collateral, before redeeming, ...
 - Newly created testnet XRP account should get initial deposit of at least 10 XRP. Otherwise payment to this account will be rejected by tecNO_DST_INSUF_XRP.
 
-
 ### Testnet faucets
 
 - testnet XRP
@@ -52,6 +51,10 @@ See [here](./docs/testDebug.md).
 - Coston
     - https://coston1-faucet.towolabs.com/ - 100 CFLR per day
 
+### Other usefull webclients
 
+- [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#) (ApiKey to access it can found in .env file - ask Urška or Iztok).
+- [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
+- [Testnet XRP Explorer](https://testnet.xrpl.org/)
 
 
