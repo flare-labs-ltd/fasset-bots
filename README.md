@@ -28,6 +28,12 @@ In order to create new agent, deposit funds and some do some other manual operat
 
 Command line interface can be access by running command `yarn fasset-bots-cli`. For more see [here](./docs/cli.md).
 
+## How to run other bots (Challenger, Liquidator and SystemKeeper)
+
+Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
+
+Example for such script using actor base runner for Challenger can be found in [`run-challenger.ts`](./src/run/run-challenger.ts) and run by with command `npx ts-node src/run/run-challenger.ts`
+
 ## Helpers
 
 In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [*TrackedState*](./src/state/TrackedState.ts) and [*TrackedAgentState*](./src/state/TrackedAgentState.ts).
@@ -56,5 +62,9 @@ See [here](./docs/testDebug.md).
 - [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#) (ApiKey to access it can found in .env file - ask Urška or Iztok).
 - [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
 - [Testnet XRP Explorer](https://testnet.xrpl.org/)
+
+### Simple wallet
+
+Payments in bots are performed via [simple-wallet](https://gitlab.com/flarenetwork/simple-wallet).
 
 
