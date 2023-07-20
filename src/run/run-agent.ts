@@ -10,11 +10,10 @@ const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 const OWNER_UNDERLYING_ADDRESS: string = requireEnv('OWNER_UNDERLYING_ADDRESS');
 const OWNER_UNDERLYING_PRIVATE_KEY: string = requireEnv('OWNER_UNDERLYING_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
-const RPC_URL: string = requireEnv('RPC_URL');
 
 toplevelRun(async () => {
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotRunConfig;
-    await initWeb3(RPC_URL, [OWNER_PRIVATE_KEY], null);
+    await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
     const botConfig = await createAgentBotConfig(runConfig);
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);

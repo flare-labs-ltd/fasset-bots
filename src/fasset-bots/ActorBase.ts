@@ -16,8 +16,4 @@ export class ActorBase {
         throw Error("Each actor needs to provide it's own implementation.");
     }
 
-    // log(text: string) {
-    //     if (!this.state.logger) return;
-    //     this.state.logger.log(text);
-    // }
 }

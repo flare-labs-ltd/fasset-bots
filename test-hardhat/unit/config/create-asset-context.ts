@@ -74,6 +74,7 @@ describe("Create asset context unit tests", async () => {
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto"),
         }
         const config: TrackedStateConfig = {
+            loopDelay: 1000,
             rpcUrl: "rpcUrl",
             chains: [chainConfig],
             nativeChainInfo: testNativeChainInfo

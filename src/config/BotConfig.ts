@@ -22,7 +22,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 export interface AgentBotRunConfig extends TrackedStateRunConfig {
-    loopDelay: number;
     ormOptions: CreateOrmOptions;
     defaultAgentSettingsPath: string;
     chainInfos: BotChainInfo[];
@@ -30,6 +29,7 @@ export interface AgentBotRunConfig extends TrackedStateRunConfig {
 }
 
 export interface TrackedStateRunConfig {
+    loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     chainInfos: TrackedChainInfo[];
     rpcUrl: string;
@@ -44,13 +44,13 @@ export interface TrackedStateRunConfig {
 }
 
 export interface AgentBotConfig extends TrackedStateConfig {
-    loopDelay: number;
     chains: AgentBotConfigChain[];
     orm: ORM;
     notifier: Notifier;
 }
 
 export interface TrackedStateConfig {
+    loopDelay: number;
     rpcUrl: string;
     chains: TrackedStateConfigChain[];
     nativeChainInfo: NativeChainInfo;
@@ -126,6 +126,7 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
         chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, runConfig.ownerAddress));
     }
     return {
+        loopDelay: runConfig.loopDelay,
         rpcUrl: runConfig.rpcUrl,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,

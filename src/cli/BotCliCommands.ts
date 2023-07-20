@@ -27,9 +27,9 @@ export class BotCliCommands {
     /**
      * Initializes asset context from AgentBotRunConfig
      */
-    async initEnvironment(): Promise<void> {
+    async initEnvironment(runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
-        const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotRunConfig;
+        const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotRunConfig;
         const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createAgentBotConfig(runConfig);

@@ -528,7 +528,7 @@ describe("Agent bot tests", async () => {
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
-            // check if redemption is done
+            // check if destroy is announced
             orm.em.clear();
             const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
             console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);

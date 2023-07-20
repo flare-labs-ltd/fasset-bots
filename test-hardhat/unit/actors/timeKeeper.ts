@@ -8,15 +8,17 @@ import { TimeKeeper } from "../../../src/actors/TimeKeeper";
 describe("Time keeper unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let timeKeeperAddress: string;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         context.blockchainIndexer.chain.finalizationBlocks = 0;
+        timeKeeperAddress= accounts[10];
     });
 
     it("Should create time keeper", async () => {
-        const timeKeeper = new TimeKeeper(context);
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
         expect(timeKeeper.context.nativeChainInfo.finalizationBlocks).to.eq(context.nativeChainInfo.finalizationBlocks);
     });
 
@@ -25,7 +27,7 @@ describe("Time keeper unit tests", async () => {
         expect(Number(currentBlock[0])).to.eq(0);
         const blocksToMine = 2;
         context.blockchainIndexer.chain.mine(blocksToMine);
-        const timeKeeper = new TimeKeeper(context);
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
         await timeKeeper.updateUnderlyingBlock();
         const currentBlock2 = await context.assetManager.currentUnderlyingBlock();
         expect(Number(currentBlock2[0])).to.eq(blocksToMine);
