@@ -190,7 +190,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         underlyingSecondsForPayment: chainInfo.underlyingBlocksForPayment,
         redemptionFeeBIPS: bnToString(parameters.redemptionFeeBIPS),
         maxRedeemedTickets: bnToString(parameters.maxRedeemedTickets),
-        redemptionDefaultFactorAgentC1BIPS: toBIPS(1.1),
+        redemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.1),
         redemptionDefaultFactorPoolBIPS: toBIPS(0.1),
         confirmationByOthersAfterSeconds: bnToString(parameters.confirmationByOthersAfterSeconds),
         confirmationByOthersRewardUSD5: toBNExp(100, 5),        // 100 USD

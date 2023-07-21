@@ -1,26 +1,25 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect } from "chai";
 import { readFileSync } from "fs";
+import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
+import { Challenger } from "../../../src/actors/Challenger";
+import { Liquidator } from "../../../src/actors/Liquidator";
+import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { AgentBotConfig, AgentBotRunConfig, TrackedStateConfig, TrackedStateRunConfig, createAgentBotConfig, createAgentBotDefaultSettings, createTrackedStateConfig } from "../../../src/config/BotConfig";
 import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
+import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { toBN, toBNExp } from "../../../src/utils/helpers";
+import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
+import { toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { balanceOfVaultCollateral, cleanUp, depositVaultCollateralAmount, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { TrackedState } from "../../../src/state/TrackedState";
-import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
-import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { Liquidator } from "../../../src/actors/Liquidator";
-import { Challenger } from "../../../src/actors/Challenger";
 
 const buyPoolTokens = toBNExp(500, 18);
 

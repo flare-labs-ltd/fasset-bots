@@ -348,7 +348,7 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const amount = toBN(10000);
-        const vaultCollateralTokenAddress = (await agentBot.agent.getVaultCollateralToken()).token;
+        const vaultCollateralTokenAddress = (await agentBot.agent.getVaultCollateral()).token;
         await mintVaultCollateralToOwner(amount, vaultCollateralTokenAddress, ownerAddress);
         await agentBot.agent.depositVaultCollateral(amount);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);

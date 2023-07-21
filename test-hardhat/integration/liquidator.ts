@@ -108,7 +108,7 @@ describe("Liquidator tests", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
         // vaultCollateralToken
-        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateralToken()).token);
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
         const minter = await createTestMinter(context, minterAddress, chain);
         await liquidator.runStep();
         // check agent status

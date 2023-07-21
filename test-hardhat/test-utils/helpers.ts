@@ -124,7 +124,7 @@ export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotCo
 }
 
 export async function mintAndDepositVaultCollateralToOwner(context: IAssetContext, agent: Agent, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
-    const vaultCollateralToken = await agent.getVaultCollateralToken();
+    const vaultCollateralToken = await agent.getVaultCollateral();
     const vaultCollateralTokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === vaultCollateralToken?.token));
     await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress);
     return vaultCollateralTokenContract;

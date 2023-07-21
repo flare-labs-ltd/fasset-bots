@@ -229,7 +229,7 @@ describe("Agent bot tests", async () => {
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
         // vaultCollateralToken
-        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateralToken()).token);
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
@@ -330,8 +330,8 @@ describe("Agent bot tests", async () => {
 
     it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
         // vaultCollateralToken
-        const vaultCollateralToken = await agentBot.agent.getVaultCollateralToken();
-        const vaultCollateralToken = await IERC20.at(vaultCollateralToken.token);
+        const vaultCollateralType = await agentBot.agent.getVaultCollateral();
+        const vaultCollateralToken = await IERC20.at(vaultCollateralType.token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -361,7 +361,7 @@ describe("Agent bot tests", async () => {
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
         const endBalance = await vaultCollateralToken.balanceOf(someAddress);
-        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, vaultCollateralToken, settings);
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, vaultCollateralType, settings);
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });

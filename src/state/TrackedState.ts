@@ -107,7 +107,7 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'CollateralTypeDeprecated')) {
                     const collateral = this.collaterals.get(event.args.collateralClass, event.args.collateralToken);
                     collateral.validUntil = toBN(event.args.validUntil);
-                } else if (eventIs(event, this.context.assetManager, 'AgentCreated')) {
+                } else if (eventIs(event, this.context.assetManager, 'AgentVaultCreated')) {
                     this.createAgent(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
                     this.destroyAgent(event.args);
@@ -232,7 +232,7 @@ export class TrackedState {
         const agentInfo = await this.context.assetManager.getAgentInfo(vaultAddress);
         const agent = this.createAgent({
             agentVault: vaultAddress,
-            owner: agentInfo.ownerColdWalletAddress,
+            owner: agentInfo.ownerManagementAddress,
             underlyingAddress: agentInfo.underlyingAddressString,
             contingencyPool: agentInfo.contingencyPool,
             vaultCollateralToken: agentInfo.vaultCollateralToken,

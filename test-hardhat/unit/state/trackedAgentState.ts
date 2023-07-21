@@ -50,7 +50,7 @@ describe("Tracked agent state tests", async () => {
 
     beforeEach(async () => {
         agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        const agentVaultCollateralToken = await agentBot.agent.getVaultCollateralToken();
+        const agentVaultCollateralToken = await agentBot.agent.getVaultCollateral();
         await mintVaultCollateralToOwner(amount, agentVaultCollateralToken.token, ownerAddress);
         await agentBot.agent.depositVaultCollateral(amount);
         const lastBlock = await web3.eth.getBlockNumber();

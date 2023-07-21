@@ -154,7 +154,8 @@ describe("Fuzzing tests", async () => {
         challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight());
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
-        const timeKeeper = new TimeKeeper(context);
+        const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
         timeKeeper.run();
         // init some state
         await refreshAvailableAgents();
