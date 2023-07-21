@@ -39,7 +39,7 @@ Finally, the TrackedState populates the tracked agent variables and tracked agen
 - CollateralTypeAdded
 - CollateralRatiosChanged
 - CollateralTypeDeprecated
-- AgentCreated
+- AgentVaultCreated
 - AgentDestroyed
 - AgentInCCB
 - LiquidationStarted

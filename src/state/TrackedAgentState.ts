@@ -6,10 +6,10 @@ import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
-import { AgentCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";
+import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";
 import { roundUBAToAmg } from "../fasset/Conversions";
 
-export type InitialAgentData = EventArgs<AgentCreated>;
+export type InitialAgentData = EventArgs<AgentVaultCreated>;
 
 export class TrackedAgentState {
     constructor(

@@ -54,31 +54,31 @@ export class Agent {
         return await this.assetManager.getAgentInfo(this.agentVault.address);
     }
 
-    async getVaultCollateralToken(): Promise<CollateralType> {
+    async getVaultCollateral(): Promise<CollateralType> {
         return await this.assetManager.getCollateralType(CollateralClass.VAULT, (await this.getAgentSettings()).vaultCollateralToken);
     }
 
-    async getPoolCollateralToken(): Promise<CollateralType> {
+    async getPoolCollateral(): Promise<CollateralType> {
         return await this.assetManager.getCollateralType(CollateralClass.POOL, await this.assetManager.getWNat());
     }
 
     async getVaultCollateralPrice(): Promise<CollateralPrice> {
         const settings = await this.assetManager.getSettings();
         const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateralToken());
+        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateral());
     }
 
     async getPoolCollateralPrice(): Promise<CollateralPrice>{
         const settings = await this.assetManager.getSettings();
         const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateralToken());
+        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateral());
     }
 
     static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
-        const response = await ctx.assetManager.createAgent(web3DeepNormalize(agentSettings), { from: ownerAddress });
-        // extract agent vault address from AgentCreated event
-        const event = findRequiredEvent(response, 'AgentCreated');
+        const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
+        // extract agent vault address from AgentVaultCreated event
+        const event = findRequiredEvent(response, 'AgentVaultCreated');
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get contingency pool
@@ -91,7 +91,7 @@ export class Agent {
     }
 
     async depositVaultCollateral(amountTokenWei: BNish) {
-        const vaultCollateralTokenAddress = (await this.getVaultCollateralToken()).token;
+        const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
         const vaultCollateralToken = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === vaultCollateralTokenAddress));
         await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
         return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.ownerAddress });
@@ -125,7 +125,7 @@ export class Agent {
     }
 
     async withdrawVaultCollateral(amountWei: BNish) {
-        const vaultCollateralTokenAddress = (await this.getVaultCollateralToken()).token;
+        const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
         return await this.agentVault.withdrawCollateral(vaultCollateralTokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
     }
 

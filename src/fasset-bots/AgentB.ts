@@ -24,9 +24,9 @@ export class AgentB extends Agent {
 
     static async create(ctx: IAssetAgentBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
         // create agent
-        const response = await ctx.assetManager.createAgent(web3DeepNormalize(settings), { from: ownerAddress });
-        // extract agent vault address from AgentCreated event
-        const event = findRequiredEvent(response, 'AgentCreated');
+        const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(settings), { from: ownerAddress });
+        // extract agent vault address from AgentVaultCreated event
+        const event = findRequiredEvent(response, 'AgentVaultCreated');
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get contingency pool

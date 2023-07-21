@@ -6,7 +6,7 @@ import { EventArgs } from "../../../src/utils/events/common";
 import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { AgentCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
+import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { lotSize } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
@@ -60,7 +60,7 @@ const agentCreatedArgs = {
     poolExitCollateralRatioBIPS: toBN(0),
     poolTopupCollateralRatioBIPS: toBN(0),
     poolTopupTokenPriceFactorBIPS: toBN(0)
-} as EventArgs<AgentCreated>;
+} as EventArgs<AgentVaultCreated>;
 const deposit = toBNExp(1_000_000, 18);
 
 
@@ -148,7 +148,7 @@ describe("Tracked state tests", async () => {
         expect(spyPrices).to.have.been.called.once;
     });
 
-    it("Should handle event 'AgentCreated'", async () => {
+    it("Should handle event 'AgentVaultCreated'", async () => {
         await createTestAgentB(context, accounts[0]);
         expect(trackedState.agents.size).to.eq(0);
         await trackedState.readUnhandledEvents();
@@ -581,7 +581,7 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'CollateralTypeAdded' and 'CollateralTypeDeprecated'", async () => {
         const collateralsBefore = trackedState.collaterals.list.length;
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
-        const agentVaultCollateral = await agentB.getVaultCollateralToken();
+        const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
         newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
         newCollateral.tokenFtsoSymbol = "NT";

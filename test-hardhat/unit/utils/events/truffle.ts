@@ -31,7 +31,7 @@ describe("Truffle unit tests", async () => {
                 blockNumber: 62,
                 address: '0x0D8448C0fBB84c30395838C8b3fD64722ea94532',
                 id: 'log_35371824',
-                event: 'AgentCreated',
+                event: 'AgentVaultCreated',
                 args: [],
                 type: 'event'
             }
@@ -49,6 +49,6 @@ describe("Truffle unit tests", async () => {
 
     it("Should get event arguments", async () => {
         expect(eventArgs(response, eventName)).to.be.undefined;
-        expect(eventArgs(response, 'AgentCreated').length).to.eq(0);
+        expect(eventArgs(response, 'AgentVaultCreated').length).to.eq(0);
     });
 });
