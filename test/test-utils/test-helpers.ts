@@ -73,10 +73,12 @@ export async function balanceOfClass1(class1TokenAddress: string, address: strin
 
 export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string) {
     // TODO - do not destroy yet list - this agents are still used in some tests.
-    const doNotDestroyYetList = ["0xBd1266020CaA3428599a247076bF84a7b20Fde0A"];
+    const doNotDestroyYetList = ["0xBd1266020CaA3428599a247076bF84a7b20Fde0A"]; //20 July 2023 13:05:32
     const list = await context.assetManager.getAllAgents(0, 100);
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of list[0]) {
+        // Returned error: execution reverted: collateral ratio falls below exitCR -- Reason given: collateral ratio falls below exitCR. 0xf9b2B25d06C38E3D0E5aC09F8f486c550f1a5D23
+        // await context.assetManager.exitAvailableAgentList('0xedaB59ee3d6CA92C3F188A42171D8467AcA993dc', { from: ownerAddress });
         if (doNotDestroyYetList.includes(agentAddress)) {
             console.log("Agent", agentAddress, "is not going to be destroying, because it is on doNotDestroyYetList.")
             continue;

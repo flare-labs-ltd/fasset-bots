@@ -126,7 +126,7 @@ describe("Agent bot tests", async () => {
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedNonPaymentProof'
         mintings = await agentBot.openMintings(orm.em, false);
@@ -134,7 +134,7 @@ describe("Agent bot tests", async () => {
         const mintingRequestedNonPaymentProof = mintings[0];
         assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
         // check if minting is done
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, 'done');
@@ -160,7 +160,7 @@ describe("Agent bot tests", async () => {
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
         mintings = await agentBot.openMintings(orm.em, false);
@@ -168,7 +168,7 @@ describe("Agent bot tests", async () => {
         const mintingRequestedNonPaymentProof = mintings[0];
         assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // check if minting is done
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
@@ -189,10 +189,10 @@ describe("Agent bot tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // check if minting is done
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
@@ -216,10 +216,10 @@ describe("Agent bot tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // check if minting is done
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
@@ -232,11 +232,9 @@ describe("Agent bot tests", async () => {
         const class1Token = await IERC20.at((await agentBot.agent.getClass1CollateralToken()).token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
-        await agentBot.runStep(orm.em);
         const txHash = await minter.performMintingPayment(crt);
-        chain.mine(chain.finalizationBlocks + 1);
+        context.blockchainIndexer.chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
-        await agentBot.runStep(orm.em);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -244,6 +242,7 @@ describe("Agent bot tests", async () => {
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
+        await agentBot.handleEvents(orm.em);
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
         chain.mine(Number(rdReq.lastUnderlyingBlock));
@@ -256,21 +255,19 @@ describe("Agent bot tests", async () => {
         const endBalanceAgent = await class1Token.balanceOf(agentBot.agent.vaultAddress);
         assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedClass1CollateralWei));
         assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedClass1CollateralWei));
-        // check if redemption is done
-        await agentBot.runStep(orm.em);
+        // check redemption
+        await agentBot.handleEvents(orm.em);
         orm.em.clear();
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionDone.state, AgentRedemptionState.PAID);
+        assert.equal(redemptionDone.state, AgentRedemptionState.STARTED);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
-        await agentBot.runStep(orm.em);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
         await minter.executeMinting(crt, txHash);
-        await agentBot.runStep(orm.em);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -278,13 +275,15 @@ describe("Agent bot tests", async () => {
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
+        // redemption started
+        await agentBot.handleEvents(orm.em);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
-        await agentBot.runStep(orm.em);
+        await agentBot.handleOpenRedemptionsForCornerCase(orm.em);
         orm.em.clear();
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);

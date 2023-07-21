@@ -2,20 +2,29 @@ import { expect } from "chai";
 import { createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { MINUTES, toBNExp } from "../../../src/utils/helpers";
+import { sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { BotCliCommands } from "../../../src/cli/BotCliCommands";
 import { AGENT_DEFAULT_CONFIG_PATH, COSTON_RPC } from "../../test-utils/test-bot-config";
-import { getNativeAccountsFromEnv, mintClass1ToOwner } from "../../test-utils/test-helpers";
-import { createTestAgentBotAndDepositCollaterals, createTestMinter } from "../../test-utils/test-actors/test-actors";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { createTestAgentBotAndDepositCollaterals, createTestMinter, createTestRedeemer } from "../../test-utils/test-actors/test-actors";
+import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../../src/entities/agent";
+import { FilterQuery } from "@mikro-orm/core";
+import { Notifier } from "../../../src/utils/Notifier";
+import { proveAndUpdateUnderlyingBlock } from "../../../src/utils/fasset-helpers";
+import { Redeemer } from "../../../src/mock/Redeemer";
+import { Minter } from "../../../src/mock/Minter";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { web3DeepNormalize } from "../../../src/utils/web3normalize";
 
 const depositClass1Amount = toBNExp(300_000, 18);
-const buyPoolTokens = toBNExp(500, 18);
-const minuteInSeconds = MINUTES * 1000;
-const agentVaultAddress = "0xBd1266020CaA3428599a247076bF84a7b20Fde0A";
+const buyPoolTokens = toBNExp(700, 18);
 const underlyingMinterAddress = "rw2M8AFty9wd5A66Jz4M1bmFaeDKrB4Bc1";
 
-describe("Agent bot simulation - coston", async () => {
+const runConfigFile = "./test/e2e/simulations/run-config-simulation.json";
+
+describe.skip("Agent bot simulation - coston", async () => {
     let accounts: string[];
     let botCliCommands: BotCliCommands;
     let context: IAssetAgentBotContext;
@@ -23,43 +32,85 @@ describe("Agent bot simulation - coston", async () => {
     let ownerAddress: string;
     let minterAddress: string;
     let class1TokenAddress: string;
+    let agentBot: AgentBot;
+    let minter: Minter;
+    let redeemer: Redeemer;
 
     before(async () => {
+        // init bot cli commands
         botCliCommands = new BotCliCommands();
-        await botCliCommands.initEnvironment();
+        await botCliCommands.initEnvironment(runConfigFile);
+        // init web3 and get addresses
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
         minterAddress = accounts[2];
+        // set orm
         orm = botCliCommands.botConfig.orm;
+        // set context
         context = botCliCommands.context;
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH);
-        class1TokenAddress = agentBotSettings.class1CollateralToken;
-        await mintClass1ToOwner(class1TokenAddress, ownerAddress);
+
+
+        // agent bot
+        // check if agent already exists
+        const agentEnt = await orm.em.findOne(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
+        if (agentEnt) {
+            agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
+        } else {
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH);
+            class1TokenAddress = agentBotSettings.class1CollateralToken;
+            agentBot = await createTestAgentBotAndDepositCollaterals(context, orm, ownerAddress, AGENT_DEFAULT_CONFIG_PATH, depositClass1Amount, buyPoolTokens);
+            // make available
+            await agentBot.agent.makeAvailable();
+        }
+
+        // await mintClass1ToOwner(class1TokenAddress, ownerAddress);
         // await whitelistAgent(accounts, ownerAddress, "0x392Def29bb0cd8ca844f84240422d20032db3023")
-        // add minter underlying address to DBwallet
+
+        // minter
+        minter = await createTestMinter(context, minterAddress, underlyingMinterAddress);
+
+        // redeemer
+        redeemer = await createTestRedeemer(context, minterAddress, underlyingMinterAddress);
+
     });
 
-    it.skip("Payment test",async () => {
-        const minter = await createTestMinter(context, minterAddress, underlyingMinterAddress);
-        expect(minter.address).to.eq(minterAddress);
-        expect(minter.underlyingAddress).to.eq(underlyingMinterAddress);
-        await minter.performPayment("rsDW4NSnwBsJNaCediN96WM2PRZ5xNUgdy", 10000000, "0x1111111111110001000000000000000000000000000000000000000000000001");
-    });
-
-    it.skip("Should create collateral reservation", async () => {
-        // get agent
-        const agentBot = await createTestAgentBotAndDepositCollaterals(context, orm, ownerAddress, AGENT_DEFAULT_CONFIG_PATH, depositClass1Amount, buyPoolTokens);
-        // make available
-        await agentBot.agent.makeAvailable();
-        // create minter
-        const minter = await createTestMinter(context, minterAddress, underlyingMinterAddress);
-        // reserve collateral
+    it("Should simulate minting and redeeming", async () => {
+        await agentBot.runStep(orm.em)
         const lots = 1;
+        // update underlying block manually
+        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
+        // reserve collateral
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
         // pay
-        const txHash = await minter.performMintingPayment(crt);
-        console.log(txHash);
-        await agentBot.runStep(orm.em);
+        await minter.performMintingPayment(crt);
+        // wait for minting to be executed
+        for (let i = 0; ; i++) {
+            await agentBot.runStep(orm.em);
+            // check if minting is done
+            orm.em.clear();
+            const minting = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+            console.log(`Agent step ${i}, minting state = ${minting.state}`);
+            if (minting.state === AgentMintingState.DONE) break;
+            await sleep(20000);
+        }
+        await agentBot.runStep(orm.em)
+        // update underlying block manually
+        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const rdReq = rdReqs[0];
+        // wait for redemption to be executed
+        for (let i = 0; ; i++) {
+            await agentBot.runStep(orm.em);
+            // check if minting is done
+            orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            console.log(`Agent step ${i}, redemption state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+            await sleep(20000);
+        }
+        await agentBot.runStep(orm.em)
+
     });
 
 });

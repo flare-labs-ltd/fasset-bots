@@ -45,19 +45,14 @@ export class AgentCollateral {
 
     freeCollateralLots() {
         const class1Lots = this.freeSingleCollateralLots(this.class1);
-        console.log("class1Lots", class1Lots.toString())
         const poolLots = this.freeSingleCollateralLots(this.pool);
-        console.log("poolLots", poolLots.toString())
         const agentPoolLots = this.freeSingleCollateralLots(this.agentPoolTokens);
-        console.log("agentPoolLots", agentPoolLots.toString())
         return minBN(class1Lots, poolLots, agentPoolLots);
     }
 
     freeSingleCollateralLots(data: CollateralData): BN {
         const collateralWei = this.freeCollateralWei(data);
         const lotWei = this.mintingLotCollateralWei(data);
-        console.log("collateralWei", collateralWei.toString())
-        console.log("lotWei", lotWei.toString())
         return collateralWei.div(lotWei);
     }
 

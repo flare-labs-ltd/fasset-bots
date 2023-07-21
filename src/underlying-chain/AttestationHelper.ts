@@ -82,7 +82,6 @@ export class AttestationHelper {
             blockNumber: block.number,
             messageIntegrityCode: ZERO_BYTES32,
         };
-        console.log(request);
         return await this.stateConnector.submitRequest(request);
     }
 

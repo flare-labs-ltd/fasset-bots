@@ -70,7 +70,6 @@ describe.skip("Attestation client unit tests", async () => {
         await sleep(3000);
         // prove payment
         const proveBalanceDecreasing = await attestationHelper.proveBalanceDecreasingTransaction(transaction, fundedAddressXRP);
-        console.log(proveBalanceDecreasing)
         expect(proveBalanceDecreasing).to.not.be.null;
         await removeWalletAddressFromDB(orm, fundedAddressXRP)
     });

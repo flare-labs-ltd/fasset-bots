@@ -1,6 +1,7 @@
 import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
+import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { artifacts } from "./artifacts";
 import { toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
@@ -28,14 +29,13 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext, caller: string) {
+export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext, caller: string): Promise<number> {
     const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
     await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller});
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 
-
-export async function attestationWindowSeconds(context: IAssetTrackedStateContext) {
+export async function attestationWindowSeconds(context: IAssetTrackedStateContext) : Promise<number> {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
@@ -43,4 +43,10 @@ export async function attestationWindowSeconds(context: IAssetTrackedStateContex
 export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, symbol: string) {
     const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(symbol);
     return await IFtso.at(ftsoAddress);
+}
+
+export async function latestUnderlyingBlock(context: IAssetTrackedStateContext): Promise<IBlock | null>  {
+    const blockHeight = await context.blockchainIndexer.getBlockHeight();
+    const latestBlock = await context.blockchainIndexer.getBlockAt(blockHeight);
+    return latestBlock;
 }

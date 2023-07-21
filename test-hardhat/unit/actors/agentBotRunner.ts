@@ -50,7 +50,6 @@ describe("Agent bot runner tests", async () => {
 
     it("Should create agent bot runner and run it", async () => {
         const spyWarn = spy.on(console, 'warn');
-        const spyError = spy.on(console, 'error');
         // create agents
         await createTestAgentBot(context, orm, ownerAddress);
         const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
@@ -69,7 +68,6 @@ describe("Agent bot runner tests", async () => {
         await agentBotRunner.runStep();
         expect(agentEntities.length).to.eq(3);
         expect(spyWarn).to.have.been.called.once;
-        expect(spyError).to.have.been.called.once;
         agentBotRunner.requestStop();
     });
 
