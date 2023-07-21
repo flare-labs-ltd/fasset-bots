@@ -80,6 +80,11 @@ export class AgentEntity {
 
     @Property()
     underlyingWithdrawalWaitingForCancelation: boolean = false;
+
+    // last time corner cases were checked
+
+    @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
+    cornerCaseCheckTimestamp: BN = BN_ZERO;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were

@@ -11,13 +11,13 @@ import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, STABLE_COIN_LOW_BALANCE, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NATIVE_LOW_BALANCE, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, STABLE_COIN_LOW_BALANCE, requireEnv, toBN } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { attestationWindowSeconds } from "../utils/fasset-helpers";
+import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
 const AgentVault = artifacts.require('AgentVault');
@@ -33,6 +33,7 @@ export class AgentBot {
 
     context = this.agent.context;
     eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
+    latestProof: ProvedDH<DHConfirmedBlockHeightExists> | null = null;
 
     /**
      *
@@ -90,14 +91,15 @@ export class AgentBot {
 
     /**
      * This is the main method, where "automatic" logic is gathered. In every step it firstly collects unhandled events and runs through them and handles them appropriately.
-     * Then it checks if there are any minting or redemption in persistent storage, that needs to be handled.
-     * Lastly, it checks if there are any actions ready to be handled for AgentBot in persistent state (such actions that need announcement beforehand or that are time locked).
+     * Secondly it checks if there are any redemptions in persistent storage, that needs to be handled.
+     * Thirdly, it checks if there are any actions ready to be handled for AgentBot in persistent state (such actions that need announcement beforehand or that are time locked).
+     * Lastly, it checks if there are any mintings or redemptions caught in corner case.
      */
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
-        await this.handleOpenMintings(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
+        await this.handleCornerCases(rootEm);
     }
 
     /**
@@ -185,6 +187,22 @@ export class AgentBot {
         agentEnt.lastEventBlockHandled = lastBlock;
         return events;
     }
+
+    /**
+     * Once a day checks if any minting or redemption is stuck in corner case.
+     */
+    async handleCornerCases(rootEm: EM): Promise<void> {
+        const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const latestBlock = await latestUnderlyingBlock(this.context);
+        if (latestBlock && ((toBN(latestBlock.timestamp).sub(toBN(agentEnt.cornerCaseCheckTimestamp))).ltn(1 * DAYS) || toBN(agentEnt.cornerCaseCheckTimestamp).eq(BN_ZERO))) {
+            this.latestProof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
+            await this.handleOpenMintings(rootEm);
+            await this.handleOpenRedemptionsForCornerCase(rootEm);
+            agentEnt.cornerCaseCheckTimestamp = toBN(latestBlock.timestamp);
+            await rootEm.persistAndFlush(agentEnt);
+        }
+    }
+
 
     /**
      * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
@@ -545,6 +563,20 @@ export class AgentBot {
         }
     }
 
+    async handleOpenRedemptionsForCornerCase(rootEm: EM): Promise<void> {
+        const openRedemptions = await this.openRedemptions(rootEm, false);
+        for (const rd of openRedemptions) {
+            const proof =  await this.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
+            if (proof) {
+                // corner case - agent did not pay
+                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.ownerAddress });
+                rd.state = AgentRedemptionState.DONE;
+                this.notifier.sendRedemptionCornerCase(rd.requestId.toString(), rd.agentAddress);
+                await rootEm.persistAndFlush(rd);
+            }
+        }
+    }
+
     /**
      * Returns minting with state other than DONE.
      */
@@ -581,18 +613,14 @@ export class AgentBot {
     }
 
     /**
-     * When redemption is in state STARTED, it checks if payment proof expired in indexer.
-     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
-     * If proof exists, it performs payment and sets the state of redemption in persistent state as PAID.
+     * When redemption is in state STARTED, it checks if payment can be done in time.
+     * Then it performs payment and sets the state of redemption in persistent state as PAID.
      */
     async payForRedemption(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
-        if (proof) {
-            // corner case - agent did not pay
-            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
-            redemption.state = AgentRedemptionState.DONE;
-            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
-        } else {
+        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+        const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
+        if (lastBlock && (toBN(lastBlock.number).lt(toBN(redemption.lastUnderlyingBlock)) || toBN(lastBlock.timestamp).lt(toBN(redemption.lastUnderlyingTimestamp)))) {
+            // pay
             const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
             // !!! TODO: what if there are too little funds on underlying address to pay for fee?
             const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
@@ -603,24 +631,14 @@ export class AgentBot {
     }
 
     /**
-     * When redemption is in state PAID, it checks if payment proof expired in indexer.
-     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
-     * If proof did not expire, it requests payment proof - see requestPaymentProof().
+     * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(toBN(redemption.lastUnderlyingBlock), toBN(redemption.lastUnderlyingTimestamp));
-        if (proof) {
-            // corner case: proof expires in indexer
-            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
-            redemption.state = AgentRedemptionState.DONE;
-            this.notifier.sendRedemptionCornerCase(redemption.requestId.toString(), redemption.agentAddress);
-        } else {
-            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
-            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-                await this.requestPaymentProof(redemption);
-                this.notifier.sendRedemptionRequestPaymentProof(this.agent.vaultAddress, redemption.requestId.toString());
-            }
+        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
+        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+        if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+            await this.requestPaymentProof(redemption);
+            this.notifier.sendRedemptionRequestPaymentProof(this.agent.vaultAddress, redemption.requestId.toString());
         }
     }
 
@@ -657,11 +675,13 @@ export class AgentBot {
      * Checks if proof has expired in indexer.
      */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
-        const proof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
-        const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
-        const lqwBTimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
-        if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
-            return proof;
+        const proof = this.latestProof;
+        if (proof) {
+            const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
+            const lqwBTimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
+            if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
+                return proof;
+            }
         }
         return null;
     }
