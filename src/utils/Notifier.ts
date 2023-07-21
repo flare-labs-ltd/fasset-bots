@@ -35,8 +35,8 @@ const AGENT_COLLATERAL_TOP_UP_ALERT = "AGENT'S COLLATERAL TOP UP ALERT";
 const POOL_COLLATERAL_TOP_UP_ALERT = "POOL'S COLLATERAL TOP UP ALERT";
 const AGENT_COLLATERAL_TOP_UP_FAILED_ALERT = "AGENT'S COLLATERAL TOP UP FAILED ALERT";
 const POOL_COLLATERAL_TOP_UP_FAILED_ALERT = "POOL'S COLLATERAL TOP UP FAILED ALERT";
-const WITHDRAW_CLASS1 = "WITHDRAW CLASS1";
-const WITHDRAW_CLASS1_ANNOUNCEMENT = "WITHDRAW CLASS1 ANNOUNCEMENT";
+const WITHDRAW_VAULT_COLLATERAL = "WITHDRAW VAULT COLLATERAL";
+const WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "WITHDRAW VAULT COLLATERAL ANNOUNCEMENT";
 
 // underlying
 const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
@@ -52,7 +52,7 @@ const WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL";
 // pool
 const REDEMPTION_POOL_TOKENS = "REDEEM POOL TOKENS";
 const BUY_POOL_TOKENS = "BUY POOL TOKENS";
-const CLASS1_DEPOSIT = "CLASS1 DEPOSIT";
+const VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT";
 const WITHDRAW_POOL_FEES = "WITHDRAW POOL FEES";
 const BALANCE_POOL_FEES = "BALANCE POOL FEES";
 
@@ -167,12 +167,12 @@ export class Notifier {
         this.send(AGENT_CREATED, `Agent ${agentVault} was created.`);
     }
 
-    sendWithdrawClass1(agentVault: string, amount: string) {
-        this.send(WITHDRAW_CLASS1, `Agent ${agentVault} withdrew ${amount} of Class1.`);
+    sendWithdrawVaultCollateral(agentVault: string, amount: string) {
+        this.send(WITHDRAW_VAULT_COLLATERAL, `Agent ${agentVault} withdrew ${amount} of vault collateral.`);
     }
 
-    sendWithdrawClass1Announcement(agentVault: string, amount: string) {
-        this.send(WITHDRAW_CLASS1_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for Class1.`);
+    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
+        this.send(WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`);
     }
 
     sendAgentSettingsUpdate(agentVault: string, settingName: string) {
@@ -211,8 +211,8 @@ export class Notifier {
         this.send(BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
     }
 
-    sendClass1Deposit(agentVault: string, amount: string) {
-        this.send(CLASS1_DEPOSIT, `Deposit of ${amount} to agent ${agentVault} was successful.`);
+    sendVaultCollateralDeposit(agentVault: string, amount: string) {
+        this.send(VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} to agent ${agentVault} was successful.`);
     }
 
     sendWithdrawPoolFees(agentVault: string, amount: string) {

@@ -111,7 +111,7 @@ export class FuzzingCustomer {
                         await this.redemptionDefault(scope, ticket);
                     }
                     const result = await redemptionDefaultPromise; // now it must be fulfiled, by agent or by customer's default call
-                    this.runner.comment(`${this.name}, req=${ticket.requestId}: default received class1=${formatBN(result.redeemedClass1CollateralWei)} pool=${formatBN(result.redeemedPoolCollateralWei)}`);
+                    this.runner.comment(`${this.name}, req=${ticket.requestId}: default received vault collateral=${formatBN(result.redeemedVaultCollateralWei)} pool=${formatBN(result.redeemedPoolCollateralWei)}`);
                 }
             } else {
                 this.runner.comment(`${this.name}, req=${ticket.requestId}: Missing redemption, reference=${ticket.paymentReference}`);

@@ -13,7 +13,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
@@ -348,10 +348,10 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const amount = toBN(10000);
-        const class1TokenAddress = (await agentBot.agent.getClass1CollateralToken()).token;
-        await mintClass1ToOwner(amount, class1TokenAddress, ownerAddress);
-        await agentBot.agent.depositClass1Collateral(amount);
-        const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
+        const vaultCollateralTokenAddress = (await agentBot.agent.getVaultCollateralToken()).token;
+        await mintVaultCollateralToOwner(amount, vaultCollateralTokenAddress, ownerAddress);
+        await agentBot.agent.depositVaultCollateral(amount);
+        const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount.toString();
         await orm.em.persist(agentEnt).flush();
@@ -362,8 +362,8 @@ describe("Agent bot unit tests", async () => {
         await time.increaseTo(withdrawalAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
-        const agentClass1Balance = (await agentBot.agent.getAgentInfo()).totalClass1CollateralWei;
-        expect(agentClass1Balance).to.eq("0");
+        const agentVaultCollateralBalance = (await agentBot.agent.getAgentInfo()).totalVaultCollateralWei;
+        expect(agentVaultCollateralBalance).to.eq("0");
     });
 
     it("Should update agent settings", async () => {
@@ -433,11 +433,11 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // try to close vault - announce class 1 withdrawal
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
+        expect(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
         // try to close vault - withdraw class 1
-        await time.increaseTo(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp);
+        await time.increaseTo(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
         // try to close vault - close
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // check agent status

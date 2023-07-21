@@ -3,7 +3,7 @@ import { AssetManagerSettings } from "./AssetManagerTypes";
 
 export const POOL_TOKEN_DECIMALS = 18;
 
-export enum CollateralKind { CLASS1, POOL, AGENT_POOL_TOKENS }
+export enum CollateralKind { VAULT, POOL, AGENT_POOL_TOKENS }
 
 export class CollateralDataFactory {
     constructor(

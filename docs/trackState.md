@@ -67,7 +67,7 @@ Finally, the TrackedState populates the tracked agent variables and tracked agen
 # TrackedAgentState
 
 ### Initialization
-Firstly, **parent** (TrackedState) and **data** (InitialAgentData: agentVault, underlyingAddress, collateralPool, class1CollateralToken, feeBIPS, poolFeeShareBIPS, mintingClass1CollateralRatioBIPS, mintingPoolCollateralRatioBIPS, poolExitCollateralRatioBIPS, buyFAssetByAgentFactorBIPS, poolTopupCollateralRatioBIPS, poolTopupTokenPriceFactorBIPS) are input into constructor:
+Firstly, **parent** (TrackedState) and **data** (InitialAgentData: agentVault, underlyingAddress, collateralPool, vaultCollateralToken, feeBIPS, poolFeeShareBIPS, mintingVaultCollateralRatioBIPS, mintingPoolCollateralRatioBIPS, poolExitCollateralRatioBIPS, buyFAssetByAgentFactorBIPS, poolTopupCollateralRatioBIPS, poolTopupTokenPriceFactorBIPS) are input into constructor:
 ```javascript
    constructor(
        public parent: TrackedState,
@@ -79,7 +79,7 @@ Secondly, TrackedAgentState is initialized and following variables are set from 
 - status
 - publiclyAvailable
 - totalPoolCollateralNATWei
-- totalClass1CollateralWei[agentInfo.class1CollateralToken]
+- totalVaultCollateralWei[agentInfo.vaultCollateralToken]
 - ccbStartTimestamp
 - liquidationStartTimestamp
 - announcedUnderlyingWithdrawalId
@@ -89,10 +89,10 @@ Secondly, TrackedAgentState is initialized and following variables are set from 
 - poolRedeemingUBA
 - dustUBA
 - underlyingBalanceUBA
-- agentSettings.class1CollateralToken
+- agentSettings.vaultCollateralToken
 - agentSettings.feeBIPS
 - agentSettings.poolFeeShareBIPS
-- agentSettings.mintingClass1CollateralRatioBIPS
+- agentSettings.mintingVaultCollateralRatioBIPS
 - agentSettings.mintingPoolCollateralRatioBIPS
 - agentSettings.poolExitCollateralRatioBIPS
 - agentSettings.buyFAssetByAgentFactorBIPS

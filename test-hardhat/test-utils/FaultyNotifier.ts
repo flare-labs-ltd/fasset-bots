@@ -60,10 +60,10 @@ export class FaultyNotifier implements Notifier {
     sendAgentCreated(agentVault: string): void {
         throw new Error("Method not implemented.");
     }
-    sendWithdrawClass1(agentVault: string, amount: string): void {
+    sendWithdrawVaultCollateral(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }
-    sendWithdrawClass1Announcement(agentVault: string, amount: string): void {
+    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }
     sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
@@ -93,7 +93,7 @@ export class FaultyNotifier implements Notifier {
     sendBuyCollateralPoolTokens(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }
-    sendClass1Deposit(agentVault: string, amount: string): void {
+    sendVaultCollateralDeposit(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }
     sendWithdrawPoolFees(agentVault: string, amount: string): void {

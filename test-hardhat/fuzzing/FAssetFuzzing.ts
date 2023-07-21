@@ -257,15 +257,15 @@ describe("Fuzzing tests", async () => {
     });
 
     function createAgentOptions(): AgentBotDefaultSettings {
-        const class1Collateral = randomChoice(context.collaterals.filter(isClass1Collateral));
+        const vaultCollateral = randomChoice(context.collaterals.filter(isVaultCollateral));
         const poolCollateral = context.collaterals.filter(isPoolCollateral)[0];
-        const mintingClass1CollateralRatioBIPS = mulDecimal(toBN(class1Collateral.minCollateralRatioBIPS), randomNum(1, 1.5));
+        const mintingVaultCollateralRatioBIPS = mulDecimal(toBN(vaultCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));
         const mintingPoolCollateralRatioBIPS = mulDecimal(toBN(poolCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));
         return {
-            class1CollateralToken: class1Collateral.token,
+            vaultCollateralToken: vaultCollateral.token,
             feeBIPS: toBIPS("5%"),
             poolFeeShareBIPS: toBIPS("40%"),
-            mintingClass1CollateralRatioBIPS: mintingClass1CollateralRatioBIPS,
+            mintingVaultCollateralRatioBIPS: mintingVaultCollateralRatioBIPS,
             mintingPoolCollateralRatioBIPS: mintingPoolCollateralRatioBIPS,
             poolExitCollateralRatioBIPS: mulDecimal(mintingPoolCollateralRatioBIPS, randomNum(1, 1.25)),
             buyFAssetByAgentFactorBIPS: toBIPS(0.9),
@@ -345,8 +345,8 @@ describe("Fuzzing tests", async () => {
         }
     }
 
-    function isClass1Collateral(collateral: CollateralType) {
-        return Number(collateral.collateralClass) === CollateralClass.CLASS1 && Number(collateral.validUntil) === 0;
+    function isVaultCollateral(collateral: CollateralType) {
+        return Number(collateral.collateralClass) === CollateralClass.VAULT && Number(collateral.validUntil) === 0;
     }
 
     async function transferFassetsToLiquidator(liquidatorAddress: string): Promise<void> {

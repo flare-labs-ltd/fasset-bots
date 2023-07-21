@@ -32,7 +32,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should create stable coins", async () => {
-        const stableCoinsArray = collateralTypes.filter(token => Number(token.collateralClass) === CollateralClass.CLASS1);
+        const stableCoinsArray = collateralTypes.filter(token => Number(token.collateralClass) === CollateralClass.VAULT);
         const stableCoins = await createStableCoins(collateralTypes);
         expect(stableCoinsArray.length).eq(Object.keys(stableCoins).length);
     });

@@ -14,10 +14,10 @@ User aka **Owner** needs:
 - To create [**initial agent’s settings**](../../src/config/BotConfig.ts).
 ```javascript
 export interface AgentSettingsConfig {
-    class1FtsoSymbol: string,
+    vaultCollateralFtsoSymbol: string,
     feeBIPS: string,
     poolFeeShareBIPS: string,
-    mintingClass1CollateralRatioConstant: number,
+    mintingVaultCollateralRatioConstant: number,
     mintingPoolCollateralRatioConstant: number,
     poolExitCollateralRatioConstant: number,
     buyFAssetByAgentFactorBIPS: string,
@@ -36,11 +36,11 @@ For more see [configuration part](../config.md).
 Via command line interface Owner can operate with following commands:
 
 - Create agent vault
-- Deposit class1 to agent vault
+- Deposit vault collateral to agent vault
 - Buy pool collateral for agent vault
 - Add agent vault to available list
 - Announce removal of agent from available list
-- Announce withdrawal class1 funds from agent vault
+- Announce withdrawal vault collateral funds from agent vault
 - Withdraw pool fees
 - Check pool fee balance
 - Self close agent vault

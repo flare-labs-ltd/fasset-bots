@@ -85,10 +85,10 @@ export interface TrackedChainInfo extends ChainInfo {
 }
 
 export interface AgentSettingsConfig {
-    class1FtsoSymbol: string;
+    vaultCollateralFtsoSymbol: string;
     feeBIPS: string;
     poolFeeShareBIPS: string;
-    mintingClass1CollateralRatioConstant: number;
+    mintingVaultCollateralRatioConstant: number;
     mintingPoolCollateralRatioConstant: number;
     poolExitCollateralRatioConstant: number;
     buyFAssetByAgentFactorBIPS: string;
@@ -167,18 +167,18 @@ export async function createTrackedStateConfigChain(chainInfo: TrackedChainInfo,
  */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(agentSettingsConfigPath).toString()) as AgentSettingsConfig;
-    const class1Token = (await context.assetManager.getCollateralTypes()).find(token => {
-        return Number(token.collateralClass) === CollateralClass.CLASS1 && token.tokenFtsoSymbol === agentSettingsConfig.class1FtsoSymbol
+    const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find(token => {
+        return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol
     });
-    if (!class1Token) {
-        throw Error(`Invalid class1 collateral token ${agentSettingsConfig.class1FtsoSymbol}`);
+    if (!vaultCollateralToken) {
+        throw Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
     }
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
-        class1CollateralToken: class1Token.token,
+        vaultCollateralToken: vaultCollateralToken.token,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
-        mintingClass1CollateralRatioBIPS: toBN(class1Token.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingClass1CollateralRatioConstant),
+        mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),
         mintingPoolCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingPoolCollateralRatioConstant),
         poolExitCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolExitCollateralRatioConstant),
         buyFAssetByAgentFactorBIPS: toBN(agentSettingsConfig.buyFAssetByAgentFactorBIPS),

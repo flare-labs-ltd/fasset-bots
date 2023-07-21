@@ -18,7 +18,7 @@ import { Minter } from "../../../src/mock/Minter";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { web3DeepNormalize } from "../../../src/utils/web3normalize";
 
-const depositClass1Amount = toBNExp(300_000, 18);
+const depositVaultCollateralAmount = toBNExp(300_000, 18);
 const buyPoolTokens = toBNExp(700, 18);
 const underlyingMinterAddress = "rw2M8AFty9wd5A66Jz4M1bmFaeDKrB4Bc1";
 
@@ -31,7 +31,7 @@ describe.skip("Agent bot simulation - coston", async () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let class1TokenAddress: string;
+    let vaultCollateralTokenAddress: string;
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
@@ -57,13 +57,13 @@ describe.skip("Agent bot simulation - coston", async () => {
             agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         } else {
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH);
-            class1TokenAddress = agentBotSettings.class1CollateralToken;
-            agentBot = await createTestAgentBotAndDepositCollaterals(context, orm, ownerAddress, AGENT_DEFAULT_CONFIG_PATH, depositClass1Amount, buyPoolTokens);
+            vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
+            agentBot = await createTestAgentBotAndDepositCollaterals(context, orm, ownerAddress, AGENT_DEFAULT_CONFIG_PATH, depositVaultCollateralAmount, buyPoolTokens);
             // make available
             await agentBot.agent.makeAvailable();
         }
 
-        // await mintClass1ToOwner(class1TokenAddress, ownerAddress);
+        // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
         // await whitelistAgent(accounts, ownerAddress, "0x392Def29bb0cd8ca844f84240422d20032db3023")
 
         // minter

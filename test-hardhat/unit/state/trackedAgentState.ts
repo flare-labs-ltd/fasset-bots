@@ -9,7 +9,7 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import { createTestAgentBot, mintClass1ToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
 const agentCreated = {
@@ -17,10 +17,10 @@ const agentCreated = {
     agentVault: '0xEA6aBEf9ea06253364Bb6cf53065dAFD2ca122FC',
     collateralPool: '0xCd17f01812099F7B76098f9bdCb93eC1DfDF24de',
     underlyingAddress: 'UNDERLYING_ACCOUNT_26086',
-    class1CollateralToken: '0x52d3b94181f8654db2530b0fEe1B19173f519C52',
+    vaultCollateralToken: '0x52d3b94181f8654db2530b0fEe1B19173f519C52',
     feeBIPS: toBN(1000),
     poolFeeShareBIPS: toBN(4000),
-    mintingClass1CollateralRatioBIPS: toBN(16800),
+    mintingVaultCollateralRatioBIPS: toBN(16800),
     mintingPoolCollateralRatioBIPS: toBN(26400),
     buyFAssetByAgentFactorBIPS: toBN(9000),
     poolExitCollateralRatioBIPS: toBN(28600),
@@ -50,9 +50,9 @@ describe("Tracked agent state tests", async () => {
 
     beforeEach(async () => {
         agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        const agentClass1Token = await agentBot.agent.getClass1CollateralToken();
-        await mintClass1ToOwner(amount, agentClass1Token.token, ownerAddress);
-        await agentBot.agent.depositClass1Collateral(amount);
+        const agentVaultCollateralToken = await agentBot.agent.getVaultCollateralToken();
+        await mintVaultCollateralToOwner(amount, agentVaultCollateralToken.token, ownerAddress);
+        await agentBot.agent.depositVaultCollateral(amount);
         const lastBlock = await web3.eth.getBlockNumber();
         trackedState = new TrackedState(trackedStateContext, lastBlock);
         await trackedState.initialize();
@@ -67,10 +67,10 @@ describe("Tracked agent state tests", async () => {
     });
 
     it("Should receive collateral balance", async () => {
-        const class1 = trackedAgentState.parent.collaterals.get(CollateralClass.CLASS1, trackedAgentState.agentSettings.class1CollateralToken);
-        const pool = trackedAgentState.parent.collaterals.get(CollateralClass.POOL, trackedAgentState.parent.poolWNatCollateral.token);
-        expect(trackedAgentState.collateralBalance(class1).eq(amount)).to.be.true;
-        expect(trackedAgentState.collateralBalance(pool).eqn(0)).to.be.true;
+        const vaultC = trackedAgentState.parent.collaterals.get(CollateralClass.VAULT, trackedAgentState.agentSettings.vaultCollateralToken);
+        const poolC = trackedAgentState.parent.collaterals.get(CollateralClass.POOL, trackedAgentState.parent.poolWNatCollateral.token);
+        expect(trackedAgentState.collateralBalance(vaultC).eq(amount)).to.be.true;
+        expect(trackedAgentState.collateralBalance(poolC).eqn(0)).to.be.true;
     });
 
 });

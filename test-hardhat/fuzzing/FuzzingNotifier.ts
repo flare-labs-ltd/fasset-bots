@@ -66,11 +66,11 @@ export class FuzzingNotifier {
     sendAgentCreated(agentVault: string) {
         this.notifier.sendAgentCreated(this.eventFormatter.formatAddress(agentVault));
     }
-    sendWithdrawClass1(agentVault: string, amount: string): void {
-        this.notifier.sendWithdrawClass1(this.eventFormatter.formatAddress(agentVault), amount);
+    sendWithdrawVaultCollateral(agentVault: string, amount: string): void {
+        this.notifier.sendWithdrawVaultCollateral(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendWithdrawClass1Announcement(agentVault: string, amount: string) {
-        this.notifier.sendWithdrawClass1Announcement(this.eventFormatter.formatAddress(agentVault), amount);
+    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
+        this.notifier.sendWithdrawVaultCollateralAnnouncement(this.eventFormatter.formatAddress(agentVault), amount);
     }
     sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
         this.notifier.sendAgentSettingsUpdate(this.eventFormatter.formatAddress(agentVault), settingName);
@@ -99,8 +99,8 @@ export class FuzzingNotifier {
     sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
         this.notifier.sendBuyCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendClass1Deposit(agentVault: string, amount: string) {
-        this.notifier.sendClass1Deposit(this.eventFormatter.formatAddress(agentVault), amount);
+    sendVaultCollateralDeposit(agentVault: string, amount: string) {
+        this.notifier.sendVaultCollateralDeposit(this.eventFormatter.formatAddress(agentVault), amount);
     }
     sendWithdrawPoolFees(agentVault: string, amount: string) {
         this.notifier.sendWithdrawPoolFees(this.eventFormatter.formatAddress(agentVault), amount);

@@ -10,7 +10,7 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintClass1ToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -228,8 +228,8 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
-        // class1token
-        const class1Token = await IERC20.at((await agentBot.agent.getClass1CollateralToken()).token);
+        // vaultCollateralToken
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateralToken()).token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
@@ -248,13 +248,13 @@ describe("Agent bot tests", async () => {
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         // redeemer requests non-payment proof
         // redeemer triggers payment default and gets paid in collateral with extra
-        const startBalanceRedeemer = await class1Token.balanceOf(redeemer.address);
-        const startBalanceAgent = await class1Token.balanceOf(agentBot.agent.vaultAddress);
+        const startBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
+        const startBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         const res = await redeemer.redemptionPaymentDefault(rdReq);
-        const endBalanceRedeemer = await class1Token.balanceOf(redeemer.address);
-        const endBalanceAgent = await class1Token.balanceOf(agentBot.agent.vaultAddress);
-        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedClass1CollateralWei));
-        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedClass1CollateralWei));
+        const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
+        const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
+        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedVaultCollateralWei));
+        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedVaultCollateralWei));
         // check redemption
         await agentBot.handleEvents(orm.em);
         orm.em.clear();
@@ -329,9 +329,9 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not confirm, anyone can confirm time expired on underlying", async () => {
-        // class1token
-        const class1CollateralToken = await agentBot.agent.getClass1CollateralToken();
-        const class1Token = await IERC20.at(class1CollateralToken.token);
+        // vaultCollateralToken
+        const vaultCollateralToken = await agentBot.agent.getVaultCollateralToken();
+        const vaultCollateralToken = await IERC20.at(vaultCollateralToken.token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -356,12 +356,12 @@ describe("Agent bot tests", async () => {
         await time.increase(settings.confirmationByOthersAfterSeconds);
         chain.mine(chain.finalizationBlocks + 1);
         const someAddress = accounts[10];
-        const startBalance = await class1Token.balanceOf(someAddress);
-        const startAgentBalance = await class1Token.balanceOf(agentBot.agent.vaultAddress);
+        const startBalance = await vaultCollateralToken.balanceOf(someAddress);
+        const startAgentBalance = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         const proof = await context.attestationProvider.provePayment(redemptionPaid.txHash!, agentBot.agent.underlyingAddress, rdReq.paymentAddress);
         await context.assetManager.confirmRedemptionPayment(proof, rdReq.requestId, { from: someAddress });
-        const endBalance = await class1Token.balanceOf(someAddress);
-        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, class1CollateralToken, settings);
+        const endBalance = await vaultCollateralToken.balanceOf(someAddress);
+        const reward = await convertFromUSD5(settings.confirmationByOthersRewardUSD5, vaultCollateralToken, settings);
         const rewardPaid = BN.min(reward, startAgentBalance);
         assert.equal(endBalance.sub(startBalance).toString(), rewardPaid.toString());
     });
@@ -520,7 +520,7 @@ describe("Agent bot tests", async () => {
         }
         // clear dust
         await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
-        // withdraw class1 and pool tokens
+        // withdraw vault collateral and pool tokens
         await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
@@ -560,7 +560,7 @@ describe("Agent bot tests", async () => {
         expect(spyConsole).to.have.been.called.once;
     });
 
-    it("Should not top up collateral - fails on owner side due to no Class1", async () => {
+    it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
         const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
@@ -579,7 +579,7 @@ describe("Agent bot tests", async () => {
         expect(spyLowOwnerBalance).to.have.been.called.once;
         // top up ownerAddress
         const deposit = toBNExp(5_000_000, 18).toString();
-        await mintClass1ToOwner(deposit, (await agentBot.agent.getAgentInfo()).class1CollateralToken, ownerAddress);
+        await mintVaultCollateralToOwner(deposit, (await agentBot.agent.getAgentInfo()).vaultCollateralToken, ownerAddress);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
         // send notifications: top up successful

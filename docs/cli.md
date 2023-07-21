@@ -11,12 +11,12 @@ Usage: `fasset-bots-cli [command] <arg>`
 Available commands:
 
 * `create` - create new agent vault
-* `depositClass1 <agentVault> <amount>` - deposit class1 collateral to agent vault from owner's address");
+* `depositVaultCollateral <agentVault> <amount>` - deposit vault collateral to agent vault from owner's address");
 * `buyPoolCollateral <agentVault> <amount>` - add pool collateral and agent pool tokens
 * `enter <agentVault>` - enter available agent's list
 * `exit <agentVault>` - exit available agent's list
 * `updateAgentSetting <agentVault> <agentSettingName> <agentSettingValue> `- set agent's settings
-* `withdrawClass1 <agentVault> <amount>` - withdraw amount from agent vault to owner's address
+* `withdrawVaultCollateral <agentVault> <amount>` - withdraw amount from agent vault to owner's address
 * `withdrawPoolFees <agentVault> <amount>` - withdraw pool fees from pool to owner's address
 * `poolFeesBalance <agentVault>` - pool fees balance of agent
 * `selfClose <agentVault> <amountUBA>` - self close agent vault with amountUBA of FAssets
@@ -35,7 +35,7 @@ For more about agent's settings check [AgentSettings.sol](https://gitlab.com/fla
 
 *   feeBIPS
 *   poolFeeShareBIPS
-*   mintingClass1CollateralRatioBIPS
+*   mintingVaultCollateralRatioBIPS
 *   mintingPoolCollateralRatioBIPS
 *   buyFAssetByAgentFactorBIPS
 *   poolExitCollateralRatioBIPS

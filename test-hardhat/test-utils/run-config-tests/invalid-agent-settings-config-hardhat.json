@@ -1,8 +1,8 @@
 {
-    "class1FtsoSymbol": "USDCXYZ",
+    "vaultCollateralFtsoSymbol": "USDCXYZ",
     "feeBIPS": 1000,
     "poolFeeShareBIPS": 4000,
-    "mintingClass1CollateralRatioConstant": 1.2,
+    "mintingVaultCollateralRatioConstant": 1.2,
     "mintingPoolCollateralRatioConstant": 1.2,
     "poolExitCollateralRatioConstant": 1.3,
     "buyFAssetByAgentFactorBIPS": 9000,

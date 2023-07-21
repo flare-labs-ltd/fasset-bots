@@ -7,7 +7,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { time } from "@openzeppelin/test-helpers";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, disableMccTraceManager, mintAndDepositClass1ToOwner } from "../../test-utils/helpers";
+import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, disableMccTraceManager, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -78,16 +78,16 @@ describe("Agent unit tests", async () => {
 
     it("Should deposit collateral", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const class1TokenContract = await mintAndDepositClass1ToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        const val = await class1TokenContract.balanceOf(agent.vaultAddress);
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
+        await agent.depositVaultCollateral(deposit);
+        const val = await vaultCollateralTokenContract.balanceOf(agent.vaultAddress);
         expect(val.toString()).to.eq(deposit.toString());
     });
 
     it("Should make agent available", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositClass1ToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
+        await agent.depositVaultCollateral(deposit);
         await agent.buyCollateralPoolTokens(deposit);
         await agent.makeAvailable();
         const agentInfo = await agent.getAgentInfo();
@@ -96,13 +96,13 @@ describe("Agent unit tests", async () => {
 
     it("Should announce collateral withdrawal and withdraw", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const class1TokenContract = await mintAndDepositClass1ToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositClass1Collateral(deposit);
-        await agent.announceClass1CollateralWithdrawal(withdraw);
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
+        await agent.depositVaultCollateral(deposit);
+        await agent.announceVaultCollateralWithdrawal(withdraw);
         const settings = await context.assetManager.getSettings();
         await time.increase(settings.withdrawalWaitMinSeconds);
-        await agent.withdrawClass1Collateral(withdraw);
-        const val = await class1TokenContract.balanceOf(agent.vaultAddress);
+        await agent.withdrawVaultCollateral(withdraw);
+        const val = await vaultCollateralTokenContract.balanceOf(agent.vaultAddress);
         expect(Number(val)).to.eq(Number(deposit.sub(withdraw)));
     });
 

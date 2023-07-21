@@ -53,8 +53,8 @@ export class BotCliCommands {
      */
     async depositToVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
-        await agentBot.agent.depositClass1Collateral(amount);
-        this.botConfig.notifier.sendClass1Deposit(agentVault, amount);
+        await agentBot.agent.depositVaultCollateral(amount);
+        this.botConfig.notifier.sendVaultCollateralDeposit(agentVault, amount);
     }
 
     /**
@@ -92,8 +92,8 @@ export class BotCliCommands {
      */
     async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const withdrawalAllowedAt = await agentBot.agent.announceClass1CollateralWithdrawal(amount);
-        this.botConfig.notifier.sendWithdrawClass1Announcement(agentVault, amount);
+        const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
+        this.botConfig.notifier.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
     }
@@ -252,13 +252,13 @@ export class BotCliCommands {
                 case 'create':
                     await this.createAgentVault();
                     break;
-                case 'depositClass1': {
+                case 'depositVaultCollateral': {
                     const agentVaultDeposit = args[3];
                     const amount = args[4];
                     if (agentVaultDeposit && amount) {
                         await this.depositToVault(agentVaultDeposit, amount);
                     } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("depositClass1"));
+                        console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("depositVaultCollateral"));
                     }
                     break;
                 }
@@ -301,13 +301,13 @@ export class BotCliCommands {
                     }
                     break;
                 }
-                case 'withdrawClass1': {
-                    const agentVaultWithdrawClass1 = args[3];
-                    const amountWithdrawClass1 = args[4];
-                    if (agentVaultWithdrawClass1 && amountWithdrawClass1) {
-                        await this.withdrawFromVault(agentVaultWithdrawClass1, amountWithdrawClass1);
+                case 'withdrawVaultCollateral': {
+                    const agentVaultWithdrawVaultCollateral = args[3];
+                    const amountWithdrawVaultCollateral = args[4];
+                    if (agentVaultWithdrawVaultCollateral && amountWithdrawVaultCollateral) {
+                        await this.withdrawFromVault(agentVaultWithdrawVaultCollateral, amountWithdrawVaultCollateral);
                     } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("withdrawClass1"));
+                        console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("withdrawVaultCollateral"));
                     }
                     break;
                 }
@@ -409,12 +409,12 @@ export function listUsageAndCommands() {
     console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
     console.log('  Available commands:', "\n");
     console.log(chalk.yellow('  create '), "create new agent vault");
-    console.log(chalk.yellow('  depositClass1 '), chalk.blue('<agentVault> <amount> '), "deposit class1 collateral to agent vault from owner's address");
+    console.log(chalk.yellow('  depositVaultCollateral '), chalk.blue('<agentVault> <amount> '), "deposit vault collateral to agent vault from owner's address");
     console.log(chalk.yellow('  buyPoolCollateral '), chalk.blue('<agentVault> <amount> '), "add pool collateral and agent pool tokens");
     console.log(chalk.yellow('  enter '), chalk.blue('<agentVault> '), "enter available agent's list");
     console.log(chalk.yellow('  exit '), chalk.blue('<agentVault> '), "exit available agent's list");
     console.log(chalk.yellow('  updateAgentSetting '), chalk.blue('<agentVault> <agentSettingName> <agentSettingValue> '), "set agent's settings");
-    console.log(chalk.yellow('  withdrawClass1 '), chalk.blue('<agentVault> <amount> '), "withdraw amount from agent vault to owner's address");
+    console.log(chalk.yellow('  withdrawVaultCollateral '), chalk.blue('<agentVault> <amount> '), "withdraw amount from agent vault to owner's address");
     console.log(chalk.yellow('  withdrawPoolFees '), chalk.blue('<agentVault> <amount> '), "withdraw pool fees from pool to owner's address");
     console.log(chalk.yellow('  poolFeesBalance '), chalk.blue('<agentVault> '), "pool fees balance of agent");
     console.log(chalk.yellow('  selfClose '), chalk.blue('<agentVault> <amountUBA> '), "self close agent vault with amountUBA of FAssets");

@@ -29,10 +29,10 @@ export async function createTestAgentBot(context: IAssetAgentBotContext, orm: OR
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
-export async function createTestAgentBotAndDepositCollaterals(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, defaultAgentConfigPath: string, depositClass1Amount: BNish, buyPoolTokensAmount: BNish, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+export async function createTestAgentBotAndDepositCollaterals(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, defaultAgentConfigPath: string, depositVaultCollateralAmount: BNish, buyPoolTokensAmount: BNish, notifier: Notifier = new Notifier()): Promise<AgentBot> {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, defaultAgentConfigPath, notifier);
     // deposit class 1
-    await agentBot.agent.depositClass1Collateral(depositClass1Amount);
+    await agentBot.agent.depositVaultCollateral(depositVaultCollateralAmount);
     // buy collateral pool tokens
     await agentBot.agent.buyCollateralPoolTokens(buyPoolTokensAmount);
     return agentBot;

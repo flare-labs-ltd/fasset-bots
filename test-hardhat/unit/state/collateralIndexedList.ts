@@ -5,8 +5,8 @@ import { CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
 describe("Collateral indexed list unit tests", async () => {
     const elt0 = { collateralClass: CollateralClass.POOL, token: "token0" };
-    const elt1 = { collateralClass: CollateralClass.CLASS1, token: "token1" };
-    const elt2 = { collateralClass: CollateralClass.CLASS1, token: "token2" };
+    const elt1 = { collateralClass: CollateralClass.VAULT, token: "token1" };
+    const elt2 = { collateralClass: CollateralClass.VAULT, token: "token2" };
 
     function createIndexList() {
         const indexedList: CollateralIndexedList<CollateralTypeId> = new CollateralIndexedList();
@@ -40,11 +40,11 @@ describe("Collateral indexed list unit tests", async () => {
         expect(indexedList.get(elt0).collateralClass).to.eq(elt0.collateralClass);
         expect(indexedList.get(elt0.collateralClass, elt0.token).collateralClass).to.eq(elt0.collateralClass);
         const fn0 = () => {
-            return indexedList.get({ collateralClass: "tokenClass100", token: "token100" });
+            return indexedList.get({ collateralClass: "tokenCls100", token: "token100" });
         };
         expect(fn0).to.throw(`Value is null or undefined`);
         const fn1 = () => {
-            return indexedList.get("tokenClass100", "token100");
+            return indexedList.get("tokenCls100", "token100");
         };
         expect(fn1).to.throw(`Value is null or undefined`);
     });

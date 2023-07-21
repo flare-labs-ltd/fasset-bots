@@ -29,10 +29,10 @@ describe("Config unit tests", async () => {
         expect(defaultAgentSettings.poolFeeShareBIPS.toString()).to.eq(agentSettingsConfig.poolFeeShareBIPS.toString());
     });
 
-    it("Should not create tracked state config - invalid class1", async () => {
+    it("Should not create tracked state config - invalid vault collateral", async () => {
         const initialAgentPath = "./test-hardhat/test-utils/run-config-tests/invalid-agent-settings-config-hardhat.json";
         const initialAgentSettings = JSON.parse(readFileSync(initialAgentPath).toString()) as AgentSettingsConfig;
-        await expect(createAgentBotDefaultSettings(context, initialAgentPath)).to.eventually.be.rejectedWith(`Invalid class1 collateral token ${initialAgentSettings.class1FtsoSymbol}`).and.be.an.instanceOf(Error);
+        await expect(createAgentBotDefaultSettings(context, initialAgentPath)).to.eventually.be.rejectedWith(`Invalid vault collateral token ${initialAgentSettings.vaultCollateralFtsoSymbol}`).and.be.an.instanceOf(Error);
     });
 
 });

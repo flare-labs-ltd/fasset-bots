@@ -155,8 +155,8 @@ export class TrackedState {
                 for (const collateral of this.collaterals.list) {
                     const contract = await tokenContract(collateral.token);
                     if (eventIs(event, contract, 'Transfer')) {
-                        this.agents.get(event.args.from)?.withdrawClass1Collateral(contract.address, toBN(event.args.value));
-                        this.agents.get(event.args.to)?.depositClass1Collateral(contract.address, toBN(event.args.value));
+                        this.agents.get(event.args.from)?.withdrawVaultCollateral(contract.address, toBN(event.args.value));
+                        this.agents.get(event.args.to)?.depositVaultCollateral(contract.address, toBN(event.args.value));
                         this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));
                         this.agentsByPool.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                     }
@@ -235,10 +235,10 @@ export class TrackedState {
             owner: agentInfo.ownerColdWalletAddress,
             underlyingAddress: agentInfo.underlyingAddressString,
             collateralPool: agentInfo.collateralPool,
-            class1CollateralToken: agentInfo.class1CollateralToken,
+            vaultCollateralToken: agentInfo.vaultCollateralToken,
             feeBIPS: agentInfo.feeBIPS,
             poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
-            mintingClass1CollateralRatioBIPS: agentInfo.mintingClass1CollateralRatioBIPS,
+            mintingVaultCollateralRatioBIPS: agentInfo.mintingVaultCollateralRatioBIPS,
             mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
             buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
             poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,

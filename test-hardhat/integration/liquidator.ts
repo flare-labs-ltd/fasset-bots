@@ -107,8 +107,8 @@ describe("Liquidator tests", async () => {
     it("Should liquidate agent", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
-        // class1token
-        const class1Token = await IERC20.at((await agentBot.agent.getClass1CollateralToken()).token);
+        // vaultCollateralToken
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateralToken()).token);
         const minter = await createTestMinter(context, minterAddress, chain);
         await liquidator.runStep();
         // check agent status
@@ -129,7 +129,7 @@ describe("Liquidator tests", async () => {
         await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
         // FAsset and collateral balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceBefore = await class1Token.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await vaultCollateralToken.balanceOf(liquidatorAddress);
         // liquidate agent (partially)
         const liquidateMaxUBA = minted.mintedAmountUBA.divn(lots);
         await context.assetManager.liquidate(agentBot.agent.agentVault.address, liquidateMaxUBA, { from: liquidator.address });
@@ -139,7 +139,7 @@ describe("Liquidator tests", async () => {
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // FAsset and collateral balance
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
-        const cBalanceAfter = await class1Token.balanceOf(liquidatorAddress);
+        const cBalanceAfter = await vaultCollateralToken.balanceOf(liquidatorAddress);
         // check FAsset and cr balance
         expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
         expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;

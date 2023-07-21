@@ -42,10 +42,10 @@ export class AgentEntity {
     poolTokenRedemptionWithdrawalAllowedAtAmount: string = "";
 
     @Property({ type: BNType })
-    destroyClass1WithdrawalAllowedAtTimestamp: BN = BN_ZERO;
+    destroyVaultCollateralWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
 
     @Property()
-    destroyClass1WithdrawalAllowedAtAmount: string = "";
+    destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
 
     // agent exit available list
 
@@ -60,7 +60,7 @@ export class AgentEntity {
     @Property()
     agentSettingUpdateValidAtName: string = "";
 
-    // agent withdraw class1
+    // agent withdraw vault collateral
 
     @Property({ type: BNType })
     withdrawalAllowedAtTimestamp: BN = BN_ZERO;

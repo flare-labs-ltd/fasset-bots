@@ -207,7 +207,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         agentFeeChangeTimelockSeconds: 6 * HOURS,
         agentCollateralRatioChangeTimelockSeconds: 1 * HOURS,
         agentExitAvailableTimelockSeconds: 10 * MINUTES,
-        class1BuyForFlareFactorBIPS: toBIPS(1.05),
+        vaultCollateralBuyForFlareFactorBIPS: toBIPS(1.05),
         mintingPoolHoldingsRequiredBIPS: toBIPS("50%"),
         tokenInvalidationTimeMinSeconds: 1 * DAYS
     };
@@ -227,7 +227,7 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         safetyMinCollateralRatioBIPS: toBIPS(2.3),
     };
     const usdcCollateral: CollateralType = {
-        collateralClass: CollateralClass.CLASS1,
+        collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdc.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
@@ -239,7 +239,7 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         safetyMinCollateralRatioBIPS: toBIPS(1.5),
     };
     const usdtCollateral: CollateralType = {
-        collateralClass: CollateralClass.CLASS1,
+        collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdt.address,
         decimals: 18,
         validUntil: 0,  // not deprecated
@@ -274,7 +274,7 @@ export function createTestLiquidationSettings(): LiquidationStrategyImplSettings
     return {
         liquidationStepSeconds: 90,
         liquidationCollateralFactorBIPS: [toBIPS(1.2), toBIPS(1.6), toBIPS(2.0)],
-        liquidationFactorClass1BIPS: [toBIPS(1), toBIPS(1), toBIPS(1)],
+        liquidationFactorVaultCollateralBIPS: [toBIPS(1), toBIPS(1), toBIPS(1)],
     };
 }
 

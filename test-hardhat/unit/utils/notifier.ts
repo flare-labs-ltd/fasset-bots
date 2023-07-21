@@ -148,9 +148,9 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send agent withdrew  class1 collateral", async () => {
-        const spySend = spy.on(notifier, "sendWithdrawClass1");
-        notifier.sendWithdrawClass1("agentVault", "100");
+    it("Should send agent withdrew vault collateral collateral", async () => {
+        const spySend = spy.on(notifier, "sendWithdrawVaultCollateral");
+        notifier.sendWithdrawVaultCollateral("agentVault", "100");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -196,9 +196,9 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send class1 was deposited to agent", async () => {
-        const spySend = spy.on(notifier, "sendClass1Deposit");
-        notifier.sendClass1Deposit("agentVault", "amount");
+    it("Should send vault collateral was deposited to agent", async () => {
+        const spySend = spy.on(notifier, "sendVaultCollateralDeposit");
+        notifier.sendVaultCollateralDeposit("agentVault", "amount");
         expect(spySend).to.have.been.called.once;
     });
 

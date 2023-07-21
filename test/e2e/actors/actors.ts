@@ -13,7 +13,7 @@ import { Notifier } from "../../../src/utils/Notifier";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import { balanceOfClass1, cleanUp, depositClass1Amount, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { balanceOfVaultCollateral, cleanUp, depositVaultCollateralAmount, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
@@ -32,7 +32,7 @@ describe("Actor tests - coston", async () => {
     let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let class1TokenAddress: string;
+    let vaultCollateralTokenAddress: string;
     // for challenger, liquidator, systemKeeper
     let trackedStateConfig: TrackedStateConfig;
     let trackedStateContext: IAssetTrackedStateContext;
@@ -60,20 +60,20 @@ describe("Actor tests - coston", async () => {
         trackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);
         // agent default settings
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath);
-        class1TokenAddress = agentBotSettings.class1CollateralToken;
+        vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
-        // mint class1 to owner
-        // await mintClass1ToOwner(class1TokenAddress, ownerAddress);
+        // mint vault collateral to owner
+        // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
     });
 
     after(async () => {
         await cleanUp(context, orm, ownerAddress);
     });
 
-    it("Should create agent bot, deposit class1, buy pool tokens and announce destroy", async () => {
+    it("Should create agent bot, deposit vault collateral, buy pool tokens and announce destroy", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, runConfig.defaultAgentSettingsPath);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
@@ -83,10 +83,10 @@ describe("Actor tests - coston", async () => {
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
         // deposit class 1
-        const depositAmount = depositClass1Amount.divn(3);
-        await agentBot.agent.depositClass1Collateral(depositAmount);
-        const agentClass1Balance = await balanceOfClass1(class1TokenAddress, agentBot.agent.vaultAddress);
-        expect(agentClass1Balance.eq(depositAmount)).to.be.true;
+        const depositAmount = depositVaultCollateralAmount.divn(3);
+        await agentBot.agent.depositVaultCollateral(depositAmount);
+        const agentVaultCollateralBalance = await balanceOfVaultCollateral(vaultCollateralTokenAddress, agentBot.agent.vaultAddress);
+        expect(agentVaultCollateralBalance.eq(depositAmount)).to.be.true;
         // buy collateral pool tokens
         await agentBot.agent.buyCollateralPoolTokens(buyPoolTokens);
         const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);

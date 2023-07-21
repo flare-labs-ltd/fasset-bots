@@ -54,18 +54,18 @@ export class Agent {
         return await this.assetManager.getAgentInfo(this.agentVault.address);
     }
 
-    async getClass1CollateralToken(): Promise<CollateralType> {
-        return await this.assetManager.getCollateralType(CollateralClass.CLASS1, (await this.getAgentSettings()).class1CollateralToken);
+    async getVaultCollateralToken(): Promise<CollateralType> {
+        return await this.assetManager.getCollateralType(CollateralClass.VAULT, (await this.getAgentSettings()).vaultCollateralToken);
     }
 
     async getPoolCollateralToken(): Promise<CollateralType> {
         return await this.assetManager.getCollateralType(CollateralClass.POOL, await this.assetManager.getWNat());
     }
 
-    async getClass1CollateralPrice(): Promise<CollateralPrice> {
+    async getVaultCollateralPrice(): Promise<CollateralPrice> {
         const settings = await this.assetManager.getSettings();
         const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getClass1CollateralToken());
+        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateralToken());
     }
 
     async getPoolCollateralPrice(): Promise<CollateralPrice>{
@@ -90,11 +90,11 @@ export class Agent {
         return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
     }
 
-    async depositClass1Collateral(amountTokenWei: BNish) {
-        const class1TokenAddress = (await this.getClass1CollateralToken()).token;
-        const class1Token = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === class1TokenAddress));
-        await class1Token.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
-        return await this.agentVault.depositCollateral(class1TokenAddress, amountTokenWei, { from: this.ownerAddress });
+    async depositVaultCollateral(amountTokenWei: BNish) {
+        const vaultCollateralTokenAddress = (await this.getVaultCollateralToken()).token;
+        const vaultCollateralToken = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === vaultCollateralTokenAddress));
+        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
+        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.ownerAddress });
     }
 
     // adds pool collateral and agent pool tokens
@@ -118,15 +118,15 @@ export class Agent {
         return requiredEventArgs(res, 'AvailableAgentExited');
     }
 
-    async announceClass1CollateralWithdrawal(amountWei: BNish): Promise<BN> {
-        const res = await this.assetManager.announceClass1CollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'Class1WithdrawalAnnounced');
+    async announceVaultCollateralWithdrawal(amountWei: BNish): Promise<BN> {
+        const res = await this.assetManager.announceVaultCollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
+        const args = requiredEventArgs(res, 'VaultCollateralWithdrawalAnnounced');
         return args.withdrawalAllowedAt;
     }
 
-    async withdrawClass1Collateral(amountWei: BNish) {
-        const class1TokenAddress = (await this.getClass1CollateralToken()).token;
-        return await this.agentVault.withdrawCollateral(class1TokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
+    async withdrawVaultCollateral(amountWei: BNish) {
+        const vaultCollateralTokenAddress = (await this.getVaultCollateralToken()).token;
+        return await this.agentVault.withdrawCollateral(vaultCollateralTokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
     }
 
     async withdrawPoolFees(amountUBA: BNish, recipient: string = this.ownerAddress) {

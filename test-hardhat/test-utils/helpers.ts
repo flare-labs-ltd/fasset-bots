@@ -52,9 +52,9 @@ export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM,
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
-export async function mintClass1ToOwner(amount: BNish, class1TokenAddress: string, ownerAddress: string): Promise<void> {
-    const class1Token = await ERC20Mock.at(class1TokenAddress);
-    await class1Token.mintAmount(ownerAddress, amount);
+export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
+    const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
+    await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 
 export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetTrackedStateContext): Promise<Challenger> {
@@ -98,8 +98,8 @@ export async function createTestRedeemer(context: IAssetContext, redeemerAddress
 
 export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
     const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-    await mintAndDepositClass1ToOwner(context, agent, deposit, ownerAddress);
-    await agent.depositClass1Collateral(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
+    await agent.depositVaultCollateral(deposit);
     await agent.buyCollateralPoolTokens(deposit);
     await agent.makeAvailable();
     return agent;
@@ -107,8 +107,8 @@ export async function createTestAgentAndMakeAvailable(context: TestAssetBotConte
 
 export async function createTestAgentBAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<AgentB> {
     const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
-    await mintAndDepositClass1ToOwner(context, agentB, deposit, ownerAddress);
-    await agentB.depositClass1Collateral(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
+    await agentB.depositVaultCollateral(deposit);
     await agentB.buyCollateralPoolTokens(deposit);
     await agentB.makeAvailable();
     return agentB;
@@ -116,18 +116,18 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
 
 export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier(), options?: AgentBotDefaultSettings) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, notifier, options);
-    await mintAndDepositClass1ToOwner(context, agentBot.agent, deposit, ownerAddress);
-    await agentBot.agent.depositClass1Collateral(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, deposit, ownerAddress);
+    await agentBot.agent.depositVaultCollateral(deposit);
     await agentBot.agent.buyCollateralPoolTokens(deposit);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }
 
-export async function mintAndDepositClass1ToOwner(context: IAssetContext, agent: Agent, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
-    const class1Token = await agent.getClass1CollateralToken();
-    const class1TokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === class1Token?.token));
-    await mintClass1ToOwner(depositAmount, class1Token!.token, ownerAddress);
-    return class1TokenContract;
+export async function mintAndDepositVaultCollateralToOwner(context: IAssetContext, agent: Agent, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
+    const vaultCollateralToken = await agent.getVaultCollateralToken();
+    const vaultCollateralTokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === vaultCollateralToken?.token));
+    await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress);
+    return vaultCollateralTokenContract;
 }
 
 export async function createTestContext(governance: string, setMaxTrustedPriceAgeSeconds: number) {
@@ -172,10 +172,10 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
         agentVault: agent.vaultAddress,
         collateralPool: agentInfo.collateralPool,
         underlyingAddress: agent.underlyingAddress,
-        class1CollateralToken: agentInfo.class1CollateralToken,
+        vaultCollateralToken: agentInfo.vaultCollateralToken,
         feeBIPS: toBN(agentInfo.feeBIPS),
         poolFeeShareBIPS: toBN(agentInfo.poolFeeShareBIPS),
-        mintingClass1CollateralRatioBIPS: toBN(agentInfo.mintingClass1CollateralRatioBIPS),
+        mintingVaultCollateralRatioBIPS: toBN(agentInfo.mintingVaultCollateralRatioBIPS),
         mintingPoolCollateralRatioBIPS: toBN(agentInfo.mintingPoolCollateralRatioBIPS),
         buyFAssetByAgentFactorBIPS: toBN(agentInfo.buyFAssetByAgentFactorBIPS),
         poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),

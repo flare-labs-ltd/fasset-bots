@@ -221,11 +221,11 @@ export class AgentBot {
                 }
             }
             if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                // agent waiting for class1 withdrawal
+                // agent waiting for vault collateral withdrawal
                 if (toBN(agentEnt.withdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
-                    // agent can withdraw class1
-                    await this.agent.withdrawClass1Collateral(agentEnt.withdrawalAllowedAtAmount);
-                    this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.withdrawalAllowedAtAmount.toString());
+                    // agent can withdraw vault collateral
+                    await this.agent.withdrawVaultCollateral(agentEnt.withdrawalAllowedAtAmount);
+                    this.notifier.sendWithdrawVaultCollateral(agentEnt.vaultAddress, agentEnt.withdrawalAllowedAtAmount.toString());
                     agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.withdrawalAllowedAtAmount = "";
                 }
@@ -246,14 +246,14 @@ export class AgentBot {
             } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
                 // agent can exit available
                 await this.exitAvailable(agentEnt);
-            } else if (agentEnt.waitingForDestructionCleanUp && (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) || toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
-                // agent waiting to withdraw class1 or to redeem pool tokens
-                if (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
-                    // agent can withdraw class1
-                    await this.agent.withdrawClass1Collateral(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
-                    this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString());
-                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = "";
-                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = BN_ZERO;
+            } else if (agentEnt.waitingForDestructionCleanUp && (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) || toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
+                // agent waiting to withdraw vault collateral or to redeem pool tokens
+                if (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
+                    // agent can withdraw vault collateral
+                    await this.agent.withdrawVaultCollateral(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount);
+                    this.notifier.sendWithdrawVaultCollateral(agentEnt.vaultAddress, agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount.toString());
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
                 }
                 // agent waiting to redeem pool tokens
                 if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
@@ -268,14 +268,14 @@ export class AgentBot {
                 // withdraw pool fees
                 const poolFeeBalance = await this.agent.poolFeeBalance();
                 if (poolFeeBalance.gt(BN_ZERO)) { await this.agent.withdrawPoolFees(poolFeeBalance); }
-                // check poolTokens and class1Balance
+                // check poolTokens and vaultCollateralBalance
                 const agentInfoForAnnounce = await this.agent.getAgentInfo();
-                const freeClass1Balance = toBN(agentInfoForAnnounce.freeClass1CollateralWei);
+                const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
                 const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);
-                if (freeClass1Balance.gt(BN_ZERO)) {
+                if (freeVaultCollateralBalance.gt(BN_ZERO)) {
                     // announce withdraw class 1
-                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = await this.agent.announceClass1CollateralWithdrawal(freeClass1Balance);
-                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = freeClass1Balance.toString();
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
                 }
                 if (freePoolTokenBalance.gt(BN_ZERO)) {
                     // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
@@ -284,7 +284,7 @@ export class AgentBot {
                 }
                 const agentInfoForDestroy = await this.agent.getAgentInfo();
                 //and wait for others to redeem
-                if (freePoolTokenBalance.eq(BN_ZERO) && freeClass1Balance.eq(BN_ZERO) && toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)) {
+                if (freePoolTokenBalance.eq(BN_ZERO) && freeVaultCollateralBalance.eq(BN_ZERO) && toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) && toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)) {
                     // agent checks if clean is complete, agent can announce destroy
                     const destroyAllowedAt = await this.agent.announceDestroy();
                     agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
@@ -428,7 +428,7 @@ export class AgentBot {
         if (proof) {
             // corner case: proof expires in indexer
             const settings = await this.context.assetManager.getSettings();
-            const burnNats = toBN((await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.class1BuyForFlareFactorBIPS)).divn(MAX_BIPS));
+            const burnNats = toBN((await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS));
             await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
@@ -733,22 +733,22 @@ export class AgentBot {
      */
     async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
         const agentInfo = await this.agent.getAgentInfo();
-        const collateralClass1Price = await this.agent.getClass1CollateralPrice();
-        const collateralPoolPrice = await this.agent.getPoolCollateralPrice();
+        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
+        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
 
-        const requiredCrClass1BIPS = toBN(collateralClass1Price.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredCrPoolBIPS = toBN(collateralPoolPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUpClass1 = await this.requiredTopUp(requiredCrClass1BIPS, agentInfo, collateralClass1Price);
-        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, collateralPoolPrice);
-        if (requiredTopUpClass1.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
+        const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
+        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
+        if (requiredTopUpVaultCollateral.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
             // no need for top up
         }
-        if (requiredTopUpClass1.gt(BN_ZERO)) {
+        if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
             try {
-                await this.agent.depositClass1Collateral(requiredTopUpClass1);
-                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
+                await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
+                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
             } catch (err) {
-                this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
+                this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
             }
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
@@ -759,15 +759,15 @@ export class AgentBot {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
             }
         }
-        const tokenClass1 = await IERC20.at(collateralClass1Price.collateral.token);
-        const ownerBalanceClass1 = await tokenClass1.balanceOf(this.agent.ownerAddress);
-        if (ownerBalanceClass1.lte(STABLE_COIN_LOW_BALANCE)) {
-            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceClass1.toString(), collateralClass1Price.collateral.tokenFtsoSymbol);
+        const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
+        const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.ownerAddress);
+        if (ownerBalanceVaultCollateral.lte(STABLE_COIN_LOW_BALANCE)) {
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceVaultCollateral.toString(), vaultCollateralPrice.collateral.tokenFtsoSymbol);
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
         if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), collateralPoolPrice.collateral.tokenFtsoSymbol);
+            this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), poolCollateralPrice.collateral.tokenFtsoSymbol);
         }
     }
 
@@ -776,11 +776,11 @@ export class AgentBot {
      * If value is less than zero, top up is not needed.
      */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
-        const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.CLASS1 ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.CLASS1 ? agentInfo.totalClass1CollateralWei : agentInfo.totalPoolCollateralNATWei);
+        const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
+        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
-        const backingClass1Wei = cp.convertUBAToTokenWei(totalUBA);
-        const requiredCollateral = backingClass1Wei.mul(requiredCrBIPS).divn(MAX_BIPS);
+        const backingVaultCollateralWei = cp.convertUBAToTokenWei(totalUBA);
+        const requiredCollateral = backingVaultCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
         return requiredCollateral.sub(balance);
     }
 

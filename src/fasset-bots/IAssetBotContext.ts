@@ -11,10 +11,10 @@ export interface IAssetAgentBotContext extends IAssetContext {
 }
 
 export interface AgentBotDefaultSettings {
-    class1CollateralToken: string;
+    vaultCollateralToken: string;
     feeBIPS: BN;
     poolFeeShareBIPS: BN;
-    mintingClass1CollateralRatioBIPS: BN;
+    mintingVaultCollateralRatioBIPS: BN;
     mintingPoolCollateralRatioBIPS: BN;
     poolExitCollateralRatioBIPS: BN;
     buyFAssetByAgentFactorBIPS: BN;

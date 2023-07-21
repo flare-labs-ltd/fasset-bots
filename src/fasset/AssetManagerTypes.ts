@@ -5,7 +5,7 @@ export type AssetManagerSettings = _AssetManagerSettings;
 
 export enum CollateralClass {
     POOL = 1,
-    CLASS1 = 2,
+    VAULT = 2,
 }
 
 type _CollateralType = Parameters<AssetManagerContract['new']>[1][0];
@@ -29,5 +29,5 @@ export type AgentInfo = _AgentInfo;
 type _AvailableAgentInfo = Awaited<ReturnType<AssetManagerInstance['getAvailableAgentsDetailedList']>>[0][0];
 export type AvailableAgentInfo = _AvailableAgentInfo;
 
-export type AgentSetting = "feeBIPS" | "poolFeeShareBIPS" | "mintingClass1CollateralRatioBIPS" | "mintingPoolCollateralRatioBIPS" |
+export type AgentSetting = "feeBIPS" | "poolFeeShareBIPS" | "mintingVaultCollateralRatioBIPS" | "mintingPoolCollateralRatioBIPS" |
     "buyFAssetByAgentFactorBIPS" | "poolExitCollateralRatioBIPS" | "poolTopupCollateralRatioBIPS" | "poolTopupTokenPriceFactorBIPS";

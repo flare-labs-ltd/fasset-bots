@@ -174,7 +174,7 @@ async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoReg
 }
 
 async function createStableCoins(collaterals: CollateralType[]) {
-    const stableCoinsArray = collaterals.filter(token => Number(token.collateralClass) === CollateralClass.CLASS1);
+    const stableCoinsArray = collaterals.filter(token => Number(token.collateralClass) === CollateralClass.VAULT);
     const stableCoins: { [key: string]: any } = {};
     for (const collateralToken of stableCoinsArray) {
         const tokenName: string = collateralToken.tokenFtsoSymbol;
