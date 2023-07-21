@@ -19,8 +19,8 @@ export interface ChainContracts {
     AgentVaultFactory: Contract;
     AssetManagerController: Contract;
     AssetManagerWhitelist?: Contract;
-    CollateralPoolFactory: Contract;
-    CollateralPoolTokenFactory: Contract;
+    ContingencyPoolFactory: Contract;
+    ContingencyPoolTokenFactory: Contract;
     PriceReader: Contract;
     FAssetWhitelist?: Contract;
     FAssetAgentWhitelist?: Contract;

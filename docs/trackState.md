@@ -67,7 +67,7 @@ Finally, the TrackedState populates the tracked agent variables and tracked agen
 # TrackedAgentState
 
 ### Initialization
-Firstly, **parent** (TrackedState) and **data** (InitialAgentData: agentVault, underlyingAddress, collateralPool, vaultCollateralToken, feeBIPS, poolFeeShareBIPS, mintingVaultCollateralRatioBIPS, mintingPoolCollateralRatioBIPS, poolExitCollateralRatioBIPS, buyFAssetByAgentFactorBIPS, poolTopupCollateralRatioBIPS, poolTopupTokenPriceFactorBIPS) are input into constructor:
+Firstly, **parent** (TrackedState) and **data** (InitialAgentData: agentVault, underlyingAddress, contingencyPool, vaultCollateralToken, feeBIPS, poolFeeShareBIPS, mintingVaultCollateralRatioBIPS, mintingPoolCollateralRatioBIPS, poolExitCollateralRatioBIPS, buyFAssetByAgentFactorBIPS, poolTopupCollateralRatioBIPS, poolTopupTokenPriceFactorBIPS) are input into constructor:
 ```javascript
    constructor(
        public parent: TrackedState,

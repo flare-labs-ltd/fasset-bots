@@ -33,8 +33,8 @@ export async function createTestAgentBotAndDepositCollaterals(context: IAssetAge
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, defaultAgentConfigPath, notifier);
     // deposit class 1
     await agentBot.agent.depositVaultCollateral(depositVaultCollateralAmount);
-    // buy collateral pool tokens
-    await agentBot.agent.buyCollateralPoolTokens(buyPoolTokensAmount);
+    // buy contingency pool tokens
+    await agentBot.agent.buyContingencyPoolTokens(buyPoolTokensAmount);
     return agentBot;
 }
 

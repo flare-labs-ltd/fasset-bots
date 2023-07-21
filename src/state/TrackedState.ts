@@ -234,7 +234,7 @@ export class TrackedState {
             agentVault: vaultAddress,
             owner: agentInfo.ownerColdWalletAddress,
             underlyingAddress: agentInfo.underlyingAddressString,
-            collateralPool: agentInfo.collateralPool,
+            contingencyPool: agentInfo.contingencyPool,
             vaultCollateralToken: agentInfo.vaultCollateralToken,
             feeBIPS: agentInfo.feeBIPS,
             poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
@@ -253,7 +253,7 @@ export class TrackedState {
         const agent = this.newAgent(data);
         this.agents.set(agent.vaultAddress, agent);
         this.agentsByUnderlying.set(agent.underlyingAddress, agent);
-        this.agentsByPool.set(agent.collateralPoolAddress, agent);
+        this.agentsByPool.set(agent.contingencyPoolAddress, agent);
         return agent;
     }
 
@@ -266,7 +266,7 @@ export class TrackedState {
         if (agent) {
             this.agents.delete(args.agentVault);
             this.agentsByUnderlying.delete(agent.underlyingAddress);
-            this.agentsByPool.delete(agent.collateralPoolAddress);
+            this.agentsByPool.delete(agent.contingencyPoolAddress);
         }
     }
 

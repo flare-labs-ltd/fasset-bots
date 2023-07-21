@@ -120,7 +120,7 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
         // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
         await agentBot.agent.announcePoolTokenRedemption(freePoolTokenBalance);
         await sleep(Number(toBN(waitingTime).muln(1000)));
-        await agentBot.agent.redeemCollateralPoolTokens(freePoolTokenBalance.toString());
+        await agentBot.agent.redeemContingencyPoolTokens(freePoolTokenBalance.toString());
     }
 
     await context.assetManager.announceDestroyAgent(agentAddress, { from: ownerAddress });

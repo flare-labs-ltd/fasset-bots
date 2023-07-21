@@ -1,7 +1,7 @@
 import { AssetManagerSettings, CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
 import { amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
 import { exp10 } from "../../../src/utils/helpers";
-import { CollateralPoolTokenInstance } from "../../../typechain-truffle";
+import { ContingencyPoolTokenInstance } from "../../../typechain-truffle";
 import { AMGPrice, AMGPriceConverter, CollateralPrice } from "./CollateralPrice";
 import { TokenPrice, TokenPriceReader, tokenBalance } from "./TokenPrice";
 
@@ -59,8 +59,8 @@ export class CollateralDataFactory {
         return await this.forCollateral(collateral, agentVault);
     }
 
-    async pool(collateral: CollateralType, collateralPoolAddress: string) {
-        return await this.forCollateral(collateral, collateralPoolAddress);
+    async pool(collateral: CollateralType, contingencyPoolAddress: string) {
+        return await this.forCollateral(collateral, contingencyPoolAddress);
     }
 
     async forCollateral(collateral: CollateralType, tokenHolder: string) {
@@ -68,7 +68,7 @@ export class CollateralDataFactory {
         return CollateralData.forCollateralPrice(collateralPrice, tokenHolder);
     }
 
-    async agentPoolTokens(poolCollateral: CollateralData, poolToken: CollateralPoolTokenInstance, agentVault: string) {
+    async agentPoolTokens(poolCollateral: CollateralData, poolToken: ContingencyPoolTokenInstance, agentVault: string) {
         const agentPoolTokens = await poolToken.balanceOf(agentVault);
         const totalPoolTokens = await poolToken.totalSupply();
         // asset price and token price will be expressed in pool collateral (wnat)

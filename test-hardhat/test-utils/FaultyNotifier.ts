@@ -87,10 +87,10 @@ export class FaultyNotifier implements Notifier {
     sendCancelWithdrawUnderlying(agentVault: string): void {
         throw new Error("Method not implemented.");
     }
-    sendCollateralPoolTokensRedemption(agentVault: string): void {
+    sendContingencyPoolTokensRedemption(agentVault: string): void {
         throw new Error("Method not implemented.");
     }
-    sendBuyCollateralPoolTokens(agentVault: string, amount: string): void {
+    sendBuyContingencyPoolTokens(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }
     sendVaultCollateralDeposit(agentVault: string, amount: string): void {

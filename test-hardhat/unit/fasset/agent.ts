@@ -88,7 +88,7 @@ describe("Agent unit tests", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
         await agent.depositVaultCollateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
+        await agent.buyContingencyPoolTokens(deposit);
         await agent.makeAvailable();
         const agentInfo = await agent.getAgentInfo();
         expect(agentInfo.publiclyAvailable).to.be.true;
@@ -186,7 +186,7 @@ describe("Agent unit tests", async () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agent.vaultAddress, 2, chain);
         const fBalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.transfer(agent.collateralPool.address, fBalance, { from: minter.address });
+        await context.fAsset.transfer(agent.contingencyPool.address, fBalance, { from: minter.address });
         // withdraw pool fees
         const fPoolBalance = await agent.poolFeeBalance();
         await agent.withdrawPoolFees(fPoolBalance);

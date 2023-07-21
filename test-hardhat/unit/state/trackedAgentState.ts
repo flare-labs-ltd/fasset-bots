@@ -15,7 +15,7 @@ import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTy
 const agentCreated = {
     owner: '0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2',
     agentVault: '0xEA6aBEf9ea06253364Bb6cf53065dAFD2ca122FC',
-    collateralPool: '0xCd17f01812099F7B76098f9bdCb93eC1DfDF24de',
+    contingencyPool: '0xCd17f01812099F7B76098f9bdCb93eC1DfDF24de',
     underlyingAddress: 'UNDERLYING_ACCOUNT_26086',
     vaultCollateralToken: '0x52d3b94181f8654db2530b0fEe1B19173f519C52',
     feeBIPS: toBN(1000),

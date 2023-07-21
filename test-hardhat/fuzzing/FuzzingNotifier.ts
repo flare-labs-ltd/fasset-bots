@@ -93,11 +93,11 @@ export class FuzzingNotifier {
     sendCancelWithdrawUnderlying(agentVault: string): void {
         this.notifier.sendCancelWithdrawUnderlying(this.eventFormatter.formatAddress(agentVault));
     }
-    sendCollateralPoolTokensRedemption(agentVault: string): void {
-        this.notifier.sendCollateralPoolTokensRedemption(this.eventFormatter.formatAddress(agentVault));
+    sendContingencyPoolTokensRedemption(agentVault: string): void {
+        this.notifier.sendContingencyPoolTokensRedemption(this.eventFormatter.formatAddress(agentVault));
     }
-    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
-        this.notifier.sendBuyCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
+    sendBuyContingencyPoolTokens(agentVault: string, amount: string) {
+        this.notifier.sendBuyContingencyPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
     }
     sendVaultCollateralDeposit(agentVault: string, amount: string) {
         this.notifier.sendVaultCollateralDeposit(this.eventFormatter.formatAddress(agentVault), amount);

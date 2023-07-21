@@ -185,14 +185,14 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send agent redeemed pool tokens", async () => {
-        const spySend = spy.on(notifier, "sendCollateralPoolTokensRedemption");
-        notifier.sendCollateralPoolTokensRedemption("agentVault");
+        const spySend = spy.on(notifier, "sendContingencyPoolTokensRedemption");
+        notifier.sendContingencyPoolTokensRedemption("agentVault");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send agent bought pool tokens", async () => {
-        const spySend = spy.on(notifier, "sendBuyCollateralPoolTokens");
-        notifier.sendBuyCollateralPoolTokens("agentVault", "amount");
+        const spySend = spy.on(notifier, "sendBuyContingencyPoolTokens");
+        notifier.sendBuyContingencyPoolTokens("agentVault", "amount");
         expect(spySend).to.have.been.called.once;
     });
 
