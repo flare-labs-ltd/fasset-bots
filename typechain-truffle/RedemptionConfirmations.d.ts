@@ -36,7 +36,7 @@ export interface RedemptionDefault {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    redeemedClass1CollateralWei: BN;
+    redeemedVaultCollateralWei: BN;
     redeemedPoolCollateralWei: BN;
     requestId: BN;
     0: string;

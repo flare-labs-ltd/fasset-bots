@@ -32,6 +32,10 @@ export interface AgentRedemptionInCollateral {
 type AllEvents = AgentRedemption | AgentRedemptionInCollateral;
 
 export interface AssetManagerMockInstance extends Truffle.ContractInstance {
+  assetPriceDiv(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  assetPriceMul(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   assetPriceNatWei(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
@@ -59,29 +63,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  collateralDeposited: {
-    (
-      arg0: string,
-      arg1: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      arg0: string,
-      arg1: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      arg0: string,
-      arg1: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      arg0: string,
-      arg1: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -91,7 +72,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string; 1: string }>;
 
-  getCollateralPool(
+  getContingencyPool(
     arg0: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
@@ -201,7 +182,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  registerFAssetForCollateralPool: {
+  registerFAssetForContingencyPool: {
     (_fasset: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -215,6 +196,29 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _fasset: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAssetPriceNatWei: {
+    (
+      _mul: number | BN | string,
+      _div: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _mul: number | BN | string,
+      _div: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _mul: number | BN | string,
+      _div: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _mul: number | BN | string,
+      _div: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -237,21 +241,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setCollateralPool: {
-    (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(pool: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(
-      pool: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      pool: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   setCommonOwner: {
     (_owner: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -263,6 +252,21 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _owner: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setContingencyPool: {
+    (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(pool: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      pool: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      pool: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -305,7 +309,34 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  updateCollateral: {
+    (
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      arg0: string,
+      arg1: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
+    assetPriceDiv(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    assetPriceMul(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     assetPriceNatWei(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
@@ -333,29 +364,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    collateralDeposited: {
-      (
-        arg0: string,
-        arg1: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        arg0: string,
-        arg1: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        arg0: string,
-        arg1: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        arg0: string,
-        arg1: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -365,7 +373,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string; 1: string }>;
 
-    getCollateralPool(
+    getContingencyPool(
       arg0: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
@@ -475,7 +483,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    registerFAssetForCollateralPool: {
+    registerFAssetForContingencyPool: {
       (_fasset: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -489,6 +497,29 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _fasset: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAssetPriceNatWei: {
+      (
+        _mul: number | BN | string,
+        _div: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _mul: number | BN | string,
+        _div: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _mul: number | BN | string,
+        _div: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _mul: number | BN | string,
+        _div: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -511,21 +542,6 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setCollateralPool: {
-      (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(pool: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(
-        pool: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        pool: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     setCommonOwner: {
       (_owner: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -540,6 +556,21 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _owner: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setContingencyPool: {
+      (pool: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(pool: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(
+        pool: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        pool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -578,6 +609,29 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _maxRedemption: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    updateCollateral: {
+      (
+        arg0: string,
+        arg1: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        arg0: string,
+        arg1: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        arg0: string,
+        arg1: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        arg0: string,
+        arg1: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

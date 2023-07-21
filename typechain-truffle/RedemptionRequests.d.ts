@@ -34,7 +34,7 @@ export interface RedeemedInCollateral {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    paidClass1Wei: BN;
+    paidVaultCollateralWei: BN;
     0: string;
     1: string;
     2: BN;

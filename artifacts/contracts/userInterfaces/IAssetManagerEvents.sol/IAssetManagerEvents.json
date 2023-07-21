@@ -21,7 +21,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "mintingClass1CollateralRatioBIPS",
+          "name": "mintingVaultCollateralRatioBIPS",
           "type": "uint256"
         },
         {
@@ -63,91 +63,6 @@
         }
       ],
       "name": "AgentCollateralTypeChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "collateralPool",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "underlyingAddress",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "class1CollateralToken",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "feeBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolFeeShareBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingClass1CollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingPoolCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "buyFAssetByAgentFactorBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolExitCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupTokenPriceFactorBIPS",
-          "type": "uint256"
-        }
-      ],
-      "name": "AgentCreated",
       "type": "event"
     },
     {
@@ -263,6 +178,91 @@
         {
           "indexed": true,
           "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "contingencyPool",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "underlyingAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "vaultCollateralToken",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolFeeShareBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintingVaultCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintingPoolCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "buyFAssetByAgentFactorBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolExitCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolTopupCollateralRatioBIPS",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolTopupTokenPriceFactorBIPS",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentVaultCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "agentVault",
           "type": "address"
         },
@@ -287,31 +287,6 @@
         }
       ],
       "name": "AvailableAgentExited",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amountWei",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "withdrawalAllowedAt",
-          "type": "uint256"
-        }
-      ],
-      "name": "Class1WithdrawalAnnounced",
       "type": "event"
     },
     {
@@ -841,7 +816,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "paidClass1Wei",
+          "name": "paidVaultCollateralWei",
           "type": "uint256"
         }
       ],
@@ -872,7 +847,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "redeemedClass1CollateralWei",
+          "name": "redeemedVaultCollateralWei",
           "type": "uint256"
         },
         {
@@ -1305,6 +1280,31 @@
         }
       ],
       "name": "UnderlyingWithdrawalConfirmed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "withdrawalAllowedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "VaultCollateralWithdrawalAnnounced",
       "type": "event"
     }
   ],

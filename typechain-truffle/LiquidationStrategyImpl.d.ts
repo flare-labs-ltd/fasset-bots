@@ -38,7 +38,7 @@ export interface LiquidationStrategyImplInstance
   extends Truffle.ContractInstance {
   currentLiquidationFactorBIPS(
     _agentVault: string,
-    _class1CR: number | BN | string,
+    _vaultCR: number | BN | string,
     _poolCR: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
@@ -48,7 +48,7 @@ export interface LiquidationStrategyImplInstance
   methods: {
     currentLiquidationFactorBIPS(
       _agentVault: string,
-      _class1CR: number | BN | string,
+      _vaultCR: number | BN | string,
       _poolCR: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;

@@ -43,19 +43,19 @@ export interface AgentVaultMockInstance extends Truffle.ContractInstance {
   };
 
   enterPool: {
-    (_collateralPool: string, txDetails?: Truffle.TransactionDetails): Promise<
+    (_contingencyPool: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
     call(
-      _collateralPool: string,
+      _contingencyPool: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _collateralPool: string,
+      _contingencyPool: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _collateralPool: string,
+      _contingencyPool: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -90,19 +90,19 @@ export interface AgentVaultMockInstance extends Truffle.ContractInstance {
 
     enterPool: {
       (
-        _collateralPool: string,
+        _contingencyPool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _collateralPool: string,
+        _contingencyPool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _collateralPool: string,
+        _contingencyPool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _collateralPool: string,
+        _contingencyPool: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

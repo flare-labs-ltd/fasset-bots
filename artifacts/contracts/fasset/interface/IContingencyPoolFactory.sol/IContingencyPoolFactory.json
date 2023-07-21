@@ -1,0 +1,92 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IContingencyPoolFactory",
+  "sourceName": "contracts/fasset/interface/IContingencyPoolFactory.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IIAssetManager",
+          "name": "_assetManager",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "underlyingAddressString",
+              "type": "string"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "vaultCollateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolFeeShareBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingVaultCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingPoolCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "buyFAssetByAgentFactorBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolExitCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupTokenPriceFactorBIPS",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct AgentSettings.Data",
+          "name": "_settings",
+          "type": "tuple"
+        }
+      ],
+      "name": "create",
+      "outputs": [
+        {
+          "internalType": "contract IIContingencyPool",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

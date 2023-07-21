@@ -15,7 +15,7 @@ export interface AgentAvailable {
   args: {
     agentVault: string;
     feeBIPS: BN;
-    mintingClass1CollateralRatioBIPS: BN;
+    mintingVaultCollateralRatioBIPS: BN;
     mintingPoolCollateralRatioBIPS: BN;
     freeCollateralLots: BN;
     0: string;
@@ -64,7 +64,7 @@ export interface AvailableAgentsInstance extends Truffle.ContractInstance {
     0: {
       agentVault: string;
       feeBIPS: BN;
-      mintingClass1CollateralRatioBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
       mintingPoolCollateralRatioBIPS: BN;
       freeCollateralLots: BN;
     }[];
@@ -86,7 +86,7 @@ export interface AvailableAgentsInstance extends Truffle.ContractInstance {
       0: {
         agentVault: string;
         feeBIPS: BN;
-        mintingClass1CollateralRatioBIPS: BN;
+        mintingVaultCollateralRatioBIPS: BN;
         mintingPoolCollateralRatioBIPS: BN;
         freeCollateralLots: BN;
       }[];

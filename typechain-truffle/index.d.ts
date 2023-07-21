@@ -11,25 +11,27 @@ import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
 import { RippleAddressValidatorContract } from "./RippleAddressValidator";
 import { IAddressValidatorContract } from "./IAddressValidator";
+import { Base58MockContract } from "./Base58Mock";
+import { BytesMockContract } from "./BytesMock";
 import { TrivialAddressValidatorMockContract } from "./TrivialAddressValidatorMock";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
 import { AssetManagerControllerContract } from "./AssetManagerController";
-import { CollateralPoolContract } from "./CollateralPool";
-import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
-import { CollateralPoolTokenContract } from "./CollateralPoolToken";
-import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
+import { ContingencyPoolContract } from "./ContingencyPool";
+import { ContingencyPoolFactoryContract } from "./ContingencyPoolFactory";
+import { ContingencyPoolTokenContract } from "./ContingencyPoolToken";
+import { ContingencyPoolTokenFactoryContract } from "./ContingencyPoolTokenFactory";
 import { FAssetContract } from "./FAsset";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
-import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
-import { ICollateralPoolTokenFactoryContract } from "./ICollateralPoolTokenFactory";
+import { IContingencyPoolFactoryContract } from "./IContingencyPoolFactory";
+import { IContingencyPoolTokenFactoryContract } from "./IContingencyPoolTokenFactory";
 import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
-import { IICollateralPoolContract } from "./IICollateralPool";
+import { IIContingencyPoolContract } from "./IIContingencyPool";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IPriceReaderContract } from "./IPriceReader";
 import { IWhitelistContract } from "./IWhitelist";
@@ -58,6 +60,8 @@ import { AgentVaultMockContract } from "./AgentVaultMock";
 import { AssetManagerMockContract } from "./AssetManagerMock";
 import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
 import { ERC20MockContract } from "./ERC20Mock";
+import { FakeERC20Contract } from "./FakeERC20";
+import { FakePriceReaderContract } from "./FakePriceReader";
 import { FAssetMockContract } from "./FAssetMock";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
@@ -74,11 +78,12 @@ import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
+import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
-import { ICollateralPoolContract } from "./ICollateralPool";
-import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
+import { IContingencyPoolContract } from "./IContingencyPool";
+import { IContingencyPoolTokenContract } from "./IContingencyPoolToken";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
@@ -128,6 +133,8 @@ declare global {
       require(name: "IERC165"): IERC165Contract;
       require(name: "RippleAddressValidator"): RippleAddressValidatorContract;
       require(name: "IAddressValidator"): IAddressValidatorContract;
+      require(name: "Base58Mock"): Base58MockContract;
+      require(name: "BytesMock"): BytesMockContract;
       require(
         name: "TrivialAddressValidatorMock"
       ): TrivialAddressValidatorMockContract;
@@ -135,24 +142,24 @@ declare global {
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
       require(name: "AssetManagerController"): AssetManagerControllerContract;
-      require(name: "CollateralPool"): CollateralPoolContract;
-      require(name: "CollateralPoolFactory"): CollateralPoolFactoryContract;
-      require(name: "CollateralPoolToken"): CollateralPoolTokenContract;
+      require(name: "ContingencyPool"): ContingencyPoolContract;
+      require(name: "ContingencyPoolFactory"): ContingencyPoolFactoryContract;
+      require(name: "ContingencyPoolToken"): ContingencyPoolTokenContract;
       require(
-        name: "CollateralPoolTokenFactory"
-      ): CollateralPoolTokenFactoryContract;
+        name: "ContingencyPoolTokenFactory"
+      ): ContingencyPoolTokenFactoryContract;
       require(name: "FAsset"): FAssetContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
-      require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
+      require(name: "IContingencyPoolFactory"): IContingencyPoolFactoryContract;
       require(
-        name: "ICollateralPoolTokenFactory"
-      ): ICollateralPoolTokenFactoryContract;
+        name: "IContingencyPoolTokenFactory"
+      ): IContingencyPoolTokenFactoryContract;
       require(name: "IFAsset"): IFAssetContract;
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
-      require(name: "IICollateralPool"): IICollateralPoolContract;
+      require(name: "IIContingencyPool"): IIContingencyPoolContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWhitelist"): IWhitelistContract;
@@ -185,6 +192,8 @@ declare global {
         name: "DistributionToDelegators"
       ): DistributionToDelegatorsContract;
       require(name: "ERC20Mock"): ERC20MockContract;
+      require(name: "FakeERC20"): FakeERC20Contract;
+      require(name: "FakePriceReader"): FakePriceReaderContract;
       require(name: "FAssetMock"): FAssetMockContract;
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
@@ -201,11 +210,14 @@ declare global {
       require(name: "GovernedBase"): GovernedBaseContract;
       require(name: "AddressUpdatableMock"): AddressUpdatableMockContract;
       require(name: "GovernedMock"): GovernedMockContract;
+      require(
+        name: "GovernedWithTimelockMock"
+      ): GovernedWithTimelockMockContract;
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
-      require(name: "ICollateralPool"): ICollateralPoolContract;
-      require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
+      require(name: "IContingencyPool"): IContingencyPoolContract;
+      require(name: "IContingencyPoolToken"): IContingencyPoolTokenContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
@@ -266,6 +278,8 @@ export {
   IAddressValidatorContract,
   IAddressValidatorInstance,
 } from "./IAddressValidator";
+export { Base58MockContract, Base58MockInstance } from "./Base58Mock";
+export { BytesMockContract, BytesMockInstance } from "./BytesMock";
 export {
   TrivialAddressValidatorMockContract,
   TrivialAddressValidatorMockInstance,
@@ -281,21 +295,21 @@ export {
   AssetManagerControllerInstance,
 } from "./AssetManagerController";
 export {
-  CollateralPoolContract,
-  CollateralPoolInstance,
-} from "./CollateralPool";
+  ContingencyPoolContract,
+  ContingencyPoolInstance,
+} from "./ContingencyPool";
 export {
-  CollateralPoolFactoryContract,
-  CollateralPoolFactoryInstance,
-} from "./CollateralPoolFactory";
+  ContingencyPoolFactoryContract,
+  ContingencyPoolFactoryInstance,
+} from "./ContingencyPoolFactory";
 export {
-  CollateralPoolTokenContract,
-  CollateralPoolTokenInstance,
-} from "./CollateralPoolToken";
+  ContingencyPoolTokenContract,
+  ContingencyPoolTokenInstance,
+} from "./ContingencyPoolToken";
 export {
-  CollateralPoolTokenFactoryContract,
-  CollateralPoolTokenFactoryInstance,
-} from "./CollateralPoolTokenFactory";
+  ContingencyPoolTokenFactoryContract,
+  ContingencyPoolTokenFactoryInstance,
+} from "./ContingencyPoolTokenFactory";
 export { FAssetContract, FAssetInstance } from "./FAsset";
 export {
   FtsoV1PriceReaderContract,
@@ -307,13 +321,13 @@ export {
   IAgentVaultFactoryInstance,
 } from "./IAgentVaultFactory";
 export {
-  ICollateralPoolFactoryContract,
-  ICollateralPoolFactoryInstance,
-} from "./ICollateralPoolFactory";
+  IContingencyPoolFactoryContract,
+  IContingencyPoolFactoryInstance,
+} from "./IContingencyPoolFactory";
 export {
-  ICollateralPoolTokenFactoryContract,
-  ICollateralPoolTokenFactoryInstance,
-} from "./ICollateralPoolTokenFactory";
+  IContingencyPoolTokenFactoryContract,
+  IContingencyPoolTokenFactoryInstance,
+} from "./IContingencyPoolTokenFactory";
 export { IFAssetContract, IFAssetInstance } from "./IFAsset";
 export { IIAgentVaultContract, IIAgentVaultInstance } from "./IIAgentVault";
 export {
@@ -321,9 +335,9 @@ export {
   IIAssetManagerInstance,
 } from "./IIAssetManager";
 export {
-  IICollateralPoolContract,
-  IICollateralPoolInstance,
-} from "./IICollateralPool";
+  IIContingencyPoolContract,
+  IIContingencyPoolInstance,
+} from "./IIContingencyPool";
 export {
   ILiquidationStrategyContract,
   ILiquidationStrategyInstance,
@@ -409,6 +423,11 @@ export {
   DistributionToDelegatorsInstance,
 } from "./DistributionToDelegators";
 export { ERC20MockContract, ERC20MockInstance } from "./ERC20Mock";
+export { FakeERC20Contract, FakeERC20Instance } from "./FakeERC20";
+export {
+  FakePriceReaderContract,
+  FakePriceReaderInstance,
+} from "./FakePriceReader";
 export { FAssetMockContract, FAssetMockInstance } from "./FAssetMock";
 export {
   FtsoManagerMockContract,
@@ -455,6 +474,10 @@ export {
   AddressUpdatableMockInstance,
 } from "./AddressUpdatableMock";
 export { GovernedMockContract, GovernedMockInstance } from "./GovernedMock";
+export {
+  GovernedWithTimelockMockContract,
+  GovernedWithTimelockMockInstance,
+} from "./GovernedWithTimelockMock";
 export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
 export {
@@ -462,13 +485,13 @@ export {
   IAssetManagerEventsInstance,
 } from "./IAssetManagerEvents";
 export {
-  ICollateralPoolContract,
-  ICollateralPoolInstance,
-} from "./ICollateralPool";
+  IContingencyPoolContract,
+  IContingencyPoolInstance,
+} from "./IContingencyPool";
 export {
-  ICollateralPoolTokenContract,
-  ICollateralPoolTokenInstance,
-} from "./ICollateralPoolToken";
+  IContingencyPoolTokenContract,
+  IContingencyPoolTokenInstance,
+} from "./IContingencyPoolToken";
 export {
   SafeMath64MockContract,
   SafeMath64MockInstance,

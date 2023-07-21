@@ -13,7 +13,7 @@ export interface IAgentVaultContract
 type AllEvents = never;
 
 export interface IAgentVaultInstance extends Truffle.ContractInstance {
-  buyCollateralPoolTokens: {
+  buyContingencyPoolTokens: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -76,22 +76,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  collateralDeposited: {
-    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(
-      _token: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _token: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  contingencyPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   delegate: {
     (
@@ -176,7 +161,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  redeemCollateralPoolTokens: {
+  redeemContingencyPoolTokens: {
     (
       _amount: number | BN | string,
       _recipient: string,
@@ -300,6 +285,21 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  updateCollateral: {
+    (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(_token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   withdrawCollateral: {
     (
       _token: string,
@@ -351,7 +351,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
   };
 
   methods: {
-    buyCollateralPoolTokens: {
+    buyContingencyPoolTokens: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -414,25 +414,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    collateralDeposited: {
-      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _token: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _token: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _token: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    contingencyPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     delegate: {
       (
@@ -517,7 +499,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    redeemCollateralPoolTokens: {
+    redeemContingencyPoolTokens: {
       (
         _amount: number | BN | string,
         _recipient: string,
@@ -642,6 +624,24 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       call(txDetails?: Truffle.TransactionDetails): Promise<void>;
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    updateCollateral: {
+      (_token: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
     };
 
     withdrawCollateral: {

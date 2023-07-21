@@ -12,7 +12,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "_class1CR",
+          "name": "_vaultCR",
           "type": "uint256"
         },
         {

@@ -22,18 +22,6 @@ export interface AgentCollateralTypeChanged {
   };
 }
 
-export interface Class1WithdrawalAnnounced {
-  name: "Class1WithdrawalAnnounced";
-  args: {
-    agentVault: string;
-    amountWei: BN;
-    withdrawalAllowedAt: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface DustChanged {
   name: "DustChanged";
   args: {
@@ -76,13 +64,25 @@ export interface PoolTokenRedemptionAnnounced {
   };
 }
 
+export interface VaultCollateralWithdrawalAnnounced {
+  name: "VaultCollateralWithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 type AllEvents =
   | AgentCollateralTypeChanged
-  | Class1WithdrawalAnnounced
   | DustChanged
   | DustConvertedToTicket
   | LiquidationEnded
-  | PoolTokenRedemptionAnnounced;
+  | PoolTokenRedemptionAnnounced
+  | VaultCollateralWithdrawalAnnounced;
 
 export interface AgentsExternalInstance extends Truffle.ContractInstance {
   getAgentVaultOwner(

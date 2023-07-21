@@ -5,7 +5,7 @@
   "abi": [
     {
       "inputs": [],
-      "name": "buyCollateralPoolTokens",
+      "name": "buyContingencyPoolTokens",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"
@@ -69,24 +69,11 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "_token",
-          "type": "address"
-        }
-      ],
-      "name": "collateralDeposited",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
-      "name": "collateralPool",
+      "name": "contingencyPool",
       "outputs": [
         {
-          "internalType": "contract ICollateralPool",
+          "internalType": "contract IContingencyPool",
           "name": "",
           "type": "address"
         }
@@ -254,7 +241,7 @@
           "type": "address"
         }
       ],
-      "name": "redeemCollateralPoolTokens",
+      "name": "redeemContingencyPoolTokens",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -339,6 +326,19 @@
     {
       "inputs": [],
       "name": "undelegateGovernance",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "updateCollateral",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

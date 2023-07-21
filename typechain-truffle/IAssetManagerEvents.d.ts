@@ -17,7 +17,7 @@ export interface AgentAvailable {
   args: {
     agentVault: string;
     feeBIPS: BN;
-    mintingClass1CollateralRatioBIPS: BN;
+    mintingVaultCollateralRatioBIPS: BN;
     mintingPoolCollateralRatioBIPS: BN;
     freeCollateralLots: BN;
     0: string;
@@ -37,38 +37,6 @@ export interface AgentCollateralTypeChanged {
     0: string;
     1: BN;
     2: string;
-  };
-}
-
-export interface AgentCreated {
-  name: "AgentCreated";
-  args: {
-    owner: string;
-    agentVault: string;
-    collateralPool: string;
-    underlyingAddress: string;
-    class1CollateralToken: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingClass1CollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
-    0: string;
-    1: string;
-    2: string;
-    3: string;
-    4: string;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: BN;
-    9: BN;
-    10: BN;
-    11: BN;
-    12: BN;
   };
 }
 
@@ -126,6 +94,38 @@ export interface AgentSettingChanged {
   };
 }
 
+export interface AgentVaultCreated {
+  name: "AgentVaultCreated";
+  args: {
+    owner: string;
+    agentVault: string;
+    contingencyPool: string;
+    underlyingAddress: string;
+    vaultCollateralToken: string;
+    feeBIPS: BN;
+    poolFeeShareBIPS: BN;
+    mintingVaultCollateralRatioBIPS: BN;
+    mintingPoolCollateralRatioBIPS: BN;
+    buyFAssetByAgentFactorBIPS: BN;
+    poolExitCollateralRatioBIPS: BN;
+    poolTopupCollateralRatioBIPS: BN;
+    poolTopupTokenPriceFactorBIPS: BN;
+    0: string;
+    1: string;
+    2: string;
+    3: string;
+    4: string;
+    5: BN;
+    6: BN;
+    7: BN;
+    8: BN;
+    9: BN;
+    10: BN;
+    11: BN;
+    12: BN;
+  };
+}
+
 export interface AvailableAgentExitAnnounced {
   name: "AvailableAgentExitAnnounced";
   args: {
@@ -141,18 +141,6 @@ export interface AvailableAgentExited {
   args: {
     agentVault: string;
     0: string;
-  };
-}
-
-export interface Class1WithdrawalAnnounced {
-  name: "Class1WithdrawalAnnounced";
-  args: {
-    agentVault: string;
-    amountWei: BN;
-    withdrawalAllowedAt: BN;
-    0: string;
-    1: BN;
-    2: BN;
   };
 }
 
@@ -392,7 +380,7 @@ export interface RedeemedInCollateral {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    paidClass1Wei: BN;
+    paidVaultCollateralWei: BN;
     0: string;
     1: string;
     2: BN;
@@ -406,7 +394,7 @@ export interface RedemptionDefault {
     agentVault: string;
     redeemer: string;
     redemptionAmountUBA: BN;
-    redeemedClass1CollateralWei: BN;
+    redeemedVaultCollateralWei: BN;
     redeemedPoolCollateralWei: BN;
     requestId: BN;
     0: string;
@@ -608,18 +596,29 @@ export interface UnderlyingWithdrawalConfirmed {
   };
 }
 
+export interface VaultCollateralWithdrawalAnnounced {
+  name: "VaultCollateralWithdrawalAnnounced";
+  args: {
+    agentVault: string;
+    amountWei: BN;
+    withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 type AllEvents =
   | AgentAvailable
   | AgentCollateralTypeChanged
-  | AgentCreated
   | AgentDestroyAnnounced
   | AgentDestroyed
   | AgentInCCB
   | AgentSettingChangeAnnounced
   | AgentSettingChanged
+  | AgentVaultCreated
   | AvailableAgentExitAnnounced
   | AvailableAgentExited
-  | Class1WithdrawalAnnounced
   | CollateralRatiosChanged
   | CollateralReservationDeleted
   | CollateralReserved
@@ -652,7 +651,8 @@ type AllEvents =
   | UnderlyingBalanceToppedUp
   | UnderlyingWithdrawalAnnounced
   | UnderlyingWithdrawalCancelled
-  | UnderlyingWithdrawalConfirmed;
+  | UnderlyingWithdrawalConfirmed
+  | VaultCollateralWithdrawalAnnounced;
 
 export interface IAssetManagerEventsInstance extends Truffle.ContractInstance {
   methods: {};

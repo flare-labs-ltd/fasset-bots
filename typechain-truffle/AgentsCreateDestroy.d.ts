@@ -12,17 +12,35 @@ export interface AgentsCreateDestroyContract
   ): Promise<AgentsCreateDestroyInstance>;
 }
 
-export interface AgentCreated {
-  name: "AgentCreated";
+export interface AgentDestroyAnnounced {
+  name: "AgentDestroyAnnounced";
+  args: {
+    agentVault: string;
+    destroyAllowedAt: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface AgentDestroyed {
+  name: "AgentDestroyed";
+  args: {
+    agentVault: string;
+    0: string;
+  };
+}
+
+export interface AgentVaultCreated {
+  name: "AgentVaultCreated";
   args: {
     owner: string;
     agentVault: string;
-    collateralPool: string;
+    contingencyPool: string;
     underlyingAddress: string;
-    class1CollateralToken: string;
+    vaultCollateralToken: string;
     feeBIPS: BN;
     poolFeeShareBIPS: BN;
-    mintingClass1CollateralRatioBIPS: BN;
+    mintingVaultCollateralRatioBIPS: BN;
     mintingPoolCollateralRatioBIPS: BN;
     buyFAssetByAgentFactorBIPS: BN;
     poolExitCollateralRatioBIPS: BN;
@@ -44,25 +62,7 @@ export interface AgentCreated {
   };
 }
 
-export interface AgentDestroyAnnounced {
-  name: "AgentDestroyAnnounced";
-  args: {
-    agentVault: string;
-    destroyAllowedAt: BN;
-    0: string;
-    1: BN;
-  };
-}
-
-export interface AgentDestroyed {
-  name: "AgentDestroyed";
-  args: {
-    agentVault: string;
-    0: string;
-  };
-}
-
-type AllEvents = AgentCreated | AgentDestroyAnnounced | AgentDestroyed;
+type AllEvents = AgentDestroyAnnounced | AgentDestroyed | AgentVaultCreated;
 
 export interface AgentsCreateDestroyInstance extends Truffle.ContractInstance {
   methods: {};
