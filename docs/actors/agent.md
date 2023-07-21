@@ -57,8 +57,9 @@ See [BotCliCommands.ts](../../src/cli/BotCliCommands.ts) for more.
 ## AgentBot Automation
 The **runStep** method is responsible for managing all relevant Agent events and comprises:
 - **handleEvents**: checks if there are any new native events since last time the method run
-- **handleOpenMintings** and **handleOpenRedemptions**: checks if there are any open mintings or open redemptions that need to be handled
+- **handleOpenRedemptions**: checks if there are any open redemptions that need to be handled
 - **handleAgentsWaitingsAndCleanUp** checks if there are any pending actions, which need upfront announcement, ready for an execution
+- **handleCornerCases**: once a day checks if there are any open mintings or redemptions stuck on corner case
 
 ### handleEvents
 
@@ -97,8 +98,37 @@ The **runStep** method is responsible for managing all relevant Agent events and
 - **UnderlyingBalanceTooLow**, **DuplicatePaymentConfirmed** and **IllegalPaymentConfirmed**:
     - send notification to Owner about full liquidation being started
 
+### handleOpenRedemptions
+Redemption should generally follow flow: *redemption request -> agent pays -> agent requests proof -> agent confirms redemption payment*.
 
-### handleOpenMintings
+For every redemption in state `STARTED` it checks if payment can be still done (if it satisfies redemption's requirements on last underlying payment block)
+- If it satisfies requirements:
+    - AgentBot performs payment
+    - Sets redemption state to `PAID`
+    - Sends notification
+
+For every redemption in state `PAID`:
+- AgentBot request payment proof
+- Sets redemption state to `REQUESTED_PROOF`
+- Sends notification
+
+For every redemption in state `REQUESTED_PROOF`:
+- AgentBot obtains payment proof
+- Calls *confirmRedemptionPayment*
+- Sets redemption state to `DONE`
+- Sends notification
+
+
+### handleAgentsWaitingsAndCleanUp
+Due to their significant impact, some FAsset operations are subject to time locks. In this method, the AgentBot verifies if the time lock has expired and then executes any pending actions:
+- withdraw collateral
+- exit Agent's available list
+- update Agent's setting
+- destroy Agent
+- confirm underlying withdrawal
+- cancel underlying withdrawal
+
+### handleOpenMintings in handleCornerCases
 Minting should generally follow flow: *collateral reservation -> minter pays -> minter requests proof -> minter executes minting*. Which means, that no additional actions are needed by AgentBot. But it could also happen that minter does not pay or does not execute minting. In that case Agent's collateral would stay locked. To avoid such cases AgentBot does following checks.
 
 For every minting in state `STARTED` it checks if proof expired in indexer:
@@ -118,54 +148,22 @@ For every minting in state `STARTED` it checks if proof expired in indexer:
     - Sends notification to Owner
 
 For every minting in state `REQUEST_PAYMENT_PROOF`:
-    - AgentBot obtains payment proof
-    - Calls *executesMinting*
-    - Sets minting state to `DONE`
-    - Sends notification
-
-For every minting in state `REQUEST_NON_PAYMENT_PROOF`:
-    - AgentBot obtains referenced payment nonexistence proof
-    - Executes *mintingPaymentDefault*
-    - Sets minting state to `DONE`
-    - Sends notification
-
-
-### handleOpenRedemptions
-Redemption should generally follow flow: *redemption request -> agent pays -> agent requests proof -> agent confirms redemption payment*.
-But it could also happen that payment proof expired in indexer (very unlikely).
-
-For every redemption in state `STARTED` it checks if proof expired in indexer:
-- If proof did NOT expire:
-    - AgentBot performs payment
-    - Sets redemption state to `PAID`
-    - Sends notification
-- If proof did expired (corner case):
-    - AgentBot *finishRedemptionWithoutPayment*
-    - Sets redemption state to `DONE`
-    - Sends notification
-
-For every redemption in state `PAID` it checks if proof expired in indexer:
-- If proof did NOT expire:
-    - AgentBot request payment proof
-    - Sets redemption state to `REQUESTED_PROOF`
-    - Sends notification
-- If proof did expired (corner case):
-    - AgentBot *finishRedemptionWithoutPayment*
-    - Sets redemption state to `DONE`
-    - Sends notification
-
-For every redemption in state `REQUESTED_PROOF`:
 - AgentBot obtains payment proof
-- Calls *confirmRedemptionPayment*
-- Sets redemption state to `DONE`
+- Calls *executesMinting*
+- Sets minting state to `DONE`
 - Sends notification
 
+For every minting in state `REQUEST_NON_PAYMENT_PROOF`:
+- AgentBot obtains referenced payment nonexistence proof
+- Executes *mintingPaymentDefault*
+- Sets minting state to `DONE`
+- Sends notification
 
-### handleAgentsWaitingsAndCleanUp
-Due to their significant impact, some FAsset operations are subject to time locks. In this method, the AgentBot verifies if the time lock has expired and then executes any pending actions:
-- withdraw collateral
-- exit Agent's available list
-- update Agent's setting
-- destroy Agent
-- confirm underlying withdrawal
-- cancel underlying withdrawal
+### handleOpenRedemptions in handleCornerCases
+It could happen that payment proof expired in indexer (very unlikely).
+
+For every redemption in state `STARTED`, `PAID` or `REQUESTED_PROOF` it checks if proof expired:
+- If proof did expired (corner case):
+    - AgentBot *finishRedemptionWithoutPayment*
+    - Sets redemption state to `DONE`
+    - Sends notification
