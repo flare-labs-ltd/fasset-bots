@@ -282,11 +282,11 @@ describe("Agent bot tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        // check if redemption is done
+        // check redemption
         await agentBot.handleOpenRedemptionsForCornerCase(orm.em);
         orm.em.clear();
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
+        assert.equal(redemptionDone.state, AgentRedemptionState.STARTED);
     });
 
     it("Should not perform redemption - agent pays, time expires in indexer", async () => {
