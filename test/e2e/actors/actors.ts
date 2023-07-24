@@ -19,8 +19,9 @@ import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import { balanceOfVaultCollateral, cleanUp, depositVaultCollateralAmount, getNativeAccountsFromEnv, mintVaultCollateralToOwner, whitelistAgent } from "../../test-utils/test-helpers";
+import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv, mintVaultCollateralToOwner, whitelistAgent } from "../../test-utils/test-helpers";
 
+const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
 
 describe("Actor tests - coston", async () => {
@@ -83,7 +84,7 @@ describe("Actor tests - coston", async () => {
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
         // deposit class 1
-        const depositAmount = depositVaultCollateralAmount.divn(3);
+        const depositAmount = vaultCollateralAmount.divn(3);
         await agentBot.agent.depositVaultCollateral(depositAmount);
         const agentVaultCollateralBalance = await balanceOfVaultCollateral(vaultCollateralTokenAddress, agentBot.agent.vaultAddress);
         expect(agentVaultCollateralBalance.eq(depositAmount)).to.be.true;
