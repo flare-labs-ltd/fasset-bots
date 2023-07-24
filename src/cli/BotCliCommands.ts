@@ -53,22 +53,22 @@ export class BotCliCommands {
      * Deposits class 1 collateral to agent's vault from owner.
      */
     async depositToVault(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Owner ${this.ownerAddress} is starting class1 deposit for agent ${agentVault} of ${amount}.`);
+        logger.info(`Owner ${this.ownerAddress} is starting vault collateral deposit for agent ${agentVault} of ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositVaultCollateral(amount);
         this.botConfig.notifier.sendVaultCollateralDeposit(agentVault, amount);
-        logger.info(`Owner ${this.ownerAddress} deposited class1 for agent ${agentVault} of ${amount}.`);
+        logger.info(`Owner ${this.ownerAddress} deposited vault collateral for agent ${agentVault} of ${amount}.`);
     }
 
     /**
      * Buys contingency pool tokens for agent.
      */
     async buyContingencyPoolTokens(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Owner ${this.ownerAddress} is starting to buy collateral pool tokens deposit for agent ${agentVault} of ${amount}.`);
+        logger.info(`Owner ${this.ownerAddress} is starting to buy contingency pool tokens for agent ${agentVault} of ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyContingencyPoolTokens(amount);
         this.botConfig.notifier.sendBuyContingencyPoolTokens(agentVault, amount);
-        logger.info(`Owner ${this.ownerAddress} bought collateral pool tokens for agent ${agentVault} of ${amount}.`);
+        logger.info(`Owner ${this.ownerAddress} bought contingency pool tokens for agent ${agentVault} of ${amount}.`);
     }
 
     /**
@@ -103,7 +103,7 @@ export class BotCliCommands {
         this.botConfig.notifier.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
-        logger.info(`Agent ${agentVault} announced class1 withdrawal at ${withdrawalAllowedAt.toString()} at ${amount}.`);
+        logger.info(`Agent ${agentVault} announced vault collateral withdrawal at ${withdrawalAllowedAt.toString()} at ${amount}.`);
     }
 
     /**

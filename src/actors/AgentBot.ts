@@ -62,7 +62,7 @@ export class AgentBot {
             agentEntity.lastEventBlockHandled = lastBlock;
             agentEntity.contingencyPoolAddress = agent.contingencyPool.address
             em.persist(agentEntity);
-            logger.info(`Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
+            logger.info(`Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and contingency pool address ${agent.contingencyPool.address}.`);
             return new AgentBot(agent, notifier);
         });
     }
@@ -91,7 +91,7 @@ export class AgentBot {
         const contingencyPoolToken = await ContingencyPoolToken.at(poolTokenAddress);
         // agent
         const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, contingencyPool, contingencyPoolToken, agentEntity.underlyingAddress);
-        logger.info(`Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
+        logger.info(`Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and contingency pool address ${agent.contingencyPool.address}.`);
         return new AgentBot(agent, notifier);
     }
 
@@ -253,7 +253,7 @@ export class AgentBot {
             }
             if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
                 logger.info(`Agent ${this.agent.vaultAddress} is waiting for vault collateral withdrawal.`);
-                // agent waiting for class1 withdrawal
+                // agent waiting for vault collateral withdrawal
                 if (toBN(agentEnt.withdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
                     // agent can withdraw vault collateral
                     await this.agent.withdrawVaultCollateral(agentEnt.withdrawalAllowedAtAmount);
@@ -285,16 +285,16 @@ export class AgentBot {
             } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
                 // agent can exit available
                 await this.exitAvailable(agentEnt);
-            } else if (agentEnt.waitingForDestructionCleanUp && (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) || toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction and for class1 withdrawal.`);
-                // agent waiting to withdraw class1 or to redeem pool tokens
-                if (toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.destroyClass1WithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
-                    // agent can withdraw class1
-                    await this.agent.withdrawClass1Collateral(agentEnt.destroyClass1WithdrawalAllowedAtAmount);
-                    this.notifier.sendWithdrawClass1(agentEnt.vaultAddress, agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString());
-                    logger.info(`Agent ${this.agent.vaultAddress} withdrew yet be withdraw ${agentEnt.destroyClass1WithdrawalAllowedAtAmount.toString()}.`);
-                    agentEnt.destroyClass1WithdrawalAllowedAtAmount = "";
-                    agentEnt.destroyClass1WithdrawalAllowedAtTimestamp = BN_ZERO;
+            } else if (agentEnt.waitingForDestructionCleanUp && (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) || toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction and for vault collateral withdrawal.`);
+                // agent waiting to withdraw vault collateral or to redeem pool tokens
+                if (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
+                    // agent can withdraw vault collateral
+                    await this.agent.withdrawVaultCollateral(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount);
+                    this.notifier.sendWithdrawVaultCollateral(agentEnt.vaultAddress, agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount.toString());
+                    logger.info(`Agent ${this.agent.vaultAddress} withdrew yet be withdraw ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount.toString()}.`);
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
+                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
                 } else {
                     logger.info(`Agent ${this.agent.vaultAddress} cannot yet be withdraw. Allowed at ${agentEnt.withdrawalAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`);
                 }
@@ -325,7 +325,7 @@ export class AgentBot {
                     // announce withdraw class 1
                     agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
                     agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
-                    logger.info(`Agent ${this.agent.vaultAddress} announced class1 withdraw of ${freeClass1Balance.toString()} at ${agentEnt.destroyClass1WithdrawalAllowedAtTimestamp}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} announced vault collateral withdraw of ${freeVaultCollateralBalance.toString()} at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
                 }
                 if (freePoolTokenBalance.gt(BN_ZERO)) {
                     // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
@@ -879,37 +879,37 @@ export class AgentBot {
         }
         if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
             try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to top up class1 collateral from owner ${this.agent.ownerAddress}.`);
-                await this.agent.depositClass1Collateral(requiredTopUpClass1);
-                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpClass1.toString());
-                logger.info(`Agent ${this.agent.vaultAddress} topped up class1 with amount ${requiredTopUpClass1.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral from owner ${this.agent.ownerAddress}.`);
+                await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
+                this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
+                logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral with amount ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.ownerAddress}.`);
             } catch (err) {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
-                logger.error(`Agent ${this.agent.vaultAddress} could NOT be topped up with class1 ${requiredTopUpClass1.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.error(`Agent ${this.agent.vaultAddress} could NOT be topped up with vault collateral ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.ownerAddress}.`);
             }
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
             try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens from owner ${this.agent.ownerAddress}.`);
-                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy contingency pool tokens from owner ${this.agent.ownerAddress}.`);
+                await this.agent.buyContingencyPoolTokens(requiredTopUpPool);
                 this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} bought contingency pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
             } catch (err) {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.error(`Agent ${this.agent.vaultAddress} could NOT buy collateral pool tokens ${requiredTopUpClass1.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.error(`Agent ${this.agent.vaultAddress} could NOT buy contingency pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
             }
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
         const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.ownerAddress);
         if (ownerBalanceVaultCollateral.lte(STABLE_COIN_LOW_BALANCE)) {
             this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalanceVaultCollateral.toString(), vaultCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(`Owner ${this.agent.ownerAddress} has low balance of ${ownerBalanceClass1.toString()} ${collateralClass1Price.collateral.tokenFtsoSymbol}.`);
+            logger.info(`Owner ${this.agent.ownerAddress} has low balance of ${ownerBalanceVaultCollateral.toString()} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`);
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
         if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), poolCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(`Owner ${this.agent.ownerAddress} has low balance of ${ownerBalance.toString()} ${collateralPoolPrice.collateral.tokenFtsoSymbol}.`);
+            logger.info(`Owner ${this.agent.ownerAddress} has low balance of ${ownerBalance.toString()} ${poolCollateralPrice.collateral.tokenFtsoSymbol}.`);
         }
     }
 
