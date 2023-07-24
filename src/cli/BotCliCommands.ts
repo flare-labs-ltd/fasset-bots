@@ -42,7 +42,7 @@ export class BotCliCommands {
     /**
      * Creates agent bot.
      */
-    async createAgentVault(): Promise<Agent | null> {
+    async createAgentVault(): Promise<Agent> {
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
         const agentBot = await AgentBot.create(this.botConfig.orm.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier);
         this.botConfig.notifier.sendAgentCreated(agentBot.agent.vaultAddress);

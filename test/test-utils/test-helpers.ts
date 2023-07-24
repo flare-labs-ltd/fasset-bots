@@ -7,7 +7,7 @@ import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EventArgs } from "../../src/utils/events/common";
 import { SourceId } from "../../src/verification/sources/sources";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
-import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
+import { AgentBotConfig, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { artifacts } from "../../src/utils/artifacts";
 import { BN_ZERO, BNish, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
@@ -15,6 +15,7 @@ import { AgentBot } from "../../src/actors/AgentBot";
 import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentEntity } from "../../src/entities/agent";
 import { Notifier } from "../../src/utils/Notifier";
+import { loadContracts } from "../../src/config/contracts";
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const Whitelist = artifacts.require('Whitelist');
@@ -24,6 +25,8 @@ const account1PrivateKey = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
 const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
 const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
 const deployPrivateKey = requireEnv('DEPLOY_PRIVATE_KEY');
+const deployAddress = requireEnv('DEPLOY_ADDRESS');
+
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {
     // owner is always first in array
@@ -63,7 +66,7 @@ export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainI
 
 export async function mintVaultCollateralToOwner(vaultCollateralTokenAddress: string, ownerAddress: string, amount: BNish = depositVaultCollateralAmount): Promise<void> {
     const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
-    await vaultCollateralToken.mintAmount(ownerAddress, amount, { from: ownerAddress });
+    await vaultCollateralToken.mintAmount(ownerAddress, amount, { from: deployAddress });
 }
 
 export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: string, address: string): Promise<BN> {
@@ -135,10 +138,10 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     }
 }
 
-export async function whitelistAgent(accounts: string[], ownerAddress: string, whitelistAddress: string) {
-    const deployerAddress = accounts[accounts.length - 1];
-    const agentWhitelist = await Whitelist.at(whitelistAddress);
-    await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
+export async function whitelistAgent(botConfig: AgentBotConfig, ownerAddress: string) {
+    const contracts = loadContracts(botConfig.contractsJsonFile!);
+    const agentWhitelist = await Whitelist.at(contracts['AgentWhitelist']!.address);
+    await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployAddress });
 }
 
 export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {

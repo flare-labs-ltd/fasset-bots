@@ -29,10 +29,10 @@ describe("Bot cli commands unit tests", async () => {
 
     it("Should create agent bot via bot cli commands", async () => {
         const agent = await botCliCommands.createAgentVault();
-        expect(agent!.underlyingAddress).is.not.null;
-        expect(agent!.ownerAddress).to.eq(ownerAddress);
+        expect(agent.underlyingAddress).is.not.null;
+        expect(agent.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
-        await agent!.announceDestroy();
+        await agent.announceDestroy();
     });
 
     it("Should run command 'create'", async () => {

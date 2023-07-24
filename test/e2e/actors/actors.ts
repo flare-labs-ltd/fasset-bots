@@ -15,11 +15,11 @@ import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
-import { toBN, toBNExp } from "../../../src/utils/helpers";
+import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import { balanceOfVaultCollateral, cleanUp, depositVaultCollateralAmount, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { balanceOfVaultCollateral, cleanUp, depositVaultCollateralAmount, getNativeAccountsFromEnv, mintVaultCollateralToOwner, whitelistAgent } from "../../test-utils/test-helpers";
 
 const buyPoolTokens = toBNExp(500, 18);
 
@@ -46,7 +46,7 @@ describe("Actor tests - coston", async () => {
         runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
         // accounts
         accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
-        ownerAddress = accounts[0];
+        ownerAddress = requireEnv('OWNER_ADDRESS');
         challengerAddress = accounts[1]
         liquidatorAddress = accounts[2]
         systemKeeperAddress = accounts[3]
@@ -64,8 +64,9 @@ describe("Actor tests - coston", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
-        // mint vault collateral to owner
+        // the following two lines are only needed after fresh deploy of fasset on Coston
         // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
+        // await whitelistAgent(botConfig, ownerAddress);
     });
 
     after(async () => {
