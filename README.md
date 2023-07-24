@@ -43,6 +43,10 @@ See [here](./docs/trackState.md).
 
 See [here](./docs/testDebug.md).
 
+## Logging
+
+Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src/cli/BotCliCommands.ts) are being logged. Log files are created every hour and can be found in `log/log/log-YYYY-MM-DD-HH.log`.
+
 ## What to be aware of when testing on Coston and testnet XRP
 
 - Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts)  before reserving collateral, before redeeming, ...
