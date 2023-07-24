@@ -459,10 +459,10 @@ describe("Agent bot tests", async () => {
         assert.equal(status, AgentStatus.NORMAL);
         // redeem pool
         const agentInfo = await agentBot.agent.getAgentInfo();
-        const amount = await context.wNat.balanceOf(agentInfo.contingencyPool);
+        const amount = await context.wNat.balanceOf(agentInfo.collateralPool);
         const withdrawAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
-        await agentBot.agent.redeemContingencyPoolTokens(amount);
+        await agentBot.agent.redeemCollateralPoolTokens(amount);
 
         // exit available
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
@@ -592,7 +592,7 @@ describe("Agent bot tests", async () => {
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgentB(context, ownerAddress);
         const deposit = ownerBalance.sub(NATIVE_LOW_BALANCE);
-        await agentB.buyContingencyPoolTokens(deposit);
+        await agentB.buyCollateralPoolTokens(deposit);
         const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
         const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -610,7 +610,7 @@ describe("Agent bot tests", async () => {
         // redeem pool tokens
         const redeemAt = await agentB.announcePoolTokenRedemption(deposit);
         await time.increaseTo(redeemAt);
-        await agentB.redeemContingencyPoolTokens(deposit);
+        await agentB.redeemCollateralPoolTokens(deposit);
         const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
         expect(ownerBalanceAfter.gte(deposit)).to.be.true;
     });
@@ -630,13 +630,13 @@ describe("Agent bot tests", async () => {
         const agent = await createTestAgentB(context, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const forDeposit = ownerBalance.sub(ownerBalance.divn(1000000));
-        await agent.buyContingencyPoolTokens(forDeposit);
+        await agent.buyCollateralPoolTokens(forDeposit);
         // check for top up collateral
         await agentBot.runStep(orm.em)
         // redeem pool tokens
         const redeemAt = await agent.announcePoolTokenRedemption(forDeposit);
         await time.increaseTo(redeemAt);
-        await agent.redeemContingencyPoolTokens(forDeposit);
+        await agent.redeemCollateralPoolTokens(forDeposit);
         const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
         expect(ownerBalanceAfter.gte(forDeposit)).to.be.true;
     });

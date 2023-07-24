@@ -20,7 +20,7 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
     status: BN;
     ownerManagementAddress: string;
     ownerWorkAddress: string;
-    contingencyPool: string;
+    collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
@@ -64,7 +64,7 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
       status: BN;
       ownerManagementAddress: string;
       ownerWorkAddress: string;
-      contingencyPool: string;
+      collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;

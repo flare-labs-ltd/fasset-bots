@@ -1,12 +1,12 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IContingencyPoolTokenFactory",
-  "sourceName": "contracts/fasset/interface/IContingencyPoolTokenFactory.sol",
+  "contractName": "ICollateralPoolTokenFactory",
+  "sourceName": "contracts/fasset/interface/ICollateralPoolTokenFactory.sol",
   "abi": [
     {
       "inputs": [
         {
-          "internalType": "contract IIContingencyPool",
+          "internalType": "contract IICollateralPool",
           "name": "pool",
           "type": "address"
         }

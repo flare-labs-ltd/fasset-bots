@@ -10,7 +10,7 @@ export class AgentEntity {
     vaultAddress!: string;
 
     @Property({ length: ADDRESS_LENGTH })
-    contingencyPoolAddress!: string;
+    collateralPoolAddress!: string;
 
     @Property()
     chainId!: number;

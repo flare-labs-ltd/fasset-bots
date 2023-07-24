@@ -99,7 +99,7 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    contingencyPool: string;
+    collateralPool: string;
     underlyingAddress: string;
     vaultCollateralToken: string;
     feeBIPS: BN;

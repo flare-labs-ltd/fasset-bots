@@ -97,11 +97,11 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateral.toString()).to.eq(depositAmount);
     });
 
-    it("Should buy contingency pool tokens", async () => {
+    it("Should buy collateral pool tokens", async () => {
         const agent = await createAgent();
-        await botCliCommands.buyContingencyPoolTokens(agent!.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent!.vaultAddress, depositAmount);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent!.vaultAddress } as FilterQuery<AgentEntity>);
-        const collateral = await context.wNat.balanceOf(agentEnt.contingencyPoolAddress);
+        const collateral = await context.wNat.balanceOf(agentEnt.collateralPoolAddress);
         expect(collateral.toString()).to.eq(depositAmount);
     });
 
@@ -115,8 +115,8 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateral.toString()).to.eq(depositAmount);
         const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore.publiclyAvailable).to.be.false;
-        // buy contingency pool tokens
-        await botCliCommands.buyContingencyPoolTokens(vaultAddress, depositAmount);
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
         // enter available
         await botCliCommands.enterAvailableList(vaultAddress);
         const agentInfoMiddle = await context.assetManager.getAgentInfo(vaultAddress);
@@ -145,7 +145,7 @@ describe("Bot cli commands unit tests", async () => {
         const vaultAddress = agent.vaultAddress;
         await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(vaultAddress);
         // execute minting
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -170,7 +170,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent2 = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent2, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent2.vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(agent2.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent2.vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(agent2.vaultAddress);
         await botCliCommands.closeVault(agent2.vaultAddress);
         const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent2.vaultAddress } as FilterQuery<AgentEntity>);
@@ -235,7 +235,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         // deposit to vault
         const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
-        await botCliCommands.buyContingencyPoolTokens(agent.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent.vaultAddress, depositAmount);
         await botCliCommands.depositToVault(agent.vaultAddress, depositAmount);
         const collateral = await vaultCollateralTokenContract.balanceOf(agent.vaultAddress);
         expect(collateral.toString()).to.eq(depositAmount);
@@ -291,7 +291,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent.vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(agent.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent.vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(agent.vaultAddress);
         // execute minting
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -322,7 +322,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent2 = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent2, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent2.vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(agent2.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent2.vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(agent2.vaultAddress);
         await botCliCommands.run(["", "", "close", agent2.vaultAddress]);
         const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent2.vaultAddress } as FilterQuery<AgentEntity>);
@@ -340,7 +340,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent.vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(agent.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent.vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(agent.vaultAddress);
         // execute minting
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -364,7 +364,7 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
         await botCliCommands.depositToVault(agent.vaultAddress, depositAmount);
-        await botCliCommands.buyContingencyPoolTokens(agent.vaultAddress, depositAmount);
+        await botCliCommands.buyCollateralPoolTokens(agent.vaultAddress, depositAmount);
         await botCliCommands.enterAvailableList(agent.vaultAddress);
         // execute minting
         const minter = await createTestMinter(context, minterAddress, chain);

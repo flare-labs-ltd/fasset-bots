@@ -1,4 +1,4 @@
-import { AgentVaultInstance, ContingencyPoolInstance, ContingencyPoolTokenInstance } from "../../typechain-truffle";
+import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
 import { Agent } from "../fasset/Agent";
 import { AgentSettings } from "../fasset/AssetManagerTypes";
 import { artifacts } from "../utils/artifacts";
@@ -7,19 +7,19 @@ import { IAssetAgentBotContext } from "./IAssetBotContext";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
 const AgentVault = artifacts.require('AgentVault');
-const ContingencyPool = artifacts.require('ContingencyPool');
-const ContingencyPoolToken = artifacts.require('ContingencyPoolToken');
+const CollateralPool = artifacts.require('CollateralPool');
+const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 
 export class AgentB extends Agent {
     constructor(
         public context: IAssetAgentBotContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
-        public contingencyPool: ContingencyPoolInstance,
-        public contingencyPoolToken: ContingencyPoolTokenInstance,
+        public collateralPool: CollateralPoolInstance,
+        public collateralPoolToken: CollateralPoolTokenInstance,
         public underlyingAddress: string
     ) {
-        super(context, ownerAddress, agentVault, contingencyPool, contingencyPoolToken, underlyingAddress);
+        super(context, ownerAddress, agentVault, collateralPool, collateralPoolToken, underlyingAddress);
     }
 
     static async create(ctx: IAssetAgentBotContext, ownerAddress: string, settings: AgentSettings): Promise<AgentB> {
@@ -29,12 +29,12 @@ export class AgentB extends Agent {
         const event = findRequiredEvent(response, 'AgentVaultCreated');
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
-        // get contingency pool
-        const contingencyPool = await ContingencyPool.at(event.args.contingencyPool);
+        // get collateral pool
+        const collateralPool = await CollateralPool.at(event.args.collateralPool);
         // get pool token
-        const poolTokenAddress = await contingencyPool.poolToken();
-        const contingencyPoolToken = await ContingencyPoolToken.at(poolTokenAddress);
+        const poolTokenAddress = await collateralPool.poolToken();
+        const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new AgentB(ctx, ownerAddress, agentVault, contingencyPool, contingencyPoolToken, settings.underlyingAddressString);
+        return new AgentB(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, settings.underlyingAddressString);
     }
 }

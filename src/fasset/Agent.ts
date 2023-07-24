@@ -1,4 +1,4 @@
-import { AgentVaultInstance, ContingencyPoolInstance, ContingencyPoolTokenInstance } from "../../typechain-truffle";
+import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
 import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
@@ -15,16 +15,16 @@ import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
 
 const AgentVault = artifacts.require('AgentVault');
-const ContingencyPool = artifacts.require('ContingencyPool');
-const ContingencyPoolToken = artifacts.require('ContingencyPoolToken');
+const CollateralPool = artifacts.require('CollateralPool');
+const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 
 export class Agent {
     constructor(
         public context: IAssetContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
-        public contingencyPool: ContingencyPoolInstance,
-        public contingencyPoolToken: ContingencyPoolTokenInstance,
+        public collateralPool: CollateralPoolInstance,
+        public collateralPoolToken: CollateralPoolTokenInstance,
         public underlyingAddress: string
     ) {
     }
@@ -81,13 +81,13 @@ export class Agent {
         const event = findRequiredEvent(response, 'AgentVaultCreated');
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
-        // get contingency pool
-        const contingencyPool = await ContingencyPool.at(event.args.contingencyPool);
+        // get collateral pool
+        const collateralPool = await CollateralPool.at(event.args.collateralPool);
         // get pool token
-        const poolTokenAddress = await contingencyPool.poolToken();
-        const contingencyPoolToken = await ContingencyPoolToken.at(poolTokenAddress);
+        const poolTokenAddress = await collateralPool.poolToken();
+        const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, contingencyPool, contingencyPoolToken, agentSettings.underlyingAddressString);
+        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
     }
 
     async depositVaultCollateral(amountTokenWei: BNish) {
@@ -98,8 +98,8 @@ export class Agent {
     }
 
     // adds pool collateral and agent pool tokens
-    async buyContingencyPoolTokens(amountNatWei: BNish) {
-        return await this.agentVault.buyContingencyPoolTokens({ from: this.ownerAddress, value: toBN(amountNatWei) });
+    async buyCollateralPoolTokens(amountNatWei: BNish) {
+        return await this.agentVault.buyCollateralPoolTokens({ from: this.ownerAddress, value: toBN(amountNatWei) });
     }
 
     async makeAvailable(): Promise<EventArgs<AgentAvailable>> {
@@ -134,7 +134,7 @@ export class Agent {
     }
 
     async poolFeeBalance(): Promise<BN> {
-        return await this.contingencyPool.fAssetFeesOf(this.vaultAddress);
+        return await this.collateralPool.fAssetFeesOf(this.vaultAddress);
     }
 
     async announceDestroy(): Promise<BN> {
@@ -202,7 +202,7 @@ export class Agent {
         return args.withdrawalAllowedAt;
     }
 
-    async redeemContingencyPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
-        return await this.agentVault.redeemContingencyPoolTokens(amountWei, recipient, { from: this.ownerAddress });
+    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
+        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
     }
 }

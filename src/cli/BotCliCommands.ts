@@ -61,14 +61,14 @@ export class BotCliCommands {
     }
 
     /**
-     * Buys contingency pool tokens for agent.
+     * Buys collateral pool tokens for agent.
      */
-    async buyContingencyPoolTokens(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Owner ${this.ownerAddress} is starting to buy contingency pool tokens for agent ${agentVault} of ${amount}.`);
+    async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
+        logger.info(`Owner ${this.ownerAddress} is starting to buy collateral pool tokens for agent ${agentVault} of ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
-        await agentBot.agent.buyContingencyPoolTokens(amount);
-        this.botConfig.notifier.sendBuyContingencyPoolTokens(agentVault, amount);
-        logger.info(`Owner ${this.ownerAddress} bought contingency pool tokens for agent ${agentVault} of ${amount}.`);
+        await agentBot.agent.buyCollateralPoolTokens(amount);
+        this.botConfig.notifier.sendBuyCollateralPoolTokens(agentVault, amount);
+        logger.info(`Owner ${this.ownerAddress} bought collateral pool tokens for agent ${agentVault} of ${amount}.`);
     }
 
     /**
@@ -255,7 +255,7 @@ export class BotCliCommands {
         const query = this.botConfig.orm.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
-            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.contingencyPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${getSourceName(agent.chainId)}`);
+            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${getSourceName(agent.chainId)}`);
         }
     }
 
@@ -291,7 +291,7 @@ export class BotCliCommands {
                     const agentVaultBuyPool = args[3];
                     const amountBuyPool = args[4];
                     if (agentVaultBuyPool && amountBuyPool) {
-                        await this.buyContingencyPoolTokens(agentVaultBuyPool, amountBuyPool);
+                        await this.buyCollateralPoolTokens(agentVaultBuyPool, amountBuyPool);
                     } else {
                         console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("buyPoolCollateral"));
                     }

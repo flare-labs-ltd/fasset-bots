@@ -87,8 +87,8 @@ describe("Actor tests - coston", async () => {
         await agentBot.agent.depositVaultCollateral(depositAmount);
         const agentVaultCollateralBalance = await balanceOfVaultCollateral(vaultCollateralTokenAddress, agentBot.agent.vaultAddress);
         expect(agentVaultCollateralBalance.eq(depositAmount)).to.be.true;
-        // buy contingency pool tokens
-        await agentBot.agent.buyContingencyPoolTokens(buyPoolTokens);
+        // buy collateral pool tokens
+        await agentBot.agent.buyCollateralPoolTokens(buyPoolTokens);
         const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfo.totalPoolCollateralNATWei).eq(buyPoolTokens));
         // sort of clean up

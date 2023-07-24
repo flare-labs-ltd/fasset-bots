@@ -23,8 +23,8 @@ import {formatArgs, logger } from "../../logger";
 import { min } from "bn.js";
 
 const AgentVault = artifacts.require('AgentVault');
-const ContingencyPool = artifacts.require('ContingencyPool');
-const ContingencyPoolToken = artifacts.require('ContingencyPoolToken');
+const CollateralPool = artifacts.require('CollateralPool');
+const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 const IERC20 = artifacts.require('IERC20');
 
 export class AgentBot {
@@ -60,9 +60,9 @@ export class AgentBot {
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
-            agentEntity.contingencyPoolAddress = agent.contingencyPool.address
+            agentEntity.collateralPoolAddress = agent.collateralPool.address
             em.persist(agentEntity);
-            logger.info(`Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and contingency pool address ${agent.contingencyPool.address}.`);
+            logger.info(`Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
             return new AgentBot(agent, notifier);
         });
     }
@@ -84,14 +84,14 @@ export class AgentBot {
     static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
-        // get contingency pool
-        const contingencyPool = await ContingencyPool.at(agentEntity.contingencyPoolAddress);
+        // get collateral pool
+        const collateralPool = await CollateralPool.at(agentEntity.collateralPoolAddress);
         // get pool token
-        const poolTokenAddress = await contingencyPool.poolToken();
-        const contingencyPoolToken = await ContingencyPoolToken.at(poolTokenAddress);
+        const poolTokenAddress = await collateralPool.poolToken();
+        const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // agent
-        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, contingencyPool, contingencyPoolToken, agentEntity.underlyingAddress);
-        logger.info(`Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and contingency pool address ${agent.contingencyPool.address}.`);
+        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
+        logger.info(`Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         return new AgentBot(agent, notifier);
     }
 
@@ -302,11 +302,11 @@ export class AgentBot {
                 if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO) && toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).lte(latestTimestamp)) {
                     logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction and for pool token redemption.`);
                     // agent can redeem pool tokens
-                    await this.agent.redeemContingencyPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+                    await this.agent.redeemCollateralPoolTokens(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
                     logger.info(`Agent ${this.agent.vaultAddress} redeemed pool tokens ${agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount.toString()}.`);
                     agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
                     agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    this.notifier.sendContingencyPoolTokensRedemption(agentEnt.vaultAddress);
+                    this.notifier.sendCollateralPoolTokensRedemption(agentEnt.vaultAddress);
                 }
             } else if (agentEnt.waitingForDestructionCleanUp) {
                 logger.info(`Agent ${this.agent.vaultAddress} is checking if clean up before destruction is complete.`);
@@ -890,13 +890,13 @@ export class AgentBot {
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
             try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy contingency pool tokens from owner ${this.agent.ownerAddress}.`);
-                await this.agent.buyContingencyPoolTokens(requiredTopUpPool);
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens from owner ${this.agent.ownerAddress}.`);
+                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
                 this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.info(`Agent ${this.agent.vaultAddress} bought contingency pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
             } catch (err) {
                 this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.error(`Agent ${this.agent.vaultAddress} could NOT buy contingency pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
+                logger.error(`Agent ${this.agent.vaultAddress} could NOT buy collateral pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`);
             }
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);

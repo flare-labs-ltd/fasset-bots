@@ -203,11 +203,11 @@ export class Notifier {
         this.send(CANCEL_WITHDRAW_UNDERLYING, `Agent's ${agentVault} underlying withdrawal announcement was successfully cancelled.`);
     }
 
-    sendContingencyPoolTokensRedemption(agentVault: string) {
+    sendCollateralPoolTokensRedemption(agentVault: string) {
         this.send(REDEMPTION_POOL_TOKENS, `Agent ${agentVault} redeemed pool tokens.`);
     }
 
-    sendBuyContingencyPoolTokens(agentVault: string, amount: string) {
+    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
         this.send(BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
     }
 

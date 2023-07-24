@@ -190,7 +190,7 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "contingencyPool",
+          "name": "collateralPool",
           "type": "address"
         },
         {

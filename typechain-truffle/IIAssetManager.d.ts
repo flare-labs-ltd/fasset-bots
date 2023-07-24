@@ -97,7 +97,7 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    contingencyPool: string;
+    collateralPool: string;
     underlyingAddress: string;
     vaultCollateralToken: string;
     feeBIPS: BN;
@@ -1736,7 +1736,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     status: BN;
     ownerManagementAddress: string;
     ownerWorkAddress: string;
-    contingencyPool: string;
+    collateralPool: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
@@ -1804,6 +1804,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string[]; 1: BN }>;
 
+  getCollateralPool(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   getCollateralType(
     _collateralClass: number | BN | string,
     _token: string,
@@ -1838,11 +1843,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     }[]
   >;
 
-  getContingencyPool(
-    _agentVault: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string>;
-
   getFAssetsBackedByPool(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -1858,8 +1858,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     assetManagerController: string;
     fAsset: string;
     agentVaultFactory: string;
-    contingencyPoolFactory: string;
-    contingencyPoolTokenFactory: string;
+    collateralPoolFactory: string;
+    collateralPoolTokenFactory: string;
     whitelist: string;
     agentWhitelist: string;
     scProofVerifier: string;
@@ -3904,7 +3904,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       status: BN;
       ownerManagementAddress: string;
       ownerWorkAddress: string;
-      contingencyPool: string;
+      collateralPool: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;
@@ -3972,6 +3972,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string[]; 1: BN }>;
 
+    getCollateralPool(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
     getCollateralType(
       _collateralClass: number | BN | string,
       _token: string,
@@ -4006,11 +4011,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       }[]
     >;
 
-    getContingencyPool(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-
     getFAssetsBackedByPool(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -4026,8 +4026,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       assetManagerController: string;
       fAsset: string;
       agentVaultFactory: string;
-      contingencyPoolFactory: string;
-      contingencyPoolTokenFactory: string;
+      collateralPoolFactory: string;
+      collateralPoolTokenFactory: string;
       whitelist: string;
       agentWhitelist: string;
       scProofVerifier: string;

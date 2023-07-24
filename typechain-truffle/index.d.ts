@@ -18,20 +18,20 @@ import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
 import { AssetManagerControllerContract } from "./AssetManagerController";
-import { ContingencyPoolContract } from "./ContingencyPool";
-import { ContingencyPoolFactoryContract } from "./ContingencyPoolFactory";
-import { ContingencyPoolTokenContract } from "./ContingencyPoolToken";
-import { ContingencyPoolTokenFactoryContract } from "./ContingencyPoolTokenFactory";
+import { CollateralPoolContract } from "./CollateralPool";
+import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
+import { CollateralPoolTokenContract } from "./CollateralPoolToken";
+import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
 import { FAssetContract } from "./FAsset";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
-import { IContingencyPoolFactoryContract } from "./IContingencyPoolFactory";
-import { IContingencyPoolTokenFactoryContract } from "./IContingencyPoolTokenFactory";
+import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
+import { ICollateralPoolTokenFactoryContract } from "./ICollateralPoolTokenFactory";
 import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
-import { IIContingencyPoolContract } from "./IIContingencyPool";
+import { IICollateralPoolContract } from "./IICollateralPool";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IPriceReaderContract } from "./IPriceReader";
 import { IWhitelistContract } from "./IWhitelist";
@@ -82,8 +82,8 @@ import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
-import { IContingencyPoolContract } from "./IContingencyPool";
-import { IContingencyPoolTokenContract } from "./IContingencyPoolToken";
+import { ICollateralPoolContract } from "./ICollateralPool";
+import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
@@ -142,24 +142,24 @@ declare global {
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
       require(name: "AssetManagerController"): AssetManagerControllerContract;
-      require(name: "ContingencyPool"): ContingencyPoolContract;
-      require(name: "ContingencyPoolFactory"): ContingencyPoolFactoryContract;
-      require(name: "ContingencyPoolToken"): ContingencyPoolTokenContract;
+      require(name: "CollateralPool"): CollateralPoolContract;
+      require(name: "CollateralPoolFactory"): CollateralPoolFactoryContract;
+      require(name: "CollateralPoolToken"): CollateralPoolTokenContract;
       require(
-        name: "ContingencyPoolTokenFactory"
-      ): ContingencyPoolTokenFactoryContract;
+        name: "CollateralPoolTokenFactory"
+      ): CollateralPoolTokenFactoryContract;
       require(name: "FAsset"): FAssetContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
-      require(name: "IContingencyPoolFactory"): IContingencyPoolFactoryContract;
+      require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
       require(
-        name: "IContingencyPoolTokenFactory"
-      ): IContingencyPoolTokenFactoryContract;
+        name: "ICollateralPoolTokenFactory"
+      ): ICollateralPoolTokenFactoryContract;
       require(name: "IFAsset"): IFAssetContract;
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
-      require(name: "IIContingencyPool"): IIContingencyPoolContract;
+      require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWhitelist"): IWhitelistContract;
@@ -216,8 +216,8 @@ declare global {
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
-      require(name: "IContingencyPool"): IContingencyPoolContract;
-      require(name: "IContingencyPoolToken"): IContingencyPoolTokenContract;
+      require(name: "ICollateralPool"): ICollateralPoolContract;
+      require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
@@ -295,21 +295,21 @@ export {
   AssetManagerControllerInstance,
 } from "./AssetManagerController";
 export {
-  ContingencyPoolContract,
-  ContingencyPoolInstance,
-} from "./ContingencyPool";
+  CollateralPoolContract,
+  CollateralPoolInstance,
+} from "./CollateralPool";
 export {
-  ContingencyPoolFactoryContract,
-  ContingencyPoolFactoryInstance,
-} from "./ContingencyPoolFactory";
+  CollateralPoolFactoryContract,
+  CollateralPoolFactoryInstance,
+} from "./CollateralPoolFactory";
 export {
-  ContingencyPoolTokenContract,
-  ContingencyPoolTokenInstance,
-} from "./ContingencyPoolToken";
+  CollateralPoolTokenContract,
+  CollateralPoolTokenInstance,
+} from "./CollateralPoolToken";
 export {
-  ContingencyPoolTokenFactoryContract,
-  ContingencyPoolTokenFactoryInstance,
-} from "./ContingencyPoolTokenFactory";
+  CollateralPoolTokenFactoryContract,
+  CollateralPoolTokenFactoryInstance,
+} from "./CollateralPoolTokenFactory";
 export { FAssetContract, FAssetInstance } from "./FAsset";
 export {
   FtsoV1PriceReaderContract,
@@ -321,13 +321,13 @@ export {
   IAgentVaultFactoryInstance,
 } from "./IAgentVaultFactory";
 export {
-  IContingencyPoolFactoryContract,
-  IContingencyPoolFactoryInstance,
-} from "./IContingencyPoolFactory";
+  ICollateralPoolFactoryContract,
+  ICollateralPoolFactoryInstance,
+} from "./ICollateralPoolFactory";
 export {
-  IContingencyPoolTokenFactoryContract,
-  IContingencyPoolTokenFactoryInstance,
-} from "./IContingencyPoolTokenFactory";
+  ICollateralPoolTokenFactoryContract,
+  ICollateralPoolTokenFactoryInstance,
+} from "./ICollateralPoolTokenFactory";
 export { IFAssetContract, IFAssetInstance } from "./IFAsset";
 export { IIAgentVaultContract, IIAgentVaultInstance } from "./IIAgentVault";
 export {
@@ -335,9 +335,9 @@ export {
   IIAssetManagerInstance,
 } from "./IIAssetManager";
 export {
-  IIContingencyPoolContract,
-  IIContingencyPoolInstance,
-} from "./IIContingencyPool";
+  IICollateralPoolContract,
+  IICollateralPoolInstance,
+} from "./IICollateralPool";
 export {
   ILiquidationStrategyContract,
   ILiquidationStrategyInstance,
@@ -485,13 +485,13 @@ export {
   IAssetManagerEventsInstance,
 } from "./IAssetManagerEvents";
 export {
-  IContingencyPoolContract,
-  IContingencyPoolInstance,
-} from "./IContingencyPool";
+  ICollateralPoolContract,
+  ICollateralPoolInstance,
+} from "./ICollateralPool";
 export {
-  IContingencyPoolTokenContract,
-  IContingencyPoolTokenInstance,
-} from "./IContingencyPoolToken";
+  ICollateralPoolTokenContract,
+  ICollateralPoolTokenInstance,
+} from "./ICollateralPoolToken";
 export {
   SafeMath64MockContract,
   SafeMath64MockInstance,

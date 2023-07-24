@@ -190,7 +190,7 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "contingencyPool",
+          "name": "collateralPool",
           "type": "address"
         },
         {
@@ -2389,7 +2389,7 @@
             },
             {
               "internalType": "address",
-              "name": "contingencyPool",
+              "name": "collateralPool",
               "type": "address"
             },
             {
@@ -2707,6 +2707,25 @@
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "getCollateralPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "enum CollateralType.Class",
           "name": "_collateralClass",
           "type": "uint8"
@@ -2846,25 +2865,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_agentVault",
-          "type": "address"
-        }
-      ],
-      "name": "getContingencyPool",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "getLiquidationSettings",
       "outputs": [
@@ -2900,12 +2900,12 @@
             },
             {
               "internalType": "address",
-              "name": "contingencyPoolFactory",
+              "name": "collateralPoolFactory",
               "type": "address"
             },
             {
               "internalType": "address",
-              "name": "contingencyPoolTokenFactory",
+              "name": "collateralPoolTokenFactory",
               "type": "address"
             },
             {

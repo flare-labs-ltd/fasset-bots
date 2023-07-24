@@ -28,8 +28,8 @@ const FtsoManagerMock = artifacts.require('FtsoManagerMock');
 const StateConnector = artifacts.require('StateConnectorMock');
 const GovernanceSettings = artifacts.require('GovernanceSettings');
 const VPContract = artifacts.require('VPContract');
-const ContingencyPoolFactory = artifacts.require("ContingencyPoolFactory");
-const ContingencyPoolTokenFactory = artifacts.require("ContingencyPoolTokenFactory");
+const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
+const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMock');
 const WhitelistMock = artifacts.require("WhitelistMock");
@@ -86,9 +86,9 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const ftsoManager = await FtsoManagerMock.new();
     // create price reader
     const priceReader = await PriceReader.new(addressUpdater.address, ftsoRegistry.address);
-    // create contingency pool factory
-    const contingencyPoolFactory = await ContingencyPoolFactory.new();
-    const contingencyPoolTokenFactory = await ContingencyPoolTokenFactory.new();
+    // create collateral pool factory
+    const collateralPoolFactory = await CollateralPoolFactory.new();
+    const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new();
     // create address validator
     const addressValidator = await TrivialAddressValidatorMock.new();
     // create liquidation strategy
@@ -107,10 +107,10 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
         SCProofVerifier: newContract('SCProofVerifier', 'SCProofVerifier.sol', scProofVerifier.address),
         AgentVaultFactory: newContract('AgentVaultFactory', 'AgentVaultFactory.sol', agentVaultFactory.address),
         AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
-        ContingencyPoolFactory: newContract('ContingencyPoolFactory', 'ContingencyPoolFactory.sol', contingencyPoolFactory.address),
+        CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
         AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address),
         AgentWhiteList: newContract('WhiteList', 'WhitelistMock.sol', agentWhitelist.address),
-        ContingencyPoolTokenFactory: newContract('ContingencyPoolTokenFactory', 'ContingencyPoolTokenFactory.sol', contingencyPoolTokenFactory.address),
+        CollateralPoolTokenFactory: newContract('CollateralPoolTokenFactory', 'CollateralPoolTokenFactory.sol', collateralPoolTokenFactory.address),
         PriceReader: newContract('PriceReader', 'PriceReader.sol', priceReader.address),
     };
     // create mock chain attestation provider
@@ -167,8 +167,8 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         assetManagerController: contracts.AssetManagerController.address,
         fAsset: ZERO_ADDRESS, // replaced in newAssetManager()
         agentVaultFactory: contracts.AgentVaultFactory.address,
-        contingencyPoolFactory: contracts.ContingencyPoolFactory.address,
-        contingencyPoolTokenFactory: contracts.ContingencyPoolTokenFactory.address,
+        collateralPoolFactory: contracts.CollateralPoolFactory.address,
+        collateralPoolTokenFactory: contracts.CollateralPoolTokenFactory.address,
         scProofVerifier: contracts.SCProofVerifier.address,
         priceReader: contracts.PriceReader.address,
         underlyingAddressValidator: contracts.AddressValidator!.address,

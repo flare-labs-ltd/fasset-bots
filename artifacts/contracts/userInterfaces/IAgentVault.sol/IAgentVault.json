@@ -5,7 +5,7 @@
   "abi": [
     {
       "inputs": [],
-      "name": "buyContingencyPoolTokens",
+      "name": "buyCollateralPoolTokens",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"
@@ -70,10 +70,10 @@
     },
     {
       "inputs": [],
-      "name": "contingencyPool",
+      "name": "collateralPool",
       "outputs": [
         {
-          "internalType": "contract IContingencyPool",
+          "internalType": "contract ICollateralPool",
           "name": "",
           "type": "address"
         }
@@ -161,7 +161,7 @@
           "type": "address"
         }
       ],
-      "name": "redeemContingencyPoolTokens",
+      "name": "redeemCollateralPoolTokens",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

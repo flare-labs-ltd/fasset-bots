@@ -102,7 +102,7 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    contingencyPool: string;
+    collateralPool: string;
     underlyingAddress: string;
     vaultCollateralToken: string;
     feeBIPS: BN;
@@ -1152,6 +1152,52 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  setCollateralPoolFactory: {
+    (
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCollateralPoolTokenFactory: {
+    (
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setCollateralRatiosForToken: {
     (
       _assetManagers: string[],
@@ -1256,52 +1302,6 @@ export interface AssetManagerControllerInstance
     estimateGas(
       _assetManagers: string[],
       _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setContingencyPoolFactory: {
-    (
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setContingencyPoolTokenFactory: {
-    (
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      _value: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2320,6 +2320,52 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    setCollateralPoolFactory: {
+      (
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCollateralPoolTokenFactory: {
+      (
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setCollateralRatiosForToken: {
       (
         _assetManagers: string[],
@@ -2424,52 +2470,6 @@ export interface AssetManagerControllerInstance
       estimateGas(
         _assetManagers: string[],
         _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setContingencyPoolFactory: {
-      (
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setContingencyPoolTokenFactory: {
-      (
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        _value: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

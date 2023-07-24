@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IContingencyPoolToken",
-  "sourceName": "contracts/userInterfaces/IContingencyPoolToken.sol",
+  "contractName": "ICollateralPoolToken",
+  "sourceName": "contracts/userInterfaces/ICollateralPoolToken.sol",
   "abi": [
     {
       "anonymous": false,
@@ -122,7 +122,7 @@
     },
     {
       "inputs": [],
-      "name": "contingencyPool",
+      "name": "collateralPool",
       "outputs": [
         {
           "internalType": "address",

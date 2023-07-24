@@ -100,7 +100,7 @@ export async function createTestAgentAndMakeAvailable(context: TestAssetBotConte
     const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
     await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
     await agent.depositVaultCollateral(deposit);
-    await agent.buyContingencyPoolTokens(deposit);
+    await agent.buyCollateralPoolTokens(deposit);
     await agent.makeAvailable();
     return agent;
 }
@@ -109,7 +109,7 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
     const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
     await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
     await agentB.depositVaultCollateral(deposit);
-    await agentB.buyContingencyPoolTokens(deposit);
+    await agentB.buyCollateralPoolTokens(deposit);
     await agentB.makeAvailable();
     return agentB;
 }
@@ -118,7 +118,7 @@ export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotCo
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, deposit, ownerAddress);
     await agentBot.agent.depositVaultCollateral(deposit);
-    await agentBot.agent.buyContingencyPoolTokens(deposit);
+    await agentBot.agent.buyCollateralPoolTokens(deposit);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }
@@ -170,7 +170,7 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
     const initialAgentData = {
         owner: agent.ownerAddress,
         agentVault: agent.vaultAddress,
-        contingencyPool: agentInfo.contingencyPool,
+        collateralPool: agentInfo.collateralPool,
         underlyingAddress: agent.underlyingAddress,
         vaultCollateralToken: agentInfo.vaultCollateralToken,
         feeBIPS: toBN(agentInfo.feeBIPS),

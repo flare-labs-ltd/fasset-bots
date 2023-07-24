@@ -5,8 +5,8 @@ import { AssetManagerInstance } from "../../../typechain-truffle";
 import { CollateralData, CollateralDataFactory, CollateralKind } from "./CollateralData";
 import { minBN } from "./helpers";
 
-const ContingencyPool = artifacts.require("ContingencyPool");
-const ContingencyPoolToken = artifacts.require("ContingencyPoolToken");
+const CollateralPool = artifacts.require("CollateralPool");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export class AgentCollateral {
     constructor(
@@ -21,14 +21,14 @@ export class AgentCollateral {
 
     static async create(assetManager: AssetManagerInstance, settings: AssetManagerSettings, agentVault: string) {
         const agentInfo = await assetManager.getAgentInfo(agentVault);
-        const contingencyPool = await ContingencyPool.at(agentInfo.contingencyPool);
-        const contingencyPoolToken = await ContingencyPoolToken.at(await contingencyPool.poolToken());
+        const collateralPool = await CollateralPool.at(agentInfo.collateralPool);
+        const collateralPoolToken = await CollateralPoolToken.at(await collateralPool.poolToken());
         const vaultCollateral = await assetManager.getCollateralType(CollateralClass.VAULT, agentInfo.vaultCollateralToken);
-        const poolCollateral = await assetManager.getCollateralType(CollateralClass.POOL, await contingencyPool.wNat());
+        const poolCollateral = await assetManager.getCollateralType(CollateralClass.POOL, await collateralPool.wNat());
         const collateralDataFactory = await CollateralDataFactory.create(settings);
         const vaultCollateralCD = await collateralDataFactory.vault(vaultCollateral, agentVault);
-        const poolCD = await collateralDataFactory.pool(poolCollateral, contingencyPool.address);
-        const agetPoolTokenCD = await collateralDataFactory.agentPoolTokens(poolCD, contingencyPoolToken, agentVault);
+        const poolCD = await collateralDataFactory.pool(poolCollateral, collateralPool.address);
+        const agetPoolTokenCD = await collateralDataFactory.agentPoolTokens(poolCD, collateralPoolToken, agentVault);
         return new AgentCollateral(settings, agentInfo, vaultCollateralCD, poolCD, agetPoolTokenCD);
     }
 

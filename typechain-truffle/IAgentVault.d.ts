@@ -13,7 +13,7 @@ export interface IAgentVaultContract
 type AllEvents = never;
 
 export interface IAgentVaultInstance extends Truffle.ContractInstance {
-  buyContingencyPoolTokens: {
+  buyCollateralPoolTokens: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -76,7 +76,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  contingencyPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   delegate: {
     (
@@ -161,7 +161,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  redeemContingencyPoolTokens: {
+  redeemCollateralPoolTokens: {
     (
       _amount: number | BN | string,
       _recipient: string,
@@ -351,7 +351,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
   };
 
   methods: {
-    buyContingencyPoolTokens: {
+    buyCollateralPoolTokens: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -414,7 +414,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    contingencyPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     delegate: {
       (
@@ -499,7 +499,7 @@ export interface IAgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    redeemContingencyPoolTokens: {
+    redeemCollateralPoolTokens: {
       (
         _amount: number | BN | string,
         _recipient: string,

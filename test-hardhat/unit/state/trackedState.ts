@@ -49,7 +49,7 @@ const agentCreatedArgs = {
     __length__: 13,
     owner: '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
     agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    contingencyPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
+    collateralPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     underlyingAddress: 'UNDERLYING_ACCOUNT_78988',
     vaultCollateralToken: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
     feeBIPS: toBN(0),
@@ -160,7 +160,7 @@ describe("Tracked state tests", async () => {
         const agentBLocal = await createTestAgentB(context, ownerLocal);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerLocal);
         await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyContingencyPoolTokens(deposit);
+        await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
         const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
@@ -174,7 +174,7 @@ describe("Tracked state tests", async () => {
         const agentBLocal = await createTestAgentB(context, ownerLocal);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerLocal);
         await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyContingencyPoolTokens(deposit);
+        await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
         const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
@@ -210,7 +210,7 @@ describe("Tracked state tests", async () => {
         const agentBLocal = await createTestAgentB(context, ownerAddress);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerAddress);
         await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyContingencyPoolTokens(deposit);
+        await agentBLocal.buyCollateralPoolTokens(deposit);
         await agentBLocal.makeAvailable();
         const lots = 3;
         const supplyBefore = trackedState.fAssetSupply;
@@ -289,12 +289,12 @@ describe("Tracked state tests", async () => {
         expect(agentMiddle.reservedUBA.gt(agentAfter.reservedUBA)).to.be.true;
     });
 
-    it("Should handle event 'RedemptionRequested' from contingency pool self close exit", async () => {
+    it("Should handle event 'RedemptionRequested' from collateral pool self close exit", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minter = await createTestMinter(context, minterAddress, chain);
         // minter enters pool
-        await agentB.contingencyPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
         // tweak some pool settings
         await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
         await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
@@ -307,22 +307,22 @@ describe("Tracked state tests", async () => {
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
         // increase fAsset allowance
         const fBalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.approve(agentB.contingencyPool.address, fBalance, { from: minter.address });
+        await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
         // self close exit
-        const tokensMinter = await agentB.contingencyPoolToken.balanceOf(minter.address);
-        await agentB.contingencyPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, { from: minter.address });
+        const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
+        await agentB.collateralPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, { from: minter.address });
         // handle events
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         expect(agentAfter.poolRedeemingUBA.eq(agentBefore.poolRedeemingUBA)).to.be.true;
     });
 
-    it("Should handle event 'RedeemedInCollateral' from contingency pool self close exit", async () => {
+    it("Should handle event 'RedeemedInCollateral' from collateral pool self close exit", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minter = await createTestMinter(context, minterAddress, chain);
         // minter enters pool
-        await agentB.contingencyPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
+        await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
         // tweak some pool settings
         await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
         await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
@@ -335,10 +335,10 @@ describe("Tracked state tests", async () => {
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
         // increase fAsset allowance
         const fBalance = await context.fAsset.balanceOf(minter.address);
-        await context.fAsset.approve(agentB.contingencyPool.address, fBalance, { from: minter.address });
+        await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
         // self close exit
-        const tokensMinter = await agentB.contingencyPoolToken.balanceOf(minter.address);
-        await agentB.contingencyPool.selfCloseExit(tokensMinter, true, minter.underlyingAddress, { from: minter.address });
+        const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
+        await agentB.collateralPool.selfCloseExit(tokensMinter, true, minter.underlyingAddress, { from: minter.address });
         // handle events
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
@@ -559,7 +559,7 @@ describe("Tracked state tests", async () => {
         await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
         await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
         await agentB.depositVaultCollateral(deposit.divn(2));
-        await agentB.buyContingencyPoolTokens(deposit);
+        await agentB.buyCollateralPoolTokens(deposit);
         // deposit vault collateral one more time
         await agentB.depositVaultCollateral(deposit.divn(2));
         await trackedState.readUnhandledEvents();
@@ -568,10 +568,10 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eq(deposit)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(deposit)).to.be.true;
         // redeem pool
-        const amount = await tokenBalance(context.wNat.address, agentInfo.contingencyPool);
+        const amount = await tokenBalance(context.wNat.address, agentInfo.collateralPool);
         const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
-        await agentB.redeemContingencyPoolTokens(amount);
+        await agentB.redeemCollateralPoolTokens(amount);
         await trackedState.readUnhandledEvents();
         expect(amount.eq(deposit)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;
