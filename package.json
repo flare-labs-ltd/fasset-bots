@@ -79,7 +79,10 @@
       "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
       "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e",
       "cover:testHH": "nyc --silent --no-clean yarn testHH_all",
-      "cover:report": "yarn nyc report --reporter=lcov --reporter=text"
+      "cover:report": "yarn nyc report --reporter=lcov --reporter=text",
+      "---------INTERACTIVE---SCRIPTS": "",
+      "console": "yarn hardhat console --no-compile",
+      "console:coston": "yarn hardhat console --no-compile --network coston"
    },
    "dependencies": {
       "@flarenetwork/mcc": "3.1.0",
@@ -89,6 +92,7 @@
       "@truffle/contract": "^4.6.22",
       "axios": "^1.3.4",
       "bn.js": "^4.12.0",
+      "commander": "11.0.0",
       "glob": "9.3.0",
       "simple-wallet": "link:../simple-wallet",
       "web3": "1.10.0",

@@ -12,7 +12,7 @@ import chalk from 'chalk';
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
-import { logger } from "../../logger";
+import { logger } from "../utils/logger";
 dotenv.config();
 
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');

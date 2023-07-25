@@ -1,30 +1,6 @@
-import { createLogger, format } from 'winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
-import { BaseEvent } from './src/utils/events/common';
 import BN from 'bn.js';
-import { groupIntegerDigits } from './test-hardhat/test-utils/fuzzing-utils';
-
-const transport: DailyRotateFile = new DailyRotateFile({
-    filename: 'log/log-%DATE%.log',
-    datePattern: 'YYYY-MM-DD-HH',
-    zippedArchive: true,
-    maxSize: '20m',
-    maxFiles: '14d'
-});
-
-export const logger = createLogger({
-    format: format.combine(
-        format.timestamp({
-            format: 'YYYY-MM-DD HH:mm:ss'
-        }),
-        format.errors({ stack: true }),
-        format.splat(),
-        format.json()
-    ),
-    level: 'info',
-    transports: transport,
-});
-
+import { groupIntegerDigits } from '../../test-hardhat/test-utils/fuzzing-utils';
+import { BaseEvent } from './events/common';
 
 function formatArg(value: unknown): string {
     if (isBigNumber(value)) {
