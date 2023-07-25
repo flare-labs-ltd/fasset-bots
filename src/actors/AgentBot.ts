@@ -175,7 +175,7 @@ export class AgentBot {
             }
         }).catch(error => {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling events for agent ${this.agent.vaultAddress}  ${error}.`);
+            logger.error(`Error handling events for agent ${this.agent.vaultAddress}:`, error);
         });
     }
 
@@ -484,7 +484,7 @@ export class AgentBot {
             }
         }).catch((error) => {
             console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}.`);
+            logger.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}:`, error);
         });
     }
 
@@ -712,7 +712,7 @@ export class AgentBot {
             }
         }).catch((error) => {
             console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}.`);
+            logger.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}:`, error);
         });
     }
 
