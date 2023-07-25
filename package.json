@@ -62,7 +62,7 @@
       "---------BUILD---SCRIPTS": "",
       "prebuild": "rm -rf dist",
       "build": "tsc --allowJs",
-      "watch": "tsc --allowJs --watch --noEmit",
+      "watch": "tsc --allowJs --watch",
       "---------LINT---SCRIPTS": "",
       "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
       "---------TEST---SCRIPTS": "",
