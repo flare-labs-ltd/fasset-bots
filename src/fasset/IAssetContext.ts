@@ -3,6 +3,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { ContractWithEvents } from "../utils/events/truffle";
+import { CollateralType } from "./AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "./ChainInfo";
 
 export type AddressUpdaterEvents = import('../../typechain-truffle/AddressUpdater').AllEvents;
@@ -37,4 +38,5 @@ export interface IAssetContext {
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
     ftsos: Record<string, ContractWithEvents<IIFtsoInstance, IIFtsoEvents>>;
+    collaterals: CollateralType[];
 }

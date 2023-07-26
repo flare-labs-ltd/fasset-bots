@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createAgentBotConfig, createStateConnectorClient, createWalletClient, AgentBotConfigFile, TrackedStateConfigFile, createTrackedStateConfig, createTrackedStateConfigChain, createAgentBotConfigChain } from "../../../src/config/BotConfig"
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createStateConnectorClient, createWalletClient, AgentBotConfigFile, TrackedStateConfigFile, createTrackedStateConfig, createTrackedStateConfigChain, createAgentBotConfigChain } from "../../../src/config/BotConfig"
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
 import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
@@ -25,7 +25,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createAgentBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
         expect(botConfig.orm).to.not.be.null;
@@ -65,7 +65,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain wallet helper", async () => {
-        const botConfig = await createAgentBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig);
         const btc = createBlockchainWalletHelper(SourceId.BTC, botConfig.orm.em, walletBTCUrl);
         expect(btc.walletClient.chainType).to.eq(SourceId.BTC);
         const doge = createBlockchainWalletHelper(SourceId.DOGE, botConfig.orm.em, walletDOGEUrl);
@@ -102,7 +102,7 @@ describe("Bot config tests", async () => {
     })
 
     it("Should create agent bot config chain", async () => {
-        const botConfig = await createAgentBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig);
         const chainInfo = runConfig.chainInfos[0];
         const agentBotConfigChain = await createAgentBotConfigChain(chainInfo, botConfig.orm.em, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(agentBotConfigChain.stateConnector).not.be.null;

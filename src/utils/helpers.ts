@@ -181,11 +181,17 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
+export class CommandLineError extends Error { }
+
 // toplevel async function runner for node.js
 /* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {
     main().catch((error) => {
-        console.error(error);
+        if (error instanceof CommandLineError) {
+            console.error(`Error: ${error.message}`);
+        } else {
+            console.error(error);
+        }
         process.exit(1);
     }).finally(() => {
         process.exit(0);
@@ -205,6 +211,12 @@ export function requireEnv(name: string) {
     const value = process.env[name];
     if (value != null) return value;
     throw new Error(`Environment value ${name} not defined`);
+}
+
+// return text, converting "${ENV_VAR}" argument to `process.env[ENV_VAR]`
+export function autoReadEnvVar(text: string) {
+    const m = text.match(/^\s*\$\{(\w+)\}\s*$/);
+    return m ? requireEnv(m[1]) : text;
 }
 
 export function filterStackTrace(error: any) {

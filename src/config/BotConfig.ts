@@ -1,24 +1,24 @@
 import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
+import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
-import { EntityManager } from "@mikro-orm/core/EntityManager";
+import * as dotenv from "dotenv";
+import { readFileSync } from "fs";
 import { WALLET } from "simple-wallet";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
-import { Notifier } from "../utils/Notifier";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
+import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
+import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
+import { Notifier } from "../utils/Notifier";
 import { requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { readFileSync } from "fs";
-import { CollateralClass } from "../fasset/AssetManagerTypes";
-import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
-import * as dotenv from "dotenv";
 dotenv.config();
 
 export interface AgentBotConfigFile extends BotConfigFile {
@@ -102,11 +102,11 @@ export interface AgentSettingsConfig {
 /**
  * Creates AgentBot configuration from initial run config file.
  */
-export async function createAgentBotConfig(runConfig: AgentBotConfigFile): Promise<BotConfig> {
+export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string = runConfig.ownerAddress): Promise<BotConfig> {
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, runConfig.ownerAddress));
+        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
     }
     return {
         rpcUrl: runConfig.rpcUrl,
@@ -123,10 +123,10 @@ export async function createAgentBotConfig(runConfig: AgentBotConfigFile): Promi
 /**
  * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
  */
-export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile): Promise<TrackedStateConfig> {
+export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile, ownerAddress: string = runConfig.ownerAddress): Promise<TrackedStateConfig> {
     const chains: TrackedStateConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, runConfig.ownerAddress));
+        chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
     }
     return {
         loopDelay: runConfig.loopDelay,

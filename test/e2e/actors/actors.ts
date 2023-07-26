@@ -7,7 +7,7 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, AgentBotConfigFile, TrackedStateConfig, TrackedStateConfigFile, createAgentBotConfig, createAgentBotDefaultSettings, createTrackedStateConfig } from "../../../src/config/BotConfig";
+import { BotConfig, AgentBotConfigFile, TrackedStateConfig, TrackedStateConfigFile, createBotConfig, createAgentBotDefaultSettings, createTrackedStateConfig } from "../../../src/config/BotConfig";
 import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -52,7 +52,7 @@ describe("Actor tests - coston", async () => {
         liquidatorAddress = accounts[2]
         systemKeeperAddress = accounts[3]
         // configs
-        botConfig = await createAgentBotConfig(runConfig);
+        botConfig = await createBotConfig(runConfig);
         orm = botConfig.orm;
         trackedStateConfig = await createTrackedStateConfig(runSimplifiedConfig);
         // contexts

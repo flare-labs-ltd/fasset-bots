@@ -2,7 +2,7 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
-import { BotConfig, createAgentBotDefaultSettings, createAgentBotConfig, AgentBotConfigFile } from "../config/BotConfig";
+import { BotConfig, createAgentBotDefaultSettings, createBotConfig, AgentBotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
 import { BN_ZERO, requireEnv, toBN } from "../utils/helpers";
@@ -33,7 +33,7 @@ export class BotCliCommands {
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotConfigFile;
         const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
-        this.botConfig = await createAgentBotConfig(runConfig);
+        this.botConfig = await createBotConfig(runConfig);
         this.ownerAddress = accounts[0];
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
         console.log(chalk.cyan('Environment successfully initialized.'));

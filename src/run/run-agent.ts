@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { AgentBotRunner } from "../actors/AgentBotRunner";
-import { createAgentBotConfig, AgentBotConfigFile } from "../config/BotConfig";
+import { createBotConfig, AgentBotConfigFile } from "../config/BotConfig";
 import { requireEnv, toplevelRun } from "../utils/helpers";
 import { initWeb3 } from "../utils/web3";
 import * as dotenv from "dotenv";
@@ -14,7 +14,7 @@ const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 toplevelRun(async () => {
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as AgentBotConfigFile;
     await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
-    const botConfig = await createAgentBotConfig(runConfig);
+    const botConfig = await createBotConfig(runConfig);
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);
     // store owner's underlying address

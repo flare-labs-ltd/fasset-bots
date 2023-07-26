@@ -6,9 +6,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { ContractWithEvents } from "../utils/events/truffle";
 
-export interface IAssetAgentBotContext extends IAssetContext {
-    collaterals: CollateralType[];
-}
+export type IAssetAgentBotContext = IAssetContext;
 
 export interface AgentBotDefaultSettings {
     vaultCollateralToken: string;

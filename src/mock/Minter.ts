@@ -1,9 +1,12 @@
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
 import { IAssetContext } from "../fasset/IAssetContext";
+import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, fail } from "../utils/helpers";
+import { BNish, fail, sleep } from "../utils/helpers";
+import { web3DeepNormalize } from "../utils/web3normalize";
+import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
 
@@ -48,8 +51,23 @@ export class Minter {
     }
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string) {
-        const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, crt.paymentAddress);
-        const res = await this.assetManager.executeMinting(proof, crt.collateralReservationId, { from: this.address });
+        const proof = await this.proveMintingPayment(crt.paymentAddress, transactionHash);
+        return await this.executeProvedMinting(crt.collateralReservationId, proof);
+    }
+
+    async waitForTransactionFinalization(transactionHash: string) {
+        while (await this.context.blockchainIndexer.getTransaction(transactionHash) == null) {
+            await sleep(5000);
+        }
+    }
+
+    async proveMintingPayment(paymentAddress: string, transactionHash: string) {
+        await this.waitForTransactionFinalization(transactionHash);
+        return await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, paymentAddress);
+    }
+
+    async executeProvedMinting(collateralReservationId: BNish, proof: ProvedDH<DHPayment>) {
+        const res = await this.assetManager.executeMinting(web3DeepNormalize(proof), String(collateralReservationId), { from: this.address });
         return requiredEventArgs(res, 'MintingExecuted');
     }
 
