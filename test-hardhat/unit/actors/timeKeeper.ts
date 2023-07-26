@@ -18,7 +18,7 @@ describe("Time keeper unit tests", async () => {
     });
 
     it("Should create time keeper", async () => {
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
         expect(timeKeeper.context.nativeChainInfo.finalizationBlocks).to.eq(context.nativeChainInfo.finalizationBlocks);
     });
 
@@ -27,7 +27,7 @@ describe("Time keeper unit tests", async () => {
         expect(Number(currentBlock[0])).to.eq(0);
         const blocksToMine = 2;
         context.blockchainIndexer.chain.mine(blocksToMine);
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
         await timeKeeper.updateUnderlyingBlock();
         const currentBlock2 = await context.assetManager.currentUnderlyingBlock();
         expect(Number(currentBlock2[0])).to.eq(blocksToMine);

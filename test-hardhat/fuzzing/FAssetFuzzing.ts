@@ -155,7 +155,7 @@ describe("Fuzzing tests", async () => {
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context);
+        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
         timeKeeper.run();
         // init some state
         await refreshAvailableAgents();

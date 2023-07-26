@@ -1,14 +1,16 @@
 import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { logger } from "../utils/logger";
 
-const delayInMs = 60000; // 1min
 export class TimeKeeper {
     constructor(
         public address: string,
-        public context: IAssetTrackedStateContext
+        public context: IAssetTrackedStateContext,
+        public intervalInMs: number,
     ) { }
 
-    interval: any;
+    interval?: NodeJS.Timer;
+
     /**
      * Prove that a block with given number and timestamp exists and
      * update the current underlying block info if the provided data is higher.
@@ -17,7 +19,10 @@ export class TimeKeeper {
      * minting or redemption payment.
      */
     async updateUnderlyingBlock() {
+        logger.info(`Updating underlying block for ${this.context.assetManager.address}...`);
         await proveAndUpdateUnderlyingBlock(this.context, this.address);
+        const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
+        logger.info(`Underlying block updated on ${this.context.assetManager.address}:  block=${underlyingBlock}  timestamp=${underlyingTimestamp}`);
     }
 
     /**
@@ -25,9 +30,10 @@ export class TimeKeeper {
      */
     /* istanbul ignore next */
     run() {
+        void this.updateUnderlyingBlock();  // do not wait whole interval for start
         this.interval = setInterval(async () => {
             await this.updateUnderlyingBlock();
-        }, delayInMs);
+        }, this.intervalInMs);
     }
 
     /**
