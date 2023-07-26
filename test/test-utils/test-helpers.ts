@@ -7,7 +7,7 @@ import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EventArgs } from "../../src/utils/events/common";
 import { SourceId } from "../../src/verification/sources/sources";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
-import { AgentBotConfig, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
+import { BotConfig, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { artifacts } from "../../src/utils/artifacts";
 import { BN_ZERO, BNish, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
@@ -138,7 +138,7 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     }
 }
 
-export async function whitelistAgent(botConfig: AgentBotConfig, ownerAddress: string) {
+export async function whitelistAgent(botConfig: BotConfig, ownerAddress: string) {
     const contracts = loadContracts(botConfig.contractsJsonFile!);
     const agentWhitelist = await Whitelist.at(contracts['AgentWhitelist']!.address);
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployAddress });

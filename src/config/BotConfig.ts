@@ -21,14 +21,22 @@ import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelp
 import * as dotenv from "dotenv";
 dotenv.config();
 
-export interface AgentBotRunConfig extends TrackedStateRunConfig {
-    ormOptions: CreateOrmOptions;
+export interface AgentBotConfigFile extends BotConfigFile {
     defaultAgentSettingsPath: string;
-    chainInfos: BotChainInfo[];
+}
+
+export interface BotConfigFile extends TrackedStateConfigFile {
+    ormOptions: CreateOrmOptions;
+    chainInfos: BotChainConfigFile[];
     // notifierFile: string;
 }
 
-export interface TrackedStateRunConfig {
+export interface BotChainConfigFile extends TrackedChainInfo {
+    walletUrl: string;
+    inTestnet?: boolean;
+}
+
+export interface TrackedStateConfigFile {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     chainInfos: TrackedChainInfo[];
@@ -43,8 +51,8 @@ export interface TrackedStateRunConfig {
     contractsJsonFile?: string;
 }
 
-export interface AgentBotConfig extends TrackedStateConfig {
-    chains: AgentBotConfigChain[];
+export interface BotConfig extends TrackedStateConfig {
+    chains: BotConfigChain[];
     orm: ORM;
     notifier: Notifier;
 }
@@ -59,7 +67,7 @@ export interface TrackedStateConfig {
     contractsJsonFile?: string;
 }
 
-export interface AgentBotConfigChain extends TrackedStateConfigChain {
+export interface BotConfigChain extends TrackedStateConfigChain {
     wallet: IBlockChainWallet;
 }
 
@@ -70,11 +78,6 @@ export interface TrackedStateConfigChain {
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
-}
-
-export interface BotChainInfo extends TrackedChainInfo {
-    walletUrl: string;
-    inTestnet?: boolean;
 }
 
 export interface TrackedChainInfo extends ChainInfo {
@@ -99,9 +102,9 @@ export interface AgentSettingsConfig {
 /**
  * Creates AgentBot configuration from initial run config file.
  */
-export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promise<AgentBotConfig> {
+export async function createAgentBotConfig(runConfig: AgentBotConfigFile): Promise<BotConfig> {
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
-    const chains: AgentBotConfigChain[] = [];
+    const chains: BotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createAgentBotConfigChain(chainInfo, orm.em, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, runConfig.ownerAddress));
     }
@@ -120,7 +123,7 @@ export async function createAgentBotConfig(runConfig: AgentBotRunConfig): Promis
 /**
  * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
  */
-export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig): Promise<TrackedStateConfig> {
+export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile): Promise<TrackedStateConfig> {
     const chains: TrackedStateConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, runConfig.ownerAddress));
@@ -138,7 +141,7 @@ export async function createTrackedStateConfig(runConfig: TrackedStateRunConfig)
 /**
  * Creates AgentBotConfigChain configuration from chain info.
  */
-export async function createAgentBotConfigChain(chainInfo: BotChainInfo, em: EM, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<AgentBotConfigChain> {
+export async function createAgentBotConfigChain(chainInfo: BotChainConfigFile, em: EM, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotConfigChain> {
     const wallet = createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet);
     const config = await createTrackedStateConfigChain(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {

@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { AgentBotConfig, createAgentBotConfig, AgentBotRunConfig, TrackedStateConfig, TrackedStateRunConfig, createTrackedStateConfig } from "../../../src/config/BotConfig"
+import { BotConfig, createAgentBotConfig, AgentBotConfigFile, TrackedStateConfig, TrackedStateConfigFile, createTrackedStateConfig } from "../../../src/config/BotConfig"
 import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
@@ -16,9 +16,9 @@ use(chaiAsPromised);
 const AddressUpdater = artifacts.require('AddressUpdater')
 
 describe("Create asset context tests", async () => {
-    let runConfig: AgentBotRunConfig;
-    let botConfig: AgentBotConfig;
-    let trackedStateRunConfig: TrackedStateRunConfig;
+    let runConfig: AgentBotConfigFile;
+    let botConfig: BotConfig;
+    let trackedStateRunConfig: TrackedStateConfigFile;
     let trackedStateConfig: TrackedStateConfig;
 
     before(async () => {
@@ -26,7 +26,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should create asset context from contracts", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.chains[0]);
         expect(context).is.not.null;
@@ -34,7 +34,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should create asset context from address updater", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.chains[0]);
         expect(context).is.not.null;
@@ -42,7 +42,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         runConfig.addressUpdater = undefined;
         runConfig.contractsJsonFile = undefined;
         botConfig = await createAgentBotConfig(runConfig);
@@ -50,21 +50,21 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should create simplified asset context from contracts", async () => {
-        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
         trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
         const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);
         expect(context).is.not.null;
     });
 
     it("Should create simplified asset context from address updater", async () => {
-        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as TrackedStateRunConfig;
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as TrackedStateConfigFile;
         trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
         const context: IAssetTrackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);
         expect(context).is.not.null;
     });
 
     it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
-        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
         trackedStateRunConfig.addressUpdater = undefined;
         trackedStateRunConfig.contractsJsonFile = undefined;
         trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
@@ -72,7 +72,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should not create asset context - assetManager or fAssetSymbol required in chain config", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         botConfig.chains[0].assetManager = undefined;
         botConfig.chains[0].fAssetSymbol = undefined;
@@ -80,7 +80,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should not create asset context - FAsset symbol not found", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         botConfig.chains[0].assetManager = undefined;
         botConfig.chains[0].fAssetSymbol = "RandomAsset";
@@ -88,7 +88,7 @@ describe("Create asset context tests", async () => {
     });
 
     it("Should not create asset context - either addressUpdater or contracts must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         await expect(getAssetManagerAndController(botConfig.chains[0], null, null)).to.eventually.be.rejectedWith(`Either addressUpdater or contracts must be defined`).and.be.an.instanceOf(Error);
     });
@@ -101,7 +101,7 @@ describe("Create asset context tests", async () => {
     });
     //skip TODO until AssetManagerController gets verified in explorer
     it.skip("Should get asset manager and controller with address updater", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as AgentBotConfigFile;
         botConfig = await createAgentBotConfig(runConfig);
         botConfig.chains[0].assetManager = undefined;
         botConfig.chains[0].fAssetSymbol = "FtestXRP";
@@ -112,4 +112,3 @@ describe("Create asset context tests", async () => {
     });
 
 });
-

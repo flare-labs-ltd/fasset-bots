@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createAgentBotConfig, createStateConnectorClient, createWalletClient, AgentBotRunConfig, TrackedStateRunConfig, createTrackedStateConfig, createTrackedStateConfigChain, createAgentBotConfigChain } from "../../../src/config/BotConfig"
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createAgentBotConfig, createStateConnectorClient, createWalletClient, AgentBotConfigFile, TrackedStateConfigFile, createTrackedStateConfig, createTrackedStateConfigChain, createAgentBotConfigChain } from "../../../src/config/BotConfig"
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources"
 import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
@@ -16,11 +16,11 @@ const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/testnet/";
 const walletXRPUrl = "https://s.altnet.rippletest.net:51234";
 
 describe("Bot config tests", async () => {
-    let runConfig: AgentBotRunConfig;
-    let trackedStateRunConfig: TrackedStateRunConfig;
+    let runConfig: AgentBotConfigFile;
+    let trackedStateRunConfig: TrackedStateConfigFile;
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
-        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
+        trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
         await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
     });
 

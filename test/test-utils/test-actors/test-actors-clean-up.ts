@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { AgentBotConfig, AgentBotRunConfig, createAgentBotConfig } from "../../../src/config/BotConfig";
+import { BotConfig, AgentBotConfigFile, createAgentBotConfig } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS } from "../test-bot-config";
@@ -9,14 +9,14 @@ import { getNativeAccountsFromEnv, cleanUp } from "../test-helpers";
 
 describe("Agent bot tests - coston", async () => {
     let accounts: string[];
-    let botConfig: AgentBotConfig;
+    let botConfig: BotConfig;
     let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let runConfig: AgentBotRunConfig;
+    let runConfig: AgentBotConfigFile;
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
         botConfig = await createAgentBotConfig(runConfig);

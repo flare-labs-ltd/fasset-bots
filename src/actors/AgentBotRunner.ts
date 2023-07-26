@@ -1,5 +1,5 @@
 import { FilterQuery, UseRequestContext } from "@mikro-orm/core";
-import { AgentBotConfig } from "../config/BotConfig";
+import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -57,7 +57,7 @@ export class AgentBotRunner {
      * Creates AgentBot runner from AgentBotConfig
      * @param botConfig - configs to run bot
      */
-    static async create(botConfig: AgentBotConfig): Promise<AgentBotRunner> {
+    static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         const contexts: Map<number, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);

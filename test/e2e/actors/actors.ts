@@ -7,7 +7,7 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { AgentBotConfig, AgentBotRunConfig, TrackedStateConfig, TrackedStateRunConfig, createAgentBotConfig, createAgentBotDefaultSettings, createTrackedStateConfig } from "../../../src/config/BotConfig";
+import { BotConfig, AgentBotConfigFile, TrackedStateConfig, TrackedStateConfigFile, createAgentBotConfig, createAgentBotDefaultSettings, createTrackedStateConfig } from "../../../src/config/BotConfig";
 import { createAssetContext, createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -27,8 +27,8 @@ const buyPoolTokens = toBNExp(500, 18);
 describe("Actor tests - coston", async () => {
     let accounts: string[];
     // for agent
-    let botConfig: AgentBotConfig;
-    let runConfig: AgentBotRunConfig;
+    let botConfig: BotConfig;
+    let runConfig: AgentBotConfigFile;
     let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
@@ -37,14 +37,14 @@ describe("Actor tests - coston", async () => {
     let trackedStateConfig: TrackedStateConfig;
     let trackedStateContext: IAssetTrackedStateContext;
     let state: TrackedState;
-    let runSimplifiedConfig: TrackedStateRunConfig;
+    let runSimplifiedConfig: TrackedStateConfigFile;
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotRunConfig;
-        runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateRunConfig;
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
+        runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
         // accounts
         accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
         ownerAddress = requireEnv('OWNER_ADDRESS');
