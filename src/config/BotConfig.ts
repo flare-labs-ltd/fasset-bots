@@ -44,8 +44,6 @@ export interface TrackedStateConfigFile {
     attestationProviderUrls: string[];
     stateConnectorAddress: string;
     stateConnectorProofVerifierAddress: string;
-    // in case of tracked state actors (challenger, ...) this address should be native address that is going to be used for that actor
-    ownerAddress: string;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
@@ -102,7 +100,7 @@ export interface AgentSettingsConfig {
 /**
  * Creates AgentBot configuration from initial run config file.
  */
-export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string = runConfig.ownerAddress): Promise<BotConfig> {
+export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string): Promise<BotConfig> {
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
     const chains: BotConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
@@ -123,7 +121,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 /**
  * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
  */
-export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile, ownerAddress: string = runConfig.ownerAddress): Promise<TrackedStateConfig> {
+export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile, ownerAddress: string): Promise<TrackedStateConfig> {
     const chains: TrackedStateConfigChain[] = [];
     for (const chainInfo of runConfig.chainInfos) {
         chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));

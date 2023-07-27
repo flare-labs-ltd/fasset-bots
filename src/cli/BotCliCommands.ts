@@ -15,6 +15,7 @@ import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 dotenv.config();
 
+const OWNER_ADDRESS: string = requireEnv('OWNER_ADDRESS');
 const OWNER_PRIVATE_KEY: string = requireEnv('OWNER_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 
@@ -33,7 +34,7 @@ export class BotCliCommands {
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotConfigFile;
         const accounts = await initWeb3(runConfig.rpcUrl, [OWNER_PRIVATE_KEY], null);
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
-        this.botConfig = await createBotConfig(runConfig);
+        this.botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
         this.ownerAddress = accounts[0];
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
         console.log(chalk.cyan('Environment successfully initialized.'));

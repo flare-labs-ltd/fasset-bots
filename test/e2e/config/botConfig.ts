@@ -18,21 +18,23 @@ const walletXRPUrl = "https://s.altnet.rippletest.net:51234";
 describe("Bot config tests", async () => {
     let runConfig: AgentBotConfigFile;
     let trackedStateRunConfig: TrackedStateConfigFile;
+    let accounts: string[];
+
     before(async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         trackedStateRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
-        await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
+        accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig, accounts[0]);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractsJsonFile).to.not.be.null;
         expect(botConfig.orm).to.not.be.null;
     });
 
     it("Should create tracked state config", async () => {
-        const trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig);
+        const trackedStateConfig = await createTrackedStateConfig(trackedStateRunConfig, accounts[0]);
         expect(trackedStateConfig.contractsJsonFile).to.not.be.null;
     });
 
@@ -65,7 +67,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain wallet helper", async () => {
-        const botConfig = await createBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig, accounts[0]);
         const btc = createBlockchainWalletHelper(SourceId.BTC, botConfig.orm.em, walletBTCUrl);
         expect(btc.walletClient.chainType).to.eq(SourceId.BTC);
         const doge = createBlockchainWalletHelper(SourceId.DOGE, botConfig.orm.em, walletDOGEUrl);
@@ -102,7 +104,7 @@ describe("Bot config tests", async () => {
     })
 
     it("Should create agent bot config chain", async () => {
-        const botConfig = await createBotConfig(runConfig);
+        const botConfig = await createBotConfig(runConfig, accounts[0]);
         const chainInfo = runConfig.chainInfos[0];
         const agentBotConfigChain = await createAgentBotConfigChain(chainInfo, botConfig.orm.em, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
         expect(agentBotConfigChain.stateConnector).not.be.null;

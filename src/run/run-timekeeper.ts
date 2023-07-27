@@ -8,17 +8,18 @@ import { initWeb3 } from "../utils/web3";
 
 dotenv.config();
 
-const CHALLENGER_PRIVATE_KEY: string = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
+const TIMEKEEPER_ADDRESS: string = requireEnv('NATIVE_ACCOUNT1');
+const TIMEKEEPER_PRIVATE_KEY: string = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json"
 
 toplevelRun(async () => {
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as TrackedStateConfigFile;
-    await initWeb3(runConfig.rpcUrl, [CHALLENGER_PRIVATE_KEY], null);
-    const config = await createTrackedStateConfig(runConfig);
+    await initWeb3(runConfig.rpcUrl, [TIMEKEEPER_PRIVATE_KEY], null);
+    const config = await createTrackedStateConfig(runConfig, TIMEKEEPER_ADDRESS);
     const timekeepers: TimeKeeper[] = [];
     for (const chain of config.chains) {
         const assetContext = await createTrackedStateAssetContext(config, chain);
-        const timekeeper = new TimeKeeper(runConfig.ownerAddress, assetContext, 120_000);
+        const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, 120_000);
         timekeepers.push(timekeeper);
         timekeeper.run();
     }

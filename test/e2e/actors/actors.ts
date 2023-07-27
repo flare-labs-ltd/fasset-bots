@@ -52,9 +52,9 @@ describe("Actor tests - coston", async () => {
         liquidatorAddress = accounts[2]
         systemKeeperAddress = accounts[3]
         // configs
-        botConfig = await createBotConfig(runConfig);
+        botConfig = await createBotConfig(runConfig, ownerAddress);
         orm = botConfig.orm;
-        trackedStateConfig = await createTrackedStateConfig(runSimplifiedConfig);
+        trackedStateConfig = await createTrackedStateConfig(runSimplifiedConfig, ownerAddress);
         // contexts
         context = await createAssetContext(botConfig, botConfig.chains[0]);
         trackedStateContext = await createTrackedStateAssetContext(trackedStateConfig, trackedStateConfig.chains[0]);

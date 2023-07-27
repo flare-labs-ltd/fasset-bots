@@ -19,7 +19,7 @@ describe("Agent bot tests - coston", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
-        botConfig = await createBotConfig(runConfig);
+        botConfig = await createBotConfig(runConfig, accounts[0]);
         orm = botConfig.orm;
         context = await createAssetContext(botConfig, botConfig.chains[0]);
     });
