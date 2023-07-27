@@ -2,6 +2,7 @@ import { BNish, toBN, toHex } from "../utils/helpers";
 
 export namespace PaymentReference {
     export const TYPE_SHIFT = 192;
+    export const LOW_BITS_MASK = toBN(1).shln(TYPE_SHIFT).subn(1);
 
     // common prefix 0x464250526641 = hex('FBPRfA' - Flare Bridge Payment Reference / fAsset)
 
@@ -38,5 +39,13 @@ export namespace PaymentReference {
 
     export function isValid(reference: string | null): reference is string {
         return reference != null && /^0x464250526641[0-9a-zA-Z]{52}$/.test(reference);
+    }
+
+    export function decodeId(reference: string) {
+        return toBN(reference).and(LOW_BITS_MASK);
+    }
+
+    export function decodeType(reference: string) {
+        return toBN(reference).shrn(TYPE_SHIFT).and(toBN(0xFFFF)).toNumber();
     }
 }

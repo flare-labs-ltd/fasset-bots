@@ -9,6 +9,7 @@ import { Redeemer } from '../mock/Redeemer';
 import { proveAndUpdateUnderlyingBlock } from '../utils/fasset-helpers';
 import { BNish, CommandLineError, requireEnv, toBN } from '../utils/helpers';
 import { initWeb3 } from '../utils/web3';
+import { PaymentReference } from '../fasset/PaymentReference';
 
 export class UserBot {
     context!: IAssetContext;
@@ -83,14 +84,25 @@ export class UserBot {
 
     async redeem(lots: BNish) {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
-        console.log("Asking for redemption");
+        console.log(`Asking for redemption of ${lots} lots`);
         const [requests, remainingLots] = await redeemer.requestRedemption(lots);
         if (!toBN(remainingLots).isZero()) {
             console.log(`Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`)
         }
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
         for (const req of requests) {
-            console.log(`    id=${req.requestId}  address=${req.paymentAddress}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
+            const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
+            console.log(`    id=${req.requestId}  amount=${amount}  address=${req.paymentAddress}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
         }
+    }
+
+    async redemptionDefault(amountUBA: BNish, paymentAddress: string, paymentReference: string, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
+        const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+        const requestId = PaymentReference.decodeId(paymentReference);
+        if (paymentReference !== PaymentReference.redemption(requestId)) throw new CommandLineError("Invalid payment reference");
+        console.log("Waiting for payment default proof...");
+        const proof = await redeemer.obtainNonPaymentProof(paymentAddress, paymentReference, amountUBA, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
+        console.log("Executing payment default...");
+        await redeemer.executePaymentDefault(requestId, proof);
     }
 }

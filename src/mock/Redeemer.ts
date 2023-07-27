@@ -4,7 +4,9 @@ import { Agent } from "../fasset/Agent";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO, BNish } from "../utils/helpers";
+import { BN_ZERO, BNish, toBN } from "../utils/helpers";
+import { ProvedDH } from "../underlying-chain/AttestationHelper";
+import { DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 
 export class Redeemer {
     constructor(
@@ -51,6 +53,21 @@ export class Redeemer {
             request.lastUnderlyingBlock.toNumber(),
             request.lastUnderlyingTimestamp.toNumber());
         const res = await this.assetManager.redemptionPaymentDefault(proof, request.requestId, { from: this.address });
+        return requiredEventArgs(res, 'RedemptionDefault');
+    }
+
+    async obtainNonPaymentProof(paymentAddress: string, paymentReference: string, amountUBA: BNish, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish){
+        return await this.attestationProvider.proveReferencedPaymentNonexistence(
+            paymentAddress,
+            paymentReference,
+            toBN(amountUBA),
+            Number(firstUnderlyingBlock),
+            Number(lastUnderlyingBlock),
+            Number(lastUnderlyingTimestamp));
+    }
+
+    async executePaymentDefault(requestId: BNish, proof: ProvedDH<DHReferencedPaymentNonexistence>) {
+        const res = await this.assetManager.redemptionPaymentDefault(proof, requestId, { from: this.address });
         return requiredEventArgs(res, 'RedemptionDefault');
     }
 }
