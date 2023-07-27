@@ -68,10 +68,10 @@ export class UserBot {
         const crt = await minter.reserveCollateral(agentVault, lots);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         const txHash = await minter.performMintingPayment(crt);
-        await this.proveAndExecuteMinting(crt.collateralReservationId, crt.paymentAddress, txHash);
+        await this.proveAndExecuteMinting(crt.collateralReservationId, txHash, crt.paymentAddress);
     }
 
-    async proveAndExecuteMinting(collateralReservationId: BNish, paymentAddress: string, transactionHash: string) {
+    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress = this.nativeAddress) {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...")
         await minter.waitForTransactionFinalization(transactionHash);
@@ -96,12 +96,12 @@ export class UserBot {
         }
     }
 
-    async redemptionDefault(amountUBA: BNish, paymentAddress: string, paymentReference: string, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
+    async redemptionDefault(amountUBA: BNish, paymentReference: string, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         const requestId = PaymentReference.decodeId(paymentReference);
         if (paymentReference !== PaymentReference.redemption(requestId)) throw new CommandLineError("Invalid payment reference");
         console.log("Waiting for payment default proof...");
-        const proof = await redeemer.obtainNonPaymentProof(paymentAddress, paymentReference, amountUBA, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
+        const proof = await redeemer.obtainNonPaymentProof(this.underlyingAddress, paymentReference, amountUBA, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
         console.log("Executing payment default...");
         await redeemer.executePaymentDefault(requestId, proof);
     }

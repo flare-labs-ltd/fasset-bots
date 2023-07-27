@@ -60,15 +60,14 @@ program.command("redeem")
 program.command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<amount>")
-    .argument("<address>")
     .argument("<reference>")
     .argument("<firstBlock>")
     .argument("<lastBlock>")
-    .argument("<lastTimestamp>")
-    .action(async (amountUBA: string, paymentAddress: string, paymentReference: string, firstUnderlyingBlock: string, lastUnderlyingBlock: string, lastUnderlyingTimestamp: string) => {
+    .argument("<lastTs>")
+    .action(async (amountUBA: string, paymentReference: string, firstUnderlyingBlock: string, lastUnderlyingBlock: string, lastUnderlyingTimestamp: string) => {
         const options: { config: string, fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset);
-        await redeemerBot.redemptionDefault(amountUBA, paymentAddress, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
+        await redeemerBot.redemptionDefault(amountUBA, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
     });
 
 toplevelRun(async () => {
