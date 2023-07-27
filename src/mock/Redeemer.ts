@@ -4,7 +4,7 @@ import { Agent } from "../fasset/Agent";
 import { IAssetContext } from "../fasset/IAssetContext";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO } from "../utils/helpers";
+import { BN_ZERO, BNish } from "../utils/helpers";
 
 export class Redeemer {
     constructor(
@@ -26,7 +26,7 @@ export class Redeemer {
         return new Redeemer(ctx, address, underlyingAddress);
     }
 
-    async requestRedemption(lots: number): Promise<[requests: EventArgs<RedemptionRequested>[], remainingLots: BN, dustChanges: EventArgs<DustChanged>[]]> {
+    async requestRedemption(lots: BNish): Promise<[requests: EventArgs<RedemptionRequested>[], remainingLots: BN, dustChanges: EventArgs<DustChanged>[]]> {
         const res = await this.assetManager.redeem(lots, this.underlyingAddress, { from: this.address });
         const redemptionRequests = filterEvents(res, 'RedemptionRequested').map(e => e.args);
         const redemptionIncomplete = eventArgs(res, 'RedemptionRequestIncomplete');

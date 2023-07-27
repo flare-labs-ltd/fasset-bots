@@ -5,8 +5,9 @@ import { createAssetContext } from '../config/create-asset-context';
 import { AvailableAgentInfo } from '../fasset/AssetManagerTypes';
 import { IAssetContext } from "../fasset/IAssetContext";
 import { Minter } from '../mock/Minter';
+import { Redeemer } from '../mock/Redeemer';
 import { proveAndUpdateUnderlyingBlock } from '../utils/fasset-helpers';
-import { BNish, CommandLineError, requireEnv } from '../utils/helpers';
+import { BNish, CommandLineError, requireEnv, toBN } from '../utils/helpers';
 import { initWeb3 } from '../utils/web3';
 
 export class UserBot {
@@ -14,6 +15,12 @@ export class UserBot {
     botConfig!: BotConfig;
     nativeAddress!: string;
     underlyingAddress!: string;
+
+    static async create(configFile: string, fAssetSymbol: string) {
+        const bot = new UserBot();
+        await bot.initialize(configFile, fAssetSymbol);
+        return bot;
+    }
 
     async initialize(configFile: string, fAssetSymbol: string) {
         console.error(chalk.cyan('Initializing environment...'));
@@ -72,5 +79,18 @@ export class UserBot {
         console.log(`Executing payment...`);
         await minter.executeProvedMinting(collateralReservationId, proof);
         console.log("Done");
+    }
+
+    async redeem(lots: BNish) {
+        const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+        console.log("Asking for redemption");
+        const [requests, remainingLots] = await redeemer.requestRedemption(lots);
+        if (!toBN(remainingLots).isZero()) {
+            console.log(`Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`)
+        }
+        console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
+        for (const req of requests) {
+            console.log(`    id=${req.requestId}  address=${req.paymentAddress}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
+        }
     }
 }

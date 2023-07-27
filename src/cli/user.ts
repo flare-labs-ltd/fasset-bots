@@ -30,8 +30,7 @@ program.command("mint")
     .option('-u, --updateBlock')
     .action(async (agentVault: string, amountLots: string) => {
         const options: { config: string, fasset: string, updateBlock: boolean | undefined } = program.opts();
-        const minterBot = new UserBot();
-        await minterBot.initialize(options.config, options.fasset);
+        const minterBot = await UserBot.create(options.config, options.fasset);
         if (options.updateBlock) {
             await minterBot.updateUnderlyingTime();
         }
@@ -45,9 +44,17 @@ program.command("mintExecute")
     .argument("<transactionHash>")
     .action(async (collateralReservationId: string, paymentAddress: string, transactionHash: string) => {
         const options: { config: string, fasset: string } = program.opts();
-        const minterBot = new UserBot();
-        await minterBot.initialize(options.config, options.fasset);
+        const minterBot = await UserBot.create(options.config, options.fasset);
         await minterBot.proveAndExecuteMinting(collateralReservationId, paymentAddress, transactionHash);
+    });
+
+program.command("redeem")
+    .description("Triggers redemption")
+    .argument("<amountLots>")
+    .action(async (amountLots: string) => {
+        const options: { config: string, fasset: string } = program.opts();
+        const redeemerBot = await UserBot.create(options.config, options.fasset);
+        await redeemerBot.redeem(amountLots);
     });
 
 toplevelRun(async () => {
