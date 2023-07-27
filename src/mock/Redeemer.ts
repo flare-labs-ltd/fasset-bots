@@ -7,6 +7,7 @@ import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truf
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import { web3DeepNormalize } from "../utils/web3normalize";
 
 export class Redeemer {
     constructor(
@@ -67,7 +68,7 @@ export class Redeemer {
     }
 
     async executePaymentDefault(requestId: BNish, proof: ProvedDH<DHReferencedPaymentNonexistence>) {
-        const res = await this.assetManager.redemptionPaymentDefault(proof, requestId, { from: this.address });
+        const res = await this.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: this.address });
         return requiredEventArgs(res, 'RedemptionDefault');
     }
 }
