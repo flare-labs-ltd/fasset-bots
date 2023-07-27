@@ -5,16 +5,14 @@ const transport: DailyRotateFile = new DailyRotateFile({
     filename: 'log/log-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
-    maxSize: '20m',
+    maxSize: '50m',
     maxFiles: '14d',
     json: true
 });
 
 export const logger = createLogger({
     format: format.combine(
-        format.timestamp({
-            format: 'YYYY-MM-DD HH:mm:ss'
-        }),
+        format.timestamp(),
         format.errors({ stack: true }),
         format.json()
     ),

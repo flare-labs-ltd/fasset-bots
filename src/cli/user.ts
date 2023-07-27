@@ -1,12 +1,12 @@
-import { Command, Option } from 'commander';
-import { UserBot } from './UserBot';
+import { Command } from 'commander';
 import { toplevelRun } from '../utils/helpers';
+import { UserBot } from '../actors/UserBot';
 
 const program = new Command();
 
 program
-    .addOption(new Option("-c, --config <configFile>", "Config file path (REQUIRED)").makeOptionMandatory(true))
-    .addOption(new Option("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
+    .addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)").makeOptionMandatory(true))
+    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
 
 program.command("agents")
     .description("Lists the available agents")
