@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { TrackedStateConfigFile, createTrackedStateConfig } from "../config/BotConfig";
 import { createTrackedStateAssetContext } from "../config/create-asset-context";
-import { requireEnv, sleep, toplevelRun } from "../utils/helpers";
+import { Future, requireEnv, sleep, toplevelRun } from "../utils/helpers";
 import { initWeb3 } from "../utils/web3";
 
 dotenv.config();
@@ -23,18 +23,16 @@ toplevelRun(async () => {
         timekeepers.push(timekeeper);
         timekeeper.run();
     }
-
     // run
     console.log("Timekeeper bot started, press CTRL+C to end");
+    const stopped = new Future<boolean>();
     process.on('SIGINT', () => {
+        console.log("Timekeeper bot stopping...");
         for (const timekeeper of timekeepers) {
             timekeeper.clear();
         }
-        console.log("Timekeeper bot stopped");
-        process.exit(0);
+        stopped.resolve(true);
     });
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        await sleep(10_000);
-    }
+    await stopped.promise;
+    console.log("Timekeeper bot stopped");
 });

@@ -198,6 +198,18 @@ export function toplevelRun(main: () => Promise<void>) {
     });
 }
 
+/**
+ * Future is a promise that can be resolved/rejected "from the outside" by calling future.resolve/reject.
+ */
+export class Future<T> {
+    resolve!: (value: T | PromiseLike<T>) => void;
+    reject!: (error: any) => void;
+    promise = new Promise<T>((resolve, reject) => {
+        this.resolve = resolve;
+        this.reject = reject;
+    });
+}
+
 // Error handling
 
 export function fail(messageOrError: string | Error): never {

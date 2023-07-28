@@ -1,0 +1,6 @@
+#!/bin/bash
+
+scriptdir=$(dirname "$0")
+logfile=$(ls -t *.log | head -n 1)
+
+tail -f $logfile | $scriptdir/pplog

@@ -19,10 +19,14 @@ export class TimeKeeper {
      * minting or redemption payment.
      */
     async updateUnderlyingBlock() {
-        logger.info(`Updating underlying block for ${this.context.assetManager.address}...`);
-        await proveAndUpdateUnderlyingBlock(this.context, this.address);
-        const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-        logger.info(`Underlying block updated on ${this.context.assetManager.address}:  block=${underlyingBlock}  timestamp=${underlyingTimestamp}`);
+        try {
+            logger.info(`Updating underlying block for ${this.context.assetManager.address}...`);
+            await proveAndUpdateUnderlyingBlock(this.context, this.address);
+            const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
+            logger.info(`Underlying block updated for ${this.context.assetManager.address}:  block=${underlyingBlock}  timestamp=${underlyingTimestamp}`);
+        } catch (err) {
+            logger.error(`Error updating underlying block for ${this.context.assetManager.address}`);
+        }
     }
 
     /**
