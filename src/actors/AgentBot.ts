@@ -220,7 +220,7 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const latestBlock = await latestUnderlyingBlock(this.context);
-        if (latestBlock && ((toBN(latestBlock.timestamp).sub(toBN(agentEnt.cornerCaseCheckTimestamp))).ltn(1 * DAYS) || toBN(agentEnt.cornerCaseCheckTimestamp).eq(BN_ZERO))) {
+        if (latestBlock && toBN(latestBlock.timestamp).sub(toBN(agentEnt.cornerCaseCheckTimestamp)).gtn(1 * DAYS)) {
             this.latestProof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
             await this.handleOpenMintings(rootEm);
             await this.handleOpenRedemptionsForCornerCase(rootEm);
