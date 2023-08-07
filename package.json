@@ -34,6 +34,7 @@
          "src/mock/*.ts",
          "src/run/run-agent.ts",
          "src/run/run-challenger.ts",
+         "src/run/run-timekeeper.ts",
          "src/cli/index.ts"
       ],
       "reporter": [
