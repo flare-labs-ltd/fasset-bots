@@ -48,9 +48,9 @@ describe("Actor tests - coston", async () => {
         // accounts
         accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
         ownerAddress = requireEnv('OWNER_ADDRESS');
-        challengerAddress = accounts[1]
-        liquidatorAddress = accounts[2]
-        systemKeeperAddress = accounts[3]
+        challengerAddress = accounts[1];
+        liquidatorAddress = accounts[2];
+        systemKeeperAddress = accounts[3];
         // configs
         botConfig = await createBotConfig(runConfig, ownerAddress);
         orm = botConfig.orm;
@@ -68,6 +68,7 @@ describe("Actor tests - coston", async () => {
         // the following two lines are only needed after fresh deploy of fasset on Coston
         // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
         // await whitelistAgent(botConfig, ownerAddress);
+
     });
 
     after(async () => {
