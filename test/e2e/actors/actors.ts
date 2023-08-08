@@ -47,7 +47,7 @@ describe("Actor tests - coston", async () => {
         runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as TrackedStateConfigFile;
         // accounts
         accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
-        ownerAddress = requireEnv('OWNER_ADDRESS');
+        ownerAddress = requireEnv('USER_ADDRESS');
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];

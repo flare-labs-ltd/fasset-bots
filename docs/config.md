@@ -38,7 +38,6 @@ Example:
     ],
     "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
     "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
-    "ownerAddress": "0x56597Fa74890E002Aa4F36E90beEb4E69c7Bae7D",
     "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
   }
 ```
@@ -53,11 +52,12 @@ Example:
 WALLET_ENCRYPTION_PASSWORD=
 
 # NATIVE CHAIN
-OWNER_PRIVATE_KEY=
+USER_ADDRESS=
+USER_PRIVATE_KEY=
 
 # UNDERLYING CHAIN
-OWNER_UNDERLYING_ADDRESS=
-OWNER_UNDERLYING_PRIVATE_KEY=
+USER_UNDERLYING_ADDRESS=
+USER_UNDERLYING_PRIVATE_KEY=
 
 # RUN CONFIG PATH
 RUN_CONFIG_PATH=
@@ -97,6 +97,5 @@ Example:
   ],
   "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
   "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
-  "ownerAddress": "0xA97d22A6b356436c81D9Da0B1E26BA07B871E3a2"
 }
 ```

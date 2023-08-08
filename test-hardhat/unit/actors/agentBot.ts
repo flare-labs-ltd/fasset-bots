@@ -46,7 +46,7 @@ describe("Agent bot unit tests", async () => {
         chain.secondsPerBlock = 1;
         // accounts
         ownerAddress = accounts[3];
-        ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
+        ownerUnderlyingAddress = requireEnv('USER_UNDERLYING_ADDRESS');
     });
 
     afterEach(function () {

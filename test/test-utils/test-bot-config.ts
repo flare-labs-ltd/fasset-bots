@@ -2,7 +2,7 @@ import { CreateOrmOptions } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 
-export const OWNER_ADDRESS: string = "0x56597Fa74890E002Aa4F36E90beEb4E69c7Bae7D";
+export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
 export const COSTON_RPC: string = "https://coston-api.flare.network/ext/C/rpc";
 export const COSTON_RUN_CONFIG_CONTRACTS = "./run-config/run-config-agent-coston-testxrp.json";
 export const COSTON_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/run-config-test/run-config-coston-with-address-updater.json";

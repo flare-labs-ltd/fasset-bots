@@ -14,7 +14,7 @@ import { ORM } from "../../../src/config/orm";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
-const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
+const accountPrivateKey = requireEnv('USER_PRIVATE_KEY');
 const sourceId = SourceId.XRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";

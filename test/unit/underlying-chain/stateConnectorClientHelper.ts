@@ -15,7 +15,7 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const accountPrivateKey = requireEnv('OWNER_PRIVATE_KEY');
+const accountPrivateKey = requireEnv('USER_PRIVATE_KEY');
 const sourceId = SourceId.XRP;
 
 describe("XRP attestation/state connector tests", async () => {
