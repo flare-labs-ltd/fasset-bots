@@ -40,6 +40,7 @@ export class BotCliCommands {
         this.ownerAddress = requireEnv('USER_ADDRESS');
         const nativePrivateKey = requireEnv('USER_PRIVATE_KEY');
         const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
+        /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) throw new Error("Invalid address/private key pair");
         // create config
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;

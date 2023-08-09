@@ -43,4 +43,10 @@ describe("Payment reference unit tests", async () => {
         expect(addressOwnershipRef).to.eq(expected);
     });
 
+    it("Should get address ownership reference", () => {
+        const addressOwnershipRef = PaymentReference.addressOwnership(address);
+        const expected = toBN(addressOwnershipRef).shrn(PaymentReference.TYPE_SHIFT).and(toBN(0xFFFF)).toNumber();
+        const decode = PaymentReference.decodeType(addressOwnershipRef);
+        expect(expected).to.eq(decode);
+    });
 });

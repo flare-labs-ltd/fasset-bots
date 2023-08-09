@@ -68,7 +68,6 @@ describe("Actor tests - coston", async () => {
         // the following two lines are only needed after fresh deploy of fasset on Coston
         // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
         // await whitelistAgent(botConfig, ownerAddress);
-
     });
 
     after(async () => {

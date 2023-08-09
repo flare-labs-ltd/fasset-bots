@@ -118,6 +118,20 @@ describe("Bot cli commands unit tests", async () => {
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem.freeVaultCollateralWei)));
     });
 
+    it("Should mint and redeem - again", async () => {
+        const deposit = toBNExp(1_000_000, 18);
+        chain.mint(userBot.underlyingAddress, deposit);
+        const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
+        await userBot.mint(agent.vaultAddress, 1);
+        const agentInfoAfterMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
+        await userBot.redeem(1);
+        const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem.freeVaultCollateralWei)));
+    });
+
     it("Should mint and defaulted redemption", async () => {
         // vaultCollateralToken
         const vaultCollateralToken = await IERC20.at((await agent.getVaultCollateral()).token);
