@@ -201,6 +201,7 @@ export function toplevelRun(main: () => Promise<void>) {
 /**
  * Future is a promise that can be resolved/rejected "from the outside" by calling future.resolve/reject.
  */
+/* istanbul ignore next */
 export class Future<T> {
     resolve!: (value: T | PromiseLike<T>) => void;
     reject!: (error: any) => void;
@@ -226,6 +227,7 @@ export function requireEnv(name: string) {
 }
 
 // return text, converting "${ENV_VAR}" argument to `process.env[ENV_VAR]`
+/* istanbul ignore next */
 export function autoReadEnvVar(text: string) {
     const m = text.match(/^\s*\$\{(\w+)\}\s*$/);
     return m ? requireEnv(m[1]) : text;

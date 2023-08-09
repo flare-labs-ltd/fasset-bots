@@ -33,11 +33,9 @@
       "exclude": [
          "src/verification/**/*.ts",
          "src/mock/*.ts",
-         "src/run/run-agent.ts",
-         "src/run/run-challenger.ts",
-         "src/run/run-timekeeper.ts",
-         "src/cli/user.ts",
-         "src/cli/agent.ts"
+         "src/run/*.ts",
+         "src/cli/*.ts",
+         "src/utils/printlog.ts"
       ],
       "reporter": [
          "html",
