@@ -71,7 +71,7 @@ export class UserBot {
         await this.proveAndExecuteMinting(crt.collateralReservationId, txHash, crt.paymentAddress);
     }
 
-    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress = this.nativeAddress) {
+    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string) {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...")
         await minter.waitForTransactionFinalization(transactionHash);
