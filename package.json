@@ -12,7 +12,8 @@
    },
    "license": "MIT",
    "bin": {
-      "fasset-bots-cli": "dist/src/cli/index.js"
+      "agent-bot": "dist/src/cli/agent.js",
+      "user-bot": "dist/src/cli/user.js"
    },
    "prettier": {
       "printWidth": 160,
@@ -35,7 +36,8 @@
          "src/run/run-agent.ts",
          "src/run/run-challenger.ts",
          "src/run/run-timekeeper.ts",
-         "src/cli/index.ts"
+         "src/cli/user.ts",
+         "src/cli/agent.ts"
       ],
       "reporter": [
          "html",

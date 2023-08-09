@@ -1,5 +1,5 @@
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentBot } from "../actors/AgentBot";
+import { AgentBot } from "./AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, AgentBotConfigFile } from "../config/BotConfig";
@@ -15,8 +15,6 @@ import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 dotenv.config();
 
-const USER_ADDRESS: string = requireEnv('USER_ADDRESS');
-const USER_PRIVATE_KEY: string = requireEnv('USER_PRIVATE_KEY');
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
 
 export class BotCliCommands {
@@ -26,17 +24,31 @@ export class BotCliCommands {
     botConfig!: BotConfig;
     agentSettingsPath!: string;
 
+    static async create(runConfigFile: string = RUN_CONFIG_PATH) {
+        const bot = new BotCliCommands();
+        await bot.initEnvironment(runConfigFile);
+        return bot;
+    }
+
     /**
      * Initializes asset context from AgentBotRunConfig
      */
     async initEnvironment(runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotConfigFile;
-        const accounts = await initWeb3(runConfig.rpcUrl, [USER_PRIVATE_KEY], null);
+        // init web3 and accounts
+        this.ownerAddress = requireEnv('USER_ADDRESS');
+        const nativePrivateKey = requireEnv('USER_PRIVATE_KEY');
+        const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
+        if (this.ownerAddress !== accounts[0]) throw new Error("Invalid address/private key pair");
+        // create config
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
-        this.botConfig = await createBotConfig(runConfig, USER_ADDRESS);
-        this.ownerAddress = accounts[0];
+        this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
+        // create underlying wallet key
+        const underlyingAddress = requireEnv('USER_UNDERLYING_ADDRESS');
+        const underlyingPrivateKey = requireEnv('USER_UNDERLYING_PRIVATE_KEY');
+        await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan('Environment successfully initialized.'));
     }
 
@@ -268,186 +280,4 @@ export class BotCliCommands {
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier);
         return { agentBot, agentEnt };
     }
-
-    /**
-     * Input method, that intercepts commands from command line.
-     */
-    async run(args: string[]): Promise<void> {
-        try {
-            switch (args[2]) {
-                case 'create':
-                    await this.createAgentVault();
-                    break;
-                case 'depositVaultCollateral': {
-                    const agentVaultDeposit = args[3];
-                    const amount = args[4];
-                    if (agentVaultDeposit && amount) {
-                        await this.depositToVault(agentVaultDeposit, amount);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("depositVaultCollateral"));
-                    }
-                    break;
-                }
-                case 'buyPoolCollateral': {
-                    const agentVaultBuyPool = args[3];
-                    const amountBuyPool = args[4];
-                    if (agentVaultBuyPool && amountBuyPool) {
-                        await this.buyCollateralPoolTokens(agentVaultBuyPool, amountBuyPool);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault> <amount>"), " for command ", chalk.yellow("buyPoolCollateral"));
-                    }
-                    break;
-                }
-                case 'enter': {
-                    const agentVaultEnter = args[3];
-                    if (agentVaultEnter) {
-                        await this.enterAvailableList(agentVaultEnter);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("enter"));
-                    }
-                    break;
-                }
-                case 'exit': {
-                    const agentVaultExit = args[3];
-                    if (agentVaultExit) {
-                        await this.announceExitAvailableList(agentVaultExit);
-                    } else {
-                        console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("exit"));
-                    }
-                    break;
-                }
-                case 'updateAgentSetting': {
-                    const agentVaultAgentSetting = args[3];
-                    const agentSettingName = args[4];
-                    const agentSettingValue = args[5];
-                    if (agentVaultAgentSetting && agentSettingName && agentSettingValue) {
-                        await this.updateAgentSetting(agentVaultAgentSetting, agentSettingName, agentSettingValue);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>, <agentSettingName>, <agentSettingValue>"), " for command ", chalk.yellow("updateAgentSetting"));
-                    }
-                    break;
-                }
-                case 'withdrawVaultCollateral': {
-                    const agentVaultWithdrawVaultCollateral = args[3];
-                    const amountWithdrawVaultCollateral = args[4];
-                    if (agentVaultWithdrawVaultCollateral && amountWithdrawVaultCollateral) {
-                        await this.withdrawFromVault(agentVaultWithdrawVaultCollateral, amountWithdrawVaultCollateral);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("withdrawVaultCollateral"));
-                    }
-                    break;
-                }
-                case 'poolFeesBalance': {
-                    const agentVaultPoolFeesBalance = args[3];
-                    if (agentVaultPoolFeesBalance) {
-                        await this.poolFeesBalance(agentVaultPoolFeesBalance);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("poolFeesBalance"));
-                    }
-                    break;
-                }
-                case 'withdrawPoolFees': {
-                    const agentVaultWithdraw = args[3];
-                    const amountWithdraw = args[4];
-                    if (agentVaultWithdraw && amountWithdraw) {
-                        await this.withdrawPoolFees(agentVaultWithdraw, amountWithdraw);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("withdrawPoolFees"));
-                    }
-                    break;
-                }
-                case 'selfClose': {
-                    const agentVaultSelfClose = args[3];
-                    const amountSelfClose = args[4];
-                    if (agentVaultSelfClose && amountSelfClose) {
-                        await this.selfClose(agentVaultSelfClose, amountSelfClose);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>, <amount>"), " for command ", chalk.yellow("selfClose"));
-                    }
-                    break;
-                }
-                case 'close': {
-                    const agentVaultClose = args[3];
-                    if (agentVaultClose) {
-                        await this.closeVault(agentVaultClose);
-                    } else {
-                        console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("close"));
-                    }
-                    break;
-                }
-                case 'announceUnderlyingWithdrawal': {
-                    const agentVaultAnnounceUnderlying = args[3];
-                    if (agentVaultAnnounceUnderlying) {
-                        await this.announceUnderlyingWithdrawal(agentVaultAnnounceUnderlying);
-                    } else {
-                        console.log("Missing arguments ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("announceUnderlyingWithdrawal"));
-                    }
-                    break;
-                }
-                case 'performUnderlyingWithdrawal': {
-                    const agentPerformUnderlying = args[3];
-                    const amount = args[4];
-                    const destinationAddress = args[5];
-                    const paymentReference = args[6];
-                    if (agentPerformUnderlying && amount && destinationAddress && paymentReference) {
-                        await this.performUnderlyingWithdrawal(agentPerformUnderlying, amount, destinationAddress, paymentReference);
-                    } else {
-                        console.log("Missing argument ", chalk.blue("<agentVault> <amount> <destinationAddress> <paymentReference>"), " for command ", chalk.yellow("performUnderlyingWithdrawal"));
-                    }
-                    break;
-                }
-                case 'confirmUnderlyingWithdrawal': {
-                    const agentConfirmUnderlying = args[3];
-                    const txHashConfirmUnderlying = args[4];
-                    if (agentConfirmUnderlying) {
-                        await this.confirmUnderlyingWithdrawal(agentConfirmUnderlying, txHashConfirmUnderlying);
-                    } else {
-                        console.log("Missing argument ", chalk.blue("<agentVault> <transactionHash>"), " for command ", chalk.yellow("confirmUnderlyingWithdrawal"));
-                    }
-                    break;
-                }
-                case 'cancelUnderlyingWithdrawal': {
-                    const agentConfirmUnderlying = args[3];
-                    if (agentConfirmUnderlying) {
-                        await this.cancelUnderlyingWithdrawal(agentConfirmUnderlying);
-                    } else {
-                        console.log("Missing argument ", chalk.blue("<agentVault>"), " for command ", chalk.yellow("cancelUnderlyingWithdrawal"));
-                    }
-                    break;
-                }
-                case 'listAgents': {
-                    await this.listActiveAgents();
-                    break;
-                }
-                default:
-                    listUsageAndCommands();
-            }
-        } catch (error) {
-            console.error(`Command could not be executed: ${error}`);
-        }
-    }
-}
-
-/**
- * Lists all commands with usage.
- */
-export function listUsageAndCommands() {
-    console.log("\n ", 'Usage: ' + chalk.green('fasset-bots-cli') + ' ' + chalk.yellow('[command]') + ' ' + chalk.blue('<arg>') + '', "\n");
-    console.log('  Available commands:', "\n");
-    console.log(chalk.yellow('  create '), "create new agent vault");
-    console.log(chalk.yellow('  depositVaultCollateral '), chalk.blue('<agentVault> <amount> '), "deposit vault collateral to agent vault from owner's address");
-    console.log(chalk.yellow('  buyPoolCollateral '), chalk.blue('<agentVault> <amount> '), "add pool collateral and agent pool tokens");
-    console.log(chalk.yellow('  enter '), chalk.blue('<agentVault> '), "enter available agent's list");
-    console.log(chalk.yellow('  exit '), chalk.blue('<agentVault> '), "exit available agent's list");
-    console.log(chalk.yellow('  updateAgentSetting '), chalk.blue('<agentVault> <agentSettingName> <agentSettingValue> '), "set agent's settings");
-    console.log(chalk.yellow('  withdrawVaultCollateral '), chalk.blue('<agentVault> <amount> '), "withdraw amount from agent vault to owner's address");
-    console.log(chalk.yellow('  withdrawPoolFees '), chalk.blue('<agentVault> <amount> '), "withdraw pool fees from pool to owner's address");
-    console.log(chalk.yellow('  poolFeesBalance '), chalk.blue('<agentVault> '), "pool fees balance of agent");
-    console.log(chalk.yellow('  selfClose '), chalk.blue('<agentVault> <amountUBA> '), "self close agent vault with amountUBA of FAssets");
-    console.log(chalk.yellow('  close '), chalk.blue('<agentVault> '), "close agent vault");
-    console.log(chalk.yellow('  announceUnderlyingWithdrawal '), chalk.blue('<agentVault> '), "announce underlying withdrawal and get needed payment reference");
-    console.log(chalk.yellow('  performUnderlyingWithdrawal '), chalk.blue('<agentVault> <amount> <destinationAddress> <paymentReference> '), "perform underlying withdrawal and get needed transaction hash");
-    console.log(chalk.yellow('  confirmUnderlyingWithdrawal '), chalk.blue('<agentVault> <transactionHash> '), "confirm underlying withdrawal with transaction hash");
-    console.log(chalk.yellow('  cancelUnderlyingWithdrawal '), chalk.blue('<agentVault> '), "cancel underlying withdrawal announcement");
-    console.log(chalk.yellow('  listAgents '), "list active agent from persistent state", "\n");
 }
