@@ -5155,7 +5155,8 @@ __metadata:
     winston-daily-rotate-file: ^4.7.1
     yarn: ^1.22.19
   bin:
-    fasset-bots-cli: dist/src/cli/index.js
+    agent-bot: dist/src/cli/agent.js
+    user-bot: dist/src/cli/user.js
   languageName: unknown
   linkType: soft
 
