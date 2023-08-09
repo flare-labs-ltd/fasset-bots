@@ -1,5 +1,5 @@
 import { AgentBot } from "../../src/actors/AgentBot";
-import { BotCliCommands } from "../../src/cli/BotCliCommands";
+import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
 import { EM } from "../../src/config/orm";
 import {  AgentRedemption, AgentRedemptionState } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";

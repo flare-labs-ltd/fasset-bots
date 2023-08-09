@@ -91,8 +91,8 @@ export async function createTestMinter(context: IAssetContext, minterAddress: st
     return minter;
 }
 
-export async function createTestRedeemer(context: IAssetContext, redeemerAddress: string) {
-    const redeemer = await Redeemer.create(context, redeemerAddress, redeemerUnderlying);
+export async function createTestRedeemer(context: IAssetContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlying) {
+    const redeemer = await Redeemer.create(context, redeemerAddress, underlyingAddress);
     return redeemer;
 }
 

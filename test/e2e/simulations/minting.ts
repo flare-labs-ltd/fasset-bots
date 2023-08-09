@@ -4,7 +4,7 @@ import { ORM } from "../../../src/config/orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { BotCliCommands } from "../../../src/cli/BotCliCommands";
+import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
 import { AGENT_DEFAULT_CONFIG_PATH, COSTON_RPC } from "../../test-utils/test-bot-config";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { createTestAgentBotAndDepositCollaterals, createTestMinter, createTestRedeemer } from "../../test-utils/test-actors/test-actors";

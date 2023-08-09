@@ -1,12 +1,13 @@
-import { expect, spy, use } from "chai";
-import { BotCliCommands } from "../../../src/cli/BotCliCommands";
+import { expect, use } from "chai";
+import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
 import { initWeb3 } from "../../../src/utils/web3";
 import spies from "chai-spies";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
+import { SourceId } from "../../../src/verification/sources/sources";
 use(spies);
 
-describe("Bot cli commands unit tests", async () => {
+describe("AgentBot cli commands unit tests", async () => {
     let botCliCommands: BotCliCommands;
     let accounts: string[];
     let ownerAddress: string;
@@ -14,6 +15,11 @@ describe("Bot cli commands unit tests", async () => {
     before(async () => {
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];
+    });
+
+    it("Should create commands", async () => {
+        const commands = await BotCliCommands.create();
+        expect(commands.botConfig.chains[0].chainInfo.chainId).to.eq(SourceId.XRP);
     });
 
     it("Should initialize bot cli commands", async () => {
@@ -35,14 +41,6 @@ describe("Bot cli commands unit tests", async () => {
         expect(agent.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
         await agent.announceDestroy();
-    });
-
-    it("Should run command 'create'", async () => {
-        botCliCommands = new BotCliCommands();
-        await botCliCommands.initEnvironment();
-        const spyAgent = spy.on(botCliCommands, "createAgentVault");
-        await botCliCommands.run(["", "", "create"]);
-        expect(spyAgent).to.be.called.once;
     });
 
 });

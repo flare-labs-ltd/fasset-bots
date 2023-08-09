@@ -21,7 +21,7 @@ import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { network } from "hardhat";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { BotCliCommands } from "../../src/cli/BotCliCommands";
+import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { artifacts } from "../../src/utils/artifacts";
