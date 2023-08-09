@@ -87,8 +87,21 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should get available agents", async () => {
+        // create agents
+        for(let i = 0; i<= 10; i++) {
+            await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
+        }
         const availableAgents = await userBot.getAvailableAgents();
         expect(availableAgents[0].agentVault).to.eq(agent.vaultAddress);
+    });
+
+    it("Should update underlying block", async () => {
+        const blockBefore = await context.assetManager.currentUnderlyingBlock();
+        chain.mine(10);
+        await userBot.updateUnderlyingTime();
+        const blockAfter = await context.assetManager.currentUnderlyingBlock();
+        expect(blockAfter[0].gt(blockBefore[0])).to.be.true;
+        expect(blockAfter[1].gt(blockBefore[1])).to.be.true;
     });
 
     it("Should mint and redeem", async () => {
@@ -99,7 +112,7 @@ describe("Bot cli commands unit tests", async () => {
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
-        await userBot.redeem(1);
+        await userBot.redeem(2);
         const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem.freeVaultCollateralWei)));
@@ -132,6 +145,9 @@ describe("Bot cli commands unit tests", async () => {
         const startBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const startBalanceAgent = await vaultCollateralToken.balanceOf(agent.vaultAddress);
         const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
+        // redemption default - invalid payment reference
+        await expect(userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)).to.eventually.be.rejectedWith('Invalid payment reference').and.be.an.instanceOf(Error);
+        // redemption default
         await userBot.redemptionDefault(amount, rdReq.paymentReference, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agent.vaultAddress);
