@@ -25,7 +25,7 @@ toplevelRun(async () => {
     // run
     console.log("Agent bot started, press CTRL+C to end");
     process.on('SIGINT', () => {
-        console.log("Stoppping agent bot...");
+        console.log("Stopping agent bot...");
         runner.requestStop();
     });
     await runner.run();
