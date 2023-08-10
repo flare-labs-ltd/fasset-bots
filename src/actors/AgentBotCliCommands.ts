@@ -67,22 +67,22 @@ export class BotCliCommands {
      * Deposits class 1 collateral to agent's vault from owner.
      */
     async depositToVault(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Owner ${this.ownerAddress} is starting vault collateral deposit for agent ${agentVault} of ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} is starting vault collateral deposit ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositVaultCollateral(amount);
         this.botConfig.notifier.sendVaultCollateralDeposit(agentVault, amount);
-        logger.info(`Owner ${this.ownerAddress} deposited vault collateral for agent ${agentVault} of ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} deposited vault collateral ${amount}.`);
     }
 
     /**
      * Buys collateral pool tokens for agent.
      */
     async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Owner ${this.ownerAddress} is starting to buy collateral pool tokens for agent ${agentVault} of ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} is starting to buy collateral pool tokens ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
         this.botConfig.notifier.sendBuyCollateralPoolTokens(agentVault, amount);
-        logger.info(`Owner ${this.ownerAddress} bought collateral pool tokens for agent ${agentVault} of ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} bought collateral pool tokens ${amount}.`);
     }
 
     /**
@@ -92,7 +92,7 @@ export class BotCliCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.makeAvailable();
         this.botConfig.notifier.sendAgentEnteredAvailable(agentVault);
-        logger.info(`Agent ${agentVault} is available.`);
+        logger.info(`Agent ${agentVault} entered available list.`);
     }
 
     /**
@@ -104,7 +104,7 @@ export class BotCliCommands {
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
         this.botConfig.notifier.sendAgentAnnouncedExitAvailable(agentVault);
-        logger.info(`Agent ${agentVault} announced exit available at ${exitAllowedAt.toString()}.`);
+        logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
     }
 
     /**
@@ -117,7 +117,7 @@ export class BotCliCommands {
         this.botConfig.notifier.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
-        logger.info(`Agent ${agentVault} announced vault collateral withdrawal at ${withdrawalAllowedAt.toString()} at ${amount}.`);
+        logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
     /**
@@ -127,7 +127,7 @@ export class BotCliCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
         this.botConfig.notifier.sendWithdrawPoolFees(agentVault, amount);
-        logger.info(`Agent ${agentVault} withdrew pool fee ${amount}.`);
+        logger.info(`Agent ${agentVault} withdrew pool fees ${amount}.`);
     }
 
     /**
@@ -208,7 +208,7 @@ export class BotCliCommands {
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
         await this.botConfig.orm.em.persist(agentEnt).flush();
         this.botConfig.notifier.sendUnderlyingWithdrawalPerformed(agentVault, txHash);
-        logger.info(`Agent ${agentVault} performed underlying withdrawal of ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
+        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
         return txHash;
     }
 
@@ -234,7 +234,7 @@ export class BotCliCommands {
             }
         } else {
             this.botConfig.notifier.sendNoActiveWithdrawal(agentVault);
-            logger.info(`Agent ${agentVault} has NO active underlying withdrawal announcement.`);
+            logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
         }
     }
 
@@ -257,13 +257,13 @@ export class BotCliCommands {
             }
         } else {
             this.botConfig.notifier.sendNoActiveWithdrawal(agentVault);
-            logger.info(`Agent ${agentVault} has NO active underlying withdrawal announcement.`);
+            logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
         }
 
     }
 
     /**
-     * Lists active agents.
+     * Lists active agents in owner's local db.
      */
     async listActiveAgents() {
         const query = this.botConfig.orm.em.createQueryBuilder(AgentEntity);
