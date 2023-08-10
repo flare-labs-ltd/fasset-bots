@@ -103,6 +103,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         if (status === "OK" && data) {
             return data;
         }
+        /* istanbul ignore next */
         return 0;
     }
 
