@@ -53,6 +53,7 @@ export class AgentBotRunner {
                 logger.info(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner run into error with agent ${agentEntity.vaultAddress}: ${error}`);
             }
         }
     }

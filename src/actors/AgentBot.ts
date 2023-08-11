@@ -175,7 +175,7 @@ export class AgentBot {
             }
         }).catch(error => {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling events for agent ${this.agent.vaultAddress}:`, error);
+            logger.error(`AgentBot ${this.agent.vaultAddress} run into error while handling events: ${error}`);
         });
     }
 

@@ -47,7 +47,7 @@ export class Liquidator extends ActorBase {
             }
         } catch (error) {
             console.error(`Error handling events for liquidator ${this.address}: ${error}`);
-            logger.error(`Error handling events for liquidator ${this.address}: ${error}`);
+            logger.error(`Liquidator ${this.address} run into error while handling events: ${error}`);
         }
     }
 

@@ -21,6 +21,6 @@ toplevelRun(async () => {
     process.on('SIGINT', () => {
         runner.requestStop();
     });
-    await runner.run();
+    await runner.run(ActorBaseKind.CHALLENGER);
     console.log("Challenger bot stopped");
 });

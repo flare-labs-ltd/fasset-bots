@@ -8,6 +8,7 @@ import { Challenger } from "./Challenger";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { Liquidator } from "./Liquidator";
 import { SystemKeeper } from "./SystemKeeper";
+import { logger } from "../utils/logger";
 
 export class ActorBaseRunner {
     constructor(
@@ -17,10 +18,10 @@ export class ActorBaseRunner {
 
     private stopRequested = false;
 
-    async run(): Promise<void> {
+    async run(kind: ActorBaseKind): Promise<void> {
         this.stopRequested = false;
         while (!this.stopRequested) {
-            await this.runStep();
+            await this.runStep(kind);
             await sleep(this.loopDelay);
         }
     }
@@ -33,11 +34,14 @@ export class ActorBaseRunner {
      * This is the main method, where "automatic" logic is gathered.
      * It runs actor runsStep method, which handles required events and other.
      */
-    async runStep(): Promise<void> {
+    async runStep(kind: ActorBaseKind): Promise<void> {
         try {
+            logger.info(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner started running steps ${this.actor.address}.`);
             await this.actor.runStep();
+            logger.info(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner finished running steps ${this.actor.address}.`);
         } catch (error) {
-            console.error(`Error with agent ${this.actor.address}: ${error}`);
+            console.error(`Error with ${ActorBaseKind[kind]} ${this.actor.address}: ${error}`);
+            logger.error(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner run into error: ${error}`);
         }
     }
 
@@ -48,10 +52,13 @@ export class ActorBaseRunner {
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      */
     static async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind): Promise<ActorBaseRunner> {
+        logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
         const assetContext = await createTrackedStateAssetContext(config, config.chains[0]);
+        logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(assetContext, lastBlock);
         await trackedState.initialize();
+        logger.info(`${ActorBaseKind[kind]} ${address} initialized tracked state for ActorBaseRunner.`);
         let actor: ActorBase;
         if (kind === ActorBaseKind.CHALLENGER) {
             const blockHeight = await assetContext.blockchainIndexer.getBlockHeight();
@@ -61,6 +68,8 @@ export class ActorBaseRunner {
         } else {
             actor = new SystemKeeper(new ScopedRunner(), address, trackedState);
         }
+        logger.info(`${ActorBaseKind[kind]} ${address} was created.`);
+        logger.info(`${ActorBaseKind[kind]} ${address} created ActorBaseRunner.`);
         return new ActorBaseRunner(config.loopDelay, actor);
     }
 }
