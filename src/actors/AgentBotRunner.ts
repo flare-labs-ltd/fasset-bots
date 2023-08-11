@@ -4,9 +4,10 @@ import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { sleep } from "../utils/helpers";
+import { requireEnv, sleep } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { AgentBot } from "./AgentBot";
+import { logger } from "../utils/logger";
 
 export class AgentBotRunner {
     constructor(
@@ -43,10 +44,13 @@ export class AgentBotRunner {
                 const context = this.contexts.get(agentEntity.chainId);
                 if (context == null) {
                     console.warn(`Invalid chain id ${agentEntity.chainId}`);
+                    logger.warn(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner found invalid chain id ${agentEntity.chainId}.`);
                     continue;
                 }
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
+                logger.info(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
+                logger.info(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
             }
@@ -58,11 +62,14 @@ export class AgentBotRunner {
      * @param botConfig - configs to run bot
      */
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
+        logger.info(`Owner ${requireEnv('USER_ADDRESS')} started to create AgentBotRunner.`);
         const contexts: Map<number, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
+            logger.info(`Owner's ${requireEnv('USER_ADDRESS')} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}.`);
         }
+        logger.info(`Owner ${requireEnv('USER_ADDRESS')} created AgentBotRunner.`);
         return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifier);
     }
 }

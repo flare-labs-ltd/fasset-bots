@@ -6,6 +6,8 @@ import { TrackedState } from "../state/TrackedState";
 import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
+import { formatArgs } from "../utils/formatting";
+import { logger } from "../utils/logger";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 
 export class Liquidator extends ActorBase {
@@ -31,16 +33,21 @@ export class Liquidator extends ActorBase {
     async registerEvents(): Promise<void> {
         try {
             // Native chain events and update state events
+            logger.info(`Liquidator ${this.address} started reading unhandled native events.`);
             const events = await this.state.readUnhandledEvents();
+            logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
                 if (eventIs(event, this.state.context.ftsoManager, 'PriceEpochFinalized')) {
+                    logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, 'MintingExecuted')) {
+                    logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event)}.`);
                     await this.handleMintingExecuted(event.args);
                 }
             }
         } catch (error) {
             console.error(`Error handling events for liquidator ${this.address}: ${error}`);
+            logger.error(`Error handling events for liquidator ${this.address}: ${error}`);
         }
     }
 
@@ -58,6 +65,7 @@ export class Liquidator extends ActorBase {
                 await this.checkAgentForLiquidation(agent);
             } catch (error) {
                 console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
+                logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}: ${error}`);
             }
         }
     }
@@ -66,12 +74,15 @@ export class Liquidator extends ActorBase {
      * Checks if agent's status. If status is LIQUIDATION, then liquidate agent with all of the liquidator's fAssets.
      */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
+        logger.info(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
         const timestamp = await latestBlockTimestampBN();
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus === AgentStatus.LIQUIDATION) {
             const fBalance = await this.state.context.fAsset.balanceOf(this.address);
             await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
+            logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
         }
+        logger.info(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
     }
 
 }
