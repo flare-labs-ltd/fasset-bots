@@ -742,6 +742,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId} with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock?.number} with timestamp ${lastBlock?.timestamp}.`);
+            // TODO: what to do? What is best for agent?
         }
     }
 

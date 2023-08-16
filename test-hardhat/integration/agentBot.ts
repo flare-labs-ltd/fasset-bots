@@ -228,8 +228,6 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
-        // vaultCollateralToken
-        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
@@ -242,24 +240,17 @@ describe("Agent bot tests", async () => {
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
-        await agentBot.handleEvents(orm.em);
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
         chain.mine(Number(rdReq.lastUnderlyingBlock));
-        // redeemer requests non-payment proof
-        // redeemer triggers payment default and gets paid in collateral with extra
-        const startBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
-        const startBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
-        const res = await redeemer.redemptionPaymentDefault(rdReq);
-        const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
-        const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
-        assert.equal(String(endBalanceRedeemer.sub(startBalanceRedeemer)), String(res.redeemedVaultCollateralWei));
-        assert.equal(String(startBalanceAgent.sub(endBalanceAgent)), String(res.redeemedVaultCollateralWei));
-        // check redemption
-        await agentBot.handleEvents(orm.em);
-        orm.em.clear();
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionDone.state, AgentRedemptionState.STARTED);
+        // agentBot stores redemption
+        await agentBot.runStep(orm.em);
+        const redemptionStarted = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemptionStarted.state, AgentRedemptionState.STARTED);
+        // agentBot doesn't pay for redemption - expired on underlying
+        await agentBot.runStep(orm.em);
+        const redemptionNotPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemptionNotPaid.state, AgentRedemptionState.STARTED);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {

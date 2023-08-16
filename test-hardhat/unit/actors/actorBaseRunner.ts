@@ -4,10 +4,11 @@ import { disableMccTraceManager } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { ActorBase } from "../../../src/fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { TrackedState } from "../../../src/state/TrackedState";
+import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 use(spies);
 
 const loopDelay: number = 2;
@@ -31,8 +32,19 @@ describe("Actor base runner tests", async () => {
         const actorBaseRunner = new ActorBaseRunner(loopDelay, actor);
         const spyStep = spy.on(actorBaseRunner, 'runStep');
         actorBaseRunner.requestStop();
-        void actorBaseRunner.run();
+        void actorBaseRunner.run(ActorBaseKind.SYSTEM_KEEPER);
         actorBaseRunner.requestStop();
+        expect(spyStep).to.have.been.called.once;
+    });
+
+    it("Should run actor base runner step", async () => {
+        const systemKeeperAddress = accounts[20];
+        const state = new TrackedState(context, await web3.eth.getBlockNumber());
+        await state.initialize();
+        const systemKeeper = new SystemKeeper(new ScopedRunner(), systemKeeperAddress, state);
+        const systemKeeperRunner = new ActorBaseRunner(loopDelay, systemKeeper);
+        const spyStep = spy.on(systemKeeper, 'runStep');
+        await systemKeeperRunner.runStep(ActorBaseKind.SYSTEM_KEEPER);
         expect(spyStep).to.have.been.called.once;
     });
 

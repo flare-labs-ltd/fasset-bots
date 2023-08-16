@@ -127,7 +127,7 @@ describe("Actor tests - coston", async () => {
         expect(systemKeeper.address).to.eq(systemKeeperAddress);
     });
 
-    it("Should create actor bot runner from  config", async () => {
+    it("Should create actor bot runner from config", async () => {
         const actorBaseRunner1 = await ActorBaseRunner.create(trackedStateConfig, challengerAddress, ActorBaseKind.CHALLENGER);
         expect(actorBaseRunner1.loopDelay).to.eq(trackedStateConfig.loopDelay);
         expect(actorBaseRunner1.actor.address).to.eq(challengerAddress);
