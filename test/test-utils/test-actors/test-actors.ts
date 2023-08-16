@@ -12,6 +12,8 @@ import { Challenger } from "../../../src/actors/Challenger";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { cleanUp } from "../test-helpers";
+import { IAssetContext } from "../../../src/fasset/IAssetContext";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -48,4 +50,10 @@ export async function createTestLiquidator(address: string, state: TrackedState)
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
     return new SystemKeeper(new ScopedRunner(), address, state);
+}
+
+export async function destroyAllAgents(context: IAssetContext, orm: ORM, ownerAddress: string) {
+    const list = await context.assetManager.getAllAgents(0, 100);
+    const listOfAgents = list[0];
+    await cleanUp(context, orm, ownerAddress, listOfAgents);
 }

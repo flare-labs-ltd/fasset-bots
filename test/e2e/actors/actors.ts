@@ -19,7 +19,7 @@ import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv, mintVaultCollateralToOwner, whitelistAgent } from "../../test-utils/test-helpers";
+import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
@@ -41,6 +41,8 @@ describe("Actor tests - coston", async () => {
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
+    // newly create agents that are destroyed after these tests
+    const destroyAgentsAfterTests: string[] = [];
 
     before(async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as AgentBotConfigFile;
@@ -71,7 +73,7 @@ describe("Actor tests - coston", async () => {
     });
 
     after(async () => {
-        await cleanUp(context, orm, ownerAddress);
+        await cleanUp(context, orm, ownerAddress, destroyAgentsAfterTests);
     });
 
     it("Should create agent bot, deposit vault collateral, buy pool tokens and announce destroy", async () => {
@@ -94,6 +96,7 @@ describe("Actor tests - coston", async () => {
         expect(toBN(agentInfo.totalPoolCollateralNATWei).eq(buyPoolTokens));
         // sort of clean up
         await agentBot.agent.announceDestroy();
+        destroyAgentsAfterTests.push(agentBot.agent.vaultAddress);
     });
 
     it("Should create agent bot runner", async () => {
