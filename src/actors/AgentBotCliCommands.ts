@@ -37,8 +37,8 @@ export class BotCliCommands {
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotConfigFile;
         // init web3 and accounts
-        this.ownerAddress = requireEnv('USER_ADDRESS');
-        const nativePrivateKey = requireEnv('USER_PRIVATE_KEY');
+        this.ownerAddress = requireEnv('OWNER_ADDRESS');
+        const nativePrivateKey = requireEnv('OWNER_PRIVATE_KEY');
         const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) throw new Error("Invalid address/private key pair");
@@ -47,8 +47,8 @@ export class BotCliCommands {
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
         // create underlying wallet key
-        const underlyingAddress = requireEnv('USER_UNDERLYING_ADDRESS');
-        const underlyingPrivateKey = requireEnv('USER_UNDERLYING_PRIVATE_KEY');
+        const underlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
+        const underlyingPrivateKey = requireEnv('OWNER_UNDERLYING_PRIVATE_KEY');
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan('Environment successfully initialized.'));
     }

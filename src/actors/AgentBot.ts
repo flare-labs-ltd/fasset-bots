@@ -848,7 +848,7 @@ export class AgentBot {
      * It also checks owner's underlying balance and notifies when it is too low.
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireEnv('USER_UNDERLYING_ADDRESS');
+        const ownerUnderlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
         try {
             logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`);
             const txHash = await this.agent.performTopupPayment(amount, ownerUnderlyingAddress);
