@@ -49,6 +49,7 @@ describe("Agent bot runner tests", async () => {
     });
 
     it("Should create agent bot runner and run it", async () => {
+        context.blockchainIndexer.chain.mine(10);
         const spyWarn = spy.on(console, 'warn');
         // create agents
         await createTestAgentBot(context, orm, ownerAddress);

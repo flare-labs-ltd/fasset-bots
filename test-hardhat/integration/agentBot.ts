@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { checkedCast, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -21,6 +21,7 @@ import BN from "bn.js";
 import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
+import { attestationWindowSeconds } from "../../src/utils/fasset-helpers";
 
 const IERC20 = artifacts.require('IERC20');
 
@@ -177,23 +178,14 @@ describe("Agent bot tests", async () => {
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
-        await agentBot.runStep(orm.em);
-        // should have an open minting
-        orm.em.clear();
-        const mintings = await agentBot.openMintings(orm.em, false);
-        assert.equal(mintings.length, 1);
-        const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agentBot.handleOpenMintings(orm.em);
-        orm.em.clear();
+        // run step
+        await agentBot.runStep(orm.em);
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
-        orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
@@ -226,6 +218,33 @@ describe("Agent bot tests", async () => {
         // check that executing minting after calling unstickMinting will revert
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
     });
+
+    it("Should delete minting", async () => {
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        // should have an open minting
+        orm.em.clear();
+        const openMintings = await agentBot.openMintings(orm.em, false);
+        assert.equal(openMintings.length, 1);
+        const mintingStarted = openMintings[0];
+        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
+        // skip time so the proof will expire in indexer
+        const queryWindow = QUERY_WINDOW_SECONDS * 2;
+        const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
+        chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
+        // manually unstick minting
+        const settings = await context.assetManager.getSettings();
+        const burnNats = (await agentBot.agent.getPoolCollateralPrice()).convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const proof = await agentBot.agent.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.ownerAddress, value: burnNats ?? BN_ZERO });
+        await agentBot.runStep(orm.em);
+        // should have an closed minting
+        const openMintings2 = await agentBot.openMintings(orm.em, false);
+        assert.equal(openMintings2.length, 0);
+    });
+
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
         // perform minting
