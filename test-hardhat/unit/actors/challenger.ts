@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect, spy, use } from "chai";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { toBN } from "../../../src/utils/helpers";
@@ -6,6 +6,9 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
 import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import spies from "chai-spies";
+import { MockTrackedState } from "../../../src/mock/MockTrackedState";
+use(spies);
 
 const underlyingAddress: string = "AGENT_UNDERLYING_ADDRESS";
 const transaction1 = {
@@ -45,13 +48,17 @@ describe("Challenger unit tests", async () => {
         ownerAddress = accounts[11];
     });
 
+    afterEach(function () {
+        spy.restore(console);
+    });
+
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, context);
+        const challenger = await createTestChallenger(challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -63,7 +70,7 @@ describe("Challenger unit tests", async () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -79,6 +86,17 @@ describe("Challenger unit tests", async () => {
         challenger.deleteUnconfirmedTransaction(agentB.vaultAddress, transaction2.hash);
         // check
         expect(challenger.unconfirmedTransactions.get(agentB.vaultAddress)).to.be.undefined;
+    });
+
+    it("Should not run step - error", async () => {
+        const spyConsole = spy.on(console, "error");
+        const lastBlock = await web3.eth.getBlockNumber();
+        const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
+        await mockState.initialize();
+        const challenger = await createTestChallenger(challengerAddress, mockState);
+        expect(challenger.address).to.eq(challengerAddress);
+        await challenger.runStep();
+        expect(spyConsole).to.be.called.once
     });
 
 });

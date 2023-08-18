@@ -114,7 +114,7 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
         expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight);

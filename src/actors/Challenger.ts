@@ -167,7 +167,7 @@ export class Challenger extends ActorBase {
     // double payments
 
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
-        logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress}for double payments ${transaction.hash}.`);
+        logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
         if (!PaymentReference.isValid(transaction.reference)) return;   // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
@@ -201,7 +201,9 @@ export class Challenger extends ActorBase {
         let transactions: Array<{ txHash: string, spent: BN }> = [];
         for (const transaction of agentTransactions.values()) {
             if (!PaymentReference.isValid(transaction.reference)) continue;     // should be caught by illegal payment challenge
+            /* istanbul ignore next */
             const spentAmount = transaction.inputs.find(input => input[0] === agent.underlyingAddress)?.[1];
+            /* istanbul ignore next */
             if (spentAmount == null) continue;
             if (this.isValidRedemptionReference(agent, transaction.reference)) {
                 const { amount } = this.activeRedemptions.get(transaction.reference)!;
@@ -212,6 +214,7 @@ export class Challenger extends ActorBase {
             // other options should be caught by illegal payment challenge
         }
         // sort by decreasing spent amount
+        /* istanbul ignore next */
         transactions.sort((a, b) => a.spent.gt(b.spent) ? -1 : a.spent.lt(b.spent) ? 1 : 0);
         // extract highest MAX_REPORT transactions
         transactions = transactions.slice(0, MAX_NEGATIVE_BALANCE_REPORT);

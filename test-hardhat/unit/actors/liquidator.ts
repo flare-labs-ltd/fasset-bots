@@ -1,11 +1,13 @@
-import { expect } from "chai";
+import { expect, spy, use } from "chai";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-
+import { MockTrackedState } from "../../../src/mock/MockTrackedState";
+import spies from "chai-spies";
+use(spies);
 
 describe("Liquidator unit tests", async () => {
     let accounts: string[];
@@ -27,9 +29,24 @@ describe("Liquidator unit tests", async () => {
         await state.initialize();
     });
 
+    afterEach(function () {
+        spy.restore(console);
+    });
+
     it("Should create liquidator", async () => {
         const liquidator = new Liquidator(runner, liquidatorAddress, state);
         expect(liquidator.address).to.eq(liquidatorAddress);
+    });
+
+    it("Should not run step - error", async () => {
+        const spyConsole = spy.on(console, "error");
+        const lastBlock = await web3.eth.getBlockNumber();
+        const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
+        await mockState.initialize();
+        const liquidator = new Liquidator(runner, liquidatorAddress, mockState);
+        expect(liquidator.address).to.eq(liquidatorAddress);
+        await liquidator.runStep();
+        expect(spyConsole).to.be.called.once
     });
 
 });

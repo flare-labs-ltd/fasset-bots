@@ -40,8 +40,8 @@ export async function createTestAgentBotAndDepositCollaterals(context: IAssetAge
     return agentBot;
 }
 
-export async function createTestChallenger(address: string, state: TrackedState, context: IAssetTrackedStateContext): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight());
+export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer.getBlockHeight());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {

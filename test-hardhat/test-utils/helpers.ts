@@ -57,8 +57,8 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
     await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 
-export async function createTestChallenger(address: string, state: TrackedState, context: TestAssetTrackedStateContext): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight());
+export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer.getBlockHeight());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {

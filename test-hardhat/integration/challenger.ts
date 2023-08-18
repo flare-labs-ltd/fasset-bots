@@ -4,7 +4,7 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { sleep, toBN } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
@@ -29,7 +29,6 @@ const underlyingAddress: string = "UNDERLYING_ADDRESS";
 describe("Challenger tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
-    let trackedStateContext: TestAssetTrackedStateContext;
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
@@ -51,7 +50,6 @@ describe("Challenger tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        trackedStateContext = getTestAssetTrackedStateContext(context);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
@@ -62,7 +60,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal payment", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -92,7 +90,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -119,7 +117,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -167,7 +165,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - announced withdrawal", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -200,7 +198,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -245,7 +243,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should challenge illegal/double payment - reference for already confirmed announced withdrawal", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -280,7 +278,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentFailed' event - failed underlying payment (not redeemer's address)", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -342,7 +340,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should catch 'RedemptionPaymentBlocked' event", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -379,7 +377,7 @@ describe("Challenger tests", async () => {
     });
 
     it("Should perform free balance negative challenge", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state, trackedStateContext);
+        const challenger = await createTestChallenger(challengerAddress, state);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -406,6 +404,31 @@ describe("Challenger tests", async () => {
         // check status
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
+    });
+
+    it("Should not perform free balance negative challenge - attestation helper error", async () => {
+        // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        // check status
+        const agentStatus1 = await getAgentStatus(agentBot);
+        assert.equal(agentStatus1, AgentStatus.NORMAL);
+        const faultyContext = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+        const faultyState = state;
+        faultyState.context.attestationProvider = faultyContext.attestationProvider;
+        const challenger = await createTestChallenger(challengerAddress, faultyState);
+        await challenger.runStep();
+        const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
+        // announce and perform underlying withdrawal
+        const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
+        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal.paymentReference, underlyingBalanceUBA, underlyingAddress);
+        await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
+        chain.mine(chain.finalizationBlocks + 1);
+        await challenger.runStep();
+        // check status
+        const agentStatus2 = await getAgentStatus(agentBot);
+        assert.equal(agentStatus2, AgentStatus.NORMAL);
     });
 
 });

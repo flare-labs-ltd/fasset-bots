@@ -4,7 +4,7 @@ import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable } from "../test-utils/helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable, createCRAndPerformMinting, createTestAgentBot } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -13,6 +13,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { artifacts } from "../../src/utils/artifacts";
+import { MockTrackedState } from "../../src/mock/MockTrackedState";
 use(spies);
 
 const IERC20 = artifacts.require('IERC20');
@@ -48,6 +49,10 @@ describe("Liquidator tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
+    });
+
+    afterEach(function () {
+        spy.restore(console);
     });
 
     it("Should check collateral ratio after price changes", async () => {
@@ -143,6 +148,36 @@ describe("Liquidator tests", async () => {
         // check FAsset and cr balance
         expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
         expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;
+    });
+
+    it("Should not check collateral ratio after minting execution - faulty function", async () => {
+        const lastBlock = await web3.eth.getBlockNumber();
+        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
+        await mockState.initialize();
+        const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
+        // create collateral reservation and perform minting
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        // check collateral ratio after minting execution
+        await liquidator.runStep();
+        expect(spyMinting).to.have.been.called.once;
+    });
+
+    it("Should not check collateral ratio after price changes - faulty function", async () => {
+        const lastBlock = await web3.eth.getBlockNumber();
+        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
+        await mockState.initialize();
+        const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
+        const spyLiquidation = spy.on(liquidator, 'checkAllAgentsForLiquidation');
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
+        // mock price changes
+        await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
+        // check collateral ratio after price changes
+        await liquidator.runStep();
+        expect(spyLiquidation).to.have.been.called.once;
     });
 
 });

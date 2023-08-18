@@ -247,11 +247,11 @@ export class TrackedAgentState {
         (this.agentSettings as any)[name] = web3Normalize(value);
     }
 
-    collateralBalance(collateral: CollateralType) {
+    collateralBalance(collateral: CollateralType): BN {
         return Number(collateral.collateralClass) === CollateralClass.VAULT ? this.totalVaultCollateralWei[this.agentSettings.vaultCollateralToken] : this.totalPoolCollateralNATWei;
     }
 
-    private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralType) {
+    private collateralRatioForPriceBIPS(prices: Prices, collateral: CollateralType): BN {
         const redeemingUBA = Number(collateral.collateralClass) === CollateralClass.VAULT ? this.redeemingUBA : this.poolRedeemingUBA;
         const totalUBA = this.reservedUBA.add(this.mintedUBA).add(redeemingUBA);
         if (totalUBA.isZero()) return MAX_UINT256;
@@ -261,14 +261,14 @@ export class TrackedAgentState {
         return totalCollateralWei.muln(MAX_BIPS).div(backingCollateralWei);
     }
 
-    collateralRatioBIPS(collateral: CollateralType) {
+    collateralRatioBIPS(collateral: CollateralType): BN {
         const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, collateral);
         const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.trustedPrices, collateral);
         return maxBN(ratio, ratioFromTrusted);
     }
 
 
-    private possibleLiquidationTransitionForCollateral(collateral: CollateralType, timestamp: BN) {
+    private possibleLiquidationTransitionForCollateral(collateral: CollateralType, timestamp: BN): AgentStatus {
         const cr = this.collateralRatioBIPS(collateral);
         const settings = this.parent.settings;
         if (this.status === AgentStatus.NORMAL) {
@@ -298,7 +298,7 @@ export class TrackedAgentState {
         return vaultTransition >= poolTransition ? vaultTransition : poolTransition;
     }
 
-    calculatePoolFee(mintingFeeUBA: BN) {
+    calculatePoolFee(mintingFeeUBA: BN): BN {
         return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(toBN(this.agentSettings.poolFeeShareBIPS)).divn(MAX_BIPS));
     }
 }
