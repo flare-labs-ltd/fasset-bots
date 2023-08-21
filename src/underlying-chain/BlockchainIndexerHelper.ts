@@ -107,26 +107,28 @@ export class BlockchainIndexerHelper implements IBlockChain {
         return 0;
     }
 
-    async getTransactionsByReference(reference: string, returnResponse: boolean = false): Promise<ITransaction[] | []> {
+    async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
+        const returnResponse = true;
         const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const txs: ITransaction[] = [];
-        if (status === "OK" && dataArray?.length > 0) {
+        if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
-                    inputs: returnResponse ?  await this.handleInputsOutputs(tx, true) : [],
-                    outputs: returnResponse ? await this.handleInputsOutputs(tx, false) : [],
+                    inputs: await this.handleInputsOutputs(tx, true),
+                    outputs: await this.handleInputsOutputs(tx, false),
                     reference: tx.paymentReference,
-                    status: returnResponse ? this.successStatus(tx) : TX_UNKNOWN
+                    status: this.successStatus(tx)
                 })
             }
         }
         return txs;
     }
 
-    async getTransactionsWithinBlockRange(from: number, to: number, returnResponse: boolean = false): Promise<ITransaction[]> {
+    async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
+        const returnResponse = true;
         const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray: any[] = resp.data.data;
@@ -136,10 +138,10 @@ export class BlockchainIndexerHelper implements IBlockChain {
             for (const tx of dataArray) {
                 txs.push({
                     hash: tx.transactionId,
-                    inputs: returnResponse ? await this.handleInputsOutputs(tx, true) : [],
-                    outputs: returnResponse ? await this.handleInputsOutputs(tx, false) : [],
+                    inputs: await this.handleInputsOutputs(tx, true),
+                    outputs: await this.handleInputsOutputs(tx, false),
                     reference: tx.paymentReference,
-                    status: returnResponse ? this.successStatus(tx) : TX_UNKNOWN
+                    status: this.successStatus(tx)
                 })
             }
         }

@@ -105,7 +105,7 @@ export class AgentBot {
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
-        await this.handleCornerCases(rootEm);
+        await this.handleDailyTasks(rootEm);
     }
 
     /**
@@ -214,22 +214,46 @@ export class AgentBot {
     }
 
     /**
-     * Once a day checks if any minting or redemption is stuck in corner case.
+     * Once a day checks corner cases and claims.
      */
-    async handleCornerCases(rootEm: EM): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
+    async handleDailyTasks(rootEm: EM): Promise<void> {
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const latestBlock = await latestUnderlyingBlock(this.context);
+        /* istanbul ignore next */
+        logger.info(`Agent ${this.agent.vaultAddress} checks if daily task need to be handled. List time checked: ${agentEnt.cornerCaseCheckTimestamp.toString()}. Latest block: ${latestBlock?.number}, ${latestBlock?.timestamp}.`);
         if (latestBlock && toBN(latestBlock.timestamp).sub(toBN(agentEnt.cornerCaseCheckTimestamp)).gtn(1 * DAYS)) {
             this.latestProof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
-            await this.handleOpenMintings(rootEm);
-            await this.handleOpenRedemptionsForCornerCase(rootEm);
+            await this.handleCornerCases(rootEm);
+            await this.checkForClaims(rootEm);
             agentEnt.cornerCaseCheckTimestamp = toBN(latestBlock.timestamp);
             await rootEm.persistAndFlush(agentEnt);
         }
+        logger.info(`Agent ${this.agent.vaultAddress} finished checking if daily task need to be handled.`);
+    }
+
+    /**
+     * Checks if any minting or redemption is stuck in corner case.
+     */
+    async handleCornerCases(rootEm: EM): Promise<void> {
+        logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
+        await this.handleOpenMintings(rootEm);
+        await this.handleOpenRedemptionsForCornerCase(rootEm);
         logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
     }
 
+    /**
+     * Checks there any claims in collateral pool and agent vault.
+     */
+    async checkForClaims(rootEm: EM): Promise<void> {
+        logger.info(`Agent ${this.agent.vaultAddress} started checking for claims.`);
+        // //TODO
+        // await this.agent.collateralPool.claimAirdropDistribution();
+        // await this.agent.collateralPool.claimFtsoRewards();
+
+        // await this.agent.agentVault.claimAirdropDistribution();
+        // await this.agent.agentVault.claimFtsoRewards();
+        logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+    }
 
     /**
      * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
@@ -503,6 +527,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} is calling 'unstickMinting' ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
             const settings = await this.context.assetManager.getSettings();
             const burnNats = toBN((await this.agent.getPoolCollateralPrice()).convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS));
+            // TODO what to do if owner does not have enough nat
             await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.ownerAddress, value: burnNats });
             minting.state = AgentMintingState.DONE;
             this.notifier.sendMintingCornerCase(minting.requestId.toString(), true, false);
@@ -515,7 +540,7 @@ export class AgentBot {
             if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
                 logger.info(`Agent ${this.agent.vaultAddress} waited that time for underlying payment expired for minting ${minting.requestId}.`);
-                const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference, true);
+                const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
                 /* istanbul ignore else */
                 if (txs.length === 1) {
                     // corner case: minter pays and doesn't execute minting
@@ -741,6 +766,7 @@ export class AgentBot {
             this.notifier.sendRedemptionPaid(this.agent.vaultAddress, redemption.requestId.toString());
             logger.info(`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId} with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`);
         } else {
+            /* istanbul ignore next */
             logger.info(`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock?.number} with timestamp ${lastBlock?.timestamp}.`);
             // TODO: what to do? What is best for agent?
         }

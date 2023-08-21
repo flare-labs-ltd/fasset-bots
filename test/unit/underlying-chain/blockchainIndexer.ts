@@ -166,7 +166,7 @@ describe("XRP blockchain tests via indexer", async () => {
 
     it("Should wait for underlying transaction finalization", async () => {
         if (txHash) {
-            const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 1);
+            const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization(txHash, 3);
             expect(txHash).to.be.eq(retrievedTransaction?.hash);
         }
     });
@@ -183,16 +183,12 @@ describe("XRP blockchain tests via indexer", async () => {
     it("Should get transaction by reference - empty array", async () => {
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsByReference("txHash");
         expect(retrievedTransaction1.length).to.be.gte(0);
-        const retrievedTransaction2 = await blockchainIndexerClient.getTransactionsByReference("txHash", true);
-        expect(retrievedTransaction2.length).to.be.gte(0);
     });
 
     it("Should get transactions within block range", async () => {
         const offset = 10;
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId);
-        expect(retrievedTransaction1.length).to.be.gte(0);
-        const retrievedTransaction2 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId, true);
-        expect(retrievedTransaction2.length).to.be.gte(0);
+        expect(retrievedTransaction1.length).to.be.gte(1);
     });
 
 });
