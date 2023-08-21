@@ -1,9 +1,10 @@
-import { expect } from "chai";
+import { expect, spy, use } from "chai";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { TimeKeeper } from "../../../src/actors/TimeKeeper";
-
+import spies from "chai-spies";
+use(spies);
 
 describe("Time keeper unit tests", async () => {
     let accounts: string[];
@@ -15,6 +16,10 @@ describe("Time keeper unit tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         context.blockchainIndexer.chain.finalizationBlocks = 0;
         timeKeeperAddress= accounts[10];
+    });
+
+    afterEach(function () {
+        spy.restore(console);
     });
 
     it("Should create time keeper", async () => {
@@ -31,6 +36,13 @@ describe("Time keeper unit tests", async () => {
         await timeKeeper.updateUnderlyingBlock();
         const currentBlock2 = await context.assetManager.currentUnderlyingBlock();
         expect(Number(currentBlock2[0])).to.eq(blocksToMine);
+    });
+
+    it("Should not update underlying block - invalid timeKeeper's address", async () => {
+        const spyConsole = spy.on(console, "error");
+        const timeKeeper = new TimeKeeper("timeKeeperAddress", context, 60000);
+        await timeKeeper.updateUnderlyingBlock();
+        expect(spyConsole).to.be.called.once;
     });
 
 });

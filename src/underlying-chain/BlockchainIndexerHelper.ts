@@ -131,6 +131,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const status = resp.data.status;
         const dataArray: any[] = resp.data.data;
         const txs: ITransaction[] = [];
+        /* istanbul ignore else */
         if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
@@ -164,6 +165,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const resp = await this.client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
+        /* istanbul ignore else */
         if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
@@ -185,6 +187,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             } else {
                 const inputs: TxInputOutput[] = [];
                 for (const item of data.vin) {
+                    /* istanbul ignore else */
                     if (item.txid && item.vout >= 0) {
                         // Given a UTXO transaction indexer does additional processing on UTXO inputs.
                         // The processing is done only if the transaction contains some kind of a payment reference (OP_RETURN).
@@ -195,9 +198,12 @@ export class BlockchainIndexerHelper implements IBlockChain {
                         if (status === "OK" && data) {
                             const vout = data.response.data.vout;
                             const elt = vout[item.vout];
+                            /* istanbul ignore next */
+                            const value = elt.value || 0;
                             inputs.push([
+                                /* istanbul ignore next */
                                 elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
-                                toBN(Math.round((elt.value || 0) * BTC_MDU).toFixed(0))
+                                toBN(Math.round(value * BTC_MDU).toFixed(0))
                             ])
                         }
                     }
@@ -208,9 +214,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
         } else {
             const outputs: TxInputOutput[] = [];
             data.vout.map((item: any) => {
+                /* istanbul ignore next */
+                const value = item.value || 0;
                 outputs.push([
                     item.scriptPubKey.address,
-                    toBN(Math.round((item.value || 0) * BTC_MDU).toFixed(0))
+                    toBN(Math.round(value * BTC_MDU).toFixed(0))
                 ])
             })
             if (outputs.length == 0) return [["", toBN(0)]];

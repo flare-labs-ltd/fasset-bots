@@ -78,6 +78,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         const response = await this.verifier.post('/query/prepareAttestation', request);
         const status = response.data.status;
         const data = response.data.data;
+        /* istanbul ignore else */
         if (status === 'OK') {
             const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
             const attReq = requiredEventArgs(txRes, 'AttestationRequest');

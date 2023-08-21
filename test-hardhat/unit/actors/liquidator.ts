@@ -46,7 +46,7 @@ describe("Liquidator unit tests", async () => {
         const liquidator = new Liquidator(runner, liquidatorAddress, mockState);
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.runStep();
-        expect(spyConsole).to.be.called.once
+        expect(spyConsole).to.be.called.once;
     });
 
 });

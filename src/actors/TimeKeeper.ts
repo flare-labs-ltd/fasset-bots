@@ -20,12 +20,13 @@ export class TimeKeeper {
      */
     async updateUnderlyingBlock() {
         try {
-            logger.info(`Updating underlying block for ${this.context.assetManager.address}...`);
+            logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
             await proveAndUpdateUnderlyingBlock(this.context, this.address);
             const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-            logger.info(`Underlying block updated for ${this.context.assetManager.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
+            logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
         } catch (err) {
-            logger.error(`Error updating underlying block for ${this.context.assetManager.address}`);
+            console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
+            logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
         }
     }
 

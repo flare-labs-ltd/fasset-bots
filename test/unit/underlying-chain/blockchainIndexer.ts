@@ -11,8 +11,6 @@ import chaiAsPromised from "chai-as-promised";
 import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 use(chaiAsPromised);
 
-
-
 describe("XRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.XRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
@@ -190,9 +188,10 @@ describe("XRP blockchain tests via indexer", async () => {
     });
 
     it("Should get transactions within block range", async () => {
-        const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - 1, blockId);
+        const offset = 10;
+        const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId);
         expect(retrievedTransaction1.length).to.be.gte(0);
-        const retrievedTransaction2 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - 1, blockId, true);
+        const retrievedTransaction2 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId, true);
         expect(retrievedTransaction2.length).to.be.gte(0);
     });
 

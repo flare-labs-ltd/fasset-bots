@@ -46,7 +46,7 @@ describe("System keeper unit tests", async () => {
         const systemKeeper = new SystemKeeper(runner, systemKeeperAddress, mockState);
         expect(systemKeeper.address).to.eq(systemKeeperAddress);
         await systemKeeper.runStep();
-        expect(spyConsole).to.be.called.once
+        expect(spyConsole).to.be.called.once;
     });
 
 });
