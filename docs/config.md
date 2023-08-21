@@ -11,7 +11,7 @@ Example:
     "loopDelay": 10000,
     "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
     "nativeChainInfo": {
-      "finalizationBlocks": 0,
+      "finalizationBlocks": 6,
       "readLogsChunkSize": 10
     },
     "chainInfos": [
@@ -78,7 +78,7 @@ Example:
 ```json
 {
   "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
-  "nativeChainInfo": { "finalizationBlocks": 0, "readLogsChunkSize": 10 },
+  "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
   "chainInfos": [
     {
       "chainId": 3,

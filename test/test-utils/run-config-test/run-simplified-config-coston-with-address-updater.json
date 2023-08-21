@@ -2,7 +2,7 @@
   "loopDelay": 10000,
   "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
   "nativeChainInfo": {
-    "finalizationBlocks": 0,
+    "finalizationBlocks": 6,
     "readLogsChunkSize": 10
   },
   "chainInfos": [
