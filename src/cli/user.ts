@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { toplevelRun } from '../utils/helpers';
 import { UserBot } from '../actors/UserBot';
+import { logger } from '../utils/logger';
 
 const program = new Command();
 
@@ -14,13 +15,16 @@ program.command("agents")
         const options: { config: string, fasset: string } = program.opts();
         const bot = new UserBot();
         await bot.initialize(options.config, options.fasset);
+        logger.info(`User ${bot.nativeAddress} started fetching available agents.`);
         const agents = await bot.getAvailableAgents();
         console.log(`${"ADDRESS".padEnd(42)}  ${"MAX_LOTS".padEnd(8)}  ${"FEE".padEnd(6)}`)
         for (const agent of agents) {
             const lots = String(agent.freeCollateralLots);
             const fee = Number(agent.feeBIPS) / 100;
             console.log(`${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%`);
+            logger.info(`User ${bot.nativeAddress} fetched agent: finished fetching available agents ${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%`);
         }
+        logger.info(`User ${bot.nativeAddress} finished fetching available agents.`);
     });
 
 program.command("mint")

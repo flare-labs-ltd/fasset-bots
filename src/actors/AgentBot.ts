@@ -26,6 +26,8 @@ const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
 const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 const IERC20 = artifacts.require('IERC20');
+// const AddressUpdater = artifacts.require('AddressUpdater');
+// const IFtsoRewardManager = artifacts.require('IFtsoRewardManager');
 
 export class AgentBot {
     constructor(
@@ -175,7 +177,7 @@ export class AgentBot {
             }
         }).catch(error => {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`AgentBot ${this.agent.vaultAddress} run into error while handling events: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events: ${error}`);
         });
     }
 
@@ -235,24 +237,39 @@ export class AgentBot {
      * Checks if any minting or redemption is stuck in corner case.
      */
     async handleCornerCases(rootEm: EM): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
-        await this.handleOpenMintings(rootEm);
-        await this.handleOpenRedemptionsForCornerCase(rootEm);
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
+            await this.handleOpenMintings(rootEm);
+            await this.handleOpenRedemptionsForCornerCase(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
+        } catch (error) {
+            console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases: ${error}`);
+        }
     }
 
     /**
      * Checks there any claims in collateral pool and agent vault.
      */
     async checkForClaims(rootEm: EM): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} started checking for claims.`);
-        // //TODO
-        // await this.agent.collateralPool.claimAirdropDistribution();
-        // await this.agent.collateralPool.claimFtsoRewards();
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started checking for claims.`);
+            // //TODO test checkforClaims
+            // const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
+            // const ftsoRewardManager = await IFtsoRewardManager.at(await addressUpdater.getContractAddress('FtsoRewardManager'));
 
-        // await this.agent.agentVault.claimAirdropDistribution();
-        // await this.agent.agentVault.claimFtsoRewards();
-        logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+            // const notClaimedRewardsAgentVault: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.vaultAddress);
+            // const notClaimedRewardsCollateralPool: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.collateralPool.address);
+            // await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, notClaimedRewardsAgentVault[notClaimedRewardsAgentVault.length - 1], this.agent.vaultAddress);
+            // await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, notClaimedRewardsCollateralPool[notClaimedRewardsCollateralPool.length - 1]);
+
+            // await this.agent.agentVault.claimAirdropDistribution();
+            // await this.agent.collateralPool.claimAirdropDistribution()
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+        } catch (error) {
+            console.error(`Error handling claims for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling claims: ${error}`);
+        }
     }
 
     /**
@@ -453,7 +470,7 @@ export class AgentBot {
 
     async handleOpenMintings(rootEm: EM): Promise<void> {
         const openMintings = await this.openMintings(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings ${openMintings.length}.`);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
         for (const rd of openMintings) {
             await this.nextMintingStep(rootEm, rd.id);
         }
@@ -504,11 +521,11 @@ export class AgentBot {
                     break;
                 default:
                     console.error(`Minting state: ${minting.state} not supported`);
-                    logger.error(`Minting state: ${minting.state} not supported for minting ${minting.requestId.toString()}.`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId.toString()}.`);
             }
         }).catch((error) => {
             console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}:`, error);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}: ${error}`);
         });
     }
 
@@ -685,7 +702,7 @@ export class AgentBot {
 
     async handleOpenRedemptions(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions ${openRedemptions.length}.`);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
         for (const rd of openRedemptions) {
             await this.nextRedemptionStep(rootEm, rd.id);
         }
@@ -694,7 +711,7 @@ export class AgentBot {
 
     async handleOpenRedemptionsForCornerCase(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, false);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions ${openRedemptions.length} for CORNER CASE.`);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
         for (const rd of openRedemptions) {
             const proof = await this.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
             if (proof) {
@@ -740,11 +757,11 @@ export class AgentBot {
                     break;
                 default:
                     console.error(`Redemption state: ${redemption.state} not supported`);
-                    logger.error(`Redemption state: ${redemption.state} not supported for redemption ${redemption.requestId.toString()}.`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into redemption state ${redemption.state} not supported for redemption ${redemption.requestId.toString()}.`);
             }
         }).catch((error) => {
             console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}:`, error);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}: ${error}`);
         });
     }
 

@@ -34,6 +34,7 @@ export class BotCliCommands {
      * Initializes asset context from AgentBotRunConfig
      */
     async initEnvironment(runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
+        logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} started to initialize cli environment.`);
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as AgentBotConfigFile;
         // init web3 and accounts
@@ -41,7 +42,10 @@ export class BotCliCommands {
         const nativePrivateKey = requireEnv('OWNER_PRIVATE_KEY');
         const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
         /* istanbul ignore next */
-        if (this.ownerAddress !== accounts[0]) throw new Error("Invalid address/private key pair");
+        if (this.ownerAddress !== accounts[0]) {
+            logger.error(`Owner ${requireEnv('OWNER_ADDRESS')} has invalid address/private key pair.`);
+            throw new Error("Invalid address/private key pair");
+        }
         // create config
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
@@ -51,6 +55,7 @@ export class BotCliCommands {
         const underlyingPrivateKey = requireEnv('OWNER_UNDERLYING_PRIVATE_KEY');
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan('Environment successfully initialized.'));
+        logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} successfully finished initializing cli environment.`);
     }
 
     /**
