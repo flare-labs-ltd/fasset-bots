@@ -11,7 +11,6 @@ import { BNish, CommandLineError, requireEnv, toBN } from '../utils/helpers';
 import { initWeb3 } from '../utils/web3';
 import { PaymentReference } from '../fasset/PaymentReference';
 import { logger } from '../utils/logger';
-import { formatArgs } from '../utils/formatting';
 import { web3DeepNormalize } from '../utils/web3normalize';
 
 export class UserBot {
