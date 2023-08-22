@@ -42,8 +42,7 @@ describe("XRP transaction integration tests", async () => {
         const balanceAfter = await walletHelper.getBalance(targetAddressXRP);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
         // wait for transaction
-        const waitBlocks = 20;
-        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction, waitBlocks);
+        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
         await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
