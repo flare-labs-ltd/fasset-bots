@@ -78,7 +78,7 @@ export class UserBot {
         console.log("Reserving collateral...");
         logger.info(`User ${requireEnv('USER_ADDRESS')} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
         const crt = await minter.reserveCollateral(agentVault, lots);
-        logger.info(`User ${requireEnv('USER_ADDRESS')} reserved collateral ${JSON.stringify(web3DeepNormalize(crt))} with agent ${agentVault} and ${lots} lots.`);
+        logger.info(`User ${requireEnv('USER_ADDRESS')} reserved collateral ${JSON.stringify(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(`User ${requireEnv('USER_ADDRESS')} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`);
         const txHash = await minter.performMintingPayment(crt);
@@ -116,7 +116,7 @@ export class UserBot {
         for (const req of requests) {
             const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
             console.log(`    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
-            logger.info(`User ${requireEnv('USER_ADDRESS')} triggered request: ${JSON.stringify(web3DeepNormalize(req))}.`);
+            logger.info(`User ${requireEnv('USER_ADDRESS')} triggered request: ${JSON.stringify(req)}.`);
         }
     }
 
