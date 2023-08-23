@@ -5,6 +5,7 @@
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
+import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
@@ -127,6 +128,7 @@ declare global {
       require(name: "MockContract"): MockContractContract;
       require(name: "MockInterface"): MockInterfaceContract;
       require(name: "ERC20"): ERC20Contract;
+      require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
@@ -263,6 +265,7 @@ declare global {
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
+export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
