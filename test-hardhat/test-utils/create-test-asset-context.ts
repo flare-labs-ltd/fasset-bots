@@ -14,8 +14,10 @@ import { artifacts } from "../../src/utils/artifacts";
 import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { FtsoManagerMockInstance, FtsoMockInstance, FtsoRegistryMockInstance } from "../../typechain-truffle";
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
+import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
+import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
+import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 
 const AgentVaultFactory = artifacts.require('AgentVaultFactory');
 const SCProofVerifier = artifacts.require('SCProofVerifier');

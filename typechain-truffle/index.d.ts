@@ -5,7 +5,6 @@
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
-import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
@@ -270,7 +269,6 @@ export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
 } from "./IERC20Metadata";
-export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
 export {
