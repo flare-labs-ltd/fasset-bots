@@ -59,23 +59,23 @@ export class Challenger extends ActorBase {
             logger.info(`Challenger ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
                 if (eventIs(event, this.state.context.assetManager, 'RedemptionRequested')) {
-                    logger.info(`Challenger ${this.address} received event 'RedemptionRequested' with data ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
                     this.handleRedemptionRequested(event.args);
-                    logger.info(`Challenger ${this.address} stored active redemption: ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} stored active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPerformed')) {
-                    logger.info(`Challenger ${this.address} received event 'RedemptionPerformed' with data ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
-                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentBlocked')) {
-                    logger.info(`Challenger ${this.address} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
-                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentFailed')) {
-                    logger.info(`Challenger ${this.address} received event 'RedemptionPaymentFailed' with data ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
-                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.state.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
-                    logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event)}.`);
+                    logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event.args)}.`);
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 }
             }

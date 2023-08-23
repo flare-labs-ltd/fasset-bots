@@ -9,8 +9,8 @@ describe("Formatting unit tests", async () => {
         const obj = { second: array };
         const event1 = { address: "address", event: "event", args: { first: array } };
         const event2 = { address: "address", event: "event", args: { first: obj } };
-        expect(formattingMethods.formatArgs(event1)).to.eq('{"first":"[0, 1, null]"}');
-        expect(formattingMethods.formatArgs(event2)).to.eq('{"first":"{ second: [0, 1, null] }"}');
+        expect(formattingMethods.formatArgs(event1.args)).to.eq('{"first":"[0, 1, null]"}');
+        expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
     });
 
 });

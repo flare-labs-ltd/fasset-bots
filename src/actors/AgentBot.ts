@@ -26,8 +26,6 @@ const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
 const CollateralPoolToken = artifacts.require('CollateralPoolToken');
 const IERC20 = artifacts.require('IERC20');
-// const AddressUpdater = artifacts.require('AddressUpdater');
-// const IFtsoRewardManager = artifacts.require('IFtsoRewardManager');
 
 export class AgentBot {
     constructor(
@@ -119,59 +117,59 @@ export class AgentBot {
             // Note: only update db here, so that retrying on error won't retry on-chain operations.
             for (const event of events) {
                 if (eventIs(event, this.context.assetManager, 'CollateralReserved')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
                     this.mintingStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'CollateralReservationDeleted')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationDeleted' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationDeleted' with data ${formatArgs(event.args)}.`);
                     const minting = await this.findMinting(em, event.args.collateralReservationId);
                     this.mintingExecuted(minting, false);
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     if (!event.args.collateralReservationId.isZero()) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event)}.`);
+                        logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                         const minting = await this.findMinting(em, event.args.collateralReservationId);
                         this.mintingExecuted(minting, true);
                     }
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
                     this.redemptionStarted(em, event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionDefault')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPerformed')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
                     await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
                     this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentFailed')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
                     await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
                     this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault, event.args.failureReason);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionPaymentBlocked')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
                     await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
                     this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, 'AgentDestroyed')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
                     await this.handleAgentDestruction(em, event.args.agentVault);
                 } else if (eventIs(event, this.context.ftsoManager, 'PriceEpochFinalized')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAgentForCollateralRatiosAndTopUp();
                 } else if (eventIs(event, this.context.assetManager, 'AgentInCCB')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendCCBAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationStarted')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendLiquidationStartAlert(event.args.agentVault, event.args.timestamp);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendLiquidationWasPerformed(event.args.agentVault, event.args.valueUBA);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault);
                 } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
                 } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
-                    logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event)}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
                     this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
                 }
             }
@@ -226,7 +224,6 @@ export class AgentBot {
         if (latestBlock && toBN(latestBlock.timestamp).sub(toBN(agentEnt.cornerCaseCheckTimestamp)).gtn(1 * DAYS)) {
             this.latestProof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
             await this.handleCornerCases(rootEm);
-            await this.checkForClaims(rootEm);
             agentEnt.cornerCaseCheckTimestamp = toBN(latestBlock.timestamp);
             await rootEm.persistAndFlush(agentEnt);
         }
@@ -245,30 +242,6 @@ export class AgentBot {
         } catch (error) {
             console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases: ${error}`);
-        }
-    }
-
-    /**
-     * Checks there any claims in collateral pool and agent vault.
-     */
-    async checkForClaims(rootEm: EM): Promise<void> {
-        try {
-            logger.info(`Agent ${this.agent.vaultAddress} started checking for claims.`);
-            // //TODO test checkforClaims
-            // const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
-            // const ftsoRewardManager = await IFtsoRewardManager.at(await addressUpdater.getContractAddress('FtsoRewardManager'));
-
-            // const notClaimedRewardsAgentVault: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.vaultAddress);
-            // const notClaimedRewardsCollateralPool: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.collateralPool.address);
-            // await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, notClaimedRewardsAgentVault[notClaimedRewardsAgentVault.length - 1], this.agent.vaultAddress);
-            // await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, notClaimedRewardsCollateralPool[notClaimedRewardsCollateralPool.length - 1]);
-
-            // await this.agent.agentVault.claimAirdropDistribution();
-            // await this.agent.collateralPool.claimAirdropDistribution()
-            logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
-        } catch (error) {
-            console.error(`Error handling claims for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling claims: ${error}`);
         }
     }
 

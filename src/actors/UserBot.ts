@@ -12,6 +12,7 @@ import { initWeb3 } from '../utils/web3';
 import { PaymentReference } from '../fasset/PaymentReference';
 import { logger } from '../utils/logger';
 import { web3DeepNormalize } from '../utils/web3normalize';
+import { formatArgs } from '../utils/formatting';
 
 export class UserBot {
     context!: IAssetContext;
@@ -78,7 +79,7 @@ export class UserBot {
         console.log("Reserving collateral...");
         logger.info(`User ${requireEnv('USER_ADDRESS')} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
         const crt = await minter.reserveCollateral(agentVault, lots);
-        logger.info(`User ${requireEnv('USER_ADDRESS')} reserved collateral ${JSON.stringify(crt)} with agent ${agentVault} and ${lots} lots.`);
+        logger.info(`User ${requireEnv('USER_ADDRESS')} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(`User ${requireEnv('USER_ADDRESS')} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`);
         const txHash = await minter.performMintingPayment(crt);
@@ -113,11 +114,13 @@ export class UserBot {
         }
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
         logger.info(`User ${requireEnv('USER_ADDRESS')} triggered ${requests.length} payment requests.`);
+        let loggedRequests = ``;
         for (const req of requests) {
             const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
             console.log(`    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
-            logger.info(`User ${requireEnv('USER_ADDRESS')} triggered request: ${JSON.stringify(req)}.`);
+            loggedRequests = loggedRequests +  `User ${requireEnv('USER_ADDRESS')} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
         }
+        logger.info(loggedRequests);
     }
 
     async redemptionDefault(amountUBA: BNish, paymentReference: string, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {

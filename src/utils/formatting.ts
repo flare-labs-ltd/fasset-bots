@@ -29,9 +29,9 @@ function formatBN(x: any) {
     }
 }
 
-export function formatArgs(event: BaseEvent) {
+export function formatArgs(args: any) {
     const result: any = {};
-    for (const [key, value] of Object.entries(event.args)) {
+    for (const [key, value] of Object.entries(args)) {
         if (Number.isNaN(parseInt(key)) && key != '__length__') {
             result[key] = formatArg(value);
         }
