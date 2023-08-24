@@ -12,13 +12,19 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 * [*SystemKeeper*](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
 * [*TimeKeeper*](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
 
+## Install
+
+Clone project. Install `fasset` and `simple-wallet` in the same directory as `fasset-bots`.
+
+Run `yarn` and `yarn build`.
+
 ## Configurations
 
 For needed prerequirements, environment variables and other configurations see [here](./docs/config.md).
 
 ## How to run Agent bot
 
-In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `npx ts-node src/run/run-agent.ts`.
+In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `node dist/src/run/run-agent.js`. (Make sure you ran `yarn build` before).
 
 The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The runner will initiate needed context and connect to native network (Flare/Songbird). Then it will constantly check if any active agent stored in persistent state should handle any incoming events (see [Agent](./docs/actors/agent.md)).
 
@@ -32,7 +38,7 @@ Command line interface can be access by running command `yarn fasset-bots-cli`. 
 
 Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 
-Example for such script using actor base runner for Challenger can be found in [`run-challenger.ts`](./src/run/run-challenger.ts) and run by with command `npx ts-node src/run/run-challenger.ts`
+Example for such script using actor base runner for Challenger can be found in [`run-challenger.ts`](./src/run/run-challenger.ts) and run by command `node dist/src/run/run-challenger.js`. (Make sure you ran `yarn build` before).
 
 ## Helpers
 
@@ -49,7 +55,7 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 
 ## What to be aware of when testing on Coston and testnet XRP
 
-- Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts)  before reserving collateral, before redeeming, ...
+- Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts) before reserving collateral, before redeeming, ...
 - Newly created testnet XRP account should get initial deposit of at least 10 XRP. Otherwise payment to this account will be rejected by tecNO_DST_INSUF_XRP.
 
 ### Testnet faucets
