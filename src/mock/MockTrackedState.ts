@@ -1,5 +1,5 @@
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
-import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { MockTrackedAgentState } from "../state/MockTrackedAgentState";
 import { InitialAgentData } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -7,7 +7,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 
 export class MockTrackedState extends TrackedState {
     constructor(
-        context: IAssetTrackedStateContext,
+        context: IAssetActorContext,
         lastEventBlockHandled: number,
         public trackedState: TrackedState | null
     ) {

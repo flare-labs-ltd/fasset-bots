@@ -1,4 +1,4 @@
-import { AgentBotDefaultSettings, IAssetAgentBotContext, IAssetTrackedStateContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings, IAssetAgentBotContext, IAssetActorContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { BNish, fail } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";

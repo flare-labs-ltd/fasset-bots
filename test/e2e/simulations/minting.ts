@@ -45,7 +45,7 @@ describe.skip("Agent bot simulation - coston", async () => {
         ownerAddress = accounts[0];
         minterAddress = accounts[2];
         // set orm
-        orm = botCliCommands.botConfig.orm;
+        orm = botCliCommands.botConfig.orm!;
         // set context
         context = botCliCommands.context;
 

@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetActorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -53,7 +53,7 @@ export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
     blockchainIndexer: MockIndexer;
 }>
 
-export type TestAssetTrackedStateContext = Modify<IAssetTrackedStateContext, {
+export type TestAssetTrackedStateContext = Modify<IAssetActorContext, {
     assetFtso: FtsoMockInstance;
     ftsoManager: FtsoManagerMockInstance;
     blockchainIndexer: MockIndexer;

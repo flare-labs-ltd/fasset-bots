@@ -20,6 +20,7 @@ import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
+import { MockAgentBot } from "../../../src/mock/MockAgentBot";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -548,6 +549,14 @@ describe("Agent bot unit tests", async () => {
         };
         await agentBot.requestPaymentProof(redemption);
         expect(redemption.state).to.eq('paid');
+    });
+
+    it("Should not handle corner cases - mock agent bot", async () => {
+        const spyError = spy.on(console, 'error');
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const mockAgentBot = new MockAgentBot(agentBot.agent, agentBot.notifier);
+        await mockAgentBot.handleCornerCases(orm.em);
+        expect(spyError).to.be.called.once;
     });
 
 });

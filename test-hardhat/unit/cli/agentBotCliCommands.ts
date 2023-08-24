@@ -38,7 +38,7 @@ describe("Bot cli commands unit tests", async () => {
     let chain: MockChain;
 
     async function createAgent(): Promise<Agent> {
-        const agentBot = await createTestAgentBot(context, botCliCommands.botConfig.orm, botCliCommands.ownerAddress);
+        const agentBot = await createTestAgentBot(context, botCliCommands.botConfig.orm!, botCliCommands.ownerAddress);
         return agentBot.agent;
     }
 
@@ -299,6 +299,17 @@ describe("Bot cli commands unit tests", async () => {
         const spyLog = spy.on(console, "log");
         await botCliCommands.listActiveAgents();
         expect(spyLog).to.be.called.gt(0);
+    });
+
+    it("Should not initialize bot cli commands - missing arguments", async () => {
+        const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-defaultAgentSettingsPath.json";
+        const runConfigFile2 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-ormOptions.json";
+        botCliCommands = new BotCliCommands();
+        expect(botCliCommands.botConfig).to.be.undefined;
+        expect(botCliCommands.context).to.be.undefined;
+        expect(botCliCommands.ownerAddress).to.be.undefined;
+        await expect(botCliCommands.initEnvironment(runConfigFile1)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
+        await expect(botCliCommands.initEnvironment(runConfigFile2)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
     });
 
 });

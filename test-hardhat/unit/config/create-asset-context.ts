@@ -6,11 +6,11 @@ import rewire from "rewire";
 import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { TrackedStateConfig, TrackedStateConfigChain } from "../../../src/config/BotConfig";
-import { createTrackedStateAssetContext } from "../../../src/config/create-asset-context";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { artifacts } from "hardhat";
 import { MockChain } from "../../../src/mock/MockChain";
+import { BotChainConfig, BotConfig } from "../../../src/config/BotConfig";
+import { createActorAssetContext } from "../../../src/config/create-asset-context";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
@@ -44,7 +44,7 @@ describe("Create asset context unit tests", async () => {
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
         const chainId = 3;
-        const chainConfig: TrackedStateConfigChain = {
+        const chainConfig: BotChainConfig = {
             chainInfo: {
                 chainId: chainId,
                 name: "Ripple",
@@ -61,7 +61,7 @@ describe("Create asset context unit tests", async () => {
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
         const chainId = 3;
-        const chainConfig: TrackedStateConfigChain = {
+        const chainConfig: BotChainConfig = {
             chainInfo: {
                 chainId: chainId,
                 name: "Ripple",
@@ -73,13 +73,13 @@ describe("Create asset context unit tests", async () => {
             blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto"),
         }
-        const config: TrackedStateConfig = {
+        const config: BotConfig = {
             loopDelay: 1000,
             rpcUrl: "rpcUrl",
             chains: [chainConfig],
             nativeChainInfo: testNativeChainInfo
         }
-        await expect(createTrackedStateAssetContext(config, chainConfig)).to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`).and.be.an.instanceOf(Error);
+        await expect(createActorAssetContext(config, chainConfig)).to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`).and.be.an.instanceOf(Error);
     });
 
 });
