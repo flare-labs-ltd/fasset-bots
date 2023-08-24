@@ -21,25 +21,13 @@ import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 dotenv.config();
 
-export interface AgentBotConfigFile extends BotConfigFile {
-    defaultAgentSettingsPath: string;
-}
-
-export interface BotConfigFile extends TrackedStateConfigFile {
-    ormOptions: CreateOrmOptions;
-    chainInfos: BotChainConfigFile[];
+export interface BotConfigFile {
+    defaultAgentSettingsPath?: string; // only for agent bot
+    ormOptions?: CreateOrmOptions; // only for agent bot
+    chainInfos: BotChainInfo[];
     // notifierFile: string;
-}
-
-export interface BotChainConfigFile extends TrackedChainInfo {
-    walletUrl: string;
-    inTestnet?: boolean;
-}
-
-export interface TrackedStateConfigFile {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
-    chainInfos: TrackedChainInfo[];
     rpcUrl: string;
     attestationProviderUrls: string[];
     stateConnectorAddress: string;
@@ -49,37 +37,32 @@ export interface TrackedStateConfigFile {
     contractsJsonFile?: string;
 }
 
-export interface BotConfig extends TrackedStateConfig {
-    chains: BotConfigChain[];
-    orm: ORM;
-    notifier: Notifier;
+export interface BotChainInfo extends ChainInfo {
+    walletUrl?: string; // only for agent bot
+    inTestnet?: boolean; // only for agent bot, optional also for agent bot
+    indexerUrl: string;
+    // either one must be set
+    assetManager?: string;
+    fAssetSymbol?: string;
 }
 
-export interface TrackedStateConfig {
+export interface BotConfig {
+    orm?: ORM; // only for agent bot
+    notifier?: Notifier; // only for agent bot
     loopDelay: number;
     rpcUrl: string;
-    chains: TrackedStateConfigChain[];
+    chains: BotChainConfig[];
     nativeChainInfo: NativeChainInfo;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
 }
 
-export interface BotConfigChain extends TrackedStateConfigChain {
-    wallet: IBlockChainWallet;
-}
-
-export interface TrackedStateConfigChain {
+export interface BotChainConfig {
+    wallet?: IBlockChainWallet; // only for agent bot
     chainInfo: ChainInfo;
     blockchainIndexerClient: BlockchainIndexerHelper;
     stateConnector: IStateConnectorClient;
-    // either one must be set
-    assetManager?: string;
-    fAssetSymbol?: string;
-}
-
-export interface TrackedChainInfo extends ChainInfo {
-    indexerUrl: string;
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
@@ -98,20 +81,20 @@ export interface AgentSettingsConfig {
 }
 
 /**
- * Creates AgentBot configuration from initial run config file.
+ * Creates bot configuration from initial run config file.
  */
 export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string): Promise<BotConfig> {
-    const orm = await overrideAndCreateOrm(runConfig.ormOptions);
-    const chains: BotConfigChain[] = [];
+    const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
+    const chains: BotChainConfig[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createAgentBotConfigChain(chainInfo, orm.em, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
+        chains.push(await createBotChainConfig(chainInfo, orm ? orm.em : undefined, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
     }
     return {
         rpcUrl: runConfig.rpcUrl,
         loopDelay: runConfig.loopDelay,
         chains: chains,
         nativeChainInfo: runConfig.nativeChainInfo,
-        orm: orm,
+        orm: orm ? orm : undefined,
         notifier: new Notifier(),
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile
@@ -119,29 +102,11 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 }
 
 /**
- * Creates Tracked State (for challenger and liquidator) configuration from initial run config file, which is more lightweight.
+ * Creates BotChainConfig configuration from chain info.
  */
-export async function createTrackedStateConfig(runConfig: TrackedStateConfigFile, ownerAddress: string): Promise<TrackedStateConfig> {
-    const chains: TrackedStateConfigChain[] = [];
-    for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createTrackedStateConfigChain(chainInfo, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
-    }
-    return {
-        loopDelay: runConfig.loopDelay,
-        rpcUrl: runConfig.rpcUrl,
-        chains: chains,
-        nativeChainInfo: runConfig.nativeChainInfo,
-        addressUpdater: runConfig.addressUpdater,
-        contractsJsonFile: runConfig.contractsJsonFile
-    };
-}
-
-/**
- * Creates AgentBotConfigChain configuration from chain info.
- */
-export async function createAgentBotConfigChain(chainInfo: BotChainConfigFile, em: EM, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotConfigChain> {
-    const wallet = createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet);
-    const config = await createTrackedStateConfigChain(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
+export async function createBotChainConfig(chainInfo: BotChainInfo, em: EM | undefined, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotChainConfig> {
+    const wallet = chainInfo.walletUrl && em ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
+    const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
         wallet: wallet,
@@ -149,9 +114,9 @@ export async function createAgentBotConfigChain(chainInfo: BotChainConfigFile, e
 }
 
 /**
- * Creates TrackedStateConfigChain configuration from chain info.
+ * Helper for BotChainConfig configuration from chain info.
  */
-export async function createTrackedStateConfigChain(chainInfo: TrackedChainInfo, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<TrackedStateConfigChain> {
+export async function createChainConfig(chainInfo: BotChainInfo, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotChainConfig> {
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl);
     const stateConnector = await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
@@ -172,7 +137,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
         return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol
     });
     if (!vaultCollateralToken) {
-        throw Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
+        throw new Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
     }
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {

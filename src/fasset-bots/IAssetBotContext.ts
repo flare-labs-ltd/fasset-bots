@@ -21,10 +21,10 @@ export interface AgentBotDefaultSettings {
 }
 
 // lightweight context
-export interface IAssetTrackedStateContext {
+export interface IAssetActorContext {
+    nativeChainInfo: NativeChainInfo;
     blockchainIndexer: BlockchainIndexerHelper;
     collaterals: CollateralType[];
-    nativeChainInfo: NativeChainInfo;
     attestationProvider: AttestationHelper;
     // contracts
     ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>;

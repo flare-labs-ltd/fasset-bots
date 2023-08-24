@@ -1,11 +1,11 @@
-import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { logger } from "../utils/logger";
 
 export class TimeKeeper {
     constructor(
         public address: string,
-        public context: IAssetTrackedStateContext,
+        public context: IAssetActorContext,
         public intervalInMs: number,
     ) { }
 

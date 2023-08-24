@@ -1,11 +1,11 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
-import { IAssetAgentBotContext, IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { artifacts } from "../utils/artifacts";
 import { createFtsosHelper } from "../utils/fasset-helpers";
 import { fail } from "../utils/helpers";
-import { BotConfig, BotConfigChain, TrackedStateConfig, TrackedStateConfigChain } from "./BotConfig";
+import { BotConfig, BotChainConfig } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
 
 const AssetManager = artifacts.require('AssetManager');
@@ -21,53 +21,29 @@ const IERC20 = artifacts.require('IERC20');
 /**
  * Creates asset context needed for AgentBot.
  */
-export async function createAssetContext(botConfig: BotConfig, chainConfig: BotConfigChain): Promise<IAssetAgentBotContext> {
-    if (botConfig.contractsJsonFile) {
-        return await createAssetContextFromContracts(botConfig as BotConfig & { contractsJsonFile: string }, chainConfig);
-    } else if (botConfig.addressUpdater) {
-        return await createAssetContextFromAddressUpdater(botConfig as BotConfig & { addressUpdater: string }, chainConfig);
-    } else {
+export async function createAssetContext(botConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetAgentBotContext> {
+    if (!botConfig.addressUpdater && !botConfig.contractsJsonFile) {
         throw new Error('Either contractsJsonFile or addressUpdater must be defined');
     }
-}
-
-/**
- * Creates asset context from contracts.
- */
-async function createAssetContextFromContracts(botConfig: BotConfig & { contractsJsonFile: string }, chainConfig: BotConfigChain): Promise<IAssetAgentBotContext> {
-    const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
-    const ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
-    const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
-    const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
-    const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
-    const stableCoins = await createStableCoins(collaterals);
-    return {
-        nativeChainInfo: botConfig.nativeChainInfo,
-        chainInfo: chainConfig.chainInfo,
-        blockchainIndexer: chainConfig.blockchainIndexerClient,
-        wallet: chainConfig.wallet,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
-        assetManager: assetManager,
-        assetManagerController: assetManagerController,
-        ftsoRegistry: ftsoRegistry,
-        ftsoManager: await IFtsoManager.at(contracts.FtsoManager.address),
-        wNat: await WNat.at(contracts.WNat.address),
-        fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: ftsos['nat'],
-        assetFtso: ftsos['asset'],
-        collaterals: collaterals,
-        stablecoins: stableCoins,
-        ftsos: ftsos
-    };
-}
-
-/**
- * Creates asset context from address updater.
- */
-async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { addressUpdater: string }, chainConfig: BotConfigChain): Promise<IAssetAgentBotContext> {
-    const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater);
-    const ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
-    const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+    if (!chainConfig.wallet) { throw new Error("Missing wallet configuration"); }
+    let ftsoRegistry;
+    let assetManager;
+    let assetManagerController;
+    let ftsoManager;
+    let wNat;
+    if (botConfig.contractsJsonFile) {
+        const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
+        ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
+        [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
+        ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
+        wNat = await WNat.at(contracts.WNat.address)
+    } else {
+        const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
+        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+        [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager'));
+        wNat = await WNat.at(await addressUpdater.getContractAddress('WNat'));
+    }
     const collaterals = await assetManager.getCollateralTypes();
     const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
     const stableCoins = await createStableCoins(collaterals);
@@ -80,8 +56,8 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
         assetManager: assetManager,
         assetManagerController: assetManagerController,
         ftsoRegistry: ftsoRegistry,
-        ftsoManager: await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager')),
-        wNat: await WNat.at(await addressUpdater.getContractAddress('WNat')),
+        ftsoManager: ftsoManager,
+        wNat: wNat,
         fAsset: await FAsset.at(await assetManager.fAsset()),
         natFtso: ftsos['nat'],
         assetFtso: ftsos['asset'],
@@ -94,7 +70,7 @@ async function createAssetContextFromAddressUpdater(botConfig: BotConfig & { add
 /**
  * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
  */
-export async function createTrackedStateAssetContext(trackedStateConfig: TrackedStateConfig, chainConfig: TrackedStateConfigChain): Promise<IAssetTrackedStateContext> {
+export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetActorContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error('Either contractsJsonFile or addressUpdater must be defined');
     }
@@ -130,7 +106,7 @@ export async function createTrackedStateAssetContext(trackedStateConfig: Tracked
 
 // utils
 
-async function getAssetManagerAndController(chainConfig: BotConfigChain | TrackedStateConfigChain, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
+async function getAssetManagerAndController(chainConfig: BotChainConfig, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
     if (chainConfig.assetManager) {
         const assetManager = await AssetManager.at(chainConfig.assetManager);
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());

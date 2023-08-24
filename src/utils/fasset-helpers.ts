@@ -1,5 +1,5 @@
 import { IFtsoRegistryInstance } from "../../typechain-truffle";
-import { IAssetTrackedStateContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { artifacts } from "./artifacts";
@@ -29,13 +29,13 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(context: IAssetTrackedStateContext, caller: string): Promise<number> {
+export async function proveAndUpdateUnderlyingBlock(context: IAssetActorContext, caller: string): Promise<number> {
     const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
     await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller});
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 
-export async function attestationWindowSeconds(context: IAssetTrackedStateContext) : Promise<number> {
+export async function attestationWindowSeconds(context: IAssetActorContext) : Promise<number> {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
@@ -45,7 +45,7 @@ export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, sym
     return await IFtso.at(ftsoAddress);
 }
 
-export async function latestUnderlyingBlock(context: IAssetTrackedStateContext): Promise<IBlock | null>  {
+export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null>  {
     const blockHeight = await context.blockchainIndexer.getBlockHeight();
     const latestBlock = await context.blockchainIndexer.getBlockAt(blockHeight);
     return latestBlock;

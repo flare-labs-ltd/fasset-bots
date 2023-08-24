@@ -1,14 +1,14 @@
-import { TrackedStateConfig } from "../config/BotConfig";
 import { sleep } from "../utils/helpers";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { TrackedState } from "../state/TrackedState";
-import { createTrackedStateAssetContext } from "../config/create-asset-context";
 import { web3 } from "../utils/web3";
 import { Challenger } from "./Challenger";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { Liquidator } from "./Liquidator";
 import { SystemKeeper } from "./SystemKeeper";
 import { logger } from "../utils/logger";
+import { createActorAssetContext } from "../config/create-asset-context";
+import { BotConfig } from "../config/BotConfig";
 
 export class ActorBaseRunner {
     constructor(
@@ -46,14 +46,14 @@ export class ActorBaseRunner {
     }
 
     /**
-     * Creates ActorBase runner from TrackedStateConfig, native address and kind of actor (Challenger, Liquidator or SystemKeeper)
+     * Creates ActorBase runner from ActorConfig, native address and kind of actor (Challenger, Liquidator or SystemKeeper)
      * @param config - configs to run bot
      * @param address - actor's native address
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      */
-    static async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind): Promise<ActorBaseRunner> {
+    static async create(config: BotConfig, address: string, kind: ActorBaseKind): Promise<ActorBaseRunner> {
         logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
-        const assetContext = await createTrackedStateAssetContext(config, config.chains[0]);
+        const assetContext = await createActorAssetContext(config, config.chains[0]);
         logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(assetContext, lastBlock);

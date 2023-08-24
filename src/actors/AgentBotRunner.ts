@@ -71,6 +71,10 @@ export class AgentBotRunner {
             logger.info(`Owner's ${requireEnv('OWNER_ADDRESS')} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}.`);
         }
         logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} created AgentBotRunner.`);
+        if(!botConfig.orm || !botConfig.notifier) {
+            logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} cannot create AgentBotRunner. Missing notifier or orm in config.`);
+            throw new Error(`Missing notifier or orm in config for owner ${requireEnv('OWNER_ADDRESS')}.`);
+        }
         return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifier);
     }
 }
