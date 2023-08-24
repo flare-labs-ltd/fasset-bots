@@ -52,12 +52,12 @@ Example:
 WALLET_ENCRYPTION_PASSWORD=
 
 # NATIVE CHAIN
-USER_ADDRESS=
-USER_PRIVATE_KEY=
+OWNER_ADDRESS=
+OWNER_PRIVATE_KEY=
 
 # UNDERLYING CHAIN
-USER_UNDERLYING_ADDRESS=
-USER_UNDERLYING_PRIVATE_KEY=
+OWNER_UNDERLYING_ADDRESS=
+OWNER_UNDERLYING_PRIVATE_KEY=
 
 # RUN CONFIG PATH
 RUN_CONFIG_PATH=
@@ -72,11 +72,12 @@ INDEXER_API_KEY=
 ## Other bots (challenger, liquidator and system keeper)
 
 ### Other bots configuration file
-In order to run bots that rely on [TrackedState](../src/state/TrackedState.ts), following configuration must be provided (see interface `TrackedStateRunConfig` in [BotConfig.ts](../src/config/BotConfig.ts)). `ownerAddress` in `TrackedStateRunConfig` should be the native address that is going to be used for that bot.
+In order to run bots that rely on [TrackedState](../src/state/TrackedState.ts), following configuration must be provided (see interface `RunConfig` in [BotConfig.ts](../src/config/BotConfig.ts)).
 
 Example:
 ```json
 {
+  "loopDelay": 5000,
   "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
   "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
   "chainInfos": [
@@ -96,6 +97,6 @@ Example:
     "https://attestation-coston.aflabs.net/attestation-client"
   ],
   "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
-  "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
+  "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E"
 }
 ```

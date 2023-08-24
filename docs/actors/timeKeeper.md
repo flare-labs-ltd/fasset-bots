@@ -7,30 +7,17 @@ File [TimeKeeper.ts](../src/actors/TimeKeeper.ts) contains framework for such ac
 ## Prerequirements
 User needs:
 - **native address**.
-- To create [**running configuration**](../../src/config/BotConfig.ts).
-```javascript
-export interface TrackedStateRunConfig {
-    nativeChainInfo: NativeChainInfo;
-    chainInfos: BotChainInfo[];
-    rpcUrl: string,
-    attestationProviderUrls: string[],
-    stateConnectorAddress: string,
-    stateConnectorProofVerifierAddress: string,
-    ownerAddress: string,
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
-}
-```
+- To create [**running configuration**](../../src/config/BotConfig.ts)
+For more see [configuration part](../config.md).
 - To set environment **.env** in root directory.
 For more see [configuration part](../config.md).
 
 ### Initialization
-The constructor takes in **address** (native address) and **asset context** (IAssetTrackedStateContext) as inputs:
+The constructor takes in **address** (native address) and **asset context** (IAssetActorContext) as inputs:
 ```javascript
    constructor(
         public address: string,
-       public context: IAssetTrackedStateContext
+       public context: IAssetActorContext
    ) { }
 ```
 ## TimeKeeperBot Automation

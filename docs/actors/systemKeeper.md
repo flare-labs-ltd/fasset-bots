@@ -7,21 +7,8 @@ File [SystemKeeper.ts](../src/actors/SystemKeeper.ts) contains framework for suc
 ## Prerequirements
 User needs:
 - **native address**.
-- To create [**running configuration**](../../src/config/BotConfig.ts).
-```javascript
-export interface TrackedStateRunConfig {
-    nativeChainInfo: NativeChainInfo;
-    chainInfos: BotChainInfo[];
-    rpcUrl: string,
-    attestationProviderUrls: string[],
-    stateConnectorAddress: string,
-    stateConnectorProofVerifierAddress: string,
-    ownerAddress: string,
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
-}
-```
+- To create [**running configuration**](../../src/config/BotConfig.ts)
+For more see [configuration part](../config.md).
 - To set environment **.env** in root directory.
 For more see [configuration part](../config.md).
 

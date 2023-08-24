@@ -8,7 +8,7 @@ TrackedState represents non-persistent state that monitors native events and cal
 Initially, the constructor takes in **asset context** and **lastEventBlockHandled** as inputs:
 ```javascript
    constructor(
-       public context: IAssetTrackedStateContext,
+       public context: IAssetActorContext,
        private lastEventBlockHandled: number
    ) { }
 ```

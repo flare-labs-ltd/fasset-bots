@@ -8,23 +8,11 @@ File [Challenger.ts](../../src/actors/Challenger.ts) contains framework for such
 ## Prerequirements
 User needs:
 - *native address*.
-- To create [**running configuration**](../../src/config/BotConfig.ts).
-```javascript
-export interface TrackedStateRunConfig {
-    nativeChainInfo: NativeChainInfo;
-    chainInfos: BotChainInfo[];
-    rpcUrl: string,
-    attestationProviderUrls: string[],
-    stateConnectorAddress: string,
-    stateConnectorProofVerifierAddress: string,
-    ownerAddress: string,
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
-}
-```
+- To create [**running configuration**](../../src/config/BotConfig.ts)
+For more see [configuration part](../config.md).
 - To set environment **.env** in root directory.
 For more see [configuration part](../config.md).
+- To run script [**./run-challenger.ts**](../../src/run/run-challenger.ts) -> creates [**ActorBotRunner**](../../src/actors/ActorBotRunner.ts).
 
 ### Initialization
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) and **lastEventUnderlyingBlockHandled** as inputs:
