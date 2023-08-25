@@ -64,7 +64,7 @@ export class TrackedState {
         }
         // fAsset supply
         this.fAssetSupply = await this.context.fAsset.totalSupply();
-        logger.info(`Tracked State set fAssetSupply ${formatArgs(this.fAssetSupply)}`);
+        logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
         // prices
         [this.prices, this.trustedPrices] = await this.getPrices();
         logger.info(`Tracked State is successfully initialized.`);
@@ -102,22 +102,22 @@ export class TrackedState {
                 } else if (eventIs(event, this.context.assetManager, 'MintingExecuted')) {
                     logger.info(`Tracked State received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
-                    logger.info(`Tracked State set fAssetSupply ${formatArgs(this.fAssetSupply)}`);
+                    logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingExecuted(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'RedemptionRequested')) {
                     logger.info(`Tracked State received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
-                    logger.info(`Tracked State set fAssetSupply ${formatArgs(this.fAssetSupply)}`);
+                    logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleRedemptionRequested(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'SelfClose')) {
                     logger.info(`Tracked State received event 'SelfClose' with data ${formatArgs(event.args)}.`);
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
-                    logger.info(`Tracked State set fAssetSupply ${formatArgs(this.fAssetSupply)}`);
+                    logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleSelfClose(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'LiquidationPerformed')) {
                     logger.info(`Tracked State received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
                     this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
-                    logger.info(`Tracked State set fAssetSupply ${formatArgs(this.fAssetSupply)}`);
+                    logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
                     (await this.getAgentTriggerAdd(event.args.agentVault)).handleLiquidationPerformed(event.args);
                 } else if (eventIs(event, this.context.assetManager, 'CollateralTypeAdded')) {
                     logger.info(`Tracked State received event 'CollateralTypeAdded' with data ${formatArgs(event.args)}.`);
