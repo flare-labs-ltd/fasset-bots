@@ -8,6 +8,8 @@ import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
 import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";
 import { roundUBAToAmg } from "../fasset/Conversions";
+import { logger } from "../utils/logger";
+import { formatArgs } from "../utils/formatting";
 
 export type InitialAgentData = EventArgs<AgentVaultCreated>;
 
@@ -100,6 +102,7 @@ export class TrackedAgentState {
         this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
         this.agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
         this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
+        logger.info(`Tracked State Agent initialized with info ${formatArgs(agentInfo)}.`);
     }
 
     handleStatusChange(status: AgentStatus, timestamp?: BN): void {
@@ -110,6 +113,7 @@ export class TrackedAgentState {
             this.liquidationStartTimestamp = timestamp;
         }
         this.status = status;
+        logger.info(`Tracked State Agent changed status: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: minting
@@ -117,6 +121,7 @@ export class TrackedAgentState {
         const mintingUBA = toBN(args.valueUBA);
         const poolFeeUBA = this.calculatePoolFee(toBN(args.feeUBA));
         this.reservedUBA = this.reservedUBA.add(mintingUBA).add(poolFeeUBA);
+        logger.info(`Tracked State Agent handled collateral reservation: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleMintingExecuted(args: EventArgs<MintingExecuted>) {
@@ -132,46 +137,56 @@ export class TrackedAgentState {
         if (collateralReservationId > 0) {  // collateralReservationId == 0 for self-minting
             this.reservedUBA = this.reservedUBA.sub(mintedAmountUBA).sub(poolFeeUBA);
         }
+        logger.info(`Tracked State Agent handled minting executed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleMintingPaymentDefault(args: EventArgs<MintingPaymentDefault>) {
         this.reservedUBA = this.reservedUBA.sub(toBN(args.reservedAmountUBA));
+        logger.info(`Tracked State Agent handled minting payment default: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleCollateralReservationDeleted(args: EventArgs<CollateralReservationDeleted>) {
         this.reservedUBA = this.reservedUBA.sub(toBN(args.reservedAmountUBA));
+        logger.info(`Tracked State Agent handled collateral reservation deleted: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: redemption and self-close
     handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
         this.updateRedeemingUBA(args.requestId, toBN(args.valueUBA));
+        logger.info(`Tracked State Agent handled redemption requested: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedemptionPerformed(args: EventArgs<RedemptionPerformed>): void {
         this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
+        logger.info(`Tracked State Agent handled redemption performed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedemptionPaymentFailed(args: EventArgs<RedemptionPaymentFailed>): void {
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
+        logger.info(`Tracked State Agent handled redemption payment failed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedemptionPaymentBlocked(args: EventArgs<RedemptionPaymentBlocked>): void {
         this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUnderlyingUBA);
+        logger.info(`Tracked State Agent handled redemption payment blocked: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedemptionDefault(args: EventArgs<RedemptionDefault>): void {
         this.updateRedeemingUBA(args.requestId, toBN(args.redemptionAmountUBA).neg());
+        logger.info(`Tracked State Agent handled redemption default: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleRedeemedInCollateral(args: EventArgs<RedeemedInCollateral>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.redemptionAmountUBA));
+        logger.info(`Tracked State Agent handled redeemed in collateral: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleSelfClose(args: EventArgs<SelfClose>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
+        logger.info(`Tracked State Agent handled self close: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     private updateRedeemingUBA(requestId: BNish, valueUBA: BN) {
@@ -188,24 +203,29 @@ export class TrackedAgentState {
     // handlers: liquidation
     handleLiquidationPerformed(args: EventArgs<LiquidationPerformed>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
+        logger.info(`Tracked State Agent handled liquidation performed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: underlying withdrawal
     handleUnderlyingWithdrawalAnnounced(args: EventArgs<UnderlyingWithdrawalAnnounced>): void {
         this.announcedUnderlyingWithdrawalId = args.announcementId;
+        logger.info(`Tracked State Agent handled underlying withdrawal announced: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleUnderlyingWithdrawalConfirmed(args: EventArgs<UnderlyingWithdrawalConfirmed>): void {
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.sub(args.spentUBA);
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
+        logger.info(`Tracked State Agent handled underlying withdrawal confirmed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleUnderlyingWithdrawalCancelled(): void {
         this.announcedUnderlyingWithdrawalId = BN_ZERO;
+        logger.info(`Tracked State Agent handled underlying withdrawal cancelled: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleUnderlyingBalanceToppedUp(args: EventArgs<UnderlyingBalanceToppedUp>): void {
         this.underlyingBalanceUBA = this.underlyingBalanceUBA.add(args.depositedUBA);
+        logger.info(`Tracked State Agent handled underlying balance topped up: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: agent availability
@@ -214,37 +234,45 @@ export class TrackedAgentState {
         Object.defineProperty(this.agentSettings, 'mintingVaultCollateralRatioBIPS', toBN(args.mintingVaultCollateralRatioBIPS));
         Object.defineProperty(this.agentSettings, 'mintingPoolCollateralRatioBIPS', toBN(args.mintingPoolCollateralRatioBIPS));
         Object.defineProperty(this.agentSettings, 'feeBIPS', toBN(args.feeBIPS));
+        logger.info(`Tracked State Agent handled agent available: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleAvailableAgentExited() {
         this.publiclyAvailable = false;
+        logger.info(`Tracked State Agent handled agent exited available: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // handlers: dust
     handleDustChanged(args: EventArgs<DustChanged>): void {
         this.dustUBA = args.dustUBA;
+        logger.info(`Tracked State Agent handled dust changed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // agent state changing
     depositVaultCollateral(token: string, value: BN): void {
         this.totalVaultCollateralWei[token] = this.totalVaultCollateralWei[token] ? this.totalVaultCollateralWei[token].add(value) : value;
+        logger.info(`Tracked State Agent handled vault collateral deposited: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     withdrawVaultCollateral(token: string, value: BN): void {
         this.totalVaultCollateralWei[token] = this.totalVaultCollateralWei[token].sub(value);
+        logger.info(`Tracked State Agent handled vault collateral withdrawal: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     // agent state changing
     depositPoolCollateral(value: BN): void {
         this.totalPoolCollateralNATWei = this.totalPoolCollateralNATWei.add(value);
+        logger.info(`Tracked State Agent handled pool collateral deposited: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     withdrawPoolCollateral(value: BN): void {
         this.totalPoolCollateralNATWei = this.totalPoolCollateralNATWei.sub(value);
+        logger.info(`Tracked State Agent handled pool collateral withdrawal: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleAgentSettingChanged(name: string, value: string | BN): void {
         (this.agentSettings as any)[name] = web3Normalize(value);
+        logger.info(`Tracked State Agent handled agent setting changed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     collateralBalance(collateral: CollateralType): BN {
@@ -295,10 +323,41 @@ export class TrackedAgentState {
         const vaultTransition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralClass.VAULT, this.agentSettings.vaultCollateralToken), timestamp);
         const poolTransition = this.possibleLiquidationTransitionForCollateral(this.parent.collaterals.get(CollateralClass.POOL, this.parent.poolWNatCollateral.token), timestamp);
         // return the higher status (more severe)
+        logger.info(`Tracked State Agent handled possible liquidation transition; vaultTransition: ${vaultTransition}, poolTransition: ${poolTransition}.`);
         return vaultTransition >= poolTransition ? vaultTransition : poolTransition;
     }
 
     calculatePoolFee(mintingFeeUBA: BN): BN {
         return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(toBN(this.agentSettings.poolFeeShareBIPS)).divn(MAX_BIPS));
+    }
+
+    getTrackedStateAgentSettings() {
+        return {
+            vaultAddress: this.vaultAddress,
+            underlyingAddress: this.underlyingAddress,
+            collateralPoolAddress: this.collateralPoolAddress,
+            vaultCollateralToken: this.agentSettings.vaultCollateralToken,
+            feeBIPS: this.agentSettings.feeBIPS,
+            poolFeeShareBIPS: this.agentSettings.poolFeeShareBIPS,
+            mintingVaultCollateralRatioBIPS: this.agentSettings.mintingVaultCollateralRatioBIPS,
+            mintingPoolCollateralRatioBIPS: this.agentSettings.mintingPoolCollateralRatioBIPS,
+            poolExitCollateralRatioBIPS: this.agentSettings.poolExitCollateralRatioBIPS,
+            buyFAssetByAgentFactorBIPS: this.agentSettings.buyFAssetByAgentFactorBIPS,
+            poolTopupCollateralRatioBIPS: this.agentSettings.poolTopupCollateralRatioBIPS,
+            poolTopupTokenPriceFactorBIPS: this.agentSettings.poolTopupTokenPriceFactorBIPS,
+            status: this.status,
+            publiclyAvailable: this.publiclyAvailable,
+            totalVaultCollateralWei: this.totalVaultCollateralWei,
+            totalPoolCollateralNATWei: this.totalPoolCollateralNATWei,
+            ccbStartTimestamp: this.ccbStartTimestamp,
+            liquidationStartTimestamp: this.liquidationStartTimestamp,
+            announcedUnderlyingWithdrawalId: this.announcedUnderlyingWithdrawalId,
+            reservedUBA: this.reservedUBA,
+            mintedUBA: this.mintedUBA,
+            redeemingUBA: this.redeemingUBA,
+            poolRedeemingUBA: this.poolRedeemingUBA,
+            dustUBA: this.dustUBA,
+            underlyingBalanceUBA: this.underlyingBalanceUBA
+        }
     }
 }

@@ -618,4 +618,12 @@ describe("Tracked state tests", async () => {
         expect(getCollateral.safetyMinCollateralRatioBIPS.toString()).to.eq(newSafetyMinCollateralRatioBIPS);
     });
 
+    it("Should return getTrackedStateAgentSettings", async () => {
+        trackedState.createAgent(agentCreatedArgs);
+        const agent = trackedState.getAgent(agentCreatedArgs.agentVault);
+        const settings = agent?.getTrackedStateAgentSettings();
+        expect(settings?.vaultAddress).to.eq(agentCreatedArgs.agentVault);
+        expect(settings?.collateralPoolAddress).to.eq(agentCreatedArgs.collateralPool);
+    });
+
 });
