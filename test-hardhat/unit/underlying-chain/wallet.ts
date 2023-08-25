@@ -18,7 +18,7 @@ const privateKey2 = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092A
 describe("Wallet keys tests", async () => {
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-wallet-keys-test.db' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-wallet-keys-test.db', type: 'sqlite' }));
         dbWallet = new DBWalletKeys(orm.em);
     })
 

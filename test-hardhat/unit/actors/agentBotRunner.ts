@@ -24,7 +24,7 @@ describe("Agent bot runner tests", async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
     });
 
     beforeEach(async () => {

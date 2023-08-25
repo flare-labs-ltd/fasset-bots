@@ -26,7 +26,7 @@ describe("XRP wallet tests", async () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
@@ -83,7 +83,7 @@ describe("BTC wallet tests", async () => {
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });
@@ -118,7 +118,7 @@ describe("DOGE wallet tests", async () => {
     const amountToSendSatoshies = 100000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });

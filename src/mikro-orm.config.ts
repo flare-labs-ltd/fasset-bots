@@ -3,10 +3,10 @@ import { AbstractSqlDriver } from "@mikro-orm/knex";
 import { AgentEntity, AgentMinting, AgentRedemption } from "./entities/agent";
 import { WalletAddress } from "./entities/wallet";
 import { createOrm, CreateOrmOptions, ORM } from "./config/orm";
+import { PostgreSqlDriver } from "@mikro-orm/postgresql";
 
-const options: Options<AbstractSqlDriver> = {
+const options: Options<AbstractSqlDriver | PostgreSqlDriver> = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
-    type: 'sqlite',
     dbName: 'fasset-bots.db',
     debug: false
 }

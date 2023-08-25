@@ -26,6 +26,6 @@ const testOptions: CreateOrmOptions = {
     schemaUpdate: 'full',
 }
 
-export function createTestOrmOptions(testOptionsOverride: CreateOrmOptions = {}) {
+export function createTestOrmOptions(testOptionsOverride: CreateOrmOptions = { type: 'sqlite' }) {
     return { ...testOptions, ...testOptionsOverride };
 }

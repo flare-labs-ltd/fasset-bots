@@ -44,7 +44,7 @@ describe("Challenger tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         challengerAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
     });
 
     beforeEach(async () => {

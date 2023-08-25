@@ -42,7 +42,7 @@ describe("Tracked agent state tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);

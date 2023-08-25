@@ -30,7 +30,8 @@ Example:
     "ormOptions": {
       "dbName": "fasset-bots-coston.db",
       "debug": false,
-      "allowGlobalContext": true
+      "allowGlobalContext": true,
+      "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": [

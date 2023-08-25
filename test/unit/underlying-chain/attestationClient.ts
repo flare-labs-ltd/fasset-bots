@@ -29,7 +29,7 @@ describe.skip("Attestation client unit tests", async () => {
     let orm: ORM;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(sourceId, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS, indexerUrl);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);

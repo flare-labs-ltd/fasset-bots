@@ -35,7 +35,7 @@ describe("Agent bot unit tests", async () => {
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
     });
 
     beforeEach(async () => {

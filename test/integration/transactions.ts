@@ -28,7 +28,7 @@ describe("XRP transaction integration tests", async () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
         blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });

@@ -33,7 +33,7 @@ describe("System keeper tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         systemKeeperAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
     });
 
     beforeEach(async () => {

@@ -35,7 +35,7 @@ describe("Liquidator tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         liquidatorAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
     });
 
     beforeEach(async () => {
