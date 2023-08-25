@@ -86,9 +86,9 @@ export class Challenger extends ActorBase {
         // Underlying chain events
         const from = this.lastEventUnderlyingBlockHandled;
         const to = await this.getLatestUnderlyingBlock();
-        logger.info(`Challenger ${this.address} started reading unhandled underlying transactions FROM ${from}.`);
+        logger.info(`Challenger ${this.address} started reading unhandled underlying transactions FROM ${from} TO ${to}.`);
         const transactions = await this.state.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
-        logger.info(`Challenger ${this.address} finished reading unhandled underlying transactions TO ${to}.`);
+        logger.info(`Challenger ${this.address} finished reading unhandled underlying transactions FROM ${from} TO ${to}.`);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
         }
