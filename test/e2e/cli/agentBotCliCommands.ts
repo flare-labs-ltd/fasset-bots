@@ -5,8 +5,11 @@ import spies from "chai-spies";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/verification/sources/sources";
+import chaiAsPromised from "chai-as-promised";
+use(chaiAsPromised);
 use(spies);
 
+const fAssetSymbol = "FtestXRP";
 describe("AgentBot cli commands unit tests", async () => {
     let botCliCommands: BotCliCommands;
     let accounts: string[];
@@ -18,7 +21,7 @@ describe("AgentBot cli commands unit tests", async () => {
     });
 
     it("Should create commands", async () => {
-        const commands = await BotCliCommands.create();
+        const commands = await BotCliCommands.create(fAssetSymbol);
         expect(commands.botConfig.chains[0].chainInfo.chainId).to.eq(SourceId.XRP);
     });
 
@@ -27,7 +30,7 @@ describe("AgentBot cli commands unit tests", async () => {
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
         expect(botCliCommands.ownerAddress).to.be.undefined;
-        await botCliCommands.initEnvironment();
+        await botCliCommands.initEnvironment(fAssetSymbol);
         expect(botCliCommands.botConfig.orm).to.not.be.null;
         expect(botCliCommands.context).to.not.be.null;
         expect(botCliCommands.ownerAddress).to.not.be.null;
@@ -35,12 +38,16 @@ describe("AgentBot cli commands unit tests", async () => {
 
     it("Should create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
-        await botCliCommands.initEnvironment();
+        await botCliCommands.initEnvironment(fAssetSymbol);
         const agent = await botCliCommands.createAgentVault();
         expect(agent.underlyingAddress).is.not.null;
         expect(agent.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
         await agent.announceDestroy();
+    });
+
+    it("Should not create  bot cli commands - invalid 'fAssetSymbol'", async () => {
+        await expect(BotCliCommands.create("invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
     });
 
 });

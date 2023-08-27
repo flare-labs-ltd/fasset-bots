@@ -42,7 +42,10 @@ export class UserBot {
         // create config
         this.botConfig = await createBotConfig(runConfig, this.nativeAddress);
         const chainConfig = this.botConfig.chains.find(cc => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) throw new CommandLineError("Invalid FAsset symbol");
+        if (chainConfig == null) {
+            logger.error(`User ${requireEnv('USER_ADDRESS')} has invalid FAsset symbol.`);
+            throw new CommandLineError("Invalid FAsset symbol");
+        }
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         this.underlyingAddress = requireEnv('USER_UNDERLYING_ADDRESS');
@@ -118,7 +121,7 @@ export class UserBot {
         for (const req of requests) {
             const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
             console.log(`    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}`);
-            loggedRequests = loggedRequests +  `User ${requireEnv('USER_ADDRESS')} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
+            loggedRequests = loggedRequests + `User ${requireEnv('USER_ADDRESS')} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
         }
         logger.info(loggedRequests);
     }

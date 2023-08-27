@@ -27,6 +27,7 @@ use(spies);
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require('StateConnectorMock');
+const fAssetSymbol = "FtestXRP";
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -308,8 +309,8 @@ describe("Bot cli commands unit tests", async () => {
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
         expect(botCliCommands.ownerAddress).to.be.undefined;
-        await expect(botCliCommands.initEnvironment(runConfigFile1)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
-        await expect(botCliCommands.initEnvironment(runConfigFile2)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
+        await expect(botCliCommands.initEnvironment(fAssetSymbol, runConfigFile1)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
+        await expect(botCliCommands.initEnvironment(fAssetSymbol, runConfigFile2)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
     });
 
 });

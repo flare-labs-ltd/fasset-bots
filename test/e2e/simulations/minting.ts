@@ -23,6 +23,7 @@ const buyPoolTokens = toBNExp(700, 18);
 const underlyingMinterAddress = "rw2M8AFty9wd5A66Jz4M1bmFaeDKrB4Bc1";
 
 const runConfigFile = "./test/e2e/simulations/run-config-simulation.json";
+const fAssetSymbol = "FtestXRP";
 
 describe.skip("Agent bot simulation - coston", async () => {
     let accounts: string[];
@@ -39,7 +40,7 @@ describe.skip("Agent bot simulation - coston", async () => {
     before(async () => {
         // init bot cli commands
         botCliCommands = new BotCliCommands();
-        await botCliCommands.initEnvironment(runConfigFile);
+        await botCliCommands.initEnvironment(fAssetSymbol, runConfigFile);
         // init web3 and get addresses
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         ownerAddress = accounts[0];

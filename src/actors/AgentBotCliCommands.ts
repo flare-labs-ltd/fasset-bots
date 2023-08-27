@@ -6,7 +6,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
-import { BN_ZERO, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import chalk from 'chalk';
@@ -25,16 +25,16 @@ export class BotCliCommands {
     botConfig!: BotConfig;
     agentSettingsPath!: string;
 
-    static async create(runConfigFile: string = RUN_CONFIG_PATH) {
+    static async create(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH) {
         const bot = new BotCliCommands();
-        await bot.initEnvironment(runConfigFile);
+        await bot.initEnvironment(fAssetSymbol, runConfigFile);
         return bot;
     }
 
     /**
      * Initializes asset context from AgentBotRunConfig
      */
-    async initEnvironment(runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
+    async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
         logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} started to initialize cli environment.`);
         console.log(chalk.cyan('Initializing environment...'));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as BotConfigFile;
@@ -56,7 +56,12 @@ export class BotCliCommands {
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         // create context
-        this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
+        const chainConfig = this.botConfig.chains.find(cc => cc.fAssetSymbol === fAssetSymbol);
+        if (chainConfig == null) {
+            logger.error(`Owner ${requireEnv('OWNER_ADDRESS')} has invalid FAsset symbol.`);
+            throw new CommandLineError("Invalid FAsset symbol");
+        }
+        this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         const underlyingAddress = requireEnv('OWNER_UNDERLYING_ADDRESS');
         const underlyingPrivateKey = requireEnv('OWNER_UNDERLYING_PRIVATE_KEY');
