@@ -28,11 +28,11 @@ In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `node d
 
 The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The runner will initiate needed context and connect to native network (Flare/Songbird). Then it will constantly check if any active agent stored in persistent state should handle any incoming events (see [Agent](./docs/actors/agent.md)).
 
-In order to create new agent, deposit funds and some do some other manual operations, command line interface is provided [`fasset-bots-cli`](./docs/cli.md). You can access it with opening another terminal and run command `yarn fasset-bots-cli`.
+In order to create new agent, deposit funds and some do some other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot`.
 
-## Command line interface for Agent bots `fasset-bots-cli`
+## Command line interface for Agent bots `agent-bot`
 
-Command line interface can be access by running command `yarn fasset-bots-cli`. For more see [here](./docs/cli.md).
+Command line interface can be access by running command `yarn agent-bot`. For more see [here](./docs/cli.md).
 
 ## How to run other bots (Challenger, Liquidator and SystemKeeper)
 

@@ -1,4 +1,4 @@
-# CLI `fasset-bots-cli`
+# CLI `agent-bot`
 
 ## Setup
 
@@ -6,7 +6,7 @@ Configuration and environment file must be provided, before running cli commands
 
 ## How to use
 
-Usage: `fasset-bots-cli [command] <arg>`
+Usage: `agent-bot [command] <arg> -f [fAssetSymbol]`
 
 Available commands:
 
