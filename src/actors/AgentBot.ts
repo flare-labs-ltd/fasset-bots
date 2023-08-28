@@ -21,6 +21,8 @@ import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
+import { readFileSync } from "fs";
+import { BotConfigFile } from "../config/BotConfig";
 
 const AgentVault = artifacts.require('AgentVault');
 const CollateralPool = artifacts.require('CollateralPool');
@@ -228,6 +230,55 @@ export class AgentBot {
             await rootEm.persistAndFlush(agentEnt);
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished checking if daily task need to be handled.`);
+    }
+
+    /**
+     * Checks there any claims in collateral pool and agent vault.
+     */
+    async checkForClaims(): Promise<void> {
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started checking for claims.`);
+
+            const AddressUpdater = artifacts.require('AddressUpdater');
+            const IFtsoRewardManager = artifacts.require('IFtsoRewardManager');
+            // const IDistributionToDelegators = artifacts.require('IDistributionToDelegators');
+
+            const addressUpdater = await AddressUpdater.at(?);
+            // TODO test checkforClaims
+            // FTSO rewards
+            const ftsoRewardManager = await IFtsoRewardManager.at(await addressUpdater.getContractAddress('FtsoRewardManager'));
+            const notClaimedRewardsAgentVault: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.vaultAddress);
+            const notClaimedRewardsCollateralPool: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.collateralPool.address);
+
+            if (notClaimedRewardsAgentVault.length > 0) {
+                const unClaimedEpochAgentVault = notClaimedRewardsAgentVault[notClaimedRewardsAgentVault.length - 1];
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for vault ${this.agent.vaultAddress} for epochs`);
+                await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochAgentVault, this.agent.vaultAddress);
+            }
+            if (notClaimedRewardsCollateralPool.length > 0) {
+                const unClaimedEpochCollateralPool = notClaimedRewardsCollateralPool[notClaimedRewardsCollateralPool.length - 1];
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for pool ${this.agent.collateralPool.address}.`);
+                await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochCollateralPool);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+
+/*
+            // airdrop distribution rewards
+            // TODO: only on coston2 and flare
+            // TODO: is it enough to input only last month, catch revert if nothing to claim?
+            const distributionToDelegators = await IDistributionToDelegators.at(await addressUpdater.getContractAddress('DistributionToDelegators'));
+
+            const {1: endMonthVault} = await distributionToDelegators.getClaimableMonths({ from: this.agent.vaultAddress });
+            const {1: endMonthPool} = await distributionToDelegators.getClaimableMonths({ from: this.agent.collateralPool.address });
+            logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for vault ${this.agent.vaultAddress} for epochs`);
+            await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress);
+            logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for pool ${this.agent.collateralPool.address}.`);
+            await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool);
+*/
+        } catch (error) {
+            console.error(`Error handling claims for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling claims: ${error}`);
+        }
     }
 
     /**
