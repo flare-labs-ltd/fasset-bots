@@ -14,9 +14,11 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
+import { artifacts } from "../utils/artifacts";
 dotenv.config();
 
 const RUN_CONFIG_PATH: string = requireEnv('RUN_CONFIG_PATH');
+const CollateralPool = artifacts.require('CollateralPool');
 
 export class BotCliCommands {
 
@@ -293,4 +295,24 @@ export class BotCliCommands {
         const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifier!);
         return { agentBot, agentEnt };
     }
+
+    /**
+     * Delegates pool collateral.
+     */
+    async delegatePoolCollateral(agentVault: string, delegates: string[], amounts: string[]) {
+        const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
+        await collateralPool.delegate(delegates, amounts);
+        logger.info(`Agent ${agentVault} delegated pool collateral to ${delegates} with amounts ${amounts}.`);
+    }
+
+    /**
+     * Undelegates pool collateral.
+     */
+        async undelegatePoolCollateral(agentVault: string) {
+            const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+            const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
+            await collateralPool.undelegateAll();
+            logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
+        }
 }

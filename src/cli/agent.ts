@@ -5,8 +5,8 @@ import { BotCliCommands } from "../actors/AgentBotCliCommands";
 const program = new Command();
 
 program
-  .name("agent-bot")
-  .description("Command line commands for AgentBot");
+    .name("agent-bot")
+    .description("Command line commands for AgentBot");
 
 program.command("create")
     .description("create new agent vault")
@@ -148,6 +148,20 @@ program.command("listAgents")
     .action(async () => {
         const cli = await BotCliCommands.create();
         await cli.listActiveAgents();
+    });
+
+program.command("delegatePoolCollateral")
+    .description("delegate pool collateral")
+    .action(async (agentVault: string, delegates: string[], amounts: string[]) => {
+        const cli = await BotCliCommands.create();
+        await cli.delegatePoolCollateral(agentVault, delegates, amounts);
+    });
+
+program.command("undelegatePoolCollateral")
+    .description("undelegate pool collateral")
+    .action(async (agentVault: string) => {
+        const cli = await BotCliCommands.create();
+        await cli.undelegatePoolCollateral(agentVault);
     });
 
 toplevelRun(async () => {

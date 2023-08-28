@@ -31,14 +31,16 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
     let assetManagerController;
     let ftsoManager;
     let wNat;
+    let addressUpdater;
     if (botConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
         ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
         [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
         ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
         wNat = await WNat.at(contracts.WNat.address)
+        addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
     } else {
-        const addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
+        addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
         ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
         [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
         ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager'));
@@ -63,7 +65,8 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
         assetFtso: ftsos['asset'],
         collaterals: collaterals,
         stablecoins: stableCoins,
-        ftsos: ftsos
+        ftsos: ftsos,
+        addressUpdater: addressUpdater
     };
 }
 

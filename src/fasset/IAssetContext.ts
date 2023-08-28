@@ -1,4 +1,4 @@
-import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IERC20Instance, IFtsoManagerInstance, IFtsoRegistryInstance, IIFtsoInstance, WNatInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IERC20Instance, IFtsoManagerInstance, IFtsoRegistryInstance, IIFtsoInstance, WNatInstance } from "../../typechain-truffle";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -39,4 +39,5 @@ export interface IAssetContext {
     stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
     ftsos: Record<string, ContractWithEvents<IIFtsoInstance, IIFtsoEvents>>;
     collaterals: CollateralType[];
+    addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
 }

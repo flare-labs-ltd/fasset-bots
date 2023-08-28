@@ -147,7 +147,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // native chain info
     const nativeChainInfo = testNativeChainInfo;
     // return context
-    return { nativeChainInfo, chainInfo, blockchainIndexer, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, stablecoins, collaterals, ftsos };
+    return { nativeChainInfo, chainInfo, blockchainIndexer, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, stablecoins, collaterals, ftsos, addressUpdater};
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext): TestAssetTrackedStateContext {
