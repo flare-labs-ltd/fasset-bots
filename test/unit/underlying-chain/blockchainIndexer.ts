@@ -116,7 +116,8 @@ describe("XRP blockchain tests via indexer", async () => {
                         Amount: 100,
                         Destination: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
                         meta: {
-                            delivered_amount: '100'
+                            delivered_amount: '100',
+                            TransactionResult: 'tesSUCCESS'
                         }
                     }
                 }
@@ -131,7 +132,8 @@ describe("XRP blockchain tests via indexer", async () => {
                         Amount: 100,
                         Fee: 15,
                         meta: {
-                            delivered_amount: '100'
+                            delivered_amount: '100',
+                            TransactionResult: 'tesSUCCESS'
                         }
                     }
                 }

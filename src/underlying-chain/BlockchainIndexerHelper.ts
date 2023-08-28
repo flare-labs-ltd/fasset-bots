@@ -236,7 +236,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             }
             return [[response.Account, response.Fee ? toBN(response.Fee) : toBN(0)]];
         } else {
-            if (data.isNativePayment) {
+            if (data.isNativePayment && this.successStatus(data) === TX_SUCCESS) {
                 /* istanbul ignore next */
                 const metaData = response.meta || (response as any).metaData;
                 return [[response.Destination, toBN(metaData.delivered_amount as string)]];
