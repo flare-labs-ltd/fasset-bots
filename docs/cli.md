@@ -26,6 +26,8 @@ Available commands:
 * `confirmUnderlyingWithdrawal <agentVault> <transactionHash>` - confirm underlying withdrawal with transaction hash
 * `cancelUnderlyingWithdrawal <agentVault>` - cancel underlying withdrawal announcement
 * `listAgents` - list active agent from persistent state
+* `delegatePoolCollateral <agentVault> <recipient> <bips>`- delegate pool collateral, where <bips> is basis points (1/100 of one percent)
+* `undelegatePoolCollateral <agentVault>`- undelegate pool collateral
 
 
 
