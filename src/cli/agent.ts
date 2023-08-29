@@ -152,6 +152,9 @@ program.command("listAgents")
 
 program.command("delegatePoolCollateral")
     .description("delegate pool collateral")
+    .argument("<agentVaultAddress>")
+    .argument("<delegates>")
+    .argument("<amounts>")
     .action(async (agentVault: string, delegates: string[], amounts: string[]) => {
         const cli = await BotCliCommands.create();
         await cli.delegatePoolCollateral(agentVault, delegates, amounts);
@@ -159,6 +162,7 @@ program.command("delegatePoolCollateral")
 
 program.command("undelegatePoolCollateral")
     .description("undelegate pool collateral")
+    .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const cli = await BotCliCommands.create();
         await cli.undelegatePoolCollateral(agentVault);
