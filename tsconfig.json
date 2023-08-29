@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2018",
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "typechain/**/*.ts", "typechain-types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
