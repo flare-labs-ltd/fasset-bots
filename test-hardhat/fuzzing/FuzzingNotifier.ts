@@ -141,4 +141,10 @@ export class FuzzingNotifier {
     sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
         this.notifier.sendRedemptionRequestPaymentProof(this.eventFormatter.formatAddress(agentVault), requestId);
     }
+    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, delegates: string[], amounts: string[]) {
+        this.notifier.sendDelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral, delegates, amounts);
+    }
+    sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
+        this.sendUndelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral,);
+    }
 }

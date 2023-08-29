@@ -55,6 +55,8 @@ const BUY_POOL_TOKENS = "BUY POOL TOKENS";
 const VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT";
 const WITHDRAW_POOL_FEES = "WITHDRAW POOL FEES";
 const BALANCE_POOL_FEES = "BALANCE POOL FEES";
+const POOL_DELEGATE = "POOL DELEGATION";
+const POOL_UNDELEGATE = "POOL UNDELEGATION";
 
 
 export class Notifier {
@@ -252,18 +254,26 @@ export class Notifier {
     }
 
     sendMintingStared(agentVault: string, requestId: string) {
-        this.send(MINTING_STARTED,  `Minting ${requestId} started for ${agentVault}.`)
+        this.send(MINTING_STARTED, `Minting ${requestId} started for ${agentVault}.`)
     }
 
     sendRedemptionStarted(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_STARTED,  `Redemption ${requestId} started for ${agentVault}.`)
+        this.send(REDEMPTION_STARTED, `Redemption ${requestId} started for ${agentVault}.`)
     }
 
     sendRedemptionPaid(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_PAID,  `Redemption ${requestId} was paid for ${agentVault}.`)
+        this.send(REDEMPTION_PAID, `Redemption ${requestId} was paid for ${agentVault}.`)
     }
 
     sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_PAYMENT_PROOF,  `Payment proof for redemption ${requestId} was requested for ${agentVault}.`)
+        this.send(REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${agentVault}.`)
+    }
+
+    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, delegates: string[], amounts: string[]) {
+        this.send(POOL_DELEGATE, `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${delegates} with ${amounts}.`);
+    }
+
+    sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
+        this.send(POOL_UNDELEGATE, `Agent ${agentVault} undelegated all pool collateral ${poolCollateral}.`);
     }
 }

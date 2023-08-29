@@ -280,4 +280,16 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send pool collateral delegated", async () => {
+        const spySend = spy.on(notifier, "sendDelegatePoolCollateral");
+        notifier.sendDelegatePoolCollateral("agentVault", "pool", ["acc1", "acc2"], ["1000", "2000"]);
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send pool collateral undelegated", async () => {
+        const spySend = spy.on(notifier, "sendUndelegatePoolCollateral");
+        notifier.sendUndelegatePoolCollateral("agentVault", "pool");
+        expect(spySend).to.have.been.called.once;
+    });
+
 });

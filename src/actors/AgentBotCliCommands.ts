@@ -302,17 +302,19 @@ export class BotCliCommands {
     async delegatePoolCollateral(agentVault: string, delegates: string[], amounts: string[]) {
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
-        await collateralPool.delegate(delegates, amounts);
+        await collateralPool.delegate(delegates, amounts, { from: agentEnt.ownerAddress });
+        this.botConfig.notifier!.sendDelegatePoolCollateral(agentVault, collateralPool.address, delegates, amounts);
         logger.info(`Agent ${agentVault} delegated pool collateral to ${delegates} with amounts ${amounts}.`);
     }
 
     /**
      * Undelegates pool collateral.
      */
-        async undelegatePoolCollateral(agentVault: string) {
-            const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-            const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
-            await collateralPool.undelegateAll();
-            logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
-        }
+    async undelegatePoolCollateral(agentVault: string) {
+        const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
+        await collateralPool.undelegateAll({ from: agentEnt.ownerAddress });
+        this.botConfig.notifier!.sendUndelegatePoolCollateral(agentVault, collateralPool.address);
+        logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
+    }
 }
