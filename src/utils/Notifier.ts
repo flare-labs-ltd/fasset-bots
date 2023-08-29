@@ -269,8 +269,8 @@ export class Notifier {
         this.send(REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${agentVault}.`)
     }
 
-    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, delegates: string[], amounts: string[]) {
-        this.send(POOL_DELEGATE, `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${delegates} with ${amounts}.`);
+    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
+        this.send(POOL_DELEGATE, `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${recipient} with ${bips}.`);
     }
 
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {

@@ -320,12 +320,13 @@ describe("Bot cli commands unit tests", async () => {
         const del2 = accounts[102];
         const del1Amount = "3000";
         const del2Amount = "5000";
-        await botCliCommands.delegatePoolCollateral(agent.vaultAddress, del1 + ',' + del2, del1Amount + ',' + del2Amount);
+        await botCliCommands.delegatePoolCollateral(agent.vaultAddress, del1, del1Amount);
         const delegations1 = await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address) as any;
         expect(delegations1._delegateAddresses[0]).to.eq(del1);
-        expect(delegations1._delegateAddresses[1]).to.eq(del2);
         expect(delegations1._bips[0].toString()).to.eq(del1Amount);
-        expect(delegations1._bips[1].toString()).to.eq(del2Amount);
+        const delegations2 = await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address) as any;
+        expect(delegations2._delegateAddresses[0]).to.eq(del2);
+        expect(delegations2._bips[0].toString()).to.eq(del2Amount);
         await botCliCommands.undelegatePoolCollateral(agent.vaultAddress);
         const { _delegateAddresses } = await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address) as any;
         expect(_delegateAddresses.length).to.eq(0);

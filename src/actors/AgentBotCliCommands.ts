@@ -299,14 +299,12 @@ export class BotCliCommands {
     /**
      * Delegates pool collateral.
      */
-    async delegatePoolCollateral(agentVault: string, delegatesString: string, amountsString: string) {
-        const delegates = delegatesString.split(',');
-        const amounts = amountsString.split(',');
+    async delegatePoolCollateral(agentVault: string, recipient: string, bips: string) {
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
-        await collateralPool.delegate(delegates, amounts, { from: agentEnt.ownerAddress });
-        this.botConfig.notifier!.sendDelegatePoolCollateral(agentVault, collateralPool.address, delegates, amounts);
-        logger.info(`Agent ${agentVault} delegated pool collateral to ${delegates} with amounts ${amounts}.`);
+        await collateralPool.delegate(recipient, bips, { from: agentEnt.ownerAddress });
+        this.botConfig.notifier!.sendDelegatePoolCollateral(agentVault, collateralPool.address, recipient, bips);
+        logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with bips ${bips}.`);
     }
 
     /**

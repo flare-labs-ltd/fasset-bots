@@ -135,7 +135,7 @@ export class FaultyNotifier implements Notifier {
     sendRedemptionRequestPaymentProof(agentVault: string, requestId: string): void {
         throw new Error("Method not implemented.");
     }
-    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, delegates: string[], amounts: string[]) {
+    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
         throw new Error("Method not implemented.");
     }
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
