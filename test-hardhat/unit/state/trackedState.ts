@@ -314,7 +314,7 @@ describe("Tracked state tests", async () => {
         // minter enters pool
         await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
         // tweak some pool settings
-        const validAtFee = await agentB.announceAgentSettingUpdate("poolFeeShareBIPS", 9999,);
+        const validAtFee = await agentB.announceAgentSettingUpdate("poolFeeShareBIPS", 9999);
         await time.increaseTo(validAtFee);
         await agentB.executeAgentSettingUpdate("poolFeeShareBIPS");
         const curr = toBN((await agentB.getAgentSettings()).poolExitCollateralRatioBIPS);

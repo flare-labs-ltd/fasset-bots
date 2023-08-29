@@ -170,6 +170,7 @@ export class Challenger extends ActorBase {
                     ])
                 );
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         });
     }
 
@@ -198,6 +199,7 @@ export class Challenger extends ActorBase {
                 .doublePaymentChallenge(web3DeepNormalize(proof1), web3DeepNormalize(proof2), agent.vaultAddress, { from: this.address })
                 .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"]));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
         });
     }
 
@@ -245,6 +247,7 @@ export class Challenger extends ActorBase {
                 .freeBalanceNegativeChallenge(web3DeepNormalize(proofs), agent.vaultAddress, { from: this.address })
                 .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"]));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
         });
     }
 

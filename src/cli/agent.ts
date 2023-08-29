@@ -65,46 +65,41 @@ program
 
 program
     .command("withdrawVaultCollateral")
-    .description("withdraw amount from agent vault to owner's address")
+    .description("withdraw amount from agent vault to owner’s address")
     .argument("<agentVaultAddress>")
-    .argument("<agentSettingName>")
-    .argument("<agentSettingValue>")
-    .action(async (agentVault: string, settingName: string, settingValue: string) => {
+    .argument("<amount")
+    .action(async (agentVault: string, amount: string) => {
         const cli = await BotCliCommands.create();
-        await cli.updateAgentSetting(agentVault, settingName, settingValue);
+        await cli.withdrawFromVault(agentVault, amount);
     });
 
 program
     .command("withdrawPoolFees")
     .description("withdraw pool fees from pool to owner's address")
     .argument("<agentVaultAddress>")
-    .argument("<agentSettingName>")
-    .argument("<agentSettingValue>")
-    .action(async (agentVault: string, settingName: string, settingValue: string) => {
+    .argument("<amount>")
+    .action(async (agentVault: string, amount: string) => {
         const cli = await BotCliCommands.create();
-        await cli.updateAgentSetting(agentVault, settingName, settingValue);
+        await cli.withdrawPoolFees(agentVault, amount);
     });
 
 program
     .command("poolFeesBalance")
     .description("get pool fees balance of agent")
     .argument("<agentVaultAddress>")
-    .argument("<agentSettingName>")
-    .argument("<agentSettingValue>")
-    .action(async (agentVault: string, settingName: string, settingValue: string) => {
+    .action(async (agentVault: string) => {
         const cli = await BotCliCommands.create();
-        await cli.updateAgentSetting(agentVault, settingName, settingValue);
+        await cli.poolFeesBalance(agentVault);
     });
 
 program
     .command("selfClose")
     .description("self close agent vault with amountUBA of FAssets")
     .argument("<agentVaultAddress>")
-    .argument("<agentSettingName>")
-    .argument("<agentSettingValue>")
-    .action(async (agentVault: string, settingName: string, settingValue: string) => {
+    .argument("<amountUBA>")
+    .action(async (agentVault: string, amountUBA: string) => {
         const cli = await BotCliCommands.create();
-        await cli.updateAgentSetting(agentVault, settingName, settingValue);
+        await cli.selfClose(agentVault, amountUBA);
     });
 
 program
