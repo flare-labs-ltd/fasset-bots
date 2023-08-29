@@ -151,11 +151,11 @@ program.command("listAgents")
     });
 
 program.command("delegatePoolCollateral")
-    .description("delegate pool collateral")
+    .description("delegate pool collateral, where <delegates> and <amounts> are comma separated strings")
     .argument("<agentVaultAddress>")
     .argument("<delegates>")
     .argument("<amounts>")
-    .action(async (agentVault: string, delegates: string[], amounts: string[]) => {
+    .action(async (agentVault: string, delegates: string, amounts: string) => {
         const cli = await BotCliCommands.create();
         await cli.delegatePoolCollateral(agentVault, delegates, amounts);
     });
