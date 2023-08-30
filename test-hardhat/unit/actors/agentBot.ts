@@ -21,6 +21,7 @@ import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { artifacts } from "../../../src/utils/artifacts";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -572,5 +573,55 @@ describe("Agent bot unit tests", async () => {
         const mockAgentBot = new MockAgentBot(agentBot.agent, agentBot.notifier);
         await mockAgentBot.handleCornerCases(orm.em);
         expect(spyError).to.be.called.once;
+    });
+
+    it("Should not handle claims - no contracts", async () => {
+        const spyError = spy.on(console, "error");
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        await agentBot.checkForClaims();
+        expect(spyError).to.be.called.twice;
+    });
+
+    it("Should handle claims", async () => {
+        const spyError = spy.on(console, "error");
+        // create agent bot
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        // necessary contracts
+        const MockContract = artifacts.require("MockContract");
+        const FtsoRewardManager = artifacts.require("IFtsoRewardManager");
+        const DistributionToDelegators = artifacts.require("DistributionToDelegators");
+        // mock contracts
+        const mockContractFtsoManager = await MockContract.new();
+        const ftsoRewardManager = await FtsoRewardManager.at(mockContractFtsoManager.address);
+        const mockContractDistribution = await MockContract.new();
+        const distributionToDelegators = await DistributionToDelegators.at(mockContractDistribution.address);
+        // add contracts to address updater
+        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["FtsoRewardManager"], [ftsoRewardManager.address]);
+        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["DistributionToDelegators"], [distributionToDelegators.address]);
+        // mock functions - there is something to claim
+        const getEpochs1 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
+            [agentBot.agent.collateralPool.address]
+        );
+        const epochs1 = web3.eth.abi.encodeParameter("uint256[]", [150]);
+        await mockContractFtsoManager.givenMethodReturn(getEpochs1, epochs1);
+        const getMonth1 = web3.eth.abi.encodeFunctionCall({ type: "function", name: "getClaimableMonths", inputs: [] }, []);
+        const month = web3.eth.abi.encodeParameters(["uint256", "uint256"], [0, 1]);
+        await mockContractDistribution.givenMethodReturn(getMonth1, month);
+        // check
+        await agentBot.checkForClaims();
+        // mock functions - there is nothing to claim
+        const getEpochs2 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
+            [agentBot.agent.collateralPool.address]
+        );
+        const epochs2 = web3.eth.abi.encodeParameter("uint256[]", []);
+        await mockContractFtsoManager.givenMethodReturn(getEpochs2, epochs2);
+        // check
+        await agentBot.checkForClaims();
+        expect(spyError).to.be.called.exactly(0);
+        // clean up
+        await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
+        await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
     });
 });
