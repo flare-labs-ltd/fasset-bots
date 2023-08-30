@@ -1,6 +1,5 @@
 import BN from "bn.js";
 import { groupIntegerDigits } from "../../test-hardhat/test-utils/fuzzing-utils";
-import { BaseEvent } from "./events/common";
 
 function formatArg(value: unknown): string {
     if (isBigNumber(value)) {

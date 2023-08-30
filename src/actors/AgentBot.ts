@@ -789,6 +789,7 @@ export class AgentBot {
         logger.info(
             `Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
         );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) {
             logger.info(
@@ -813,6 +814,7 @@ export class AgentBot {
             logger.info(
                 `Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
@@ -825,6 +827,7 @@ export class AgentBot {
         logger.info(
             `Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
         );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
         if (!proof.finalized) {
             logger.info(
@@ -846,6 +849,7 @@ export class AgentBot {
             logger.info(
                 `Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.notifier.sendNoProofObtained(minting.agentAddress, minting.requestId.toString(), minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
@@ -1005,6 +1009,7 @@ export class AgentBot {
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
@@ -1022,6 +1027,7 @@ export class AgentBot {
                 redemption.txHash
             } and redemption ${redemption.requestId.toString()}.`
         );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_PROOF;
@@ -1049,6 +1055,7 @@ export class AgentBot {
         logger.info(
             `Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`
         );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
         if (!proof.finalized) {
             logger.info(
@@ -1075,7 +1082,9 @@ export class AgentBot {
             this.notifier.sendNoProofObtained(
                 redemption.agentAddress,
                 redemption.requestId.toString(),
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 redemption.proofRequestRound!,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 redemption.proofRequestData!,
                 true
             );

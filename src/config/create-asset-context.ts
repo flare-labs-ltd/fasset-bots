@@ -42,6 +42,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
         wNat = await WNat.at(contracts.WNat.address);
         addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
     } else {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
         ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress("FtsoRegistry"));
         [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
@@ -88,6 +89,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
         ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
     } else {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const addressUpdater = await AddressUpdater.at(trackedStateConfig.addressUpdater!);
         ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress("FtsoRegistry"));
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);

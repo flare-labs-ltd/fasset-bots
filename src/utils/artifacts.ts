@@ -38,7 +38,7 @@ class ArtifactsImpl {
         if (this.artifactMap == null) {
             this.loadArtifactMap();
         }
-        const artifactData = this.artifactMap!.get(name);
+        const artifactData = this.artifactMap?.get(name);
         /* istanbul ignore if */
         if (artifactData == null) {
             throw new Error(`Unknown artifact ${name}`);

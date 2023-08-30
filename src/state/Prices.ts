@@ -1,7 +1,4 @@
-import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
-import { IAssetContext, IFtsoRegistryEvents } from "../fasset/IAssetContext";
-import { ContractWithEvents } from "../utils/events/truffle";
 import { CollateralIndexedList, CollateralTypeId } from "./CollateralIndexedList";
 import { CollateralPrice } from "./CollateralPrice";
 import { TokenPrice, TokenPriceReader } from "./TokenPrice";

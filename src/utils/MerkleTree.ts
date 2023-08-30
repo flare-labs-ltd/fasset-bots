@@ -63,7 +63,7 @@ export function commitHash(merkleRoot: string, randomNumber: string, address: st
  * @param y second `0x`-prefixed 32-byte hex string
  * @returns the sorted hash
  */
-export function sortedHashPair(x: string, y: string) {
+export function sortedHashPair(x: string, y: string): string {
     if (x <= y) {
         return Web3.utils.soliditySha3Raw(web3.eth.abi.encodeParameters(["bytes32", "bytes32"], [x, y]));
     }
@@ -148,7 +148,7 @@ export class MerkleTree {
         const n = hashes.length;
         this._tree = [...new Array(Math.max(n - 1, 0)).fill(0), ...hashes];
         for (let i = n - 2; i >= 0; i--) {
-            this._tree[i] = sortedHashPair(this._tree[2 * i + 1], this._tree[2 * i + 2])!;
+            this._tree[i] = sortedHashPair(this._tree[2 * i + 1], this._tree[2 * i + 2]);
         }
     }
 
@@ -206,7 +206,7 @@ export function verifyWithMerkleProof(leaf: string, proof: string[], root: strin
     if (!leaf || !proof || !root) return false;
     let hash = leaf;
     for (const pair of proof) {
-        hash = sortedHashPair(pair, hash)!;
+        hash = sortedHashPair(pair, hash);
     }
     return hash == root;
 }

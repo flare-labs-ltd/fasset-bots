@@ -1,4 +1,4 @@
-import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS, TX_UNKNOWN } from "./interfaces/IBlockChain";
+import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
 import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";

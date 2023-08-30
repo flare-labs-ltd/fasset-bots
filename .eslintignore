@@ -14,3 +14,5 @@ tsconfig.json
 hardhat.config.ts
 .gitlab-ci.yml
 .eslintrc.json
+test/*
+test-hardhat/*
