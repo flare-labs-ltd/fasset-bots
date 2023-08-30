@@ -154,14 +154,14 @@
     {
       "inputs": [
         {
-          "internalType": "address[]",
+          "internalType": "address",
           "name": "_to",
-          "type": "address[]"
+          "type": "address"
         },
         {
-          "internalType": "uint256[]",
+          "internalType": "uint256",
           "name": "_bips",
-          "type": "uint256[]"
+          "type": "uint256"
         }
       ],
       "name": "delegate",
@@ -349,24 +349,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "contract IClaimSetupManager",
-          "name": "_claimSetupManager",
-          "type": "address"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_executors",
-          "type": "address[]"
-        }
-      ],
-      "name": "setAutoClaiming",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "topupCollateralRatioBIPS",
       "outputs": [
@@ -390,6 +372,13 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "undelegateAll",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

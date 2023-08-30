@@ -107,6 +107,11 @@
     {
       "inputs": [
         {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "address",
           "name": "_to",
           "type": "address"
@@ -244,7 +249,13 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
       "name": "undelegateGovernance",
       "outputs": [],
       "stateMutability": "nonpayable",

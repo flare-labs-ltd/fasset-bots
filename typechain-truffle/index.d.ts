@@ -5,6 +5,7 @@
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
+import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
@@ -32,6 +33,7 @@ import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
 import { IICollateralPoolContract } from "./IICollateralPool";
+import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IPriceReaderContract } from "./IPriceReader";
 import { IWhitelistContract } from "./IWhitelist";
@@ -161,6 +163,7 @@ declare global {
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
+      require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWhitelist"): IWhitelistContract;
@@ -269,6 +272,7 @@ export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
 } from "./IERC20Metadata";
+export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
 export {
@@ -339,6 +343,10 @@ export {
   IICollateralPoolContract,
   IICollateralPoolInstance,
 } from "./IICollateralPool";
+export {
+  IICollateralPoolTokenContract,
+  IICollateralPoolTokenInstance,
+} from "./IICollateralPoolToken";
 export {
   ILiquidationStrategyContract,
   ILiquidationStrategyInstance,

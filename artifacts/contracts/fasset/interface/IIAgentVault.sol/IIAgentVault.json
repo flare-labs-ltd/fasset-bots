@@ -107,6 +107,11 @@
     {
       "inputs": [
         {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        },
+        {
           "internalType": "address",
           "name": "_to",
           "type": "address"
@@ -136,7 +141,13 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "_wNat",
+          "type": "address"
+        }
+      ],
       "name": "depositNat",
       "outputs": [],
       "stateMutability": "payable",
@@ -212,6 +223,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "contract IWNat",
+          "name": "_wNat",
+          "type": "address"
+        },
         {
           "internalType": "address payable",
           "name": "_recipient",
@@ -324,7 +340,13 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "contract IVPToken",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
       "name": "undelegateGovernance",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -341,19 +363,6 @@
       "name": "updateCollateral",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "wNat",
-      "outputs": [
-        {
-          "internalType": "contract IWNat",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {

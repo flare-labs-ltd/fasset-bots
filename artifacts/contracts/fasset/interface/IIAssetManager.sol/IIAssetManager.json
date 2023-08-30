@@ -1547,6 +1547,24 @@
     {
       "inputs": [
         {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_valueNATWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "beforeCollateralWithdrawal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
@@ -3250,6 +3268,11 @@
               "internalType": "uint64",
               "name": "agentCollateralRatioChangeTimelockSeconds",
               "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "agentTimelockedOperationWindowSeconds",
+              "type": "uint64"
             }
           ],
           "internalType": "struct AssetManagerSettings.Data",
@@ -4242,24 +4265,6 @@
         }
       ],
       "name": "upgradeWNatContract",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "_token",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_valueNATWei",
-          "type": "uint256"
-        }
-      ],
-      "name": "withdrawCollateral",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

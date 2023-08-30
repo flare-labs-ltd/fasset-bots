@@ -55,6 +55,7 @@ export interface AssetManagerContract
       agentExitAvailableTimelockSeconds: number | BN | string;
       agentFeeChangeTimelockSeconds: number | BN | string;
       agentCollateralRatioChangeTimelockSeconds: number | BN | string;
+      agentTimelockedOperationWindowSeconds: number | BN | string;
     },
     _initialCollateralTypes: {
       collateralClass: number | BN | string;
@@ -928,6 +929,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       attached: boolean,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  beforeCollateralWithdrawal: {
+    (
+      _token: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _token: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _token: string,
+      _valueNATWei: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _token: string,
+      _valueNATWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1964,6 +1988,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     agentExitAvailableTimelockSeconds: BN;
     agentFeeChangeTimelockSeconds: BN;
     agentCollateralRatioChangeTimelockSeconds: BN;
+    agentTimelockedOperationWindowSeconds: BN;
   }>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -2863,29 +2888,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  withdrawCollateral: {
-    (
-      _token: string,
-      _valueNATWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _token: string,
-      _valueNATWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _token: string,
-      _valueNATWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _token: string,
-      _valueNATWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
     addCollateralType: {
       (
@@ -3099,6 +3101,29 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         attached: boolean,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    beforeCollateralWithdrawal: {
+      (
+        _token: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _token: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _token: string,
+        _valueNATWei: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _token: string,
+        _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -4137,6 +4162,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       agentExitAvailableTimelockSeconds: BN;
       agentFeeChangeTimelockSeconds: BN;
       agentCollateralRatioChangeTimelockSeconds: BN;
+      agentTimelockedOperationWindowSeconds: BN;
     }>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -5032,29 +5058,6 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    withdrawCollateral: {
-      (
-        _token: string,
-        _valueNATWei: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _token: string,
-        _valueNATWei: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _token: string,
-        _valueNATWei: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _token: string,
-        _valueNATWei: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

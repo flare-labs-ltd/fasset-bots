@@ -3112,6 +3112,11 @@
               "internalType": "uint64",
               "name": "agentCollateralRatioChangeTimelockSeconds",
               "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "agentTimelockedOperationWindowSeconds",
+              "type": "uint64"
             }
           ],
           "internalType": "struct AssetManagerSettings.Data",

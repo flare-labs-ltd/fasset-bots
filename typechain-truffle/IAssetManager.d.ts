@@ -1784,6 +1784,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     agentExitAvailableTimelockSeconds: BN;
     agentFeeChangeTimelockSeconds: BN;
     agentCollateralRatioChangeTimelockSeconds: BN;
+    agentTimelockedOperationWindowSeconds: BN;
   }>;
 
   illegalPaymentChallenge: {
@@ -3627,6 +3628,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       agentExitAvailableTimelockSeconds: BN;
       agentFeeChangeTimelockSeconds: BN;
       agentCollateralRatioChangeTimelockSeconds: BN;
+      agentTimelockedOperationWindowSeconds: BN;
     }>;
 
     illegalPaymentChallenge: {

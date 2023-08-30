@@ -211,7 +211,8 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         agentExitAvailableTimelockSeconds: 10 * MINUTES,
         vaultCollateralBuyForFlareFactorBIPS: toBIPS(1.05),
         mintingPoolHoldingsRequiredBIPS: toBIPS("50%"),
-        tokenInvalidationTimeMinSeconds: 1 * DAYS
+        tokenInvalidationTimeMinSeconds: 1 * DAYS,
+        agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds)
     };
 }
 
