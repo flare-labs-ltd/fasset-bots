@@ -6,17 +6,28 @@
     ],
     "extends": [
         "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:prettier/recommended"
     ],
     "rules": {
-        "linebreak-style": ["error", "unix"],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
         "@typescript-eslint/prefer-namespace-keyword": "off",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-inferrable-types": "off",
         "guard-for-in": "warn",
         "@typescript-eslint/await-thenable": "warn",
-        "@typescript-eslint/no-floating-promises": ["error", { "ignoreVoid": true }],
-        "@typescript-eslint/no-explicit-any": "off"
+        "@typescript-eslint/no-floating-promises": [
+            "error",
+            {
+                "ignoreVoid": true
+            }
+        ],
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-console": 1
     },
     "parserOptions": {
         "ecmaVersion": 2020,
