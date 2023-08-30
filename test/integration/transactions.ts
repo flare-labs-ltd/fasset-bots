@@ -18,21 +18,17 @@ export const fundedPrivateKeyXRP = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49
 export const targetAddressXRP = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
-
 describe("XRP transaction integration tests", async () => {
-
-
     const sourceId: SourceId = SourceId.XRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
-
 
     it("Should send funds and retrieve transaction", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
@@ -47,7 +43,6 @@ describe("XRP transaction integration tests", async () => {
         await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
 
-
     it("Should send funds and retrieve transaction by reference", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
@@ -60,5 +55,4 @@ describe("XRP transaction integration tests", async () => {
         expect(retrievedTransactionsByRef.length).to.be.gt(0);
         await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
-
 });

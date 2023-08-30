@@ -17,15 +17,15 @@ import { AgentEntity } from "../../src/entities/agent";
 import { Notifier } from "../../src/utils/Notifier";
 import { loadContracts } from "../../src/config/contracts";
 
-const ERC20Mock = artifacts.require('ERC20Mock');
-const Whitelist = artifacts.require('Whitelist');
+const ERC20Mock = artifacts.require("ERC20Mock");
+const Whitelist = artifacts.require("Whitelist");
 
-const ownerAccountPrivateKey = requireEnv('USER_PRIVATE_KEY');
-const account1PrivateKey = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
-const account2PrivateKey = requireEnv('NATIVE_ACCOUNT2_PRIVATE_KEY');
-const account3PrivateKey = requireEnv('NATIVE_ACCOUNT3_PRIVATE_KEY');
-const deployPrivateKey = requireEnv('DEPLOY_PRIVATE_KEY');
-const deployAddress = requireEnv('DEPLOY_ADDRESS');
+const ownerAccountPrivateKey = requireEnv("USER_PRIVATE_KEY");
+const account1PrivateKey = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
+const account2PrivateKey = requireEnv("NATIVE_ACCOUNT2_PRIVATE_KEY");
+const account3PrivateKey = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
+const deployPrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
+const deployAddress = requireEnv("DEPLOY_ADDRESS");
 
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {
@@ -44,27 +44,35 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
     return await agent.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
 }
 
-export async function receiveBlockAndTransaction(sourceId: SourceId, blockChainIndexerClient: BlockchainIndexerHelper, indexerUrl: string): Promise<{ blockNumber: number, blockHash: string, txHash: string | null } | null> {
+export async function receiveBlockAndTransaction(
+    sourceId: SourceId,
+    blockChainIndexerClient: BlockchainIndexerHelper,
+    indexerUrl: string
+): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
     const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
-    if (resp.status === 'OK') {
+    if (resp.status === "OK") {
         const blockNumber = resp.data.last;
         const block = await blockChainHelper.getBlockAt(blockNumber);
         const blockHash = block!.hash;
         let txHash = null;
         if (block!.transactions.length > 0) {
-            txHash = block!.transactions[0]
+            txHash = block!.transactions[0];
         }
         return {
             blockNumber,
             blockHash,
-            txHash
-        }
+            txHash,
+        };
     }
     return null;
 }
 
-export async function mintVaultCollateralToOwner(vaultCollateralTokenAddress: string, ownerAddress: string, amount: BNish = depositVaultCollateralAmount): Promise<void> {
+export async function mintVaultCollateralToOwner(
+    vaultCollateralTokenAddress: string,
+    ownerAddress: string,
+    amount: BNish = depositVaultCollateralAmount
+): Promise<void> {
     const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
     await vaultCollateralToken.mintAmount(ownerAddress, amount, { from: deployAddress });
 }
@@ -82,16 +90,18 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
             await destroyAgent(context, orm, agentAddress, ownerAddress);
         } catch (e) {
             if (e instanceof Error) {
-                if (e.message.includes('destroy: not allowed yet')) {
+                if (e.message.includes("destroy: not allowed yet")) {
                     await sleep(Number(toBN(waitingTime).muln(1000)));
                     await destroyAgent(context, orm, agentAddress, ownerAddress);
                 }
-                if (e.message.includes('destroy not announced')) {
+                if (e.message.includes("destroy not announced")) {
                     await context.assetManager.announceDestroyAgent(agentAddress, { from: ownerAddress });
                     await sleep(Number(toBN(waitingTime).muln(1000)));
                     await destroyAgent(context, orm, agentAddress, ownerAddress);
                 }
-                if (e.message.includes('AgentEntity not found')) { continue; }
+                if (e.message.includes("AgentEntity not found")) {
+                    continue;
+                }
                 console.log(e.message, agentAddress);
             }
         }
@@ -122,7 +132,7 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     await sleep(Number(toBN(waitingTime).muln(1000)));
 
     const res = await context.assetManager.destroyAgent(agentAddress, ownerAddress, { from: ownerAddress });
-    const eventArgs = requiredEventArgs(res, 'AgentDestroyed');
+    const eventArgs = requiredEventArgs(res, "AgentDestroyed");
     if (eventArgs) {
         console.log("Agent is destroyed", agentAddress);
         agentEnt.active = false;
@@ -132,7 +142,7 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
 
 export async function whitelistAgent(botConfig: BotConfig, ownerAddress: string) {
     const contracts = loadContracts(botConfig.contractsJsonFile!);
-    const agentWhitelist = await Whitelist.at(contracts['AgentWhitelist']!.address);
+    const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployAddress });
 }
 

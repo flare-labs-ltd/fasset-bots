@@ -14,13 +14,11 @@ const privateKey1 = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0
 const address2 = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const privateKey2 = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
-
 describe("Wallet keys tests", async () => {
-
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-wallet-keys-test.db', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", dbName: "fasset-bots-wallet-keys-test.db", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
-    })
+    });
 
     it("Should insert address with private key into db and retrieved it", async () => {
         await dbWallet.addKey(address1, privateKey1);
@@ -37,10 +35,9 @@ describe("Wallet keys tests", async () => {
         expect(privateKey1FromDb).to.equal(privateKey1);
     });
 
-    it("Should return private key, when class is recreated", async() => {
+    it("Should return private key, when class is recreated", async () => {
         dbWallet = new DBWalletKeys(orm.em);
         const privateKey2FromDb = await dbWallet.getKey(address2);
         expect(privateKey2FromDb).to.equal(privateKey2);
     });
-
 });

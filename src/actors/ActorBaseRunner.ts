@@ -14,7 +14,7 @@ export class ActorBaseRunner {
     constructor(
         public loopDelay: number,
         public actor: ActorBase
-    ) { }
+    ) {}
 
     private stopRequested = false;
 

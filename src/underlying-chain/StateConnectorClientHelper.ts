@@ -4,7 +4,13 @@ import { requiredEventArgs } from "../utils/events/truffle";
 import { BNish, DEFAULT_TIMEOUT, sleep, toBN, toNumber } from "../utils/helpers";
 import { MerkleTree } from "../utils/MerkleTree";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence, DHType } from "../verification/generated/attestation-hash-types";
+import {
+    DHBalanceDecreasingTransaction,
+    DHConfirmedBlockHeightExists,
+    DHPayment,
+    DHReferencedPaymentNonexistence,
+    DHType,
+} from "../verification/generated/attestation-hash-types";
 import { AttestationType } from "../verification/generated/attestation-types-enum";
 import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
 import { ARBase } from "../verification/generated/attestation-request-types";
@@ -18,7 +24,6 @@ export class StateConnectorError extends Error {
 }
 
 export class StateConnectorClientHelper implements IStateConnectorClient {
-
     clients: AxiosInstance[] = [];
     verifier: AxiosInstance;
     // initialized at initStateConnector()
@@ -52,7 +57,14 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
 
-    static async create(urls: string[], attestationClientAddress: string, stateConnectorAddress: string, verifierUrl: string, verifierUrlApiKey: string, account: string): Promise<StateConnectorClientHelper> {
+    static async create(
+        urls: string[],
+        attestationClientAddress: string,
+        stateConnectorAddress: string,
+        verifierUrl: string,
+        verifierUrlApiKey: string,
+        account: string
+    ): Promise<StateConnectorClientHelper> {
         const helper = new StateConnectorClientHelper(urls, attestationClientAddress, stateConnectorAddress, verifierUrl, verifierUrlApiKey, account);
         await helper.initStateConnector();
         return helper;
@@ -75,18 +87,18 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
-        const response = await this.verifier.post('/query/prepareAttestation', request);
+        const response = await this.verifier.post("/query/prepareAttestation", request);
         const status = response.data.status;
         const data = response.data.data;
         /* istanbul ignore else */
-        if (status === 'OK') {
+        if (status === "OK") {
             const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
-            const attReq = requiredEventArgs(txRes, 'AttestationRequest');
+            const attReq = requiredEventArgs(txRes, "AttestationRequest");
             const calculated_round_id = this.timestampToRoundId(toNumber(attReq.timestamp));
             return {
                 round: calculated_round_id,
-                data: data
-            }
+                data: data,
+            };
         } else {
             return null;
         }
@@ -155,12 +167,12 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 // extra verification - should never fail, since Merkle root matches
                 const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
                 if (!verified) {
-                    throw new StateConnectorError("Proof does not verify!!!")
+                    throw new StateConnectorError("Proof does not verify!!!");
                 }
 
                 return { finalized: true, result: proofData };
             }
-            throw new StateConnectorError("There aren't any attestation providers.")
+            throw new StateConnectorError("There aren't any attestation providers.");
         } catch (e) {
             if (e instanceof StateConnectorError) throw e;
             throw new StateConnectorError(String(e));
@@ -217,7 +229,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             intendedReceivedAmount: toBN(matchedResponse.intendedReceivedAmount),
             paymentReference: matchedResponse.paymentReference,
             oneToOne: matchedResponse.oneToOne,
-            status: toBN(matchedResponse.status)
+            status: toBN(matchedResponse.status),
         };
     }
 
@@ -231,7 +243,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             sourceAddressIndicator: matchedResponse.sourceAddressIndicator,
             sourceAddressHash: matchedResponse.sourceAddressHash,
             spentAmount: toBN(matchedResponse.spentAmount),
-            paymentReference: matchedResponse.paymentReference
+            paymentReference: matchedResponse.paymentReference,
         };
     }
 
@@ -243,7 +255,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             blockTimestamp: toBN(matchedResponse.blockTimestamp),
             numberOfConfirmations: toBN(matchedResponse.numberOfConfirmations),
             lowestQueryWindowBlockNumber: toBN(matchedResponse.lowestQueryWindowBlockNumber),
-            lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp)
+            lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp),
         };
     }
 
@@ -259,7 +271,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             lowerBoundaryBlockNumber: toBN(matchedResponse.lowerBoundaryBlockNumber),
             lowerBoundaryBlockTimestamp: toBN(matchedResponse.lowerBoundaryBlockTimestamp),
             firstOverflowBlockNumber: toBN(matchedResponse.firstOverflowBlockNumber),
-            firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp)
+            firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp),
         };
     }
 

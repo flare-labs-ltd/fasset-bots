@@ -5,7 +5,17 @@ import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
-import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
+import {
+    InclusionIterable,
+    currentRealTime,
+    getEnv,
+    mulDecimal,
+    randomChoice,
+    randomInt,
+    randomNum,
+    toWei,
+    weightedRandomChoice,
+} from "../test-utils/fuzzing-utils";
 import { Challenger } from "../../src/actors/Challenger";
 import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { assert } from "chai";
@@ -33,9 +43,9 @@ import { FuzzingTimeline } from "./FuzzingTimeline";
 import { FuzzingStateComparator } from "./FuzzingStateComparator";
 import { FuzzingState } from "./FuzzingState";
 
-export type MiningMode = 'auto' | 'manual'
+export type MiningMode = "auto" | "manual";
 
-const StateConnector = artifacts.require('StateConnectorMock');
+const StateConnector = artifacts.require("StateConnectorMock");
 
 describe("Fuzzing tests", async () => {
     let accounts: string[];
@@ -46,18 +56,18 @@ describe("Fuzzing tests", async () => {
 
     const startTimestamp = systemTimestamp();
 
-    const CHAIN = getEnv('CHAIN', 'string', 'xrp');
-    const LOOPS = getEnv('LOOPS', 'number', 100);
-    const AUTOMINE = getEnv('AUTOMINE', 'boolean', true);
-    const N_AGENTS = getEnv('N_AGENTS', 'number', 4);
-    const N_CUSTOMERS = getEnv('N_CUSTOMERS', 'number', 6);     // minters and redeemers
-    const N_KEEPERS = getEnv('N_KEEPERS', 'number', 1);
-    const N_LIQUIDATORS = getEnv('N_LIQUIDATORS', 'number', 1);
-    const CUSTOMER_BALANCE = toWei(getEnv('CUSTOMER_BALANCE', 'number', 10_000));  // initial underlying balance
-    const AVOID_ERRORS = getEnv('AVOID_ERRORS', 'boolean', true);
-    const CHANGE_PRICE_AT = getEnv('CHANGE_PRICE_AT', 'range', [3, 88]);
-    const CHANGE_PRICE_FACTOR = getEnv('CHANGE_PRICE_FACTOR', 'json', { asset: [10, 12], default: [1, 1] }) as { [key: string]: [number, number] };
-    const ILLEGAL_PROB = getEnv('ILLEGAL_PROB', 'number', 4);     // likelihood of illegal operations (not normalized)
+    const CHAIN = getEnv("CHAIN", "string", "xrp");
+    const LOOPS = getEnv("LOOPS", "number", 100);
+    const AUTOMINE = getEnv("AUTOMINE", "boolean", true);
+    const N_AGENTS = getEnv("N_AGENTS", "number", 4);
+    const N_CUSTOMERS = getEnv("N_CUSTOMERS", "number", 6); // minters and redeemers
+    const N_KEEPERS = getEnv("N_KEEPERS", "number", 1);
+    const N_LIQUIDATORS = getEnv("N_LIQUIDATORS", "number", 1);
+    const CUSTOMER_BALANCE = toWei(getEnv("CUSTOMER_BALANCE", "number", 10_000)); // initial underlying balance
+    const AVOID_ERRORS = getEnv("AVOID_ERRORS", "boolean", true);
+    const CHANGE_PRICE_AT = getEnv("CHANGE_PRICE_AT", "range", [3, 88]);
+    const CHANGE_PRICE_FACTOR = getEnv("CHANGE_PRICE_FACTOR", "json", { asset: [10, 12], default: [1, 1] }) as { [key: string]: [number, number] };
+    const ILLEGAL_PROB = getEnv("ILLEGAL_PROB", "number", 4); // likelihood of illegal operations (not normalized)
 
     const agentBots: FuzzingAgentBot[] = [];
     const customers: FuzzingCustomer[] = [];
@@ -76,11 +86,11 @@ describe("Fuzzing tests", async () => {
         governance = accounts[1];
         // create context
         chainInfo = testChainInfo[CHAIN as keyof typeof testChainInfo] ?? assert.fail(`Invalid chain ${CHAIN}`);
-        context = await createTestAssetContext(governance, chainInfo)
+        context = await createTestAssetContext(governance, chainInfo);
         chain = context.blockchainIndexer.chain as MockChain;
         // create interceptor
         eventFormatter = new EventFormatter();
-        notifier = new FuzzingNotifier(new Notifier, eventFormatter);
+        notifier = new FuzzingNotifier(new Notifier(), eventFormatter);
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
         commonTrackedState = new FuzzingState(context, lastBlock, new MockChainWallet(chain));
@@ -93,7 +103,7 @@ describe("Fuzzing tests", async () => {
 
     it("f-asset fuzzing test", async () => {
         // create bots
-        const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', dbName: 'fasset-bots-test_fuzzing.db', type: 'sqlite' }));
+        const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", dbName: "fasset-bots-test_fuzzing.db", type: "sqlite" }));
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];
@@ -108,17 +118,19 @@ describe("Fuzzing tests", async () => {
             botCliCommands.botConfig = {
                 rpcUrl: "",
                 loopDelay: 0,
-                chains: [{
-                    chainInfo: chainInfo,
-                    wallet: new MockChainWallet(chain),
-                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
-                    assetManager: ""
-                }],
+                chains: [
+                    {
+                        chainInfo: chainInfo,
+                        wallet: new MockChainWallet(chain),
+                        blockchainIndexerClient: new MockIndexer("", chainId, chain),
+                        stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
+                        assetManager: "",
+                    },
+                ],
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
                 notifier: notifier,
-                addressUpdater: ""
+                addressUpdater: "",
             };
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
@@ -170,9 +182,7 @@ describe("Fuzzing tests", async () => {
             [testIllegalTransaction, ILLEGAL_PROB],
             [testDoublePayment, ILLEGAL_PROB],
         ];
-        const timedActions: Array<[(index: number) => Promise<void>, InclusionIterable<number> | null]> = [
-            [testChangePrices, CHANGE_PRICE_AT],
-        ];
+        const timedActions: Array<[(index: number) => Promise<void>, InclusionIterable<number> | null]> = [[testChangePrices, CHANGE_PRICE_AT]];
         // switch underlying chain to timed mining
         chain.automine = false;
         chain.finalizationBlocks = chainInfo.finalizationBlocks;
@@ -181,7 +191,7 @@ describe("Fuzzing tests", async () => {
             chain.mine();
         }
         if (!AUTOMINE) {
-            await setMiningMode('manual', 1000);
+            await setMiningMode("manual", 1000);
         }
         // run tracked state
         await commonTrackedState.readUnhandledEvents();
@@ -233,7 +243,7 @@ describe("Fuzzing tests", async () => {
             }
             // occasionally skip some time
             if (loop % 10 === 0) {
-                await checkInvariants(false);     // state change may happen during check, so we don't have any failure here
+                await checkInvariants(false); // state change may happen during check, so we don't have any failure here
                 runner.comment(`-----  LOOP ${loop}  ${await timeInfo()}  -----`);
                 await timeline.skipTime(100);
                 await commonTrackedState.readUnhandledEvents();
@@ -246,14 +256,13 @@ describe("Fuzzing tests", async () => {
             await sleep(200);
             await timeline.skipTime(100);
             runner.comment(`-----  WAITING  ${await timeInfo()}  -----`);
-
         }
         // fail immediately on unexpected errors from threads
         if (runner.uncaughtErrors.length > 0) {
             throw runner.uncaughtErrors[0];
         }
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
-        await checkInvariants(true);  // all events are flushed, state must match
+        await checkInvariants(true); // all events are flushed, state must match
         // assert.isTrue(fuzzingState.failedExpectations.length === 0, "fuzzing state has expectation failures");
     });
 
@@ -276,10 +285,12 @@ describe("Fuzzing tests", async () => {
     }
 
     async function timeInfo() {
-        return `block=${await time.latestBlock()} timestamp=${await latestBlockTimestamp() - startTimestamp}  ` +
+        return (
+            `block=${await time.latestBlock()} timestamp=${(await latestBlockTimestamp()) - startTimestamp}  ` +
             `underlyingBlock=${chain.blockHeight()} underlyingTimestamp=${chain.lastBlockTimestamp() - startTimestamp}  ` +
-            `skew=${await latestBlockTimestamp() - chain.lastBlockTimestamp()}  ` +
-            `realTime=${(currentRealTime() - startTimestamp).toFixed(3)}`;
+            `skew=${(await latestBlockTimestamp()) - chain.lastBlockTimestamp()}  ` +
+            `realTime=${(currentRealTime() - startTimestamp).toFixed(3)}`
+        );
     }
 
     async function refreshAvailableAgents() {
@@ -323,7 +334,7 @@ describe("Fuzzing tests", async () => {
 
     async function testChangePrices() {
         for (const [symbol, ftso] of Object.entries(context.ftsos)) {
-            const [minFactor, maxFactor] = CHANGE_PRICE_FACTOR[symbol] ?? CHANGE_PRICE_FACTOR['default'] ?? [0.9, 1.1];
+            const [minFactor, maxFactor] = CHANGE_PRICE_FACTOR[symbol] ?? CHANGE_PRICE_FACTOR["default"] ?? [0.9, 1.1];
             await _changePriceOnFtso(ftso, randomNum(minFactor, maxFactor));
         }
         await context.ftsoManager.mockFinalizePriceEpoch();
@@ -337,12 +348,12 @@ describe("Fuzzing tests", async () => {
     }
 
     async function setMiningMode(miningMode: MiningMode, interval: number = 0) {
-        if (miningMode === 'manual') {
-            await network.provider.send('evm_setAutomine', [false]);
+        if (miningMode === "manual") {
+            await network.provider.send("evm_setAutomine", [false]);
             await network.provider.send("evm_setIntervalMining", [interval]);
         } else {
             await network.provider.send("evm_setIntervalMining", [0]);
-            await network.provider.send('evm_setAutomine', [true]);
+            await network.provider.send("evm_setAutomine", [true]);
         }
     }
 
@@ -371,18 +382,18 @@ describe("Fuzzing tests", async () => {
         const checker = new FuzzingStateComparator();
         // total supply
         const fAssetSupply = await context.fAsset.totalSupply();
-        checker.checkEquality('fAsset supply', fAssetSupply, commonTrackedState.fAssetSupply, true);
+        checker.checkEquality("fAsset supply", fAssetSupply, commonTrackedState.fAssetSupply, true);
         // // total balances
         // const totalBalances = commonTrackedState.fAssetBalance.total();
         // checker.checkEquality('fAsset supply / total balances', fAssetSupply, totalBalances);
         // total minted value by all agents
-        const totalMintedUBA = sumBN(commonTrackedState.agents.values(), agent => agent.mintedUBA);
-        checker.checkEquality('fAsset supply/total minted by agents', fAssetSupply, totalMintedUBA, true);
+        const totalMintedUBA = sumBN(commonTrackedState.agents.values(), (agent) => agent.mintedUBA);
+        checker.checkEquality("fAsset supply/total minted by agents", fAssetSupply, totalMintedUBA, true);
         // settings
         const actualSettings = await context.assetManager.getSettings();
         for (const [key, value] of Object.entries(actualSettings)) {
-            if (/^\d+$/.test(key)) continue;   // all properties are both named and with index
-            if (['assetManagerController'].includes(key)) continue;   // special properties, not changed in normal way
+            if (/^\d+$/.test(key)) continue; // all properties are both named and with index
+            if (["assetManagerController"].includes(key)) continue; // special properties, not changed in normal way
             checker.checkEquality(`settings.${key}`, value, (commonTrackedState.settings as any)[key]);
         }
         // check agents' state
@@ -395,5 +406,4 @@ describe("Fuzzing tests", async () => {
         }
         console.log("****************** CHECK INVARIANTS - END ******************");
     }
-
 });

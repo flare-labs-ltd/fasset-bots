@@ -8,16 +8,16 @@ export class Web3EventDecoder {
     public eventTypes = new Map<string, AbiItem>(); // signature (topic[0]) => type
     public contractNames = new Map<string, string>(); // address => name
 
-    constructor(contracts: { [name: string]: Truffle.ContractInstance; }, filter?: string[]) {
+    constructor(contracts: { [name: string]: Truffle.ContractInstance }, filter?: string[]) {
         this.addContracts(contracts, filter);
     }
 
-    addContracts(contracts: { [name: string]: Truffle.ContractInstance; }, filter?: string[]) {
+    addContracts(contracts: { [name: string]: Truffle.ContractInstance }, filter?: string[]) {
         for (const contractName of Object.keys(contracts)) {
             const contract = contracts[contractName];
             this.contractNames.set(contract.address, contractName);
             for (const item of contract.abi) {
-                if (item.type === 'event' && (filter == null || filter.includes(item.name!))) {
+                if (item.type === "event" && (filter == null || filter.includes(item.name!))) {
                     this.eventTypes.set((item as any).signature, item);
                 }
             }
@@ -45,7 +45,7 @@ export class Web3EventDecoder {
             address: event.address,
             type: evtType.type,
             signature: signature,
-            event: evtType.name ?? '<unknown>',
+            event: evtType.name ?? "<unknown>",
             args: decodedArgs,
             blockHash: event.blockHash,
             blockNumber: event.blockNumber,
@@ -56,7 +56,6 @@ export class Web3EventDecoder {
     }
 
     decodeEvents(rawLogs: RawEvent[]): EvmEvent[] {
-        return rawLogs.map(log => this.decodeEvent(log)).filter(isNotNull);
+        return rawLogs.map((log) => this.decodeEvent(log)).filter(isNotNull);
     }
-
 }

@@ -24,7 +24,7 @@ describe("Agent bot runner tests", async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
     beforeEach(async () => {
@@ -41,7 +41,7 @@ describe("Agent bot runner tests", async () => {
 
     it("Should run agent bot runner until its stopped", async () => {
         const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
-        const spyStep = spy.on(agentBotRunner, 'runStep');
+        const spyStep = spy.on(agentBotRunner, "runStep");
         agentBotRunner.requestStop();
         void agentBotRunner.run();
         agentBotRunner.requestStop();
@@ -50,7 +50,7 @@ describe("Agent bot runner tests", async () => {
 
     it("Should create agent bot runner and run it", async () => {
         context.blockchainIndexer.chain.mine(10);
-        const spyWarn = spy.on(console, 'warn');
+        const spyWarn = spy.on(console, "warn");
         // create agents
         await createTestAgentBot(context, orm, ownerAddress);
         const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
@@ -60,7 +60,7 @@ describe("Agent bot runner tests", async () => {
         const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay, new FaultyNotifier());
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
-        const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>)
+        const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         // make faulty entity
         const agentEnt = agentEntities[0];
         agentEnt.vaultAddress = "someString";
@@ -71,5 +71,4 @@ describe("Agent bot runner tests", async () => {
         expect(spyWarn).to.have.been.called.once;
         agentBotRunner.requestStop();
     });
-
 });

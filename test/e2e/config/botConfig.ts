@@ -1,8 +1,26 @@
 import { readFileSync } from "fs";
-import { BotConfigFile, createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotChainConfig, createBotConfig, createChainConfig, createStateConnectorClient, createWalletClient } from "../../../src/config/BotConfig"
+import {
+    BotConfigFile,
+    createAttestationHelper,
+    createBlockchainIndexerHelper,
+    createBlockchainWalletHelper,
+    createBotChainConfig,
+    createBotConfig,
+    createChainConfig,
+    createStateConnectorClient,
+    createWalletClient,
+} from "../../../src/config/BotConfig";
 import { initWeb3 } from "../../../src/utils/web3";
-import { SourceId } from "../../../src/verification/sources/sources"
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
+import { SourceId } from "../../../src/verification/sources/sources";
+import {
+    ATTESTATION_PROVIDER_URLS,
+    COSTON_RPC,
+    COSTON_RUN_CONFIG_CONTRACTS,
+    COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS,
+    OWNER_ADDRESS,
+    STATE_CONNECTOR_ADDRESS,
+    STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+} from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
@@ -82,32 +100,82 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create attestation helper", async () => {
-        const btc = await createAttestationHelper(SourceId.BTC, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS, indexerBTCUrl);
+        const btc = await createAttestationHelper(
+            SourceId.BTC,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS,
+            indexerBTCUrl
+        );
         expect(btc.chainId).to.eq(SourceId.BTC);
-        const doge = await createAttestationHelper(SourceId.DOGE, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS, indexerDOGEUrl);
+        const doge = await createAttestationHelper(
+            SourceId.DOGE,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS,
+            indexerDOGEUrl
+        );
         expect(doge.chainId).to.eq(SourceId.DOGE);
-        const xrp = await createAttestationHelper(SourceId.XRP, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS, indexerXRPUrl);
+        const xrp = await createAttestationHelper(
+            SourceId.XRP,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS,
+            indexerXRPUrl
+        );
         expect(xrp.chainId).to.eq(SourceId.XRP);
         const unsupportedSourceId = SourceId.ALGO;
-        await expect(createAttestationHelper(unsupportedSourceId, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS, indexerXRPUrl)).to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`).and.be.an.instanceOf(Error);
+        await expect(
+            createAttestationHelper(
+                unsupportedSourceId,
+                ATTESTATION_PROVIDER_URLS,
+                STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+                STATE_CONNECTOR_ADDRESS,
+                OWNER_ADDRESS,
+                indexerXRPUrl
+            )
+        )
+            .to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {
-        const stateConnector = await createStateConnectorClient(indexerXRPUrl, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const stateConnector = await createStateConnectorClient(
+            indexerXRPUrl,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS
+        );
         expect(stateConnector.account).to.eq(OWNER_ADDRESS);
     });
 
     it("Should create tracked state config chain", async () => {
         const chainInfo = actorRunConfig.chainInfos[0];
-        const trackedStateConfigChain = await createChainConfig(chainInfo, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const trackedStateConfigChain = await createChainConfig(
+            chainInfo,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS
+        );
         expect(trackedStateConfigChain.stateConnector).not.be.null;
-    })
+    });
 
     it("Should create agent bot config chain", async () => {
         const botConfig = await createBotConfig(runConfig, accounts[0]);
         const chainInfo = runConfig.chainInfos[0];
-        const agentBotConfigChain = await createBotChainConfig(chainInfo, botConfig.orm!.em, ATTESTATION_PROVIDER_URLS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, STATE_CONNECTOR_ADDRESS, OWNER_ADDRESS);
+        const agentBotConfigChain = await createBotChainConfig(
+            chainInfo,
+            botConfig.orm!.em,
+            ATTESTATION_PROVIDER_URLS,
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS
+        );
         expect(agentBotConfigChain.stateConnector).not.be.null;
-    })
-
+    });
 });

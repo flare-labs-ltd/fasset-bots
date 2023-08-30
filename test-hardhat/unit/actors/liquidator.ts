@@ -48,5 +48,4 @@ describe("Liquidator unit tests", async () => {
         await liquidator.runStep();
         expect(spyConsole).to.be.called.once;
     });
-
 });

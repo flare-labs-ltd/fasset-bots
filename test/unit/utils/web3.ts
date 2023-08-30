@@ -9,11 +9,10 @@ const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
 
 describe("web3 unit tests", async () => {
-
     it("Should create provider", async () => {
         expect(createProvider(null)).to.be.null;
         expect(createProvider("local").host).to.eq("http://127.0.0.1:8545");
-        const randomProvider = "http://random"
+        const randomProvider = "http://random";
         expect(createProvider(randomProvider).host).to.eq(randomProvider);
     });
 
@@ -36,5 +35,4 @@ describe("web3 unit tests", async () => {
         expect(accounts.length).to.eq(0);
         web3.eth.accounts.wallet.clear();
     });
-
 });

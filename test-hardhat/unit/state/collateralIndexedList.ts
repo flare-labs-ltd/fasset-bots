@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { CollateralIndexedList, CollateralTypeId } from "../../../src/state/CollateralIndexedList";
 import { CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
-
 describe("Collateral indexed list unit tests", async () => {
     const elt0 = { collateralClass: CollateralClass.POOL, token: "token0" };
     const elt1 = { collateralClass: CollateralClass.VAULT, token: "token1" };
@@ -56,16 +55,15 @@ describe("Collateral indexed list unit tests", async () => {
         expect(indexedList.index).to.not.be.null;
 
         for (const item of indexedList) {
-            if(item.token === elt0.token) {
+            if (item.token === elt0.token) {
                 expect(item.collateralClass).to.eq(elt0.collateralClass);
             }
-            if(item.token === elt1.token) {
+            if (item.token === elt1.token) {
                 expect(item.collateralClass).to.eq(elt1.collateralClass);
             }
-            if(item.token === elt2.token) {
+            if (item.token === elt2.token) {
                 expect(item.collateralClass).to.eq(elt2.collateralClass);
             }
         }
     });
-
 });

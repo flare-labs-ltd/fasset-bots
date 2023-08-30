@@ -7,9 +7,9 @@ import { PostgreSqlDriver } from "@mikro-orm/postgresql";
 
 const options: Options<AbstractSqlDriver | PostgreSqlDriver> = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
-    dbName: 'fasset-bots.db',
-    debug: false
-}
+    dbName: "fasset-bots.db",
+    debug: false,
+};
 
 export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions): Promise<ORM> {
     const createOptions: CreateOrmOptions = { ...options, ...optionsOverride };

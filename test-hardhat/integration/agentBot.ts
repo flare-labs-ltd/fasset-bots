@@ -10,7 +10,18 @@ import { web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgentB, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
+import {
+    convertFromUSD5,
+    createCRAndPerformMinting,
+    createCRAndPerformMintingAndRunSteps,
+    createTestAgentB,
+    createTestAgentBotAndMakeAvailable,
+    createTestMinter,
+    createTestRedeemer,
+    disableMccTraceManager,
+    getAgentStatus,
+    mintVaultCollateralToOwner,
+} from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -23,7 +34,7 @@ import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 import { attestationWindowSeconds } from "../../src/utils/fasset-helpers";
 
-const IERC20 = artifacts.require('IERC20');
+const IERC20 = artifacts.require("IERC20");
 
 describe("Agent bot tests", async () => {
     let accounts: string[];
@@ -41,7 +52,7 @@ describe("Agent bot tests", async () => {
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
@@ -123,7 +134,7 @@ describe("Agent bot tests", async () => {
         let mintings = await agentBot.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, 'started');
+        assert.equal(mintingStarted.state, "started");
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
@@ -137,8 +148,8 @@ describe("Agent bot tests", async () => {
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
-        assert.equal(mintingDone.state, 'done');
+        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+        assert.equal(mintingDone.state, "done");
         // check that executing minting after calling mintingPaymentDefault will revert
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -171,7 +182,7 @@ describe("Agent bot tests", async () => {
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
+        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
@@ -186,7 +197,7 @@ describe("Agent bot tests", async () => {
         // run step
         await agentBot.runStep(orm.em);
         // check if minting is done
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
+        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
@@ -213,7 +224,7 @@ describe("Agent bot tests", async () => {
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId)
+        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling unstickMinting will revert
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
@@ -236,7 +247,10 @@ describe("Agent bot tests", async () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // manually unstick minting
         const settings = await context.assetManager.getSettings();
-        const burnNats = (await agentBot.agent.getPoolCollateralPrice()).convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const burnNats = (await agentBot.agent.getPoolCollateralPrice())
+            .convertUBAToTokenWei(crt.valueUBA)
+            .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
+            .divn(MAX_BIPS);
         const proof = await agentBot.agent.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
         await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.ownerAddress, value: burnNats ?? BN_ZERO });
         await agentBot.runStep(orm.em);
@@ -244,7 +258,6 @@ describe("Agent bot tests", async () => {
         const openMintings2 = await agentBot.openMintings(orm.em, false);
         assert.equal(openMintings2.length, 0);
     });
-
 
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
         // perform minting
@@ -454,7 +467,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spyTop = spy.on(agentBot, 'checkAgentForCollateralRatiosAndTopUp');
+        const spyTop = spy.on(agentBot, "checkAgentForCollateralRatiosAndTopUp");
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -463,7 +476,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {
-        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress, } as FilterQuery<AgentEntity>);
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // check agent status
         const status = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status, AgentStatus.NORMAL);
@@ -550,7 +563,7 @@ describe("Agent bot tests", async () => {
 
     it("Should fail to send notification - 'faulty notifier", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, new FaultyNotifier());
-        const spyConsole = spy.on(console, 'error');
+        const spyConsole = spy.on(console, "error");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -566,15 +579,15 @@ describe("Agent bot tests", async () => {
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // run bot
-        await agentBot.runStep(orm.em);
+        await agentBot.handleEvents(orm.em);
         expect(spyConsole).to.have.been.called.once;
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
-        const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
-        const spyTopUp = spy.on(agentBot.notifier, 'sendCollateralTopUpAlert');
+        const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
+        const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
+        const spyTopUp = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
@@ -603,8 +616,8 @@ describe("Agent bot tests", async () => {
         const agentB = await createTestAgentB(context, ownerAddress);
         const deposit = ownerBalance.sub(NATIVE_LOW_BALANCE);
         await agentB.buyCollateralPoolTokens(deposit);
-        const spyTopUpFailed = spy.on(agentBot.notifier, 'sendCollateralTopUpFailedAlert');
-        const spyLowOwnerBalance = spy.on(agentBot.notifier, 'sendLowBalanceOnOwnersAddress');
+        const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
+        const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
@@ -631,7 +644,7 @@ describe("Agent bot tests", async () => {
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         await context.ftsoManager.mockFinalizePriceEpoch();
-        await agentBot.runStep(orm.em)
+        await agentBot.runStep(orm.em);
         // change prices
         await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
@@ -642,7 +655,7 @@ describe("Agent bot tests", async () => {
         const forDeposit = ownerBalance.sub(ownerBalance.divn(1000000));
         await agent.buyCollateralPoolTokens(forDeposit);
         // check for top up collateral
-        await agentBot.runStep(orm.em)
+        await agentBot.runStep(orm.em);
         // redeem pool tokens
         const redeemAt = await agent.announcePoolTokenRedemption(forDeposit);
         await time.increaseTo(redeemAt);
@@ -650,5 +663,4 @@ describe("Agent bot tests", async () => {
         const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
         expect(ownerBalanceAfter.gte(forDeposit)).to.be.true;
     });
-
 });

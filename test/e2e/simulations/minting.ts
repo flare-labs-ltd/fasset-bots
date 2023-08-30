@@ -49,7 +49,6 @@ describe.skip("Agent bot simulation - coston", async () => {
         // set context
         context = botCliCommands.context;
 
-
         // agent bot
         // check if agent already exists
         const agentEnt = await orm.em.findOne(AgentEntity, { ownerAddress: ownerAddress } as FilterQuery<AgentEntity>);
@@ -58,7 +57,14 @@ describe.skip("Agent bot simulation - coston", async () => {
         } else {
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH);
             vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
-            agentBot = await createTestAgentBotAndDepositCollaterals(context, orm, ownerAddress, AGENT_DEFAULT_CONFIG_PATH, depositVaultCollateralAmount, buyPoolTokens);
+            agentBot = await createTestAgentBotAndDepositCollaterals(
+                context,
+                orm,
+                ownerAddress,
+                AGENT_DEFAULT_CONFIG_PATH,
+                depositVaultCollateralAmount,
+                buyPoolTokens
+            );
             // make available
             await agentBot.agent.makeAvailable();
         }
@@ -71,11 +77,10 @@ describe.skip("Agent bot simulation - coston", async () => {
 
         // redeemer
         redeemer = await createTestRedeemer(context, minterAddress, underlyingMinterAddress);
-
     });
 
     it("Should simulate minting and redeeming", async () => {
-        await agentBot.runStep(orm.em)
+        await agentBot.runStep(orm.em);
         const lots = 1;
         // update underlying block manually
         await proveAndUpdateUnderlyingBlock(context, ownerAddress);
@@ -93,7 +98,7 @@ describe.skip("Agent bot simulation - coston", async () => {
             if (minting.state === AgentMintingState.DONE) break;
             await sleep(20000);
         }
-        await agentBot.runStep(orm.em)
+        await agentBot.runStep(orm.em);
         // update underlying block manually
         await proveAndUpdateUnderlyingBlock(context, ownerAddress);
         // request redemption
@@ -109,8 +114,6 @@ describe.skip("Agent bot simulation - coston", async () => {
             if (redemption.state === AgentRedemptionState.DONE) break;
             await sleep(20000);
         }
-        await agentBot.runStep(orm.em)
-
+        await agentBot.runStep(orm.em);
     });
-
 });

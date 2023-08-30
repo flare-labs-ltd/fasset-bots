@@ -6,8 +6,8 @@ export class TimeKeeper {
     constructor(
         public address: string,
         public context: IAssetActorContext,
-        public intervalInMs: number,
-    ) { }
+        public intervalInMs: number
+    ) {}
 
     interval?: NodeJS.Timer;
 
@@ -23,7 +23,9 @@ export class TimeKeeper {
             logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
             await proveAndUpdateUnderlyingBlock(this.context, this.address);
             const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-            logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
+            logger.info(
+                `Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`
+            );
         } catch (err) {
             console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
             logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
@@ -35,7 +37,7 @@ export class TimeKeeper {
      */
     /* istanbul ignore next */
     run() {
-        void this.updateUnderlyingBlock();  // do not wait whole interval for start
+        void this.updateUnderlyingBlock(); // do not wait whole interval for start
         this.interval = setInterval(async () => {
             await this.updateUnderlyingBlock();
         }, this.intervalInMs);
@@ -48,5 +50,4 @@ export class TimeKeeper {
     clear() {
         clearInterval(this.interval);
     }
-
 }

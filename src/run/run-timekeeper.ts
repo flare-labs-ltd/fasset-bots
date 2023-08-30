@@ -9,9 +9,9 @@ import { createActorAssetContext } from "../config/create-asset-context";
 
 dotenv.config();
 
-const TIMEKEEPER_ADDRESS: string = requireEnv('NATIVE_ACCOUNT1');
-const TIMEKEEPER_PRIVATE_KEY: string = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
-const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json"
+const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
+const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
+const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
 
 toplevelRun(async () => {
     // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
@@ -29,7 +29,7 @@ toplevelRun(async () => {
     // run
     console.log("Timekeeper bot started, press CTRL+C to end");
     const stopped = new Future<boolean>();
-    process.on('SIGINT', () => {
+    process.on("SIGINT", () => {
         console.log("Timekeeper bot stopping...");
         for (const timekeeper of timekeepers) {
             timekeeper.clear();

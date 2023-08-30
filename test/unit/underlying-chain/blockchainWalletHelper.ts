@@ -20,13 +20,12 @@ export const targetAddressXRP = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
 describe("XRP wallet tests", async () => {
-
     const sourceId: SourceId = SourceId.XRP;
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
@@ -54,7 +53,9 @@ describe("XRP wallet tests", async () => {
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options, false)).to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options, false))
+            .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`)
+            .and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(orm, fundedAddressXRP);
     });
 
@@ -63,18 +64,18 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined, false)).to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`).and.be.an.instanceOf(Error);
+        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined, false))
+            .to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should get transaction fee", async () => {
         const fee = await walletHelper.getTransactionFee();
         expect(fee.gtn(0));
     });
-
 });
 
 describe("BTC wallet tests", async () => {
-
     const sourceId: SourceId = SourceId.BTC;
     const walletUrl: string = "https://api.bitcore.io/api/BTC/testnet/";
     const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
@@ -83,7 +84,7 @@ describe("BTC wallet tests", async () => {
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });
@@ -104,11 +105,9 @@ describe("BTC wallet tests", async () => {
         await removeWalletAddressFromDB(orm, fundedAddress);
         await removeWalletAddressFromDB(orm, targetAddress);
     });
-
 });
 
 describe("DOGE wallet tests", async () => {
-
     const sourceId: SourceId = SourceId.DOGE;
     const walletUrl: string = "https://api.bitcore.io/api/DOGE/testnet/";
     const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
@@ -118,7 +117,7 @@ describe("DOGE wallet tests", async () => {
     const amountToSendSatoshies = 100000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
     });
@@ -146,5 +145,4 @@ describe("DOGE wallet tests", async () => {
         expect(transaction).to.not.be.null;
         await removeWalletAddressFromDB(orm, fundedAddress);
     });
-
 });

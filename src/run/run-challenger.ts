@@ -8,9 +8,9 @@ import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 dotenv.config();
 
-const CHALLENGER_ADDRESS: string = requireEnv('NATIVE_ACCOUNT1');
-const CHALLENGER_PRIVATE_KEY: string = requireEnv('NATIVE_ACCOUNT1_PRIVATE_KEY');
-const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json"
+const CHALLENGER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
+const CHALLENGER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
+const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
 
 toplevelRun(async () => {
     // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
@@ -21,7 +21,7 @@ toplevelRun(async () => {
     const runner = await ActorBaseRunner.create(config, CHALLENGER_ADDRESS, ActorBaseKind.CHALLENGER);
     // run
     console.log("Challenger bot started, press CTRL+C to end");
-    process.on('SIGINT', () => {
+    process.on("SIGINT", () => {
         runner.requestStop();
     });
     await runner.run(ActorBaseKind.CHALLENGER);

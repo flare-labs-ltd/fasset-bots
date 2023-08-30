@@ -2,9 +2,23 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
+import {
+    createTestAssetContext,
+    getTestAssetTrackedStateContext,
+    TestAssetBotContext,
+    TestAssetTrackedStateContext,
+} from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable, createCRAndPerformMinting, createTestAgentBot } from "../test-utils/helpers";
+import {
+    createCRAndPerformMintingAndRunSteps,
+    createTestLiquidator,
+    createTestMinter,
+    disableMccTraceManager,
+    getAgentStatus,
+    createTestAgentBotAndMakeAvailable,
+    createCRAndPerformMinting,
+    createTestAgentBot,
+} from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -16,7 +30,7 @@ import { artifacts } from "../../src/utils/artifacts";
 import { MockTrackedState } from "../../src/mock/MockTrackedState";
 use(spies);
 
-const IERC20 = artifacts.require('IERC20');
+const IERC20 = artifacts.require("IERC20");
 
 describe("Liquidator tests", async () => {
     let accounts: string[];
@@ -35,7 +49,7 @@ describe("Liquidator tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         liquidatorAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
     beforeEach(async () => {
@@ -57,7 +71,7 @@ describe("Liquidator tests", async () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
-        const spyLiquidation = spy.on(liquidator, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
         // mock price changes
         await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -69,7 +83,7 @@ describe("Liquidator tests", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
+        const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
         // create collateral reservation, perform minting and run liquidation trigger
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         await liquidator.runStep();
@@ -101,7 +115,7 @@ describe("Liquidator tests", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
+        const spyMinting = spy.on(liquidator, "handleMintingExecuted");
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         // check collateral ratio after minting execution
@@ -146,8 +160,8 @@ describe("Liquidator tests", async () => {
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         const cBalanceAfter = await vaultCollateralToken.balanceOf(liquidatorAddress);
         // check FAsset and cr balance
-        expect((fBalanceBefore.sub(liquidateMaxUBA)).toString()).to.eq(fBalanceAfter.toString());
-        expect((cBalanceAfter.gt(cBalanceBefore))).to.be.true;
+        expect(fBalanceBefore.sub(liquidateMaxUBA).toString()).to.eq(fBalanceAfter.toString());
+        expect(cBalanceAfter.gt(cBalanceBefore)).to.be.true;
     });
 
     it("Should not check collateral ratio after minting execution - faulty function", async () => {
@@ -157,7 +171,7 @@ describe("Liquidator tests", async () => {
         const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyMinting = spy.on(liquidator, 'handleMintingExecuted');
+        const spyMinting = spy.on(liquidator, "handleMintingExecuted");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check collateral ratio after minting execution
@@ -170,7 +184,7 @@ describe("Liquidator tests", async () => {
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
         await mockState.initialize();
         const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
-        const spyLiquidation = spy.on(liquidator, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
         // mock price changes
@@ -179,5 +193,4 @@ describe("Liquidator tests", async () => {
         await liquidator.runStep();
         expect(spyLiquidation).to.have.been.called.once;
     });
-
 });

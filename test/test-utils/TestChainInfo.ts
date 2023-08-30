@@ -10,7 +10,7 @@ export const testNatInfo: TestNatInfo = {
     name: "NetworkNative",
     symbol: "NAT",
     startPrice: 0.42,
-}
+};
 
 export interface TestChainInfo extends ChainInfo {
     startPrice: number;
@@ -25,7 +25,7 @@ export const testNativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export const testChainInfo: Record<'eth' | 'btc' | 'xrp', TestChainInfo> = {
+export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
     eth: {
         chainId: 1,
         name: "Ethereum",
@@ -64,5 +64,5 @@ export const testChainInfo: Record<'eth' | 'btc' | 'xrp', TestChainInfo> = {
         underlyingBlocksForPayment: 10,
         lotSize: 10_000,
         requireEOAProof: false,
-    }
-}
+    },
+};

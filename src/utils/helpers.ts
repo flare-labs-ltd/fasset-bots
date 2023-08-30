@@ -37,7 +37,7 @@ export const DEFAULT_TIMEOUT = 15000;
  * Asynchronously wait `ms` milliseconds.
  */
 export function sleep(ms: number) {
-    return new Promise<void>(resolve => setTimeout(() => resolve(), ms));
+    return new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
 }
 
 /**
@@ -80,27 +80,27 @@ export function toBN(x: BN | number | string): BN {
  * @returns same number as Number
  */
 export function toNumber(x: BN | number | string) {
-    if (typeof x === 'number') return x;
+    if (typeof x === "number") return x;
     return Number(x);
 }
 
 // return String(Math.round(x * 10^exponent)), but sets places below float precision to zero instead of some random digits
 export function toStringExp(x: number | string, exponent: number): string {
     let xStr: string;
-    if (typeof x === 'number') {
+    if (typeof x === "number") {
         const significantDecimals = x !== 0 ? Math.max(0, 14 - Math.floor(Math.log10(x))) : 0;
         const decimals = Math.min(exponent, significantDecimals);
         xStr = x.toFixed(decimals);
     } else {
         xStr = x;
     }
-    const dot = xStr.indexOf('.');
+    const dot = xStr.indexOf(".");
     const mantissa = dot >= 0 ? xStr.slice(0, dot) + xStr.slice(dot + 1) : xStr;
     const precision = dot >= 0 ? xStr.length - (dot + 1) : 0;
     if (precision === exponent) return mantissa;
     /* istanbul ignore if */
     if (exponent < precision) throw new Error("toStringExp: loss of precision");
-    const zeros = Array.from({ length: exponent - precision }, () => '0').join('');   // trailing zeros
+    const zeros = Array.from({ length: exponent - precision }, () => "0").join(""); // trailing zeros
     return mantissa + zeros;
 }
 
@@ -181,21 +181,23 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
-export class CommandLineError extends Error { }
+export class CommandLineError extends Error {}
 
 // toplevel async function runner for node.js
 /* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {
-    main().catch((error) => {
-        if (error instanceof CommandLineError) {
-            console.error(`Error: ${error.message}`);
-        } else {
-            console.error(error);
-        }
-        process.exit(1);
-    }).finally(() => {
-        process.exit(0);
-    });
+    main()
+        .catch((error) => {
+            if (error instanceof CommandLineError) {
+                console.error(`Error: ${error.message}`);
+            } else {
+                console.error(error);
+            }
+            process.exit(1);
+        })
+        .finally(() => {
+            process.exit(0);
+        });
 }
 
 /**
@@ -214,7 +216,7 @@ export class Future<T> {
 // Error handling
 
 export function fail(messageOrError: string | Error): never {
-    if (typeof messageOrError === 'string') {
+    if (typeof messageOrError === "string") {
         throw new Error(messageOrError);
     }
     throw messageOrError;
@@ -235,9 +237,9 @@ export function autoReadEnvVar(text: string) {
 
 export function filterStackTrace(error: any) {
     const stack = String(error.stack || error);
-    let lines = stack.split('\n');
-    lines = lines.filter(l => !l.startsWith('    at') || /\.(sol|ts):/.test(l));
-    return lines.join('\n');
+    let lines = stack.split("\n");
+    lines = lines.filter((l) => !l.startsWith("    at") || /\.(sol|ts):/.test(l));
+    return lines.join("\n");
 }
 
 export function reportError(error: any) {
@@ -245,12 +247,12 @@ export function reportError(error: any) {
 }
 
 // either (part of) error message or an error constructor
-export type ErrorFilter = string | { new(...args: any[]): Error };
+export type ErrorFilter = string | { new (...args: any[]): Error };
 
 export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
-    const message = String(error?.message ?? '');
+    const message = String(error?.message ?? "");
     for (const expectedErr of expectedErrors) {
-        if (typeof expectedErr === 'string') {
+        if (typeof expectedErr === "string") {
             if (message.includes(expectedErr)) return true;
         } else {
             if (error instanceof expectedErr) return true;
@@ -261,12 +263,12 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
 
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
     if (errorIncluded(error, expectedErrors)) return;
-    throw error;    // unexpected error
+    throw error; // unexpected error
 }
 
 export function toBIPS(x: number | string) {
-    if (typeof x === 'string' && x.endsWith('%')) {
-        return toBNExp(x.slice(0, x.length - 1), 2);    // x is in percent, only multiply by 100
+    if (typeof x === "string" && x.endsWith("%")) {
+        return toBNExp(x.slice(0, x.length - 1), 2); // x is in percent, only multiply by 100
     } else {
         return toBNExp(x, 4);
     }

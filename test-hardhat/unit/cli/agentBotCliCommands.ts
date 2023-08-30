@@ -26,7 +26,7 @@ use(spies);
 
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
-const StateConnector = artifacts.require('StateConnectorMock');
+const StateConnector = artifacts.require("StateConnectorMock");
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -45,7 +45,7 @@ describe("Bot cli commands unit tests", async () => {
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
@@ -63,24 +63,26 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            chains: [{
-                chainInfo: {
-                    chainId: chainId,
-                    name: "Ripple",
-                    symbol: "XRP",
-                    decimals: 6,
-                    amgDecimals: 0,
-                    requireEOAProof: false
+            chains: [
+                {
+                    chainInfo: {
+                        chainId: chainId,
+                        name: "Ripple",
+                        symbol: "XRP",
+                        decimals: 6,
+                        amgDecimals: 0,
+                        requireEOAProof: false,
+                    },
+                    wallet: new MockChainWallet(chain),
+                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
+                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
+                    assetManager: "",
                 },
-                wallet: new MockChainWallet(chain),
-                blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-                assetManager: "",
-            }],
+            ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifier: new Notifier(),
-            addressUpdater: ""
+            addressUpdater: "",
         };
     });
 
@@ -137,7 +139,7 @@ describe("Bot cli commands unit tests", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.withdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
         expect(agentEnt.withdrawalAllowedAtTimestamp.gt(BN_ZERO)).to.be.true;
-    })
+    });
 
     it("Should self close", async () => {
         const agent = await createAgent();
@@ -218,7 +220,7 @@ describe("Bot cli commands unit tests", async () => {
         await minter.executeMinting(crt, txHash);
         // withdraw pool fees
         const amount = await botCliCommands.poolFeesBalance(agent.vaultAddress);
-        await botCliCommands.withdrawPoolFees(agent.vaultAddress, (amount.divn(2)).toString());
+        await botCliCommands.withdrawPoolFees(agent.vaultAddress, amount.divn(2).toString());
         const amountAfter = await botCliCommands.poolFeesBalance(agent.vaultAddress);
         expect(amount.gt(amountAfter)).to.be.true;
     });
@@ -248,7 +250,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
         const spyConsole = spy.on(console, "log");
         await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
@@ -262,7 +264,12 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         const paymentReference = await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
         const amountToWithdraw = 100;
-        const txHash = await botCliCommands.performUnderlyingWithdrawal(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress", paymentReference!);
+        const txHash = await botCliCommands.performUnderlyingWithdrawal(
+            agent.vaultAddress,
+            amountToWithdraw.toString(),
+            "SomeRandomUnderlyingAddress",
+            paymentReference!
+        );
         expect(txHash).to.not.be.undefined;
     });
 
@@ -272,7 +279,12 @@ describe("Bot cli commands unit tests", async () => {
         const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)).to.be.true;
         const amountToWithdraw = 100;
-        const txHash = await botCliCommands.performUnderlyingWithdrawal(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress", paymentReference!);
+        const txHash = await botCliCommands.performUnderlyingWithdrawal(
+            agent.vaultAddress,
+            amountToWithdraw.toString(),
+            "SomeRandomUnderlyingAddress",
+            paymentReference!
+        );
         chain.mine(chain.finalizationBlocks + 1);
         //  not enough time passed
         await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, txHash);
@@ -308,8 +320,12 @@ describe("Bot cli commands unit tests", async () => {
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
         expect(botCliCommands.ownerAddress).to.be.undefined;
-        await expect(botCliCommands.initEnvironment(runConfigFile1)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
-        await expect(botCliCommands.initEnvironment(runConfigFile2)).to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config").and.be.an.instanceOf(Error);
+        await expect(botCliCommands.initEnvironment(runConfigFile1))
+            .to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config")
+            .and.be.an.instanceOf(Error);
+        await expect(botCliCommands.initEnvironment(runConfigFile2))
+            .to.eventually.be.rejectedWith("Missing defaultAgentSettingsPath or ormOptions in config")
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should delegate and undelegate", async () => {
@@ -320,15 +336,14 @@ describe("Bot cli commands unit tests", async () => {
         const del2 = accounts[102];
         const del1Amount = "3000";
         const del2Amount = "5000";
-        await botCliCommands.delegatePoolCollateral(agent.vaultAddress, del1 + ',' + del2, del1Amount + ',' + del2Amount);
-        const delegations1 = await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address) as any;
+        await botCliCommands.delegatePoolCollateral(agent.vaultAddress, del1 + "," + del2, del1Amount + "," + del2Amount);
+        const delegations1 = (await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address)) as any;
         expect(delegations1._delegateAddresses[0]).to.eq(del1);
         expect(delegations1._delegateAddresses[1]).to.eq(del2);
         expect(delegations1._bips[0].toString()).to.eq(del1Amount);
         expect(delegations1._bips[1].toString()).to.eq(del2Amount);
         await botCliCommands.undelegatePoolCollateral(agent.vaultAddress);
-        const { _delegateAddresses } = await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address) as any;
+        const { _delegateAddresses } = (await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address)) as any;
         expect(_delegateAddresses.length).to.eq(0);
     });
-
 });

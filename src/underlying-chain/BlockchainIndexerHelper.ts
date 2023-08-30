@@ -5,7 +5,6 @@ import { DEFAULT_TIMEOUT, sleep, toBN } from "../utils/helpers";
 import { BTC_MDU } from "@flarenetwork/mcc";
 
 export class BlockchainIndexerHelper implements IBlockChain {
-
     finalizationBlocks: number = 0;
     secondsPerBlock: number = 0;
     client: AxiosInstance;
@@ -20,7 +19,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             timeout: DEFAULT_TIMEOUT,
             headers: {
                 "Content-Type": "application/json",
-                "X-API-KEY": this.indexerWebServerApiKey
+                "X-API-KEY": this.indexerWebServerApiKey,
             },
 
             validateStatus: function (status: number) {
@@ -42,7 +41,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 inputs: await this.handleInputsOutputs(data, true),
                 outputs: await this.handleInputsOutputs(data, false),
                 reference: data.paymentReference,
-                status: this.successStatus(data)
+                status: this.successStatus(data),
             };
         }
         return null;
@@ -55,8 +54,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
         if (status === "OK" && data) {
             return {
                 hash: data.blockHash,
-                number: data.blockNumber
-            }
+                number: data.blockNumber,
+            };
         }
         return null;
     }
@@ -74,7 +73,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 hash: data.blockHash,
                 number: data.blockNumber,
                 timestamp: data.timestamp,
-                transactions: await this.extractTransactionIds(data.blockNumber)
+                transactions: await this.extractTransactionIds(data.blockNumber),
             };
         }
         return null;
@@ -89,7 +88,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 hash: data.blockHash,
                 number: data.blockNumber,
                 timestamp: data.timestamp,
-                transactions: await this.extractTransactionIds(data.blockNumber)
+                transactions: await this.extractTransactionIds(data.blockNumber),
             };
         }
         return null;
@@ -120,8 +119,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     inputs: await this.handleInputsOutputs(tx, true),
                     outputs: await this.handleInputsOutputs(tx, false),
                     reference: tx.paymentReference,
-                    status: this.successStatus(tx)
-                })
+                    status: this.successStatus(tx),
+                });
             }
         }
         return txs;
@@ -141,8 +140,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     inputs: await this.handleInputsOutputs(tx, true),
                     outputs: await this.handleInputsOutputs(tx, false),
                     reference: tx.paymentReference,
-                    status: this.successStatus(tx)
-                })
+                    status: this.successStatus(tx),
+                });
             }
         }
         return txs;
@@ -158,7 +157,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             case SourceId.XRP:
                 return this.XRPInputsOutputs(data, input);
             default:
-                throw new Error(`Invalid SourceId: ${this.sourceId}.`)
+                throw new Error(`Invalid SourceId: ${this.sourceId}.`);
         }
     }
 
@@ -171,15 +170,13 @@ export class BlockchainIndexerHelper implements IBlockChain {
         if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
-            })
+            });
         }
         return transactionIds;
     }
 
     private get isUTXOchain(): boolean {
-        return getSourceName(this.sourceId) === "BTC" ||
-            getSourceName(this.sourceId) === "DOGE" ||
-            getSourceName(this.sourceId) === "LTC";
+        return getSourceName(this.sourceId) === "BTC" || getSourceName(this.sourceId) === "DOGE" || getSourceName(this.sourceId) === "LTC";
     }
 
     private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {
@@ -205,8 +202,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
                             inputs.push([
                                 /* istanbul ignore next */
                                 elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
-                                toBN(Math.round(value * BTC_MDU).toFixed(0))
-                            ])
+                                toBN(Math.round(value * BTC_MDU).toFixed(0)),
+                            ]);
                         }
                     }
                 }
@@ -218,11 +215,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
             data.vout.map((item: any) => {
                 /* istanbul ignore next */
                 const value = item.value || 0;
-                outputs.push([
-                    item.scriptPubKey.address,
-                    toBN(Math.round(value * BTC_MDU).toFixed(0))
-                ])
-            })
+                outputs.push([item.scriptPubKey.address, toBN(Math.round(value * BTC_MDU).toFixed(0))]);
+            });
             if (outputs.length == 0) return [["", toBN(0)]];
             return outputs;
         }

@@ -7,7 +7,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 import chaiAsPromised from "chai-as-promised";
 use(chaiAsPromised);
 
-const RUN_CONFIG_PATH = requireEnv('RUN_CONFIG_PATH');
+const RUN_CONFIG_PATH = requireEnv("RUN_CONFIG_PATH");
 
 describe("UserBot cli commands unit tests", async () => {
     let accounts: string[];
@@ -26,5 +26,4 @@ describe("UserBot cli commands unit tests", async () => {
     it("Should create UserBot - invalid 'fAssetSymbol'", async () => {
         await expect(UserBot.create(RUN_CONFIG_PATH, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
     });
-
 });

@@ -3,7 +3,6 @@ import * as formattingMethods from "../../../src/utils/formatting";
 import { toBN } from "../../../src/utils/helpers";
 
 describe("Formatting unit tests", async () => {
-
     it("Should format values from array", async () => {
         const array = [toBN(0), toBN(1), null];
         const obj = { second: array };
@@ -12,5 +11,4 @@ describe("Formatting unit tests", async () => {
         expect(formattingMethods.formatArgs(event1.args)).to.eq('{"first":"[0, 1, null]"}');
         expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
     });
-
 });

@@ -50,7 +50,7 @@ describe("Actor tests - coston", async () => {
         runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         // accounts
         accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
-        ownerAddress = requireEnv('OWNER_ADDRESS');
+        ownerAddress = requireEnv("OWNER_ADDRESS");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];
@@ -83,7 +83,7 @@ describe("Actor tests - coston", async () => {
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new Notifier())
+        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
         // deposit class 1
@@ -109,7 +109,7 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should create agent bot runner from bot config", async () => {
-        const agentBotRunner = await AgentBotRunner.create(botConfig)
+        const agentBotRunner = await AgentBotRunner.create(botConfig);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
@@ -119,8 +119,12 @@ describe("Actor tests - coston", async () => {
         config1.orm = undefined;
         const config2 = Object.assign({}, botConfig);
         config2.notifier = undefined;
-        await expect(AgentBotRunner.create(config1)).to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`).and.be.an.instanceOf(Error);
-        await expect(AgentBotRunner.create(config2)).to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`).and.be.an.instanceOf(Error);
+        await expect(AgentBotRunner.create(config1))
+            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`)
+            .and.be.an.instanceOf(Error);
+        await expect(AgentBotRunner.create(config2))
+            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should create challenger", async () => {
@@ -146,7 +150,6 @@ describe("Actor tests - coston", async () => {
         expect(actorBaseRunner1.actor.address).to.eq(challengerAddress);
         expect(actorBaseRunner1.actor instanceof Challenger).to.be.true;
 
-
         const actorBaseRunner2 = await ActorBaseRunner.create(actorConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR);
         expect(actorBaseRunner2.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner2.actor.address).to.eq(liquidatorAddress);
@@ -157,5 +160,4 @@ describe("Actor tests - coston", async () => {
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
     });
-
 });

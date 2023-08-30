@@ -87,7 +87,16 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const chains: BotChainConfig[] = [];
     for (const chainInfo of runConfig.chainInfos) {
-        chains.push(await createBotChainConfig(chainInfo, orm ? orm.em : undefined, runConfig.attestationProviderUrls, runConfig.stateConnectorProofVerifierAddress, runConfig.stateConnectorAddress, ownerAddress));
+        chains.push(
+            await createBotChainConfig(
+                chainInfo,
+                orm ? orm.em : undefined,
+                runConfig.attestationProviderUrls,
+                runConfig.stateConnectorProofVerifierAddress,
+                runConfig.stateConnectorAddress,
+                ownerAddress
+            )
+        );
     }
     return {
         rpcUrl: runConfig.rpcUrl,
@@ -97,14 +106,21 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         orm: orm ? orm : undefined,
         notifier: new Notifier(),
         addressUpdater: runConfig.addressUpdater,
-        contractsJsonFile: runConfig.contractsJsonFile
+        contractsJsonFile: runConfig.contractsJsonFile,
     };
 }
 
 /**
  * Creates BotChainConfig configuration from chain info.
  */
-export async function createBotChainConfig(chainInfo: BotChainInfo, em: EM | undefined, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotChainConfig> {
+export async function createBotChainConfig(
+    chainInfo: BotChainInfo,
+    em: EM | undefined,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    ownerAddress: string
+): Promise<BotChainConfig> {
     const wallet = chainInfo.walletUrl && em ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
@@ -116,15 +132,27 @@ export async function createBotChainConfig(chainInfo: BotChainInfo, em: EM | und
 /**
  * Helper for BotChainConfig configuration from chain info.
  */
-export async function createChainConfig(chainInfo: BotChainInfo, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, ownerAddress: string): Promise<BotChainConfig> {
+export async function createChainConfig(
+    chainInfo: BotChainInfo,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    ownerAddress: string
+): Promise<BotChainConfig> {
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl);
-    const stateConnector = await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
+    const stateConnector = await createStateConnectorClient(
+        chainInfo.indexerUrl,
+        attestationProviderUrls,
+        scProofVerifierAddress,
+        stateConnectorAddress,
+        ownerAddress
+    );
     return {
         chainInfo: chainInfo,
         blockchainIndexerClient: blockchainIndexerClient,
         stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
-        fAssetSymbol: chainInfo.fAssetSymbol
+        fAssetSymbol: chainInfo.fAssetSymbol,
     };
 }
 
@@ -133,8 +161,8 @@ export async function createChainConfig(chainInfo: BotChainInfo, attestationProv
  */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = JSON.parse(readFileSync(agentSettingsConfigPath).toString()) as AgentSettingsConfig;
-    const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find(token => {
-        return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol
+    const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find((token) => {
+        return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol;
     });
     if (!vaultCollateralToken) {
         throw new Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
@@ -149,7 +177,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
         poolExitCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolExitCollateralRatioConstant),
         buyFAssetByAgentFactorBIPS: toBN(agentSettingsConfig.buyFAssetByAgentFactorBIPS),
         poolTopupCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolTopupCollateralRatioConstant),
-        poolTopupTokenPriceFactorBIPS: toBN(agentSettingsConfig.poolTopupTokenPriceFactorBIPS)
+        poolTopupTokenPriceFactorBIPS: toBN(agentSettingsConfig.poolTopupTokenPriceFactorBIPS),
     };
     return agentBotSettings;
 }
@@ -157,7 +185,11 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
 /**
  * Creates wallet client.
  */
-export function createWalletClient(sourceId: SourceId, walletUrl: string, inTestnet?: boolean): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
+export function createWalletClient(
+    sourceId: SourceId,
+    walletUrl: string,
+    inTestnet?: boolean
+): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
@@ -166,21 +198,21 @@ export function createWalletClient(sourceId: SourceId, walletUrl: string, inTest
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: inTestnet
+            inTestnet: inTestnet,
         } as UtxoMccCreate);
     } else if (sourceId === SourceId.DOGE) {
         return new WALLET.DOGE({
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: inTestnet
+            inTestnet: inTestnet,
         } as UtxoMccCreate);
     } else {
         return new WALLET.XRP({
             url: walletUrl,
             username: "",
             password: "",
-            apiTokenKey: process.env.FLARE_API_PORTAL_KEY
+            apiTokenKey: process.env.FLARE_API_PORTAL_KEY,
         } as XrpMccCreate);
     }
 }
@@ -190,14 +222,19 @@ export function createWalletClient(sourceId: SourceId, walletUrl: string, inTest
  */
 export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string): BlockchainIndexerHelper {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
-    const apiKey = requireEnv('INDEXER_API_KEY');
+    const apiKey = requireEnv("INDEXER_API_KEY");
     return new BlockchainIndexerHelper(indexerUrl, sourceId, apiKey);
 }
 
 /**
  * Creates blockchain wallet helper using wallet client.
  */
-export function createBlockchainWalletHelper(sourceId: SourceId, em: EntityManager<IDatabaseDriver<Connection>>, walletUrl: string, inTestnet?: boolean): BlockchainWalletHelper {
+export function createBlockchainWalletHelper(
+    sourceId: SourceId,
+    em: EntityManager<IDatabaseDriver<Connection>>,
+    walletUrl: string,
+    inTestnet?: boolean
+): BlockchainWalletHelper {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
@@ -211,7 +248,14 @@ export function createBlockchainWalletHelper(sourceId: SourceId, em: EntityManag
 /**
  * Creates attestation helper.
  */
-export async function createAttestationHelper(sourceId: SourceId, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, owner: string, indexerUrl: string): Promise<AttestationHelper> {
+export async function createAttestationHelper(
+    sourceId: SourceId,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    owner: string,
+    indexerUrl: string
+): Promise<AttestationHelper> {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
     const stateConnector = await createStateConnectorClient(indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
     return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId, indexerUrl), sourceId);
@@ -220,11 +264,16 @@ export async function createAttestationHelper(sourceId: SourceId, attestationPro
 /**
  * Creates state connector client
  */
-export async function createStateConnectorClient(indexerWebServerUrl: string, attestationProviderUrls: string[], scProofVerifierAddress: string, stateConnectorAddress: string, owner: string): Promise<StateConnectorClientHelper> {
-    const apiKey = requireEnv('INDEXER_API_KEY');
+export async function createStateConnectorClient(
+    indexerWebServerUrl: string,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    owner: string
+): Promise<StateConnectorClientHelper> {
+    const apiKey = requireEnv("INDEXER_API_KEY");
     return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
 }
-
 
 function supportedSourceId(sourceId: SourceId) {
     if (sourceId === SourceId.XRP || sourceId === SourceId.BTC || sourceId === SourceId.DOGE) {

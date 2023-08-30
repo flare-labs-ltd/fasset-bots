@@ -1,4 +1,3 @@
-
 import { AssetManagerSettings, CollateralType } from "../../../src/fasset/AssetManagerTypes";
 import { AMGSettings, amgToTokenWeiPrice, convertAmgToTokenWei, convertUBAToTokenWei } from "../../../src/fasset/Conversions";
 import { BNish, toBN } from "../../../src/utils/helpers";
@@ -9,9 +8,8 @@ export class AMGPrice {
     constructor(
         public amgToTokenWei: BN,
         public assetMintingDecimals: BN,
-        public assetMintingGranularityUBA: BN,
-    ) {
-    }
+        public assetMintingGranularityUBA: BN
+    ) {}
 
     convertAmgToUBA(valueAMG: BNish) {
         return convertAmgToUBA(this, valueAMG);
@@ -81,7 +79,7 @@ export class CollateralPrice extends AMGPriceConverter {
         public collateral: CollateralType,
         public assetPrice: TokenPrice,
         public tokenPrice: TokenPrice | undefined,
-        public amgPrice: AMGPrice,
+        public amgPrice: AMGPrice
     ) {
         super();
     }
@@ -97,7 +95,9 @@ export class CollateralPrice extends AMGPriceConverter {
 
     static async forCollateral(priceReader: TokenPriceReader, settings: AssetManagerSettings, collateral: CollateralType, trusted: boolean = false) {
         const assetPrice = await priceReader.getPrice(collateral.assetFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds);
-        const tokenPrice = collateral.tokenFtsoSymbol ? await priceReader.getPrice(collateral.tokenFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds) : undefined;
+        const tokenPrice = collateral.tokenFtsoSymbol
+            ? await priceReader.getPrice(collateral.tokenFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds)
+            : undefined;
         const amgPrice = AMGPrice.forTokenPrices(settings, collateral, assetPrice, tokenPrice);
         return new CollateralPrice(collateral, assetPrice, tokenPrice, amgPrice);
     }

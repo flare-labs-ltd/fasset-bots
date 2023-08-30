@@ -3,7 +3,6 @@ import { toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3DeepNormalize, web3Normalize } from "../../../src/utils/web3normalize";
 
 describe("web3 normalize unit tests", async () => {
-
     it("Should normalize null to null", async () => {
         const res = web3Normalize(null);
         expect(res).to.be.null;
@@ -44,9 +43,9 @@ describe("web3 normalize unit tests", async () => {
             data1: null,
             data2: toBN(24),
             data3: {
-                a: "foo"
-            }
-        }
+                a: "foo",
+            },
+        };
         const deepNormalize = web3DeepNormalize(data);
         expect(deepNormalize.data0[0]).to.eq(data.data0[0].toString());
         expect(deepNormalize.data1).to.eq(data.data1);
@@ -69,5 +68,4 @@ describe("web3 normalize unit tests", async () => {
         };
         expect(fn2).to.throw("Unsupported object type Array");
     });
-
 });

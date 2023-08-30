@@ -32,7 +32,8 @@ describe("Config unit tests", async () => {
     it("Should not create tracked state config - invalid vault collateral", async () => {
         const initialAgentPath = "./test-hardhat/test-utils/run-config-tests/invalid-agent-settings-config-hardhat.json";
         const initialAgentSettings = JSON.parse(readFileSync(initialAgentPath).toString()) as AgentSettingsConfig;
-        await expect(createAgentBotDefaultSettings(context, initialAgentPath)).to.eventually.be.rejectedWith(`Invalid vault collateral token ${initialAgentSettings.vaultCollateralFtsoSymbol}`).and.be.an.instanceOf(Error);
+        await expect(createAgentBotDefaultSettings(context, initialAgentPath))
+            .to.eventually.be.rejectedWith(`Invalid vault collateral token ${initialAgentSettings.vaultCollateralFtsoSymbol}`)
+            .and.be.an.instanceOf(Error);
     });
-
 });

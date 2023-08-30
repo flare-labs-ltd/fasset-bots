@@ -8,24 +8,26 @@ import { fail } from "../utils/helpers";
 import { BotConfig, BotChainConfig } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
 
-const AssetManager = artifacts.require('AssetManager');
-const AssetManagerController = artifacts.require('AssetManagerController');
-const AddressUpdater = artifacts.require('AddressUpdater');
-const WNat = artifacts.require('WNat');
-const IIFtso = artifacts.require('IIFtso');
-const IFtsoRegistry = artifacts.require('IFtsoRegistry');
-const IFtsoManager = artifacts.require('IFtsoManager');
-const FAsset = artifacts.require('FAsset');
-const IERC20 = artifacts.require('IERC20');
+const AssetManager = artifacts.require("AssetManager");
+const AssetManagerController = artifacts.require("AssetManagerController");
+const AddressUpdater = artifacts.require("AddressUpdater");
+const WNat = artifacts.require("WNat");
+const IIFtso = artifacts.require("IIFtso");
+const IFtsoRegistry = artifacts.require("IFtsoRegistry");
+const IFtsoManager = artifacts.require("IFtsoManager");
+const FAsset = artifacts.require("FAsset");
+const IERC20 = artifacts.require("IERC20");
 
 /**
  * Creates asset context needed for AgentBot.
  */
 export async function createAssetContext(botConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetAgentBotContext> {
     if (!botConfig.addressUpdater && !botConfig.contractsJsonFile) {
-        throw new Error('Either contractsJsonFile or addressUpdater must be defined');
+        throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
-    if (!chainConfig.wallet) { throw new Error("Missing wallet configuration"); }
+    if (!chainConfig.wallet) {
+        throw new Error("Missing wallet configuration");
+    }
     let ftsoRegistry;
     let assetManager;
     let assetManagerController;
@@ -37,14 +39,14 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
         ftsoRegistry = await IFtsoRegistry.at(contracts.FtsoRegistry.address);
         [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
         ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
-        wNat = await WNat.at(contracts.WNat.address)
+        wNat = await WNat.at(contracts.WNat.address);
         addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
     } else {
         addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
-        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress("FtsoRegistry"));
         [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager'));
-        wNat = await WNat.at(await addressUpdater.getContractAddress('WNat'));
+        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress("FtsoManager"));
+        wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
     }
     const collaterals = await assetManager.getCollateralTypes();
     const ftsos = await createFtsos(collaterals, ftsoRegistry, chainConfig.chainInfo.symbol);
@@ -61,12 +63,12 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
         ftsoManager: ftsoManager,
         wNat: wNat,
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        natFtso: ftsos['nat'],
-        assetFtso: ftsos['asset'],
+        natFtso: ftsos["nat"],
+        assetFtso: ftsos["asset"],
         collaterals: collaterals,
         stablecoins: stableCoins,
         ftsos: ftsos,
-        addressUpdater: addressUpdater
+        addressUpdater: addressUpdater,
     };
 }
 
@@ -75,7 +77,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
  */
 export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetActorContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
-        throw new Error('Either contractsJsonFile or addressUpdater must be defined');
+        throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
     let ftsoRegistry;
     let assetManager;
@@ -87,9 +89,9 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
         ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
     } else {
         const addressUpdater = await AddressUpdater.at(trackedStateConfig.addressUpdater!);
-        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress('FtsoRegistry'));
+        ftsoRegistry = await IFtsoRegistry.at(await addressUpdater.getContractAddress("FtsoRegistry"));
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress('FtsoManager'));
+        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress("FtsoManager"));
     }
 
     const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
@@ -103,7 +105,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
         ftsoManager: ftsoManager,
         fAsset: await FAsset.at(await assetManager.fAsset()),
         assetFtso: assetFtso,
-        collaterals: collaterals
+        collaterals: collaterals,
     };
 }
 
@@ -117,9 +119,11 @@ async function getAssetManagerAndController(chainConfig: BotChainConfig, address
     } else if (chainConfig.fAssetSymbol) {
         /* istanbul ignore next */ //TODO until AssetManagerController gets verified in explorer
         const controllerAddress =
-            addressUpdater != null ? await addressUpdater.getContractAddress('AssetManagerController') :
-                contracts != null ? contracts.AssetManagerController.address :
-                    fail('Either addressUpdater or contracts must be defined');
+            addressUpdater != null
+                ? await addressUpdater.getContractAddress("AssetManagerController")
+                : contracts != null
+                ? contracts.AssetManagerController.address
+                : fail("Either addressUpdater or contracts must be defined");
         const assetManagerController = await AssetManagerController.at(controllerAddress);
         const assetManager = await findAssetManager(assetManagerController, chainConfig.fAssetSymbol);
         return [assetManager, assetManagerController] as const;
@@ -133,7 +137,7 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
     for (const addr of assetManagers) {
         const assetManager = await AssetManager.at(addr);
         const fAsset = await FAsset.at(await assetManager.fAsset());
-        if (await fAsset.symbol() === fAssetSymbol) {
+        if ((await fAsset.symbol()) === fAssetSymbol) {
             return assetManager;
         }
     }
@@ -143,7 +147,7 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
 async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoRegistryInstance, assetFtsoSymbol: string) {
     const assetFtso = await IIFtso.at(await ftsoRegistry.getFtsoBySymbol(assetFtsoSymbol));
     const ftsos: { [key: string]: any } = {};
-    ftsos['asset'] = assetFtso;
+    ftsos["asset"] = assetFtso;
     for (const collateralToken of collaterals) {
         const tokenName = collateralToken.tokenFtsoSymbol;
         const tokenFtso = await createFtsosHelper(ftsoRegistry, collateralToken.tokenFtsoSymbol);
@@ -153,7 +157,7 @@ async function createFtsos(collaterals: CollateralType[], ftsoRegistry: IFtsoReg
 }
 
 async function createStableCoins(collaterals: CollateralType[]) {
-    const stableCoinsArray = collaterals.filter(token => Number(token.collateralClass) === CollateralClass.VAULT);
+    const stableCoinsArray = collaterals.filter((token) => Number(token.collateralClass) === CollateralClass.VAULT);
     const stableCoins: { [key: string]: any } = {};
     for (const collateralToken of stableCoinsArray) {
         const tokenName: string = collateralToken.tokenFtsoSymbol;

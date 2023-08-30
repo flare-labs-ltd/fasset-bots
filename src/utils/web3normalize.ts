@@ -8,8 +8,7 @@ import BN from "bn.js";
  * This function converts all number formats to string for simpler comparison.
  */
 export function web3Normalize(x: any) {
-    if (x == null)
-        return null; // undefined also converted to null
+    if (x == null) return null; // undefined also converted to null
     switch (typeof x) {
         case "boolean":
         case "string":

@@ -35,5 +35,4 @@ describe("Minter unit tests", async () => {
         const getTx = await chain.getTransaction(txHash);
         expect(txHash).to.eq(getTx?.hash);
     });
-
 });

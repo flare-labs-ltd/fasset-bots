@@ -15,7 +15,7 @@ describe("Time keeper unit tests", async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         context.blockchainIndexer.chain.finalizationBlocks = 0;
-        timeKeeperAddress= accounts[10];
+        timeKeeperAddress = accounts[10];
     });
 
     afterEach(function () {
@@ -44,5 +44,4 @@ describe("Time keeper unit tests", async () => {
         await timeKeeper.updateUnderlyingBlock();
         expect(spyConsole).to.be.called.once;
     });
-
 });

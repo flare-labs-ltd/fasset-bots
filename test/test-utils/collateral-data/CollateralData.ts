@@ -5,10 +5,13 @@ import { CollateralPoolTokenInstance } from "../../../typechain-truffle";
 import { AMGPrice, AMGPriceConverter, CollateralPrice } from "./CollateralPrice";
 import { TokenPrice, TokenPriceReader, tokenBalance } from "./TokenPrice";
 
-
 export const POOL_TOKEN_DECIMALS = 18;
 
-export enum CollateralKind { VAULT, POOL, AGENT_POOL_TOKENS }
+export enum CollateralKind {
+    VAULT,
+    POOL,
+    AGENT_POOL_TOKENS,
+}
 
 export class CollateralData extends AMGPriceConverter {
     constructor(
@@ -16,7 +19,7 @@ export class CollateralData extends AMGPriceConverter {
         public balance: BN,
         public assetPrice: TokenPrice,
         public tokenPrice: TokenPrice | undefined,
-        public amgPrice: AMGPrice,
+        public amgPrice: AMGPrice
     ) {
         super();
     }
@@ -48,7 +51,7 @@ export class CollateralDataFactory {
     constructor(
         public settings: AssetManagerSettings,
         public priceReader: TokenPriceReader
-    ) { }
+    ) {}
 
     static async create(settings: AssetManagerSettings) {
         const priceReader = await TokenPriceReader.create(settings);
@@ -72,10 +75,12 @@ export class CollateralDataFactory {
         const agentPoolTokens = await poolToken.balanceOf(agentVault);
         const totalPoolTokens = await poolToken.totalSupply();
         // asset price and token price will be expressed in pool collateral (wnat)
-        const assetPrice = poolCollateral.collateral!.directPricePair ? poolCollateral.assetPrice : poolCollateral.assetPrice.priceInToken(poolCollateral.tokenPrice!, 18);
+        const assetPrice = poolCollateral.collateral!.directPricePair
+            ? poolCollateral.assetPrice
+            : poolCollateral.assetPrice.priceInToken(poolCollateral.tokenPrice!, 18);
         const tokenPrice = TokenPrice.fromFraction(poolCollateral.balance, totalPoolTokens, poolCollateral.assetPrice.timestamp, 18);
         const amgToTokenWei = tokenPrice.price.isZero()
-            ? exp10(100)    // artificial price, shouldn't be used
+            ? exp10(100) // artificial price, shouldn't be used
             : amgToTokenWeiPrice(this.settings, POOL_TOKEN_DECIMALS, tokenPrice.price, tokenPrice.decimals, assetPrice.price, assetPrice.decimals);
         const amgPrice = AMGPrice.forAmgPrice(this.settings, amgToTokenWei);
         return new CollateralData(null, agentPoolTokens, assetPrice, tokenPrice, amgPrice);

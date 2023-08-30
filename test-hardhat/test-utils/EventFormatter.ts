@@ -3,7 +3,6 @@ import { formatBN } from "./fuzzing-utils";
 import { web3 } from "../../src/utils/web3";
 import { BaseEvent } from "../../src/utils/events/common";
 
-
 export class EventFormatter {
     public formatArgsWithNames: boolean = true;
     public contractNames = new Map<string, string>(); // address => name
@@ -12,18 +11,18 @@ export class EventFormatter {
         this.contractNames.set(address, name);
     }
 
-    addAddresses(addressMap: { [name: string]: string; }) {
+    addAddresses(addressMap: { [name: string]: string }) {
         for (const [name, address] of Object.entries(addressMap)) {
             this.contractNames.set(address, name);
         }
     }
 
     isAddress(s: any): s is string {
-        return typeof s === 'string' && /^0x[0-9a-fA-F]{40}$/.test(s);
+        return typeof s === "string" && /^0x[0-9a-fA-F]{40}$/.test(s);
     }
 
     formatAddress(address: string) {
-        return this.contractNames.get(address) ?? address.slice(0, 10) + '...';
+        return this.contractNames.get(address) ?? address.slice(0, 10) + "...";
     }
 
     formatArg(value: unknown): string {
@@ -32,11 +31,13 @@ export class EventFormatter {
         } else if (this.isAddress(value)) {
             return this.formatAddress(value);
         } else if (Array.isArray(value)) {
-            return `[${value.map(v => this.formatArg(v)).join(', ')}]`;
-        } else if (typeof value === 'object' && value?.constructor === Object) {
-            return `{ ${Object.entries(value).map(([k, v]) => `${k}: ${this.formatArg(v)}`).join(', ')} }`;
+            return `[${value.map((v) => this.formatArg(v)).join(", ")}]`;
+        } else if (typeof value === "object" && value?.constructor === Object) {
+            return `{ ${Object.entries(value)
+                .map(([k, v]) => `${k}: ${this.formatArg(v)}`)
+                .join(", ")} }`;
         } else {
-            return '' + value;
+            return "" + value;
         }
     }
 
@@ -59,7 +60,7 @@ export class EventFormatter {
     }
 
     isBigNumber(x: any) {
-        return BN.isBN(x) || (typeof x === 'string' && /^\d+$/.test(x));
+        return BN.isBN(x) || (typeof x === "string" && /^\d+$/.test(x));
     }
 
     formatBN(x: any) {
@@ -67,16 +68,18 @@ export class EventFormatter {
     }
 
     static formatEvent(event: BaseEvent, contractName?: string, args: any = event.args) {
-        const keys = Object.keys(args).filter(k => /^\d+$/.test(k)).map(k => Number(k));
+        const keys = Object.keys(args)
+            .filter((k) => /^\d+$/.test(k))
+            .map((k) => Number(k));
         keys.sort((a, b) => a - b);
-        const formattedArgs = keys.map(k => args[k]).map(x => web3.utils.isBN(x) ? x.toString() : x);
-        return `${contractName ?? event.address}.${event.event}(${formattedArgs.join(', ')})`;
+        const formattedArgs = keys.map((k) => args[k]).map((x) => (web3.utils.isBN(x) ? x.toString() : x));
+        return `${contractName ?? event.address}.${event.event}(${formattedArgs.join(", ")})`;
     }
 
     static formatEventByNames(event: BaseEvent, contractName?: string, args: any = event.args) {
-        const keys = Object.keys(args).filter(k => !/^\d+$/.test(k) && k !== '__length__');
-        const formattedArgs = keys.map(k => args[k]).map(x => web3.utils.isBN(x) ? x.toString() : x);
+        const keys = Object.keys(args).filter((k) => !/^\d+$/.test(k) && k !== "__length__");
+        const formattedArgs = keys.map((k) => args[k]).map((x) => (web3.utils.isBN(x) ? x.toString() : x));
         const parts = keys.map((k, i) => `${k}: ${formattedArgs[i]}`);
-        return `${contractName ?? event.address}.${event.event}(${parts.join(', ')})`;
+        return `${contractName ?? event.address}.${event.event}(${parts.join(", ")})`;
     }
 }

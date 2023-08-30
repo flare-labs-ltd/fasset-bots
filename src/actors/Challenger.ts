@@ -15,7 +15,7 @@ import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
-const MAX_NEGATIVE_BALANCE_REPORT = 50;  // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
+const MAX_NEGATIVE_BALANCE_REPORT = 50; // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 interface ActiveRedemption {
     agentAddress: string;
     amount: BN;
@@ -32,11 +32,11 @@ export class Challenger extends ActorBase {
         public lastEventUnderlyingBlockHandled: number
     ) {
         super(runner, address, state);
-     }
+    }
 
-    activeRedemptions = new Map<string, ActiveRedemption>();                        // paymentReference => { agent vault address, requested redemption amount }
-    transactionForPaymentReference = new Map<string, string>();                     // paymentReference => transaction hash
-    unconfirmedTransactions = new Map<string, Map<string, ITransaction>>();         // agentVaultAddress => (txHash => transaction)
+    activeRedemptions = new Map<string, ActiveRedemption>(); // paymentReference => { agent vault address, requested redemption amount }
+    transactionForPaymentReference = new Map<string, string>(); // paymentReference => transaction hash
+    unconfirmedTransactions = new Map<string, Map<string, ITransaction>>(); // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
 
     /**
@@ -58,23 +58,23 @@ export class Challenger extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`Challenger ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.assetManager, 'RedemptionRequested')) {
+                if (eventIs(event, this.state.context.assetManager, "RedemptionRequested")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
                     this.handleRedemptionRequested(event.args);
                     logger.info(`Challenger ${this.address} stored active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPerformed')) {
+                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPerformed")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentBlocked')) {
+                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPaymentBlocked")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, 'RedemptionPaymentFailed')) {
+                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPaymentFailed")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, 'UnderlyingWithdrawalConfirmed')) {
+                } else if (eventIs(event, this.state.context.assetManager, "UnderlyingWithdrawalConfirmed")) {
                     logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event.args)}.`);
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 }
@@ -130,7 +130,7 @@ export class Challenger extends ActorBase {
         });
     }
 
-    async handleRedemptionFinished(args: { requestId: BN; agentVault: string; transactionHash: string; }): Promise<void> {
+    async handleRedemptionFinished(args: { requestId: BN; agentVault: string; transactionHash: string }): Promise<void> {
         // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediately illegal anyway
         const reference = PaymentReference.redemption(args.requestId);
         this.transactionForPaymentReference.delete(reference);
@@ -143,8 +143,9 @@ export class Challenger extends ActorBase {
 
     checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
-        const transactionValid = PaymentReference.isValid(transaction.reference)
-            && (this.isValidRedemptionReference(agent, transaction.reference) || this.isValidAnnouncedPaymentReference(agent, transaction.reference));
+        const transactionValid =
+            PaymentReference.isValid(transaction.reference) &&
+            (this.isValidRedemptionReference(agent, transaction.reference) || this.isValidAnnouncedPaymentReference(agent, transaction.reference));
         // if the challenger starts tracking later, activeRedemptions might not hold all active redemeptions,
         // but that just means there will be a few unnecessary illegal transaction challenges, which is perfectly safe
         if (!transactionValid && agent.status !== AgentStatus.FULL_LIQUIDATION) {
@@ -158,10 +159,18 @@ export class Challenger extends ActorBase {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             // due to async nature of challenging (and the fact that challenger might start tracking agent later), there may be some false challenges which will be rejected
             // this is perfectly safe for the system, but the errors must be caught
-            await this.state.context.assetManager.illegalPaymentChallenge(web3DeepNormalize(proof), agent.vaultAddress, { from: this.address })
-                .catch(e => scope.exitOnExpectedError(e, ['chlg: already liquidating', 'chlg: transaction confirmed', 'matching redemption active', 'matching ongoing announced pmt']));
-                logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
-                console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+            await this.state.context.assetManager
+                .illegalPaymentChallenge(web3DeepNormalize(proof), agent.vaultAddress, { from: this.address })
+                .catch((e) =>
+                    scope.exitOnExpectedError(e, [
+                        "chlg: already liquidating",
+                        "chlg: transaction confirmed",
+                        "matching redemption active",
+                        "matching ongoing announced pmt",
+                    ])
+                );
+            logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         });
     }
 
@@ -169,7 +178,7 @@ export class Challenger extends ActorBase {
 
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
-        if (!PaymentReference.isValid(transaction.reference)) return;   // handled by illegal payment challenge
+        if (!PaymentReference.isValid(transaction.reference)) return; // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
             this.runner.startThread((scope) => this.doublePaymentChallenge(scope, transaction.hash, existingHash, agent));
@@ -186,10 +195,11 @@ export class Challenger extends ActorBase {
                 this.waitForDecreasingBalanceProof(scope, tx2hash, agent.underlyingAddress),
             ]);
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager.doublePaymentChallenge(web3DeepNormalize(proof1), web3DeepNormalize(proof2), agent.vaultAddress, { from: this.address })
-                .catch(e => scope.exitOnExpectedError(e, ['chlg dbl: already liquidating']));
-                logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
-                console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
+            await this.state.context.assetManager
+                .doublePaymentChallenge(web3DeepNormalize(proof1), web3DeepNormalize(proof2), agent.vaultAddress, { from: this.address })
+                .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"]));
+            logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
         });
     }
 
@@ -200,11 +210,11 @@ export class Challenger extends ActorBase {
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
         // extract the spent value for each transaction
-        let transactions: Array<{ txHash: string, spent: BN }> = [];
+        let transactions: Array<{ txHash: string; spent: BN }> = [];
         for (const transaction of agentTransactions.values()) {
-            if (!PaymentReference.isValid(transaction.reference)) continue;     // should be caught by illegal payment challenge
+            if (!PaymentReference.isValid(transaction.reference)) continue; // should be caught by illegal payment challenge
             /* istanbul ignore next */
-            const spentAmount = transaction.inputs.find(input => input[0] === agent.underlyingAddress)?.[1];
+            const spentAmount = transaction.inputs.find((input) => input[0] === agent.underlyingAddress)?.[1];
             /* istanbul ignore next */
             if (spentAmount == null) continue;
             if (this.isValidRedemptionReference(agent, transaction.reference)) {
@@ -217,13 +227,13 @@ export class Challenger extends ActorBase {
         }
         // sort by decreasing spent amount
         /* istanbul ignore next */
-        transactions.sort((a, b) => a.spent.gt(b.spent) ? -1 : a.spent.lt(b.spent) ? 1 : 0);
+        transactions.sort((a, b) => (a.spent.gt(b.spent) ? -1 : a.spent.lt(b.spent) ? 1 : 0));
         // extract highest MAX_REPORT transactions
         transactions = transactions.slice(0, MAX_NEGATIVE_BALANCE_REPORT);
         // initiate challenge if total spent is big enough
-        const totalSpent = sumBN(transactions, tx => tx.spent);
+        const totalSpent = sumBN(transactions, (tx) => tx.spent);
         if (totalSpent.gt(agent.freeUnderlyingBalanceUBA)) {
-            const transactionHashes = transactions.map(tx => tx.txHash);
+            const transactionHashes = transactions.map((tx) => tx.txHash);
             this.runner.startThread((scope) => this.freeBalanceNegativeChallenge(scope, transactionHashes, agent));
         }
     }
@@ -231,13 +241,13 @@ export class Challenger extends ActorBase {
     async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for free negative balance.`);
         await this.singleChallengePerAgent(agent, async () => {
-            const proofs = await Promise.all(transactionHashes.map(txHash =>
-                this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
+            const proofs = await Promise.all(transactionHashes.map((txHash) => this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager.freeBalanceNegativeChallenge(web3DeepNormalize(proofs), agent.vaultAddress, { from: this.address })
-                .catch(e => scope.exitOnExpectedError(e, ['mult chlg: already liquidating', 'mult chlg: enough balance']));
-                logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
-                console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
+            await this.state.context.assetManager
+                .freeBalanceNegativeChallenge(web3DeepNormalize(proofs), agent.vaultAddress, { from: this.address })
+                .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"]));
+            logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
+            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
         });
     }
 
@@ -269,8 +279,9 @@ export class Challenger extends ActorBase {
 
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
         await this.state.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
-        return await this.state.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
-            .catch(e => scope.exitOnExpectedError(e, [AttestationHelperError]));
+        return await this.state.context.attestationProvider
+            .proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
+            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
 
     async singleChallengePerAgent(agent: TrackedAgentState, body: () => Promise<void>) {
