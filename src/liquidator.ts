@@ -7,12 +7,12 @@ import { AgentVault, BlazeSwap } from './actors'
 
 // one liquidator instance for each f-asset
 export class Liquidator {
-  public agentVaults: AgentVault[] = []
+  public agents: AgentVault[] = []
   public blazeSwaps: BlazeSwap[] = []
 
   constructor(public context: IContext) {
     // save agent vaults
-    context.addresses.agentVault.map(async (agent) => this.agentVaults.push(
+    context.addresses.agentVault.map(async (agent) => this.agents.push(
       new AgentVault(getContract<IAgentVault>(context.provider, agent.address, "IAgentVault"))  
     ))
     // save dexs
@@ -22,7 +22,7 @@ export class Liquidator {
   }
 
   public async init() {
-    await Promise.all(this.agentVaults.map(async (agent) => {
+    await Promise.all(this.agents.map(async (agent) => {
       await agent.setConstantData(this.context)
       await agent.setPseudoConstantData(this.context)
     }))
@@ -31,43 +31,45 @@ export class Liquidator {
   public async runArbitrage(): Promise<void> {
     // find the best agent from which to liquidate 
     // (by max liquidation and liquidation factor, ignore pool collateral)
-    let agentVault: AgentVault | undefined
-    let agentArbitrageData: IAgentArbitrageData | undefined
-    let agentQuality: bigint | undefined
-    for (const agent of this.agentVaults) {
+    let selectedAgent: {
+      object: AgentVault
+      data: IAgentArbitrageData
+      quality: bigint
+    } | undefined
+    for (const agent of this.agents) {
       const data = await agent.checkForAgentArbitrageAndGetData(this.context)
       if (data !== null) {
         const quality = data.maxLiquidation * data.vaultCR.factor
-        if (agentQuality === undefined || quality > agentQuality) {
-          agentVault = agent
-          agentArbitrageData = data
-          agentQuality = quality
+        if (selectedAgent === undefined || quality > selectedAgent.quality) {
+          selectedAgent = { object: agent, data: data, quality: quality }
         }
       }
     }
-    if (agentVault === undefined || agentArbitrageData === undefined) return
+    if (selectedAgent === undefined) return
     // find the best-suitable liquidity pool (by the max profit)
-    let liquidityPool: BlazeSwap | undefined
-    let argMaxVaultCollateral: bigint | undefined
-    let maxLiquidatorProfit: bigint | undefined
+    let selectedDex: {
+      object: BlazeSwap
+      optimalVaultCollateral: bigint
+      liquidatorProfit: bigint
+    } | undefined
     for (const blazeSwap of this.blazeSwaps) {
       const [reserveVaultCollateral, reserveFAsset] = 
         await blazeSwap.getPoolReserves(
-          agentArbitrageData.poolCollateralToken, 
-          agentArbitrageData.vaultCollateralToken
+          selectedAgent.data.poolCollateralToken, 
+          selectedAgent.data.vaultCollateralToken
         )
       const fee = await blazeSwap.getPoolFee(
-        agentArbitrageData.poolCollateralToken, 
-        agentArbitrageData.vaultCollateralToken
+        selectedAgent.data.poolCollateralToken, 
+        selectedAgent.data.vaultCollateralToken
       )
       const assetPriceUSDT = await getAssetPriceInVaultCollateral(
         this.context, 
-        agentVault.vaultCollateralSymbol, 
-        agentVault.fAssetSymbol, 
-        agentVault.fAssetDecimals
+        selectedAgent.object.vaultCollateralSymbol, 
+        selectedAgent.object.fAssetSymbol, 
+        selectedAgent.object.fAssetDecimals
       )
       const optimalVaultCollateral = this.getOptimalVaultCollateral(
-        agentArbitrageData,
+        selectedAgent.data,
         assetPriceUSDT,
         reserveVaultCollateral,
         reserveFAsset,
@@ -79,24 +81,23 @@ export class Liquidator {
       const liquidatorProfit = this.getLiquidatorProfit(
         optimalVaultCollateral, 
         liquidatedFAssets, 
-        agentArbitrageData.vaultCR.factor, 
+        selectedAgent.data.vaultCR.factor, 
         assetPriceUSDT
       )
-      if (maxLiquidatorProfit === undefined || liquidatorProfit > maxLiquidatorProfit) {
-        liquidityPool = blazeSwap
-        argMaxVaultCollateral = optimalVaultCollateral
-        maxLiquidatorProfit = liquidatorProfit
+      if (selectedDex === undefined || liquidatorProfit > selectedDex.liquidatorProfit) {
+        selectedDex = { object: blazeSwap, optimalVaultCollateral, liquidatorProfit }
       }
     }
-    if (liquidityPool === undefined || argMaxVaultCollateral === undefined) return
+    if (selectedDex === undefined) return
     // execute arbitrage
     await this.context.liquidator.executeArbitrage(
+      selectedDex.optimalVaultCollateral,
       this.context.wNat,
-      agentVault.fAsset,
-      agentVault.vaultCollateral,
-      liquidityPool.contract,
-      agentVault.assetManager,
-      agentVault.contract
+      selectedAgent.object.fAsset,
+      selectedAgent.object.vaultCollateral,
+      selectedDex.object.contract,
+      selectedAgent.object.assetManager,
+      selectedAgent.object.contract
     )
   }
 

@@ -1,13 +1,14 @@
 {
-  "name": "arbitrage",
-  "version": "2.0.0",
-  "description": "",
+  "name": "fasset-liquidator",
+  "version": "0.0.0",
+  "description": "Liquidator bot for the f-asset bridge on the Flare network",
   "scripts": {
     "compile": "rimraf typechain typechain-types && yarn hardhat compile && yarn typechain-ethers-v6",
     "typechain-ethers-v6": "yarn typechain --target=ethers-v6 --out-dir typechain \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\""
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/dotenv": "^8.2.0",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@typechain/ethers-v6": "^0.5.0",
@@ -21,7 +22,6 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3",
-    "@types/dotenv": "^8.2.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1"
   }

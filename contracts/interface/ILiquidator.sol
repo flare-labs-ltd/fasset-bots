@@ -10,6 +10,7 @@ import "./IAgentVault.sol";
 interface ILiquidator {
 
     function executeArbitrage(
+        uint256 _vaultCollateralAmount,
         IWNat _wNat,
         IFAsset _fAsset,
         IERC20 _vaultCollateral,
