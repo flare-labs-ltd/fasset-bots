@@ -236,10 +236,8 @@ export class AgentBot {
      */
     async checkForClaims(): Promise<void> {
         const addressUpdater = this.context.addressUpdater;
-
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
-            // TODO test checkforClaims
             // FTSO rewards
             const IFtsoRewardManager = artifacts.require('IFtsoRewardManager');
             const ftsoRewardManager = await IFtsoRewardManager.at(await addressUpdater.getContractAddress('FtsoRewardManager'));
@@ -248,12 +246,12 @@ export class AgentBot {
             if (notClaimedRewardsAgentVault.length > 0) {
                 const unClaimedEpochAgentVault = notClaimedRewardsAgentVault[notClaimedRewardsAgentVault.length - 1];
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for vault ${this.agent.vaultAddress} for epochs`);
-                await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochAgentVault, this.agent.vaultAddress);
+                await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochAgentVault, this.agent.vaultAddress, { from: this.agent.ownerAddress });
             }
             if (notClaimedRewardsCollateralPool.length > 0) {
                 const unClaimedEpochCollateralPool = notClaimedRewardsCollateralPool[notClaimedRewardsCollateralPool.length - 1];
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for pool ${this.agent.collateralPool.address}.`);
-                await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochCollateralPool);
+                await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochCollateralPool, { from: this.agent.ownerAddress });
             }
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
         } catch (error) {
@@ -263,7 +261,6 @@ export class AgentBot {
 
         try {
             // airdrop distribution rewards
-            // TODO: only on coston2 and flare
             // TODO: is it enough to input only last month, catch revert if nothing to claim?
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);
             const IDistributionToDelegators = artifacts.require('IDistributionToDelegators');
@@ -271,11 +268,10 @@ export class AgentBot {
 
             const { 1: endMonthVault } = await distributionToDelegators.getClaimableMonths({ from: this.agent.vaultAddress });
             const { 1: endMonthPool } = await distributionToDelegators.getClaimableMonths({ from: this.agent.collateralPool.address });
-            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for vault ${this.agent.vaultAddress} for epochs`);
-            await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress);
-            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for pool ${this.agent.collateralPool.address}.`);
-            await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool);
-
+            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for vault ${this.agent.vaultAddress} for month ${endMonthVault}.`);
+            await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress, { from: this.agent.ownerAddress });
+            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for pool ${this.agent.collateralPool.address} for ${endMonthPool}.`);
+            await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool, { from: this.agent.ownerAddress });
         } catch (error) {
             console.error(`Error handling airdrop distribution for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution: ${error}`);
