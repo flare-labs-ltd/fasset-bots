@@ -48,5 +48,4 @@ describe("System keeper unit tests", async () => {
         await systemKeeper.runStep();
         expect(spyConsole).to.be.called.once;
     });
-
 });

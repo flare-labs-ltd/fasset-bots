@@ -26,12 +26,26 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
     return new Redeemer(ctx, address, underlyingAddress);
 }
 
-export async function createTestAgentBot(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, defaultAgentConfigPath: string, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+export async function createTestAgentBot(
+    context: IAssetAgentBotContext,
+    orm: ORM,
+    ownerAddress: string,
+    defaultAgentConfigPath: string,
+    notifier: Notifier = new Notifier()
+): Promise<AgentBot> {
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
-export async function createTestAgentBotAndDepositCollaterals(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, defaultAgentConfigPath: string, depositVaultCollateralAmount: BNish, buyPoolTokensAmount: BNish, notifier: Notifier = new Notifier()): Promise<AgentBot> {
+export async function createTestAgentBotAndDepositCollaterals(
+    context: IAssetAgentBotContext,
+    orm: ORM,
+    ownerAddress: string,
+    defaultAgentConfigPath: string,
+    depositVaultCollateralAmount: BNish,
+    buyPoolTokensAmount: BNish,
+    notifier: Notifier = new Notifier()
+): Promise<AgentBot> {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, defaultAgentConfigPath, notifier);
     // deposit class 1
     await agentBot.agent.depositVaultCollateral(depositVaultCollateralAmount);

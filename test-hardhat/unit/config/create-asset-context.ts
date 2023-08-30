@@ -17,7 +17,7 @@ const createStableCoins = createAssetContextInternal.__get__("createStableCoins"
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 
-const StateConnector = artifacts.require('StateConnectorMock');
+const StateConnector = artifacts.require("StateConnectorMock");
 
 describe("Create asset context unit tests", async () => {
     let accounts: string[];
@@ -32,14 +32,16 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should create stable coins", async () => {
-        const stableCoinsArray = collateralTypes.filter(token => Number(token.collateralClass) === CollateralClass.VAULT);
+        const stableCoinsArray = collateralTypes.filter((token) => Number(token.collateralClass) === CollateralClass.VAULT);
         const stableCoins = await createStableCoins(collateralTypes);
         expect(stableCoinsArray.length).eq(Object.keys(stableCoins).length);
     });
 
     it("Should not find asset manager - fasset symbol not found", async () => {
         const noSymbol = "NO_SYMBOL";
-        await expect(findAssetManager(context.assetManagerController, noSymbol)).to.eventually.be.rejectedWith(`FAsset symbol ${noSymbol} not found`).and.be.an.instanceOf(Error);
+        await expect(findAssetManager(context.assetManagerController, noSymbol))
+            .to.eventually.be.rejectedWith(`FAsset symbol ${noSymbol} not found`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
@@ -54,9 +56,11 @@ describe("Create asset context unit tests", async () => {
                 requireEOAProof: false,
             },
             blockchainIndexerClient: context.blockchainIndexer,
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto")
-        }
-        await expect(getAssetManagerAndController(chainConfig, null, null)).to.eventually.be.rejectedWith(`assetManager or fAssetSymbol required in chain config`).and.be.an.instanceOf(Error);
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),
+        };
+        await expect(getAssetManagerAndController(chainConfig, null, null))
+            .to.eventually.be.rejectedWith(`assetManager or fAssetSymbol required in chain config`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
@@ -71,15 +75,16 @@ describe("Create asset context unit tests", async () => {
                 requireEOAProof: false,
             },
             blockchainIndexerClient: context.blockchainIndexer,
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() },  "auto"),
-        }
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),
+        };
         const config: BotConfig = {
             loopDelay: 1000,
             rpcUrl: "rpcUrl",
             chains: [chainConfig],
-            nativeChainInfo: testNativeChainInfo
-        }
-        await expect(createActorAssetContext(config, chainConfig)).to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`).and.be.an.instanceOf(Error);
+            nativeChainInfo: testNativeChainInfo,
+        };
+        await expect(createActorAssetContext(config, chainConfig))
+            .to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`)
+            .and.be.an.instanceOf(Error);
     });
-
 });

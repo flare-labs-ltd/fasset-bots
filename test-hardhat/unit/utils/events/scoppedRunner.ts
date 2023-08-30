@@ -16,8 +16,7 @@ describe("Scopped runner unit tests", async () => {
     it("Should caught uncaught error", async () => {
         const runner = new ScopedRunner();
         // eslint-disable-next-line @typescript-eslint/await-thenable
-        await runner.startThread(scope => notImplemented(scope));
+        await runner.startThread((scope) => notImplemented(scope));
         expect(runner.uncaughtErrors.length).to.eq(1);
     });
-
 });

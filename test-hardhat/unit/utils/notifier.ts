@@ -43,7 +43,6 @@ describe("Notifier tests", async () => {
         expect(spySend).to.have.been.called.once;
     });
 
-
     it("Should send full liquidation alert", async () => {
         const spySend = spy.on(notifier, "sendFullLiquidationAlert");
         notifier.sendFullLiquidationAlert("agentVault", "pay1", "pay2");
@@ -81,13 +80,13 @@ describe("Notifier tests", async () => {
 
     it("Should send redemption defaulted alert", async () => {
         const spySend = spy.on(notifier, "sendRedemptionWasPerformed");
-        notifier.sendRedemptionWasPerformed("reqId", "redeemer",  "agentVault");
+        notifier.sendRedemptionWasPerformed("reqId", "redeemer", "agentVault");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send redemption was performed", async () => {
         const spySend = spy.on(notifier, "sendRedemptionDefaulted");
-        notifier.sendRedemptionDefaulted("reqId", "redeemer",  "agentVault");
+        notifier.sendRedemptionDefaulted("reqId", "redeemer", "agentVault");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -131,7 +130,7 @@ describe("Notifier tests", async () => {
 
     it("Should send no proof obtained  alert", async () => {
         const spySend = spy.on(notifier, "sendNoProofObtained");
-        notifier.sendNoProofObtained("agentVault", "reqId", 1,  "data", true);
+        notifier.sendNoProofObtained("agentVault", "reqId", 1, "data", true);
         notifier.sendNoProofObtained("agentVault", "reqId", 1, "data");
         expect(spySend).to.have.been.called.twice;
     });
@@ -291,5 +290,4 @@ describe("Notifier tests", async () => {
         notifier.sendUndelegatePoolCollateral("agentVault", "pool");
         expect(spySend).to.have.been.called.once;
     });
-
 });

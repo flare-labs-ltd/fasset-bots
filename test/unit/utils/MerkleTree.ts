@@ -87,5 +87,4 @@ describe("Merkle tree unit tests", async () => {
         tree.build(doubleLeaves);
         expect(tree.root).eq(new MerkleTree(hashes).root);
     });
-
 });

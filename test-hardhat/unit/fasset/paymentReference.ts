@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { toBN, toHex } from "../../../src/utils/helpers";
 
-
 describe("Payment reference unit tests", async () => {
     const id = 5;
     const address = "";
@@ -45,7 +44,7 @@ describe("Payment reference unit tests", async () => {
 
     it("Should get address ownership reference", () => {
         const addressOwnershipRef = PaymentReference.addressOwnership(address);
-        const expected = toBN(addressOwnershipRef).shrn(PaymentReference.TYPE_SHIFT).and(toBN(0xFFFF)).toNumber();
+        const expected = toBN(addressOwnershipRef).shrn(PaymentReference.TYPE_SHIFT).and(toBN(0xffff)).toNumber();
         const decode = PaymentReference.decodeType(addressOwnershipRef);
         expect(expected).to.eq(decode);
     });

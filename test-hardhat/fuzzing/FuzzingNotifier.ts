@@ -2,11 +2,10 @@ import { Notifier } from "../../src/utils/Notifier";
 import { EventFormatter } from "../test-utils/EventFormatter";
 
 export class FuzzingNotifier {
-
     constructor(
         public notifier: Notifier,
         public eventFormatter: EventFormatter
-    ) { }
+    ) {}
 
     send(title: string, message?: string) {
         this.notifier.send(title, message);
@@ -31,7 +30,13 @@ export class FuzzingNotifier {
         this.notifier.sendRedemptionCornerCase(requestId, this.eventFormatter.formatAddress(agentVault));
     }
     sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): void {
-        this.notifier.sendRedemptionFailedOrBlocked(requestId, txHash, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault), failureReason);
+        this.notifier.sendRedemptionFailedOrBlocked(
+            requestId,
+            txHash,
+            this.eventFormatter.formatAddress(redeemer),
+            this.eventFormatter.formatAddress(agentVault),
+            failureReason
+        );
     }
     sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): void {
         this.notifier.sendRedemptionDefaulted(requestId, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault));
@@ -145,6 +150,6 @@ export class FuzzingNotifier {
         this.notifier.sendDelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral, recipient, bips);
     }
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
-        this.sendUndelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral,);
+        this.sendUndelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral);
     }
 }

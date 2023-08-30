@@ -17,7 +17,7 @@ export class SystemKeeper extends ActorBase {
         public state: TrackedState
     ) {
         super(runner, address, state);
-     }
+    }
 
     /**
      * This is the main method, where "automatic" logic is gathered.
@@ -37,10 +37,10 @@ export class SystemKeeper extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`SystemKeeper ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.ftsoManager, 'PriceEpochFinalized')) {
+                if (eventIs(event, this.state.context.ftsoManager, "PriceEpochFinalized")) {
                     logger.info(`SystemKeeper ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
-                } else if (eventIs(event, this.state.context.assetManager, 'MintingExecuted')) {
+                } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
                     logger.info(`SystemKeeper ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     await this.handleMintingExecuted(event.args);
                 }
@@ -54,9 +54,8 @@ export class SystemKeeper extends ActorBase {
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
         this.runner.startThread(async (scope) => {
-            await this.checkAgentForLiquidation(agent)
-                .catch(e => scope.exitOnExpectedError(e, []));
-        })
+            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
+        });
     }
 
     async checkAllAgentsForLiquidation(): Promise<void> {
@@ -79,12 +78,19 @@ export class SystemKeeper extends ActorBase {
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus > agent.status) {
             await this.state.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
-            logger.info(`SystemKeeper ${this.address} started liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${AgentStatus[newStatus]}.`);
+            logger.info(
+                `SystemKeeper ${this.address} started liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${
+                    AgentStatus[agent.status]
+                } to ${AgentStatus[newStatus]}.`
+            );
         } else if (newStatus < agent.status) {
             await this.state.context.assetManager.endLiquidation(agent.vaultAddress, { from: this.address });
-            logger.info(`SystemKeeper ${this.address} ended liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${AgentStatus[newStatus]}.`);
+            logger.info(
+                `SystemKeeper ${this.address} ended liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${
+                    AgentStatus[newStatus]
+                }.`
+            );
         }
         logger.info(`SystemKeeper ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
     }
-
 }

@@ -14,7 +14,6 @@ class SmallError extends Error {
 }
 
 describe("Helpers unit tests", async () => {
-
     it("Should sleep for x seconds", async () => {
         await helperMethods.sleep(1000);
         await expect(helperMethods.sleep(1000)).to.eventually.be.fulfilled;
@@ -68,7 +67,7 @@ describe("Helpers unit tests", async () => {
     });
 
     it("Should return number", async () => {
-        const expected = '1000';
+        const expected = "1000";
         expect(helperMethods.toStringExp(1, 3)).to.eq(expected);
         expect(helperMethods.toStringExp("1", 3)).to.eq(expected);
         expect(helperMethods.toStringExp(0, 2)).to.eq(expected.slice(1));
@@ -82,7 +81,7 @@ describe("Helpers unit tests", async () => {
     });
 
     it("Should use requireEnv - not defined", () => {
-        const name = 'I_DO_NOT_EXIST_HA_HA';
+        const name = "I_DO_NOT_EXIST_HA_HA";
         const fn = () => {
             return helperMethods.requireEnv(name);
         };
@@ -104,7 +103,7 @@ describe("Helpers unit tests", async () => {
 
     it("Should use reportError", () => {
         const errorMessage = "This is error";
-        const spyError = spy.on(console, 'error');
+        const spyError = spy.on(console, "error");
         helperMethods.reportError(errorMessage);
         expect(spyError).to.have.been.called.once;
     });
@@ -127,5 +126,4 @@ describe("Helpers unit tests", async () => {
         const b = toBN(2);
         expect(helperMethods.maxBN(a, b).toString()).to.eq(b.toString());
     });
-
 });

@@ -42,5 +42,4 @@ describe("AgentBot cli commands unit tests", async () => {
         // sort of clean up
         await agent.announceDestroy();
     });
-
 });

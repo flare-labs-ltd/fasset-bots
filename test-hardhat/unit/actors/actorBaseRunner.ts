@@ -30,7 +30,7 @@ describe("Actor base runner tests", async () => {
     it("Should run actor base runner until its stopped", async () => {
         const actor = new ActorBase(new ScopedRunner(), ownerAddress, new TrackedState(context, await web3.eth.getBlockNumber()));
         const actorBaseRunner = new ActorBaseRunner(loopDelay, actor);
-        const spyStep = spy.on(actorBaseRunner, 'runStep');
+        const spyStep = spy.on(actorBaseRunner, "runStep");
         actorBaseRunner.requestStop();
         void actorBaseRunner.run(ActorBaseKind.SYSTEM_KEEPER);
         actorBaseRunner.requestStop();
@@ -43,9 +43,8 @@ describe("Actor base runner tests", async () => {
         await state.initialize();
         const systemKeeper = new SystemKeeper(new ScopedRunner(), systemKeeperAddress, state);
         const systemKeeperRunner = new ActorBaseRunner(loopDelay, systemKeeper);
-        const spyStep = spy.on(systemKeeper, 'runStep');
+        const spyStep = spy.on(systemKeeper, "runStep");
         await systemKeeperRunner.runStep(ActorBaseKind.SYSTEM_KEEPER);
         expect(spyStep).to.have.been.called.once;
     });
-
 });

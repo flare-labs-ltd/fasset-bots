@@ -14,7 +14,6 @@ export class FuzzingStateAgent extends TrackedAgentState {
         super(parent, data);
     }
 
-
     async checkInvariants(checker: FuzzingStateComparator, agentName: string) {
         // get actual agent state
         const agentInfo = await this.parent.context.assetManager.getAgentInfo(this.vaultAddress);
@@ -31,7 +30,12 @@ export class FuzzingStateAgent extends TrackedAgentState {
         problems += checker.checkEquality(`${agentName}.underlyingFreeBalanceUBA`, agentInfo.freeUnderlyingBalanceUBA, this.freeUnderlyingBalanceUBA);
         // minimum underlying backing (unless in full liquidation)
         if (this.status !== AgentStatus.FULL_LIQUIDATION) {
-            problems += checker.checkNumericDifference(`${agentName}.underlyingBalanceUBA`, agentInfo.underlyingBalanceUBA, 'gte', this.mintedUBA.add(this.freeUnderlyingBalanceUBA));
+            problems += checker.checkNumericDifference(
+                `${agentName}.underlyingBalanceUBA`,
+                agentInfo.underlyingBalanceUBA,
+                "gte",
+                this.mintedUBA.add(this.freeUnderlyingBalanceUBA)
+            );
         }
         // dust
         problems += checker.checkEquality(`${agentName}.dustUBA`, this.dustUBA, agentInfo.dustUBA);
@@ -39,7 +43,7 @@ export class FuzzingStateAgent extends TrackedAgentState {
         if (!(this.status === AgentStatus.CCB && Number(agentInfo.status) === Number(AgentStatus.LIQUIDATION))) {
             problems += checker.checkStringEquality(`${agentName}.status`, agentInfo.status, this.status);
         } else {
-            console.log(`    ${agentName}.status: CCB -> LIQUIDATION issue, time=${await latestBlockTimestamp() - Number(this.ccbStartTimestamp)}`);
+            console.log(`    ${agentName}.status: CCB -> LIQUIDATION issue, time=${(await latestBlockTimestamp()) - Number(this.ccbStartTimestamp)}`);
         }
         // log
         if (problems > 0) {

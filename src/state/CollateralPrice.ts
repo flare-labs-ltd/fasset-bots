@@ -7,9 +7,8 @@ export class AMGPrice {
     constructor(
         public amgToTokenWei: BN,
         public assetMintingDecimals: BN,
-        public assetMintingGranularityUBA: BN,
-    ) {
-    }
+        public assetMintingGranularityUBA: BN
+    ) {}
 
     convertUBAToTokenWei(valueUBA: BNish) {
         return convertUBAToTokenWei(this, valueUBA, this.amgToTokenWei);
@@ -35,14 +34,16 @@ export class CollateralPrice extends AMGPriceConverter {
         public collateral: CollateralType,
         public assetPrice: TokenPrice,
         public tokenPrice: TokenPrice | undefined,
-        public amgPrice: AMGPrice,
+        public amgPrice: AMGPrice
     ) {
         super();
     }
 
     static async forCollateral(priceReader: TokenPriceReader, settings: AssetManagerSettings, collateral: CollateralType, trusted: boolean = false) {
         const assetPrice = await priceReader.getPrice(collateral.assetFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds);
-        const tokenPrice = collateral.tokenFtsoSymbol ? await priceReader.getPrice(collateral.tokenFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds) : undefined;
+        const tokenPrice = collateral.tokenFtsoSymbol
+            ? await priceReader.getPrice(collateral.tokenFtsoSymbol, trusted, settings.maxTrustedPriceAgeSeconds)
+            : undefined;
         const amgPrice = AMGPrice.forTokenPrices(settings, collateral, assetPrice, tokenPrice);
         return new CollateralPrice(collateral, assetPrice, tokenPrice, amgPrice);
     }

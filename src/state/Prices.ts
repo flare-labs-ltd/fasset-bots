@@ -9,15 +9,18 @@ import { TokenPrice, TokenPriceReader } from "./TokenPrice";
 export type StablecoinPrices = { [tokenAddress: string]: TokenPrice };
 
 export class Prices {
-    constructor(
-        public collateralPrices: CollateralIndexedList<CollateralPrice>,
-    ) { }
+    constructor(public collateralPrices: CollateralIndexedList<CollateralPrice>) {}
 
     get(token: CollateralTypeId) {
         return this.collateralPrices.get(token);
     }
 
-    static async getFtsoPrices(priceReader: TokenPriceReader, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>, trusted: boolean): Promise<Prices> {
+    static async getFtsoPrices(
+        priceReader: TokenPriceReader,
+        settings: AssetManagerSettings,
+        collaterals: Iterable<CollateralType>,
+        trusted: boolean
+    ): Promise<Prices> {
         const collateralPrices = new CollateralIndexedList<CollateralPrice>();
         for (const collateral of collaterals) {
             const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, collateral, trusted);

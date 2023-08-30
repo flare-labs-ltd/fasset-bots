@@ -9,11 +9,11 @@ export interface IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = requireEnv('WALLET_ENCRYPTION_PASSWORD');
+    private password = requireEnv("WALLET_ENCRYPTION_PASSWORD");
 
     private privateKeyCache = new Map<string, string>();
 
-    constructor(private em: EntityManager) { }
+    constructor(private em: EntityManager) {}
 
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {

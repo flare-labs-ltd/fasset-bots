@@ -6,9 +6,9 @@ import { findRequiredEvent } from "../utils/events/truffle";
 import { IAssetAgentBotContext } from "./IAssetBotContext";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
-const AgentVault = artifacts.require('AgentVault');
-const CollateralPool = artifacts.require('CollateralPool');
-const CollateralPoolToken = artifacts.require('CollateralPoolToken');
+const AgentVault = artifacts.require("AgentVault");
+const CollateralPool = artifacts.require("CollateralPool");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export class AgentB extends Agent {
     constructor(
@@ -26,7 +26,7 @@ export class AgentB extends Agent {
         // create agent
         const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(settings), { from: ownerAddress });
         // extract agent vault address from AgentVaultCreated event
-        const event = findRequiredEvent(response, 'AgentVaultCreated');
+        const event = findRequiredEvent(response, "AgentVaultCreated");
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get collateral pool

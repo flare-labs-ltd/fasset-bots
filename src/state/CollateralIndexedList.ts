@@ -14,7 +14,7 @@ export class CollateralIndexedList<T> implements Iterable<T> {
     set(token: CollateralTypeId, value: T) {
         const key = collateralTokenKey(token.collateralClass, token.token);
         const index = this.index.get(key);
-        if (typeof index === 'undefined') {
+        if (typeof index === "undefined") {
             this.list.push(value);
             this.index.set(key, this.list.length - 1);
         } else {
@@ -47,4 +47,3 @@ export function isPoolCollateral(collateral: CollateralType) {
 export function collateralTokenKey(collateralClass: BNish | CollateralClass, token: string) {
     return `${collateralClass}|${token}`;
 }
-

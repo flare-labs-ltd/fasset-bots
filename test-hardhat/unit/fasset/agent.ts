@@ -7,7 +7,14 @@ import { Agent } from "../../../src/fasset/Agent";
 import { time } from "@openzeppelin/test-helpers";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, disableMccTraceManager, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import {
+    createCRAndPerformMinting,
+    createTestAgent,
+    createTestAgentAndMakeAvailable,
+    createTestMinter,
+    disableMccTraceManager,
+    mintAndDepositVaultCollateralToOwner,
+} from "../../test-utils/helpers";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -117,7 +124,7 @@ describe("Agent unit tests", async () => {
 
     it("Should perform and confirm top up", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const spyAgent = spy.on(agent.assetManager, 'confirmTopupPayment');
+        const spyAgent = spy.on(agent.assetManager, "confirmTopupPayment");
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.confirmTopupPayment(tx);
@@ -195,5 +202,4 @@ describe("Agent unit tests", async () => {
         expect(ownerFassets.eq(fPoolBalance)).to.be.true;
         expect(fPoolBalanceAfterWithdraw.eqn(0)).to.be.true;
     });
-
 });

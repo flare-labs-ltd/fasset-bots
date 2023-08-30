@@ -9,7 +9,6 @@ import { expect, use } from "chai";
 use(chaiAsPromised);
 
 describe("Token price unit tests", async () => {
-
     it("Should create TokenPrice", async () => {
         const price = toBN(123456);
         const timestamp = toBN(123);
@@ -17,7 +16,6 @@ describe("Token price unit tests", async () => {
         const tokenPrice = new TokenPrice(price, timestamp, decimals);
         expect(tokenPrice).to.not.be.null;
     });
-
 });
 
 describe("Token price reader unit tests", async () => {
@@ -44,5 +42,4 @@ describe("Token price reader unit tests", async () => {
         expect(price1.toString()).to.not.be.null;
         expect(price2.toString()).to.not.be.null;
     });
-
 });

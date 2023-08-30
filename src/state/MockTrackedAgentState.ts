@@ -10,6 +10,6 @@ export class MockTrackedAgentState extends TrackedAgentState {
     }
 
     override collateralRatioBIPS(): BN {
-        throw new Error("Faulty calculation.")
+        throw new Error("Faulty calculation.");
     }
 }

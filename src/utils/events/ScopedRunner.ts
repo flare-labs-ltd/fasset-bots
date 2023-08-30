@@ -23,7 +23,7 @@ export class ScopedRunner {
         const scope = this.newScope();
         ++this.runningThreads;
         void method(scope)
-            .catch(e => {
+            .catch((e) => {
                 if (e instanceof ExitScope) {
                     /* istanbul ignore next */
                     if (e.scope == null || e.scope === scope) return;
@@ -36,5 +36,4 @@ export class ScopedRunner {
                 return this.finishScope(scope);
             });
     }
-
 }

@@ -14,10 +14,8 @@ export class AgentCollateral {
         public agentInfo: AgentInfo,
         public vault: CollateralData,
         public pool: CollateralData,
-        public agentPoolTokens: CollateralData,
-    ) {
-
-    }
+        public agentPoolTokens: CollateralData
+    ) {}
 
     static async create(assetManager: AssetManagerInstance, settings: AssetManagerSettings, agentVault: string) {
         const agentInfo = await assetManager.getAgentInfo(agentVault);
@@ -68,9 +66,11 @@ export class AgentCollateral {
         const redeemingUBA = data.kind() === CollateralKind.POOL ? toBN(this.agentInfo.poolRedeemingUBA) : toBN(this.agentInfo.redeemingUBA);
         const redeemingCollateral = data.convertUBAToTokenWei(redeemingUBA).mul(systemMinCollateralRatioBIPS).divn(MAX_BIPS);
         const announcedWithdrawal =
-            data.kind() === CollateralKind.VAULT ? toBN(this.agentInfo.announcedVaultCollateralWithdrawalWei) :
-            data.kind() === CollateralKind.AGENT_POOL_TOKENS ? toBN(this.agentInfo.announcedPoolTokensWithdrawalWei) :
-            BN_ZERO;
+            data.kind() === CollateralKind.VAULT
+                ? toBN(this.agentInfo.announcedVaultCollateralWithdrawalWei)
+                : data.kind() === CollateralKind.AGENT_POOL_TOKENS
+                ? toBN(this.agentInfo.announcedPoolTokensWithdrawalWei)
+                : BN_ZERO;
         return mintingCollateral.add(redeemingCollateral).add(announcedWithdrawal);
     }
 
@@ -103,8 +103,8 @@ export class AgentCollateral {
 
     collateralRatioBIPS(data: CollateralData) {
         const redeemingUBA = data.kind() === CollateralKind.POOL ? this.agentInfo.poolRedeemingUBA : this.agentInfo.redeemingUBA;
-        const totalBacked = toBN(this.agentInfo.mintedUBA).add(toBN(this.agentInfo.reservedUBA)).add(toBN(redeemingUBA))
-        if (totalBacked.isZero()) return exp10(10);    // nothing minted - ~infinite collateral ratio (but avoid overflows)
+        const totalBacked = toBN(this.agentInfo.mintedUBA).add(toBN(this.agentInfo.reservedUBA)).add(toBN(redeemingUBA));
+        if (totalBacked.isZero()) return exp10(10); // nothing minted - ~infinite collateral ratio (but avoid overflows)
         const backingTokenWei = data.convertUBAToTokenWei(totalBacked);
         return data.balance.muln(MAX_BIPS).div(backingTokenWei);
     }

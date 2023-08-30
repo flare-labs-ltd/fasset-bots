@@ -19,47 +19,60 @@ import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 
-const AgentVaultFactory = artifacts.require('AgentVaultFactory');
-const SCProofVerifier = artifacts.require('SCProofVerifier');
-const AssetManagerController = artifacts.require('AssetManagerController');
-const AddressUpdater = artifacts.require('AddressUpdater');
-const WNat = artifacts.require('WNat');
-const FtsoMock = artifacts.require('FtsoMock');
-const FtsoRegistryMock = artifacts.require('FtsoRegistryMock');
-const FtsoManagerMock = artifacts.require('FtsoManagerMock');
-const StateConnector = artifacts.require('StateConnectorMock');
-const GovernanceSettings = artifacts.require('GovernanceSettings');
-const VPContract = artifacts.require('VPContract');
+const AgentVaultFactory = artifacts.require("AgentVaultFactory");
+const SCProofVerifier = artifacts.require("SCProofVerifier");
+const AssetManagerController = artifacts.require("AssetManagerController");
+const AddressUpdater = artifacts.require("AddressUpdater");
+const WNat = artifacts.require("WNat");
+const FtsoMock = artifacts.require("FtsoMock");
+const FtsoRegistryMock = artifacts.require("FtsoRegistryMock");
+const FtsoManagerMock = artifacts.require("FtsoManagerMock");
+const StateConnector = artifacts.require("StateConnectorMock");
+const GovernanceSettings = artifacts.require("GovernanceSettings");
+const VPContract = artifacts.require("VPContract");
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
 const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const ERC20Mock = artifacts.require("ERC20Mock");
-const TrivialAddressValidatorMock = artifacts.require('TrivialAddressValidatorMock');
+const TrivialAddressValidatorMock = artifacts.require("TrivialAddressValidatorMock");
 const WhitelistMock = artifacts.require("WhitelistMock");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
-export type TestFtsos = Record<'nat' | 'usdc' | 'usdt' | 'asset', FtsoMockInstance>;
+export type TestFtsos = Record<"nat" | "usdc" | "usdt" | "asset", FtsoMockInstance>;
 
 export const ftsoNatInitialPrice = 0.42;
 export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
 
-export type TestAssetBotContext = Modify<IAssetAgentBotContext, {
-    natFtso: FtsoMockInstance;
-    assetFtso: FtsoMockInstance;
-    ftsoManager: FtsoManagerMockInstance;
-    ftsos: TestFtsos;
-    blockchainIndexer: MockIndexer;
-}>
+export type TestAssetBotContext = Modify<
+    IAssetAgentBotContext,
+    {
+        natFtso: FtsoMockInstance;
+        assetFtso: FtsoMockInstance;
+        ftsoManager: FtsoManagerMockInstance;
+        ftsos: TestFtsos;
+        blockchainIndexer: MockIndexer;
+    }
+>;
 
-export type TestAssetTrackedStateContext = Modify<IAssetActorContext, {
-    assetFtso: FtsoMockInstance;
-    ftsoManager: FtsoManagerMockInstance;
-    blockchainIndexer: MockIndexer;
-}>
+export type TestAssetTrackedStateContext = Modify<
+    IAssetActorContext,
+    {
+        assetFtso: FtsoMockInstance;
+        ftsoManager: FtsoManagerMockInstance;
+        blockchainIndexer: MockIndexer;
+    }
+>;
 
-export async function createTestAssetContext(governance: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean, customParameters?: any, updateExecutor?: string, useAlwaysFailsProver?: boolean): Promise<TestAssetBotContext> {
+export async function createTestAssetContext(
+    governance: string,
+    chainInfo: TestChainInfo,
+    requireEOAAddressProof?: boolean,
+    customParameters?: any,
+    updateExecutor?: string,
+    useAlwaysFailsProver?: boolean
+): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -74,7 +87,7 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create attestation client
     const scProofVerifier = await SCProofVerifier.new(stateConnector.address);
     // create asset manager controller
-    const addressUpdater = await AddressUpdater.new(governance);  // don't switch to production
+    const addressUpdater = await AddressUpdater.new(governance); // don't switch to production
     const assetManagerController = await AssetManagerController.new(governanceSettings.address, governance, addressUpdater.address);
     await assetManagerController.switchToProductionMode({ from: governance });
     // create WNat token
@@ -100,26 +113,31 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     const agentWhitelist = await WhitelistMock.new(true);
     // set contracts
     const contracts: ChainContracts = {
-        GovernanceSettings: newContract('GovernanceSettings', 'GovernanceSettings.sol', governanceSettings.address),
-        AddressUpdater: newContract('AddressUpdater', 'AddressUpdater.sol', addressUpdater.address),
-        StateConnector: newContract('StateConnector', 'StateConnectorMock.sol', stateConnector.address),
-        WNat: newContract('WNat', 'WNat.sol', wNat.address),
-        FtsoRegistry: newContract('FtsoRegistry', 'FtsoRegistryMock.sol', ftsoRegistry.address),
-        FtsoManager: newContract('FtsoManager', 'FtsoManagerMock.sol', ftsoManager.address),
-        SCProofVerifier: newContract('SCProofVerifier', 'SCProofVerifier.sol', scProofVerifier.address),
-        AgentVaultFactory: newContract('AgentVaultFactory', 'AgentVaultFactory.sol', agentVaultFactory.address),
-        AssetManagerController: newContract('AssetManagerController', 'AssetManagerController.sol', assetManagerController.address),
-        CollateralPoolFactory: newContract('CollateralPoolFactory', 'CollateralPoolFactory.sol', collateralPoolFactory.address),
-        AddressValidator: newContract('IAddressValidatorInstance', 'IAddressValidatorInstance.sol', addressValidator.address),
-        AgentWhiteList: newContract('WhiteList', 'WhitelistMock.sol', agentWhitelist.address),
-        CollateralPoolTokenFactory: newContract('CollateralPoolTokenFactory', 'CollateralPoolTokenFactory.sol', collateralPoolTokenFactory.address),
-        PriceReader: newContract('PriceReader', 'PriceReader.sol', priceReader.address),
+        GovernanceSettings: newContract("GovernanceSettings", "GovernanceSettings.sol", governanceSettings.address),
+        AddressUpdater: newContract("AddressUpdater", "AddressUpdater.sol", addressUpdater.address),
+        StateConnector: newContract("StateConnector", "StateConnectorMock.sol", stateConnector.address),
+        WNat: newContract("WNat", "WNat.sol", wNat.address),
+        FtsoRegistry: newContract("FtsoRegistry", "FtsoRegistryMock.sol", ftsoRegistry.address),
+        FtsoManager: newContract("FtsoManager", "FtsoManagerMock.sol", ftsoManager.address),
+        SCProofVerifier: newContract("SCProofVerifier", "SCProofVerifier.sol", scProofVerifier.address),
+        AgentVaultFactory: newContract("AgentVaultFactory", "AgentVaultFactory.sol", agentVaultFactory.address),
+        AssetManagerController: newContract("AssetManagerController", "AssetManagerController.sol", assetManagerController.address),
+        CollateralPoolFactory: newContract("CollateralPoolFactory", "CollateralPoolFactory.sol", collateralPoolFactory.address),
+        AddressValidator: newContract("IAddressValidatorInstance", "IAddressValidatorInstance.sol", addressValidator.address),
+        AgentWhiteList: newContract("WhiteList", "WhitelistMock.sol", agentWhitelist.address),
+        CollateralPoolTokenFactory: newContract("CollateralPoolTokenFactory", "CollateralPoolTokenFactory.sol", collateralPoolTokenFactory.address),
+        PriceReader: newContract("PriceReader", "PriceReader.sol", priceReader.address),
     };
     // create mock chain attestation provider
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, 'auto', useAlwaysFailsProver ? useAlwaysFailsProver : false);
+    const stateConnectorClient = new MockStateConnectorClient(
+        stateConnector,
+        { [chainInfo.chainId]: chain },
+        "auto",
+        useAlwaysFailsProver ? useAlwaysFailsProver : false
+    );
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
     const wallet = new MockChainWallet(chain);
@@ -135,9 +153,24 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // create asset manager
     const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo, requireEOAAddressProof);
+    const settings = createTestAssetManagerSettings(
+        contracts,
+        customParameters ? customParameters : parameters,
+        liquidationStrategy,
+        chainInfo,
+        requireEOAAddressProof
+    );
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
-    const [assetManager, fAsset] = await newAssetManager(governance, assetManagerController, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
+    const [assetManager, fAsset] = await newAssetManager(
+        governance,
+        assetManagerController,
+        chainInfo.name,
+        chainInfo.symbol,
+        chainInfo.decimals,
+        web3DeepNormalize(settings),
+        collaterals,
+        createEncodedTestLiquidationSettings()
+    );
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     //
@@ -147,21 +180,55 @@ export async function createTestAssetContext(governance: string, chainInfo: Test
     // native chain info
     const nativeChainInfo = testNativeChainInfo;
     // return context
-    return { nativeChainInfo, chainInfo, blockchainIndexer, wallet, attestationProvider, assetManager, assetManagerController, ftsoRegistry, ftsoManager, wNat, fAsset, natFtso, assetFtso, stablecoins, collaterals, ftsos, addressUpdater};
+    return {
+        nativeChainInfo,
+        chainInfo,
+        blockchainIndexer,
+        wallet,
+        attestationProvider,
+        assetManager,
+        assetManagerController,
+        ftsoRegistry,
+        ftsoManager,
+        wNat,
+        fAsset,
+        natFtso,
+        assetFtso,
+        stablecoins,
+        collaterals,
+        ftsos,
+        addressUpdater,
+    };
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext): TestAssetTrackedStateContext {
-    return { nativeChainInfo: context.nativeChainInfo, blockchainIndexer: context.blockchainIndexer, attestationProvider: context.attestationProvider, assetManager: context.assetManager, ftsoRegistry: context.ftsoRegistry, ftsoManager: context.ftsoManager, fAsset: context.fAsset, assetFtso: context.assetFtso, collaterals: context.collaterals };
+    return {
+        nativeChainInfo: context.nativeChainInfo,
+        blockchainIndexer: context.blockchainIndexer,
+        attestationProvider: context.attestationProvider,
+        assetManager: context.assetManager,
+        ftsoRegistry: context.ftsoRegistry,
+        ftsoManager: context.ftsoManager,
+        fAsset: context.fAsset,
+        assetFtso: context.assetFtso,
+        collaterals: context.collaterals,
+    };
 }
 
 function bnToString(x: BN | number | string) {
     if (!BN.isBN(x)) {
-        x = new BN(x);  // convert to BN to remove spaces etc.
+        x = new BN(x); // convert to BN to remove spaces etc.
     }
     return x.toString(10);
 }
 
-function createTestAssetManagerSettings(contracts: ChainContracts, parameters: any, liquidationStrategy: string, chainInfo: TestChainInfo, requireEOAAddressProof?: boolean): AssetManagerSettings {
+function createTestAssetManagerSettings(
+    contracts: ChainContracts,
+    parameters: any,
+    liquidationStrategy: string,
+    chainInfo: TestChainInfo,
+    requireEOAAddressProof?: boolean
+): AssetManagerSettings {
     if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.SCProofVerifier) {
         throw new Error("Missing contracts");
     }
@@ -185,9 +252,9 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         assetMintingDecimals: chainInfo.amgDecimals,
         assetMintingGranularityUBA: toBNExp(1, chainInfo.decimals - chainInfo.amgDecimals),
         minUnderlyingBackingBIPS: MAX_BIPS,
-        mintingCapAMG: 0,                                   // minting cap disabled
+        mintingCapAMG: 0, // minting cap disabled
         lotSizeAMG: toBNExp(chainInfo.lotSize, chainInfo.amgDecimals),
-        requireEOAAddressProof: typeof requireEOAAddressProof !== 'undefined' ? requireEOAAddressProof : chainInfo.requireEOAProof,
+        requireEOAAddressProof: typeof requireEOAAddressProof !== "undefined" ? requireEOAAddressProof : chainInfo.requireEOAProof,
         underlyingBlocksForPayment: chainInfo.underlyingBlocksForPayment,
         underlyingSecondsForPayment: chainInfo.underlyingBlocksForPayment,
         redemptionFeeBIPS: bnToString(parameters.redemptionFeeBIPS),
@@ -195,8 +262,8 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         redemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.1),
         redemptionDefaultFactorPoolBIPS: toBIPS(0.1),
         confirmationByOthersAfterSeconds: bnToString(parameters.confirmationByOthersAfterSeconds),
-        confirmationByOthersRewardUSD5: toBNExp(100, 5),        // 100 USD
-        paymentChallengeRewardUSD5: toBNExp(300, 5),            // 300 USD
+        confirmationByOthersRewardUSD5: toBNExp(100, 5), // 100 USD
+        paymentChallengeRewardUSD5: toBNExp(300, 5), // 300 USD
         paymentChallengeRewardBIPS: bnToString(parameters.paymentChallengeRewardBIPS),
         withdrawalWaitMinSeconds: bnToString(parameters.withdrawalWaitMinSeconds),
         ccbTimeSeconds: bnToString(parameters.ccbTimeSeconds),
@@ -212,7 +279,7 @@ function createTestAssetManagerSettings(contracts: ChainContracts, parameters: a
         vaultCollateralBuyForFlareFactorBIPS: toBIPS(1.05),
         mintingPoolHoldingsRequiredBIPS: toBIPS("50%"),
         tokenInvalidationTimeMinSeconds: 1 * DAYS,
-        agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds)
+        agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds),
     };
 }
 
@@ -221,7 +288,7 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         collateralClass: CollateralClass.POOL,
         token: contracts.WNat!.address,
         decimals: 18,
-        validUntil: 0,  // not deprecated
+        validUntil: 0, // not deprecated
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
         tokenFtsoSymbol: "NAT",
@@ -233,7 +300,7 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdc.address,
         decimals: 18,
-        validUntil: 0,  // not deprecated
+        validUntil: 0, // not deprecated
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
         tokenFtsoSymbol: "USDC",
@@ -245,7 +312,7 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
         collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdt.address,
         decimals: 18,
-        validUntil: 0,  // not deprecated
+        validUntil: 0, // not deprecated
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
         tokenFtsoSymbol: "USDT",
@@ -256,7 +323,12 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
     return [poolCollateral, usdcCollateral, usdtCollateral];
 }
 
-export async function createFtsoMock(ftsoRegistry: FtsoRegistryMockInstance, ftsoSymbol: string, initialPrice: number, decimals: number = 5): Promise<FtsoMockInstance> {
+export async function createFtsoMock(
+    ftsoRegistry: FtsoRegistryMockInstance,
+    ftsoSymbol: string,
+    initialPrice: number,
+    decimals: number = 5
+): Promise<FtsoMockInstance> {
     const ftso = await FtsoMock.new(ftsoSymbol, decimals);
     await ftso.setCurrentPrice(toBNExp(initialPrice, decimals), 0);
     await ftso.setCurrentPriceFromTrustedProviders(toBNExp(initialPrice, decimals), 0);
@@ -269,7 +341,7 @@ export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, as
         nat: await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice),
         usdc: await createFtsoMock(ftsoRegistry, "USDC", ftsoUsdcInitialPrice),
         usdt: await createFtsoMock(ftsoRegistry, "USDT", ftsoUsdtInitialPrice),
-        asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice)
+        asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
     };
 }
 
@@ -286,5 +358,9 @@ export function createEncodedTestLiquidationSettings() {
 }
 
 export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotContext, governance: string) {
-    await waitForTimelock(context.assetManagerController.setLotSizeAmg([context.assetManager.address], newLotSizeAMG, { from: governance }), context.assetManagerController, governance);
+    await waitForTimelock(
+        context.assetManagerController.setLotSizeAmg([context.assetManager.address], newLotSizeAMG, { from: governance }),
+        context.assetManagerController,
+        governance
+    );
 }

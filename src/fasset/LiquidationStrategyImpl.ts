@@ -28,12 +28,17 @@ export interface LiquidationStrategyImplSettings {
 }
 
 export function encodeLiquidationStrategyImplSettings(settings: LiquidationStrategyImplSettings) {
-    return web3.eth.abi.encodeParameters(['uint256', 'uint256[]', 'uint256[]'],
-        [settings.liquidationStepSeconds, settings.liquidationCollateralFactorBIPS, settings.liquidationFactorVaultCollateralBIPS]);
+    return web3.eth.abi.encodeParameters(
+        ["uint256", "uint256[]", "uint256[]"],
+        [settings.liquidationStepSeconds, settings.liquidationCollateralFactorBIPS, settings.liquidationFactorVaultCollateralBIPS]
+    );
 }
 
 export function decodeLiquidationStrategyImplSettings(encoded: string): LiquidationStrategyImplSettings {
-    const { 0: liquidationStepSeconds, 1: liquidationCollateralFactorBIPS, 2: liquidationFactorVaultCollateralBIPS } =
-        web3.eth.abi.decodeParameters(['uint256', 'uint256[]', 'uint256[]'], encoded);
+    const {
+        0: liquidationStepSeconds,
+        1: liquidationCollateralFactorBIPS,
+        2: liquidationFactorVaultCollateralBIPS,
+    } = web3.eth.abi.decodeParameters(["uint256", "uint256[]", "uint256[]"], encoded);
     return { liquidationStepSeconds, liquidationCollateralFactorBIPS, liquidationFactorVaultCollateralBIPS };
 }

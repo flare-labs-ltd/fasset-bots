@@ -20,9 +20,9 @@ import { UserBot } from "../../../src/actors/UserBot";
 use(chaiAsPromised);
 use(spies);
 
-const IERC20 = artifacts.require('IERC20');
+const IERC20 = artifacts.require("IERC20");
 
-const StateConnector = artifacts.require('StateConnectorMock');
+const StateConnector = artifacts.require("StateConnectorMock");
 const agentUnderlyingAddress = "agentUnderlyingAddress";
 const userUnderlyingAddress = "userUnderlyingAddress";
 
@@ -35,11 +35,10 @@ describe("Bot cli commands unit tests", async () => {
     let chain: MockChain;
     let agent: Agent;
 
-
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
         ownerAddress = accounts[3];
     });
@@ -60,24 +59,26 @@ describe("Bot cli commands unit tests", async () => {
         userBot.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            chains: [{
-                chainInfo: {
-                    chainId: chainId,
-                    name: "Ripple",
-                    symbol: "XRP",
-                    decimals: 6,
-                    amgDecimals: 0,
-                    requireEOAProof: false
+            chains: [
+                {
+                    chainInfo: {
+                        chainId: chainId,
+                        name: "Ripple",
+                        symbol: "XRP",
+                        decimals: 6,
+                        amgDecimals: 0,
+                        requireEOAProof: false,
+                    },
+                    wallet: new MockChainWallet(chain),
+                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
+                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
+                    assetManager: "",
                 },
-                wallet: new MockChainWallet(chain),
-                blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-                assetManager: "",
-            }],
+            ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifier: new Notifier(),
-            addressUpdater: ""
+            addressUpdater: "",
         };
         agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
     });
@@ -88,7 +89,7 @@ describe("Bot cli commands unit tests", async () => {
 
     it("Should get available agents", async () => {
         // create agents
-        for(let i = 0; i<= 10; i++) {
+        for (let i = 0; i <= 10; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
         }
         const availableAgents = await userBot.getAvailableAgents();
@@ -160,7 +161,11 @@ describe("Bot cli commands unit tests", async () => {
         const startBalanceAgent = await vaultCollateralToken.balanceOf(agent.vaultAddress);
         const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
         // redemption default - invalid payment reference
-        await expect(userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)).to.eventually.be.rejectedWith('Invalid payment reference').and.be.an.instanceOf(Error);
+        await expect(
+            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
+        )
+            .to.eventually.be.rejectedWith("Invalid payment reference")
+            .and.be.an.instanceOf(Error);
         // redemption default
         await userBot.redemptionDefault(amount, rdReq.paymentReference, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
@@ -168,5 +173,4 @@ describe("Bot cli commands unit tests", async () => {
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
         expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
     });
-
 });

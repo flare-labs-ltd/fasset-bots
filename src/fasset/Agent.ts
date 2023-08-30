@@ -1,5 +1,15 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
+import {
+    AgentAvailable,
+    AgentDestroyed,
+    AllEvents,
+    AssetManagerInstance,
+    AvailableAgentExited,
+    SelfClose,
+    UnderlyingWithdrawalAnnounced,
+    UnderlyingWithdrawalCancelled,
+    UnderlyingWithdrawalConfirmed,
+} from "../../typechain-truffle/AssetManager";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, requireNotNull, toBN } from "../utils/helpers";
@@ -14,9 +24,9 @@ import { getAgentSettings } from "../utils/fasset-helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
 
-const AgentVault = artifacts.require('AgentVault');
-const CollateralPool = artifacts.require('CollateralPool');
-const CollateralPoolToken = artifacts.require('CollateralPoolToken');
+const AgentVault = artifacts.require("AgentVault");
+const CollateralPool = artifacts.require("CollateralPool");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export class Agent {
     constructor(
@@ -26,8 +36,7 @@ export class Agent {
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
         public underlyingAddress: string
-    ) {
-    }
+    ) {}
 
     get assetManager(): ContractWithEvents<AssetManagerInstance, AllEvents> {
         return this.context.assetManager;
@@ -68,7 +77,7 @@ export class Agent {
         return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateral());
     }
 
-    async getPoolCollateralPrice(): Promise<CollateralPrice>{
+    async getPoolCollateralPrice(): Promise<CollateralPrice> {
         const settings = await this.assetManager.getSettings();
         const collateralDataFactory = await CollateralDataFactory.create(settings);
         return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateral());
@@ -78,7 +87,7 @@ export class Agent {
         // create agent
         const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
         // extract agent vault address from AgentVaultCreated event
-        const event = findRequiredEvent(response, 'AgentVaultCreated');
+        const event = findRequiredEvent(response, "AgentVaultCreated");
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get collateral pool
@@ -92,7 +101,7 @@ export class Agent {
 
     async depositVaultCollateral(amountTokenWei: BNish) {
         const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        const vaultCollateralToken = requireNotNull(Object.values(this.context.stablecoins).find(token => token.address === vaultCollateralTokenAddress));
+        const vaultCollateralToken = requireNotNull(Object.values(this.context.stablecoins).find((token) => token.address === vaultCollateralTokenAddress));
         await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
         return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.ownerAddress });
     }
@@ -104,23 +113,23 @@ export class Agent {
 
     async makeAvailable(): Promise<EventArgs<AgentAvailable>> {
         const res = await this.assetManager.makeAgentAvailable(this.vaultAddress, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'AgentAvailable');
+        return requiredEventArgs(res, "AgentAvailable");
     }
 
     async announceExitAvailable(): Promise<BN> {
         const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'AvailableAgentExitAnnounced');
+        const args = requiredEventArgs(res, "AvailableAgentExitAnnounced");
         return args.exitAllowedAt;
     }
 
     async exitAvailable(): Promise<EventArgs<AvailableAgentExited>> {
         const res = await this.assetManager.exitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'AvailableAgentExited');
+        return requiredEventArgs(res, "AvailableAgentExited");
     }
 
     async announceVaultCollateralWithdrawal(amountWei: BNish): Promise<BN> {
         const res = await this.assetManager.announceVaultCollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'VaultCollateralWithdrawalAnnounced');
+        const args = requiredEventArgs(res, "VaultCollateralWithdrawalAnnounced");
         return args.withdrawalAllowedAt;
     }
 
@@ -139,13 +148,13 @@ export class Agent {
 
     async announceDestroy(): Promise<BN> {
         const res = await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'AgentDestroyAnnounced');
+        const args = requiredEventArgs(res, "AgentDestroyAnnounced");
         return args.destroyAllowedAt;
     }
 
     async destroy(recipient: string = this.ownerAddress): Promise<EventArgs<AgentDestroyed>> {
         const res = await this.assetManager.destroyAgent(this.vaultAddress, recipient, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'AgentDestroyed');
+        return requiredEventArgs(res, "AgentDestroyed");
     }
 
     async performTopupPayment(amount: BNish, underlyingAddress: string): Promise<string> {
@@ -159,7 +168,7 @@ export class Agent {
 
     async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
         const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'UnderlyingWithdrawalAnnounced');
+        return requiredEventArgs(res, "UnderlyingWithdrawalAnnounced");
     }
 
     async performUnderlyingWithdrawal(paymentReference: string, amount: BNish, underlyingAddress: string): Promise<string> {
@@ -169,26 +178,31 @@ export class Agent {
     async confirmUnderlyingWithdrawal(transactionHash: string): Promise<EventArgs<UnderlyingWithdrawalConfirmed>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, null);
         const res = await this.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agentVault.address, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'UnderlyingWithdrawalConfirmed');
+        return requiredEventArgs(res, "UnderlyingWithdrawalConfirmed");
     }
 
     async cancelUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalCancelled>> {
         const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'UnderlyingWithdrawalCancelled');
+        return requiredEventArgs(res, "UnderlyingWithdrawalCancelled");
     }
 
     async selfClose(amountUBA: BNish): Promise<EventArgs<SelfClose>> {
         const res = await this.assetManager.selfClose(this.agentVault.address, amountUBA, { from: this.ownerAddress });
-        return requiredEventArgs(res, 'SelfClose');
+        return requiredEventArgs(res, "SelfClose");
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee): Promise<string> {
+    async performPayment(
+        paymentAddress: string,
+        paymentAmount: BNish,
+        paymentReference: string | null = null,
+        options?: TransactionOptionsWithFee
+    ): Promise<string> {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
     }
 
     async announceAgentSettingUpdate(settingName: string, settingValue: BNish): Promise<BN> {
         const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'AgentSettingChangeAnnounced');
+        const args = requiredEventArgs(res, "AgentSettingChangeAnnounced");
         return args.validAt;
     }
 
@@ -198,7 +212,7 @@ export class Agent {
 
     async announcePoolTokenRedemption(amountWei: BNish) {
         const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.ownerAddress });
-        const args = requiredEventArgs(res, 'PoolTokenRedemptionAnnounced');
+        const args = requiredEventArgs(res, "PoolTokenRedemptionAnnounced");
         return args.withdrawalAllowedAt;
     }
 

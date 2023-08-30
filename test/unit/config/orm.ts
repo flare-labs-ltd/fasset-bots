@@ -6,15 +6,14 @@ import { BNType } from "../../../src/config/orm-types";
 import { toBN } from "../../../src/utils/helpers";
 import BN from "bn.js";
 
-const dbNameSqlite: string = 'fasset-bots-unit-test-sqlite.db';
-const dbNameMySql: string = 'fasset-bots-unit-test-mysql';
-const dbNamePostgres: string = 'fasset-bots-unit-test-postgres';
-const dbOptionsSqlite: CreateOrmOptions = { dbName: dbNameSqlite, type: 'sqlite', entities: [WalletAddress] };
-const dbOptionsMySql: CreateOrmOptions = { dbName: dbNameMySql, type: 'mysql', entities: [WalletAddress] };
-const dbOptionsPostgres: CreateOrmOptions = { dbName: dbNamePostgres, type: 'postgresql', entities: [WalletAddress] };
+const dbNameSqlite: string = "fasset-bots-unit-test-sqlite.db";
+const dbNameMySql: string = "fasset-bots-unit-test-mysql";
+const dbNamePostgres: string = "fasset-bots-unit-test-postgres";
+const dbOptionsSqlite: CreateOrmOptions = { dbName: dbNameSqlite, type: "sqlite", entities: [WalletAddress] };
+const dbOptionsMySql: CreateOrmOptions = { dbName: dbNameMySql, type: "mysql", entities: [WalletAddress] };
+const dbOptionsPostgres: CreateOrmOptions = { dbName: dbNamePostgres, type: "postgresql", entities: [WalletAddress] };
 
 describe("Orm config tests", async () => {
-
     it("Should create database", async () => {
         await createOrm(dbOptionsSqlite);
         const exist1 = existsSync(dbNameSqlite);
@@ -39,11 +38,11 @@ describe("Orm config tests", async () => {
     });
 
     it("Should update database", async () => {
-        await createOrm({ ...dbOptionsSqlite, schemaUpdate: 'recreate' });
+        await createOrm({ ...dbOptionsSqlite, schemaUpdate: "recreate" });
         const exist = existsSync(dbNameSqlite);
-        await createOrm({ ...dbOptionsSqlite, schemaUpdate: 'safe' });
+        await createOrm({ ...dbOptionsSqlite, schemaUpdate: "safe" });
         const exist2 = existsSync(dbNameSqlite);
-        await createOrm({ ...dbOptionsSqlite, schemaUpdate: 'full' });
+        await createOrm({ ...dbOptionsSqlite, schemaUpdate: "full" });
         const exist3 = existsSync(dbNameSqlite);
         expect(exist).to.be.true;
         expect(exist2).to.be.true;
@@ -66,5 +65,4 @@ describe("Orm config tests", async () => {
         expect(bnType.convertToJSValue(value).toString()).to.eq(new BN(value, 10).toString());
         expect(bnType.convertToJSValue(toBN(value)).toString()).to.eq(toBN(value).toString());
     });
-
 });

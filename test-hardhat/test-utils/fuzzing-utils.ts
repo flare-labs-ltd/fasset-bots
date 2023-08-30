@@ -28,7 +28,7 @@ export class Statistics {
     }
 
     add(x: BN | number) {
-        if (typeof x !== 'number') x = x.toNumber();
+        if (typeof x !== "number") x = x.toNumber();
         if (this.min == undefined || this.min > x) this.min = x;
         if (this.max == undefined || this.max < x) this.max = x;
         this.count += 1;
@@ -36,9 +36,9 @@ export class Statistics {
     }
 
     toString(decimals = 2) {
-        const min = this.min?.toFixed(decimals) ?? '---';
-        const max = this.max?.toFixed(decimals) ?? '---';
-        const avg = this.average?.toFixed(decimals) ?? '---';
+        const min = this.min?.toFixed(decimals) ?? "---";
+        const max = this.max?.toFixed(decimals) ?? "---";
+        const avg = this.average?.toFixed(decimals) ?? "---";
         return `n: ${this.count}  min: ${min}  avg: ${avg}  max: ${max}`;
     }
 }
@@ -84,7 +84,7 @@ export function coinFlip(p: number = 0.5) {
 }
 
 export function randomChoice<T>(choices: readonly T[], avoid?: T): T {
-    if (choices.length === 0) throw new Error("Random choice from empty array.")
+    if (choices.length === 0) throw new Error("Random choice from empty array.");
     if (avoid === undefined) {
         return choices[randomInt(choices.length)];
     } else {
@@ -96,7 +96,7 @@ export function randomChoice<T>(choices: readonly T[], avoid?: T): T {
 }
 
 export function weightedRandomChoice<T>(choices: readonly (readonly [T, number])[]): T {
-    if (choices.length === 0) throw new Error("Random choice from empty array.")
+    if (choices.length === 0) throw new Error("Random choice from empty array.");
     let total = 0;
     for (const [choice, weight] of choices) total += weight;
     const rnd = Math.random() * total;
@@ -127,9 +127,9 @@ export interface InclusionIterable<T> extends Iterable<T> {
     includes(x: T): boolean;
 }
 
-export function range(start: number, end: number | null, step: number = 1, inclusive?: 'inclusive'): InclusionIterable<number> {
+export function range(start: number, end: number | null, step: number = 1, inclusive?: "inclusive"): InclusionIterable<number> {
     let endN = end ?? (step > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
-    if (inclusive === 'inclusive') endN += step;
+    if (inclusive === "inclusive") endN += step;
     return {
         [Symbol.iterator]: function* () {
             if (step > 0) {
@@ -151,18 +151,18 @@ export function range(start: number, end: number | null, step: number = 1, inclu
             return this.indexOf(x) >= 0;
         },
         toString() {
-            const incl = Number.isFinite(endN) && inclusive === 'inclusive';
-            return `range(${start}, ${incl ? (endN - step) + ' (inclusive)' : endN}, ${step})`;
-        }
+            const incl = Number.isFinite(endN) && inclusive === "inclusive";
+            return `range(${start}, ${incl ? endN - step + " (inclusive)" : endN}, ${step})`;
+        },
     } as InclusionIterable<number>;
 }
 
 export function parseRange(s: string) {
     if (/^(\d+(,\d+)*)?$/.test(s)) {
-        return s != '' ? s.split(',').map(Number) : [];
+        return s != "" ? s.split(",").map(Number) : [];
     } else {
         const m = s.match(/^(\d+)(?:,(\d+))?,?...,?(\d+)?$/);
-        if (m) return range(Number(m[1]), m[3] ? Number(m[3]) : null, m[2] ? Number(m[2]) - Number(m[1]) : 1, 'inclusive');
+        if (m) return range(Number(m[1]), m[3] ? Number(m[3]) : null, m[2] ? Number(m[2]) - Number(m[1]) : 1, "inclusive");
         throw new Error("Invalid range value");
     }
 }
@@ -181,13 +181,15 @@ export function elapsedTime(startRealTime: number) {
 // this method converts it to JS dict
 export function truffleResultAsDict(result: any): any {
     if (!Array.isArray(result)) {
-        return result;  // not an array
+        return result; // not an array
     }
     const keys = Object.keys(result);
-    const stringKeys = keys.filter(k => !/^\d+/.test(k));
-    if (stringKeys.length === 0) {  // result is really an array
-        return result.map(v => truffleResultAsDict(v));
-    } else { // result is bot array and dict as
+    const stringKeys = keys.filter((k) => !/^\d+/.test(k));
+    if (stringKeys.length === 0) {
+        // result is really an array
+        return result.map((v) => truffleResultAsDict(v));
+    } else {
+        // result is bot array and dict as
         const res: any = {};
         for (const key of stringKeys) res[key] = truffleResultAsDict((result as any)[key]);
         return res;
@@ -229,21 +231,21 @@ export async function foreachAsyncSerial<T>(array: T[], func: (x: T, index: numb
 }
 
 const envConverters = {
-    'number': (s: string) => Number(s),
-    'string': (s: string) => s,
-    'boolean': (s: string): boolean => {
-        if (s === 'true') return true;
-        if (s === 'false') return false;
+    number: (s: string) => Number(s),
+    string: (s: string) => s,
+    boolean: (s: string): boolean => {
+        if (s === "true") return true;
+        if (s === "false") return false;
         throw new Error("Invalid boolean value");
     },
-    'number[]': (s: string) => s != '' ? s.split(',').map(Number) : [],
-    'string[]': (s: string) => s.split(','),
-    'boolean[]': (s: string) => s.split(',').map(p => envConverters['boolean'](p)),
-    'range': (s: string) => parseRange(s),
-    'json': (s: string) => JSON.parse(s),
+    "number[]": (s: string) => (s != "" ? s.split(",").map(Number) : []),
+    "string[]": (s: string) => s.split(","),
+    "boolean[]": (s: string) => s.split(",").map((p) => envConverters["boolean"](p)),
+    range: (s: string) => parseRange(s),
+    json: (s: string) => JSON.parse(s),
 } as const;
-type EnvConverterType = keyof (typeof envConverters);
-type EnvConverterResult<T extends EnvConverterType> = ReturnType<typeof envConverters[T]>;
+type EnvConverterType = keyof typeof envConverters;
+type EnvConverterResult<T extends EnvConverterType> = ReturnType<(typeof envConverters)[T]>;
 
 /**
  * Get an environment variable and convert it to some type.
@@ -272,11 +274,10 @@ export function mulDecimal(a: BN, b: number) {
         return a.mul(toBN(b));
     }
     const exp = 15 - Math.ceil(Math.log10(b));
-    const bm = Math.round(b * (10 ** exp));
+    const bm = Math.round(b * 10 ** exp);
     const m = a.mul(toBN(bm));
     return exp >= 0 ? m.div(exp10(exp)) : m.mul(exp10(-exp));
 }
-
 
 export function getLotSize(settings: AssetManagerSettings): BN {
     return toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
@@ -291,7 +292,7 @@ export function formatBN(x: BN | string | number) {
     if (xs.length >= 18) {
         const dec = Math.max(0, 22 - xs.length);
         const xm = (Number(xs) / 1e18).toFixed(dec);
-        return groupIntegerDigits(xm) + 'e+18';
+        return groupIntegerDigits(xm) + "e+18";
     } else {
         return groupIntegerDigits(xs);
     }
@@ -301,11 +302,12 @@ export function formatBN(x: BN | string | number) {
  * Put '_' characters between 3-digit groups in integer part of a number.
  */
 export function groupIntegerDigits(x: string) {
-    let startp = x.indexOf('.');
+    let startp = x.indexOf(".");
     if (startp < 0) startp = x.length;
-    const endp = x[0] === '-' ? 1 : 0;
+    const endp = x[0] === "-" ? 1 : 0;
     for (let p = startp - 3; p > endp; p -= 3) {
-        x = x.slice(0, p) + '_' + x.slice(p); x
+        x = x.slice(0, p) + "_" + x.slice(p);
+        x;
     }
     return x;
 }

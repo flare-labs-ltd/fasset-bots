@@ -6,11 +6,11 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ## Actors in FAsset system
 
-* [*Agent*](./docs/actors/agent.md): main player in the FAsset system.
-* [*Challenger*](./docs/actors/challenger.md): essential player for maintaining the FAsset system healthy.
-* [*Liquidator*](./docs/actors/liquidator.md): player who liquidates bad agents.
-* [*SystemKeeper*](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
-* [*TimeKeeper*](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
+-   [_Agent_](./docs/actors/agent.md): main player in the FAsset system.
+-   [_Challenger_](./docs/actors/challenger.md): essential player for maintaining the FAsset system healthy.
+-   [_Liquidator_](./docs/actors/liquidator.md): player who liquidates bad agents.
+-   [_SystemKeeper_](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
+-   [_TimeKeeper_](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
 
 ## Install
 
@@ -42,7 +42,7 @@ Example for such script using actor base runner for Challenger can be found in [
 
 ## Helpers
 
-In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [*TrackedState*](./src/state/TrackedState.ts) and [*TrackedAgentState*](./src/state/TrackedAgentState.ts).
+In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [_TrackedState_](./src/state/TrackedState.ts) and [_TrackedAgentState_](./src/state/TrackedAgentState.ts).
 See [here](./docs/trackState.md).
 
 ## Test and debug
@@ -55,26 +55,25 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 
 ## What to be aware of when testing on Coston and testnet XRP
 
-- Run TimeKeeper or manually  run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts) before reserving collateral, before redeeming, ...
-- Newly created testnet XRP account should get initial deposit of at least 10 XRP. Otherwise payment to this account will be rejected by tecNO_DST_INSUF_XRP.
+-   Run TimeKeeper or manually run [`proveAndUpdateUnderlyingBlock`](./src/utils/fasset-helpers.ts) before reserving collateral, before redeeming, ...
+-   Newly created testnet XRP account should get initial deposit of at least 10 XRP. Otherwise payment to this account will be rejected by tecNO_DST_INSUF_XRP.
 
 ### Testnet faucets
 
-- testnet XRP
-    - https://yusufsahinhamza.github.io/xrp-testnet-faucet/ - 980 XRP (not limited per day)
-    - https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
+-   testnet XRP
 
-- Coston
-    - https://coston1-faucet.towolabs.com/ - 100 CFLR per day
+    -   https://yusufsahinhamza.github.io/xrp-testnet-faucet/ - 980 XRP (not limited per day)
+    -   https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
+
+-   Coston
+    -   https://coston1-faucet.towolabs.com/ - 100 CFLR per day
 
 ### Other usefull webclients
 
-- [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#) (ApiKey to access it can found in .env file - ask Urška or Iztok).
-- [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
-- [Testnet XRP Explorer](https://testnet.xrpl.org/)
+-   [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#) (ApiKey to access it can found in .env file - ask Urška or Iztok).
+-   [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
+-   [Testnet XRP Explorer](https://testnet.xrpl.org/)
 
 ### Simple wallet
 
 Payments in bots are performed via [simple-wallet](https://gitlab.com/flarenetwork/simple-wallet).
-
-

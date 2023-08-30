@@ -8,12 +8,18 @@ export interface AMGSettings {
     assetMintingGranularityUBA: BNish;
 }
 
-export function amgToTokenWeiPrice(settings: AMGSettings, tokenDecimals: BNish, tokenUSD: BNish, tokenFtsoDecimals: BNish, assetUSD: BNish, assetFtsoDecimals: BNish): BN {
+export function amgToTokenWeiPrice(
+    settings: AMGSettings,
+    tokenDecimals: BNish,
+    tokenUSD: BNish,
+    tokenFtsoDecimals: BNish,
+    assetUSD: BNish,
+    assetFtsoDecimals: BNish
+): BN {
     // the scale by which token/asset price is divided
     const tokenScale = exp10(toBN(tokenDecimals).add(toBN(tokenFtsoDecimals)));
     const assetScale = exp10(toBN(settings.assetMintingDecimals).add(toBN(assetFtsoDecimals)));
-    return toBN(assetUSD).mul(tokenScale).mul(AMG_TOKENWEI_PRICE_SCALE)
-        .div(toBN(tokenUSD).mul(assetScale));
+    return toBN(assetUSD).mul(tokenScale).mul(AMG_TOKENWEI_PRICE_SCALE).div(toBN(tokenUSD).mul(assetScale));
 }
 
 export function roundUBAToAmg(settings: AMGSettings, valueUBA: BNish) {

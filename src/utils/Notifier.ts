@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import chalk from "chalk";
 // agent status and settings
 const CCB_TITLE = "CCB ALERT";
 const LIQUIDATION_STARTED_ALERT = "LIQUIDATION STARTED ALERT";
@@ -58,9 +58,7 @@ const BALANCE_POOL_FEES = "BALANCE POOL FEES";
 const POOL_DELEGATE = "POOL DELEGATION";
 const POOL_UNDELEGATE = "POOL UNDELEGATION";
 
-
 export class Notifier {
-
     send(title: string, message?: string) {
         if (message) {
             console.log(chalk.cyan(title + ":") + " " + message);
@@ -107,9 +105,15 @@ export class Notifier {
 
     sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string) {
         if (failureReason) {
-            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${agentVault}.`);
+            this.send(
+                REDEMPTION_FAILED_BLOCKED,
+                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${agentVault}.`
+            );
         } else {
-            this.send(REDEMPTION_FAILED_BLOCKED, `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${agentVault}.`);
+            this.send(
+                REDEMPTION_FAILED_BLOCKED,
+                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${agentVault}.`
+            );
         }
     }
 
@@ -131,14 +135,23 @@ export class Notifier {
 
     sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool: boolean = false) {
         if (pool) {
-            this.send(POOL_COLLATERAL_TOP_UP_FAILED_ALERT, `Agent ${agentVault} POOL could not be automatically topped up with collateral ${value} due to price changes.`);
+            this.send(
+                POOL_COLLATERAL_TOP_UP_FAILED_ALERT,
+                `Agent ${agentVault} POOL could not be automatically topped up with collateral ${value} due to price changes.`
+            );
         } else {
-            this.send(AGENT_COLLATERAL_TOP_UP_FAILED_ALERT, `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`);
+            this.send(
+                AGENT_COLLATERAL_TOP_UP_FAILED_ALERT,
+                `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`
+            );
         }
     }
 
     sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string) {
-        this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`);
+        this.send(
+            LOW_AGENT_FREE_UNDERLYING_BALANCE,
+            `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
+        );
     }
 
     sendLowUnderlyingAgentBalance(agentVault: string, amount: string) {
@@ -155,9 +168,15 @@ export class Notifier {
 
     sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean) {
         if (redemption) {
-            this.send(REDEMPTION_NO_PROOF_OBTAINED, `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`);
+            this.send(
+                REDEMPTION_NO_PROOF_OBTAINED,
+                `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
+            );
         } else {
-            this.send(MINTING_NO_PROOF_OBTAINED, `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`);
+            this.send(
+                MINTING_NO_PROOF_OBTAINED,
+                `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+            );
         }
     }
 
@@ -218,15 +237,15 @@ export class Notifier {
     }
 
     sendWithdrawPoolFees(agentVault: string, amount: string) {
-        this.send(WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`)
+        this.send(WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`);
     }
 
     sendBalancePoolFees(agentVault: string, amount: string) {
-        this.send(BALANCE_POOL_FEES, `Agent ${agentVault} has following pool fees balance ${amount}.`)
+        this.send(BALANCE_POOL_FEES, `Agent ${agentVault} has following pool fees balance ${amount}.`);
     }
 
     sendSelfClose(agentVault: string) {
-        this.send(SELF_CLOSE, `Agent ${agentVault} self closed successfully.`)
+        this.send(SELF_CLOSE, `Agent ${agentVault} self closed successfully.`);
     }
 
     sendActiveWithdrawal(agentVault: string) {
@@ -238,11 +257,11 @@ export class Notifier {
     }
 
     sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
-        this.send(ANNOUNCE_WITHDRAW_UNDERLYING, `Agent ${agentVault} announced underlying withdrawal with payment reference ${paymentReference}.`)
+        this.send(ANNOUNCE_WITHDRAW_UNDERLYING, `Agent ${agentVault} announced underlying withdrawal with payment reference ${paymentReference}.`);
     }
 
     sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
-        this.send(WITHDRAW_UNDERLYING, `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`)
+        this.send(WITHDRAW_UNDERLYING, `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`);
     }
 
     sendMintingExecuted(agentVault: string, requestId: string) {
@@ -254,19 +273,19 @@ export class Notifier {
     }
 
     sendMintingStared(agentVault: string, requestId: string) {
-        this.send(MINTING_STARTED, `Minting ${requestId} started for ${agentVault}.`)
+        this.send(MINTING_STARTED, `Minting ${requestId} started for ${agentVault}.`);
     }
 
     sendRedemptionStarted(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_STARTED, `Redemption ${requestId} started for ${agentVault}.`)
+        this.send(REDEMPTION_STARTED, `Redemption ${requestId} started for ${agentVault}.`);
     }
 
     sendRedemptionPaid(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_PAID, `Redemption ${requestId} was paid for ${agentVault}.`)
+        this.send(REDEMPTION_PAID, `Redemption ${requestId} was paid for ${agentVault}.`);
     }
 
     sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
-        this.send(REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${agentVault}.`)
+        this.send(REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${agentVault}.`);
     }
 
     sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {

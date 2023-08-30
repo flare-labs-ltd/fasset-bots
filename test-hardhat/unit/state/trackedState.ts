@@ -7,12 +7,26 @@ import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } f
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import {
+    createTestAssetContext,
+    getTestAssetTrackedStateContext,
+    TestAssetBotContext,
+    TestAssetTrackedStateContext,
+} from "../../test-utils/create-test-asset-context";
 import { lotSize } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgentB, createTestAgentBAndMakeAvailable, createCRAndPerformMinting, createTestMinter, disableMccTraceManager, mintAndDepositVaultCollateralToOwner, createTestRedeemer, fromAgentInfoToInitialAgentData } from "../../test-utils/helpers";
+import {
+    createTestAgentB,
+    createTestAgentBAndMakeAvailable,
+    createCRAndPerformMinting,
+    createTestMinter,
+    disableMccTraceManager,
+    mintAndDepositVaultCollateralToOwner,
+    createTestRedeemer,
+    fromAgentInfoToInitialAgentData,
+} from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
@@ -25,33 +39,33 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 use(chaiAsPromised);
 use(spies);
 
-const ERC20Mock = artifacts.require('ERC20Mock');
+const ERC20Mock = artifacts.require("ERC20Mock");
 
 const agentDestroyedArgs = {
-    '0': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
+    "0": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
     __length__: 1,
-    agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d'
+    agentVault: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
 } as EventArgs<AgentDestroyed>;
 const agentCreatedArgs = {
-    '0': '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
-    '1': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    '2': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    '3': 'UNDERLYING_ACCOUNT_78988',
-    '4': '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    '5': toBN(0),
-    '6': toBN(0),
-    '7': toBN(0),
-    '8': toBN(0),
-    '9': toBN(0),
-    '10': toBN(0),
-    '11': toBN(0),
-    '12': toBN(0),
+    "0": "0xedCdC766aA7DbB84004428ee0d35075375270E9B",
+    "1": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+    "2": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+    "3": "UNDERLYING_ACCOUNT_78988",
+    "4": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+    "5": toBN(0),
+    "6": toBN(0),
+    "7": toBN(0),
+    "8": toBN(0),
+    "9": toBN(0),
+    "10": toBN(0),
+    "11": toBN(0),
+    "12": toBN(0),
     __length__: 13,
-    owner: '0xedCdC766aA7DbB84004428ee0d35075375270E9B',
-    agentVault: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    collateralPool: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
-    underlyingAddress: 'UNDERLYING_ACCOUNT_78988',
-    vaultCollateralToken: '0x094f7F426E4729d967216C2468DD1d44E2396e3d',
+    owner: "0xedCdC766aA7DbB84004428ee0d35075375270E9B",
+    agentVault: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+    collateralPool: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+    underlyingAddress: "UNDERLYING_ACCOUNT_78988",
+    vaultCollateralToken: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
     feeBIPS: toBN(0),
     poolFeeShareBIPS: toBN(0),
     mintingVaultCollateralRatioBIPS: toBN(0),
@@ -59,10 +73,9 @@ const agentCreatedArgs = {
     buyFAssetByAgentFactorBIPS: toBN(0),
     poolExitCollateralRatioBIPS: toBN(0),
     poolTopupCollateralRatioBIPS: toBN(0),
-    poolTopupTokenPriceFactorBIPS: toBN(0)
+    poolTopupTokenPriceFactorBIPS: toBN(0),
 } as EventArgs<AgentVaultCreated>;
 const deposit = toBNExp(1_000_000, 18);
-
 
 describe("Tracked state tests", async () => {
     let context: TestAssetBotContext;
@@ -143,8 +156,8 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'PriceEpochFinalized'", async () => {
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
-        const spyPrices = spy.on(trackedState, 'getPrices');
-        await trackedState.readUnhandledEvents()
+        const spyPrices = spy.on(trackedState, "getPrices");
+        await trackedState.readUnhandledEvents();
         expect(spyPrices).to.have.been.called.once;
     });
 
@@ -217,17 +230,21 @@ describe("Tracked state tests", async () => {
         // convert lots in uba
         const amountUBA = toBN(lots).mul(lotSize(await context.assetManager.getSettings()));
         const agentSettings = await agentBLocal.getAgentSettings();
-        const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS))
+        const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS));
 
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
         context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
 
-        const transactionHash = await agentBLocal.wallet.addTransaction(randomUnderlyingAddress, agentBLocal.underlyingAddress, allAmountUBA, PaymentReference.selfMint(agentBLocal.agentVault.address));
+        const transactionHash = await agentBLocal.wallet.addTransaction(
+            randomUnderlyingAddress,
+            agentBLocal.underlyingAddress,
+            allAmountUBA,
+            PaymentReference.selfMint(agentBLocal.agentVault.address)
+        );
         const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);
         const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.ownerAddress });
-        const selfMint = requiredEventArgs(res, 'MintingExecuted');
-
+        const selfMint = requiredEventArgs(res, "MintingExecuted");
 
         await trackedState.readUnhandledEvents();
         const supplyMiddle = trackedState.fAssetSupply;
@@ -281,7 +298,8 @@ describe("Tracked state tests", async () => {
             crt.valueUBA.add(crt.feeUBA),
             crt.firstUnderlyingBlock.toNumber(),
             crt.lastUnderlyingBlock.toNumber(),
-            crt.lastUnderlyingTimestamp.toNumber());
+            crt.lastUnderlyingTimestamp.toNumber()
+        );
         await agentB.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
@@ -296,12 +314,13 @@ describe("Tracked state tests", async () => {
         // minter enters pool
         await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
         // tweak some pool settings
-        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
-        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
-        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", { from: agentB.ownerAddress });
-        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", 88600, { from: agentB.ownerAddress });
-        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
-        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", { from: agentB.ownerAddress });
+        const validAtFee = await agentB.announceAgentSettingUpdate("poolFeeShareBIPS", 9999,);
+        await time.increaseTo(validAtFee);
+        await agentB.executeAgentSettingUpdate("poolFeeShareBIPS");
+        const curr = toBN((await agentB.getAgentSettings()).poolExitCollateralRatioBIPS);
+        const validAtExit = await agentB.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", curr.muln(3).divn(2));
+        await time.increaseTo(validAtExit);
+        await agentB.executeAgentSettingUpdate("poolExitCollateralRatioBIPS");
         // minter performs minting
         const lots = 20;
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
@@ -351,7 +370,7 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         const lots = 2;
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
-        const spyRedemption = spy.on(trackedState.getAgent(agentB.vaultAddress)!, 'handleRedemptionPerformed');
+        const spyRedemption = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleRedemptionPerformed");
         const redeemer = await createTestRedeemer(context, redeemerAddress);
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -376,7 +395,10 @@ describe("Tracked state tests", async () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         const settings = await context.assetManager.getSettings();
-        const burnNats = (await agentB.getPoolCollateralPrice()).convertUBAToTokenWei(crt.valueUBA).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const burnNats = (await agentB.getPoolCollateralPrice())
+            .convertUBAToTokenWei(crt.valueUBA)
+            .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
+            .divn(MAX_BIPS);
         const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
         await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
@@ -466,8 +488,13 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'SettingChanged'", async () => {
         const paymentChallengeRewardUSD5_new = toBN(trackedState.settings.paymentChallengeRewardUSD5).muln(4);
-        const paymentChallengeRewardBIPS_new = (toBN(trackedState.settings.paymentChallengeRewardBIPS).muln(4)).addn(100);
-        await context.assetManagerController.setPaymentChallengeReward([context.assetManager.address], paymentChallengeRewardUSD5_new, paymentChallengeRewardBIPS_new, { from: governance });
+        const paymentChallengeRewardBIPS_new = toBN(trackedState.settings.paymentChallengeRewardBIPS).muln(4).addn(100);
+        await context.assetManagerController.setPaymentChallengeReward(
+            [context.assetManager.address],
+            paymentChallengeRewardUSD5_new,
+            paymentChallengeRewardBIPS_new,
+            { from: governance }
+        );
         await trackedState.readUnhandledEvents();
         const settingsAfter = trackedState.settings;
         expect(settingsAfter.paymentChallengeRewardUSD5.toString()).to.eq(paymentChallengeRewardUSD5_new.toString());
@@ -480,12 +507,16 @@ describe("Tracked state tests", async () => {
         const newLiquidationStrategySettings = {
             ...liquidationStrategySettings,
             liquidationFactorVaultCollateralBIPS: liquidationStrategySettings.liquidationFactorVaultCollateralBIPS.slice(0, 2),
-            liquidationCollateralFactorBIPS: [2_0000, 2_5000]
-        }
+            liquidationCollateralFactorBIPS: [2_0000, 2_5000],
+        };
         const settingsBefore = trackedState.liquidationStrategySettings;
         expect(settingsBefore.liquidationCollateralFactorBIPS[0].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[0].toString());
         expect(settingsBefore.liquidationCollateralFactorBIPS[1].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[1].toString());
-        const resp = await context.assetManagerController.updateLiquidationStrategySettings([context.assetManager.address], encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings), { from: governance });
+        const resp = await context.assetManagerController.updateLiquidationStrategySettings(
+            [context.assetManager.address],
+            encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings),
+            { from: governance }
+        );
         await waitForTimelock(resp, context.assetManagerController, updateExecutor);
         await trackedState.readUnhandledEvents();
         const settingsAfter = trackedState.liquidationStrategySettings;
@@ -494,43 +525,43 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle events 'SettingChanged' and 'SettingArrayChanged' - invalid setting", async () => {
-        const spyError = spy.on(console, 'error');
+        const spyError = spy.on(console, "error");
         const settingChangedEventFail = {
             address: trackedState.context.assetManager.address,
-            type: 'event',
-            signature: '0xac1fb27759c1e6f9e4a24d4f8c320be6091becb03cea5a95398fa220fca4ac0e',
-            event: 'SettingChanged',
+            type: "event",
+            signature: "0xac1fb27759c1e6f9e4a24d4f8c320be6091becb03cea5a95398fa220fca4ac0e",
+            event: "SettingChanged",
             args: {
-                '0': 'lotSizeAMGFail',
-                '1': toBN(0),
+                "0": "lotSizeAMGFail",
+                "1": toBN(0),
                 __length__: 2,
-                name: 'lotSizeAMGFail',
-                value: toBN(0)
+                name: "lotSizeAMGFail",
+                value: toBN(0),
             },
-            blockHash: '0xdc0640480d61a307ad0e7b67b8b7e3586bbd20aefa52620fb5b54f4a943a299d',
+            blockHash: "0xdc0640480d61a307ad0e7b67b8b7e3586bbd20aefa52620fb5b54f4a943a299d",
             blockNumber: 39,
             logIndex: 0,
-            transactionHash: '0xf5081736c212077a16a512864ed480c60dfaf8f8d4d30bd452eec74125485cd5',
-            transactionIndex: 0
-        }
+            transactionHash: "0xf5081736c212077a16a512864ed480c60dfaf8f8d4d30bd452eec74125485cd5",
+            transactionIndex: 0,
+        };
         const settingArrayChangedEventFail = {
             address: trackedState.context.assetManager.address,
-            type: 'event',
-            signature: '0xf8df5a8f8fc0ea5cc0d8aff70643ac14b7353b936a843e23cb08ff282ba74739',
-            event: 'SettingArrayChanged',
+            type: "event",
+            signature: "0xf8df5a8f8fc0ea5cc0d8aff70643ac14b7353b936a843e23cb08ff282ba74739",
+            event: "SettingArrayChanged",
             args: {
-                '0': 'liquidationCollateralFactorBIPSFail',
-                '1': [toBN(0), toBN(0)],
+                "0": "liquidationCollateralFactorBIPSFail",
+                "1": [toBN(0), toBN(0)],
                 __length__: 2,
-                name: 'liquidationCollateralFactorBIPSFail',
-                value: [toBN(0), toBN(0)]
+                name: "liquidationCollateralFactorBIPSFail",
+                value: [toBN(0), toBN(0)],
             },
-            blockHash: '0xb80d1ac278eb17ad869bcd5c7be9bd6c907db6a03dabb69ec43b72e24aba141e',
+            blockHash: "0xb80d1ac278eb17ad869bcd5c7be9bd6c907db6a03dabb69ec43b72e24aba141e",
             blockNumber: 39,
             logIndex: 0,
-            transactionHash: '0x4878b678646979bfe49669034562c6a8f0ad1765910d1db9109fb8245097e7c4',
-            transactionIndex: 0
-        }
+            transactionHash: "0x4878b678646979bfe49669034562c6a8f0ad1765910d1db9109fb8245097e7c4",
+            transactionIndex: 0,
+        };
         await trackedState.registerStateEvents([settingChangedEventFail]);
         await trackedState.registerStateEvents([settingArrayChangedEventFail]);
         expect(spyError).to.have.been.called.twice;
@@ -595,7 +626,13 @@ describe("Tracked state tests", async () => {
         expect(toBN(getCollateral0.validUntil).eqn(0)).to.be.true;
         // deprecate
         const settings = await context.assetManager.getSettings();
-        await context.assetManagerController.deprecateCollateralType([context.assetManager.address], newCollateral.collateralClass, newCollateral.token, settings.tokenInvalidationTimeMinSeconds, { from: governance });
+        await context.assetManagerController.deprecateCollateralType(
+            [context.assetManager.address],
+            newCollateral.collateralClass,
+            newCollateral.token,
+            settings.tokenInvalidationTimeMinSeconds,
+            { from: governance }
+        );
         await trackedState.readUnhandledEvents();
         const getCollateral1 = trackedState.collaterals.get(newCollateral.collateralClass, newCollateral.token);
         expect(toBN(getCollateral1.validUntil).gtn(0)).to.be.true;
@@ -609,7 +646,15 @@ describe("Tracked state tests", async () => {
         expect(collateral.minCollateralRatioBIPS.toString()).to.not.eq(newMinCollateralRatioBIPS);
         expect(collateral.ccbMinCollateralRatioBIPS.toString()).to.not.eq(newCcbMinCollateralRatioBIPS);
         expect(collateral.safetyMinCollateralRatioBIPS.toString()).to.not.eq(newSafetyMinCollateralRatioBIPS);
-        const resp = await context.assetManagerController.setCollateralRatiosForToken([context.assetManager.address], collateral.collateralClass, collateral.token, newMinCollateralRatioBIPS, newCcbMinCollateralRatioBIPS, newSafetyMinCollateralRatioBIPS, { from: governance });
+        const resp = await context.assetManagerController.setCollateralRatiosForToken(
+            [context.assetManager.address],
+            collateral.collateralClass,
+            collateral.token,
+            newMinCollateralRatioBIPS,
+            newCcbMinCollateralRatioBIPS,
+            newSafetyMinCollateralRatioBIPS,
+            { from: governance }
+        );
         await waitForTimelock(resp, context.assetManagerController, updateExecutor);
         await trackedState.readUnhandledEvents();
         const getCollateral = trackedState.collaterals.list[0];
@@ -625,5 +670,4 @@ describe("Tracked state tests", async () => {
         expect(settings?.vaultAddress).to.eq(agentCreatedArgs.agentVault);
         expect(settings?.collateralPoolAddress).to.eq(agentCreatedArgs.collateralPool);
     });
-
 });

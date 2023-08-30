@@ -25,5 +25,4 @@ describe("Redeemer unit tests", async () => {
         expect(redeemer.address).to.eq(redeemerAddress);
         expect(redeemer.underlyingAddress).to.eq(redeemerUnderlyingAddress);
     });
-
 });

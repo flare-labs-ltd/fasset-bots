@@ -8,10 +8,17 @@ import { unPrefix0x } from "../verification/attestation-types/attestation-types-
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
         public walletClient: WalletClient,
-        private em: EntityManager,
-    ) { }
+        private em: EntityManager
+    ) {}
 
-    async addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee, awaitForTransaction?: boolean): Promise<string> {
+    async addTransaction(
+        sourceAddress: string,
+        targetAddress: string,
+        amount: string | number | BN,
+        reference: string | null,
+        options?: TransactionOptionsWithFee,
+        awaitForTransaction?: boolean
+    ): Promise<string> {
         const walletKeys = new DBWalletKeys(this.em);
         const value = amount as number;
         const fee = undefined;
@@ -21,7 +28,9 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const privateKey = await walletKeys.getKey(sourceAddress);
         if (privateKey) {
             const txSigned = await this.walletClient.signTransaction(tr, privateKey);
-            const submit = awaitForTransaction ? await this.walletClient.submitTransactionAndWait(txSigned) : await this.walletClient.submitTransaction(txSigned);
+            const submit = awaitForTransaction
+                ? await this.walletClient.submitTransactionAndWait(txSigned)
+                : await this.walletClient.submitTransaction(txSigned);
             return submit.txId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
@@ -44,7 +53,6 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         await walletKeys.addKey(address, privateKey);
         return address;
     }
-
 
     async getBalance(address: string): Promise<BN> {
         const balance = await this.walletClient.getAccountBalance(address);

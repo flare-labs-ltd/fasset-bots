@@ -6,7 +6,7 @@ import { artifacts } from "./artifacts";
 import { toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
-const IFtso = artifacts.require('IFtso');
+const IFtso = artifacts.require("IFtso");
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -31,11 +31,11 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  */
 export async function proveAndUpdateUnderlyingBlock(context: IAssetActorContext, caller: string): Promise<number> {
     const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
-    await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller});
+    await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 
-export async function attestationWindowSeconds(context: IAssetActorContext) : Promise<number> {
+export async function attestationWindowSeconds(context: IAssetActorContext): Promise<number> {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
@@ -45,7 +45,7 @@ export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, sym
     return await IFtso.at(ftsoAddress);
 }
 
-export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null>  {
+export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null> {
     const blockHeight = await context.blockchainIndexer.getBlockHeight();
     const latestBlock = await context.blockchainIndexer.getBlockAt(blockHeight);
     return latestBlock;

@@ -30,7 +30,7 @@ import { TokenPriceReader } from "../../src/state/TokenPrice";
 import BN from "bn.js";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 
-const ERC20Mock = artifacts.require('ERC20Mock');
+const ERC20Mock = artifacts.require("ERC20Mock");
 
 const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
@@ -47,7 +47,13 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
 }
 
-export async function createTestAgentBot(context: TestAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier(), options?: AgentBotDefaultSettings, ): Promise<AgentBot> {
+export async function createTestAgentBot(
+    context: TestAssetBotContext,
+    orm: ORM,
+    ownerAddress: string,
+    notifier: Notifier = new Notifier(),
+    options?: AgentBotDefaultSettings
+): Promise<AgentBot> {
     const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
@@ -81,7 +87,12 @@ export async function createTestAgent(context: TestAssetBotContext, ownerAddress
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export function createTestAgentBotRunner(contexts: Map<number, TestAssetBotContext>, orm: ORM, loopDelay: number, notifier: Notifier = new Notifier()): AgentBotRunner {
+export function createTestAgentBotRunner(
+    contexts: Map<number, TestAssetBotContext>,
+    orm: ORM,
+    loopDelay: number,
+    notifier: Notifier = new Notifier()
+): AgentBotRunner {
     return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
 
@@ -105,7 +116,11 @@ export async function createTestAgentAndMakeAvailable(context: TestAssetBotConte
     return agent;
 }
 
-export async function createTestAgentBAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<AgentB> {
+export async function createTestAgentBAndMakeAvailable(
+    context: TestAssetBotContext,
+    ownerAddress: string,
+    underlyingAddress: string = agentUnderlying
+): Promise<AgentB> {
     const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
     await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
     await agentB.depositVaultCollateral(deposit);
@@ -114,7 +129,13 @@ export async function createTestAgentBAndMakeAvailable(context: TestAssetBotCont
     return agentB;
 }
 
-export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotContext, orm: ORM, ownerAddress: string, notifier: Notifier = new Notifier(), options?: AgentBotDefaultSettings) {
+export async function createTestAgentBotAndMakeAvailable(
+    context: TestAssetBotContext,
+    orm: ORM,
+    ownerAddress: string,
+    notifier: Notifier = new Notifier(),
+    options?: AgentBotDefaultSettings
+) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, deposit, ownerAddress);
     await agentBot.agent.depositVaultCollateral(deposit);
@@ -123,9 +144,14 @@ export async function createTestAgentBotAndMakeAvailable(context: TestAssetBotCo
     return agentBot;
 }
 
-export async function mintAndDepositVaultCollateralToOwner(context: IAssetContext, agent: Agent, depositAmount: BNish, ownerAddress: string): Promise<IERC20Instance> {
+export async function mintAndDepositVaultCollateralToOwner(
+    context: IAssetContext,
+    agent: Agent,
+    depositAmount: BNish,
+    ownerAddress: string
+): Promise<IERC20Instance> {
     const vaultCollateralToken = await agent.getVaultCollateral();
-    const vaultCollateralTokenContract = requireNotNull(Object.values(context.stablecoins).find(token => token.address === vaultCollateralToken?.token));
+    const vaultCollateralTokenContract = requireNotNull(Object.values(context.stablecoins).find((token) => token.address === vaultCollateralToken?.token));
     await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress);
     return vaultCollateralTokenContract;
 }
@@ -162,7 +188,7 @@ export async function convertFromUSD5(amount: BN, collateralToken: CollateralTyp
     const priceReader = await TokenPriceReader.create(settings);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
     const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
-    return (toBN(amount).mul(toBNExp(10, expPlus))).div(stablecoinUSD.price);
+    return toBN(amount).mul(toBNExp(10, expPlus)).div(stablecoinUSD.price);
 }
 
 export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<InitialAgentData> {
@@ -180,7 +206,7 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
         buyFAssetByAgentFactorBIPS: toBN(agentInfo.buyFAssetByAgentFactorBIPS),
         poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
         poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
-        poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS)
+        poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
     };
     return initialAgentData;
 }

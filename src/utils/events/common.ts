@@ -28,14 +28,14 @@ export interface TypedEvent<A> extends BaseEvent {
 }
 
 export interface SelectedEvent<E extends EventSelector> extends BaseEvent {
-    event: E['name'];
-    args: E['args'];
+    event: E["name"];
+    args: E["args"];
 }
 
 export type NamedFields<T> = Omit<T, number>;
 
-export type EventArgs<E extends EventSelector> = NamedFields<SelectedEvent<E>['args']>;
+export type EventArgs<E extends EventSelector> = NamedFields<SelectedEvent<E>["args"]>;
 
-export type ExtractEvent<E extends EventSelector, N extends E['name']> = SelectedEvent<Extract<E, { name: N; }>>;
+export type ExtractEvent<E extends EventSelector, N extends E["name"]> = SelectedEvent<Extract<E, { name: N }>>;
 
-export type ExtractedEventArgs<E extends EventSelector, N extends E['name']> = NamedFields<ExtractEvent<E, N>['args']>;
+export type ExtractedEventArgs<E extends EventSelector, N extends E["name"]> = NamedFields<ExtractEvent<E, N>["args"]>;

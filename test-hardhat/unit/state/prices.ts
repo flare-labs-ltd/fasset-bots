@@ -12,9 +12,9 @@ import { CollateralIndexedList } from "../../../src/state/CollateralIndexedList"
 const setMaxTrustedPriceAgeSeconds = 1;
 const amgSettings = {
     assetMintingDecimals: 6,
-    assetMintingGranularityUBA: 1
-}
-const AMG_TO_TOKEN_WEI = toBNExp(1, 9)
+    assetMintingGranularityUBA: 1,
+};
+const AMG_TO_TOKEN_WEI = toBNExp(1, 9);
 const price = toBN(123456);
 const timestamp = toBN(123);
 const decimals = toBN(6);
@@ -22,7 +22,7 @@ const poolCollateral: CollateralType = {
     collateralClass: CollateralClass.POOL,
     token: "address",
     decimals: 18,
-    validUntil: 0,  // not deprecated
+    validUntil: 0, // not deprecated
     directPricePair: false,
     assetFtsoSymbol: "XRP",
     tokenFtsoSymbol: "NAT",
@@ -72,5 +72,4 @@ describe("Prices tests", async () => {
         const pricesPair = new Prices(collateralPricesPair);
         expect(pricesPair.toString().length).to.be.gt(1);
     });
-
 });

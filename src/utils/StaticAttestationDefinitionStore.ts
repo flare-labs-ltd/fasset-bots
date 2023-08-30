@@ -9,11 +9,6 @@ export class StaticAttestationDefinitionStore extends AttestationDefinitionStore
     constructor() {
         super();
         this.web3 = new Web3();
-        this.definitions = [
-            paymentDef,
-            balanceDecreasingTransactionDef,
-            confirmedBlockHeightExistsDef,
-            referencedPaymentNonexistenceDef,
-        ];
+        this.definitions = [paymentDef, balanceDecreasingTransactionDef, confirmedBlockHeightExistsDef, referencedPaymentNonexistenceDef];
     }
 }

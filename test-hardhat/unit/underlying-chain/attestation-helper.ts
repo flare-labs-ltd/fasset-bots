@@ -70,21 +70,25 @@ describe("Attestation client unit tests", async () => {
         await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const invalidTransaction = transaction.slice(0, 50);
-        await expect(context.attestationProvider.provePayment(invalidTransaction, underlying1, underlying2)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.provePayment(invalidTransaction, underlying1, underlying2))
+            .to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not request balance decreasing transaction proof - transaction not found", async () => {
         await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         const invalidTransaction = transaction.slice(0, 50);
-        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1)).to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1))
+            .to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`)
+            .and.be.an.instanceOf(Error);
     });
 
     it.skip("Should not obtain balance decreasing transaction proof - address not in transaction", async () => {
         await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
-        const res = await context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, "karEm");//.to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
+        const res = await context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, "karEm"); //.to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
         const res2 = await context.attestationProvider.obtainBalanceDecreasingTransactionProof(res!.round, res!.data);
     });
 
@@ -94,7 +98,9 @@ describe("Attestation client unit tests", async () => {
         const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
         const blockHeight = await chain.getBlockHeight();
         chain.finalizationBlocks = 10;
-        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2)).to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2))
+            .to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not request balance decreasing transaction proof - finalization block not found", async () => {
@@ -103,7 +109,9 @@ describe("Attestation client unit tests", async () => {
         const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
         const blockHeight = await chain.getBlockHeight();
         chain.finalizationBlocks = 10;
-        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying1)).to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying1))
+            .to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not obtain payment proof - not finalized", async () => {
@@ -123,7 +131,7 @@ describe("Attestation client unit tests", async () => {
         await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
         const finalized = await context.attestationProvider.roundFinalized(round);
         expect(finalized).to.be.true;
-    })
+    });
 
     it("Should not receive referenced payment nonexistence proof - overflow block not found", async () => {
         await useContext();
@@ -133,8 +141,11 @@ describe("Attestation client unit tests", async () => {
         const blockNumber = await context.blockchainIndexer.getBlockHeight();
         const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
         const endBlock = blockNumber + 10;
-        await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!))
-            .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`).and.be.an.instanceOf(Error);
+        await expect(
+            context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!)
+        )
+            .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not receive referenced payment nonexistence proof - finalization block not found", async () => {
@@ -150,15 +161,27 @@ describe("Attestation client unit tests", async () => {
         chain.mine(3);
         const overflowBlock = await context.blockchainIndexer.getBlockAt(endBlockNumber + 1);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
-        await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlockNumber, endBlockTimestamp!))
-            .to.eventually.be.rejectedWith(`finalization block not found (block ${overflowBlock!.number + 1}, height ${blockHeight})`).and.be.an.instanceOf(Error);
+        await expect(
+            context.attestationProvider.requestReferencedPaymentNonexistenceProof(
+                underlying2,
+                reference,
+                toBN(amount),
+                blockNumber,
+                endBlockNumber,
+                endBlockTimestamp!
+            )
+        )
+            .to.eventually.be.rejectedWith(`finalization block not found (block ${overflowBlock!.number + 1}, height ${blockHeight})`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not find address index", async () => {
         await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying1)).to.eventually.be.rejectedWith(`address ${underlying1} not used in transaction`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying1))
+            .to.eventually.be.rejectedWith(`address ${underlying1} not used in transaction`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not prove payment proof", async () => {
@@ -166,7 +189,9 @@ describe("Attestation client unit tests", async () => {
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2)).to.eventually.be.rejectedWith(`payment: not proved`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2))
+            .to.eventually.be.rejectedWith(`payment: not proved`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not prove balance decreasing transaction", async () => {
@@ -174,18 +199,24 @@ describe("Attestation client unit tests", async () => {
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1)).to.eventually.be.rejectedWith(`balanceDecreasingTransaction: not proved`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1))
+            .to.eventually.be.rejectedWith(`balanceDecreasingTransaction: not proved`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not prove confirmed block height existence", async () => {
         await useContext(true);
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context))).to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context)))
+            .to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should not prove referenced payment nonexistence", async () => {
         await useContext(true);
         chain.mine(2 * chain.finalizationBlocks);
-        await expect(context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1)).to.eventually.be.rejectedWith(`referencedPaymentNonexistence: not proved`).and.be.an.instanceOf(Error);
+        await expect(context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1))
+            .to.eventually.be.rejectedWith(`referencedPaymentNonexistence: not proved`)
+            .and.be.an.instanceOf(Error);
     });
 });

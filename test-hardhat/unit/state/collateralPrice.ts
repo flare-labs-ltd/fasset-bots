@@ -11,9 +11,9 @@ use(chaiAsPromised);
 
 const amgSettings = {
     assetMintingDecimals: 6,
-    assetMintingGranularityUBA: 1
-}
-const AMG_TO_TOKEN_WEI = toBNExp(1, 9)
+    assetMintingGranularityUBA: 1,
+};
+const AMG_TO_TOKEN_WEI = toBNExp(1, 9);
 const price = toBN(123456);
 const timestamp = toBN(123);
 const decimals = toBN(6);
@@ -21,7 +21,7 @@ const poolCollateral: CollateralType = {
     collateralClass: CollateralClass.POOL,
     token: "address",
     decimals: 18,
-    validUntil: 0,  // not deprecated
+    validUntil: 0, // not deprecated
     directPricePair: true,
     assetFtsoSymbol: "XRP",
     tokenFtsoSymbol: "",
@@ -31,12 +31,10 @@ const poolCollateral: CollateralType = {
 };
 
 describe("AMG price unit tests", async () => {
-
     it("Should create AMGPrice", async () => {
         const amgPrice = new AMGPrice(AMG_TO_TOKEN_WEI, toBN(amgSettings.assetMintingDecimals), toBN(amgSettings.assetMintingGranularityUBA));
         expect(amgPrice.amgToTokenWei.eq(AMG_TO_TOKEN_WEI)).to.be.true;
     });
-
 });
 
 describe("Collateral price unit tests", async () => {
@@ -65,5 +63,4 @@ describe("Collateral price unit tests", async () => {
         expect(collateralPrice2.assetPrice.decimals.eq(assetPrice.decimals));
         expect(collateralPrice2.amgPrice.amgToTokenWei.eq(amgPrice.amgToTokenWei));
     });
-
 });

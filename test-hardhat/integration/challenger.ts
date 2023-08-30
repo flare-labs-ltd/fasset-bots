@@ -10,7 +10,15 @@ import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
 import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
 import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
-import { createTestAgentBotAndMakeAvailable, createCRAndPerformMintingAndRunSteps, createTestChallenger, createTestMinter, createTestRedeemer, disableMccTraceManager, getAgentStatus } from "../test-utils/helpers";
+import {
+    createTestAgentBotAndMakeAvailable,
+    createCRAndPerformMintingAndRunSteps,
+    createTestChallenger,
+    createTestMinter,
+    createTestRedeemer,
+    disableMccTraceManager,
+    getAgentStatus,
+} from "../test-utils/helpers";
 import { TrackedState } from "../../src/state/TrackedState";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
@@ -44,7 +52,7 @@ describe("Challenger tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         challengerAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
     beforeEach(async () => {
@@ -61,7 +69,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge illegal payment", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
+        const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -78,7 +86,7 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         // send notification
@@ -91,7 +99,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge illegal payment - reference for nonexisting redemption", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'illegalTransactionChallenge');
+        const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -108,7 +116,7 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         const agentStatus = await getAgentStatus(agentBot);
@@ -118,7 +126,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge double payment", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, "doublePaymentChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -154,7 +162,7 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         // send notification
@@ -166,7 +174,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge double payment - announced withdrawal", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, "doublePaymentChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -186,20 +194,20 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
         expect(spyChlg).to.have.been.called.once;
-        const spyAgent = spy.on(agentBot.notifier, 'sendFullLiquidationAlert');
+        const spyAgent = spy.on(agentBot.notifier, "sendFullLiquidationAlert");
         await agentBot.runStep(orm.em);
         expect(spyAgent).to.have.been.called.once;
     });
 
     it("Should challenge double payment - reference for already confirmed redemption", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, "doublePaymentChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -234,7 +242,7 @@ describe("Challenger tests", async () => {
             await challenger.runStep();
             await agentBot.runStep(orm.em);
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         const agentStatus = await getAgentStatus(agentBot);
@@ -244,7 +252,7 @@ describe("Challenger tests", async () => {
 
     it("Should challenge illegal/double payment - reference for already confirmed announced withdrawal", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const spyChlg = spy.on(challenger, 'doublePaymentChallenge');
+        const spyChlg = spy.on(challenger, "doublePaymentChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -254,9 +262,13 @@ describe("Challenger tests", async () => {
         const agentInfo = await agentBot.agent.getAgentInfo();
         // announce underlying withdrawal
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-        const txHash = await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.freeUnderlyingBalanceUBA).divn(2), announce.paymentReference);
+        const txHash = await agentBot.agent.performPayment(
+            agentInfo.underlyingAddressString,
+            toBN(agentInfo.freeUnderlyingBalanceUBA).divn(2),
+            announce.paymentReference
+        );
         chain.mine(chain.finalizationBlocks + 1);
-        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
+        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);
         // confirm underlying withdrawal
         await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
@@ -269,7 +281,7 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         const agentStatus2 = await getAgentStatus(agentBot);
@@ -321,10 +333,10 @@ describe("Challenger tests", async () => {
         let argsFailed: any = null;
         let argsDefault: any = null;
         for (const item of res!.logs) {
-            if (item.event === 'RedemptionPaymentFailed') {
+            if (item.event === "RedemptionPaymentFailed") {
                 argsFailed = item.args;
             }
-            if (item.event === 'RedemptionDefault') {
+            if (item.event === "RedemptionDefault") {
                 argsDefault = item.args;
             }
         }
@@ -360,7 +372,9 @@ describe("Challenger tests", async () => {
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
-        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, { status: TX_BLOCKED } as MockTransactionOptionsWithFee);
+        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, {
+            status: TX_BLOCKED,
+        } as MockTransactionOptionsWithFee);
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         redemption.txHash = txHash;
@@ -371,7 +385,7 @@ describe("Challenger tests", async () => {
         // catch 'RedemptionPaymentBlocked' event
         await challenger.runStep();
         // send notification
-        const spyRedemption = spy.on(agentBot.notifier, 'sendRedemptionFailedOrBlocked');
+        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionFailedOrBlocked");
         await agentBot.runStep(orm.em);
         expect(spyRedemption).to.have.been.called.once;
     });
@@ -396,7 +410,7 @@ describe("Challenger tests", async () => {
             await sleep(3000);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
-            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`)
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
         }
         // send notification
@@ -430,5 +444,4 @@ describe("Challenger tests", async () => {
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.NORMAL);
     });
-
 });

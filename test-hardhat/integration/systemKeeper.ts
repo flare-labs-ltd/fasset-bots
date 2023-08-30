@@ -2,9 +2,22 @@ import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
+import {
+    createTestAssetContext,
+    getTestAssetTrackedStateContext,
+    TestAssetBotContext,
+    TestAssetTrackedStateContext,
+} from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createCRAndPerformMinting, createTestMinter, createTestSystemKeeper, disableMccTraceManager, getAgentStatus, createTestAgentBotAndMakeAvailable, createTestAgentBot } from "../test-utils/helpers";
+import {
+    createCRAndPerformMinting,
+    createTestMinter,
+    createTestSystemKeeper,
+    disableMccTraceManager,
+    getAgentStatus,
+    createTestAgentBotAndMakeAvailable,
+    createTestAgentBot,
+} from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -33,7 +46,7 @@ describe("System keeper tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         systemKeeperAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: 'recreate', type: 'sqlite' }));
+        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
     beforeEach(async () => {
@@ -55,7 +68,7 @@ describe("System keeper tests", async () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
-        const spyLiquidation = spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(systemKeeper, "checkAllAgentsForLiquidation");
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
@@ -67,7 +80,7 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyLiquidation = spy.on(agentBot.notifier, 'sendLiquidationStartAlert');
+        const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -119,8 +132,8 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyCCBAlert = spy.on(agentBot.notifier, 'sendCCBAlert');
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, 'sendCollateralTopUpAlert');
+        const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -153,8 +166,8 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyCCBAlert = spy.on(agentBot.notifier, 'sendCCBAlert');
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, 'sendCollateralTopUpAlert');
+        const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -236,7 +249,7 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyMinting = spy.on(systemKeeper, 'handleMintingExecuted');
+        const spyMinting = spy.on(systemKeeper, "handleMintingExecuted");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check collateral ratio after minting execution
@@ -251,7 +264,7 @@ describe("System keeper tests", async () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, mockState);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        const spyMinting = spy.on(systemKeeper, 'handleMintingExecuted');
+        const spyMinting = spy.on(systemKeeper, "handleMintingExecuted");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check collateral ratio after minting execution
@@ -264,7 +277,7 @@ describe("System keeper tests", async () => {
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
         await mockState.initialize();
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, mockState);
-        const spyLiquidation = spy.on(systemKeeper, 'checkAllAgentsForLiquidation');
+        const spyLiquidation = spy.on(systemKeeper, "checkAllAgentsForLiquidation");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
         // mock price changes
@@ -273,5 +286,4 @@ describe("System keeper tests", async () => {
         await systemKeeper.runStep();
         expect(spyLiquidation).to.have.been.called.once;
     });
-
 });

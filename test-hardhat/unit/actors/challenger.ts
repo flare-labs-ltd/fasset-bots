@@ -5,25 +5,30 @@ import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import {
+    createTestAssetContext,
+    getTestAssetTrackedStateContext,
+    TestAssetBotContext,
+    TestAssetTrackedStateContext,
+} from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 use(spies);
 
 const underlyingAddress: string = "AGENT_UNDERLYING_ADDRESS";
 const transaction1 = {
-    hash: '0x169781d915f549c9546305746e220c80df82304f5a496de47d10e3fefd54ebcb',
+    hash: "0x169781d915f549c9546305746e220c80df82304f5a496de47d10e3fefd54ebcb",
     inputs: [[underlyingAddress, toBN(100)]],
-    outputs: [['someAddress', toBN(100)]],
-    reference: '0x46425052664100030000000000000000000000000000000000000000000001df',
-    status: 1
+    outputs: [["someAddress", toBN(100)]],
+    reference: "0x46425052664100030000000000000000000000000000000000000000000001df",
+    status: 1,
 } as ITransaction;
 const transaction2 = {
-    hash: '0x169781d915f549c9546305746e220c80df82304f5a496de47d10e3fefd54eAcb',
+    hash: "0x169781d915f549c9546305746e220c80df82304f5a496de47d10e3fefd54eAcb",
     inputs: [[underlyingAddress, toBN(100)]],
-    outputs: [['someAddress', toBN(100)]],
-    reference: '0x46425052664100030000000000000000000000000000000000000000000001df',
-    status: 1
+    outputs: [["someAddress", toBN(100)]],
+    reference: "0x46425052664100030000000000000000000000000000000000000000000001df",
+    status: 1,
 } as ITransaction;
 
 describe("Challenger unit tests", async () => {
@@ -66,7 +71,7 @@ describe("Challenger unit tests", async () => {
         challenger.addUnconfirmedTransaction(trackedAgent, transaction1);
         // check
         const agentTransaction = challenger.unconfirmedTransactions.get(agentB.vaultAddress)!;
-        assertWeb3DeepEqual(transaction1, agentTransaction.get((transaction1.hash)));
+        assertWeb3DeepEqual(transaction1, agentTransaction.get(transaction1.hash));
     });
 
     it("Should delete unconfirmed transactions", async () => {
@@ -96,7 +101,6 @@ describe("Challenger unit tests", async () => {
         const challenger = await createTestChallenger(challengerAddress, mockState);
         expect(challenger.address).to.eq(challengerAddress);
         await challenger.runStep();
-        expect(spyConsole).to.be.called.once
+        expect(spyConsole).to.be.called.once;
     });
-
 });
