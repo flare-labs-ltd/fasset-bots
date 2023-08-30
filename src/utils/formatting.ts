@@ -31,6 +31,7 @@ function formatBN(x: any) {
 }
 
 export function formatArgs(args: any) {
+    if(!args) return null;
     const result: any = {};
     for (const [key, value] of Object.entries(args)) {
         if (Number.isNaN(parseInt(key)) && key != "__length__") {
