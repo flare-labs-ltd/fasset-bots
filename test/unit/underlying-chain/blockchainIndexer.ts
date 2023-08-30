@@ -184,10 +184,18 @@ describe("XRP blockchain tests via indexer", async () => {
             .and.be.an.instanceOf(Error);
     });
 
+    it("Should get transaction by reference - invalid reference", async () => {
+        await expect(blockchainIndexerClient.getTransactionsByReference("txHash"))
+            .to.eventually.be.rejectedWith(`Cannot retrieve transaction by reference txHash: ERROR: Invalid payment reference, Invalid payment reference`)
+            .and.be.an.instanceOf(Error);
+    });
+
     it("Should get transaction by reference - empty array", async () => {
-        const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsByReference("txHash");
+        const note = "0x10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+        const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsByReference(note);
         expect(retrievedTransaction1.length).to.be.gte(0);
     });
+
 
     it("Should get transactions within block range", async () => {
         const offset = 10;
