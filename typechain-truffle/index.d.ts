@@ -7,7 +7,6 @@ import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
-import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
 import { RippleAddressValidatorContract } from "./RippleAddressValidator";
@@ -267,7 +266,6 @@ declare global {
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
-export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
