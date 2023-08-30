@@ -2,3 +2,15 @@ src/verification/generated/
 src/verification/attestation-types/
 test/types/@openzeppelin/test-helpers.d.ts
 src/mock/*
+node_modules/*
+typechain-truffle/*
+log/*
+dist/*
+coverage/*
+artifacts/*
+cache/*
+.vscode/*
+tsconfig.json
+hardhat.config.ts
+.gitlab-ci.yml
+.eslintrc.json
