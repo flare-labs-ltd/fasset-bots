@@ -13,6 +13,11 @@ class SmallError extends Error {
     }
 }
 
+async function fetchData() {
+    await helperMethods.sleep(2000);
+    throw new Error();
+};
+
 describe("Helpers unit tests", async () => {
     it("Should sleep for x seconds", async () => {
         await helperMethods.sleep(1000);
@@ -125,5 +130,16 @@ describe("Helpers unit tests", async () => {
         const a = toBN(1);
         const b = toBN(2);
         expect(helperMethods.maxBN(a, b).toString()).to.eq(b.toString());
+    });
+
+    it("Should return maximal BN", () => {
+        const a = toBN(1);
+        const b = toBN(2);
+        expect(helperMethods.maxBN(a, b).toString()).to.eq(b.toString());
+    });
+
+    it("Should use retry", async () => {
+        const retNum: number | null = null;
+        await expect(helperMethods.retry(fetchData, [], 3, retNum!)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
 });
