@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { IStateConnectorInstance, SCProofVerifierInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, DEFAULT_TIMEOUT, sleep, toBN, toNumber } from "../utils/helpers";
+import { BNish, DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN, toNumber } from "../utils/helpers";
 import { MerkleTree } from "../utils/MerkleTree";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import {
@@ -16,6 +16,8 @@ import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from
 import { ARBase } from "../verification/generated/attestation-request-types";
 import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
 import { artifacts } from "../utils/artifacts";
+import { logger } from "../utils/logger";
+import { formatArgs } from "../utils/formatting";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
@@ -87,6 +89,12 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
+        const attReq = await retry(this.submitRequestToStateConnector.bind(this), [request], DEFAULT_RETRIES);
+        logger.info(`State connector helper: retrieved attestation request ${formatArgs(attReq)}`);
+        return attReq;
+    }
+
+    async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId | null> {
         const response = await this.verifier.post("/query/prepareAttestation", request);
         const status = response.data.status;
         const data = response.data.data;
@@ -110,6 +118,12 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
+        const proof = await retry(this.obtainProofFromStateConnector.bind(this), [round, requestData], DEFAULT_RETRIES);
+        logger.info(`State connector helper: obtained proof ${formatArgs(proof)}`);
+        return proof;
+    }
+
+    async obtainProofFromStateConnector(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
         try {
             for (const [i, client] of this.clients.entries()) {
                 const resp = await client.get(`/api/proof/votes-for-round/${round}`);
@@ -145,6 +159,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 const proof = tree.getProof(index);
                 if (proof == null) {
                     // this should never happen, unless there is bug in the MerkleTree implementation
+                    logger.error(`State connector error: cannot obtain Merkle proof`);
                     throw new StateConnectorError(`Cannot obtain Merkle proof`);
                 }
 
@@ -155,6 +170,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                     // inconsistent with the finalized Merkle root in the blockchain
                     // skip to next attestation provider
                     if (this.lastClient(i)) {
+                        logger.error(`State connector error: SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
                         throw new StateConnectorError(`SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
                     } else {
                         continue;
@@ -167,14 +183,20 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 // extra verification - should never fail, since Merkle root matches
                 const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
                 if (!verified) {
+                    logger.error(`State connector error: proof does not verify!!`);
                     throw new StateConnectorError("Proof does not verify!!!");
                 }
 
                 return { finalized: true, result: proofData };
             }
+            logger.error(`State connector error: there aren't any attestation providers`);
             throw new StateConnectorError("There aren't any attestation providers.");
         } catch (e) {
-            if (e instanceof StateConnectorError) throw e;
+            if (e instanceof StateConnectorError) {
+                logger.error(`State connector error: ${e}`);
+                throw e;
+            }
+            logger.error(`State connector error: ${String(e)}`);
             throw new StateConnectorError(String(e));
         }
     }
@@ -191,6 +213,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             case AttestationType.ReferencedPaymentNonexistence:
                 return await this.scProofVerifier.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);
             default:
+                logger.error(`State connector error: invalid attestation type ${type}`);
                 throw new StateConnectorError(`Invalid attestation type ${type}`);
         }
     }
@@ -206,6 +229,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             case AttestationType.ReferencedPaymentNonexistence:
                 return this.decodeReferencedPaymentNonexistence(matchedResponse, proof);
             default:
+                logger.error(`State connector error: invalid attestation type ${type}`);
                 throw new StateConnectorError(`Invalid attestation type ${type}`);
         }
     }

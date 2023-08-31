@@ -1,7 +1,7 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { getSourceName, SourceId } from "../verification/sources/sources";
-import { DEFAULT_TIMEOUT, retry, sleep, toBN } from "../utils/helpers";
+import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN } from "../utils/helpers";
 import { BTC_MDU } from "@flarenetwork/mcc";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
@@ -40,7 +40,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
-        const transaction = await retry(this.getTransactionFromIndexer.bind(this), [txHash], 3);
+        const transaction = await retry(this.getTransactionFromIndexer.bind(this), [txHash], DEFAULT_RETRIES);
         logger.info(`Retrieved transaction: ${formatArgs(transaction)}`);
         return transaction;
     }
@@ -72,7 +72,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
-        const block = await retry(this.getTransactionBlockFromIndexer.bind(this), [txHash], 3);
+        const block = await retry(this.getTransactionBlockFromIndexer.bind(this), [txHash], DEFAULT_RETRIES);
         logger.info(`Retrieved block: ${formatArgs(block)}`);
         return block;
     }
@@ -105,7 +105,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlock(blockHash: string): Promise<IBlock | null> {
-        const block = await retry(this.getBlockFromIndexer.bind(this), [blockHash], 3);
+        const block = await retry(this.getBlockFromIndexer.bind(this), [blockHash], DEFAULT_RETRIES);
         logger.info(`Retrieved block: ${formatArgs(block)}`);
         return block;
     }
@@ -127,7 +127,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 hash: data.blockHash,
                 number: data.blockNumber,
                 timestamp: data.timestamp,
-                transactions: await retry(this.extractTransactionIds.bind(this), [data.blockNumber], 3),
+                transactions: await retry(this.extractTransactionIds.bind(this), [data.blockNumber], DEFAULT_RETRIES),
             };
         } else {
             return null;
@@ -135,7 +135,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
-        const block = await retry(this.getBlockAtFromIndexer.bind(this), [blockNumber], 3);
+        const block = await retry(this.getBlockAtFromIndexer.bind(this), [blockNumber], DEFAULT_RETRIES);
         logger.info(`Retrieved block: ${formatArgs(block)}`);
         return block;
     }
@@ -165,7 +165,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockHeight(): Promise<number> {
-        const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], 3);
+        const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
         logger.info(`Retrieved block height: ${blockHeight}`);
         return blockHeight;
     }
@@ -188,7 +188,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
-        const txs = await retry(this.getTransactionsByReferenceFromIndexer.bind(this), [reference], 3);
+        const txs = await retry(this.getTransactionsByReferenceFromIndexer.bind(this), [reference], DEFAULT_RETRIES);
         logger.info(`Retrieved transactions by reference ${reference}: ${formatArgs(txs)}`);
         return txs;
     }
@@ -225,7 +225,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
-        const txs = await retry(this.getTransactionsWithinBlockRangeFromIndexer.bind(this), [from, to], 3);
+        const txs = await retry(this.getTransactionsWithinBlockRangeFromIndexer.bind(this), [from, to], DEFAULT_RETRIES);
         logger.info(`Retrieved transactions from ${from} to ${to}: ${formatArgs(txs)}`);
         return txs;
     }
