@@ -79,13 +79,14 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
         return false;
     }
-
     async waitForRoundFinalization(round: number): Promise<void> {
+        logger.info(`State connector helper: waiting for round ${round} finalization`);
         let roundFinalized = false;
         while (!roundFinalized) {
             roundFinalized = await this.roundFinalized(round);
             await sleep(5000);
         }
+        logger.info(`State connector helper: round ${round} is finalized`);
     }
 
     async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
