@@ -286,23 +286,18 @@ export function exp10(n: BNish) {
 /**
  * Retries a function n number of times before giving up
  */
-export async function retry<T extends (...arg0: any[]) => any>(
-    fn: T,
-    args: Parameters<T>,
-    maxTry: number,
-    retryCount = 1
-  ): Promise<Awaited<ReturnType<T>>> {
-    const currRetry = typeof retryCount === 'number' ? retryCount : 1;
+export async function retry<T extends (...arg0: any[]) => any>(fn: T, args: Parameters<T>, maxTry: number, retryCount = 1): Promise<Awaited<ReturnType<T>>> {
+    const currRetry = typeof retryCount === "number" ? retryCount : 1;
     try {
-      const result = await fn(...args);
-      return result;
+        const result = await fn(...args);
+        return result;
     } catch (e) {
-      logger.info(`Retry ${currRetry} failed for function ${fn.name}.`);
-      if (currRetry > maxTry) {
-        console.log(`All ${maxTry} retry attempts exhausted`);
-        logger.error(`All ${maxTry} retry attempts exhausted for function ${fn.name}: ${e}`);
-        throw e;
-      }
-      return retry(fn, args, maxTry, currRetry + 1);
+        logger.info(`Retry ${currRetry} failed for function ${fn.name}.`);
+        if (currRetry > maxTry) {
+            console.log(`All ${maxTry} retry attempts exhausted`);
+            logger.error(`All ${maxTry} retry attempts exhausted for function ${fn.name}: ${e}`);
+            throw e;
+        }
+        return retry(fn, args, maxTry, currRetry + 1);
     }
-  }
+}

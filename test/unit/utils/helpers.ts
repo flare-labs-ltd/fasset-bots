@@ -16,7 +16,7 @@ class SmallError extends Error {
 async function fetchData() {
     await helperMethods.sleep(2000);
     throw new Error();
-};
+}
 
 describe("Helpers unit tests", async () => {
     it("Should sleep for x seconds", async () => {

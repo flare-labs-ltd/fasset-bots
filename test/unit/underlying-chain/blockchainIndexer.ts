@@ -196,7 +196,6 @@ describe("XRP blockchain tests via indexer", async () => {
         expect(retrievedTransaction1.length).to.be.gte(0);
     });
 
-
     it("Should get transactions within block range", async () => {
         const offset = 10;
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId);
