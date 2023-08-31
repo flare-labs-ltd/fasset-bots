@@ -174,6 +174,7 @@ export class BotCliCommands {
         agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
         agentEnt.agentSettingUpdateValidAtName = settingName;
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
+        console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
 
     /**
@@ -190,6 +191,7 @@ export class BotCliCommands {
         agentEnt.waitingForDestructionCleanUp = true;
         await this.botConfig.orm!.em.persist(agentEnt).flush();
         logger.info(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
+        console.log(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
     }
 
     /**
@@ -199,7 +201,7 @@ export class BotCliCommands {
      */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
+        if (!toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).isZero()) {
             this.botConfig.notifier!.sendActiveWithdrawal(agentVault);
             logger.info(
                 `Agent ${agentVault} already has an active underlying withdrawal announcement at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}.`
@@ -256,6 +258,9 @@ export class BotCliCommands {
                         .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
+                console.log(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                    .add(announcedUnderlyingConfirmationMinSeconds)
+                    .toString()}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
@@ -267,6 +272,7 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
+            console.log(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
             const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
             const latestTimestamp = await latestBlockTimestampBN();
             if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
@@ -279,8 +285,9 @@ export class BotCliCommands {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 await this.botConfig.orm!.em.persist(agentEnt).flush();
                 logger.info(
-                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
+                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`
                 );
+                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
