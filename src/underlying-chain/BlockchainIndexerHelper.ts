@@ -298,6 +298,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 transactionIds.push(item.transactionId);
             });
         }
+        /* istanbul ignore else */
         return transactionIds;
     }
 

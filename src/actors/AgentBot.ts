@@ -1000,7 +1000,6 @@ export class AgentBot {
                     redemption.requestId
                 }. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock?.number} with timestamp ${lastBlock?.timestamp}.`
             );
-            // TODO: what to do? What is best for agent?
         }
     }
 
