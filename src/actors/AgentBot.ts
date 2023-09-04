@@ -504,7 +504,7 @@ export class AgentBot {
                     const announcedUnderlyingConfirmationMinSeconds = toBN(
                         (await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
                     );
-                    if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                    if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                         // agent can confirm underlying withdrawal
                         await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
                         this.notifier.sendConfirmWithdrawUnderlying(agentEnt.vaultAddress);
@@ -517,7 +517,7 @@ export class AgentBot {
                         logger.info(
                             `Agent ${
                                 this.agent.vaultAddress
-                            } cannot yet confirm underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                            } cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                                 .add(announcedUnderlyingConfirmationMinSeconds)
                                 .toString()}. Current ${latestTimestamp.toString()}.`
                         );
@@ -544,7 +544,7 @@ export class AgentBot {
                     logger.info(
                         `Agent ${
                             this.agent.vaultAddress
-                        } cannot yet cancel underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
+                        } cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).toString()}. Current ${latestTimestamp.toString()}.`
                     );
                 }
             }
