@@ -598,7 +598,7 @@ export class AgentBot {
                     logger.info(
                         `Agent ${
                             this.agent.vaultAddress
-                        } cannot yet cancel underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
+                        } cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).toString()}. Current ${latestTimestamp.toString()}.`
                     );
                 }
             }
