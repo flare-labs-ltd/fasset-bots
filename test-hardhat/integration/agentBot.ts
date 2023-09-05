@@ -205,9 +205,6 @@ describe("Agent bot tests", async () => {
             console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
             if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
         }
-
-//TODO
-        // await agentBot.runStep(orm.em);
         // check if minting is done
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
@@ -216,25 +213,27 @@ describe("Agent bot tests", async () => {
     it("Should perform unstick minting - minter pays and time expires in indexer", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
-        await agentBot.runStep(orm.em);
-        // should have an open minting
-        orm.em.clear();
-        const mintings = await agentBot.openMintings(orm.em, false);
-        assert.equal(mintings.length, 1);
-        const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
         // pay for minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
+        console.log(chain.blocks.length);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        await agentBot.handleOpenMintings(orm.em);
-        orm.em.clear();
+        // run step
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
+            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
+        }
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
@@ -317,11 +316,21 @@ describe("Agent bot tests", async () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
+        // run steps
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
+            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
+        }
         // check redemption
-        await agentBot.handleOpenRedemptionsForCornerCase(orm.em);
         orm.em.clear();
         const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionDone.state, AgentRedemptionState.STARTED);
+        assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
     it("Should not perform redemption - agent pays, time expires in indexer", async () => {

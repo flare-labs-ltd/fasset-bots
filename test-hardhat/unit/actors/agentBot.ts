@@ -6,7 +6,7 @@ import { web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { time } from "@openzeppelin/test-helpers";
@@ -241,6 +241,7 @@ describe("Agent bot unit tests", async () => {
         expect(spyProof).to.have.been.called.once;
     });
 
+
     it("Should not receive proof 3 - not finalized", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
@@ -259,6 +260,17 @@ describe("Agent bot unit tests", async () => {
             proofRequestData: "",
         });
         await agentBot.checkConfirmPayment(rd);
+        expect(spyProof).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 4 - not finalized", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainConfirmedBlockHeightExistsProof");
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        agentEnt.dailyProofRequestData = "";
+        agentEnt.dailyProofRequestRound = 1;
+        agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
+        await agentBot.handleDailyTasks(orm.em);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -327,6 +339,18 @@ describe("Agent bot unit tests", async () => {
             proofRequestData: "",
         });
         await agentBot.checkConfirmPayment(rd);
+        expect(spyProof).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 4 - no proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        agentEnt.dailyProofRequestData = "";
+        agentEnt.dailyProofRequestRound = 0;
+        agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
+        await agentBot.handleDailyTasks(orm.em);
         expect(spyProof).to.have.been.called.once;
     });
 
