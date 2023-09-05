@@ -1,12 +1,8 @@
-import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
-import { artifacts } from "./artifacts";
 import { toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
-
-const IFtso = artifacts.require("IFtso");
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;

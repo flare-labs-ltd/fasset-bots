@@ -1,4 +1,4 @@
-import { AddressUpdaterInstance, AssetManagerControllerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance } from "../../typechain-truffle";
 import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
