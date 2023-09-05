@@ -40,11 +40,6 @@ export async function attestationWindowSeconds(context: IAssetActorContext): Pro
     return Number(settings.attestationWindowSeconds);
 }
 
-export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, symbol: string) {
-    const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(symbol);
-    return await IFtso.at(ftsoAddress);
-}
-
 export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null> {
     const blockHeight = await context.blockchainIndexer.getBlockHeight();
     const latestBlock = await context.blockchainIndexer.getBlockAt(blockHeight);

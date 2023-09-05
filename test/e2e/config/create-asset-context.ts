@@ -12,7 +12,6 @@ import {
 import rewire from "rewire";
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
-const createFtsos = createAssetContextInternal.__get__("createFtsos");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -119,12 +118,6 @@ describe("Create asset context tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should create ftsos", async () => {
-        const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.chains[0]);
-        const collateralTypes = await context.assetManager.getCollateralTypes();
-        const ftso = await createFtsos(collateralTypes, context.ftsoRegistry, context.chainInfo.symbol);
-        expect(Object.keys(ftso).length).eq(collateralTypes.length + 1);
-    });
     //skip TODO until AssetManagerController gets verified in explorer
     it.skip("Should get asset manager and controller with address updater", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;

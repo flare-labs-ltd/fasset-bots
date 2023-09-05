@@ -1,7 +1,7 @@
-import { IFtsoManagerInstance, FAssetInstance, IIFtsoInstance, AssetManagerInstance, IFtsoRegistryInstance } from "../../typechain-truffle";
+import { IFtsoManagerInstance, FAssetInstance, AssetManagerInstance } from "../../typechain-truffle";
 import { CollateralType } from "../fasset/AssetManagerTypes";
 import { NativeChainInfo } from "../fasset/ChainInfo";
-import { AssetManagerEvents, FAssetEvents, IAssetContext, IFtsoManagerEvents, IFtsoRegistryEvents, IIFtsoEvents } from "../fasset/IAssetContext";
+import { AssetManagerEvents, FAssetEvents, IAssetContext, IFtsoManagerEvents } from "../fasset/IAssetContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { ContractWithEvents } from "../utils/events/truffle";
@@ -27,9 +27,7 @@ export interface IAssetActorContext {
     collaterals: CollateralType[];
     attestationProvider: AttestationHelper;
     // contracts
-    ftsoRegistry: ContractWithEvents<IFtsoRegistryInstance, IFtsoRegistryEvents>;
     ftsoManager: ContractWithEvents<IFtsoManagerInstance, IFtsoManagerEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
-    assetFtso: ContractWithEvents<IIFtsoInstance, IIFtsoEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
 }
