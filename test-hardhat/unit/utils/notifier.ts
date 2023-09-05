@@ -132,7 +132,8 @@ describe("Notifier tests", async () => {
         const spySend = spy.on(notifier, "sendNoProofObtained");
         notifier.sendNoProofObtained("agentVault", "reqId", 1, "data", true);
         notifier.sendNoProofObtained("agentVault", "reqId", 1, "data");
-        expect(spySend).to.have.been.called.twice;
+        notifier.sendNoProofObtained("agentVault", null, 1, "data");
+        expect(spySend).to.have.been.called.exactly(3);
     });
 
     it("Should send agent destroyed  alert", async () => {

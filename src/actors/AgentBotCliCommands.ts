@@ -199,7 +199,7 @@ export class BotCliCommands {
      */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
+        if (!toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).isZero()) {
             this.botConfig.notifier!.sendActiveWithdrawal(agentVault);
             logger.info(
                 `Agent ${agentVault} already has an active underlying withdrawal announcement at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}.`
@@ -252,7 +252,7 @@ export class BotCliCommands {
                 this.botConfig.notifier!.sendConfirmWithdrawUnderlying(agentVault);
             } else {
                 logger.info(
-                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                         .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );

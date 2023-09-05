@@ -1,7 +1,7 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../entities/agent";
 import { AgentB } from "../fasset-bots/AgentB";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -77,6 +77,7 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
+            agentEntity.dailyProofState= DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
             logger.info(
                 `Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
@@ -256,19 +257,72 @@ export class AgentBot {
         logger.info(
             `Agent ${
                 this.agent.vaultAddress
-            } checks if daily task need to be handled. List time checked: ${agentEnt.cornerCaseCheckTimestamp.toString()}. Latest block: ${latestBlock?.number}, ${latestBlock?.timestamp}.`
+            } checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${latestBlock?.number}, ${latestBlock?.timestamp}.`
         );
         if (
             latestBlock &&
             toBN(latestBlock.timestamp)
-                .sub(toBN(agentEnt.cornerCaseCheckTimestamp))
+                .sub(toBN(agentEnt.dailyTasksTimestamp))
                 .gtn(1 * DAYS)
         ) {
-            this.latestProof = await this.context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(this.context));
-            await this.handleCornerCases(rootEm);
-            await this.checkForClaims();
-            agentEnt.cornerCaseCheckTimestamp = toBN(latestBlock.timestamp);
-            await rootEm.persistAndFlush(agentEnt);
+            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
+                logger.info(
+                    `Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`
+                );
+                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context));
+                if (request) {
+                    agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
+                    agentEnt.dailyProofRequestRound = request.round;
+                    agentEnt.dailyProofRequestData = request.data;
+                    logger.info(
+                        `Agent ${this.agent.vaultAddress} requested confirmed block heigh exists proof for daily tasks: dailyProofRequestRound ${request.round} and dailyProofRequestData ${request.data}`
+                    );
+                    await rootEm.persistAndFlush(agentEnt);
+                } else {
+                    // else cannot prove request yet
+                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet request confirmed block heigh exists for proof daily tasks`);
+                }
+            } else { // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
+                logger.info(
+                    `Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
+                );
+                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    agentEnt.dailyProofRequestRound!,
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    agentEnt.dailyProofRequestData!
+                );
+                if (!proof.finalized) {
+                    logger.info(
+                        `Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
+                    );
+                    return;
+                }
+                if (proof.result && proof.result.merkleProof) {
+                    logger.info(
+                        `Agent ${this.agent.vaultAddress} obtained confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
+                    );
+                    this.latestProof = proof.result as ProvedDH<DHConfirmedBlockHeightExists>;
+
+                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
+                    await this.handleCornerCases(rootEm);
+                    await this.checkForClaims();
+                    agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
+                    await rootEm.persistAndFlush(agentEnt);
+                } else {
+                    logger.info(
+                        `Agent ${this.agent.vaultAddress} cannot obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
+                    );
+                    this.notifier.sendNoProofObtained(
+                        agentEnt.vaultAddress,
+                        null,
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        agentEnt.dailyProofRequestRound!,
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        agentEnt.dailyProofRequestData!
+                    );
+                }
+            }
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished checking if daily task need to be handled.`);
     }
@@ -504,7 +558,7 @@ export class AgentBot {
                     const announcedUnderlyingConfirmationMinSeconds = toBN(
                         (await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds
                     );
-                    if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                    if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                         // agent can confirm underlying withdrawal
                         await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
                         this.notifier.sendConfirmWithdrawUnderlying(agentEnt.vaultAddress);
@@ -517,7 +571,7 @@ export class AgentBot {
                         logger.info(
                             `Agent ${
                                 this.agent.vaultAddress
-                            } cannot yet confirm underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                            } cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                                 .add(announcedUnderlyingConfirmationMinSeconds)
                                 .toString()}. Current ${latestTimestamp.toString()}.`
                         );
@@ -589,7 +643,7 @@ export class AgentBot {
                 firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
                 lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
                 lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-                paymentReference: request.paymentReference,
+                paymentReference: request.paymentReference
             } as RequiredEntityData<AgentMinting>,
             { persist: true }
         );

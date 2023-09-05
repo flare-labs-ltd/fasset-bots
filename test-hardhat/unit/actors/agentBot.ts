@@ -339,11 +339,11 @@ describe("Agent bot unit tests", async () => {
         expect(toBN(agentInfo.status).toNumber()).to.eq(AgentStatus.DESTROYING);
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForDestructionTimestamp.eq(destroyAllowedAt)).to.be.true;
+        expect(toBN(agentEnt.waitingForDestructionTimestamp).eq(destroyAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(destroyAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
     });
 
     it("Should withdraw collateral", async () => {
@@ -359,11 +359,11 @@ describe("Agent bot unit tests", async () => {
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.withdrawalAllowedAtTimestamp.eq(withdrawalAllowedAt)).to.be.true;
+        expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(withdrawalAllowedAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const agentVaultCollateralBalance = (await agentBot.agent.getAgentInfo()).totalVaultCollateralWei;
         expect(agentVaultCollateralBalance).to.eq("0");
     });
@@ -379,7 +379,7 @@ describe("Agent bot unit tests", async () => {
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eq(validAt)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtTimestamp).eq(validAt)).to.be.true;
         // allowed
         await time.increaseTo(validAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
@@ -395,7 +395,7 @@ describe("Agent bot unit tests", async () => {
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eq(validAt)).to.be.true;
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(validAt)).to.be.true;
         // allowed
         await time.increaseTo(validAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
@@ -406,13 +406,13 @@ describe("Agent bot unit tests", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
+        expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
-        expect(agentEnt.waitingForDestructionTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.withdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
+        expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
     });
 
@@ -426,20 +426,20 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eq(validAt)).to.be.true;
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(validAt)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // allowed
         await time.increaseTo(validAt);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // try to close vault - announce class 1 withdrawal
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.gtn(0)).to.be.true;
+        expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         // try to close vault - withdraw class 1
         await time.increaseTo(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         // try to close vault - close
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // check agent status
@@ -459,11 +459,11 @@ describe("Agent bot unit tests", async () => {
         agentEnt.underlyingWithdrawalConfirmTransaction = tx;
         // confirmation not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gtn(0)).to.be.true;
+        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
         // confirmation allowed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
     });
 
     it("Should ignore 'MintingExecuted' when self mint", async () => {
@@ -503,11 +503,11 @@ describe("Agent bot unit tests", async () => {
         await orm.em.persist(agentEnt).flush();
         // cancelation not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gtn(0)).to.be.true;
+        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
         // cancelation allowed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
