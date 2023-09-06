@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
-import { IWNat, ILiquidationStrategy, IFtsoRegistry, ILiquidator } from '../typechain';
+import { IWNat, ILiquidationStrategy, IFtsoRegistry, ILiquidator } from '../typechain-ethers';
 
-export interface IAddressesJson {
+export interface AddressesJson {
   liquidator: string
   ftsoRegistry: string
   wNat: string
@@ -19,7 +19,7 @@ export interface IAddressesJson {
 }
 
 // all CRs are assummed in BIPS
-export interface IAgentArbitrageData {
+export interface AgentArbitrageData {
   vaultCollateralToken: string
   poolCollateralToken: string // assume always wNat
   minted: bigint
@@ -38,9 +38,9 @@ export interface IAgentArbitrageData {
 }
 
 // think of more appropriate context
-export interface IContext {
+export interface Context {
   provider: ethers.JsonRpcProvider
-  addresses: IAddressesJson
+  addresses: AddressesJson
   liquidator: ILiquidator
   ftsoRegistry: IFtsoRegistry
   wNat: IWNat

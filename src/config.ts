@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { ethers } from "ethers"
-import { IWNat, ILiquidationStrategy, ILiquidator } from '../typechain';
-import { IAddressesJson, IContext } from './interface';
+import { IWNat, ILiquidationStrategy, ILiquidator } from '../typechain-ethers';
+import { AddressesJson, Context } from './interface';
 import { getContract } from './util'
 
 dotenv.config()
@@ -12,8 +12,8 @@ export const addresses = JSON.parse(fs.readFileSync(process.env.CONTRACTS!, 'utf
 
 export function getContext(
   provider: ethers.JsonRpcProvider, 
-  addresses: IAddressesJson
-): IContext {
+  addresses: AddressesJson
+): Context {
   return {
     provider: provider, 
     addresses: addresses,

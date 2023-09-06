@@ -1,13 +1,13 @@
-import { IAgentVault, IBlazeSwapRouter, IERC20, IFAsset, IAssetManager, ILiquidationStrategy, IERC20Metadata } from '../typechain'
-import { AgentInfo, AssetManagerSettings, CollateralType } from "../typechain/contracts/interface/IAssetManager"
-import { IAgentArbitrageData, LiquidationPhase, AgentStatus, IContext } from './interface'
+import { IFAsset, IAssetManager, IBlazeSwapRouter, ILiquidationStrategy, IERC20Metadata, IFAssetMetadata, IIAgentVault } from '../typechain-ethers'
+import { AgentInfo, AssetManagerSettings, CollateralType } from '../typechain/fasset/contracts/userInterfaces/IAssetManager'
+import { AgentArbitrageData, LiquidationPhase, AgentStatus, Context } from './interface'
 import { getContract, min } from './util'
 
 export class AgentVault {
   // constants
   public address!: string
   public assetManager!: IAssetManager
-  public fAsset!: IFAsset
+  public fAsset!: IFAssetMetadata
   public fAssetDecimals!: bigint
   public fAssetSymbol!: string
   // cache
@@ -18,21 +18,21 @@ export class AgentVault {
   public liquidationStrategy!: ILiquidationStrategy
   public assetManagerSettings!: AssetManagerSettings.DataStructOutput
 
-  constructor(public contract: IAgentVault) {}
+  constructor(public contract: IIAgentVault) {}
 
   // these variables getting updated means f-asset is screwed
-  public async setConstantData(context: IContext): Promise<void> {
+  public async setConstantData(context: Context): Promise<void> {
     this.address = await this.contract.getAddress()
     this.assetManager = getContract<IAssetManager>(
       context.provider, await this.contract.assetManager(), "IAssetManager")
-    this.fAsset = getContract<IFAsset>(
+    this.fAsset = getContract<IFAssetMetadata>(
       context.provider, await this.assetManager.fAsset(), "IFAsset")
     this.fAssetSymbol = await this.fAsset.symbol()
     this.fAssetDecimals = await this.fAsset.decimals()
   }
 
-  // these variables can get updated as part of the usual operation
-  public async setPseudoConstantData(context: IContext): Promise<void> {
+  // these variables can get updated as part of normal (but rare) operation
+  public async setPseudoConstantData(context: Context): Promise<void> {
     const agentInfo = await this.assetManager.getAgentInfo(this.address)
     this.vaultCollateral = getContract<IERC20Metadata>(
       context.provider, agentInfo.vaultCollateralToken, "IERC20Metadata")
@@ -44,7 +44,7 @@ export class AgentVault {
     this.assetManagerSettings = await this.assetManager.getSettings()
   }
 
-  public async checkForAgentArbitrageAndGetData(context: IContext): Promise<IAgentArbitrageData | null> {
+  public async checkForAgentArbitrageAndGetData(context: Context): Promise<AgentArbitrageData | null> {
     const agentInfo = await this.assetManager.getAgentInfo(await this.contract.getAddress())
     const status = Number(agentInfo.status)
     if (
@@ -57,8 +57,8 @@ export class AgentVault {
 
   // get data relevant to doing an arbitrage with a liquidity pool
   protected async getAgentArbitrageData(
-    context: IContext, agentInfo: AgentInfo.InfoStructOutput
-  ): Promise<IAgentArbitrageData> {
+    context: Context, agentInfo: AgentInfo.InfoStructOutput
+  ): Promise<AgentArbitrageData> {
     const { _c1FactorBIPS, _poolFactorBIPS } = 
       await context.liquidationStrategy.currentLiquidationFactorBIPS(
         this.address, 

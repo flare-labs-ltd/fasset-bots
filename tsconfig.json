@@ -9,6 +9,11 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "typechain/**/*.ts", "typechain-types/**/*.ts"],
+  "include": [
+    "./src",
+    "./test",
+    "./typechain",
+    "./typechain-truffle"
+  ],
   "exclude": ["node_modules"]
 }

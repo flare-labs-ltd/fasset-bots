@@ -1,19 +1,29 @@
-import { IAgentVault, IBlazeSwapRouter } from '../typechain';
-import { IAgentArbitrageData, IContext } from './interface'
-import { getContract, getAssetPriceInVaultCollateral, divBips, min, mulBips } from './util'
+import { IIAgentVault, IBlazeSwapRouter } from '../typechain-ethers'
+import { AgentArbitrageData, Context } from './interface'
+import { getContract, divBips, min, mulBips } from './util'
 import { AgentVault, BlazeSwap } from './actors'
 
-// assummes that pool collateral is always wrapped native
+// does not account for whhen vault collateral is non 18 decimals or non usd pegged
+export async function getAssetPriceInVaultCollateral(
+  context: Context, 
+  vaultCollateralSymbol: string, 
+  fAssetSymbol: string, 
+  fAssetDecimals: bigint
+): Promise<bigint> {
+  const { _price, _assetPriceUsdDecimals } = await context.ftsoRegistry["getCurrentPriceWithDecimals(string)"](fAssetSymbol)
+  const exp = fAssetDecimals + BigInt(18) - _assetPriceUsdDecimals
+  return _price ** exp
+}
 
 // one liquidator instance for each f-asset
 export class Liquidator {
   public agents: AgentVault[] = []
   public blazeSwaps: BlazeSwap[] = []
 
-  constructor(public context: IContext) {
+  constructor(public context: Context) {
     // save agent vaults
     context.addresses.agentVault.map(async (agent) => this.agents.push(
-      new AgentVault(getContract<IAgentVault>(context.provider, agent.address, "IAgentVault"))  
+      new AgentVault(getContract<IIAgentVault>(context.provider, agent.address, "IIAgentVault"))  
     ))
     // save dexs
     context.addresses.dex.map((dex) => this.blazeSwaps.push(
@@ -33,7 +43,7 @@ export class Liquidator {
     // (by max liquidation and liquidation factor, ignore pool collateral)
     let selectedAgent: {
       object: AgentVault
-      data: IAgentArbitrageData
+      data: AgentArbitrageData
       quality: bigint
     } | undefined
     for (const agent of this.agents) {
@@ -53,39 +63,11 @@ export class Liquidator {
       liquidatorProfit: bigint
     } | undefined
     for (const blazeSwap of this.blazeSwaps) {
-      const [reserveVaultCollateral, reserveFAsset] = 
-        await blazeSwap.getPoolReserves(
-          selectedAgent.data.poolCollateralToken, 
-          selectedAgent.data.vaultCollateralToken
-        )
-      const fee = await blazeSwap.getPoolFee(
-        selectedAgent.data.poolCollateralToken, 
-        selectedAgent.data.vaultCollateralToken
+      const arbitrage = await this.getArbitrageProfit(
+        selectedAgent.object, selectedAgent.data, blazeSwap
       )
-      const assetPriceUSDT = await getAssetPriceInVaultCollateral(
-        this.context, 
-        selectedAgent.object.vaultCollateralSymbol, 
-        selectedAgent.object.fAssetSymbol, 
-        selectedAgent.object.fAssetDecimals
-      )
-      const optimalVaultCollateral = this.getOptimalVaultCollateral(
-        selectedAgent.data,
-        assetPriceUSDT,
-        reserveVaultCollateral,
-        reserveFAsset,
-        fee
-      )
-      const liquidatedFAssets = this.getFAssetSwappedFromVaultCollateral(
-        optimalVaultCollateral, reserveVaultCollateral, reserveFAsset, fee
-      )
-      const liquidatorProfit = this.getLiquidatorProfit(
-        optimalVaultCollateral, 
-        liquidatedFAssets, 
-        selectedAgent.data.vaultCR.factor, 
-        assetPriceUSDT
-      )
-      if (selectedDex === undefined || liquidatorProfit > selectedDex.liquidatorProfit) {
-        selectedDex = { object: blazeSwap, optimalVaultCollateral, liquidatorProfit }
+      if (selectedDex === undefined || arbitrage.liquidatorProfit > selectedDex.liquidatorProfit) {
+        selectedDex = { object: blazeSwap, ...arbitrage }
       }
     }
     if (selectedDex === undefined) return
@@ -101,11 +83,59 @@ export class Liquidator {
     )
   }
 
+  public async getArbitrageProfit(
+    agentVault: AgentVault, 
+    agentArbitrageData: AgentArbitrageData,
+    blazeSwap: BlazeSwap
+  ): Promise<{
+    optimalVaultCollateral: bigint,
+    liquidatorProfit: bigint
+  }> {
+    const [reserveVaultCollateral, reserveFAsset] = 
+      await blazeSwap.getPoolReserves(
+        agentArbitrageData.poolCollateralToken, 
+        agentArbitrageData.vaultCollateralToken
+      )
+    const fee = await blazeSwap.getPoolFee(
+      agentArbitrageData.poolCollateralToken, 
+      agentArbitrageData.vaultCollateralToken
+    )
+    const assetPriceUSDT = 
+      await getAssetPriceInVaultCollateral(
+        this.context, 
+        agentVault.vaultCollateralSymbol, 
+        agentVault.fAssetSymbol, 
+        agentVault.fAssetDecimals
+      )
+    const optimalVaultCollateral = 
+      this.getOptimalVaultCollateral(
+        agentArbitrageData,
+        assetPriceUSDT,
+        reserveVaultCollateral,
+        reserveFAsset,
+        fee
+      )
+    const liquidatedFAssets = 
+      this.getFAssetSwappedFromVaultCollateral(
+        optimalVaultCollateral, 
+        reserveVaultCollateral, 
+        reserveFAsset, 
+        fee
+      )
+    const liquidatorProfit = this.getLiquidationProfit(
+      optimalVaultCollateral, 
+      liquidatedFAssets, 
+      agentArbitrageData.vaultCR.factor, 
+      assetPriceUSDT
+    )
+    return { optimalVaultCollateral, liquidatorProfit }
+  }
+
   // optimal value of the vault collateral to swap for fAsset and then liquidate
   // maximizing M(v) = min(Fd v (1 - δ) / (v (1 - δ) + Vd), fm) Ra P - v
   // gets vo = min(Vd Fd Ra P - 1 / (1 - δ), fm Vd / ((1 - δ) (Fd - fm))
   protected getOptimalVaultCollateral(
-    agentArbitrageData: IAgentArbitrageData,
+    agentArbitrageData: AgentArbitrageData,
     fAssetInVaulCollateralPrice: bigint,
     lpReserveVaultCollateral: bigint,
     lpReserveFAsset: bigint,
@@ -139,7 +169,7 @@ export class Liquidator {
 
   // calculates f-asset liquidation profit
   // f(v) * P * Ra - v
-  protected getLiquidatorProfit(
+  protected getLiquidationProfit(
     usedVaultCollateral: bigint,
     liquidatedFAssets: bigint,
     liquidationFactor: bigint,

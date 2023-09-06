@@ -1,5 +1,4 @@
 import { ethers } from "ethers"
-import { IContext } from "./interface"
 
 
 type ContractType = 
@@ -13,6 +12,7 @@ type ContractType =
   | "IFtsoRegistry"
   | "IERC20Metadata"
   | "ILiquidator"
+  | "IIAgentVault"
 
 export const MAX_BIPS = BigInt(10_000)
 
@@ -26,18 +26,6 @@ export function getContract<T>(
     ? "@openzeppelin/token/ERC20/extensions/ERC20Metadata.sol"
     : `contracts/interface/${ctype}.sol` 
   return new ethers.Contract(address, require(path!).abi, provider) as T
-}
-
-// does not account for whhen vault collateral is non 18 decimals or non usd pegged
-export async function getAssetPriceInVaultCollateral(
-  context: IContext, 
-  vaultCollateralSymbol: string, 
-  fAssetSymbol: string, 
-  fAssetDecimals: bigint
-): Promise<bigint> {
-  const { _price, _assetPriceUsdDecimals } = await context.ftsoRegistry.getCurrentPriceWithDecimals(fAssetSymbol)
-  const exp = fAssetDecimals + BigInt(18) - _assetPriceUsdDecimals
-  return _price ** exp
 }
 
 ///////////////////////////////////////////////////////////////
