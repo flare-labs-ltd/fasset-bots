@@ -6,7 +6,7 @@ Configuration and environment file must be provided, before running cli commands
 
 ## How to use
 
-Usage: `agent-bot [command] <arg>`
+Usage: `agent-bot [command] <arg> -f [fAssetSymbol]`
 
 Available commands:
 

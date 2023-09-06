@@ -41,8 +41,11 @@ export class UserBot {
         }
         // create config
         this.botConfig = await createBotConfig(runConfig, this.nativeAddress);
-        const chainConfig = this.botConfig.chains.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) throw new CommandLineError("Invalid FAsset symbol");
+        const chainConfig = this.botConfig.chains.find(cc => cc.fAssetSymbol === fAssetSymbol);
+        if (chainConfig == null) {
+            logger.error(`User ${requireEnv('USER_ADDRESS')} has invalid FAsset symbol.`);
+            throw new CommandLineError("Invalid FAsset symbol");
+        }
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         this.underlyingAddress = requireEnv("USER_UNDERLYING_ADDRESS");
