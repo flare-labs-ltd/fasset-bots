@@ -139,7 +139,7 @@ export async function createChainConfig(
     stateConnectorAddress: string,
     ownerAddress: string
 ): Promise<BotChainConfig> {
-    const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl);
+    const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks);
     const stateConnector = await createStateConnectorClient(
         chainInfo.indexerUrl,
         attestationProviderUrls,
@@ -220,10 +220,10 @@ export function createWalletClient(
 /**
  * Creates blockchain indexer helper. Relevant urls and api keys are provided in .env.
  */
-export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string): BlockchainIndexerHelper {
+export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string, finalizationBlocks: number): BlockchainIndexerHelper {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
     const apiKey = requireEnv("INDEXER_API_KEY");
-    return new BlockchainIndexerHelper(indexerUrl, sourceId, apiKey);
+    return new BlockchainIndexerHelper(indexerUrl, sourceId, finalizationBlocks, apiKey);
 }
 
 /**
@@ -254,11 +254,12 @@ export async function createAttestationHelper(
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
     owner: string,
-    indexerUrl: string
+    indexerUrl: string,
+    finalizationBlocks: number
 ): Promise<AttestationHelper> {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
     const stateConnector = await createStateConnectorClient(indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId, indexerUrl), sourceId);
+    return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks), sourceId);
 }
 
 /**

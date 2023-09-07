@@ -73,6 +73,7 @@ describe("Bot cli commands unit tests", async () => {
                         decimals: 6,
                         amgDecimals: 0,
                         requireEOAProof: false,
+                        finalizationBlocks: 6
                     },
                     wallet: new MockChainWallet(chain),
                     blockchainIndexerClient: new MockIndexer("", chainId, chain),

@@ -47,9 +47,10 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
 export async function receiveBlockAndTransaction(
     sourceId: SourceId,
     blockChainIndexerClient: BlockchainIndexerHelper,
-    indexerUrl: string
+    indexerUrl: string,
+    finalizationBlocks: number
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
+    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;

@@ -32,7 +32,7 @@ import BN from "bn.js";
 import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
-import { attestationWindowSeconds } from "../../src/utils/fasset-helpers";
+import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -69,6 +69,7 @@ describe("Agent bot tests", async () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
     });
 
     it("Should perform minting", async () => {

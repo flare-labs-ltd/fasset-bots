@@ -26,6 +26,7 @@ const sourceId = SourceId.XRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
+const finalizationBlocks: number = 6;
 
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
@@ -43,7 +44,8 @@ describe.skip("Attestation client unit tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl
+            indexerUrl,
+            finalizationBlocks
         );
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });

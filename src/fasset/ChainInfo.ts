@@ -5,6 +5,7 @@ export interface ChainInfo {
     decimals: number;
     amgDecimals: number;
     requireEOAProof: boolean;
+    finalizationBlocks: number;
 }
 
 export interface NativeChainInfo {

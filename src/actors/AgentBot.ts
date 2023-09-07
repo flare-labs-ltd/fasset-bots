@@ -19,8 +19,10 @@ import {
     NATIVE_LOW_BALANCE,
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
     STABLE_COIN_LOW_BALANCE,
+    XRP_ACTIVATE_BALANCE,
     requireEnv,
     toBN,
+    toBNExp,
 } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
@@ -31,6 +33,8 @@ import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
+import { SourceId } from "../verification/sources/sources";
+import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -63,6 +67,8 @@ export class AgentBot {
         const lastBlock = await web3.eth.getBlockNumber();
         return await rootEm.transactional(async (em) => {
             const underlyingAddress = await context.wallet.createAccount();
+            // send 10 XRP from owners account to activate agent's account
+            await this.activateUnderlyingAccount(context, underlyingAddress);
             const settings = await context.assetManager.getSettings();
             if (settings.requireEOAAddressProof) {
                 await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
@@ -77,7 +83,7 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.lastEventBlockHandled = lastBlock;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
-            agentEntity.dailyProofState= DailyProofState.OBTAINED_PROOF;
+            agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
             logger.info(
                 `Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
@@ -114,6 +120,28 @@ export class AgentBot {
             `Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
         );
         return new AgentBot(agent, notifier);
+    }
+
+    /**
+     * Activate agent's underlying XRP account by depositing 10 XRP from owner's underlying.
+     */
+    static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string) {
+        const ownerAddress = requireEnv("OWNER_ADDRESS");
+        try {
+            if (context.chainInfo.chainId != SourceId.XRP) return;
+            const starterAmount = XRP_ACTIVATE_BALANCE;
+            const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
+            const reference = requireEnv("OWNER_ADDRESS");
+            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
+            const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
+            if (!transaction || transaction?.status != TX_SUCCESS) {
+                throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
+            }
+            logger.info(`Owner ${ownerAddress} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
+        } catch (error) {
+            logger.error(`Owner ${ownerAddress} couldn't activate underlying address ${agentUnderlyingAddress}: ${error}`);
+            throw new Error(`Could not activate or verify new XRP account ${agentUnderlyingAddress}`);
+        }
     }
 
     /**
@@ -266,9 +294,7 @@ export class AgentBot {
                 .gtn(1 * DAYS)
         ) {
             if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`
-                );
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`);
                 const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context));
                 if (request) {
                     agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
@@ -282,7 +308,8 @@ export class AgentBot {
                     // else cannot prove request yet
                     logger.info(`Agent ${this.agent.vaultAddress} cannot yet request confirmed block heigh exists for proof daily tasks`);
                 }
-            } else { // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
+            } else {
+                // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
                 logger.info(
                     `Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
                 );
@@ -569,9 +596,9 @@ export class AgentBot {
                         agentEnt.underlyingWithdrawalConfirmTransaction = "";
                     } else {
                         logger.info(
-                            `Agent ${
-                                this.agent.vaultAddress
-                            } cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                            `Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${toBN(
+                                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                            )
                                 .add(announcedUnderlyingConfirmationMinSeconds)
                                 .toString()}. Current ${latestTimestamp.toString()}.`
                         );
@@ -596,9 +623,9 @@ export class AgentBot {
                     agentEnt.underlyingWithdrawalWaitingForCancelation = false;
                 } else {
                     logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).toString()}. Current ${latestTimestamp.toString()}.`
+                        `Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(
+                            agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                        ).toString()}. Current ${latestTimestamp.toString()}.`
                     );
                 }
             }
@@ -643,7 +670,7 @@ export class AgentBot {
                 firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
                 lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
                 lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-                paymentReference: request.paymentReference
+                paymentReference: request.paymentReference,
             } as RequiredEntityData<AgentMinting>,
             { persist: true }
         );

@@ -20,6 +20,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
+        public completionBlocks: number,
         private indexerWebServerApiKey: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
@@ -37,6 +38,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         };
         // set client
         this.client = axios.create(createAxiosConfig);
+        this.finalizationBlocks = completionBlocks;
     }
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {

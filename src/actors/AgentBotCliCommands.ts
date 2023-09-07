@@ -15,6 +15,7 @@ import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/artifacts";
+import { ChainInfo } from "../fasset/ChainInfo";
 dotenv.config();
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
@@ -25,6 +26,7 @@ export class BotCliCommands {
     ownerAddress!: string;
     botConfig!: BotConfig;
     agentSettingsPath!: string;
+    botChainInfo!: ChainInfo;
 
     static async create(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH) {
         const bot = new BotCliCommands();
@@ -36,8 +38,8 @@ export class BotCliCommands {
      * Initializes asset context from AgentBotRunConfig
      */
     async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
-        logger.info(`Owner ${requireEnv('OWNER_ADDRESS')} started to initialize cli environment.`);
-        console.log(chalk.cyan('Initializing environment...'));
+        logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to initialize cli environment.`);
+        console.log(chalk.cyan("Initializing environment..."));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as BotConfigFile;
         // check arguments
         if (!runConfig.defaultAgentSettingsPath || !runConfig.ormOptions) {
@@ -57,11 +59,12 @@ export class BotCliCommands {
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         // create context
-        const chainConfig = this.botConfig.chains.find(cc => cc.fAssetSymbol === fAssetSymbol);
+        const chainConfig = this.botConfig.chains.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`Owner ${requireEnv('OWNER_ADDRESS')} has invalid FAsset symbol.`);
+            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol.`);
             throw new CommandLineError("Invalid FAsset symbol");
         }
+        this.botChainInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         const underlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
@@ -74,11 +77,16 @@ export class BotCliCommands {
     /**
      * Creates agent bot.
      */
-    async createAgentVault(): Promise<Agent> {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
-        const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
-        this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
-        return agentBot.agent;
+    async createAgentVault(): Promise<Agent | null> {
+        try {
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+            this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            return agentBot.agent;
+        } catch (error) {
+            console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
+        }
+        return null;
     }
 
     /**
@@ -263,9 +271,11 @@ export class BotCliCommands {
                         .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
-                console.log(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                    .add(announcedUnderlyingConfirmationMinSeconds)
-                    .toString()}. Current ${latestTimestamp.toString()}.`);
+                console.log(
+                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
+                );
             }
         } else {
             this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
@@ -290,9 +300,15 @@ export class BotCliCommands {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 await this.botConfig.orm!.em.persist(agentEnt).flush();
                 logger.info(
-                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`
+                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
                 );
-                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                console.log(
+                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
+                );
             }
         } else {
             this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
