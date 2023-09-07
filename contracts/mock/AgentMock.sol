@@ -4,21 +4,25 @@ pragma solidity 0.8.20;
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "./ERC20Mock.sol";
+import "./AssetManagerMock.sol";
 
 contract AgentMock {
     AgentInfo.Info private info;
+    AssetManagerMock public assetManager;
     ERC20Mock public fAssetToken;
     ERC20Mock public vaultCollateralToken;
     ERC20Mock public poolCollateralToken;
 
     constructor(
-        ERC20Mock _vaultCollateralToken, 
-        ERC20Mock _poolCollateralToken, 
-        ERC20Mock _fAssetToken
+        AssetManagerMock _assetManager,
+        ERC20Mock _vaultCollateralToken
     ) {
+        assetManager = _assetManager;
+        vaultCollateralToken = _vaultCollateralToken;
+        poolCollateralToken = ERC20Mock(_assetManager.getWNat());
+        fAssetToken = ERC20Mock(_assetManager.fAsset());
+        // store vault collateral token in info
         info.vaultCollateralToken = IERC20(_vaultCollateralToken);
-        poolCollateralToken = _poolCollateralToken;
-        fAssetToken = _fAssetToken;
     }
 
     function mint(address _target, uint256 _amountUBA) external {

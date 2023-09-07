@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "fasset/contracts/utils/lib/MathUtils.sol";
 import "fasset/contracts/utils/lib/SafePct.sol";
+import "fasset/contracts/fasset/library/CollateralTypes.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/AssetManagerSettings.sol";
-import "fasset/contracts/fasset/mock/FtsoMock.sol";
-import "./LiquidationStrategyMock.sol";
+import "fasset/contracts/fasset/mock/FakePriceReader.sol";
 import "./AgentMock.sol";
 import "./AssetManagerMock.sol";
 
@@ -18,12 +20,11 @@ contract AssetManagerMock {
     uint256 internal constant AMG_TOKEN_WEI_PRICE_SCALE_EXP = 9;
     uint256 internal constant AMG_TOKEN_WEI_PRICE_SCALE = 10 ** AMG_TOKEN_WEI_PRICE_SCALE_EXP;
 
-    AssetManagerSettings.Data private settings;
+    address public wNat;
     uint256 public minCollateralRatioBIPS;
 
-    FtsoMock public vaultCollateralFtso;
-    FtsoMock public poolCollateralFtso;
-    FtsoMock public fAssetFtso;
+    AssetManagerSettings.Data private settings;
+    FakePriceReader private priceReader;
 
     struct CRData {
         uint256 vaultCR;
@@ -33,18 +34,24 @@ contract AssetManagerMock {
     }
 
     constructor (
-        address _liquidationStrategy, uint8 _assetMintingDecimals,
-        uint256 _minCollateralRatioBIPS, uint64 _lotSizeAMG, uint64 _assetMintingGranularityUBA,
-        FtsoMock _vaultCollateralFtso, FtsoMock _poolCollateralFtso, FtsoMock _fAssetFtso
+        address _wNat,
+        address _fAsset,
+        FakePriceReader _priceReader,
+        uint256 _minCollateralRatioBIPS,
+        uint64 _lotSizeAMG,
+        uint64 _assetMintingGranularityUBA,
+        uint8 _assetMintingDecimals
     ) {
-        settings.liquidationStrategy = _liquidationStrategy;
-        settings.assetMintingDecimals = _assetMintingDecimals;
+        // settings
+        settings.priceReader = address(_priceReader);
+        settings.fAsset = _fAsset;
         settings.lotSizeAMG = _lotSizeAMG;
         settings.assetMintingGranularityUBA = _assetMintingGranularityUBA;
+        settings.assetMintingDecimals = _assetMintingDecimals;
+        // local mock
+        wNat = _wNat;
+        priceReader = _priceReader;
         minCollateralRatioBIPS = _minCollateralRatioBIPS;
-        vaultCollateralFtso = _vaultCollateralFtso;
-        poolCollateralFtso = _poolCollateralFtso;
-        fAssetFtso = _fAssetFtso;
     }
 
     function liquidate(
@@ -64,7 +71,12 @@ contract AssetManagerMock {
         external view
         returns (AgentInfo.Info memory)
     {
-        return AgentMock(_agentVault).getInfo();
+        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
+        agentInfo.maxLiquidationAmountUBA = getMaxLiquidatedFAssetUBA(_agentVault);
+        (agentInfo.liquidationPaymentFactorVaultBIPS, agentInfo.liquidationPaymentFactorPoolBIPS) =
+            getLiquidationFactorsBips(_agentVault);
+        return agentInfo;
+
     }
 
     function getSettings()
@@ -78,34 +90,29 @@ contract AssetManagerMock {
         return settings.fAsset;
     }
 
-    ////////////////////////////////////////////////////////////////
-    // remove this when agent info holds the below data
+    function getWNat() external view returns (address) {
+        return wNat;
+    }
 
-    function getMaxLiquidatedFAssetUBA(address _agentVault) external view returns (uint256) {
+    ////////////////////////////////////////////////////////////////
+    // mock hacks
+
+    function getMaxLiquidatedFAssetUBA(address _agentVault) private view returns (uint256) {
         AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
         CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        (uint256 vaultFactor, uint256 poolFactor) = LiquidationStrategyMock(settings.liquidationStrategy)
-            .currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
+        (uint256 vaultFactor, uint256 poolFactor) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
         return convertAmgToUBA(Math.max(
             _maxLiquidationAmountAMG(agentInfo, cr.vaultCR, vaultFactor),
             _maxLiquidationAmountAMG(agentInfo, cr.poolCR, poolFactor)
         ));
     }
 
-    function getLiquidationFactorVaultBips(address _agentVault) external view returns (uint256 vaultFactor) {
+    function getLiquidationFactorsBips(address _agentVault) private view returns (uint256, uint256) {
         AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
         CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        (vaultFactor,) = LiquidationStrategyMock(settings.liquidationStrategy)
-            .currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
+        return _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
     }
 
-    function getLiquidationFactorPoolBips(address _agentVault) external view returns (uint256 poolFactor) {
-        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        (,poolFactor) = LiquidationStrategyMock(settings.liquidationStrategy)
-            .currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
-    }
-    
     ////////////////////////////////////////////////////////////////
     // liquidation
 
@@ -144,8 +151,7 @@ contract AssetManagerMock {
         returns (uint256 _liquidatedAMG, uint256 _payoutC1Wei, uint256 _payoutPoolWei)
     {
         // split liquidation payment between agent vault and pool
-        (uint256 vaultFactor, uint256 poolFactor) = LiquidationStrategyMock(settings.liquidationStrategy)
-            .currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
+        (uint256 vaultFactor, uint256 poolFactor) = _currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
         // calculate liquidation amount
         uint256 maxLiquidatedAMG = Math.max(
             _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR, vaultFactor),
@@ -162,7 +168,7 @@ contract AssetManagerMock {
     )
         internal view
         returns (CRData memory)
-    {   
+    {
         (uint256 vaultCR, uint256 amgToC1WeiPrice) = _getCollateralRatioBIPS(_agentInfo, false);
         (uint256 poolCR, uint256 amgToPoolWeiPrice) = _getCollateralRatioBIPS(_agentInfo, true);
         return CRData({
@@ -180,20 +186,23 @@ contract AssetManagerMock {
         private view
         returns (uint256, uint256)
     {
+        string memory fAssetSymbol = IERC20Metadata(settings.fAsset).symbol();
+        string memory vaultTokenSymbol = IERC20Metadata(address(_agentInfo.vaultCollateralToken)).symbol();
+        string memory poolTokenSymbol = IERC20Metadata(wNat).symbol();
         // assume both collaterals are erc20 tokens with 18 decimals
         uint256 redeemingUBA;
         uint256 collateralWei;
         uint256 ubaToWeiPrice;
-        (uint256 assetPrice,, uint256 assetFtsoDec) = fAssetFtso.getCurrentPriceWithDecimals();
+        (uint256 assetPrice,, uint256 assetFtsoDec) = priceReader.getPrice(fAssetSymbol);
         if (_pool) {
             redeemingUBA = _agentInfo.poolRedeemingUBA;
             collateralWei = _agentInfo.totalPoolCollateralNATWei;
-            (uint256 tokenPrice,, uint256 tokenFtsoDec) = poolCollateralFtso.getCurrentPriceWithDecimals();
+            (uint256 tokenPrice,, uint256 tokenFtsoDec) = priceReader.getPrice(poolTokenSymbol);
             ubaToWeiPrice = calcAmgToTokenWeiPrice(18, tokenPrice, tokenFtsoDec, assetPrice, assetFtsoDec);
         } else {
             redeemingUBA = _agentInfo.redeemingUBA;
             collateralWei = _agentInfo.totalVaultCollateralWei;
-            (uint256 tokenPrice,, uint256 tokenFtsoDec) = vaultCollateralFtso.getCurrentPriceWithDecimals();
+            (uint256 tokenPrice,, uint256 tokenFtsoDec) = priceReader.getPrice(vaultTokenSymbol);
             ubaToWeiPrice = calcAmgToTokenWeiPrice(18, tokenPrice, tokenFtsoDec, assetPrice, assetFtsoDec);
         }
         uint256 totalUBA = uint256(_agentInfo.mintedUBA) + uint256(redeemingUBA);
@@ -225,6 +234,9 @@ contract AssetManagerMock {
         return Math.min(maxLiquidatedAMG, _agentInfo.mintedUBA);
     }
 
+    ////////////////////////////////////////////////////////////////
+    // conversions
+
     function convertUBAToAmg(uint256 _valueUBA) internal view returns (uint256) {
         return _valueUBA / settings.assetMintingGranularityUBA;
     }
@@ -254,5 +266,39 @@ contract AssetManagerMock {
         // token decimals and ftso decimals typically never change.
         assert(expPlus >= expMinus);
         return _assetPrice.mulDiv(10 ** (expPlus - expMinus), _tokenPrice);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // liquidation strategy
+
+    uint256 public liquidationCollateralFactorBIPS;
+    uint256 public liquidationFactorVaultCollateralBIPS;
+
+    function _currentLiquidationFactorBIPS(
+        address /* _agentVault */,
+        uint256 _vaultCR,
+        uint256 _poolCR
+    )
+        internal view
+        returns (uint256 _c1FactorBIPS, uint256 _poolFactorBIPS)
+    {
+        uint256 factorBIPS = Math.min(liquidationFactorVaultCollateralBIPS, liquidationCollateralFactorBIPS);
+        // never exceed CR of tokens
+        if (_c1FactorBIPS > _vaultCR) {
+            _c1FactorBIPS = _vaultCR;
+        }
+        _poolFactorBIPS = factorBIPS - _c1FactorBIPS;
+        if (_poolFactorBIPS > _poolCR) {
+            _poolFactorBIPS = _poolCR;
+            _c1FactorBIPS = Math.min(factorBIPS - _poolFactorBIPS, _vaultCR);
+        }
+    }
+
+    function setLiquidationFactors(
+        uint256 _liquidationCollateralFactorBIPS,
+        uint256 _liquidationFactorVaultCollateralBIPS
+    ) external {
+        liquidationCollateralFactorBIPS = _liquidationCollateralFactorBIPS;
+        liquidationFactorVaultCollateralBIPS = _liquidationFactorVaultCollateralBIPS;
     }
 }

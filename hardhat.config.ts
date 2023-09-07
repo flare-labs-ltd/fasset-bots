@@ -6,15 +6,19 @@ import "@nomiclabs/hardhat-ethers"
 import "@nomiclabs/hardhat-truffle5"
 
 const config: HardhatUserConfig = {
+  // do not change, otherwise blazeswap will not work
   solidity: {
-    version: "0.8.20",
+    version: '0.8.20',
     settings: {
-      evmVersion: "london",
+      metadata: {
+        bytecodeHash: 'none',
+      },
+      evmVersion: 'london',
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 10000,
+      },
+    },
   },
   networks: {
     coston: {
@@ -39,7 +43,7 @@ const config: HardhatUserConfig = {
     target: "truffle-v5",
   },
   paths: {
-    sources: "./contracts/",
+    sources: "./contracts",
     cache: "./cache",
     artifacts: "./artifacts"
 },
