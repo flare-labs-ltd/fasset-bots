@@ -586,6 +586,10 @@ describe("Agent bot unit tests", async () => {
         };
         await agentBot.requestPaymentProof(redemption);
         expect(redemption.state).to.eq("paid");
+        // handleDailyTasks
+        expect(agentBot.latestProof).to.be.null;
+        await agentBot.handleDailyTasks(orm.em);
+        expect(agentBot.latestProof).to.be.null;
     });
 
     it("Should not handle corner cases - mock agent bot", async () => {

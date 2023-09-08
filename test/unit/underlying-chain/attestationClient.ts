@@ -13,12 +13,13 @@ import {
 } from "../../test-utils/test-bot-config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { SourceId } from "../../../src/verification/sources/sources";
-import { createAttestationHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
-import { artifacts } from "../../../src/utils/artifacts";
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 import { ORM } from "../../../src/config/orm";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 use(chaiAsPromised);
 
 const accountPrivateKey = requireEnv("USER_PRIVATE_KEY");
@@ -30,10 +31,12 @@ const finalizationBlocks: number = 6;
 
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
-describe.skip("Attestation client unit tests", async () => {
+describe("Attestation client unit tests", async () => {
     let attestationHelper: AttestationHelper;
     let walletHelper: BlockchainWalletHelper;
     let orm: ORM;
+    let blockChainIndexerClient: BlockchainIndexerHelper;
+    let dbWallet: DBWalletKeys;
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
@@ -47,52 +50,52 @@ describe.skip("Attestation client unit tests", async () => {
             indexerUrl,
             finalizationBlocks
         );
+        dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
     });
 
-    it("Should return round finalization", async () => {
-        const IStateConnector = artifacts.require("IStateConnector");
-        const stateConnector = await IStateConnector.at(STATE_CONNECTOR_ADDRESS);
-        const lastRound = Number(await stateConnector.lastFinalizedRoundId());
-        const finalized = await attestationHelper.roundFinalized(lastRound);
-        expect(finalized).to.be.true;
-        const round = lastRound * 10;
-        const finalized2 = await attestationHelper.roundFinalized(round);
-        expect(finalized2).to.be.false;
+    it("Should not obtain proofs - no attestation providers",async () => {
+        const localAttestationHelper = await createAttestationHelper(
+            sourceId,
+            [],
+            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
+            STATE_CONNECTOR_ADDRESS,
+            OWNER_ADDRESS,
+            indexerUrl,
+            finalizationBlocks
+        );
+        await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
+        .to.eventually.be.rejectedWith(`There aren't any attestation providers.`)
+        .and.be.an.instanceOf(Error);
     });
 
-    it("Should prove confirmed block height existence", async () => {
+    it("Should obtain proofs", async () => {
+        // request confirmed block height
         const windowSeconds = 100;
-        const requestConfirmedBlockHeight = await attestationHelper.proveConfirmedBlockHeightExists(windowSeconds);
-        expect(requestConfirmedBlockHeight).to.not.be.null;
-    });
-
-    it("Should prove payment proof", async () => {
+        const requestBlock = await attestationHelper.requestConfirmedBlockHeightExistsProof(windowSeconds);
+        // obtain to soon
+        const res1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round, requestBlock!.data);
+        expect(res1.finalized).to.be.false;
+        // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined, true);
-        // to make sure transaction is already in indexer
-        await sleep(2000);
-        // prove payment
-        const provePayment = await attestationHelper.provePayment(transaction, fundedAddressXRP, targetAddressXRP);
-        expect(provePayment).to.not.be.null;
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
-    });
-
-    it("Should prove balance decreasing transaction proof", async () => {
-        await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 2000000, ref, undefined, true);
-        // to make sure transaction is already in indexer
-        await sleep(3000);
-        // prove payment
-        const proveBalanceDecreasing = await attestationHelper.proveBalanceDecreasingTransaction(transaction, fundedAddressXRP);
-        expect(proveBalanceDecreasing).to.not.be.null;
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
-    });
-
-    it("Should prove referenced payment nonexistence", async () => {
-        const blockHeight = await attestationHelper.chain.getBlockHeight();
-        const block = (await attestationHelper.chain.getBlockAt(blockHeight - 2))!;
-        const requestConfirmedBlockHeight = await attestationHelper.proveReferencedPaymentNonexistence(
+        await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
+        let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
+        const finalBlock = currentBlockHeight + finalizationBlocks;
+        console.log(currentBlockHeight, finalBlock);
+        while (currentBlockHeight <= finalBlock) {
+            currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
+        }
+        console.log(currentBlockHeight, finalBlock);
+        const requestPayment = await attestationHelper.requestPaymentProof(transaction, fundedAddressXRP, targetAddressXRP);
+        // request balance decreasing
+        const requestDecreasing = await attestationHelper.requestBalanceDecreasingTransactionProof(transaction, fundedAddressXRP);
+        // request non payment
+        // const blockHeight = await attestationHelper.chain.getBlockHeight();
+        const blockId = (await attestationHelper.chain.getTransactionBlock(transaction))!;
+        const block = (await attestationHelper.chain.getBlockAt(blockId.number))!;
+        const requestNonPayment = await attestationHelper.requestReferencedPaymentNonexistenceProof(
             fundedAddressXRP,
             ref,
             toBN(2000000),
@@ -100,6 +103,29 @@ describe.skip("Attestation client unit tests", async () => {
             block.number,
             block.timestamp
         );
-        expect(requestConfirmedBlockHeight).to.not.be.null;
+
+        // wait for round finalizations
+        await attestationHelper.stateConnector.waitForRoundFinalization(requestBlock!.round);
+        await attestationHelper.stateConnector.waitForRoundFinalization(requestPayment!.round);
+        await attestationHelper.stateConnector.waitForRoundFinalization(requestDecreasing!.round);
+        await attestationHelper.stateConnector.waitForRoundFinalization(requestNonPayment!.round);
+
+        // obtain proofs
+        const proofBlock = await attestationHelper.stateConnector.obtainProof(requestBlock!.round, requestBlock!.data);
+        const proofPayment = await attestationHelper.stateConnector.obtainProof(requestPayment!.round, requestPayment!.data);
+        const proofDecreasing = await attestationHelper.stateConnector.obtainProof(requestDecreasing!.round, requestDecreasing!.data);
+        const proofNonPayment = await attestationHelper.stateConnector.obtainProof(requestNonPayment!.round, requestNonPayment!.data);
+        expect(proofBlock.finalized).to.be.true;
+        expect(proofPayment.finalized).to.be.true;
+        expect(proofDecreasing.finalized).to.be.true;
+        expect(proofNonPayment.finalized).to.be.true;
+
+        console.log(requestBlock);
+        console.log(requestPayment);
+        console.log(requestDecreasing);
+        console.log(requestNonPayment);
+
+        const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round-2, requestBlock!.data);
+        console.log(proofBlock1)
     });
 });

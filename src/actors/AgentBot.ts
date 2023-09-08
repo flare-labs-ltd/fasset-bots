@@ -133,6 +133,7 @@ export class AgentBot {
             const reference = requireEnv("OWNER_ADDRESS");
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
+            /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
                 throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
             }
