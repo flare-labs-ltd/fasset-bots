@@ -12,6 +12,7 @@ import "fasset/contracts/fasset/mock/FakePriceReader.sol";
 import "./AgentMock.sol";
 import "./AssetManagerMock.sol";
 
+import "hardhat/console.sol";
 
 contract AssetManagerMock {
     using MathUtils for uint256;
@@ -24,7 +25,6 @@ contract AssetManagerMock {
     uint256 public minCollateralRatioBIPS;
 
     AssetManagerSettings.Data private settings;
-    FakePriceReader private priceReader;
 
     struct CRData {
         uint256 vaultCR;
@@ -50,7 +50,6 @@ contract AssetManagerMock {
         settings.assetMintingDecimals = _assetMintingDecimals;
         // local mock
         wNat = _wNat;
-        priceReader = _priceReader;
         minCollateralRatioBIPS = _minCollateralRatioBIPS;
     }
 
@@ -72,11 +71,26 @@ contract AssetManagerMock {
         returns (AgentInfo.Info memory)
     {
         AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        agentInfo.maxLiquidationAmountUBA = getMaxLiquidatedFAssetUBA(_agentVault);
-        (agentInfo.liquidationPaymentFactorVaultBIPS, agentInfo.liquidationPaymentFactorPoolBIPS) =
-            getLiquidationFactorsBips(_agentVault);
+        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
+        agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
+        agentInfo.poolCollateralRatioBIPS = cr.poolCR;
+        (
+            agentInfo.liquidationPaymentFactorVaultBIPS,
+            agentInfo.liquidationPaymentFactorPoolBIPS
+        ) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
+        agentInfo.maxLiquidationAmountUBA = convertAmgToUBA(Math.max(
+            _maxLiquidationAmountAMG(
+                agentInfo,
+                cr.vaultCR,
+                agentInfo.liquidationPaymentFactorVaultBIPS
+            ),
+            _maxLiquidationAmountAMG(
+                agentInfo,
+                cr.poolCR,
+                agentInfo.liquidationPaymentFactorPoolBIPS
+            )
+        ));
         return agentInfo;
-
     }
 
     function getSettings()
@@ -92,25 +106,6 @@ contract AssetManagerMock {
 
     function getWNat() external view returns (address) {
         return wNat;
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // mock hacks
-
-    function getMaxLiquidatedFAssetUBA(address _agentVault) private view returns (uint256) {
-        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        (uint256 vaultFactor, uint256 poolFactor) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
-        return convertAmgToUBA(Math.max(
-            _maxLiquidationAmountAMG(agentInfo, cr.vaultCR, vaultFactor),
-            _maxLiquidationAmountAMG(agentInfo, cr.poolCR, poolFactor)
-        ));
-    }
-
-    function getLiquidationFactorsBips(address _agentVault) private view returns (uint256, uint256) {
-        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        return _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -186,29 +181,34 @@ contract AssetManagerMock {
         private view
         returns (uint256, uint256)
     {
-        string memory fAssetSymbol = IERC20Metadata(settings.fAsset).symbol();
-        string memory vaultTokenSymbol = IERC20Metadata(address(_agentInfo.vaultCollateralToken)).symbol();
-        string memory poolTokenSymbol = IERC20Metadata(wNat).symbol();
-        // assume both collaterals are erc20 tokens with 18 decimals
-        uint256 redeemingUBA;
+        IERC20Metadata _fAsset = IERC20Metadata(settings.fAsset);
+        IERC20Metadata token;
+        uint256 redeemingAMG;
         uint256 collateralWei;
-        uint256 ubaToWeiPrice;
-        (uint256 assetPrice,, uint256 assetFtsoDec) = priceReader.getPrice(fAssetSymbol);
         if (_pool) {
-            redeemingUBA = _agentInfo.poolRedeemingUBA;
+            token = IERC20Metadata(wNat);
+            redeemingAMG = convertUBAToAmg(_agentInfo.poolRedeemingUBA);
             collateralWei = _agentInfo.totalPoolCollateralNATWei;
-            (uint256 tokenPrice,, uint256 tokenFtsoDec) = priceReader.getPrice(poolTokenSymbol);
-            ubaToWeiPrice = calcAmgToTokenWeiPrice(18, tokenPrice, tokenFtsoDec, assetPrice, assetFtsoDec);
         } else {
-            redeemingUBA = _agentInfo.redeemingUBA;
+            token = IERC20Metadata(address(_agentInfo.vaultCollateralToken));
+            redeemingAMG = convertUBAToAmg(_agentInfo.redeemingUBA);
             collateralWei = _agentInfo.totalVaultCollateralWei;
-            (uint256 tokenPrice,, uint256 tokenFtsoDec) = priceReader.getPrice(vaultTokenSymbol);
-            ubaToWeiPrice = calcAmgToTokenWeiPrice(18, tokenPrice, tokenFtsoDec, assetPrice, assetFtsoDec);
         }
-        uint256 totalUBA = uint256(_agentInfo.mintedUBA) + uint256(redeemingUBA);
-        if (totalUBA == 0) return (1e10, ubaToWeiPrice); // nothing minted - ~infinite collateral ratio (but avoid overflows)
-        uint256 backingTokenWei = convertAmgToTokenWei(totalUBA, ubaToWeiPrice);
-        return (collateralWei.mulDiv(SafePct.MAX_BIPS, backingTokenWei), ubaToWeiPrice);
+        (uint256 assetPrice,, uint256 assetFtsoDecimals) =
+            IPriceReader(settings.priceReader).getPrice(_fAsset.symbol());
+        (uint256 tokenPrice,, uint256 tokenFtsoDecimals) =
+            IPriceReader(settings.priceReader).getPrice(token.symbol());
+        uint256 amgToTokenWeiPrice = calcAmgToTokenWeiPrice(
+            token.decimals(),
+            tokenPrice,
+            tokenFtsoDecimals,
+            assetPrice,
+            assetFtsoDecimals
+        );
+        uint256 totalAMG = uint256(convertUBAToAmg(_agentInfo.mintedUBA)) + uint256(redeemingAMG);
+        if (totalAMG == 0) return (1e10, amgToTokenWeiPrice); // nothing minted
+        uint256 backingTokenWei = convertAmgToTokenWei(totalAMG, amgToTokenWeiPrice);
+        return (collateralWei.mulDiv(SafePct.MAX_BIPS, backingTokenWei), amgToTokenWeiPrice);
     }
 
     function _maxLiquidationAmountAMG(
@@ -224,28 +224,38 @@ contract AssetManagerMock {
         if (targetRatioBIPS <= _collateralRatioBIPS) {
             return 0;               // agent already safe
         }
+        uint256 agentMintedAMG = convertUBAToAmg(_agentInfo.mintedUBA);
         if (_collateralRatioBIPS <= _factorBIPS) {
-            return _agentInfo.mintedUBA; // cannot achieve target - liquidate all
+            return agentMintedAMG; // cannot achieve target - liquidate all
         }
-        uint256 maxLiquidatedAMG = convertUBAToAmg(_agentInfo.mintedUBA)
-            .mulDivRoundUp(targetRatioBIPS - _collateralRatioBIPS, targetRatioBIPS - _factorBIPS);
+        uint256 maxLiquidatedAMG = agentMintedAMG.mulDivRoundUp(
+            targetRatioBIPS - _collateralRatioBIPS,
+            targetRatioBIPS - _factorBIPS
+        );
         // round up to whole number of lots
         maxLiquidatedAMG = maxLiquidatedAMG.roundUp(settings.lotSizeAMG);
-        return Math.min(maxLiquidatedAMG, _agentInfo.mintedUBA);
+        return Math.min(maxLiquidatedAMG, agentMintedAMG);
     }
 
     ////////////////////////////////////////////////////////////////
     // conversions
 
-    function convertUBAToAmg(uint256 _valueUBA) internal view returns (uint256) {
+    function convertUBAToAmg(
+        uint256 _valueUBA
+    ) internal view returns (uint256) {
         return _valueUBA / settings.assetMintingGranularityUBA;
     }
 
-    function convertAmgToUBA(uint256 _valueAMG) internal view returns (uint256) {
+    function convertAmgToUBA(
+        uint256 _valueAMG
+    ) internal view returns (uint256) {
         return _valueAMG * settings.assetMintingGranularityUBA;
     }
 
-    function convertAmgToTokenWei(uint256 _valueAMG, uint256 _amgToTokenWeiPrice) internal pure returns (uint256) {
+    function convertAmgToTokenWei(
+        uint256 _valueAMG,
+        uint256 _amgToTokenWeiPrice
+    ) internal pure returns (uint256) {
         return _valueAMG.mulDiv(_amgToTokenWeiPrice, AMG_TOKEN_WEI_PRICE_SCALE);
     }
 
@@ -282,7 +292,8 @@ contract AssetManagerMock {
         internal view
         returns (uint256 _c1FactorBIPS, uint256 _poolFactorBIPS)
     {
-        uint256 factorBIPS = Math.min(liquidationFactorVaultCollateralBIPS, liquidationCollateralFactorBIPS);
+        uint256 factorBIPS = liquidationCollateralFactorBIPS;
+        _c1FactorBIPS = Math.min(liquidationFactorVaultCollateralBIPS, factorBIPS);
         // never exceed CR of tokens
         if (_c1FactorBIPS > _vaultCR) {
             _c1FactorBIPS = _vaultCR;

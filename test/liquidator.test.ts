@@ -9,13 +9,15 @@ import { FlashLenderInstance } from '../typechain-truffle/contracts/FlashLender'
 import { LiquidatorInstance } from '../typechain-truffle/contracts/Liquidator'
 import { fXRP as fASSET, USDT as VAULT, WNAT as POOL } from './assets'
 
-
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 const MAX_INT = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
 type BNish = number | string | BN
 const toBN = (x: BNish) => new BN(x)
 const minBN = (a: BN, b: BN) => a.lt(b) ? a : b
+
+const LOT_SIZE_AMG = toBN(fASSET.lotSize).mul(toBN(10).pow(toBN(fASSET.amgDecimals)))
+const LOT_SIZE_UBA = toBN(fASSET.lotSize).mul(toBN(10).pow(toBN(fASSET.decimals)))
 
 const FakePriceReader = artifacts.require("FakePriceReader")
 const AssetManagerMock  = artifacts.require("AssetManagerMock")
@@ -104,33 +106,33 @@ contract("Tests for Liquidator contract", (accounts) => {
 
   async function getAgentCRs(agent: AgentMockInstance): Promise<[BN, BN]> {
     const agentInfo = await assetManager.getAgentInfo(agent.address)
-    return [agentInfo.vaultCollateralRatioBIPS, agentInfo.poolCollateralRatioBIPS]
+    return [
+      toBN(agentInfo.vaultCollateralRatioBIPS),
+      toBN(agentInfo.poolCollateralRatioBIPS)
+    ]
   }
 
   beforeEach(async function () {
-    // ideally, should be bf4c1c435583a2bb8d763765a34a46e376071c3b3d80e5bbac0950aeecdf31cb,
-    // otherwise you have to change blazeswap periphery library line 27 to below output
-    console.log("hash", keccak256(artifacts.require('BlazeSwapBasePair').bytecode))
     // set tokens
     fAsset = await ERC20Mock.new(fASSET.name, fASSET.symbol, fASSET.decimals)
     vault = await ERC20Mock.new(VAULT.name, VAULT.symbol, VAULT.decimals)
     pool = await ERC20Mock.new(POOL.name, POOL.symbol, POOL.decimals)
     // set up price reader
     priceReader = await FakePriceReader.new(accounts[0])
-    await priceReader.setDecimals(fASSET.symbol, fASSET.decimals)
-    await priceReader.setDecimals(VAULT.symbol, VAULT.decimals)
-    await priceReader.setDecimals(POOL.symbol, POOL.decimals)
+    await priceReader.setDecimals(fASSET.symbol, fASSET.ftsoDecimals)
+    await priceReader.setDecimals(VAULT.symbol, VAULT.ftsoDecimals)
+    await priceReader.setDecimals(POOL.symbol, POOL.ftsoDecimals)
     // set asset manager
     assetManager = await AssetManagerMock.new(
       pool.address,
       fAsset.address,
       priceReader.address,
       fASSET.minCrBips,
-      fASSET.lotSizeAMG,
-      fASSET.amgSizeUBA,
-      fASSET.decimals
+      LOT_SIZE_AMG,
+      toBN(10).pow(toBN(fASSET.amgDecimals)),
+      fASSET.decimals - fASSET.amgDecimals
     )
-    await assetManager.setLiquidationFactors(10_000, 12_000)
+    await assetManager.setLiquidationFactors(12_000, 10_000)
     // set agent
     agent = await AgentMock.new(assetManager.address, vault.address)
     // set up blazeswap
@@ -147,32 +149,37 @@ contract("Tests for Liquidator contract", (accounts) => {
 
   it("should use an agent in liquidation to execute an arbitrage", async () => {
     // set ftso and dex prices
-    await setFtsoPrices(5_000, 10_000, 133)
-    await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(VAULT.decimals + 8)))
-    await setDexPairPrice(vault, pool, 5_000, 133, toBN(10).pow(toBN(POOL.decimals + 10)))
+    await setFtsoPrices(50_000, 100_000, 1333)
+    await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(VAULT.decimals + 10)))
+    await setDexPairPrice(vault, pool, 5_000, 133, toBN(10).pow(toBN(POOL.decimals + 12)))
     // deposit enough collaterals and mint 40 lots
     await agent.depositVaultCollateral(toBN(10).pow(toBN(VAULT.decimals + 6)))
-    await agent.depositPoolCollateral(toBN(10).pow(toBN(VAULT.decimals + 4)))
-    await agent.mint(accounts[10], toBN(fASSET.lotSizeAMG).mul(toBN(fASSET.amgSizeUBA)).muln(40))
-    // price changes drop the vault collateral ratio to 3 / 4 of minCR
-    await setAgentVaultCR(assetManager, agent, toBN(fASSET.minCrBips).muln(3).divn(4))
-
+    await agent.depositPoolCollateral(toBN(10).pow(toBN(POOL.decimals + 8)))
+    await agent.mint(accounts[10], LOT_SIZE_UBA.muln(40))
+    // price changes drop the vault collateral ratio to 2 / 3 of minCR
+    const targetCR = toBN(fASSET.minCrBips).muln(2).divn(3)
+    await setAgentVaultCR(assetManager, agent, targetCR)
     const [vaultCR1, poolCR1] = await getAgentCRs(agent)
-    console.log("vaultCR", vaultCR1.toString())
-    console.log("poolCR", poolCR1.toString())
-
+    assert.isTrue(vaultCR1.eq(targetCR))
     // perform arbitrage by liquidation
+    const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
+    const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
     await liquidator.runArbitrage(agent.address, { from: accounts[11] })
-
-    const [vaultCR2, poolCR2] = await getAgentCRs(agent)
-    console.log("vaultCR", vaultCR2.toString())
-    console.log("poolCR", poolCR2.toString())
-
+    const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
+    const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
     // check that the new collateral ratio is at minCR
-    assert.isTrue(minBN(...await getAgentCRs(agent)).eqn(fASSET.minCrBips))
+    const [vaultCR2, poolCR2] = await getAgentCRs(agent)
+    console.log("vault CR", vaultCR2.toString())
+    console.log("pool CR ", poolCR2.toString())
 
-    const liquidatorEarnings = await vault.balanceOf(accounts[11])
-    console.log("liquidator earnings", liquidatorEarnings.toString())
+    assert.isTrue(minBN(...await getAgentCRs(agent)).gten(fASSET.minCrBips - 1))
+    // check that redeemer was compensated by agent's lost vault collateral
+    const earnings = await vault.balanceOf(accounts[11])
+    const agentLost = agentVaultBalanceBefore.sub(agentVaultBalanceAfter)
+    assert.isTrue(earnings.gte(agentLost))
+
+    console.log("earnings  ", earnings.toString())
+    console.log("agent lost", agentLost.toString())
   })
 
 })

@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
-import "./lib/ArbitrageStrategy.sol";
+import "./lib/LiquidationMath.sol";
 
+import "hardhat/console.sol";
 
 // always assume pool = wrapped native
 contract Liquidator is ILiquidator, Ownable {
@@ -46,7 +47,7 @@ contract Liquidator is ILiquidator, Ownable {
         vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
-        uint256 optimalVaultAmount = ArbitrageStrategy.getOptimalVaultCollateral(
+        uint256 optimalVaultAmount = LiquidatorMath.getUsedVaultCollateral(
             address(wNat),
             agentInfo,
             assetManagerSettings,
@@ -64,7 +65,7 @@ contract Liquidator is ILiquidator, Ownable {
                 _blazeSwap
             )
         );
-        // send earnings to sender
+        // send earnings to sender (have to fix so they are not stolen in onFlashLoan)
         vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
     }
 
@@ -107,25 +108,32 @@ contract Liquidator is ILiquidator, Ownable {
         IBlazeSwapRouter _blazeSwap,
         uint256 _vaultAmount
     ) internal {
+        IERC20 _poolToken = wNat; // gas savings
         // swap vault collateral for f-asset
+        _vaultToken.approve(address(_blazeSwap), _vaultAmount);
         (, uint256[] memory obtainedFAsset) = _blazeSwap.swapExactTokensForTokens(
             _vaultAmount, 0,
             _toDynamicArray(address(_vaultToken), address(_fAsset)),
             address(this),
             block.timestamp
         );
+        _vaultToken.approve(address(_blazeSwap), 0); // cleanup
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
-            obtainedFAsset[0]
+            obtainedFAsset[1]
         );
         // swap pool for vault collateral
-        _blazeSwap.swapExactTokensForTokens(
-            obtainedPool, 0,
-            _toDynamicArray(address(wNat), address(_vaultToken)),
-            address(this),
-            block.timestamp
-        );
+        if (obtainedPool > 0) {
+            _poolToken.approve(address(_blazeSwap), obtainedPool);
+            _blazeSwap.swapExactTokensForTokens(
+                obtainedPool, 0,
+                _toDynamicArray(address(_poolToken), address(_vaultToken)),
+                address(this),
+                block.timestamp
+            );
+            _poolToken.approve(address(_blazeSwap), 0); // cleanup
+        }
     }
 
     function withdrawToken(IERC20 token) external onlyOwner {

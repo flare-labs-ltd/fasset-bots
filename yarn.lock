@@ -1493,7 +1493,7 @@
     "@types/node" "*"
     "@types/responselike" "^1.0.0"
 
-"@types/chai@^4.2.0", "@types/chai@^4.3.5":
+"@types/chai@^4.2.0":
   version "4.3.6"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.3.6.tgz#7b489e8baf393d5dd1266fb203ddd4ea941259e6"
   integrity sha512-VOVRLM1mBxIRxydiViqPcKn6MIxZytrbMpd6RJLIWKxUNr3zux8no0Oc7kJx0WAPIitgZ0gkrDS+btlqQpubpw==
@@ -2619,7 +2619,7 @@ cbor@^5.2.0:
     bignumber.js "^9.0.1"
     nofilter "^1.0.4"
 
-chai@^4.2.0, chai@^4.3.8:
+chai@^4.2.0:
   version "4.3.8"
   resolved "https://registry.yarnpkg.com/chai/-/chai-4.3.8.tgz#40c59718ad6928da6629c70496fe990b2bb5b17c"
   integrity sha512-vX4YvVVtxlfSZ2VecZgFUTU5qPCYsobVI2O9FmwEXBhDigYGQA6jRXCycIs1yJnnWbZ6/+a2zNIF5DfVCcJBFQ==
@@ -5073,7 +5073,7 @@ hardhat@2.4.3:
     uuid "^3.3.2"
     ws "^7.4.6"
 
-hardhat@^2.9.9:
+hardhat@^2.17.1:
   version "2.17.2"
   resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.17.2.tgz#250a8c8e76029e9bfbfb9b9abee68d5b350b5d4a"
   integrity sha512-oUv40jBeHw0dKpbyQ+iH9cmNMziweLoTW3MnkNxJ2Gc0KGLrQR/1n4vV4xY60zn2LdmRgnwPqy3CgtY0mfwIIA==

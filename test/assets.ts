@@ -3,18 +3,21 @@ export const fXRP = {
   symbol: "fXRP",
   decimals: 6,
   minCrBips: 15_000,
-  lotSizeAMG: "2000000",
-  amgSizeUBA: "100"
+  amgDecimals: 2,
+  lotSize: 20,
+  ftsoDecimals: 5
 }
 
 export const USDT = {
   name: "Tether USD",
   symbol: "USDT",
-  decimals: 18
+  decimals: 18,
+  ftsoDecimals: 5
 }
 
 export const WNAT = {
   name: "Wrapped NAT",
   symbol: "WNAT",
-  decimals: 18
+  decimals: 18,
+  ftsoDecimals: 5
 }

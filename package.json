@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "description": "Liquidator bot for the f-asset bridge on the Flare network",
   "scripts": {
-    "compile": "rimraf typechain-types typechain-truffle && yarn hardhat compile && yarn typechain-truffle-v5 && yarn typechain-ethers-v6",
+    "compile": "yarn replace-blazeswap-hash; rimraf typechain-types typechain-truffle && yarn hardhat compile && yarn typechain-truffle-v5 && yarn typechain-ethers-v6",
     "typechain-ethers-v6": "yarn typechain --target=ethers-v6 --out-dir typechain-ethers \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
     "typechain-truffle-v5": "yarn typechain --target=truffle-v5 --out-dir typechain-truffle \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
+    "replace-blazeswap-hash": "./scripts/replace-blazeswap-hash.sh",
     "test": "yarn hardhat test"
   },
   "license": "MIT",
@@ -18,11 +19,9 @@
     "@typechain/hardhat": "^8.0.3",
     "@typechain/truffle-v5": "^8.0.6",
     "@typechain/web3-v1": "^6.0.6",
-    "@types/chai": "^4.3.5",
     "@types/dotenv": "^8.2.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.7",
-    "chai": "^4.3.8",
     "hardhat": "^2.17.1",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
