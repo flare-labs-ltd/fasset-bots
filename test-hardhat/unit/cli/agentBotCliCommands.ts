@@ -26,7 +26,7 @@ use(spies);
 
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
-const StateConnector = artifacts.require('StateConnectorMock');
+const StateConnector = artifacts.require("StateConnectorMock");
 const fAssetSymbol = "FtestXRP";
 
 describe("Bot cli commands unit tests", async () => {
@@ -73,7 +73,7 @@ describe("Bot cli commands unit tests", async () => {
                         decimals: 6,
                         amgDecimals: 0,
                         requireEOAProof: false,
-                        finalizationBlocks: 6
+                        finalizationBlocks: 6,
                     },
                     wallet: new MockChainWallet(chain),
                     blockchainIndexerClient: new MockIndexer("", chainId, chain),

@@ -239,7 +239,6 @@ describe("Agent bot unit tests", async () => {
         expect(spyProof).to.have.been.called.once;
     });
 
-
     it("Should not receive proof 3 - not finalized", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");

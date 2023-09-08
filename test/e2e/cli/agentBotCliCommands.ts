@@ -51,7 +51,6 @@ describe("AgentBot cli commands unit tests", async () => {
     });
 });
 
-
 describe("AgentBot cli commands unit tests", async () => {
     let botCliCommands: BotCliCommands;
     let accounts: string[];
@@ -74,8 +73,6 @@ describe("AgentBot cli commands unit tests", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fAssetSymbol);
         const agent = await botCliCommands.createAgentVault();
-        console.log(agent)
         expect(agent).to.be.null;
     });
-
 });

@@ -94,7 +94,6 @@ export class AgentEntity {
 
     @Property({ nullable: true })
     dailyProofRequestData?: string;
-
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -198,7 +197,7 @@ export class AgentRedemption {
 
 export enum DailyProofState {
     WAITING_PROOF = "waitingProof",
-    OBTAINED_PROOF = "obtainedProof"
+    OBTAINED_PROOF = "obtainedProof",
 }
 
 export enum AgentMintingState {

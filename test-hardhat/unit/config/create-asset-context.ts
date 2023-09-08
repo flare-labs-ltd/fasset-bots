@@ -54,7 +54,7 @@ describe("Create asset context unit tests", async () => {
                 decimals: 6,
                 amgDecimals: 6,
                 requireEOAProof: false,
-                finalizationBlocks: 6
+                finalizationBlocks: 6,
             },
             blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),
@@ -74,7 +74,7 @@ describe("Create asset context unit tests", async () => {
                 decimals: 6,
                 amgDecimals: 6,
                 requireEOAProof: false,
-                finalizationBlocks: 6
+                finalizationBlocks: 6,
             },
             blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),

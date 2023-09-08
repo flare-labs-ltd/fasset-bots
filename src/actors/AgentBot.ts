@@ -22,7 +22,6 @@ import {
     XRP_ACTIVATE_BALANCE,
     requireEnv,
     toBN,
-    toBNExp,
 } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
 import { web3 } from "../utils/web3";
