@@ -4,5 +4,4 @@ import { keccak256 } from '@ethersproject/keccak256'
 // importing blazeswap makes weird things happen and this is how to get the correct hash
 
 const BlazeSwapBasePair = require('../artifacts/blazeswap/contracts/core/BlazeSwapBasePair.sol/BlazeSwapBasePair.json')
-const hash = keccak256(BlazeSwapBasePair.bytecode).slice(2)
-console.log(hash)
+console.log(keccak256(BlazeSwapBasePair.bytecode).slice(2))

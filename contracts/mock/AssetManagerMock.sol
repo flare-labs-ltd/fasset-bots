@@ -158,6 +158,32 @@ contract AssetManagerMock {
         _payoutPoolWei = convertAmgToTokenWei(_liquidatedAMG.mulBips(poolFactor), _cr.amgToPoolWeiPrice);
     }
 
+        function _maxLiquidationAmountAMG(
+        AgentInfo.Info memory _agentInfo,
+        uint256 _collateralRatioBIPS,
+        uint256 _factorBIPS
+    )
+        private view
+        returns (uint256)
+    {
+        // otherwise, liquidate just enough to get agent to safety
+        uint256 targetRatioBIPS = minCollateralRatioBIPS;
+        if (targetRatioBIPS <= _collateralRatioBIPS) {
+            return 0;               // agent already safe
+        }
+        uint256 agentMintedAMG = convertUBAToAmg(_agentInfo.mintedUBA);
+        if (_collateralRatioBIPS <= _factorBIPS) {
+            return agentMintedAMG; // cannot achieve target - liquidate all
+        }
+        uint256 maxLiquidatedAMG = agentMintedAMG.mulDivRoundUp(
+            targetRatioBIPS - _collateralRatioBIPS,
+            targetRatioBIPS - _factorBIPS
+        );
+        // round up to whole number of lots
+        maxLiquidatedAMG = maxLiquidatedAMG.roundUp(settings.lotSizeAMG);
+        return Math.min(maxLiquidatedAMG, agentMintedAMG);
+    }
+
     function _getCollateralRatiosBIPS(
         AgentInfo.Info memory _agentInfo
     )
@@ -209,32 +235,6 @@ contract AssetManagerMock {
         if (totalAMG == 0) return (1e10, amgToTokenWeiPrice); // nothing minted
         uint256 backingTokenWei = convertAmgToTokenWei(totalAMG, amgToTokenWeiPrice);
         return (collateralWei.mulDiv(SafePct.MAX_BIPS, backingTokenWei), amgToTokenWeiPrice);
-    }
-
-    function _maxLiquidationAmountAMG(
-        AgentInfo.Info memory _agentInfo,
-        uint256 _collateralRatioBIPS,
-        uint256 _factorBIPS
-    )
-        private view
-        returns (uint256)
-    {
-        // otherwise, liquidate just enough to get agent to safety
-        uint256 targetRatioBIPS = minCollateralRatioBIPS;
-        if (targetRatioBIPS <= _collateralRatioBIPS) {
-            return 0;               // agent already safe
-        }
-        uint256 agentMintedAMG = convertUBAToAmg(_agentInfo.mintedUBA);
-        if (_collateralRatioBIPS <= _factorBIPS) {
-            return agentMintedAMG; // cannot achieve target - liquidate all
-        }
-        uint256 maxLiquidatedAMG = agentMintedAMG.mulDivRoundUp(
-            targetRatioBIPS - _collateralRatioBIPS,
-            targetRatioBIPS - _factorBIPS
-        );
-        // round up to whole number of lots
-        maxLiquidatedAMG = maxLiquidatedAMG.roundUp(settings.lotSizeAMG);
-        return Math.min(maxLiquidatedAMG, agentMintedAMG);
     }
 
     ////////////////////////////////////////////////////////////////

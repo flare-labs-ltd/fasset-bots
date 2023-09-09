@@ -47,16 +47,12 @@ contract AgentMock {
 
     function payoutFromVault(address _target, uint256 _amount) external returns (uint256) {
         info.totalVaultCollateralWei -= _amount;
-        uint256 balance = vaultCollateralToken.balanceOf(address(this));
-        if (balance < _amount) _amount = balance;
         vaultCollateralToken.transfer(_target, _amount);
         return _amount;
     }
 
     function payoutFromPool(address _target, uint256 _amount) external returns (uint256) {
         info.totalPoolCollateralNATWei -= _amount;
-        uint256 balance = poolCollateralToken.balanceOf(address(this));
-        if (balance < _amount) _amount = balance;
         poolCollateralToken.transfer(_target, _amount);
         return _amount;
     }

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
-import "./lib/LiquidationMath.sol";
+import "./lib/LiquidatorMath.sol";
 
 import "hardhat/console.sol";
 
@@ -69,6 +69,7 @@ contract Liquidator is ILiquidator, Ownable {
         vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
     }
 
+    // think this through!
     function onFlashLoan(
         address /* _initiator */,
         address _token,
@@ -76,25 +77,30 @@ contract Liquidator is ILiquidator, Ownable {
         uint256 _fee,
         bytes calldata _data
     ) external returns (bytes32) {
-        (
-            IFAsset _fAsset,
-            IAssetManager _assetManager,
-            IIAgentVault _agentVault,
-            IBlazeSwapRouter _blazeSwap
-        ) = abi.decode(_data, (
-            IFAsset,
-            IAssetManager,
-            IIAgentVault,
-            IBlazeSwapRouter
-        ));
-        _executeArbitrage(
-            IERC20(_token),
-            _fAsset,
-            _assetManager,
-            _agentVault,
-            _blazeSwap,
-            _amount
-        );
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        require(balance == _amount, "Incorrect flash loan amount");
+        {
+            // scope to avoid stack too deep error
+            (
+                IFAsset _fAsset,
+                IAssetManager _assetManager,
+                IIAgentVault _agentVault,
+                IBlazeSwapRouter _blazeSwap
+            ) = abi.decode(_data, (
+                IFAsset,
+                IAssetManager,
+                IIAgentVault,
+                IBlazeSwapRouter
+            ));
+            _executeArbitrage(
+                IERC20(_token),
+                _fAsset,
+                _assetManager,
+                _agentVault,
+                _blazeSwap,
+                _amount
+            );
+        }
         // approve flash loan spending to flash lender
         IERC20(_token).approve(address(msg.sender), _amount + _fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
@@ -117,7 +123,7 @@ contract Liquidator is ILiquidator, Ownable {
             address(this),
             block.timestamp
         );
-        _vaultToken.approve(address(_blazeSwap), 0); // cleanup
+        _vaultToken.approve(address(_blazeSwap), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -132,7 +138,7 @@ contract Liquidator is ILiquidator, Ownable {
                 address(this),
                 block.timestamp
             );
-            _poolToken.approve(address(_blazeSwap), 0); // cleanup
+            _poolToken.approve(address(_blazeSwap), 0);
         }
     }
 

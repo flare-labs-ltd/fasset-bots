@@ -1,5 +1,4 @@
 import { BN } from 'bn.js'
-import { keccak256 } from '@ethersproject/keccak256'
 import { FakePriceReaderInstance } from '../typechain-truffle/fasset/contracts/fasset/mock/FakePriceReader'
 import { ERC20MockInstance } from '../typechain-truffle/contracts/mock/ERC20Mock'
 import { AssetManagerMockInstance } from '../typechain-truffle/contracts/mock/AssetManagerMock'
@@ -74,7 +73,7 @@ contract("Tests for Liquidator contract", (accounts) => {
   }
 
   // mocks asset price increase
-  async function setAgentVaultCR(
+  async function setAgentVaultCr(
     assetManager: AssetManagerMockInstance,
     agent: AgentMockInstance,
     crBips: BNish
@@ -83,7 +82,7 @@ contract("Tests for Liquidator contract", (accounts) => {
     const totalMintedUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.redeemingUBA))
     const vaultCollateralWei = toBN(agentInfo.totalVaultCollateralWei)
     // calculate necessary price of asset, expressed in vault collateral
-    // P(Vw, Fu) = v / (f CR)
+    // P(Vw, Fu) = v / (f Cr)
     // P(Vw, Fu) = P(Vw, S) * P(S, Fu)
     const assetUBAPriceVaultWei = vaultCollateralWei
       .muln(10_000)
@@ -104,7 +103,7 @@ contract("Tests for Liquidator contract", (accounts) => {
     await priceReader.setPrice(fASSET.symbol, assetPriceUSD)
   }
 
-  async function getAgentCRs(agent: AgentMockInstance): Promise<[BN, BN]> {
+  async function getAgentCrsBips(agent: AgentMockInstance): Promise<[BN, BN]> {
     const agentInfo = await assetManager.getAgentInfo(agent.address)
     return [
       toBN(agentInfo.vaultCollateralRatioBIPS),
@@ -147,7 +146,7 @@ contract("Tests for Liquidator contract", (accounts) => {
     liquidator = await Liquidator.new(pool.address, flashLender.address, blazeSwap.address)
   })
 
-  it("should use an agent in liquidation to execute an arbitrage", async () => {
+  it("should liquidate an agent with vault cr below min cr", async () => {
     // set ftso and dex prices
     await setFtsoPrices(50_000, 100_000, 1333)
     await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(VAULT.decimals + 10)))
@@ -156,30 +155,23 @@ contract("Tests for Liquidator contract", (accounts) => {
     await agent.depositVaultCollateral(toBN(10).pow(toBN(VAULT.decimals + 6)))
     await agent.depositPoolCollateral(toBN(10).pow(toBN(POOL.decimals + 8)))
     await agent.mint(accounts[10], LOT_SIZE_UBA.muln(40))
-    // price changes drop the vault collateral ratio to 2 / 3 of minCR
-    const targetCR = toBN(fASSET.minCrBips).muln(2).divn(3)
-    await setAgentVaultCR(assetManager, agent, targetCR)
-    const [vaultCR1, poolCR1] = await getAgentCRs(agent)
-    assert.isTrue(vaultCR1.eq(targetCR))
+    // price changes drop the vault collateral ratio to 120% below minCr = 150%
+    await setAgentVaultCr(assetManager, agent, 12_000)
+    const [vaultCrBeforeLiquidation, poolCrBeforeLiquidation] = await getAgentCrsBips(agent)
+    assert.isTrue(vaultCrBeforeLiquidation.eqn(12_000))
     // perform arbitrage by liquidation
     const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
     const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
     await liquidator.runArbitrage(agent.address, { from: accounts[11] })
     const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
     const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
-    // check that the new collateral ratio is at minCR
-    const [vaultCR2, poolCR2] = await getAgentCRs(agent)
-    console.log("vault CR", vaultCR2.toString())
-    console.log("pool CR ", poolCR2.toString())
-
-    assert.isTrue(minBN(...await getAgentCRs(agent)).gten(fASSET.minCrBips - 1))
+    // check that the new collateral ratio is at minCr
+    const crAfterLiquidation = minBN(...await getAgentCrsBips(agent))
+    assert.isTrue(crAfterLiquidation.gten(fASSET.minCrBips - 1))
     // check that redeemer was compensated by agent's lost vault collateral
     const earnings = await vault.balanceOf(accounts[11])
     const agentLost = agentVaultBalanceBefore.sub(agentVaultBalanceAfter)
     assert.isTrue(earnings.gte(agentLost))
-
-    console.log("earnings  ", earnings.toString())
-    console.log("agent lost", agentLost.toString())
   })
 
 })
