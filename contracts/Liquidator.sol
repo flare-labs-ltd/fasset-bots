@@ -14,7 +14,7 @@ import "hardhat/console.sol";
 enum FlashLoanLockType {
     INACTIVE,
     CALL,
-    FINISH_CALL
+    END_CALL
 }
 
 // always assume pool = wrapped native
@@ -40,13 +40,16 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
     modifier flashLoanInitiatorLock() {
         flashLoanLockType = FlashLoanLockType.CALL;
         _;
+        // after flash loaning there is no external contract calls
+        require(flashLoanLockType == FlashLoanLockType.END_CALL,
+            "Flash loan not ended by onFlashLoan");
         flashLoanLockType = FlashLoanLockType.INACTIVE;
     }
 
     modifier flashLoanReceiverLock() {
         require(flashLoanLockType == FlashLoanLockType.CALL,
             "Flash loan not initiated by runArbitrageWithCustomParams");
-        flashLoanLockType = FlashLoanLockType.FINISH_CALL;
+        flashLoanLockType = FlashLoanLockType.END_CALL;
         _;
     }
 
