@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
@@ -10,12 +11,21 @@ import "./lib/LiquidatorMath.sol";
 
 import "hardhat/console.sol";
 
+enum FlashLoanLockType {
+    INACTIVE,
+    CALL,
+    FINISH_CALL
+}
+
 // always assume pool = wrapped native
-contract Liquidator is ILiquidator, Ownable {
+contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
 
     IWNat public immutable wNat; // wrapped native address is constant
     IERC3156FlashLender public flashLender;
     IBlazeSwapRouter public blazeswap;
+
+    // needed for flash loan to only get executed once from runArbitrage
+    FlashLoanLockType private flashLoanLockType;
 
     constructor(
         IWNat _wNat,
@@ -25,6 +35,19 @@ contract Liquidator is ILiquidator, Ownable {
         wNat = _wNat;
         flashLender = _flashLender;
         blazeswap = _blazeSwap;
+    }
+
+    modifier flashLoanInitiatorLock() {
+        flashLoanLockType = FlashLoanLockType.CALL;
+        _;
+        flashLoanLockType = FlashLoanLockType.INACTIVE;
+    }
+
+    modifier flashLoanReceiverLock() {
+        require(flashLoanLockType == FlashLoanLockType.CALL,
+            "Flash loan not initiated by runArbitrageWithCustomParams");
+        flashLoanLockType = FlashLoanLockType.FINISH_CALL;
+        _;
     }
 
     function runArbitrage(
@@ -37,7 +60,7 @@ contract Liquidator is ILiquidator, Ownable {
         IIAgentVault _agentVault,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwap
-    ) public {
+    ) public flashLoanInitiatorLock nonReentrant {
         // extrapolate data
         IAssetManager assetManager = _agentVault.assetManager();
         AssetManagerSettings.Data memory assetManagerSettings = assetManager.getSettings();
@@ -69,38 +92,43 @@ contract Liquidator is ILiquidator, Ownable {
         vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
     }
 
-    // think this through!
+    // dangerous: think this through!
+    // cannot reenter due to flashLoanReceiverLock!
+    // can only be run through runArbitrageWithCustomParams and once!
+    // previous point makes sure _token is always vault collateral
+    // tokens are transfered to owner at runArbitrageWithCustomParams,
+    // so contract has zero token balance at each call!
     function onFlashLoan(
         address /* _initiator */,
         address _token,
         uint256 _amount,
         uint256 _fee,
         bytes calldata _data
-    ) external returns (bytes32) {
+    ) external flashLoanReceiverLock returns (bytes32) {
+        // check that starting contract vault collateral balance
+        // is correct (note that anyone can call onFlashLoan)
         uint256 balance = IERC20(_token).balanceOf(address(this));
         require(balance == _amount, "Incorrect flash loan amount");
-        {
-            // scope to avoid stack too deep error
-            (
-                IFAsset _fAsset,
-                IAssetManager _assetManager,
-                IIAgentVault _agentVault,
-                IBlazeSwapRouter _blazeSwap
-            ) = abi.decode(_data, (
-                IFAsset,
-                IAssetManager,
-                IIAgentVault,
-                IBlazeSwapRouter
-            ));
-            _executeArbitrage(
-                IERC20(_token),
-                _fAsset,
-                _assetManager,
-                _agentVault,
-                _blazeSwap,
-                _amount
-            );
-        }
+        // execute arbitrage
+        (
+            IFAsset _fAsset,
+            IAssetManager _assetManager,
+            IIAgentVault _agentVault,
+            IBlazeSwapRouter _blazeSwap
+        ) = abi.decode(_data, (
+            IFAsset,
+            IAssetManager,
+            IIAgentVault,
+            IBlazeSwapRouter
+        ));
+        _executeArbitrage(
+            IERC20(_token),
+            _fAsset,
+            _assetManager,
+            _agentVault,
+            _blazeSwap,
+            _amount
+        );
         // approve flash loan spending to flash lender
         IERC20(_token).approve(address(msg.sender), _amount + _fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");

@@ -20,26 +20,39 @@ Another requirement is the f-asset flash loan accessibility. This will be solved
 
 ## How it works
 
-Defining the following variables (bound to a DEX `d` and an agent `a`):
-- `Vd`: the vault collateral reserve of DEX `d`,
-- `Fd`: the f-asset reserve of DEX `d`,
-- `δ`: the DEX's fee (for uniswap hardcoded to 0.3%),
+Every agent in the f-asset system holds two types of collatera - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
+- flash loan an optimal value of vault collateral,
+- swap vault collateral for f-asset on a given dex,
+- liquidate obtained f-asset and receive vault and pool collateral,
+- swap pool collateral on another given dex for vault collateral,
+- repay the flash loan (plus possible fee) and take whatever remains.
+
+Note that a dual strategy is possible, starting with pool collateral instead of vault collateral. Two reasons we start with vault collateral are:
+- we expect dexes with stablecoin/f-asset pairs to be better liquidated and more stable,
+- liquidation usually outputs less pool collateral than vault collateral, so the second swap will consume less fees.
+
+The contract uses Blazeswap as the default dex, but any v2-uniswap interfaced constant product dex can be used. Also note that flash loan is assumed to have a fixed (or no) fee.
+
+### Cauculations
+
+Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / vault collateral pair dex, and `a` an agent in liquidation. We define the following variables:
+- `Vd1`: the vault collateral reserve of dex `d1`,
+- `Fd1`: the f-asset reserve of dex `d1`,
+- `Wd2`: the pool collateral reserve of dex `d2`,
+- `Vd2`: the vault collateral reserve of dex `d2`,
+- `δ1`: dex1's fee (for uniswap hardcoded to 0.3%),
+- `δ2`: dex2's fee (for uniswap hardcoded to 0.3%),
 - `Fa`: the total f-asset minted/backed by agent `a`,
-- `CRc`: current ratio between agent's collateral and the value of backed f-assets,
-- `CRt`: target ratio between agent's collateral and the value of backed f-assets,
-- `Ra`: reward ratio at which the value of f-asset is priced during liquidation (e.g. 1.1),
-- `P`: the f-asset/collateral price on the Flare nework price oracle.
+- `RV`: vault collateral reward ratio for f-asset liquidation,
+- `RW`: pool collateral reward ratio for f-asset liquidation,
+- `fm`: maximum liquidated f-asset (before getting agent back to safety),
+- `PV`: the f-asset price in vault collateral, determined using Flare nework price oracle,
+- `PW`: the f-asset price in pool collateral, determined using Flare nework price oracle.
 
-From those vaules we can derive
-- `f(v) = Fd v (1 - δ) / (v (1 - δ) + Vd)`: obtained f-assets when swapping `v` collateral for f-asset on a DEX `d`,
-- `fm = Fa (CRt - CRc) / (CRt - Ra)`: the max amount of liquidated f-asset,
-- `vm = fm Vd / ((1 - δ) (Fd - fm))`: the amount of collateral that when swapped produces `fm` f-assets,
-- `vo' = Vd Fd Ra P - 1 / (1 - δ)`: the amount of collateral that maximizes the simplified profit function `M'(v) = f(v) Ra P - v`,
-- `vo = min(vo', vm)`: the amount of collateral that maximizes the actual profit function when accounting for the max amount of liquidated f-asset `M(v) = min(f(v), fm) Ra P - v`,
-- `profit = f(vo) Ra P - vo`: profit after the arbitrage.
+From those vaules we can derive:
+- `fd1(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on a DEX `d1`,
+- `fd2(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on a DEX `d2`,
+- `vm = fm Vd1 / ((1 - δ1) (Fd1 - fm))`: the amount of vault collateral that when swapped on dex `d1` produces `fm` f-assets,
+- `profit(v) = L(min(fd1(v), fm)) - v`, where `L(f) = f PV RV + fd2(f PW RW)`: vault collateral profit of our arbitrage strategy.
 
-Note that the agent carries two types of collateral:
-- vault collateral (some stablecoin or ETH),
-- pool collateral (wrapped native).
-
-If agent's vault collateral does not cover the liquidation, the pool collateral is used. This is not yet implemented, but the idea is that when obtained, the pool collateral is swapped back to vault collateral and used to repay the flash loan. The math gets complicated tho and we assume it should not happen often anyway.
+Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.

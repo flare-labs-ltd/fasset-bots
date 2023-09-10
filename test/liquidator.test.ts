@@ -29,6 +29,8 @@ const FlashLender = artifacts.require("FlashLender")
 const Liquidator = artifacts.require("Liquidator")
 
 contract("Tests for Liquidator contract", (accounts) => {
+  let liquidatorAccount = accounts[10]
+
   let priceReader: FakePriceReaderInstance
   let assetManager: AssetManagerMockInstance
   let fAsset: ERC20MockInstance
@@ -149,8 +151,8 @@ contract("Tests for Liquidator contract", (accounts) => {
   it("should liquidate an agent with vault cr below min cr", async () => {
     // set ftso and dex prices
     await setFtsoPrices(50_000, 100_000, 1333)
-    await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(VAULT.decimals + 10)))
-    await setDexPairPrice(vault, pool, 5_000, 133, toBN(10).pow(toBN(POOL.decimals + 12)))
+    await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(fASSET.decimals + 10)))
+    await setDexPairPrice(vault, pool, 5_000, 133, toBN(10).pow(toBN(VAULT.decimals + 12)))
     // deposit enough collaterals and mint 40 lots
     await agent.depositVaultCollateral(toBN(10).pow(toBN(VAULT.decimals + 6)))
     await agent.depositPoolCollateral(toBN(10).pow(toBN(POOL.decimals + 8)))
@@ -160,18 +162,22 @@ contract("Tests for Liquidator contract", (accounts) => {
     const [vaultCrBeforeLiquidation, poolCrBeforeLiquidation] = await getAgentCrsBips(agent)
     assert.isTrue(vaultCrBeforeLiquidation.eqn(12_000))
     // perform arbitrage by liquidation
+    const { 0: vaultReserve, 1: poolReserve } = await blazeSwap.getReserves(vault.address, pool.address)
     const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
     const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
-    await liquidator.runArbitrage(agent.address, { from: accounts[11] })
+    await liquidator.runArbitrage(agent.address, { from: liquidatorAccount })
     const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
     const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
-    // check that the new collateral ratio is at minCr
+    // check that agent's losses were converted into liquidator gained vault collateral
     const crAfterLiquidation = minBN(...await getAgentCrsBips(agent))
     assert.isTrue(crAfterLiquidation.gten(fASSET.minCrBips - 1))
     // check that redeemer was compensated by agent's lost vault collateral
-    const earnings = await vault.balanceOf(accounts[11])
+    const earnings = await vault.balanceOf(liquidatorAccount)
     const agentLost = agentVaultBalanceBefore.sub(agentVaultBalanceAfter)
     assert.isTrue(earnings.gte(agentLost))
+  })
+
+  it("should liquidate an agent with pool cr below min cr", async () => {
   })
 
 })
