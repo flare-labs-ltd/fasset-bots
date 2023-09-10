@@ -51,8 +51,8 @@ Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / v
 
 From those vaules we can derive:
 - `fd1(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on a DEX `d1`,
-- `fd2(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on a DEX `d2`,
+- `vd2(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on a DEX `d2`,
 - `vm = fm Vd1 / ((1 - δ1) (Fd1 - fm))`: the amount of vault collateral that when swapped on dex `d1` produces `fm` f-assets,
-- `profit(v) = L(min(fd1(v), fm)) - v`, where `L(f) = f PV RV + fd2(f PW RW)`: vault collateral profit of our arbitrage strategy.
+- `profit(v) = L(min(fd1(v), fm)) - v`, where `L(f) = f PV RV + vd2(f PW RW)`: vault collateral profit of our arbitrage strategy.
 
 Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.
