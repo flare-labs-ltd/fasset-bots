@@ -212,7 +212,9 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 logger.error(`State connector error: ${e}`);
                 throw e;
             }
+            /* istanbul ignore next */
             logger.error(`State connector error: ${String(e)}`);
+            /* istanbul ignore next */
             throw new StateConnectorError(String(e));
         }
     }

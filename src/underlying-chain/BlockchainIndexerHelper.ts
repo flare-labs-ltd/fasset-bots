@@ -309,7 +309,6 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorMessage = resp.data.errorMessage;
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
-        /* istanbul ignore else */
         if (status != "OK") {
             logger.error(
                 `Block chain indexer helper error: cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${
