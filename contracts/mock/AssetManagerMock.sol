@@ -12,7 +12,6 @@ import "fasset/contracts/fasset/mock/FakePriceReader.sol";
 import "./AgentMock.sol";
 import "./AssetManagerMock.sol";
 
-import "hardhat/console.sol";
 
 contract AssetManagerMock {
     using MathUtils for uint256;
@@ -39,15 +38,15 @@ contract AssetManagerMock {
         FakePriceReader _priceReader,
         uint256 _minCollateralRatioBIPS,
         uint64 _lotSizeAMG,
-        uint64 _assetMintingGranularityUBA,
         uint8 _assetMintingDecimals
     ) {
+        uint8 assetDecimals = IERC20Metadata(_fAsset).decimals();
         // settings
         settings.priceReader = address(_priceReader);
         settings.fAsset = _fAsset;
         settings.lotSizeAMG = _lotSizeAMG;
-        settings.assetMintingGranularityUBA = _assetMintingGranularityUBA;
         settings.assetMintingDecimals = _assetMintingDecimals;
+        settings.assetMintingGranularityUBA = uint64(10) ** (assetDecimals - _assetMintingDecimals);
         // local mock
         wNat = _wNat;
         minCollateralRatioBIPS = _minCollateralRatioBIPS;
@@ -146,7 +145,8 @@ contract AssetManagerMock {
         returns (uint256 _liquidatedAMG, uint256 _payoutC1Wei, uint256 _payoutPoolWei)
     {
         // split liquidation payment between agent vault and pool
-        (uint256 vaultFactor, uint256 poolFactor) = _currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
+        (uint256 vaultFactor, uint256 poolFactor) =
+            _currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
         // calculate liquidation amount
         uint256 maxLiquidatedAMG = Math.max(
             _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR, vaultFactor),
@@ -158,7 +158,7 @@ contract AssetManagerMock {
         _payoutPoolWei = convertAmgToTokenWei(_liquidatedAMG.mulBips(poolFactor), _cr.amgToPoolWeiPrice);
     }
 
-        function _maxLiquidationAmountAMG(
+    function _maxLiquidationAmountAMG(
         AgentInfo.Info memory _agentInfo,
         uint256 _collateralRatioBIPS,
         uint256 _factorBIPS
@@ -190,8 +190,10 @@ contract AssetManagerMock {
         internal view
         returns (CRData memory)
     {
-        (uint256 vaultCR, uint256 amgToC1WeiPrice) = _getCollateralRatioBIPS(_agentInfo, false);
-        (uint256 poolCR, uint256 amgToPoolWeiPrice) = _getCollateralRatioBIPS(_agentInfo, true);
+        (uint256 vaultCR, uint256 amgToC1WeiPrice) =
+            _getCollateralRatioBIPS(_agentInfo, false);
+        (uint256 poolCR, uint256 amgToPoolWeiPrice) =
+            _getCollateralRatioBIPS(_agentInfo, true);
         return CRData({
             vaultCR: vaultCR,
             poolCR: poolCR,

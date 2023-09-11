@@ -111,7 +111,7 @@ library LiquidatorMath {
             * _liquidatorVars.reserveVaultWeiDex1;
         uint256 _aux2 = _liquidatorVars.reserveFAssetUBADex1
             - _liquidatorVars.maxLiquidatedFAssetUBA;
-        return _aux1 / _aux2 * 10_000 / _liquidatorVars.feeFactorBipsDex1;
+        return _aux1 * 10_000 / _aux2 / _liquidatorVars.feeFactorBipsDex1;
     }
 
     function _getLiquidatorVars(

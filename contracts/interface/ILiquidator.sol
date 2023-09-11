@@ -9,7 +9,8 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 
 /**
  * @title ILiquidator
- * @notice Never send funds to this contract, only gas fees are required for an arbitrage!
+ * @notice An arbitrage does not need any sent funds,
+ * send funds only if you wish to donate to the contract owner.
  */
 interface ILiquidator is IERC3156FlashBorrower {
 

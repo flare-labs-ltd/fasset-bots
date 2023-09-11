@@ -28,12 +28,12 @@ Every agent in the f-asset system holds two types of collatera - vault and pool.
 - repay the flash loan (plus possible fee) and take whatever remains.
 
 Note that a dual strategy is possible, starting with pool collateral instead of vault collateral. Two reasons we start with vault collateral are:
-- we expect dexes with stablecoin/f-asset pairs to be better liquidated and more stable,
+- we expect dexes with stablecoin / f-asset pairs to be better liquidated and more stable,
 - liquidation usually outputs less pool collateral than vault collateral, so the second swap will consume less fees.
 
 The contract uses Blazeswap as the default dex, but any v2-uniswap interfaced constant product dex can be used. Also note that flash loan is assumed to have a fixed (or no) fee.
 
-### Cauculations
+### Calculations
 
 Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / vault collateral pair dex, and `a` an agent in liquidation. We define the following variables:
 - `Vd1`: the vault collateral reserve of dex `d1`,
@@ -52,7 +52,9 @@ Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / v
 From those vaules we can derive:
 - `fd1(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on a DEX `d1`,
 - `vd2(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on a DEX `d2`,
-- `vm = fm Vd1 / ((1 - δ1) (Fd1 - fm))`: the amount of vault collateral that when swapped on dex `d1` produces `fm` f-assets,
 - `profit(v) = L(min(fd1(v), fm)) - v`, where `L(f) = f PV RV + vd2(f PW RW)`: vault collateral profit of our arbitrage strategy.
 
 Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.
+
+## TODO
+- [] handle situations when dex reserves are smaller than swapping amounts.

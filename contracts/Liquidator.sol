@@ -11,11 +11,6 @@ import "./lib/LiquidatorMath.sol";
 
 import "hardhat/console.sol";
 
-enum FlashLoanLockType {
-    INACTIVE,
-    CALL,
-    END_CALL
-}
 
 // always assume pool = wrapped native
 contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
@@ -25,7 +20,7 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
     IBlazeSwapRouter public blazeswap;
 
     // needed for flash loan to only get executed once from runArbitrage
-    FlashLoanLockType private flashLoanLockType;
+    bool private flashLoanLock;
 
     constructor(
         IWNat _wNat,
@@ -37,25 +32,27 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         blazeswap = _blazeSwap;
     }
 
-    modifier flashLoanInitiatorLock() {
-        flashLoanLockType = FlashLoanLockType.CALL;
+    modifier logGasUsage() {
+        uint256 startGas = gasleft();
         _;
-        // after flash loaning there is no external contract calls
-        require(flashLoanLockType == FlashLoanLockType.END_CALL,
-            "Flash loan not ended by onFlashLoan");
-        flashLoanLockType = FlashLoanLockType.INACTIVE;
+        console.log("gas used", startGas - gasleft());
+    }
+
+    modifier flashLoanInitiatorLock() {
+        flashLoanLock = true;
+        _;
+        flashLoanLock = false;
     }
 
     modifier flashLoanReceiverLock() {
-        require(flashLoanLockType == FlashLoanLockType.CALL,
-            "Flash loan not initiated by runArbitrageWithCustomParams");
-        flashLoanLockType = FlashLoanLockType.END_CALL;
+        require(flashLoanLock, "Flash loan not initiated by runArbitrageWithCustomParams");
+        flashLoanLock = false;
         _;
     }
 
     function runArbitrage(
         IIAgentVault _agentVault
-    ) external {
+    ) external logGasUsage {
         runArbitrageWithCustomParams(_agentVault, flashLender, blazeswap);
     }
 
@@ -91,7 +88,8 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
                 _blazeSwap
             )
         );
-        // send earnings to sender (have to fix so they are not stolen in onFlashLoan)
+        // send earnings to sender (any balance held by the contract was
+        // previously sent to the conract owner, so those funds can't be stolen)
         vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
     }
 
@@ -145,12 +143,13 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         IBlazeSwapRouter _blazeSwap,
         uint256 _vaultAmount
     ) internal {
-        IERC20 _poolToken = wNat; // gas savings
+        uint256[] memory amountsRecv;
         // swap vault collateral for f-asset
         _vaultToken.approve(address(_blazeSwap), _vaultAmount);
-        (, uint256[] memory obtainedFAsset) = _blazeSwap.swapExactTokensForTokens(
-            _vaultAmount, 0,
-            _toDynamicArray(address(_vaultToken), address(_fAsset)),
+        (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
+            _vaultAmount,
+            0,
+            toDynamicArray(address(_vaultToken), address(_fAsset)),
             address(this),
             block.timestamp
         );
@@ -158,14 +157,17 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
-            obtainedFAsset[1]
+            amountsRecv[1]
         );
         // swap pool for vault collateral
         if (obtainedPool > 0) {
+            IERC20 _poolToken = wNat; // gas savings
             _poolToken.approve(address(_blazeSwap), obtainedPool);
-            _blazeSwap.swapExactTokensForTokens(
-                obtainedPool, 0,
-                _toDynamicArray(address(_poolToken), address(_vaultToken)),
+            (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
+                obtainedPool,
+                0,
+                toDynamicArray(address(_poolToken),
+                address(_vaultToken)),
                 address(this),
                 block.timestamp
             );
@@ -181,7 +183,7 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         payable(owner()).transfer(address(this).balance);
     }
 
-    function _toDynamicArray(
+    function toDynamicArray(
         address _x,
         address _y
     ) private pure returns (address[] memory) {
