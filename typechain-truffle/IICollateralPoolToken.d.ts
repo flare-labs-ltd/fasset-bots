@@ -78,26 +78,40 @@ export interface IICollateralPoolTokenInstance
     (
       _account: string,
       _amount: number | BN | string,
+      ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _account: string,
       _amount: number | BN | string,
+      ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _account: string,
       _amount: number | BN | string,
+      ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _account: string,
       _amount: number | BN | string,
+      ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  debtFreeBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  debtLockedBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   destroy: {
     (_recipient: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -145,10 +159,20 @@ export interface IICollateralPoolTokenInstance
     ): Promise<number>;
   };
 
+  nonTimelockedBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   supportsInterface(
     interfaceId: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
+
+  timelockedBalanceOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
@@ -246,26 +270,40 @@ export interface IICollateralPoolTokenInstance
       (
         _account: string,
         _amount: number | BN | string,
+        ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _account: string,
         _amount: number | BN | string,
+        ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _account: string,
         _amount: number | BN | string,
+        ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _account: string,
         _amount: number | BN | string,
+        ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
     collateralPool(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    debtFreeBalanceOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    debtLockedBalanceOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     destroy: {
       (_recipient: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -313,10 +351,20 @@ export interface IICollateralPoolTokenInstance
       ): Promise<number>;
     };
 
+    nonTimelockedBalanceOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     supportsInterface(
       interfaceId: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
+
+    timelockedBalanceOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 

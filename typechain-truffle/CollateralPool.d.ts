@@ -25,10 +25,12 @@ export interface Entered {
     amountNatWei: BN;
     receivedTokensWei: BN;
     addedFAssetFeesUBA: BN;
+    newFAssetFeeDebt: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
+    4: BN;
   };
 }
 
@@ -40,11 +42,13 @@ export interface Exited {
     receivedNatWei: BN;
     receviedFAssetFeesUBA: BN;
     closedFAssetsUBA: BN;
+    newFAssetFeeDebt: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -121,6 +125,16 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  debtFreeTokensOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  debtLockedTokensOf(
+    _account: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   delegate: {
     (
       _to: string,
@@ -157,6 +171,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
+  };
+
+  depositNat: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
   destroy: {
@@ -258,11 +281,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   fAssetRequiredForSelfCloseExit(
     _tokenAmountWei: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  lockedTokensOf(
-    _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
@@ -476,11 +494,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  transferableTokensOf(
-    _account: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   undelegateAll: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -613,6 +626,16 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    debtFreeTokensOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    debtLockedTokensOf(
+      _account: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     delegate: {
       (
         _to: string,
@@ -649,6 +672,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
+    };
+
+    depositNat: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
     destroy: {
@@ -752,11 +784,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     fAssetRequiredForSelfCloseExit(
       _tokenAmountWei: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    lockedTokensOf(
-      _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
@@ -971,11 +998,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     totalFAssetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    transferableTokensOf(
-      _account: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
 
     undelegateAll: {
       (txDetails?: Truffle.TransactionDetails): Promise<

@@ -243,6 +243,18 @@ export interface ContractChanged {
   };
 }
 
+export interface CurrentUnderlyingBlockUpdated {
+  name: "CurrentUnderlyingBlockUpdated";
+  args: {
+    underlyingBlockNumber: BN;
+    underlyingBlockTimestamp: BN;
+    updatedAt: BN;
+    0: BN;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface DuplicatePaymentConfirmed {
   name: "DuplicatePaymentConfirmed";
   args: {
@@ -622,6 +634,7 @@ type AllEvents =
   | CollateralTypeAdded
   | CollateralTypeDeprecated
   | ContractChanged
+  | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
   | DustConvertedToTicket

@@ -244,6 +244,18 @@ export interface ContractChanged {
   };
 }
 
+export interface CurrentUnderlyingBlockUpdated {
+  name: "CurrentUnderlyingBlockUpdated";
+  args: {
+    underlyingBlockNumber: BN;
+    underlyingBlockTimestamp: BN;
+    updatedAt: BN;
+    0: BN;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface DuplicatePaymentConfirmed {
   name: "DuplicatePaymentConfirmed";
   args: {
@@ -623,6 +635,7 @@ type AllEvents =
   | CollateralTypeAdded
   | CollateralTypeDeprecated
   | ContractChanged
+  | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
   | DustConvertedToTicket
@@ -1255,6 +1268,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -1270,6 +1284,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -1285,6 +1300,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -1300,6 +1316,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -1785,6 +1802,9 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     dustUBA: BN;
     ccbStartTimestamp: BN;
     liquidationStartTimestamp: BN;
+    maxLiquidationAmountUBA: BN;
+    liquidationPaymentFactorVaultBIPS: BN;
+    liquidationPaymentFactorPoolBIPS: BN;
     underlyingBalanceUBA: BN;
     requiredUnderlyingBalanceUBA: BN;
     freeUnderlyingBalanceUBA: BN;
@@ -1831,6 +1851,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
+
+  getCollateralPoolTokenTimelockSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   getCollateralType(
     _collateralClass: number | BN | string,
@@ -1883,6 +1907,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     agentVaultFactory: string;
     collateralPoolFactory: string;
     collateralPoolTokenFactory: string;
+    poolTokenSuffix: string;
     whitelist: string;
     agentWhitelist: string;
     scProofVerifier: string;
@@ -1923,8 +1948,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     vaultCollateralBuyForFlareFactorBIPS: BN;
     agentExitAvailableTimelockSeconds: BN;
     agentFeeChangeTimelockSeconds: BN;
-    agentCollateralRatioChangeTimelockSeconds: BN;
+    agentMintingCRChangeTimelockSeconds: BN;
+    poolExitAndTopupChangeTimelockSeconds: BN;
     agentTimelockedOperationWindowSeconds: BN;
+    collateralPoolTokenTimelockSeconds: BN;
   }>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -3424,6 +3451,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -3439,6 +3467,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -3454,6 +3483,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -3469,6 +3499,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -3954,6 +3985,9 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       dustUBA: BN;
       ccbStartTimestamp: BN;
       liquidationStartTimestamp: BN;
+      maxLiquidationAmountUBA: BN;
+      liquidationPaymentFactorVaultBIPS: BN;
+      liquidationPaymentFactorPoolBIPS: BN;
       underlyingBalanceUBA: BN;
       requiredUnderlyingBalanceUBA: BN;
       freeUnderlyingBalanceUBA: BN;
@@ -4000,6 +4034,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    getCollateralPoolTokenTimelockSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     getCollateralType(
       _collateralClass: number | BN | string,
@@ -4052,6 +4090,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       agentVaultFactory: string;
       collateralPoolFactory: string;
       collateralPoolTokenFactory: string;
+      poolTokenSuffix: string;
       whitelist: string;
       agentWhitelist: string;
       scProofVerifier: string;
@@ -4092,8 +4131,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       vaultCollateralBuyForFlareFactorBIPS: BN;
       agentExitAvailableTimelockSeconds: BN;
       agentFeeChangeTimelockSeconds: BN;
-      agentCollateralRatioChangeTimelockSeconds: BN;
+      agentMintingCRChangeTimelockSeconds: BN;
+      poolExitAndTopupChangeTimelockSeconds: BN;
       agentTimelockedOperationWindowSeconds: BN;
+      collateralPoolTokenTimelockSeconds: BN;
     }>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;

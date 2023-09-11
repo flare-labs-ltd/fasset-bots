@@ -29,6 +29,12 @@
           "internalType": "uint256",
           "name": "addedFAssetFeesUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newFAssetFeeDebt",
+          "type": "uint256"
         }
       ],
       "name": "Entered",
@@ -66,6 +72,12 @@
           "internalType": "uint256",
           "name": "closedFAssetsUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newFAssetFeeDebt",
+          "type": "uint256"
         }
       ],
       "name": "Exited",
@@ -96,6 +108,19 @@
       "outputs": [
         {
           "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "assetManager",
+      "outputs": [
+        {
+          "internalType": "contract IIAssetManager",
           "name": "",
           "type": "address"
         }
@@ -155,6 +180,44 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "debtFreeTokensOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "debtLockedTokensOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "_to",
           "type": "address"
         },
@@ -167,6 +230,13 @@
       "name": "delegate",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "depositNat",
+      "outputs": [],
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -302,25 +372,6 @@
         }
       ],
       "name": "fAssetRequiredForSelfCloseExit",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_account",
-          "type": "address"
-        }
-      ],
-      "name": "lockedTokensOf",
       "outputs": [
         {
           "internalType": "uint256",
@@ -489,25 +540,6 @@
           "internalType": "uint16",
           "name": "",
           "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_account",
-          "type": "address"
-        }
-      ],
-      "name": "transferableTokensOf",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",

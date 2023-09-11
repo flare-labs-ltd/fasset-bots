@@ -77,6 +77,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  getCollateralPoolTokenTimelockSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getFAssetsBackedByPool(
     arg0: string,
     txDetails?: Truffle.TransactionDetails
@@ -309,6 +313,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setTimelockDuration: {
+    (
+      _timelockDuration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _timelockDuration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _timelockDuration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _timelockDuration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   updateCollateral: {
     (
       arg0: string,
@@ -377,6 +400,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       arg0: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    getCollateralPoolTokenTimelockSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     getFAssetsBackedByPool(
       arg0: string,
@@ -609,6 +636,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _maxRedemption: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setTimelockDuration: {
+      (
+        _timelockDuration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _timelockDuration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _timelockDuration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _timelockDuration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

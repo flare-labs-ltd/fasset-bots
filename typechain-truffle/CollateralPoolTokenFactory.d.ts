@@ -17,19 +17,28 @@ type AllEvents = never;
 export interface CollateralPoolTokenFactoryInstance
   extends Truffle.ContractInstance {
   create: {
-    (_pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
+    (
+      _pool: string,
+      _systemSuffix: string,
+      _agentSuffix: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _pool: string,
+      _systemSuffix: string,
+      _agentSuffix: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     sendTransaction(
       _pool: string,
+      _systemSuffix: string,
+      _agentSuffix: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _pool: string,
+      _systemSuffix: string,
+      _agentSuffix: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -41,19 +50,28 @@ export interface CollateralPoolTokenFactoryInstance
 
   methods: {
     create: {
-      (_pool: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
+      (
+        _pool: string,
+        _systemSuffix: string,
+        _agentSuffix: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _pool: string,
+        _systemSuffix: string,
+        _agentSuffix: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       sendTransaction(
         _pool: string,
+        _systemSuffix: string,
+        _agentSuffix: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _pool: string,
+        _systemSuffix: string,
+        _agentSuffix: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

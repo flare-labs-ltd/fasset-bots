@@ -23,6 +23,7 @@ export interface CollateralPoolFactoryInstance
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -40,6 +41,7 @@ export interface CollateralPoolFactoryInstance
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -57,6 +59,7 @@ export interface CollateralPoolFactoryInstance
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -74,6 +77,7 @@ export interface CollateralPoolFactoryInstance
       _settings: {
         underlyingAddressString: string;
         vaultCollateralToken: string;
+        poolTokenSuffix: string;
         feeBIPS: number | BN | string;
         poolFeeShareBIPS: number | BN | string;
         mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -100,6 +104,7 @@ export interface CollateralPoolFactoryInstance
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -117,6 +122,7 @@ export interface CollateralPoolFactoryInstance
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -134,6 +140,7 @@ export interface CollateralPoolFactoryInstance
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;
@@ -151,6 +158,7 @@ export interface CollateralPoolFactoryInstance
         _settings: {
           underlyingAddressString: string;
           vaultCollateralToken: string;
+          poolTokenSuffix: string;
           feeBIPS: number | BN | string;
           poolFeeShareBIPS: number | BN | string;
           mintingVaultCollateralRatioBIPS: number | BN | string;

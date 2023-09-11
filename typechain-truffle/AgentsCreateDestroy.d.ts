@@ -62,7 +62,23 @@ export interface AgentVaultCreated {
   };
 }
 
-type AllEvents = AgentDestroyAnnounced | AgentDestroyed | AgentVaultCreated;
+export interface CurrentUnderlyingBlockUpdated {
+  name: "CurrentUnderlyingBlockUpdated";
+  args: {
+    underlyingBlockNumber: BN;
+    underlyingBlockTimestamp: BN;
+    updatedAt: BN;
+    0: BN;
+    1: BN;
+    2: BN;
+  };
+}
+
+type AllEvents =
+  | AgentDestroyAnnounced
+  | AgentDestroyed
+  | AgentVaultCreated
+  | CurrentUnderlyingBlockUpdated;
 
 export interface AgentsCreateDestroyInstance extends Truffle.ContractInstance {
   methods: {};

@@ -13,6 +13,8 @@ export interface IIAgentVaultContract
 type AllEvents = never;
 
 export interface IIAgentVaultInstance extends Truffle.ContractInstance {
+  assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   buyCollateralPoolTokens: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -311,33 +313,6 @@ export interface IIAgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setAutoClaiming: {
-    (
-      _claimSetupManager: string,
-      _executors: string[],
-      _allowedRecipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _claimSetupManager: string,
-      _executors: string[],
-      _allowedRecipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _claimSetupManager: string,
-      _executors: string[],
-      _allowedRecipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _claimSetupManager: string,
-      _executors: string[],
-      _allowedRecipients: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   transferExternalToken: {
     (
       _token: string,
@@ -457,6 +432,8 @@ export interface IIAgentVaultInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     buyCollateralPoolTokens: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -754,33 +731,6 @@ export interface IIAgentVaultInstance extends Truffle.ContractInstance {
         _token: string,
         _who: string,
         _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setAutoClaiming: {
-      (
-        _claimSetupManager: string,
-        _executors: string[],
-        _allowedRecipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _claimSetupManager: string,
-        _executors: string[],
-        _allowedRecipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _claimSetupManager: string,
-        _executors: string[],
-        _allowedRecipients: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _claimSetupManager: string,
-        _executors: string[],
-        _allowedRecipients: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

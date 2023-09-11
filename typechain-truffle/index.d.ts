@@ -7,6 +7,7 @@ import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20MetadataContract } from "./IERC20Metadata";
+import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
 import { RippleAddressValidatorContract } from "./RippleAddressValidator";
@@ -31,6 +32,7 @@ import { ICollateralPoolTokenFactoryContract } from "./ICollateralPoolTokenFacto
 import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
+import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
@@ -55,6 +57,7 @@ import { RedemptionConfirmationsContract } from "./RedemptionConfirmations";
 import { RedemptionFailuresContract } from "./RedemptionFailures";
 import { RedemptionRequestsContract } from "./RedemptionRequests";
 import { SettingsUpdaterContract } from "./SettingsUpdater";
+import { StateUpdaterContract } from "./StateUpdater";
 import { UnderlyingBalanceContract } from "./UnderlyingBalance";
 import { UnderlyingWithdrawalAnnouncementsContract } from "./UnderlyingWithdrawalAnnouncements";
 import { AgentVaultMockContract } from "./AgentVaultMock";
@@ -161,6 +164,9 @@ declare global {
       require(name: "IFAsset"): IFAssetContract;
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
+      require(
+        name: "IIAssetManagerController"
+      ): IIAssetManagerControllerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
@@ -185,6 +191,7 @@ declare global {
       require(name: "RedemptionFailures"): RedemptionFailuresContract;
       require(name: "RedemptionRequests"): RedemptionRequestsContract;
       require(name: "SettingsUpdater"): SettingsUpdaterContract;
+      require(name: "StateUpdater"): StateUpdaterContract;
       require(name: "UnderlyingBalance"): UnderlyingBalanceContract;
       require(
         name: "UnderlyingWithdrawalAnnouncements"
@@ -266,6 +273,7 @@ declare global {
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
+export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export {
   IERC20MetadataContract,
   IERC20MetadataInstance,
@@ -338,6 +346,10 @@ export {
   IIAssetManagerInstance,
 } from "./IIAssetManager";
 export {
+  IIAssetManagerControllerContract,
+  IIAssetManagerControllerInstance,
+} from "./IIAssetManagerController";
+export {
   IICollateralPoolContract,
   IICollateralPoolInstance,
 } from "./IICollateralPool";
@@ -409,6 +421,7 @@ export {
   SettingsUpdaterContract,
   SettingsUpdaterInstance,
 } from "./SettingsUpdater";
+export { StateUpdaterContract, StateUpdaterInstance } from "./StateUpdater";
 export {
   UnderlyingBalanceContract,
   UnderlyingBalanceInstance,

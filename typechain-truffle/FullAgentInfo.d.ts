@@ -46,6 +46,9 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
     dustUBA: BN;
     ccbStartTimestamp: BN;
     liquidationStartTimestamp: BN;
+    maxLiquidationAmountUBA: BN;
+    liquidationPaymentFactorVaultBIPS: BN;
+    liquidationPaymentFactorPoolBIPS: BN;
     underlyingBalanceUBA: BN;
     requiredUnderlyingBalanceUBA: BN;
     freeUnderlyingBalanceUBA: BN;
@@ -90,6 +93,9 @@ export interface FullAgentInfoInstance extends Truffle.ContractInstance {
       dustUBA: BN;
       ccbStartTimestamp: BN;
       liquidationStartTimestamp: BN;
+      maxLiquidationAmountUBA: BN;
+      liquidationPaymentFactorVaultBIPS: BN;
+      liquidationPaymentFactorPoolBIPS: BN;
       underlyingBalanceUBA: BN;
       requiredUnderlyingBalanceUBA: BN;
       freeUnderlyingBalanceUBA: BN;

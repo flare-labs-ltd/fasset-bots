@@ -29,6 +29,12 @@
           "internalType": "uint256",
           "name": "addedFAssetFeesUBA",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newFAssetFeeDebt",
+          "type": "uint256"
         }
       ],
       "name": "Entered",
@@ -65,6 +71,12 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "closedFAssetsUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newFAssetFeeDebt",
           "type": "uint256"
         }
       ],

@@ -249,6 +249,18 @@ export interface ContractChanged {
   };
 }
 
+export interface CurrentUnderlyingBlockUpdated {
+  name: "CurrentUnderlyingBlockUpdated";
+  args: {
+    underlyingBlockNumber: BN;
+    underlyingBlockTimestamp: BN;
+    updatedAt: BN;
+    0: BN;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface DuplicatePaymentConfirmed {
   name: "DuplicatePaymentConfirmed";
   args: {
@@ -676,6 +688,7 @@ type AllEvents =
   | CollateralTypeAdded
   | CollateralTypeDeprecated
   | ContractChanged
+  | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
   | DustConvertedToTicket
@@ -945,29 +958,6 @@ export interface AssetManagerControllerInstance
 
   replacedBy(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  setAgentCollateralRatioChangeTimelockSeconds: {
-    (
-      _assetManagers: string[],
-      _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _assetManagers: string[],
-      _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   setAgentExitAvailableTimelockSeconds: {
     (
       _assetManagers: string[],
@@ -992,6 +982,29 @@ export interface AssetManagerControllerInstance
   };
 
   setAgentFeeChangeTimelockSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAgentMintingCRChangeTimelockSeconds: {
     (
       _assetManagers: string[],
       _value: number | BN | string,
@@ -1217,6 +1230,29 @@ export interface AssetManagerControllerInstance
     estimateGas(
       _assetManagers: string[],
       _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCollateralPoolTokenTimelockSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1540,6 +1576,29 @@ export interface AssetManagerControllerInstance
       _assetManagers: string[],
       _rewardVaultCollateralWei: number | BN | string,
       _rewardBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setPoolExitAndTopupChangeTimelockSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2136,29 +2195,6 @@ export interface AssetManagerControllerInstance
 
     replacedBy(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    setAgentCollateralRatioChangeTimelockSeconds: {
-      (
-        _assetManagers: string[],
-        _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     setAgentExitAvailableTimelockSeconds: {
       (
         _assetManagers: string[],
@@ -2183,6 +2219,29 @@ export interface AssetManagerControllerInstance
     };
 
     setAgentFeeChangeTimelockSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAgentMintingCRChangeTimelockSeconds: {
       (
         _assetManagers: string[],
         _value: number | BN | string,
@@ -2408,6 +2467,29 @@ export interface AssetManagerControllerInstance
       estimateGas(
         _assetManagers: string[],
         _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCollateralPoolTokenTimelockSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2731,6 +2813,29 @@ export interface AssetManagerControllerInstance
         _assetManagers: string[],
         _rewardVaultCollateralWei: number | BN | string,
         _rewardBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setPoolExitAndTopupChangeTimelockSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

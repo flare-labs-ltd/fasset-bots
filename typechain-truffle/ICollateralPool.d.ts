@@ -17,10 +17,12 @@ export interface Entered {
     amountNatWei: BN;
     receivedTokensWei: BN;
     addedFAssetFeesUBA: BN;
+    newFAssetFeeDebt: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
+    4: BN;
   };
 }
 
@@ -32,11 +34,13 @@ export interface Exited {
     receivedNatWei: BN;
     receviedFAssetFeesUBA: BN;
     closedFAssetsUBA: BN;
+    newFAssetFeeDebt: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 

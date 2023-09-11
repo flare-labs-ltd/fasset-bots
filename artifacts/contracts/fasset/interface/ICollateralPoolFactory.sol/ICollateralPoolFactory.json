@@ -28,6 +28,11 @@
               "type": "address"
             },
             {
+              "internalType": "string",
+              "name": "poolTokenSuffix",
+              "type": "string"
+            },
+            {
               "internalType": "uint256",
               "name": "feeBIPS",
               "type": "uint256"

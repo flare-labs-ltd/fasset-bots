@@ -5,6 +5,19 @@
   "abi": [
     {
       "inputs": [],
+      "name": "assetManager",
+      "outputs": [
+        {
+          "internalType": "contract IIAssetManager",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "buyCollateralPoolTokens",
       "outputs": [],
       "stateMutability": "payable",
@@ -283,29 +296,6 @@
       "name": "revokeDelegationAt",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IClaimSetupManager",
-          "name": "_claimSetupManager",
-          "type": "address"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_executors",
-          "type": "address[]"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_allowedRecipients",
-          "type": "address[]"
-        }
-      ],
-      "name": "setAutoClaiming",
-      "outputs": [],
-      "stateMutability": "payable",
       "type": "function"
     },
     {

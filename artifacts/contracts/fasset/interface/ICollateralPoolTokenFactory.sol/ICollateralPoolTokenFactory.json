@@ -9,6 +9,16 @@
           "internalType": "contract IICollateralPool",
           "name": "pool",
           "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_systemSuffix",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_agentSuffix",
+          "type": "string"
         }
       ],
       "name": "create",

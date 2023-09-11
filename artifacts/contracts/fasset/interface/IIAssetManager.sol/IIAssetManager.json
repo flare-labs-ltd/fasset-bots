@@ -533,6 +533,31 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "underlyingBlockNumber",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "underlyingBlockTimestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "updatedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "CurrentUnderlyingBlockUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "agentVault",
@@ -1978,6 +2003,11 @@
               "type": "address"
             },
             {
+              "internalType": "string",
+              "name": "poolTokenSuffix",
+              "type": "string"
+            },
+            {
               "internalType": "uint256",
               "name": "feeBIPS",
               "type": "uint256"
@@ -2655,6 +2685,21 @@
               "type": "uint256"
             },
             {
+              "internalType": "uint256",
+              "name": "maxLiquidationAmountUBA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationPaymentFactorVaultBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationPaymentFactorPoolBIPS",
+              "type": "uint256"
+            },
+            {
               "internalType": "int256",
               "name": "underlyingBalanceUBA",
               "type": "int256"
@@ -2855,6 +2900,19 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCollateralPoolTokenTimelockSeconds",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -3065,6 +3123,11 @@
               "type": "address"
             },
             {
+              "internalType": "string",
+              "name": "poolTokenSuffix",
+              "type": "string"
+            },
+            {
               "internalType": "address",
               "name": "whitelist",
               "type": "address"
@@ -3266,13 +3329,23 @@
             },
             {
               "internalType": "uint64",
-              "name": "agentCollateralRatioChangeTimelockSeconds",
+              "name": "agentMintingCRChangeTimelockSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "poolExitAndTopupChangeTimelockSeconds",
               "type": "uint64"
             },
             {
               "internalType": "uint64",
               "name": "agentTimelockedOperationWindowSeconds",
               "type": "uint64"
+            },
+            {
+              "internalType": "uint32",
+              "name": "collateralPoolTokenTimelockSeconds",
+              "type": "uint32"
             }
           ],
           "internalType": "struct AssetManagerSettings.Data",
