@@ -281,11 +281,17 @@ export class AgentBot {
     async handleDailyTasks(rootEm: EM): Promise<void> {
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const latestBlock = await latestUnderlyingBlock(this.context);
-        logger.info(
-            `Agent ${
-                this.agent.vaultAddress
-            } checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${latestBlock?.number}, ${latestBlock?.timestamp}.`
-        );
+        /* istanbul ignore else */
+        if (latestBlock) {
+            logger.info(
+                `Agent ${
+                    this.agent.vaultAddress
+                } checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${latestBlock.number}, ${latestBlock.timestamp}.`
+            );
+        } else {
+            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve latest block in handleDailyTasks.`);
+            return;
+        }
         if (
             latestBlock &&
             toBN(latestBlock.timestamp)
@@ -1057,6 +1063,7 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
+        /* istanbul ignore else */
         if (
             lastBlock &&
             (toBN(lastBlock.number).lt(toBN(redemption.lastUnderlyingBlock)) || toBN(lastBlock.timestamp).lt(toBN(redemption.lastUnderlyingTimestamp)))
@@ -1073,12 +1080,16 @@ export class AgentBot {
                     redemption.paymentAddress
                 }, payment reference ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`
             );
-        } else {
+        } else if (lastBlock) {
             logger.info(
                 `Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${
                     redemption.requestId
-                }. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock?.number} with timestamp ${lastBlock?.timestamp}.`
+                }. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${
+                    lastBlock.number
+                } with timestamp ${lastBlock.timestamp}.`
             );
+        } else {
+            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in payForRedemption for ${redemption.requestId}.`);
         }
     }
 
