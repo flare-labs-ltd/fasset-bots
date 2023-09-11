@@ -4,13 +4,16 @@ import { BotCliCommands } from "../actors/AgentBotCliCommands";
 
 const program = new Command();
 
+program.addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
+
 program.name("agent-bot").description("Command line commands for AgentBot");
 
 program
     .command("create")
     .description("create new agent vault")
     .action(async () => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.createAgentVault();
     });
 
@@ -20,7 +23,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.depositToVault(agentVault, amount);
     });
 
@@ -30,7 +34,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.buyCollateralPoolTokens(agentVault, amount);
     });
 
@@ -39,7 +44,8 @@ program
     .description("enter available agent's list")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.enterAvailableList(agentVault);
     });
 
@@ -48,7 +54,8 @@ program
     .description("exit available agent's list")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.announceExitAvailableList(agentVault);
     });
 
@@ -59,7 +66,8 @@ program
     .argument("<agentSettingName>")
     .argument("<agentSettingValue>")
     .action(async (agentVault: string, settingName: string, settingValue: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.updateAgentSetting(agentVault, settingName, settingValue);
     });
 
@@ -69,7 +77,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount")
     .action(async (agentVault: string, amount: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.withdrawFromVault(agentVault, amount);
     });
 
@@ -79,7 +88,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.withdrawPoolFees(agentVault, amount);
     });
 
@@ -88,7 +98,8 @@ program
     .description("get pool fees balance of agent")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.poolFeesBalance(agentVault);
     });
 
@@ -98,7 +109,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amountUBA>")
     .action(async (agentVault: string, amountUBA: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.selfClose(agentVault, amountUBA);
     });
 
@@ -107,7 +119,8 @@ program
     .description("close agent vault")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.closeVault(agentVault);
     });
 
@@ -116,7 +129,8 @@ program
     .description("announce underlying withdrawal and get needed payment reference")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.announceUnderlyingWithdrawal(agentVault);
     });
 
@@ -128,7 +142,8 @@ program
     .argument("<destinationAddress>")
     .argument("<paymentReference>")
     .action(async (agentVault: string, amount: string, destinationAddress: string, paymentReference: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.performUnderlyingWithdrawal(agentVault, amount, destinationAddress, paymentReference);
     });
 
@@ -138,7 +153,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<txHash>")
     .action(async (agentVault: string, txHash: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.confirmUnderlyingWithdrawal(agentVault, txHash);
     });
 
@@ -147,7 +163,8 @@ program
     .description("cancel underlying withdrawal announcement")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.cancelUnderlyingWithdrawal(agentVault);
     });
 
@@ -155,7 +172,8 @@ program
     .command("listAgents")
     .description("list active agent from persistent state")
     .action(async () => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.listActiveAgents();
     });
 
@@ -166,7 +184,8 @@ program
     .argument("<recipient>")
     .argument("<bips>")
     .action(async (agentVault: string, recipient: string, bips: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.delegatePoolCollateral(agentVault, recipient, bips);
     });
 
@@ -175,7 +194,8 @@ program
     .description("undelegate pool collateral")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const cli = await BotCliCommands.create();
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
         await cli.undelegatePoolCollateral(agentVault);
     });
 

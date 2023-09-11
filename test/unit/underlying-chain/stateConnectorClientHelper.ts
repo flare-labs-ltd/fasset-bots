@@ -24,6 +24,7 @@ const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper
 let stateConnectorClient: StateConnectorClientHelper;
 const accountPrivateKey = requireEnv("USER_PRIVATE_KEY");
 const sourceId = SourceId.XRP;
+const finalizationBlocks: number = 6;
 
 describe("XRP attestation/state connector tests", async () => {
     const roundId = 571512;
@@ -55,7 +56,7 @@ describe("XRP attestation/state connector tests", async () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP);
+        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, finalizationBlocks);
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ARConfirmedBlockHeightExists = {

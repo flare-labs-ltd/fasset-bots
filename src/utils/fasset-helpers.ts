@@ -1,12 +1,8 @@
-import { IFtsoRegistryInstance } from "../../typechain-truffle";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
-import { artifacts } from "./artifacts";
 import { toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
-
-const IFtso = artifacts.require("IFtso");
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -38,11 +34,6 @@ export async function proveAndUpdateUnderlyingBlock(context: IAssetActorContext,
 export async function attestationWindowSeconds(context: IAssetActorContext): Promise<number> {
     const settings = await context.assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
-}
-
-export async function createFtsosHelper(ftsoRegistry: IFtsoRegistryInstance, symbol: string) {
-    const ftsoAddress = await ftsoRegistry.getFtsoBySymbol(symbol);
-    return await IFtso.at(ftsoAddress);
 }
 
 export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null> {

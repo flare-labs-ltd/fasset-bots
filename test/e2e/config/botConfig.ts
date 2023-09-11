@@ -33,6 +33,7 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/testnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/testnet/";
 const walletXRPUrl = "https://s.altnet.rippletest.net:51234";
 
+const finalizationBlocks = 0;
 describe("Bot config tests", async () => {
     let runConfig: BotConfigFile;
     let actorRunConfig: BotConfigFile;
@@ -71,15 +72,15 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create block chain indexer", async () => {
-        const btc = createBlockchainIndexerHelper(SourceId.BTC, indexerBTCUrl);
+        const btc = createBlockchainIndexerHelper(SourceId.BTC, indexerBTCUrl, finalizationBlocks);
         expect(btc.sourceId).to.eq(SourceId.BTC);
-        const doge = createBlockchainIndexerHelper(SourceId.DOGE, indexerDOGEUrl);
+        const doge = createBlockchainIndexerHelper(SourceId.DOGE, indexerDOGEUrl, finalizationBlocks);
         expect(doge.sourceId).to.eq(SourceId.DOGE);
-        const xrp = createBlockchainIndexerHelper(SourceId.XRP, indexerXRPUrl);
+        const xrp = createBlockchainIndexerHelper(SourceId.XRP, indexerXRPUrl, finalizationBlocks);
         expect(xrp.sourceId).to.eq(SourceId.XRP);
         const sourceId = SourceId.LTC;
         const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "");
+            return createBlockchainIndexerHelper(sourceId, "", finalizationBlocks);
         };
         expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
@@ -106,7 +107,8 @@ describe("Bot config tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerBTCUrl
+            indexerBTCUrl,
+            finalizationBlocks
         );
         expect(btc.chainId).to.eq(SourceId.BTC);
         const doge = await createAttestationHelper(
@@ -115,7 +117,8 @@ describe("Bot config tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerDOGEUrl
+            indexerDOGEUrl,
+            finalizationBlocks
         );
         expect(doge.chainId).to.eq(SourceId.DOGE);
         const xrp = await createAttestationHelper(
@@ -124,7 +127,8 @@ describe("Bot config tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerXRPUrl
+            indexerXRPUrl,
+            finalizationBlocks
         );
         expect(xrp.chainId).to.eq(SourceId.XRP);
         const unsupportedSourceId = SourceId.ALGO;
@@ -135,7 +139,8 @@ describe("Bot config tests", async () => {
                 STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
                 STATE_CONNECTOR_ADDRESS,
                 OWNER_ADDRESS,
-                indexerXRPUrl
+                indexerXRPUrl,
+                finalizationBlocks
             )
         )
             .to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`)

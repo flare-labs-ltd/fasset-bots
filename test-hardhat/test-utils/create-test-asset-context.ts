@@ -18,6 +18,8 @@ import { newAssetManager, waitForTimelock } from "./new-asset-manager";
 import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
+import { ContractWithEvents } from "../../src/utils/events/truffle";
+import { AssetManagerControllerInstance } from "../../typechain-truffle";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -37,6 +39,8 @@ const TrivialAddressValidatorMock = artifacts.require("TrivialAddressValidatorMo
 const WhitelistMock = artifacts.require("WhitelistMock");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 
+export type AssetManagerControllerEvents = import("../../typechain-truffle/AssetManagerController").AllEvents;
+
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
 export type TestFtsos = Record<"nat" | "usdc" | "usdt" | "asset", FtsoMockInstance>;
@@ -53,6 +57,7 @@ export type TestAssetBotContext = Modify<
         ftsoManager: FtsoManagerMockInstance;
         ftsos: TestFtsos;
         blockchainIndexer: MockIndexer;
+        assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;
     }
 >;
 
@@ -188,7 +193,6 @@ export async function createTestAssetContext(
         attestationProvider,
         assetManager,
         assetManagerController,
-        ftsoRegistry,
         ftsoManager,
         wNat,
         fAsset,
@@ -207,7 +211,6 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext): T
         blockchainIndexer: context.blockchainIndexer,
         attestationProvider: context.attestationProvider,
         assetManager: context.assetManager,
-        ftsoRegistry: context.ftsoRegistry,
         ftsoManager: context.ftsoManager,
         fAsset: context.fAsset,
         assetFtso: context.assetFtso,
@@ -274,12 +277,12 @@ function createTestAssetManagerSettings(
         buybackCollateralFactorBIPS: bnToString(parameters.buybackCollateralFactorBIPS),
         announcedUnderlyingConfirmationMinSeconds: bnToString(parameters.announcedUnderlyingConfirmationMinSeconds),
         agentFeeChangeTimelockSeconds: 6 * HOURS,
-        agentCollateralRatioChangeTimelockSeconds: 1 * HOURS,
+        agentCollateralRatioChangeTimelockSeconds: bnToString(parameters.agentCollateralRatioChangeTimelockSeconds),
+        agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds),
         agentExitAvailableTimelockSeconds: 10 * MINUTES,
         vaultCollateralBuyForFlareFactorBIPS: toBIPS(1.05),
         mintingPoolHoldingsRequiredBIPS: toBIPS("50%"),
         tokenInvalidationTimeMinSeconds: 1 * DAYS,
-        agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds),
     };
 }
 

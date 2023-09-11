@@ -7,8 +7,7 @@
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:prettier/recommended"
+        "plugin:@typescript-eslint/eslint-recommended"
     ],
     "rules": {
         "linebreak-style": [
@@ -27,7 +26,7 @@
             }
         ],
         "@typescript-eslint/no-explicit-any": "off",
-        "no-console": 1
+        "no-console": 0
     },
     "parserOptions": {
         "ecmaVersion": 2020,

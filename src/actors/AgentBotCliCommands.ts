@@ -6,7 +6,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
-import { BN_ZERO, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import chalk from "chalk";
@@ -15,6 +15,7 @@ import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/artifacts";
+import { ChainInfo } from "../fasset/ChainInfo";
 dotenv.config();
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
@@ -25,17 +26,18 @@ export class BotCliCommands {
     ownerAddress!: string;
     botConfig!: BotConfig;
     agentSettingsPath!: string;
+    botChainInfo!: ChainInfo;
 
-    static async create(runConfigFile: string = RUN_CONFIG_PATH) {
+    static async create(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH) {
         const bot = new BotCliCommands();
-        await bot.initEnvironment(runConfigFile);
+        await bot.initEnvironment(fAssetSymbol, runConfigFile);
         return bot;
     }
 
     /**
      * Initializes asset context from AgentBotRunConfig
      */
-    async initEnvironment(runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
+    async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
         const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as BotConfigFile;
@@ -57,7 +59,13 @@ export class BotCliCommands {
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         // create context
-        this.context = await createAssetContext(this.botConfig, this.botConfig.chains[0]);
+        const chainConfig = this.botConfig.chains.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        if (chainConfig == null) {
+            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol.`);
+            throw new CommandLineError("Invalid FAsset symbol");
+        }
+        this.botChainInfo = chainConfig.chainInfo;
+        this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         const underlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
         const underlyingPrivateKey = requireEnv("OWNER_UNDERLYING_PRIVATE_KEY");
@@ -69,11 +77,16 @@ export class BotCliCommands {
     /**
      * Creates agent bot.
      */
-    async createAgentVault(): Promise<Agent> {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
-        const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
-        this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
-        return agentBot.agent;
+    async createAgentVault(): Promise<Agent | null> {
+        try {
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+            this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            return agentBot.agent;
+        } catch (error) {
+            console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
+        }
+        return null;
     }
 
     /**
@@ -174,6 +187,7 @@ export class BotCliCommands {
         agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
         agentEnt.agentSettingUpdateValidAtName = settingName;
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
+        console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
 
     /**
@@ -190,6 +204,7 @@ export class BotCliCommands {
         agentEnt.waitingForDestructionCleanUp = true;
         await this.botConfig.orm!.em.persist(agentEnt).flush();
         logger.info(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
+        console.log(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
     }
 
     /**
@@ -199,7 +214,7 @@ export class BotCliCommands {
      */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (!agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.isZero()) {
+        if (!toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).isZero()) {
             this.botConfig.notifier!.sendActiveWithdrawal(agentVault);
             logger.info(
                 `Agent ${agentVault} already has an active underlying withdrawal announcement at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}.`
@@ -240,10 +255,10 @@ export class BotCliCommands {
     async confirmUnderlyingWithdrawal(agentVault: string, txHash: string): Promise<void> {
         logger.info(`Agent ${agentVault} is waiting for confirming underlying withdrawal.`);
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
+        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                 await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
                 logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
@@ -252,7 +267,12 @@ export class BotCliCommands {
                 this.botConfig.notifier!.sendConfirmWithdrawUnderlying(agentVault);
             } else {
                 logger.info(
-                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp
+                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
+                );
+                console.log(
+                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                         .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
@@ -265,11 +285,12 @@ export class BotCliCommands {
 
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.gt(BN_ZERO)) {
+        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
+            console.log(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
             const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
@@ -279,7 +300,14 @@ export class BotCliCommands {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 await this.botConfig.orm!.em.persist(agentEnt).flush();
                 logger.info(
-                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
+                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
+                );
+                console.log(
+                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
+                        .toString()}. Current ${latestTimestamp.toString()}.`
                 );
             }
         } else {

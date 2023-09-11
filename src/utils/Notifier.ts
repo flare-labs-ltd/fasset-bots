@@ -58,6 +58,9 @@ const BALANCE_POOL_FEES = "BALANCE POOL FEES";
 const POOL_DELEGATE = "POOL DELEGATION";
 const POOL_UNDELEGATE = "POOL UNDELEGATION";
 
+// other
+const DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK ALERT";
+
 export class Notifier {
     send(title: string, message?: string) {
         if (message) {
@@ -166,17 +169,24 @@ export class Notifier {
         this.send(LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance: ${balance} ${tokenSymbol}.`);
     }
 
-    sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean) {
-        if (redemption) {
+    sendNoProofObtained(agentVault: string, requestId: string | null, roundId: number, requestData: string, redemption?: boolean) {
+        if (!requestId) {
             this.send(
-                REDEMPTION_NO_PROOF_OBTAINED,
-                `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
+                DAILY_TASK_NO_PROOF_OBTAINED,
+                `Agent ${agentVault} cannot obtain proof confirmed block heigh existence in round ${roundId} with requested data ${requestData}.`
             );
         } else {
-            this.send(
-                MINTING_NO_PROOF_OBTAINED,
-                `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
-            );
+            if (redemption) {
+                this.send(
+                    REDEMPTION_NO_PROOF_OBTAINED,
+                    `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
+                );
+            } else {
+                this.send(
+                    MINTING_NO_PROOF_OBTAINED,
+                    `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+                );
+            }
         }
     }
 

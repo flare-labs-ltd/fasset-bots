@@ -218,6 +218,7 @@ export class Challenger extends ActorBase {
             /* istanbul ignore next */
             if (spentAmount == null) continue;
             if (this.isValidRedemptionReference(agent, transaction.reference)) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const { amount } = this.activeRedemptions.get(transaction.reference)!;
                 transactions.push({ txHash: transaction.hash, spent: spentAmount.sub(amount) });
             } else if (this.isValidAnnouncedPaymentReference(agent, transaction.reference)) {

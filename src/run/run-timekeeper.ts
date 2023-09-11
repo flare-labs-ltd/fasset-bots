@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import { TimeKeeper } from "../actors/TimeKeeper";
-import { Future, requireEnv, sleep, toplevelRun } from "../utils/helpers";
+import { Future, requireEnv, toplevelRun } from "../utils/helpers";
 import { initWeb3 } from "../utils/web3";
 import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";

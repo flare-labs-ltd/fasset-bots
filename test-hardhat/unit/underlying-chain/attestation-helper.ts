@@ -84,14 +84,6 @@ describe("Attestation client unit tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it.skip("Should not obtain balance decreasing transaction proof - address not in transaction", async () => {
-        await useContext();
-        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
-        chain.mine(chain.finalizationBlocks + 1);
-        const res = await context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, "karEm"); //.to.eventually.be.rejectedWith(`address ${underlying2} not used in transaction`).and.be.an.instanceOf(Error);
-        const res2 = await context.attestationProvider.obtainBalanceDecreasingTransactionProof(res!.round, res!.data);
-    });
-
     it("Should not request payment proof - finalization block not found", async () => {
         await useContext();
         const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);

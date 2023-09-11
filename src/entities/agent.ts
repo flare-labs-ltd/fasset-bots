@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Entity, Enum, EnumType, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
@@ -81,10 +81,19 @@ export class AgentEntity {
     @Property()
     underlyingWithdrawalWaitingForCancelation: boolean = false;
 
-    // last time corner cases were checked
+    // last time daily tasks were checked
 
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
-    cornerCaseCheckTimestamp: BN = BN_ZERO;
+    dailyTasksTimestamp: BN = BN_ZERO;
+
+    @Enum({ type: EnumType, defaultRaw: "obtainedProof" })
+    dailyProofState!: DailyProofState;
+
+    @Property({ nullable: true })
+    dailyProofRequestRound?: number;
+
+    @Property({ nullable: true })
+    dailyProofRequestData?: string;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -184,6 +193,11 @@ export class AgentRedemption {
 
     @Property({ nullable: true })
     proofRequestData?: string;
+}
+
+export enum DailyProofState {
+    WAITING_PROOF = "waitingProof",
+    OBTAINED_PROOF = "obtainedProof",
 }
 
 export enum AgentMintingState {

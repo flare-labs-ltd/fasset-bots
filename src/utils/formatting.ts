@@ -1,6 +1,5 @@
 import BN from "bn.js";
 import { groupIntegerDigits } from "../../test-hardhat/test-utils/fuzzing-utils";
-import { BaseEvent } from "./events/common";
 
 function formatArg(value: unknown): string {
     if (isBigNumber(value)) {
@@ -32,6 +31,7 @@ function formatBN(x: any) {
 }
 
 export function formatArgs(args: any) {
+    if (!args) return null;
     const result: any = {};
     for (const [key, value] of Object.entries(args)) {
         if (Number.isNaN(parseInt(key)) && key != "__length__") {

@@ -3,7 +3,6 @@ import BN from "bn.js";
 export type TxInputOutput = [address: string, amount: BN];
 
 // possible transaction status values
-export const TX_UNKNOWN = -1; // in case of simplified response from indexer, where status is unknown
 export const TX_SUCCESS = 0;
 export const TX_FAILED = 1;
 export const TX_BLOCKED = 2;
