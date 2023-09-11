@@ -286,7 +286,9 @@ export class AgentBot {
             logger.info(
                 `Agent ${
                     this.agent.vaultAddress
-                } checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${latestBlock.number}, ${latestBlock.timestamp}.`
+                } checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${
+                    latestBlock.number
+                }, ${latestBlock.timestamp}.`
             );
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} could not retrieve latest block in handleDailyTasks.`);

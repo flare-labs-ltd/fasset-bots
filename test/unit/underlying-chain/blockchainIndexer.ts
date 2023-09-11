@@ -194,7 +194,6 @@ describe("XRP blockchain tests via indexer", async () => {
     it("Should get transaction by reference - empty array", async () => {
         const note = "0x1eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeefbeaddeafdeaddeedcab";
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsByReference(note);
-        console.log(retrievedTransaction1)
         expect(retrievedTransaction1.length).to.be.eq(0);
     });
 

@@ -61,7 +61,7 @@
         "lint": "eslint \"src/**/*ts\"",
         "---------PRETTIER---SCRIPTS": "",
         "prettier_check": "prettier --check .",
-        "prettier_write": "prettier --write .",
+        "prettier_fix": "prettier --write .",
         "---------TEST---SCRIPTS": "",
         "test": "mocha",
         "test_all:e2e": "mocha --recursive -t 500000 \"test/e2e/**/*.ts\"",
