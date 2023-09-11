@@ -192,9 +192,10 @@ describe("XRP blockchain tests via indexer", async () => {
     });
 
     it("Should get transaction by reference - empty array", async () => {
-        const note = "0x10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+        const note = "0x1eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeefbeaddeafdeaddeedcab";
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsByReference(note);
-        expect(retrievedTransaction1.length).to.be.gte(0);
+        console.log(retrievedTransaction1)
+        expect(retrievedTransaction1.length).to.be.eq(0);
     });
 
     it("Should get transactions within block range", async () => {

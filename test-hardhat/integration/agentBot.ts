@@ -136,6 +136,9 @@ describe("Agent bot tests", async () => {
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, "started");
+        // run it also now to cover else
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));

@@ -207,6 +207,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             logger.error(`State connector error: there aren't any attestation providers`);
             throw new StateConnectorError("There aren't any attestation providers.");
         } catch (e) {
+            /* istanbul ignore else */
             if (e instanceof StateConnectorError) {
                 logger.error(`State connector error: ${e}`);
                 throw e;
