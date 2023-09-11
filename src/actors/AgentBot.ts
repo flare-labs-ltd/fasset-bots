@@ -281,7 +281,6 @@ export class AgentBot {
     async handleDailyTasks(rootEm: EM): Promise<void> {
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const latestBlock = await latestUnderlyingBlock(this.context);
-        /* istanbul ignore next */
         logger.info(
             `Agent ${
                 this.agent.vaultAddress
@@ -1075,7 +1074,6 @@ export class AgentBot {
                 }, payment reference ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`
             );
         } else {
-            /* istanbul ignore next */
             logger.info(
                 `Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${
                     redemption.requestId

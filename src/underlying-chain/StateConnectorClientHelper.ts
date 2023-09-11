@@ -99,6 +99,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         const response = await this.verifier.post("/query/prepareAttestation", request);
         const status = response.data.status;
         const data = response.data.data;
+        const errorMessage = response.data.errorMessage;
+        const errorDetails = response.data.errorDetails;
         /* istanbul ignore else */
         if (status === "OK") {
             const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
@@ -109,7 +111,16 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 data: data,
             };
         } else {
-            return null;
+            logger.error(
+                `State connector error: cannot submit request ${formatArgs(request)}: ${status}: ${errorMessage ? errorMessage : ""}, ${
+                    errorDetails ? errorDetails : ""
+                }`
+            );
+            throw new StateConnectorError(
+                `State connector error: cannot submit request ${formatArgs(request)}: ${status}: ${errorMessage ? errorMessage : ""}, ${
+                    errorDetails ? errorDetails : ""
+                }`
+            );
         }
     }
 
@@ -158,6 +169,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 const tree = new MerkleTree(hashes);
                 const index = tree.sortedHashes.findIndex((hash) => hash === matchedResponse.hash);
                 const proof = tree.getProof(index);
+                /* istanbul ignore next */
                 if (proof == null) {
                     // this should never happen, unless there is bug in the MerkleTree implementation
                     logger.error(`State connector error: cannot obtain Merkle proof`);
@@ -166,6 +178,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
                 // gets the root and checks that it is available (throws if it is not)
                 const scFinalizedRoot = await this.stateConnector.merkleRoot(round);
+                /* istanbul ignore next */
                 if (scFinalizedRoot !== tree.root) {
                     // this can only happen if the attestation provider from where we picked data is
                     // inconsistent with the finalized Merkle root in the blockchain
@@ -183,6 +196,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
                 // extra verification - should never fail, since Merkle root matches
                 const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
+                /* istanbul ignore next */
                 if (!verified) {
                     logger.error(`State connector error: proof does not verify!!`);
                     throw new StateConnectorError("Proof does not verify!!!");

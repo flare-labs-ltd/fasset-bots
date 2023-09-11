@@ -317,7 +317,6 @@ export class BlockchainIndexerHelper implements IBlockChain {
             throw new BlockChainIndexerHelperError(
                 `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
             );
-            /* istanbul ignore else */
         } else if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);

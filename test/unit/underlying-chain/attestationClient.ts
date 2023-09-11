@@ -83,11 +83,9 @@ describe("Attestation client unit tests", async () => {
         await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
         let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
         const finalBlock = currentBlockHeight + finalizationBlocks;
-        console.log(currentBlockHeight, finalBlock);
         while (currentBlockHeight <= finalBlock) {
             currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
         }
-        console.log(currentBlockHeight, finalBlock);
         const requestPayment = await attestationHelper.requestPaymentProof(transaction, fundedAddressXRP, targetAddressXRP);
         // request balance decreasing
         const requestDecreasing = await attestationHelper.requestBalanceDecreasingTransactionProof(transaction, fundedAddressXRP);
@@ -119,11 +117,6 @@ describe("Attestation client unit tests", async () => {
         expect(proofPayment.finalized).to.be.true;
         expect(proofDecreasing.finalized).to.be.true;
         expect(proofNonPayment.finalized).to.be.true;
-
-        console.log(requestBlock);
-        console.log(requestPayment);
-        console.log(requestDecreasing);
-        console.log(requestNonPayment);
 
         const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round-2, requestBlock!.data);
         console.log(proofBlock1)
