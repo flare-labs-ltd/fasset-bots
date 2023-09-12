@@ -1,10 +1,10 @@
 import { time } from "@openzeppelin/test-helpers";
 import { AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
-import { artifacts } from "../../src/utils/artifacts";
 import { findEvent } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance } from "../../typechain-truffle";
 import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
+import { artifacts } from "../../src/utils/web3";
 
 export async function newAssetManager(
     governanceAddress: string,
@@ -95,16 +95,28 @@ export async function linkAssetManager() {
     });
 }
 
-export function deployLibrary(name: string, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<Truffle.ContractInstance> {
+export async function deployLibrary(name: string, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<Truffle.ContractInstance> {
     // libraries don't have typechain info generated, so we have to import as 'any' (but it's no problem, since we only use them for linking)
-    return linkDependencies(artifacts.require(name as any), dependencies).new();
+    const contract = artifacts.require(name as any) as Truffle.Contract<any>;
+    const linkedContract = await linkDependencies(contract, dependencies);
+    return linkedContract.new();
 }
 
-export function linkDependencies<T extends Truffle.Contract<any>>(contract: T, dependencies: { [key: string]: Truffle.ContractInstance } = {}): T {
-    // for some strange reason, the only way to call `link` that is supported by Hardhat, doesn't have type info by typechain
-    // so the interface of this method assumes that maybe we will need linking by name in the future (that's why it accepts dictionary)
+export async function linkDependencies<T extends Truffle.Contract<any>>(contract: T, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<T> {
+    // normally, detectNetwork is called on new, but it has to be called before link
+    if ((contract as any).detectNetwork) {
+        await (contract as any).detectNetwork();
+    }
+    // due to difference between hardhat and truffle format, have to extract id like $b5cdffcf5b8f8ae6fa06e08eee0b808a00$ and use it instead of name in link
     for (const dependencyName of Object.keys(dependencies)) {
-        contract.link(dependencies[dependencyName] as any);
+        const originalJson = (contract as any)._originalJson;
+        let dependencyId: string | null = null;
+        for (const dict of Object.values(originalJson.linkReferences) as any) {
+            if (dict[dependencyName] == null) continue;
+            const { start, length } = dict[dependencyName][0];
+            dependencyId = originalJson.bytecode.slice(2 * start + 4, 2 * (start + length)).replace(/\$/g, '\\$');
+        }
+        contract.link(dependencyId ?? dependencyName, dependencies[dependencyName].address);
     }
     return contract;
 }

@@ -10,7 +10,6 @@ import {
     UnderlyingWithdrawalCancelled,
     UnderlyingWithdrawalConfirmed,
 } from "../../typechain-truffle/AssetManager";
-import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, requireNotNull, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -23,6 +22,7 @@ import { getAgentSettings } from "../utils/fasset-helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { artifacts } from "../utils/web3";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");

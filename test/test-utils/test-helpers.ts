@@ -9,13 +9,13 @@ import { SourceId } from "../../src/verification/sources/sources";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BotConfig, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
-import { artifacts } from "../../src/utils/artifacts";
 import { BN_ZERO, BNish, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentEntity } from "../../src/entities/agent";
 import { Notifier } from "../../src/utils/Notifier";
 import { loadContracts } from "../../src/config/contracts";
+import { artifacts } from "../../src/utils/web3";
 
 const ERC20Mock = artifacts.require("ERC20Mock");
 const Whitelist = artifacts.require("Whitelist");

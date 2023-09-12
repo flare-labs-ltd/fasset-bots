@@ -1,13 +1,12 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { disableMccTraceManager } from "../../test-utils/helpers";
-import { web3 } from "../../../src/utils/web3";
+import { artifacts, web3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { artifacts } from "hardhat";
 import { MockChain } from "../../../src/mock/MockChain";
 import { BotChainConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";

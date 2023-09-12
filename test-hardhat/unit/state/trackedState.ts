@@ -4,7 +4,7 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
 import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
-import { web3 } from "../../../src/utils/web3";
+import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
 import {
@@ -30,7 +30,6 @@ import {
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
-import { artifacts } from "../../../src/utils/artifacts";
 import { tokenBalance } from "../../../src/state/TokenPrice";
 import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";

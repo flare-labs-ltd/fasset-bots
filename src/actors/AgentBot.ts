@@ -6,7 +6,6 @@ import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/I
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
-import { artifacts } from "../utils/artifacts";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
@@ -23,7 +22,7 @@ import {
     toBN,
 } from "../utils/helpers";
 import { Notifier } from "../utils/Notifier";
-import { web3 } from "../utils/web3";
+import { artifacts, web3 } from "../utils/web3";
 import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { CollateralPrice } from "../state/CollateralPrice";

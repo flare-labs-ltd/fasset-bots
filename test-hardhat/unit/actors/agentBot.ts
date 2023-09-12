@@ -2,7 +2,7 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
-import { web3 } from "../../../src/utils/web3";
+import { artifacts, web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
@@ -21,7 +21,6 @@ import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
-import { artifacts } from "../../../src/utils/artifacts";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";

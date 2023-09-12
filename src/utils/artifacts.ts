@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { globSync } from "glob";
-import { basename, extname } from "path";
+import { basename, dirname, extname, relative } from "path";
 import Web3 from "web3";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const createContract = require("@truffle/contract");
@@ -8,25 +8,37 @@ const createContract = require("@truffle/contract");
 interface ArtifactData {
     name: string;
     path: string;
-    contract?: any;
+    contract?: Truffle.Contract<any>;
 }
 
-class ArtifactsImpl {
-    artifactMap?: Map<string, ArtifactData>;
-    web3?: Web3;
+export interface ArtifactsWithUpdate extends Truffle.Artifacts {
+    updateWeb3(web3: Web3): void;
+}
+
+export function createArtifacts(web3: Web3): ArtifactsWithUpdate {
+    return new ArtifactsImpl(web3);
+}
+
+class ArtifactsImpl implements ArtifactsWithUpdate {
+    private artifactMap?: Map<string, ArtifactData>;
+
+    constructor(
+        private web3: Web3,
+    ) {}
 
     loadArtifactMap(): void {
         this.artifactMap = new Map();
         const paths = globSync("artifacts/**/*.json");
         for (const path of paths) {
             const name = basename(path, extname(path));
+            const solPath = relative('artifacts/', dirname(path)).replace(/\\/g, '/');
             const data: ArtifactData = { name: name, path: path };
             this.artifactMap.set(name, data);
-            this.artifactMap.set(path, data);
+            this.artifactMap.set(`${solPath}:${name}`, data);
         }
     }
 
-    loadContract<T>(path: string): T {
+    loadContract(path: string): Truffle.Contract<any> {
         const abi = JSON.parse(readFileSync(path).toString());
         const contract = createContract(abi);
         contract._originalJson = abi;
@@ -34,7 +46,7 @@ class ArtifactsImpl {
         return contract;
     }
 
-    require(name: string): ArtifactData {
+    require(name: string): Truffle.Contract<any> {
         if (this.artifactMap == null) {
             this.loadArtifactMap();
         }
@@ -63,22 +75,12 @@ class ArtifactsImpl {
     }
 
     private updateContractWeb3(contract: any): void {
-        if (this.web3?.currentProvider != null) {
+        if (this.web3.currentProvider != null) {
             contract.setProvider(this.web3.currentProvider);
             contract.setWallet(this.web3.eth.accounts.wallet);
         }
-        if (this.web3?.eth.defaultAccount != null) {
+        if (this.web3.eth.defaultAccount != null) {
             contract.defaults({ from: this.web3.eth.defaultAccount });
         }
     }
-}
-
-interface ArtifactsWithUpdate extends Truffle.Artifacts {
-    updateWeb3?(web3: Web3): void;
-}
-
-export const artifacts: ArtifactsWithUpdate = createArtifacts();
-
-function createArtifacts(): ArtifactsWithUpdate {
-    return (global as any).artifacts ?? new ArtifactsImpl();
 }

@@ -2,7 +2,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { createTestAgentBAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter, disableMccTraceManager } from "../test-utils/helpers";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import { web3 } from "../../src/utils/web3";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import {
@@ -34,7 +34,6 @@ import { EventFormatter } from "../test-utils/EventFormatter";
 import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
-import { artifacts } from "../../src/utils/artifacts";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
 import { FuzzingNotifier } from "./FuzzingNotifier";

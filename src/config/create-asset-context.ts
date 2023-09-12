@@ -2,8 +2,8 @@ import { AddressUpdaterInstance, AssetManagerControllerInstance } from "../../ty
 import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { artifacts } from "../utils/artifacts";
 import { fail } from "../utils/helpers";
+import { artifacts } from "../utils/web3";
 import { BotConfig, BotChainConfig } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
 
