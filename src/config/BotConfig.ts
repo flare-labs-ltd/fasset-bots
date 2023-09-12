@@ -1,8 +1,9 @@
+import "dotenv/config";
+
 import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
-import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import { WALLET } from "simple-wallet";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
@@ -19,7 +20,6 @@ import { Notifier } from "../utils/Notifier";
 import { requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
-dotenv.config();
 
 export interface BotConfigFile {
     defaultAgentSettingsPath?: string; // only for agent bot

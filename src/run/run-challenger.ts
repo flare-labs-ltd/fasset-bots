@@ -1,12 +1,12 @@
+import "dotenv/config";
+
 import { readFileSync } from "fs";
 import { requireEnv, toplevelRun } from "../utils/helpers";
 import { initWeb3 } from "../utils/web3";
-import * as dotenv from "dotenv";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
-dotenv.config();
 
 const CHALLENGER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
 const CHALLENGER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
