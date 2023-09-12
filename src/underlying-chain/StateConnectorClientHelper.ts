@@ -15,9 +15,9 @@ import { AttestationType } from "../verification/generated/attestation-types-enu
 import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
 import { ARBase } from "../verification/generated/attestation-request-types";
 import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
-import { artifacts } from "../utils/artifacts";
 import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
+import { artifacts } from "../utils/web3";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {

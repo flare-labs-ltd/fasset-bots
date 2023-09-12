@@ -1,5 +1,5 @@
 import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
-import { initWeb3 } from "../../../src/utils/web3";
+import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";

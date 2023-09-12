@@ -7,7 +7,7 @@ import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { initWeb3 } from "../utils/web3";
+import { artifacts, initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import { readFileSync } from "fs";
 import chalk from "chalk";
@@ -15,7 +15,6 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
-import { artifacts } from "../utils/artifacts";
 import { ChainInfo } from "../fasset/ChainInfo";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");

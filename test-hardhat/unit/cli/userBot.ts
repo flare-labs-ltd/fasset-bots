@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ORM } from "../../../src/config/orm";
 import { checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
-import { web3 } from "../../../src/utils/web3";
+import { artifacts, web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
@@ -9,7 +9,6 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { Notifier } from "../../../src/utils/Notifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { artifacts } from "../../../src/utils/artifacts";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";

@@ -1,6 +1,6 @@
 import { AgentInfo, AssetManagerSettings, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
-import { artifacts } from "../../../src/utils/artifacts";
 import { BN_ZERO, MAX_BIPS, exp10, maxBN, toBN } from "../../../src/utils/helpers";
+import { artifacts } from "../../../src/utils/web3";
 import { AssetManagerInstance } from "../../../typechain-truffle";
 import { CollateralData, CollateralDataFactory, CollateralKind } from "./CollateralData";
 import { minBN } from "./helpers";
