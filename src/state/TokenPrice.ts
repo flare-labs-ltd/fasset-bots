@@ -1,5 +1,5 @@
-import { IERC20Events } from "../fasset/IAssetContext";
 import { IERC20Instance, IFtsoInstance, IPriceReaderInstance } from "../../typechain-truffle";
+import { IERC20Events } from "../fasset-bots/IAssetBotContext";
 import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";

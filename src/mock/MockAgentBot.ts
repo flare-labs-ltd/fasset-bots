@@ -1,10 +1,10 @@
 import { AgentBot } from "../actors/AgentBot";
-import { AgentB } from "../fasset-bots/AgentB";
+import { Agent } from "../fasset/Agent";
 import { Notifier } from "../utils/Notifier";
 
 export class MockAgentBot extends AgentBot {
     constructor(
-        public agent: AgentB,
+        public agent: Agent,
         public notifier: Notifier
     ) {
         super(agent, notifier);

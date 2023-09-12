@@ -1,5 +1,5 @@
+import { IERC20Events } from "../../../src/fasset-bots/IAssetBotContext";
 import { AMGSettings, amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
-import { IERC20Events } from "../../../src/fasset/IAssetContext";
 import { artifacts } from "../../../src/utils/artifacts";
 import { ContractWithEvents } from "../../../src/utils/events/truffle";
 import { BN_ZERO, BNish, exp10, getOrCreateAsync, requireNotNull, toBN } from "../../../src/utils/helpers";

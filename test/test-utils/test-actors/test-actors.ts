@@ -1,4 +1,4 @@
-import { AgentBotDefaultSettings, IAssetAgentBotContext, IAssetActorContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { BNish, fail } from "../../../src/utils/helpers";
 import { SourceId } from "../../../src/verification/sources/sources";
@@ -13,7 +13,6 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { cleanUp } from "../test-helpers";
-import { IAssetContext } from "../../../src/fasset/IAssetContext";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -66,7 +65,7 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
     return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
-export async function destroyAllAgents(context: IAssetContext, orm: ORM, ownerAddress: string) {
+export async function destroyAllAgents(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string) {
     const list = await context.assetManager.getAllAgents(0, 100);
     const listOfAgents = list[0];
     await cleanUp(context, orm, ownerAddress, listOfAgents);

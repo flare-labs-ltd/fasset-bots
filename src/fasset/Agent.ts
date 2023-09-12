@@ -14,7 +14,6 @@ import { artifacts } from "../utils/artifacts";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, requireNotNull, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
-import { IAssetContext } from "./IAssetContext";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { EventArgs } from "../utils/events/common";
@@ -23,6 +22,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { getAgentSettings } from "../utils/fasset-helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -30,7 +30,7 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export class Agent {
     constructor(
-        public context: IAssetContext,
+        public context: IAssetAgentBotContext,
         public ownerAddress: string,
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
@@ -83,7 +83,7 @@ export class Agent {
         return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateral());
     }
 
-    static async create(ctx: IAssetContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
+    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
         const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
         // extract agent vault address from AgentVaultCreated event

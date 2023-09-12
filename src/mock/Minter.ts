@@ -1,5 +1,5 @@
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
-import { IAssetContext } from "../fasset/IAssetContext";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
@@ -12,7 +12,7 @@ import { MockIndexer } from "./MockIndexer";
 
 export class Minter {
     constructor(
-        public context: IAssetContext,
+        public context: IAssetAgentBotContext,
         public address: string,
         public underlyingAddress: string,
         public wallet: IBlockChainWallet
@@ -27,14 +27,14 @@ export class Minter {
         return this.context.attestationProvider;
     }
 
-    static async createTest(ctx: IAssetContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
+    static async createTest(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
         if (!(ctx.blockchainIndexer instanceof MockIndexer)) fail("only for mock chains");
         ctx.blockchainIndexer.chain.mint(underlyingAddress, underlyingBalance);
         const wallet = new MockChainWallet(ctx.blockchainIndexer.chain);
         return Minter.create(ctx, address, underlyingAddress, wallet);
     }
 
-    static async create(ctx: IAssetContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet): Promise<Minter> {
+    static async create(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet): Promise<Minter> {
         return new Minter(ctx, address, underlyingAddress, wallet);
     }
 

@@ -2,7 +2,6 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../entities/agent";
-import { AgentB } from "../fasset-bots/AgentB";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -34,6 +33,7 @@ import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
 import { SourceId } from "../verification/sources/sources";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
+import { Agent } from "../fasset/Agent";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -42,7 +42,7 @@ const IERC20 = artifacts.require("IERC20");
 
 export class AgentBot {
     constructor(
-        public agent: AgentB,
+        public agent: Agent,
         public notifier: Notifier
     ) {}
 
@@ -73,7 +73,7 @@ export class AgentBot {
                 await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
             }
             const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentSettingsConfig };
-            const agent = await AgentB.create(context, ownerAddress, agentSettings);
+            const agent = await Agent.create(context, ownerAddress, agentSettings);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.ownerAddress = agent.ownerAddress;
@@ -114,7 +114,7 @@ export class AgentBot {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // agent
-        const agent = new AgentB(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
+        const agent = new Agent(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
         logger.info(
             `Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
         );
