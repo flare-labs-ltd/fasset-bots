@@ -77,7 +77,7 @@ export class TrackedState {
         try {
             for (const event of events) {
                 if (eventIs(event, this.context.ftsoManager, "PriceEpochFinalized")) {
-                    logger.info(`Tracked State received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
+                    logger.info(`Tracked State received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     [this.prices, this.trustedPrices] = await this.getPrices();
                 } else if (eventIs(event, this.context.assetManager, "SettingChanged")) {
                     logger.info(`Tracked State received event 'SettingChanged' with data ${formatArgs(event.args)}.`);
