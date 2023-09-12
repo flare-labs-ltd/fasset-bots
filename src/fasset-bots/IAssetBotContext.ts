@@ -10,6 +10,7 @@ export type IAssetAgentBotContext = IAssetContext;
 
 export interface AgentBotDefaultSettings {
     vaultCollateralToken: string;
+    poolTokenSuffix: string;
     feeBIPS: BN;
     poolFeeShareBIPS: BN;
     mintingVaultCollateralRatioBIPS: BN;

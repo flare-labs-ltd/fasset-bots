@@ -1,5 +1,6 @@
 {
     "vaultCollateralFtsoSymbol": "USDCXYZ",
+    "poolTokenSuffix": "URSKA",
     "feeBIPS": 1000,
     "poolFeeShareBIPS": 4000,
     "mintingVaultCollateralRatioConstant": 1.2,

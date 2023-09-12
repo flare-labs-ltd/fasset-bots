@@ -70,6 +70,7 @@ export interface BotChainConfig {
 
 export interface AgentSettingsConfig {
     vaultCollateralFtsoSymbol: string;
+    poolTokenSuffix: string;
     feeBIPS: string;
     poolFeeShareBIPS: string;
     mintingVaultCollateralRatioConstant: number;
@@ -170,6 +171,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         vaultCollateralToken: vaultCollateralToken.token,
+        poolTokenSuffix: agentSettingsConfig.poolTokenSuffix + "-" + vaultCollateralToken.tokenFtsoSymbol,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
         mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),
