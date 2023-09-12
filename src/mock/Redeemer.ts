@@ -1,17 +1,17 @@
 import { assert } from "chai";
 import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { Agent } from "../fasset/Agent";
-import { IAssetContext } from "../fasset/IAssetContext";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 
 export class Redeemer {
     constructor(
-        public context: IAssetContext,
+        public context: IAssetAgentBotContext,
         public address: string,
         public underlyingAddress: string
     ) {
@@ -25,7 +25,7 @@ export class Redeemer {
         return this.context.attestationProvider;
     }
 
-    static async create(ctx: IAssetContext, address: string, underlyingAddress: string): Promise<Redeemer> {
+    static async create(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string): Promise<Redeemer> {
         return new Redeemer(ctx, address, underlyingAddress);
     }
 

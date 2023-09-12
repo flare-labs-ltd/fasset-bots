@@ -295,6 +295,11 @@ export async function retry<T extends (...arg0: any[]) => any>(fn: T, args: Para
         return result;
     } catch (e) {
         logger.info(`Retry ${currRetry} failed for function ${fn.name}.`);
+        if(e instanceof Error) {
+            console.log(e.message)
+            console.log(e.name)
+            console.log(e.stack)
+        }
         if (currRetry > maxTry) {
             console.log(`All ${maxTry} retry attempts exhausted`);
             logger.error(`All ${maxTry} retry attempts exhausted for function ${fn.name}: ${e}`);

@@ -3,7 +3,6 @@ import { readFileSync } from "fs";
 import { BotConfig, BotConfigFile, createBotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
-import { IAssetContext } from "../fasset/IAssetContext";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
@@ -13,9 +12,10 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { formatArgs } from "../utils/formatting";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 
 export class UserBot {
-    context!: IAssetContext;
+    context!: IAssetAgentBotContext;
     botConfig!: BotConfig;
     nativeAddress!: string;
     underlyingAddress!: string;
