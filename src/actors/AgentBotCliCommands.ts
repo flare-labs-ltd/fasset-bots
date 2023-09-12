@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import "dotenv/config";
+
 import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "./AgentBot";
 import { AgentEntity } from "../entities/agent";
@@ -7,7 +9,6 @@ import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFil
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
-import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
@@ -16,7 +17,6 @@ import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/artifacts";
 import { ChainInfo } from "../fasset/ChainInfo";
-dotenv.config();
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -79,13 +79,13 @@ export class BotCliCommands {
      */
     async createAgentVault(): Promise<Agent | null> {
         try {
-            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
-            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
-            this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
-            return agentBot.agent;
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+        const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+        this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+        return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
-        }
+    }
         return null;
     }
 
@@ -273,7 +273,7 @@ export class BotCliCommands {
                 );
                 console.log(
                     `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                        .add(announcedUnderlyingConfirmationMinSeconds)
+                    .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
             }

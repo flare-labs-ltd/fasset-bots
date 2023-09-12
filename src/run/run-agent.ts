@@ -1,11 +1,11 @@
+import "dotenv/config";
+
 import { readFileSync } from "fs";
 import { AgentBotRunner } from "../actors/AgentBotRunner";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 import { requireEnv, toplevelRun } from "../utils/helpers";
 import { initWeb3 } from "../utils/web3";
-import * as dotenv from "dotenv";
 import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
-dotenv.config();
 
 const OWNER_ADDRESS: string = requireEnv("OWNER_ADDRESS");
 const OWNER_PRIVATE_KEY: string = requireEnv("OWNER_PRIVATE_KEY");
