@@ -31,7 +31,7 @@ Note that a dual strategy is possible, starting with pool collateral instead of 
 - we expect dexes with stablecoin / f-asset pairs to be better liquidated and more stable,
 - liquidation usually outputs less pool collateral than vault collateral, so the second swap will consume less fees.
 
-The contract uses Blazeswap as the default dex, but any v2-uniswap interfaced constant product dex can be used. Also note that flash loan is assumed to have a fixed (or no) fee.
+The contract uses Blazeswap as the default dex, but any v2-uniswap interfaced constant product dex can be used (with the hardcoded 0.3% fee). Also note that flash loan is assumed to have a fixed (or no) fee.
 
 ### Calculations
 
@@ -57,4 +57,4 @@ From those vaules we can derive:
 Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.
 
 ## TODO
-- [] handle situations when dex reserves are smaller than swapping amounts.
+- [ ] handle situations when dex reserves are smaller than swapping amounts.

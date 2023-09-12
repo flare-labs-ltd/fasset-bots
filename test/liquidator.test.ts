@@ -7,8 +7,9 @@ import { BlazeSwapRouterInstance } from '../typechain-truffle/blazeswap/contract
 import { FlashLenderInstance } from '../typechain-truffle/contracts/FlashLender'
 import { LiquidatorInstance } from '../typechain-truffle/contracts/Liquidator'
 import { fXRP as fASSET, USDT as VAULT, WNAT as POOL, lotSizeAmg, lotSizeUba, amgSizeUba, roundDownToAmg } from './assets'
-import { ZERO_ADDRESS, MAX_INT, BNish, toBN, minBN } from './helpers/constants'
-import { assertBnEqual } from './helpers/assertBn'
+import { BNish, toBN, minBN } from './utils/constants'
+import { setDexPairPrice, swapOutput, swapInput } from "./utils/blazeswap"
+import { assertBnEqual } from './utils/assertBn'
 
 
 const AMG_TOKEN_WEI_PRICE_SCALE_EXP = 9
@@ -48,28 +49,6 @@ contract("Tests for Liquidator contract", (accounts) => {
     await priceReader.setPrice(fASSET.symbol, priceAsset)
     await priceReader.setPrice(VAULT.symbol, priceVault)
     await priceReader.setPrice(POOL.symbol, pricePool)
-  }
-
-  // set reserve ratio tokenA : tokenB
-  // prices expressed in e.g. usd
-  async function setDexPairPrice(
-    tokenA: ERC20MockInstance,
-    tokenB: ERC20MockInstance,
-    priceA: BNish,
-    priceB: BNish,
-    reserveA: BNish,
-  ): Promise<void> {
-    // reserveA / reserveB = priceA / priceB
-    const reserveB = toBN(reserveA).mul(toBN(priceB)).div(toBN(priceA))
-    await tokenA.mint(accounts[0], reserveA)
-    await tokenB.mint(accounts[0], reserveB)
-    await tokenA.approve(blazeSwap.address, reserveA)
-    await tokenB.approve(blazeSwap.address, reserveB)
-    await blazeSwap.addLiquidity(
-      tokenA.address, tokenB.address,
-      reserveA, reserveB, 0, 0, 0, 0,
-      ZERO_ADDRESS, MAX_INT
-    )
   }
 
   // mocks asset price increase
@@ -125,57 +104,35 @@ contract("Tests for Liquidator contract", (accounts) => {
     return toBN(uba).div(amgSizeUba(fASSET))
   }
 
-  async function swapInput(
-    tokenA: ERC20MockInstance,
-    tokenB: ERC20MockInstance,
-    amountB: BNish
-  ): Promise<BN> {
-    const { 0: reserveA, 1: reserveB } = await blazeSwap.getReserves(tokenA.address, tokenB.address)
-    return toBN(amountB).muln(1000).mul(reserveA).div(reserveB.sub(toBN(amountB))).divn(997)
-  }
-
-  // uniswap-v2 formula for swap output
-  async function swapOutput(
-    tokenA: ERC20MockInstance,
-    tokenB: ERC20MockInstance,
-    amountA: BNish
-  ): Promise<BN> {
-    const { 0: reserveA, 1: reserveB } = await blazeSwap.getReserves(tokenA.address, tokenB.address)
-    const amountAWithFee = toBN(amountA).muln(997)
-    const numerator = amountAWithFee.mul(reserveB)
-    const denominator = reserveA.muln(1000).add(amountAWithFee)
-    return numerator.div(denominator)
-  }
-
   async function liquidationOutput(
     agent: AgentMockInstance,
     amountFAssetUba: BNish
   ): Promise<[BN, BN]> {
     const agentInfo = await assetManager.getAgentInfo(agent.address)
-    const { 0: fAssetPrice } = await priceReader.getPrice(fASSET.symbol)
-    const { 0: vaultPrice, 2: vaultFtsoDecimals } = await priceReader.getPrice(VAULT.symbol)
-    const { 0: poolPrice, 2: poolFtsoDecimals } = await priceReader.getPrice(POOL.symbol)
     const amountFAssetAmg = ubaToAmg(amountFAssetUba)
     // for vault
-    const amgPriceVault  = calcAmgToTokenWeiPrice(VAULT.decimals, vaultPrice, vaultFtsoDecimals, fAssetPrice)
+    const amgPriceVault = await calcAmgToTokenWeiPrice(priceReader, vault)
     const amgWithVaultFactor = amountFAssetAmg.mul(toBN(agentInfo.liquidationPaymentFactorVaultBIPS)).divn(10_000)
     const amountVault = amgToTokenWei(amgWithVaultFactor, amgPriceVault)
     // for pool
-    const amgPricePool = calcAmgToTokenWeiPrice(POOL.decimals, poolPrice, poolFtsoDecimals, fAssetPrice)
+    const amgPricePool = await calcAmgToTokenWeiPrice(priceReader, pool)
     const amgWithPoolFactor = amountFAssetAmg.mul(toBN(agentInfo.liquidationPaymentFactorPoolBIPS)).divn(10_000)
     const amountPool = amgToTokenWei(amgWithPoolFactor, amgPricePool)
     return [amountVault, amountPool]
   }
 
-  function calcAmgToTokenWeiPrice(
-    tokenDecimals: BNish,
-    tokenPrice: BNish,
-    tokenFtsoDecimals: BNish,
-    assetPrice: BNish,
-  ): BN {
-    const expPlus = Number(tokenDecimals) + Number(tokenFtsoDecimals) + AMG_TOKEN_WEI_PRICE_SCALE_EXP;
-    const expMinus = fASSET.amgDecimals + fASSET.ftsoDecimals
-    return toBN(assetPrice).mul(toBN(10).pow(toBN(expPlus - expMinus))).div(toBN(tokenPrice))
+  async function calcAmgToTokenWeiPrice(
+    priceReader: FakePriceReaderInstance,
+    token: ERC20MockInstance,
+  ): Promise<BN> {
+    const tokenSymbol = await token.symbol()
+    const tokenDecimals = await token.decimals()
+    const { 0: tokenFtsoPrice, 2: tokenFtsoDecimals } = await priceReader.getPrice(tokenSymbol)
+    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals } = await priceReader.getPrice(fASSET.symbol)
+    const expPlus = tokenDecimals.add(tokenFtsoDecimals).addn(AMG_TOKEN_WEI_PRICE_SCALE_EXP)
+    const expMinus = fAssetFtsoDecimals.addn(fASSET.amgDecimals)
+    const scale = toBN(10).pow(expPlus.sub(expMinus))
+    return toBN(fAssetFtsoPrice).mul(scale).div(tokenFtsoPrice)
   }
 
   function amgToTokenWei(
@@ -184,6 +141,21 @@ contract("Tests for Liquidator contract", (accounts) => {
   ): BN {
     return toBN(amgAmount).mul(toBN(tokenPrice)).div(AMG_TOKEN_WEI_PRICE_SCALE)
   }
+
+  // this is how prices are calculated in the liquidator contract
+  async function calcUbaTokenPriceMulDiv(
+    priceReader: FakePriceReaderInstance,
+    token: ERC20MockInstance,
+  ): Promise<[BN, BN]> {
+    const tokenSymbol = await token.symbol()
+    const tokenDecimals = await token.decimals()
+    const { 0: assetPrice, 2: assetFtsoDecimals } = await priceReader.getPrice(fASSET.symbol)
+    const { 0: tokenPrice, 2: tokenFtsoDecimals } = await priceReader.getPrice(tokenSymbol)
+    return [
+        assetPrice.mul(toBN(10).pow(toBN(tokenDecimals).add(tokenFtsoDecimals))),
+        tokenPrice.mul(toBN(10).pow(toBN(fASSET.decimals).add(assetFtsoDecimals)))
+    ]
+}
 
   beforeEach(async function () {
     // set tokens
@@ -214,73 +186,84 @@ contract("Tests for Liquidator contract", (accounts) => {
     blazeSwap = await BlazeSwapRouter.new(blazeSwapFactory.address, pool.address, false)
     // set up flash loans
     flashLender = await FlashLender.new(vault.address)
-    await vault.mint(flashLender.address, toBN(10).pow(toBN(VAULT.decimals + 15)))
+    await vault.mint(flashLender.address, toBN(10).pow(toBN(VAULT.decimals + 20)))
     // set liquidator
     liquidator = await Liquidator.new(pool.address, flashLender.address, blazeSwap.address)
   })
 
-  it("should liquidate an agent with vault cr below min cr", async () => {
-    // set ftso and dex prices
-    await setFtsoPrices(50_000, 100_000, 1333)
-    await setDexPairPrice(fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(fASSET.decimals + 10)))
-    await setDexPairPrice(vault, pool, 5_000, 133, toBN(10).pow(toBN(VAULT.decimals + 12)))
-    // deposit enough collaterals and mint 40 lots
-    await agent.depositVaultCollateral(toBN(10).pow(toBN(VAULT.decimals + 6)))
-    await agent.depositPoolCollateral(toBN(10).pow(toBN(POOL.decimals + 8)))
-    await agent.mint(minterAccount, lotSizeUba(fASSET).muln(40))
-    // price changes drop the vault collateral ratio to 120% below minCr = 150%
-    await setAgentVaultCr(assetManager, agent, 12_000)
-    const [vaultCrBeforeLiquidation,] = await getAgentCrsBips(agent)
-    assert.isTrue(vaultCrBeforeLiquidation.eqn(12_000))
+  describe("scenarios", () => {
 
-    const mlf = await getMaxLiquidatedFAsset(agent)
-    const mlv = await swapInput(vault, fAsset, mlf)
-    const mlf2 = await swapOutput(vault, fAsset, mlv)
+    it("should liquidate an agent with vault cr below min cr", async () => {
+      // set ftso and dex prices
+      await setFtsoPrices(50_000, 100_000, 1333)
+      await setDexPairPrice(blazeSwap, fAsset, vault, 5_000, 10_000, toBN(10).pow(toBN(fASSET.decimals + 15)), accounts[0])
+      await setDexPairPrice(blazeSwap, vault, pool, 5_000, 133, toBN(10).pow(toBN(VAULT.decimals + 15)), accounts[0])
+      // deposit enough collaterals and mint 40 lots
+      await agent.depositVaultCollateral(toBN(10).pow(toBN(VAULT.decimals + 9)))
+      await agent.depositPoolCollateral(toBN(10).pow(toBN(POOL.decimals + 11)))
+      await agent.mint(minterAccount, lotSizeUba(fASSET).muln(40))
+      // price changes drop the vault collateral ratio to 120% below minCr = 150%
+      await setAgentVaultCr(assetManager, agent, 12_000)
+      const [vaultCrBeforeLiquidation,] = await getAgentCrsBips(agent)
+      assert.isTrue(vaultCrBeforeLiquidation.eqn(12_000))
+      // perform arbitrage by liquidation
+      const maxLiquidatedFAsset = await getMaxLiquidatedFAsset(agent)
+      const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
+      const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(agent, maxLiquidatedFAsset)
+      const expectedSwappedPool = await swapOutput(blazeSwap, pool, vault, expectedLiqPool)
+      const mintedFAssetBefore = await getMintedFAsset(agent)
+      const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
+      const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
+      await liquidator.runArbitrage(agent.address, { from: liquidatorAccount })
+      const fAssetAfter = await getMintedFAsset(agent)
+      const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
+      const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
+      // check that max fAsset was liquidated (this relies on constructed state settings)
+      const liquidatedFAsset = mintedFAssetBefore.sub(fAssetAfter)
+      assertBnEqual(ubaToAmg(maxLiquidatedFAsset), ubaToAmg(liquidatedFAsset), 1)
+      // check that agent's losses were converted into liquidator gained vault collateral
+      const crAfterLiquidation = minBN(...await getAgentCrsBips(agent))
+      assert.isTrue(crAfterLiquidation.gten(fASSET.minCrBips - 1))
+      // check that agent lost appropriate amounts of both collaterals
+      const agentVaultLoss = agentVaultBalanceBefore.sub(agentVaultBalanceAfter)
+      assertBnEqual(agentVaultLoss, expectedLiqVault)
+      const agentPoolLoss = agentPoolBalanceBefore.sub(agentPoolBalanceAfter)
+      assertBnEqual(agentPoolLoss, expectedLiqPool)
+      // check that redeemer was compensated by agent's lost vault collateral
+      const expectedVaultEarnings = expectedLiqVault.add(expectedSwappedPool).sub(maxLiquidatedVault)
+      const earnings = await vault.balanceOf(liquidatorAccount)
+      assertBnEqual(earnings, expectedVaultEarnings)
+      // check that liquidator contract or its owner have no leftover funds
+      const fAssetBalanceLiquidatorContract = await fAsset.balanceOf(liquidator.address)
+      assertBnEqual(fAssetBalanceLiquidatorContract, 0)
+      const fAssetBalanceLiquidatorOwner = await fAsset.balanceOf(liquidatorContractOwner)
+      assertBnEqual(fAssetBalanceLiquidatorOwner, 0)
+      const poolBalanceLiquidatorContract = await pool.balanceOf(liquidator.address)
+      assertBnEqual(poolBalanceLiquidatorContract, 0)
+      const poolBalanceLiquidatorOwner = await pool.balanceOf(liquidatorContractOwner)
+      assertBnEqual(poolBalanceLiquidatorOwner, 0)
+      const vaultBalanceLiquidatorContract = await vault.balanceOf(liquidator.address)
+      assertBnEqual(vaultBalanceLiquidatorContract, 0)
+      const vaultBalanceLiquidatorOwner = await vault.balanceOf(liquidatorContractOwner)
+      assertBnEqual(vaultBalanceLiquidatorOwner, 0)
+    })
 
-    // perform arbitrage by liquidation
-    const maxLiquidatedFAsset = await getMaxLiquidatedFAsset(agent)
-    const maxLiquidatedVault = await swapInput(vault, fAsset, maxLiquidatedFAsset)
-    const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(agent, roundDownToAmg(fASSET, mlf2))
-    const expectedSwappedPool = await swapOutput(pool, vault, expectedLiqPool)
-    const mintedFAssetBefore = await getMintedFAsset(agent)
-    const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
-    const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
-    await liquidator.runArbitrage(agent.address, { from: liquidatorAccount })
-    const fAssetAfter = await getMintedFAsset(agent)
-    const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
-    const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
-    // check that max fAsset was liquidated (this relies on constructed state settings)
-    const liquidatedFAsset = mintedFAssetBefore.sub(fAssetAfter)
-    assertBnEqual(ubaToAmg(maxLiquidatedFAsset), ubaToAmg(liquidatedFAsset), 1)
-    // check that liquidator contract or its owner have no leftover funds
-    /* const fAssetBalanceLiquidatorContract = await fAsset.balanceOf(liquidator.address)
-    assertBnEqual(fAssetBalanceLiquidatorContract, 0)
-    const fAssetBalanceLiquidatorOwner = await fAsset.balanceOf(liquidatorContractOwner)
-    assertBnEqual(fAssetBalanceLiquidatorOwner, 0) */
-    const poolBalanceLiquidatorContract = await pool.balanceOf(liquidator.address)
-    assertBnEqual(poolBalanceLiquidatorContract, 0)
-    const poolBalanceLiquidatorOwner = await pool.balanceOf(liquidatorContractOwner)
-    assertBnEqual(poolBalanceLiquidatorOwner, 0)
-    const vaultBalanceLiquidatorContract = await vault.balanceOf(liquidator.address)
-    assertBnEqual(vaultBalanceLiquidatorContract, 0)
-    const vaultBalanceLiquidatorOwner = await vault.balanceOf(liquidatorContractOwner)
-    assertBnEqual(vaultBalanceLiquidatorOwner, 0)
-    // check that agent's losses were converted into liquidator gained vault collateral
-    const crAfterLiquidation = minBN(...await getAgentCrsBips(agent))
-    assert.isTrue(crAfterLiquidation.gten(fASSET.minCrBips - 1))
-    // check that agent lost appropriate amounts of both collaterals
-    const agentVaultLoss = agentVaultBalanceBefore.sub(agentVaultBalanceAfter)
-    assertBnEqual(agentVaultLoss, expectedLiqVault)
-    const agentPoolLoss = agentPoolBalanceBefore.sub(agentPoolBalanceAfter)
-    assertBnEqual(agentPoolLoss, expectedLiqPool)
-    // check that redeemer was compensated by agent's lost vault collateral
-    const expectedVaultEarnings = expectedLiqVault.add(expectedSwappedPool).sub(maxLiquidatedVault)
-    const earnings = await vault.balanceOf(liquidatorAccount)
-    assertBnEqual(earnings, expectedVaultEarnings)
+    it("should liquidate an agent with pool cr below min cr", async () => {
+
+    })
   })
 
-  it("should liquidate an agent with pool cr below min cr", async () => {
-
+  describe("calculation", () => {
+    it("should test calculating asset price in pool token in two ways", async () => {
+      await setFtsoPrices(50_000, 100_000, 1333)
+      const token = pool
+      const price1 = await calcAmgToTokenWeiPrice(priceReader, token)
+      const [price2Mul, price2Div] = await calcUbaTokenPriceMulDiv(priceReader, token)
+      const amountUBA = toBN(10_000_000)
+      const amountWei1 = amgToTokenWei(ubaToAmg(amountUBA), price1)
+      const amountWei2 = amountUBA.mul(price2Mul).div(price2Div)
+      assertBnEqual(amountWei1, amountWei2)
+    })
   })
 
 })

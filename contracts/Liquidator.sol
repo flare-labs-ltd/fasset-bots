@@ -70,7 +70,7 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
-        uint256 optimalVaultAmount = LiquidatorMath.getUsedVaultCollateral(
+        uint256 optimalVaultAmount = LiquidatorMath.getFlashLoanedVaultCollateral(
             address(wNat),
             agentInfo,
             assetManagerSettings,

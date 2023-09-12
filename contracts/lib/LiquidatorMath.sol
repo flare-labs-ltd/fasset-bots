@@ -9,12 +9,15 @@ import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 
+import "hardhat/console.sol";
+
 
 // embedded library
 library LiquidatorMath {
     using Babylonian for uint256;
 
-    // for now assume that flash loans do not have fees
+    // for now assume that flash loans do
+    // not have fees or that they are fixed
     struct LiquidatorVars {
         // agent
         uint256 agentVaultCollateralWei;
@@ -23,8 +26,6 @@ library LiquidatorMath {
         uint256 liquidationFactorVaultBips;
         uint256 liquidationFactorPoolBips;
         // dexes
-        uint256 feeFactorBipsDex1; // 1 - dex fee
-        uint256 feeFactorBipsDex2; // 1 - dex fee
         uint256 reserveVaultWeiDex1;
         uint256 reserveFAssetUBADex1;
         uint256 reservePoolWeiDex2;
@@ -36,7 +37,7 @@ library LiquidatorMath {
         uint256 priceFAssetPoolDiv;
     }
 
-    function getUsedVaultCollateral(
+    function getFlashLoanedVaultCollateral(
         address _poolToken,
         AgentInfo.Info memory _agentInfo,
         AssetManagerSettings.Data memory _assetManagerSettings,
@@ -48,9 +49,23 @@ library LiquidatorMath {
             _assetManagerSettings,
             _blazeSwap
         );
-        uint256 optAmount = _calculateOptimalVaultCollateral(liquidatorVars);
-        uint256 maxAmount = _calculateMaximumVaultCollateral(liquidatorVars);
-        return Math.min(optAmount, maxAmount);
+        uint256 optVaultAmount = _calculateOptimalVaultCollateral(liquidatorVars);
+        uint256 optFAssetAmountUBA = getBlazeSwapAmountOut(
+            optVaultAmount,
+            liquidatorVars.reserveVaultWeiDex1,
+            liquidatorVars.reserveFAssetUBADex1
+        );
+        optFAssetAmountUBA = Math.min(
+            roundUpWithPrecision(
+                optFAssetAmountUBA,
+                _assetManagerSettings.assetMintingGranularityUBA
+            ), liquidatorVars.maxLiquidatedFAssetUBA
+        );
+        return getBlazeSwapAmountIn(
+            optFAssetAmountUBA,
+            liquidatorVars.reserveVaultWeiDex1,
+            liquidatorVars.reserveFAssetUBADex1
+        );
     }
 
     function _calculateOptimalVaultCollateral(
@@ -62,8 +77,8 @@ library LiquidatorMath {
             // scope to avoid stack too deep error
             _amount
                 = _liquidatorVars.reserveVaultWeiDex1
-                * _liquidatorVars.feeFactorBipsDex1
-                / 10_000
+                * 997
+                / 1000
                 * _liquidatorVars.reservePoolWeiDex2;
             _amount = _amount.sqrt();
         }
@@ -82,8 +97,8 @@ library LiquidatorMath {
                 / 10_000
                 * _liquidatorVars.priceFAssetPoolMul
                 / _liquidatorVars.priceFAssetPoolDiv
-                * _liquidatorVars.feeFactorBipsDex2
-                / 10_000
+                * 997
+                / 1000
                 * _liquidatorVars.reserveVaultWeiDex2;
             _amount *= (_aux1 + _aux2).sqrt();
         }
@@ -95,23 +110,9 @@ library LiquidatorMath {
             require(_aux1 < _amount, "Arbitrage failed due to numeric error");
             _amount -= _aux1;
         }
-        _amount *= 10_000;
-        _amount /= _liquidatorVars.feeFactorBipsDex1;
+        _amount *= 1000;
+        _amount /= 997;
         _amount /= _liquidatorVars.reservePoolWeiDex2;
-    }
-
-    // gets the vault collateral that when swapped produces maxLiquidatedFAssetUBA
-    // numeric errors should cause this value to only ever be lower!
-    function _calculateMaximumVaultCollateral(
-        LiquidatorVars memory _liquidatorVars
-    ) internal pure returns (uint256) {
-        require(_liquidatorVars.reserveFAssetUBADex1 > _liquidatorVars.maxLiquidatedFAssetUBA,
-            "Arbitrage failed: max liquidated f-asset is greater than f-asset reserve");
-        uint256 _aux1 = _liquidatorVars.maxLiquidatedFAssetUBA
-            * _liquidatorVars.reserveVaultWeiDex1;
-        uint256 _aux2 = _liquidatorVars.reserveFAssetUBADex1
-            - _liquidatorVars.maxLiquidatedFAssetUBA;
-        return _aux1 * 10_000 / _aux2 / _liquidatorVars.feeFactorBipsDex1;
     }
 
     function _getLiquidatorVars(
@@ -130,8 +131,6 @@ library LiquidatorMath {
         _liquidatorVars.liquidationFactorVaultBips = _agentInfo.liquidationPaymentFactorVaultBIPS;
         _liquidatorVars.liquidationFactorPoolBips = _agentInfo.liquidationPaymentFactorPoolBIPS;
         // dexes
-        _liquidatorVars.feeFactorBipsDex1 = 9970; // blazeswap hardcodes 0.3% fee like uniswap-v2
-        _liquidatorVars.feeFactorBipsDex2 = 9970; // blazeswap hardcodes 0.3% fee like uniswap-v2
         (_liquidatorVars.reserveVaultWeiDex1, _liquidatorVars.reserveFAssetUBADex1) = _blazeSwap.getReserves(
             vaultToken, fAssetToken
         );
@@ -139,41 +138,93 @@ library LiquidatorMath {
             _poolToken, vaultToken
         );
         // prices
-        string memory fAssetSymbol = IERC20Metadata(fAssetToken).symbol();
         uint8 fAssetDecimals = IERC20Metadata(fAssetToken).decimals();
-        (
-            _liquidatorVars.priceFAssetVaultMul,
-            _liquidatorVars.priceFAssetVaultDiv
-        ) = _getToken1Token2PriceMulDiv(
-            IPriceReader(_assetManagerSettings.priceReader),
-            fAssetSymbol, fAssetDecimals,
-            IERC20Metadata(vaultToken).symbol(),
-            IERC20Metadata(vaultToken).decimals()
-        );
-        (
-            _liquidatorVars.priceFAssetPoolMul,
-            _liquidatorVars.priceFAssetPoolDiv
-        ) = _getToken1Token2PriceMulDiv(
-            IPriceReader(_assetManagerSettings.priceReader),
-            fAssetSymbol, fAssetDecimals,
-            IERC20Metadata(_poolToken).symbol(),
-            IERC20Metadata(_poolToken).decimals()
+        (uint256 fAssetPrice,, uint256 fAssetFtsoDecimals) =
+            IPriceReader(_assetManagerSettings.priceReader).getPrice(
+                IERC20Metadata(fAssetToken).symbol()
+            );
+        {
+            // scope to avoid stack too deep error
+            (uint256 vaultPrice,, uint256 vaultFtsoDecimals) =
+                IPriceReader(_assetManagerSettings.priceReader).getPrice(
+                    IERC20Metadata(vaultToken).symbol()
+                );
+            (_liquidatorVars.priceFAssetVaultMul, _liquidatorVars.priceFAssetVaultDiv) =
+                getTokenAToTokenBPriceMulDiv(
+                    fAssetDecimals,
+                    fAssetFtsoDecimals,
+                    fAssetPrice,
+                    IERC20Metadata(vaultToken).decimals(),
+                    vaultFtsoDecimals,
+                    vaultPrice
+                );
+        }
+        {
+            // scope to avoid stack too deep error
+            (uint256 poolPrice,, uint256 poolFtsoDecimals) =
+                IPriceReader(_assetManagerSettings.priceReader).getPrice(
+                    IERC20Metadata(_poolToken).symbol()
+                );
+            (_liquidatorVars.priceFAssetPoolMul, _liquidatorVars.priceFAssetPoolDiv) =
+                getTokenAToTokenBPriceMulDiv(
+                    fAssetDecimals,
+                    fAssetFtsoDecimals,
+                    fAssetPrice,
+                    IERC20Metadata(_poolToken).decimals(),
+                    poolFtsoDecimals,
+                    poolPrice
+                );
+        }
+    }
+
+    function getTokenAToTokenBPriceMulDiv(
+        uint256 _decimalsA,
+        uint256 _ftsoDecimalsA,
+        uint256 _priceA,
+        uint256 _decimalsB,
+        uint256 _ftsoDecimalsB,
+        uint256 _priceB
+    ) internal pure returns (uint256, uint256) {
+        return (
+            _priceA * (10 ** (_decimalsB + _ftsoDecimalsB)),
+            _priceB * (10 ** (_decimalsA + _ftsoDecimalsA))
         );
     }
 
-    function _getToken1Token2PriceMulDiv(
-        IPriceReader _priceReader,
-        string memory _symbol1,
-        uint256 _decimals1,
-        string memory _symbol2,
-        uint256 _decimals2
-    ) internal view returns (uint256, uint256) {
-        (uint256 price1,, uint256 ftsoDecimals1) = _priceReader.getPrice(_symbol1);
-        (uint256 price2,, uint256 ftsoDecimals2) = _priceReader.getPrice(_symbol2);
-        return (
-            price1 * (10 ** (_decimals2 + ftsoDecimals2)),
-            price2 * (10 ** (_decimals1 + ftsoDecimals1))
-        );
+    // given an output amount of an asset and pair reserves,
+    // returns a required input amount of the other asset
+    function getBlazeSwapAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountIn) {
+        uint256 numerator = reserveIn * amountOut * 1000;
+        uint256 denominator = (reserveOut - amountOut) * 997;
+        amountIn = numerator / denominator + 1;
+    }
+
+    // given an input amount of an asset and pair reserves,
+    // returns the maximum output amount of the other asset
+    function getBlazeSwapAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountOut) {
+        uint256 amountInWithFee = amountIn * 997;
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 1000 + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function roundUpWithPrecision(
+        uint256 _amount,
+        uint256 _precision
+    ) private pure returns (uint256) {
+        uint256 _aux = _amount % _precision;
+        if (_aux == 0) {
+            return _amount;
+        }
+        return _amount + _precision - _aux;
     }
 
 }

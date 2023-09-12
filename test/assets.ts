@@ -1,4 +1,4 @@
-import { BNish, toBN } from './helpers/constants'
+import { BNish, toBN } from './utils/constants'
 
 export interface Asset {
   name: string

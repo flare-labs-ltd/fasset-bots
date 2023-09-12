@@ -7,26 +7,29 @@ import { ZERO_ADDRESS, MAX_INT, BNish, toBN } from './constants'
 // when swapping amountA of tokenA
 export async function swapOutput(
   router: BlazeSwapRouterInstance,
-  tokenA: ERC20MockInstance,
-  tokenB: ERC20MockInstance,
-  amountA: BNish
+  tokenIn: ERC20MockInstance,
+  tokenOut: ERC20MockInstance,
+  amountIn: BNish
 ): Promise<BN> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA.address, tokenB.address)
-  const amountAWithFee = toBN(amountA).muln(997).divn(1000)
-  return amountAWithFee.mul(reserveB).div(reserveA.add(amountAWithFee))
+  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenIn.address, tokenOut.address)
+  const amountInWithFee = toBN(amountIn).muln(997)
+  const numerator = amountInWithFee.mul(reserveB)
+  const denominator = reserveA.muln(1000).add(amountInWithFee)
+  return numerator.div(denominator)
 }
 
 // calculates the amount of tokenB needed
-// to swap to obtain amountA of tokenA
+// to swap to obtain amountA of tokenIn
 export async function swapInput(
   router: BlazeSwapRouterInstance,
-  tokenA: ERC20MockInstance,
-  tokenB: ERC20MockInstance,
-  amountB: BNish
+  tokenIn: ERC20MockInstance,
+  tokenOut: ERC20MockInstance,
+  amountOut: BNish
 ): Promise<BN> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA.address, tokenB.address)
-  const amountABeforeFee = toBN(amountB).mul(reserveA).div(reserveB.sub(toBN(amountB)))
-  return amountABeforeFee.muln(1000).divn(997)
+  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenIn.address, tokenOut.address)
+  const numerator = reserveA.mul(toBN(amountOut)).muln(1000)
+  const denominator = reserveB.sub(toBN(amountOut)).muln(997)
+  return numerator.div(denominator).addn(1)
 }
 
 // set price of tokenA in tokenB
