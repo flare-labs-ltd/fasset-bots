@@ -119,6 +119,7 @@ describe("Attestation client unit tests", async () => {
         expect(proofNonPayment.finalized).to.be.true;
 
         const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round - 2, requestBlock!.data);
-        console.log(proofBlock1);
+        expect(proofBlock1.finalized).to.be.true;
+        expect(proofBlock1.result).to.be.null;
     });
 });

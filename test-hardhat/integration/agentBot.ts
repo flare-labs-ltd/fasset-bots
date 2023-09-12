@@ -220,7 +220,6 @@ describe("Agent bot tests", async () => {
         // pay for minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
-        console.log(chain.blocks.length);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
