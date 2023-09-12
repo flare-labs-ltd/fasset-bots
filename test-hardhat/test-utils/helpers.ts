@@ -12,7 +12,7 @@ import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fas
 import { TrackedState } from "../../src/state/TrackedState";
 import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, DEFAULT_RETRIES, requireEnv, requireNotNull, retry, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
@@ -56,7 +56,7 @@ export async function createTestAgentBot(
     const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
-    return await retry(AgentBot.create.bind(AgentBot), [orm.em, context, ownerAddress, agentBotSettings, notifier], DEFAULT_RETRIES);
+    return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
