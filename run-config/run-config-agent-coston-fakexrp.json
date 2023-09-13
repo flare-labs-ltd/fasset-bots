@@ -5,7 +5,7 @@
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "chainInfos": [
+    "fAssetInfos": [
         {
             "chainId": 3,
             "name": "Test XRP",

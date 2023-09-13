@@ -16,7 +16,7 @@ Example:
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "chainInfos": [
+    "fAssetInfos": [
         {
             "chainId": 3,
             "name": "Test XRP",
@@ -84,7 +84,7 @@ Example:
     "loopDelay": 5000,
     "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
-    "chainInfos": [
+    "fAssetInfos": [
         {
             "chainId": 3,
             "name": "Test XRP",
