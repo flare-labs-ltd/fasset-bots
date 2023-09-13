@@ -18,7 +18,7 @@ describe("Agent bot runner tests", async () => {
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    const contexts: Map<number, TestAssetBotContext> = new Map();
+    const contexts: Map<string, TestAssetBotContext> = new Map();
 
     before(async () => {
         disableMccTraceManager();
@@ -30,13 +30,13 @@ describe("Agent bot runner tests", async () => {
     beforeEach(async () => {
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        contexts.set(context.chainInfo.chainId, context);
+        contexts.set(context.chainInfo.symbol, context);
     });
 
     it("Should create agent bot runner", async () => {
         const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
@@ -59,7 +59,7 @@ describe("Agent bot runner tests", async () => {
         // create runner
         const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay, new FaultyNotifier());
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         // make faulty entity
         const agentEnt = agentEntities[0];

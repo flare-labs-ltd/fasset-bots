@@ -89,7 +89,7 @@ export async function createTestAgent(context: TestAssetBotContext, ownerAddress
 }
 
 export function createTestAgentBotRunner(
-    contexts: Map<number, TestAssetBotContext>,
+    contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
     loopDelay: number,
     notifier: Notifier = new Notifier()
