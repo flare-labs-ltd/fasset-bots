@@ -37,10 +37,15 @@ export class TimeKeeper {
      */
     /* istanbul ignore next */
     run() {
-        void this.updateUnderlyingBlock(); // do not wait whole interval for start
-        this.interval = setInterval(async () => {
-            await this.updateUnderlyingBlock();
-        }, this.intervalInMs);
+        try {
+            void this.updateUnderlyingBlock(); // do not wait whole interval for start
+            this.interval = setInterval(async () => {
+                await this.updateUnderlyingBlock();
+            }, this.intervalInMs);
+        } catch (err) {
+            console.error(`Error running timeKeeper for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
+            logger.error(`Error running timeKeeper for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
+        }
     }
 
     /**

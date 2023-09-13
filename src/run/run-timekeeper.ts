@@ -1,4 +1,5 @@
-import * as dotenv from "dotenv";
+import "dotenv/config";
+
 import { readFileSync } from "fs";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { Future, requireEnv, toplevelRun } from "../utils/helpers";
@@ -7,7 +8,6 @@ import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
 
-dotenv.config();
 
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
 const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");

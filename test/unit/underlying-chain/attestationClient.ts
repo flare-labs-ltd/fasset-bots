@@ -1,5 +1,5 @@
 import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
-import { initWeb3 } from "../../../src/utils/web3";
+import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
@@ -55,7 +55,7 @@ describe("Attestation client unit tests", async () => {
         blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
     });
 
-    it("Should not obtain proofs - no attestation providers",async () => {
+    it("Should not obtain proofs - no attestation providers", async () => {
         const localAttestationHelper = await createAttestationHelper(
             sourceId,
             [],
@@ -66,8 +66,8 @@ describe("Attestation client unit tests", async () => {
             finalizationBlocks
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
-        .to.eventually.be.rejectedWith(`There aren't any attestation providers.`)
-        .and.be.an.instanceOf(Error);
+            .to.eventually.be.rejectedWith(`There aren't any attestation providers.`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should obtain proofs", async () => {
@@ -118,7 +118,8 @@ describe("Attestation client unit tests", async () => {
         expect(proofDecreasing.finalized).to.be.true;
         expect(proofNonPayment.finalized).to.be.true;
 
-        const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round-2, requestBlock!.data);
-        console.log(proofBlock1)
+        const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round - 2, requestBlock!.data);
+        expect(proofBlock1.finalized).to.be.true;
+        expect(proofBlock1.result).to.be.null;
     });
 });

@@ -14,10 +14,10 @@ const createAssetContextInternal = rewire("../../../src/config/create-asset-cont
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { initWeb3 } from "../../../src/utils/web3";
-import { artifacts } from "../../../src/utils/artifacts";
+import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
+
 const AddressUpdater = artifacts.require("AddressUpdater");
 
 describe("Create asset context tests", async () => {

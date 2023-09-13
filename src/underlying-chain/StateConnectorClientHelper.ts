@@ -15,9 +15,9 @@ import { AttestationType } from "../verification/generated/attestation-types-enu
 import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
 import { ARBase } from "../verification/generated/attestation-request-types";
 import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
-import { artifacts } from "../utils/artifacts";
 import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
+import { artifacts } from "../utils/web3";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
@@ -212,7 +212,9 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 logger.error(`State connector error: ${e}`);
                 throw e;
             }
+            /* istanbul ignore next */
             logger.error(`State connector error: ${String(e)}`);
+            /* istanbul ignore next */
             throw new StateConnectorError(String(e));
         }
     }

@@ -10,7 +10,6 @@ import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
-import { artifacts } from "../../src/utils/artifacts";
 import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -20,6 +19,7 @@ import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { ContractWithEvents } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance } from "../../typechain-truffle";
+import { artifacts } from "../../src/utils/web3";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");

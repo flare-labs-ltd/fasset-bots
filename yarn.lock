@@ -347,7 +347,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ensdomains/ensjs@npm:^2.0.1, @ensdomains/ensjs@npm:^2.1.0":
+"@ensdomains/ensjs@npm:^2.1.0":
   version: 2.1.0
   resolution: "@ensdomains/ensjs@npm:2.1.0"
   dependencies:
@@ -1357,23 +1357,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomiclabs/hardhat-truffle5@npm:2.0.5":
-  version: 2.0.5
-  resolution: "@nomiclabs/hardhat-truffle5@npm:2.0.5"
-  dependencies:
-    "@nomiclabs/truffle-contract": ^4.2.23
-    "@types/chai": ^4.2.0
-    chai: ^4.2.0
-    ethereumjs-util: ^7.1.3
-    fs-extra: ^7.0.1
-  peerDependencies:
-    "@nomiclabs/hardhat-web3": ^2.0.0
-    hardhat: ^2.6.4
-    web3: ^1.0.0-beta.36
-  checksum: 7e7b5b431211043b6d127383bec83dc5ec05cd70bedee76c8ffbb359e590e4f51460bcd76ec69794abaa148129e98a48be73720231b78bc2d14f50a78bc50be6
-  languageName: node
-  linkType: hard
-
 "@nomiclabs/hardhat-web3@npm:2.0.0":
   version: 2.0.0
   resolution: "@nomiclabs/hardhat-web3@npm:2.0.0"
@@ -1383,30 +1366,6 @@ __metadata:
     hardhat: ^2.0.0
     web3: ^1.0.0-beta.36
   checksum: b777179ba395ec841848dc28bb7c583dc7a3dbf369a1f00d691157594d7cf74fe8ee7ae31ba1fb6424e2c39080ec386bda77cb56ad2517a0d1e55059178e1075
-  languageName: node
-  linkType: hard
-
-"@nomiclabs/truffle-contract@npm:^4.2.23":
-  version: 4.5.10
-  resolution: "@nomiclabs/truffle-contract@npm:4.5.10"
-  dependencies:
-    "@ensdomains/ensjs": ^2.0.1
-    "@truffle/blockchain-utils": ^0.1.3
-    "@truffle/contract-schema": ^3.4.7
-    "@truffle/debug-utils": ^6.0.22
-    "@truffle/error": ^0.1.0
-    "@truffle/interface-adapter": ^0.5.16
-    bignumber.js: ^7.2.1
-    ethereum-ens: ^0.8.0
-    ethers: ^4.0.0-beta.1
-    source-map-support: ^0.5.19
-  peerDependencies:
-    web3: ^1.2.1
-    web3-core-helpers: ^1.2.1
-    web3-core-promievent: ^1.2.1
-    web3-eth-abi: ^1.2.1
-    web3-utils: ^1.2.1
-  checksum: 93b4af44d5105acacedfb6440cd6005c1f7e7c3cdac87eeea5fae8f06cd21f44adfd8161b5e65ac48a11a9881360d9fa1c58c37a4e66edcbe2e2a7cead11b853
   languageName: node
   linkType: hard
 
@@ -1626,17 +1585,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/abi-utils@npm:^0.3.4":
-  version: 0.3.4
-  resolution: "@truffle/abi-utils@npm:0.3.4"
-  dependencies:
-    change-case: 3.0.2
-    fast-check: 3.1.1
-    web3-utils: 1.7.4
-  checksum: e3ad4c0182b8c9f6df323ea9c5cf144e5f0d7f7efa8df1f18a090044d9171895a8aff5af0b87e1d1565268eed74bfbf65e3a65336ac2e575cd6964fa8f4c222d
-  languageName: node
-  linkType: hard
-
 "@truffle/abi-utils@npm:^1.0.0":
   version: 1.0.0
   resolution: "@truffle/abi-utils@npm:1.0.0"
@@ -1648,7 +1596,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/blockchain-utils@npm:^0.1.3, @truffle/blockchain-utils@npm:^0.1.4":
+"@truffle/blockchain-utils@npm:^0.1.4":
   version: 0.1.4
   resolution: "@truffle/blockchain-utils@npm:0.1.4"
   checksum: b75d3cb4fb9bb4356755cbd50a29b8cfdf0ad7a5d05b8827bbda9de35fd714df0acaa1efccc1a4fcae12297c8039dd3c12de746d35ccfb64cf0bed02d4faf656
@@ -1680,24 +1628,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/codec@npm:^0.14.8":
-  version: 0.14.8
-  resolution: "@truffle/codec@npm:0.14.8"
-  dependencies:
-    "@truffle/abi-utils": ^0.3.4
-    "@truffle/compile-common": ^0.9.0
-    big.js: ^6.0.3
-    bn.js: ^5.1.3
-    cbor: ^5.2.0
-    debug: ^4.3.1
-    lodash: ^4.17.21
-    semver: 7.3.7
-    utf8: ^3.0.0
-    web3-utils: 1.7.4
-  checksum: 1cbe2deebec6ab9c6c0f0f95be773542d8df3e8378337de4cf0d387bf0a7b87553c91ed1fcc9a3d233a695bee6f68db44e6a2094f4810526b4c2411adbbd6d9a
-  languageName: node
-  linkType: hard
-
 "@truffle/codec@npm:^0.15.1":
   version: 0.15.1
   resolution: "@truffle/codec@npm:0.15.1"
@@ -1726,16 +1656,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/compile-common@npm:^0.9.0":
-  version: 0.9.0
-  resolution: "@truffle/compile-common@npm:0.9.0"
-  dependencies:
-    "@truffle/error": ^0.1.1
-    colors: 1.4.0
-  checksum: d3da264cf382311efb025a73933151e1e8fc92886b3668ab35c3ff7cf2369b6f1bfc1c5077d2e5eeeed4a25bf8533978ba84c052de8c43c5676663b0351093cd
-  languageName: node
-  linkType: hard
-
 "@truffle/compile-common@npm:^0.9.5":
   version: 0.9.5
   resolution: "@truffle/compile-common@npm:0.9.5"
@@ -1746,7 +1666,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/contract-schema@npm:^3.4.10, @truffle/contract-schema@npm:^3.4.7":
+"@truffle/contract-schema@npm:^3.4.10":
   version: 3.4.10
   resolution: "@truffle/contract-schema@npm:3.4.10"
   dependencies:
@@ -1810,20 +1730,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/debug-utils@npm:^6.0.22":
-  version: 6.0.39
-  resolution: "@truffle/debug-utils@npm:6.0.39"
-  dependencies:
-    "@truffle/codec": ^0.14.8
-    "@trufflesuite/chromafi": ^3.0.0
-    bn.js: ^5.1.3
-    chalk: ^2.4.2
-    debug: ^4.3.1
-    highlightjs-solidity: ^2.0.5
-  checksum: 7636cef597dfe328381c3c0d2f46bca73475559c68a4204f24df9c8e399ced9489514df6919b28797dc99d31864b21d3130092649aecc5053c3b2273da73e519
-  languageName: node
-  linkType: hard
-
 "@truffle/debug-utils@npm:^6.0.35":
   version: 6.0.35
   resolution: "@truffle/debug-utils@npm:6.0.35"
@@ -1852,7 +1758,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/error@npm:^0.1.0, @truffle/error@npm:^0.1.1":
+"@truffle/error@npm:^0.1.1":
   version: 0.1.1
   resolution: "@truffle/error@npm:0.1.1"
   checksum: 32c6faca2d221560456e54709b344533bacdbd575506c9feaeffe27ffb8720839a36fd2c0318da2be5bb824c7aa253d2697e4f5ff5d5b0674e937fdd6f024e07
@@ -1863,17 +1769,6 @@ __metadata:
   version: 0.2.0
   resolution: "@truffle/error@npm:0.2.0"
   checksum: 7b10ce336a07e8f633108d6e6363d99e53f2bbf28c09f496f1e413c3339e7d8968fda5a781a90bde1952a599ec05871a56f7e36329f66f9efafdb9f35770d8be
-  languageName: node
-  linkType: hard
-
-"@truffle/interface-adapter@npm:^0.5.16":
-  version: 0.5.24
-  resolution: "@truffle/interface-adapter@npm:0.5.24"
-  dependencies:
-    bn.js: ^5.1.3
-    ethers: ^4.0.32
-    web3: 1.7.4
-  checksum: 03844d8b0f4cb92dac72f46bf5aa67ef31843850abda77a2b4829f7ed37ec7f845aa5866dc8fc9529b4b11aaa29a743634fe203cbd6c594bfd3a1989c7d282e2
   languageName: node
   linkType: hard
 
@@ -2014,7 +1909,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:4.3.4, @types/chai@npm:^4.2.0":
+"@types/chai@npm:4.3.4":
   version: 4.3.4
   resolution: "@types/chai@npm:4.3.4"
   checksum: 571184967beb03bf64c4392a13a7d44e72da9af5a1e83077ff81c39cf59c0fda2a5c78d2005084601cf8f3d11726608574d8b5b4a0e3e9736792807afd926cd0
@@ -2923,7 +2818,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.4.7, bluebird@npm:^3.5.0, bluebird@npm:^3.5.2":
+"bluebird@npm:^3.5.0, bluebird@npm:^3.5.2":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 869417503c722e7dc54ca46715f70e15f4d9c602a423a02c825570862d12935be59ed9c7ba34a9b31f186c017c23cac6b54e35446f8353059c101da73eac22ef
@@ -4863,7 +4758,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eth-ens-namehash@npm:2.0.8, eth-ens-namehash@npm:^2.0.0, eth-ens-namehash@npm:^2.0.8":
+"eth-ens-namehash@npm:2.0.8, eth-ens-namehash@npm:^2.0.8":
   version: 2.0.8
   resolution: "eth-ens-namehash@npm:2.0.8"
   dependencies:
@@ -4930,20 +4825,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethereum-ens@npm:^0.8.0":
-  version: 0.8.0
-  resolution: "ethereum-ens@npm:0.8.0"
-  dependencies:
-    bluebird: ^3.4.7
-    eth-ens-namehash: ^2.0.0
-    js-sha3: ^0.5.7
-    pako: ^1.0.4
-    underscore: ^1.8.3
-    web3: ^1.0.0-beta.34
-  checksum: 9822a6cac8cbd29b28b4e4bc5a00fbfb2951680593e4f90ff5996fdc70da200c8e66c566f61a87b150eb4768b468dd16bfb1d5af491f8a84461d784591c92598
-  languageName: node
-  linkType: hard
-
 "ethereumjs-abi@npm:^0.6.8":
   version: 0.6.8
   resolution: "ethereumjs-abi@npm:0.6.8"
@@ -4982,7 +4863,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^4.0.0-beta.1, ethers@npm:^4.0.32":
+"ethers@npm:^4.0.32":
   version: 4.0.49
   resolution: "ethers@npm:4.0.49"
   dependencies:
@@ -5180,7 +5061,6 @@ __metadata:
     "@mikro-orm/mysql": ^5.7.14
     "@mikro-orm/postgresql": ^5.7.14
     "@mikro-orm/sqlite": ^5.7.14
-    "@nomiclabs/hardhat-truffle5": 2.0.5
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": ^0.5.16
     "@truffle/contract": ^4.6.22
@@ -8810,13 +8690,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pako@npm:^1.0.4":
-  version: 1.0.11
-  resolution: "pako@npm:1.0.11"
-  checksum: 1be2bfa1f807608c7538afa15d6f25baa523c30ec870a3228a89579e474a4d992f4293859524e46d5d87fd30fa17c5edf34dbef0671251d9749820b488660b16
-  languageName: node
-  linkType: hard
-
 "param-case@npm:^2.1.0":
   version: 2.1.1
   resolution: "param-case@npm:2.1.1"
@@ -10191,7 +10064,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:0.5.21, source-map-support@npm:^0.5.13, source-map-support@npm:^0.5.16, source-map-support@npm:^0.5.19":
+"source-map-support@npm:0.5.21, source-map-support@npm:^0.5.13, source-map-support@npm:^0.5.16":
   version: 0.5.21
   resolution: "source-map-support@npm:0.5.21"
   dependencies:
@@ -10975,13 +10848,6 @@ __metadata:
     has-symbols: ^1.0.3
     which-boxed-primitive: ^1.0.2
   checksum: b7a1cf5862b5e4b5deb091672ffa579aa274f648410009c81cca63fed3b62b610c4f3b773f912ce545bb4e31edc3138975b5bc777fc6e4817dca51affb6380e9
-  languageName: node
-  linkType: hard
-
-"underscore@npm:^1.8.3":
-  version: 1.13.6
-  resolution: "underscore@npm:1.13.6"
-  checksum: d5cedd14a9d0d91dd38c1ce6169e4455bb931f0aaf354108e47bd46d3f2da7464d49b2171a5cf786d61963204a42d01ea1332a903b7342ad428deaafaf70ec36
   languageName: node
   linkType: hard
 
@@ -12361,7 +12227,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"web3@npm:^1.0.0-beta.34, web3@npm:^1.2.5":
+"web3@npm:^1.2.5":
   version: 1.8.0
   resolution: "web3@npm:1.8.0"
   dependencies:

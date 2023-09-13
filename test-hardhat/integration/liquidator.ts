@@ -1,7 +1,7 @@
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
+import { artifacts, web3 } from "../../src/utils/web3";
 import {
     createTestAssetContext,
     getTestAssetTrackedStateContext,
@@ -26,7 +26,6 @@ import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
-import { artifacts } from "../../src/utils/artifacts";
 import { MockTrackedState } from "../../src/mock/MockTrackedState";
 use(spies);
 

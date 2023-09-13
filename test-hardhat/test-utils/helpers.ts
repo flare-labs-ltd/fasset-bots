@@ -10,7 +10,6 @@ import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { TrackedState } from "../../src/state/TrackedState";
-import { artifacts } from "../../src/utils/artifacts";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
@@ -27,6 +26,7 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import BN from "bn.js";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
+import { artifacts } from "../../src/utils/web3";
 
 const ERC20Mock = artifacts.require("ERC20Mock");
 

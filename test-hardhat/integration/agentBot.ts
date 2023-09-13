@@ -6,7 +6,7 @@ import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
@@ -29,7 +29,6 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import BN from "bn.js";
-import { artifacts } from "../../src/utils/artifacts";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
@@ -220,7 +219,6 @@ describe("Agent bot tests", async () => {
         // pay for minting
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
-        console.log(chain.blocks.length);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);

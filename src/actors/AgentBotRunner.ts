@@ -68,7 +68,7 @@ export class AgentBotRunner {
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.chainId, assetContext);
-            logger.info(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}.`);
+            logger.info(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId} with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} created AgentBotRunner.`);
         if (!botConfig.orm || !botConfig.notifier) {

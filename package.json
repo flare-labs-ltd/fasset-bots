@@ -61,7 +61,7 @@
         "lint": "eslint \"src/**/*ts\"",
         "---------PRETTIER---SCRIPTS": "",
         "prettier_check": "prettier --check .",
-        "prettier_write": "prettier --write .",
+        "prettier_fix": "prettier --write .",
         "---------TEST---SCRIPTS": "",
         "test": "mocha",
         "test_all:e2e": "mocha --recursive -t 500000 \"test/e2e/**/*.ts\"",
@@ -102,7 +102,6 @@
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
-        "@nomiclabs/hardhat-truffle5": "2.0.5",
         "@nomiclabs/hardhat-web3": "2.0.0",
         "@openzeppelin/test-helpers": "^0.5.16",
         "@types/bn.js": "^5.1.1",

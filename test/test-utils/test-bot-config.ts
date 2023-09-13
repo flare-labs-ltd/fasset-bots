@@ -11,7 +11,10 @@ export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/r
 export const AGENT_DEFAULT_CONFIG_PATH = "./run-config/agent-settings-config.json";
 
 export const INDEXER_URL_XRP: string = "https://attestation-coston.aflabs.net/verifier/xrp";
-export const ATTESTATION_PROVIDER_URLS: string[] = ["https://attestation-coston.aflabs.net/attestation-client", "https://attestation-coston.aflabs.net/attestation-client"];
+export const ATTESTATION_PROVIDER_URLS: string[] = [
+    "https://attestation-coston.aflabs.net/attestation-client",
+    "https://attestation-coston.aflabs.net/attestation-client",
+];
 export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x3551096766115b622bD02EF156b151A9D996Fb6E";
 export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 

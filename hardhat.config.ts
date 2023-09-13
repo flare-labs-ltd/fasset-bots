@@ -1,10 +1,8 @@
-import "@nomiclabs/hardhat-truffle5";
+import "dotenv/config";
+
 import "@nomiclabs/hardhat-web3";
-import * as dotenv from "dotenv";
 import fs from "fs";
 import { HardhatUserConfig } from "hardhat/config";
-
-dotenv.config();
 
 const accounts = [
     // In Truffle, default account is always the first one.
