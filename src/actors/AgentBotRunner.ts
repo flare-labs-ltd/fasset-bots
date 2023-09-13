@@ -65,7 +65,7 @@ export class AgentBotRunner {
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
-        for (const chainConfig of botConfig.chains) {
+        for (const chainConfig of botConfig.fAssets) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
             logger.info(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId} with symbol ${chainConfig.chainInfo.symbol}.`);

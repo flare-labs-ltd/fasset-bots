@@ -59,8 +59,8 @@ describe("Actor tests - coston", async () => {
         orm = botConfig.orm!;
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
-        context = await createAssetContext(botConfig, botConfig.chains[0]);
-        actorContext = await createActorAssetContext(actorConfig, actorConfig.chains[0]);
+        context = await createAssetContext(botConfig, botConfig.fAssets[0]);
+        actorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0]);
         // agent default settings
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
         vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;

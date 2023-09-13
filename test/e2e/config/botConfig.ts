@@ -4,7 +4,7 @@ import {
     createAttestationHelper,
     createBlockchainIndexerHelper,
     createBlockchainWalletHelper,
-    createBotChainConfig,
+    createBotFAssetConfig,
     createBotConfig,
     createChainConfig,
     createStateConnectorClient,
@@ -159,7 +159,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should create tracked state config chain", async () => {
-        const chainInfo = actorRunConfig.chainInfos[0];
+        const chainInfo = actorRunConfig.fAssetInfos[0];
         const trackedStateConfigChain = await createChainConfig(
             chainInfo,
             ATTESTATION_PROVIDER_URLS,
@@ -172,8 +172,8 @@ describe("Bot config tests", async () => {
 
     it("Should create agent bot config chain", async () => {
         const botConfig = await createBotConfig(runConfig, accounts[0]);
-        const chainInfo = runConfig.chainInfos[0];
-        const agentBotConfigChain = await createBotChainConfig(
+        const chainInfo = runConfig.fAssetInfos[0];
+        const agentBotConfigChain = await createBotFAssetConfig(
             chainInfo,
             botConfig.orm!.em,
             ATTESTATION_PROVIDER_URLS,

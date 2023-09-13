@@ -53,7 +53,7 @@ export class ActorBaseRunner {
      */
     static async create(config: BotConfig, address: string, kind: ActorBaseKind): Promise<ActorBaseRunner> {
         logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
-        const assetContext = await createActorAssetContext(config, config.chains[0]);
+        const assetContext = await createActorAssetContext(config, config.fAssets[0]);
         logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(assetContext, lastBlock);

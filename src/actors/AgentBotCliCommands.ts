@@ -25,7 +25,7 @@ export class BotCliCommands {
     ownerAddress!: string;
     botConfig!: BotConfig;
     agentSettingsPath!: string;
-    botChainInfo!: ChainInfo;
+    BotFAssetInfo!: ChainInfo;
 
     static async create(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH) {
         const bot = new BotCliCommands();
@@ -58,12 +58,12 @@ export class BotCliCommands {
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
         // create context
-        const chainConfig = this.botConfig.chains.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
             logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol.`);
             throw new CommandLineError("Invalid FAsset symbol");
         }
-        this.botChainInfo = chainConfig.chainInfo;
+        this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
         const underlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
