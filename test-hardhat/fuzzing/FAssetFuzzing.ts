@@ -4,7 +4,7 @@ import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
+import { MINUS_CHAR, expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import {
     InclusionIterable,
     currentRealTime,
@@ -272,6 +272,7 @@ describe("Fuzzing tests", async () => {
         const mintingPoolCollateralRatioBIPS = mulDecimal(toBN(poolCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));
         return {
             vaultCollateralToken: vaultCollateral.token,
+            poolTokenSuffix: "FUZZ" + MINUS_CHAR + vaultCollateral.tokenFtsoSymbol,
             feeBIPS: toBIPS("5%"),
             poolFeeShareBIPS: toBIPS("40%"),
             mintingVaultCollateralRatioBIPS: mintingVaultCollateralRatioBIPS,
