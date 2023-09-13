@@ -65,7 +65,7 @@ describe("Create asset context unit tests", async () => {
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
         const chainId = 3;
-        const chainConfig: BotFAssetConfig = {
+        const fAssetConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
                 name: "Ripple",
@@ -81,10 +81,10 @@ describe("Create asset context unit tests", async () => {
         const config: BotConfig = {
             loopDelay: 1000,
             rpcUrl: "rpcUrl",
-            chains: [chainConfig],
+            fAssets: [fAssetConfig],
             nativeChainInfo: testNativeChainInfo,
         };
-        await expect(createActorAssetContext(config, chainConfig))
+        await expect(createActorAssetContext(config, fAssetConfig))
             .to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`)
             .and.be.an.instanceOf(Error);
     });

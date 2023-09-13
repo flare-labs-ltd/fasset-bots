@@ -117,7 +117,7 @@ describe("Fuzzing tests", async () => {
             botCliCommands.botConfig = {
                 rpcUrl: "",
                 loopDelay: 0,
-                chains: [
+                fAssets: [
                     {
                         chainInfo: chainInfo,
                         wallet: new MockChainWallet(chain),
