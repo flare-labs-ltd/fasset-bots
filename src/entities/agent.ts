@@ -16,6 +16,9 @@ export class AgentEntity {
     chainId!: number;
 
     @Property()
+    chainSymbol!: string;
+
+    @Property()
     ownerAddress!: string;
 
     @Property()

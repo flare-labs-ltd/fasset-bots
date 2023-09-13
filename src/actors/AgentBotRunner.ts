@@ -11,7 +11,7 @@ import { logger } from "../utils/logger";
 
 export class AgentBotRunner {
     constructor(
-        public contexts: Map<number, IAssetAgentBotContext>,
+        public contexts: Map<string, IAssetAgentBotContext>,
         public orm: ORM,
         public loopDelay: number,
         public notifier: Notifier
@@ -41,10 +41,10 @@ export class AgentBotRunner {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
             try {
-                const context = this.contexts.get(agentEntity.chainId);
+                const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
-                    console.warn(`Invalid chain id ${agentEntity.chainId}`);
-                    logger.warn(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner found invalid chain id ${agentEntity.chainId}.`);
+                    console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
+                    logger.warn(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
                 }
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
@@ -64,10 +64,10 @@ export class AgentBotRunner {
      */
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to create AgentBotRunner.`);
-        const contexts: Map<number, IAssetAgentBotContext> = new Map();
+        const contexts: Map<string, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.chains) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
-            contexts.set(assetContext.chainInfo.chainId, assetContext);
+            contexts.set(assetContext.chainInfo.symbol, assetContext);
             logger.info(`Owner's ${requireEnv("OWNER_ADDRESS")} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId} with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} created AgentBotRunner.`);

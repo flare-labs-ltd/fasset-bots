@@ -75,6 +75,7 @@ export class AgentBot {
             const agent = await Agent.create(context, ownerAddress, agentSettings);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
+            agentEntity.chainSymbol = context.chainInfo.symbol;
             agentEntity.ownerAddress = agent.ownerAddress;
             agentEntity.vaultAddress = agent.vaultAddress;
             agentEntity.underlyingAddress = agent.underlyingAddress;

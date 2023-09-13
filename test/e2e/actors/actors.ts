@@ -101,17 +101,17 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const contexts: Map<number, IAssetAgentBotContext> = new Map();
-        contexts.set(context.chainInfo.chainId, context);
+        const contexts: Map<string, IAssetAgentBotContext> = new Map();
+        contexts.set(context.chainInfo.symbol, context);
         const agentBotRunner = new AgentBotRunner(contexts, orm, 5, new Notifier());
         expect(agentBotRunner.loopDelay).to.eq(5);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should create agent bot runner from bot config", async () => {
         const agentBotRunner = await AgentBotRunner.create(botConfig);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should not create agent bot runner - missing arguments", async () => {
