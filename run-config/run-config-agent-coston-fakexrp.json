@@ -8,6 +8,18 @@
     "chainInfos": [
         {
             "chainId": 3,
+            "name": "Test XRP",
+            "symbol": "testXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "finalizationBlocks": 10,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FtestXRP",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "walletUrl": "https://s.altnet.rippletest.net:51234"
+        },
+        {
+            "chainId": 3,
             "name": "Fake XRP",
             "symbol": "fakeXRP",
             "decimals": 6,
