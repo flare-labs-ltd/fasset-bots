@@ -16,6 +16,7 @@ User aka **Owner** needs:
 ```javascript
 export interface AgentSettingsConfig {
     vaultCollateralFtsoSymbol: string,
+    poolTokenSuffix: string,
     feeBIPS: string,
     poolFeeShareBIPS: string,
     mintingVaultCollateralRatioConstant: number,
