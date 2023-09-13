@@ -2,7 +2,7 @@
     "loopDelay": 0,
     "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
-    "chainInfos": [
+    "fAssetInfos": [
         {
             "chainId": 3,
             "name": "Test XRP",
