@@ -584,7 +584,7 @@ describe("Agent bot tests", async () => {
         assert.equal(status, AgentStatus.DESTROYING);
     });
 
-    it.only("Should fail to send notification - faulty notifier", async () => {
+    it("Should fail to send notification - faulty notifier", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, new FaultyNotifier());
         const spyConsole = spy.on(console, "error");
         // create collateral reservation and perform minting

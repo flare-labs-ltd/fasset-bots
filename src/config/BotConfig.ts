@@ -17,7 +17,7 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
-import { requireEnv, toBN } from "../utils/helpers";
+import { MINUS_CHAR, requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 
@@ -171,7 +171,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         vaultCollateralToken: vaultCollateralToken.token,
-        poolTokenSuffix: agentSettingsConfig.poolTokenSuffix + "-" + vaultCollateralToken.tokenFtsoSymbol,
+        poolTokenSuffix: agentSettingsConfig.poolTokenSuffix + MINUS_CHAR + vaultCollateralToken.tokenFtsoSymbol,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
         mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),
