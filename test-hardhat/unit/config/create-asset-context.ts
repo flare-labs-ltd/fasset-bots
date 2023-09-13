@@ -8,7 +8,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { MockChain } from "../../../src/mock/MockChain";
-import { BotChainConfig, BotConfig } from "../../../src/config/BotConfig";
+import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
@@ -45,7 +45,7 @@ describe("Create asset context unit tests", async () => {
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
         const chainId = 3;
-        const chainConfig: BotChainConfig = {
+        const chainConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
                 name: "Ripple",
@@ -65,7 +65,7 @@ describe("Create asset context unit tests", async () => {
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
         const chainId = 3;
-        const chainConfig: BotChainConfig = {
+        const chainConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
                 name: "Ripple",

@@ -22,7 +22,7 @@ describe("AgentBot cli commands unit tests", async () => {
 
     it("Should create commands", async () => {
         const commands = await BotCliCommands.create(fAssetSymbol);
-        expect(commands.botConfig.chains[0].chainInfo.chainId).to.eq(SourceId.XRP);
+        expect(commands.botConfig.fAssets[0].chainInfo.chainId).to.eq(SourceId.XRP);
     });
 
     it("Should initialize bot cli commands", async () => {

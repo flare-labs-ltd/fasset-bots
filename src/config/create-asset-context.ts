@@ -4,7 +4,7 @@ import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
-import { BotConfig, BotChainConfig } from "./BotConfig";
+import { BotConfig, BotFAssetConfig } from "./BotConfig";
 import { ChainContracts, loadContracts } from "./contracts";
 
 const AssetManager = artifacts.require("AssetManager");
@@ -18,7 +18,7 @@ const IERC20 = artifacts.require("IERC20");
 /**
  * Creates asset context needed for AgentBot.
  */
-export async function createAssetContext(botConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetAgentBotContext> {
+export async function createAssetContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentBotContext> {
     if (!botConfig.addressUpdater && !botConfig.contractsJsonFile) {
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
@@ -63,7 +63,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotC
 /**
  * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
  */
-export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotChainConfig): Promise<IAssetActorContext> {
+export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetActorContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
@@ -93,7 +93,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
 
 // utils
 
-async function getAssetManagerAndController(chainConfig: BotChainConfig, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
+async function getAssetManagerAndController(chainConfig: BotFAssetConfig, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
     if (chainConfig.assetManager) {
         const assetManager = await AssetManager.at(chainConfig.assetManager);
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());

@@ -58,7 +58,7 @@ describe("Bot cli commands unit tests", async () => {
         userBot.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            chains: [
+            fAssets: [
                 {
                     chainInfo: {
                         chainId: chainId,

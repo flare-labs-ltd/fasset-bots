@@ -24,7 +24,7 @@ import { CreateOrmOptions, EM, ORM } from "./orm";
 export interface BotConfigFile {
     defaultAgentSettingsPath?: string; // only for agent bot
     ormOptions?: CreateOrmOptions; // only for agent bot
-    chainInfos: BotChainInfo[];
+    fAssetInfos: BotFAssetInfo[];
     // notifierFile: string;
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
@@ -37,7 +37,7 @@ export interface BotConfigFile {
     contractsJsonFile?: string;
 }
 
-export interface BotChainInfo extends ChainInfo {
+export interface BotFAssetInfo extends ChainInfo {
     walletUrl?: string; // only for agent bot
     inTestnet?: boolean; // only for agent bot, optional also for agent bot
     indexerUrl: string;
@@ -51,14 +51,14 @@ export interface BotConfig {
     notifier?: Notifier; // only for agent bot
     loopDelay: number;
     rpcUrl: string;
-    chains: BotChainConfig[];
+    fAssets: BotFAssetConfig[];
     nativeChainInfo: NativeChainInfo;
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
 }
 
-export interface BotChainConfig {
+export interface BotFAssetConfig {
     wallet?: IBlockChainWallet; // only for agent bot
     chainInfo: ChainInfo;
     blockchainIndexerClient: BlockchainIndexerHelper;
@@ -86,10 +86,10 @@ export interface AgentSettingsConfig {
  */
 export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string): Promise<BotConfig> {
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
-    const chains: BotChainConfig[] = [];
-    for (const chainInfo of runConfig.chainInfos) {
-        chains.push(
-            await createBotChainConfig(
+    const fAssets: BotFAssetConfig[] = [];
+    for (const chainInfo of runConfig.fAssetInfos) {
+        fAssets.push(
+            await createBotFAssetConfig(
                 chainInfo,
                 orm ? orm.em : undefined,
                 runConfig.attestationProviderUrls,
@@ -102,7 +102,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     return {
         rpcUrl: runConfig.rpcUrl,
         loopDelay: runConfig.loopDelay,
-        chains: chains,
+        fAssets: fAssets,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm ? orm : undefined,
         notifier: new Notifier(),
@@ -112,16 +112,16 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 }
 
 /**
- * Creates BotChainConfig configuration from chain info.
+ * Creates BotFAssetConfig configuration from chain info.
  */
-export async function createBotChainConfig(
-    chainInfo: BotChainInfo,
+export async function createBotFAssetConfig(
+    chainInfo: BotFAssetInfo,
     em: EM | undefined,
     attestationProviderUrls: string[],
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
     ownerAddress: string
-): Promise<BotChainConfig> {
+): Promise<BotFAssetConfig> {
     const wallet = chainInfo.walletUrl && em ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
@@ -131,15 +131,15 @@ export async function createBotChainConfig(
 }
 
 /**
- * Helper for BotChainConfig configuration from chain info.
+ * Helper for BotFAssetConfig configuration from chain info.
  */
 export async function createChainConfig(
-    chainInfo: BotChainInfo,
+    chainInfo: BotFAssetInfo,
     attestationProviderUrls: string[],
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
     ownerAddress: string
-): Promise<BotChainConfig> {
+): Promise<BotFAssetConfig> {
     const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks);
     const stateConnector = await createStateConnectorClient(
         chainInfo.indexerUrl,

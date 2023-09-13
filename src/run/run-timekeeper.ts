@@ -20,7 +20,7 @@ toplevelRun(async () => {
     await initWeb3(runConfig.rpcUrl, [TIMEKEEPER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, TIMEKEEPER_ADDRESS);
     const timekeepers: TimeKeeper[] = [];
-    for (const chain of config.chains) {
+    for (const chain of config.fAssets) {
         const assetContext = await createActorAssetContext(config, chain);
         const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, 120_000);
         timekeepers.push(timekeeper);
