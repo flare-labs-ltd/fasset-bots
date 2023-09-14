@@ -128,9 +128,23 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendAgentAnnouncedExitAvailable(agentVault);
         logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
     }
+
+    /**
+     * Exit agent's available list.
+     */
+        async exitAvailableList(agentVault: string): Promise<void> {
+            const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+            if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
+                // agent can exit available
+                await agentBot.exitAvailable(agentEnt);
+            } else {
+                logger.info(`Agent ${agentVault} cannot yet exit available list, allowed at ${toBN(agentEnt.exitAvailableAllowedAtTimestamp).toString()}.`);
+            }
+        }
 
     /**
      * Announces agent's withdrawal of class 1. It marks in persistent state that withdrawal of class 1
@@ -142,6 +156,7 @@ export class BotCliCommands {
         this.botConfig.notifier!.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -185,6 +200,7 @@ export class BotCliCommands {
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
         agentEnt.agentSettingUpdateValidAtName = settingName;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
@@ -201,7 +217,7 @@ export class BotCliCommands {
             await this.announceExitAvailableList(agentVault);
         }
         agentEnt.waitingForDestructionCleanUp = true;
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
         console.log(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
     }
@@ -222,7 +238,7 @@ export class BotCliCommands {
         }
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
         logger.info(
             `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${
@@ -239,7 +255,7 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendUnderlyingWithdrawalPerformed(agentVault, txHash);
         logger.info(
             `Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`
@@ -262,7 +278,7 @@ export class BotCliCommands {
                 logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 this.botConfig.notifier!.sendConfirmWithdrawUnderlying(agentVault);
             } else {
                 logger.info(
@@ -293,11 +309,11 @@ export class BotCliCommands {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 this.botConfig.notifier!.sendCancelWithdrawUnderlying(agentVault);
             } else {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 logger.info(
                     `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                         .add(announcedUnderlyingConfirmationMinSeconds)

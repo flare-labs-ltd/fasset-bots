@@ -50,6 +50,16 @@ program
     });
 
 program
+    .command("announceExit")
+    .description("announce exit available agent's list")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.announceExitAvailableList(agentVault);
+    });
+
+program
     .command("exit")
     .description("exit available agent's list")
     .argument("<agentVaultAddress>")
