@@ -107,7 +107,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(collateral.toString()).to.eq(depositAmount);
     });
 
-    it("Should enter and announce exit available list", async () => {
+    it("Should enter, announce exit available list and exit available list", async () => {
         const agent = await createAgent();
         const vaultAddress = agent.vaultAddress;
         // deposit to vault
@@ -119,6 +119,10 @@ describe("Bot cli commands unit tests", async () => {
         expect(agentInfoBefore.publiclyAvailable).to.be.false;
         // buy collateral pool tokens
         await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
+        // try to exit - not in available list yet
+        await botCliCommands.exitAvailableList(vaultAddress);
+        const agentInfoBefore2 = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore2.publiclyAvailable).to.be.false;
         // enter available
         await botCliCommands.enterAvailableList(vaultAddress);
         const agentInfoMiddle = await context.assetManager.getAgentInfo(vaultAddress);
@@ -127,6 +131,16 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.announceExitAvailableList(vaultAddress!);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        // try to exit - not yet allowed
+        await botCliCommands.exitAvailableList(vaultAddress);
+        const agentInfoMiddle2 = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoMiddle2.publiclyAvailable).to.be.true;
+        // skip time
+        await time.increaseTo(agentEnt.exitAvailableAllowedAtTimestamp);
+        // try to exit - not yet allowed
+        await botCliCommands.exitAvailableList(vaultAddress);
+        const agentInfoAfter = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoAfter.publiclyAvailable).to.be.false;
     });
 
     it("Should deposit and withdraw from agent vault", async () => {
