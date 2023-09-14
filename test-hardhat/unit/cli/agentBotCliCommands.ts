@@ -362,4 +362,10 @@ describe("Bot cli commands unit tests", async () => {
         const { _delegateAddresses } = (await botCliCommands.context.wNat.delegatesOf(agent.collateralPool.address)) as any;
         expect(_delegateAddresses.length).to.eq(0);
     });
+
+    it("Should create underlying account", async () => {
+        const data = await botCliCommands.createUnderlyingAccount();
+        expect(data.address).to.not.be.null;
+        expect(data.privateKey).to.not.be.null;
+    });
 });

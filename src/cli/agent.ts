@@ -209,6 +209,15 @@ program
         await cli.undelegatePoolCollateral(agentVault);
     });
 
+    program
+    .command("createUnderlyingAccount")
+    .description("create underlying account")
+    .action(async () => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.createUnderlyingAccount();
+    });
+
 toplevelRun(async () => {
     await program.parseAsync();
 });

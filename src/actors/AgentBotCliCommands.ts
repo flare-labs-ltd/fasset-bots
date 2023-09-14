@@ -16,6 +16,7 @@ import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -78,13 +79,13 @@ export class BotCliCommands {
      */
     async createAgentVault(): Promise<Agent | null> {
         try {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
-        const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
-        this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
-        return agentBot.agent;
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+            this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
-    }
+        }
         return null;
     }
 
@@ -136,15 +137,15 @@ export class BotCliCommands {
     /**
      * Exit agent's available list.
      */
-        async exitAvailableList(agentVault: string): Promise<void> {
-            const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-            if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
-                // agent can exit available
-                await agentBot.exitAvailable(agentEnt);
-            } else {
-                logger.info(`Agent ${agentVault} cannot yet exit available list, allowed at ${toBN(agentEnt.exitAvailableAllowedAtTimestamp).toString()}.`);
-            }
+    async exitAvailableList(agentVault: string): Promise<void> {
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
+            // agent can exit available
+            await agentBot.exitAvailable(agentEnt);
+        } else {
+            logger.info(`Agent ${agentVault} cannot yet exit available list, allowed at ${toBN(agentEnt.exitAvailableAllowedAtTimestamp).toString()}.`);
         }
+    }
 
     /**
      * Announces agent's withdrawal of class 1. It marks in persistent state that withdrawal of class 1
@@ -288,7 +289,7 @@ export class BotCliCommands {
                 );
                 console.log(
                     `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                    .add(announcedUnderlyingConfirmationMinSeconds)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
             }
@@ -334,7 +335,7 @@ export class BotCliCommands {
     /**
      * Lists active agents in owner's local db.
      */
-    async listActiveAgents() {
+    async listActiveAgents(): Promise<void> {
         const query = this.botConfig.orm!.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
@@ -358,7 +359,7 @@ export class BotCliCommands {
     /**
      * Delegates pool collateral.
      */
-    async delegatePoolCollateral(agentVault: string, delegatesString: string, amountsString: string) {
+    async delegatePoolCollateral(agentVault: string, delegatesString: string, amountsString: string): Promise<void> {
         const delegates = delegatesString.split(",");
         const amounts = amountsString.split(",");
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
@@ -371,11 +372,23 @@ export class BotCliCommands {
     /**
      * Undelegates pool collateral.
      */
-    async undelegatePoolCollateral(agentVault: string) {
+    async undelegatePoolCollateral(agentVault: string): Promise<void> {
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.undelegateAll({ from: agentEnt.ownerAddress });
         this.botConfig.notifier!.sendUndelegatePoolCollateral(agentVault, collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
+    }
+
+    /**
+     * Creates underlying account.
+     */
+    async createUnderlyingAccount(): Promise<{ address: string, privateKey: string }> {
+        const address = await this.context.wallet.createAccount();
+        const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
+        const privateKey = (await walletKeys.getKey(address))!;
+        // TODO - can this be done more securely
+        console.log(address, privateKey);
+        return { address, privateKey };
     }
 }
