@@ -66,7 +66,7 @@ program
     .action(async (agentVault: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.announceExitAvailableList(agentVault);
+        await cli.exitAvailableList(agentVault);
     });
 
 program
