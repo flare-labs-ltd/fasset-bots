@@ -22,16 +22,14 @@ export function createArtifacts(web3: Web3): ArtifactsWithUpdate {
 class ArtifactsImpl implements ArtifactsWithUpdate {
     private artifactMap?: Map<string, ArtifactData>;
 
-    constructor(
-        private web3: Web3,
-    ) {}
+    constructor(private web3: Web3) {}
 
     loadArtifactMap(): void {
         this.artifactMap = new Map();
         const paths = globSync("artifacts/**/*.json");
         for (const path of paths) {
             const name = basename(path, extname(path));
-            const solPath = relative('artifacts/', dirname(path)).replace(/\\/g, '/');
+            const solPath = relative("artifacts/", dirname(path)).replace(/\\/g, "/");
             const data: ArtifactData = { name: name, path: path };
             this.artifactMap.set(name, data);
             this.artifactMap.set(`${solPath}:${name}`, data);

@@ -209,7 +209,7 @@ program
         await cli.undelegatePoolCollateral(agentVault);
     });
 
-    program
+program
     .command("createUnderlyingAccount")
     .description("create underlying account")
     .action(async () => {

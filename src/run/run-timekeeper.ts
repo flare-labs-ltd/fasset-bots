@@ -8,7 +8,6 @@ import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
 
-
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
 const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";

@@ -288,7 +288,12 @@ export function exp10(n: BNish) {
 /**
  * Retries a function n number of times before giving up
  */
-export async function retry<T extends (...arg0: any[]) => any>(fn: T, args: Parameters<T>, maxTry: number, currRetry: number = 0): Promise<Awaited<ReturnType<T>>> {
+export async function retry<T extends (...arg0: any[]) => any>(
+    fn: T,
+    args: Parameters<T>,
+    maxTry: number,
+    currRetry: number = 0
+): Promise<Awaited<ReturnType<T>>> {
     const delay = 2000;
     try {
         const result = await fn(...args);
@@ -300,7 +305,7 @@ export async function retry<T extends (...arg0: any[]) => any>(fn: T, args: Para
             logger.error(`All ${maxTry} retry attempts exhausted for function ${fn.name}: ${e}`);
             throw e;
         }
-        currRetry ++;
+        currRetry++;
         logger.info(`Retrying ${fn.name} ${currRetry} times after delaying  ${currRetry * delay} ms.`);
         await sleep(currRetry * delay);
         return retry(fn, args, maxTry, currRetry);
