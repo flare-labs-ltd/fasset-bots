@@ -50,34 +50,25 @@ library LiquidatorMath {
             _blazeSwap
         );
         uint256 optVaultAmount = calculateOptimalVaultCollateral(liquidatorVars);
-        uint256 optFAssetAmountUBA = getBlazeSwapAmountOut(
-            optVaultAmount,
-            liquidatorVars.reserveVaultWeiDex1,
-            liquidatorVars.reserveFAssetUBADex1
-        );
-        optFAssetAmountUBA = Math.min(
-            roundUpWithPrecision(
-                optFAssetAmountUBA,
-                _assetManagerSettings.assetMintingGranularityUBA
-            ), liquidatorVars.maxLiquidatedFAssetUBA
-        );
-        optVaultAmount = getBlazeSwapAmountIn(
-            optFAssetAmountUBA,
-            liquidatorVars.reserveVaultWeiDex1,
-            liquidatorVars.reserveFAssetUBADex1
-        );
-        return Math.min(optVaultAmount, liquidatorVars.reserveVaultWeiDex1);
-/*         return getBlazeSwapAmountIn(Math.min(
+        uint256 optFAssetAmountUBA = Math.min(
             roundUpWithPrecision(
                 getBlazeSwapAmountOut(
-                    calculateOptimalVaultCollateral(liquidatorVars),
+                    optVaultAmount,
                     liquidatorVars.reserveVaultWeiDex1,
                     liquidatorVars.reserveFAssetUBADex1
-                ), _assetManagerSettings.assetMintingGranularityUBA
-            ), liquidatorVars.maxLiquidatedFAssetUBA),
-            liquidatorVars.reserveVaultWeiDex1,
-            liquidatorVars.reserveFAssetUBADex1
-        ); */
+                ),  _assetManagerSettings.assetMintingGranularityUBA
+            ), liquidatorVars.maxLiquidatedFAssetUBA
+        );
+        if (optFAssetAmountUBA == 0) {
+            return 0;
+        }
+        return Math.min(
+            getBlazeSwapAmountIn(
+                optFAssetAmountUBA,
+                liquidatorVars.reserveVaultWeiDex1,
+                liquidatorVars.reserveFAssetUBADex1
+            ), liquidatorVars.reserveVaultWeiDex1
+        );
     }
 
     function calculateOptimalVaultCollateral(

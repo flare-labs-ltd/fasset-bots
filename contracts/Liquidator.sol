@@ -76,12 +76,14 @@ contract Liquidator is ILiquidator, Ownable {
         vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
+        require(maxVaultFlashLoan > 0, "No f-asset to liquidate");
         uint256 optimalVaultAmount = LiquidatorMath.getFlashLoanedVaultCollateral(
             address(wNat),
             agentInfo,
             assetManagerSettings,
             _blazeSwap
         );
+        require(optimalVaultAmount > 0, "No arbitrage opportunity");
         // run flash loan
         _flashLender.flashLoan(
             this,
@@ -152,6 +154,7 @@ contract Liquidator is ILiquidator, Ownable {
         uint256[] memory amountsRecv;
         // swap vault collateral for f-asset
         _vaultToken.approve(address(_blazeSwap), _vaultAmount);
+        console.log(_vaultAmount);
         (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
             _vaultAmount,
             0,

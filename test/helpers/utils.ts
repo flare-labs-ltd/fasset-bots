@@ -174,19 +174,6 @@ export function getPriceBasedDexReserve(
     .div(expBN(decimalsA))
 }
 
-// how many f-assets have to be minted
-// for the collateral ratio to be crBips
-export function mintedUbaForCr(
-  crBips: BNish,
-  totalCollateral: BNish,
-  priceFAsset: BNish,
-  priceCollateral: BNish,
-  decimalsFAsset: BNish,
-  decimalsCollateral: BNish
-): void {
-  // not implemented
-}
-
 export function collateralForCr(
   crBips: BNish,
   totalMintedUBA: BNish,

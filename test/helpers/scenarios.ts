@@ -2,8 +2,8 @@ import { EcosystemConfig } from "./interface"
 import { lotSizeUba, BNish, toBN, expBN, randBn, getPriceBasedDexReserve, collateralForCr } from "./utils"
 import { USDT as VAULT, WNAT as POOL, XRP as ASSET } from "./assets"
 
-const idealFAssetReserve = expBN(ASSET.decimals + 9)
-const idealPoolReserve = expBN(POOL.decimals + 11)
+const idealFAssetReserve = expBN(ASSET.decimals + 10)
+const idealPoolReserve = expBN(POOL.decimals + 12)
 const idealMintedUBA = lotSizeUba(ASSET).muln(1e5)
 
 const baseEcosystem: EcosystemConfig = {
@@ -91,10 +91,10 @@ const randBnInRelRadius = (center: BNish, radiusPerc: BNish) => {
   return randBn(toBN(center).sub(radius), toBN(center).add(radius))
 }
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 10; i++) {
   // slightly randomized crs
-  const vaultCr = randBnInRelRadius(15_000, 20)
-  const poolCr = randBnInRelRadius(15_000, 20)
+  const vaultCr = randBnInRelRadius(14_000, 10)
+  const poolCr = randBnInRelRadius(14_000, 10)
   // slightly randomized ftso prices
   const prices = {
     ftsoAssetPrice: randBnInRelRadius(baseEcosystem.ftsoAssetPrice, 5),
@@ -106,10 +106,10 @@ for (let i = 0; i < 1; i++) {
     ...prices,
     name: 'randomly randomized healthy ecosystem ' + i,
     // slightly randomized dex reserves
-    dex1VaultReserve: randBnInRelRadius(baseEcosystem.dex1VaultReserve, 5),
-    dex1FAssetReserve: randBnInRelRadius(baseEcosystem.dex1FAssetReserve, 5),
-    dex2PoolReserve: randBnInRelRadius(baseEcosystem.dex2PoolReserve, 5),
-    dex2VaultReserve: randBnInRelRadius(baseEcosystem.dex2VaultReserve, 5),
+    dex1VaultReserve: randBnInRelRadius(baseEcosystem.dex1VaultReserve, 2),
+    dex1FAssetReserve: randBnInRelRadius(baseEcosystem.dex1FAssetReserve, 2),
+    dex2PoolReserve: randBnInRelRadius(baseEcosystem.dex2PoolReserve, 2),
+    dex2VaultReserve: randBnInRelRadius(baseEcosystem.dex2VaultReserve, 2),
     // slightly randomized minted f-assets
     vaultCollateral: collateralForCr(
       vaultCr, // mincr = 150%
