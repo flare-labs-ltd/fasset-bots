@@ -1,9 +1,8 @@
 import { BlazeSwapRouterInstance } from '../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
 import { ERC20MockInstance } from '../typechain-truffle/contracts/mock/ERC20Mock'
-import { fXRP, USDT, WNAT } from './assets'
-import { MAX_INT, ZERO_ADDRESS, toBN } from './utils/constants'
-import { swapOutput } from './utils/blazeswap'
-import { assertBnEqual } from './utils/assertBn'
+import { XRP, USDT, WNAT } from './helpers/assets'
+import { MAX_INT, ZERO_ADDRESS } from './helpers/constants'
+import { swapOutput, assertBnEqual, toBN } from './helpers/utils'
 
 const ERC20Mock = artifacts.require("ERC20Mock")
 const BlazeSwapManager = artifacts.require("BlazeSwapManager")
@@ -16,7 +15,7 @@ contract("Tests for BlazeSwapRouter contract", (accounts) => {
   let tokenA: ERC20MockInstance
   let tokenB: ERC20MockInstance
 
-  beforeEach(async function () {
+  before(async function () {
     wNat = await ERC20Mock.new(WNAT.name, WNAT.symbol, WNAT.decimals)
     const blazeSwapManager = await BlazeSwapManager.new(accounts[0])
     const blazeSwapFactory = await BlazeSwapFactory.new(blazeSwapManager.address)
@@ -24,7 +23,7 @@ contract("Tests for BlazeSwapRouter contract", (accounts) => {
     blazeSwapRouter = await BlazeSwapRouter.new(blazeSwapFactory.address, wNat.address, false)
     // set tokens
     tokenA = await ERC20Mock.new(USDT.name, USDT.symbol, USDT.decimals)
-    tokenB = await ERC20Mock.new(fXRP.name, fXRP.symbol, fXRP.decimals)
+    tokenB = await ERC20Mock.new(XRP.name, XRP.symbol, XRP.decimals)
   })
 
   it("should test adding liquidity and swapping", async () => {
@@ -42,6 +41,9 @@ contract("Tests for BlazeSwapRouter contract", (accounts) => {
     const { 0: reserveA, 1: reserveB } = await blazeSwapRouter.getReserves(tokenA.address, tokenB.address)
     assertBnEqual(reserveA, tokenALiq)
     assertBnEqual(reserveB, tokenBLiq)
+  })
+
+  it("should swap", async () => {
     const swapA = toBN(10).pow(toBN(14))
     await tokenA.mint(accounts[1], swapA)
     await tokenA.approve(blazeSwapRouter.address, swapA, { from: accounts[1] })

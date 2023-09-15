@@ -1,14 +1,14 @@
 import { ethers } from "ethers"
 
 
-type ContractType = 
-  | "IAgentVault" 
-  | "IBlazeSwap" 
-  | "IFAsset" 
-  | "IAssetManager" 
-  | "IERC20" 
-  | "IWNat" 
-  | "ILiquidationStrategy" 
+type ContractType =
+  | "IAgentVault"
+  | "IBlazeSwap"
+  | "IFAsset"
+  | "IAssetManager"
+  | "IERC20"
+  | "IWNat"
+  | "ILiquidationStrategy"
   | "IFtsoRegistry"
   | "IERC20Metadata"
   | "ILiquidator"
@@ -19,12 +19,12 @@ export const MAX_BIPS = BigInt(10_000)
 export function getContract<T>(
   provider: ethers.JsonRpcProvider, address: string, ctype: ContractType
 ): T {
-  const path = "artifacts/" 
-    + (ctype === "IERC20") 
+  const path = "artifacts/"
+    + (ctype === "IERC20")
     ? "@openzeppelin/token/ERC20/ERC20.sol"
     : (ctype === "IERC20Metadata")
     ? "@openzeppelin/token/ERC20/extensions/ERC20Metadata.sol"
-    : `contracts/interface/${ctype}.sol` 
+    : `contracts/interface/${ctype}.sol`
   return new ethers.Contract(address, require(path!).abi, provider) as T
 }
 

@@ -49,7 +49,7 @@ library LiquidatorMath {
             _assetManagerSettings,
             _blazeSwap
         );
-        uint256 optVaultAmount = _calculateOptimalVaultCollateral(liquidatorVars);
+        uint256 optVaultAmount = calculateOptimalVaultCollateral(liquidatorVars);
         uint256 optFAssetAmountUBA = getBlazeSwapAmountOut(
             optVaultAmount,
             liquidatorVars.reserveVaultWeiDex1,
@@ -61,17 +61,30 @@ library LiquidatorMath {
                 _assetManagerSettings.assetMintingGranularityUBA
             ), liquidatorVars.maxLiquidatedFAssetUBA
         );
-        return getBlazeSwapAmountIn(
+        optVaultAmount = getBlazeSwapAmountIn(
             optFAssetAmountUBA,
             liquidatorVars.reserveVaultWeiDex1,
             liquidatorVars.reserveFAssetUBADex1
         );
+        return Math.min(optVaultAmount, liquidatorVars.reserveVaultWeiDex1);
+/*         return getBlazeSwapAmountIn(Math.min(
+            roundUpWithPrecision(
+                getBlazeSwapAmountOut(
+                    calculateOptimalVaultCollateral(liquidatorVars),
+                    liquidatorVars.reserveVaultWeiDex1,
+                    liquidatorVars.reserveFAssetUBADex1
+                ), _assetManagerSettings.assetMintingGranularityUBA
+            ), liquidatorVars.maxLiquidatedFAssetUBA),
+            liquidatorVars.reserveVaultWeiDex1,
+            liquidatorVars.reserveFAssetUBADex1
+        ); */
     }
 
-    function _calculateOptimalVaultCollateral(
+    function calculateOptimalVaultCollateral(
         LiquidatorVars memory _liquidatorVars
     ) internal pure returns (uint256 _amount) {
         // to avoid overflow, we never multiply three non-bips vars
+        // (two are ok, as blazeswap allows only 112-bit reserves)
         // unfortunately this can introduce a bit of numerical errors
         {
             // scope to avoid stack too deep error

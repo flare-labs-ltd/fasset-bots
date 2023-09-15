@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
@@ -11,16 +10,18 @@ import "./lib/LiquidatorMath.sol";
 
 import "hardhat/console.sol";
 
+enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
+
 
 // always assume pool = wrapped native
-contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
+contract Liquidator is ILiquidator, Ownable {
 
     IWNat public immutable wNat; // wrapped native address is constant
     IERC3156FlashLender public flashLender;
     IBlazeSwapRouter public blazeswap;
 
     // needed for flash loan to only get executed once from runArbitrage
-    bool private flashLoanLock;
+    FlashLoanLock private _status;
 
     constructor(
         IWNat _wNat,
@@ -39,14 +40,18 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
     }
 
     modifier flashLoanInitiatorLock() {
-        flashLoanLock = true;
+        require(_status == FlashLoanLock.INACTIVE, "Reentrancy blocked");
+        _status = FlashLoanLock.INITIATOR_ENTER;
         _;
-        flashLoanLock = false;
+        require(_status == FlashLoanLock.RECEIVER_ENTER,
+            "Reentrancy blocked or flash loan receiver not called");
+        _status = FlashLoanLock.INACTIVE;
     }
 
     modifier flashLoanReceiverLock() {
-        require(flashLoanLock, "Flash loan not initiated by runArbitrageWithCustomParams");
-        flashLoanLock = false;
+        require(_status == FlashLoanLock.INITIATOR_ENTER,
+            "Flash loan with invalid initiator");
+        _status = FlashLoanLock.RECEIVER_ENTER;
         _;
     }
 
@@ -56,11 +61,12 @@ contract Liquidator is ILiquidator, ReentrancyGuard, Ownable {
         runArbitrageWithCustomParams(_agentVault, flashLender, blazeswap);
     }
 
+    // non-reentrant
     function runArbitrageWithCustomParams(
         IIAgentVault _agentVault,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwap
-    ) public flashLoanInitiatorLock nonReentrant {
+    ) public flashLoanInitiatorLock {
         // extrapolate data
         IAssetManager assetManager = _agentVault.assetManager();
         AssetManagerSettings.Data memory assetManagerSettings = assetManager.getSettings();

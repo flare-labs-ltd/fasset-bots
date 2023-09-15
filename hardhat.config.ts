@@ -1,6 +1,5 @@
 import { HardhatUserConfig } from "hardhat/config"
 import '@typechain/hardhat'
-import '@typechain/truffle-v5'
 import '@nomiclabs/hardhat-web3'
 import "@nomiclabs/hardhat-ethers"
 import "@nomiclabs/hardhat-truffle5"
@@ -46,7 +45,7 @@ const config: HardhatUserConfig = {
     sources: "./contracts",
     cache: "./cache",
     artifacts: "./artifacts"
-},
+  },
 }
 
 export default config

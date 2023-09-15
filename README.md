@@ -4,6 +4,8 @@ This repo contains an implementation of an f-asset liquidator on the [Flare netw
 
 >**Note**: The f-asset bridge is not yet deployed on flare mainnet, it is currently in the testing phase on the flare canary network's testnet coston.
 
+>**Note**: It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. Moral: run a challenger.
+
 ## Why it's necessary
 
 The f-asset system is a bridge between the Flare network and non-smart contract chains. Its completely decentralized nature makes it reliant on the user ecosystem, especially in overseeing the main actors of the system - agents. Agents are bots that interact with smart contracts on flare to establish a safe bridge that is secured by their collateral. This collateral needs to cover some factor of bridged (f-)asset's value in order to secure against agent failure. When the ratio between agent's collateral and the value of their minted f-assets falls below a certain threshold, the agent is considered undercollateralized and can be liquidated. This means that anyone can exchange their f-assets for agent's collateral at a discount, and keep doing this until agent is again considered sufficiently collateralized. Combining an agent in liquidation with flash loans and DEXs, there arises a possibility of a profitable arbitrage. This repo contains an implementation of such an arbitrage bot.
@@ -50,11 +52,29 @@ Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / v
 - `PW`: the f-asset price in pool collateral, determined using Flare nework price oracle.
 
 From those vaules we can derive:
-- `fd1(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on a DEX `d1`,
-- `vd2(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on a DEX `d2`,
-- `profit(v) = L(min(fd1(v), fm)) - v`, where `L(f) = f PV RV + vd2(f PW RW)`: vault collateral profit of our arbitrage strategy.
+- `swap_v_for_f(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on dex `d1`,
+- `swap_w_for_v(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on dex `d2`,
+- `liquidate_v(f) = f PV RV`: obtained vault collateral when liquidating `f` f-assets,
+- `liquidate_w(f) = f PW RW`: obtained pool collateral when liquidating `f` f-assets,
+- `profit(v) = liquidate_v(min(swap_v_for_f(v), fm)) + swap_w_for_v(liquidate_w(min(swap_v_for_f(v), fm))) - v`: vault collateral profit of our arbitrage strategy.
 
 Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.
+
+## Dev notes
+
+Clone the repo with
+```sh
+git clone https://github.com/kuco23/FAsset-Liquidator.git
+```
+then run
+```sh
+yarn && yarn compile
+```
+and test with
+```sh
+yarn test
+```
+For testing we use hardhat with truffle. For the client-side bot implementation, ethers should/will be used, as it is both lightweight and powerful, so it can be intergrated into frontend.
 
 ## TODO
 - [ ] handle situations when dex reserves are smaller than swapping amounts.

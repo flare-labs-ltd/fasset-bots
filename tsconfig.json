@@ -12,7 +12,7 @@
   "include": [
     "./src",
     "./test",
-    "./typechain",
+    "./typechain-ethers",
     "./typechain-truffle"
   ],
   "exclude": ["node_modules", "scripts"]
