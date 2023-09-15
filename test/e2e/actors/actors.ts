@@ -24,6 +24,7 @@ import chaiAsPromised from "chai-as-promised";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
+const fAssetSymbol = "FtestXRP";
 
 describe("Actor tests - coston", async () => {
     let accounts: string[];
@@ -59,8 +60,10 @@ describe("Actor tests - coston", async () => {
         orm = botConfig.orm!;
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
-        context = await createAssetContext(botConfig, botConfig.fAssets[0]);
-        actorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0]);
+        const chainConfig1 = botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        context = await createAssetContext(botConfig, chainConfig1!);
+        const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        actorContext = await createActorAssetContext(actorConfig, chainConfig2!);
         // agent default settings
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
         vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
