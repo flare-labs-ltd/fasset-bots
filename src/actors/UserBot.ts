@@ -7,7 +7,7 @@ import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BNish, CommandLineError, requireEnv, toBN } from "../utils/helpers";
-import { initWeb3 } from "../utils/web3";
+import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -33,7 +33,7 @@ export class UserBot {
         // init web3 and accounts
         this.nativeAddress = requireEnv("USER_ADDRESS");
         const nativePrivateKey = requireEnv("USER_PRIVATE_KEY");
-        const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.nativeAddress !== accounts[0]) {
             logger.error(`User ${requireEnv("USER_ADDRESS")} has invalid address/private key pair.`);

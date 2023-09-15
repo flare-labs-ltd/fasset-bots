@@ -7,7 +7,7 @@ import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { artifacts, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import { readFileSync } from "fs";
 import chalk from "chalk";
@@ -49,7 +49,7 @@ export class BotCliCommands {
         // init web3 and accounts
         this.ownerAddress = requireEnv("OWNER_ADDRESS");
         const nativePrivateKey = requireEnv("OWNER_PRIVATE_KEY");
-        const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) {
             logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid address/private key pair.`);

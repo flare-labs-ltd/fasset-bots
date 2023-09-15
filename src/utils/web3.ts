@@ -31,6 +31,21 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     return accounts;
 }
 
+export function authenticatedHttpProvider(url: string, apiToken?: string): provider {
+    if (!apiToken) {
+        return new Web3.providers.HttpProvider(url);
+    } else if (authenticatedHttpProvider.useHeader) {
+        const headers = [{ name: 'x-apikey', value: apiToken }];
+        return new Web3.providers.HttpProvider(url, { headers });
+    } else {
+        const sep = url.includes('?') ? '&' : '?';
+        const authUrl = `${url}${sep}x-apikey=${apiToken}`
+        return new Web3.providers.HttpProvider(authUrl);
+    }
+}
+// default to url, because api seems to not support header auth correctly
+authenticatedHttpProvider.useHeader = false;
+
 function createProvider(provider: provider) {
     if (typeof provider === "string") {
         if (provider in predefinedProviders) {
