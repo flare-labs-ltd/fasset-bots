@@ -68,7 +68,7 @@ export class UserBot {
         let start = 0;
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            const { 0: list } = await this.context.assetManager.getAvailableAgentsDetailedList(start, chunkSize);
+            const { 0: list } = await this.context.assetManager.getAvailableAgentsDetailedList(start, start + chunkSize);
             result.splice(result.length, 0, ...list);
             if (list.length < chunkSize) break;
             start += list.length;
