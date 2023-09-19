@@ -13,7 +13,8 @@
     "license": "MIT",
     "bin": {
         "agent-bot": "dist/src/cli/agent.js",
-        "user-bot": "dist/src/cli/user.js"
+        "user-bot": "dist/src/cli/user.js",
+        "fake-price-reader" : "dist/src/cli/fakePriceReader.js"
     },
     "nyc": {
         "extends": "@istanbuljs/nyc-config-typescript",

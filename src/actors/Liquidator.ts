@@ -38,9 +38,11 @@ export class Liquidator extends ActorBase {
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
                 if (eventIs(event, this.state.context.ftsoManager, "PriceEpochFinalized")) {
+                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`)
                     logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
+                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`)
                     logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     await this.handleMintingExecuted(event.args);
                 }
@@ -76,6 +78,7 @@ export class Liquidator extends ActorBase {
         logger.info(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
         const timestamp = await latestBlockTimestampBN();
         const newStatus = agent.possibleLiquidationTransition(timestamp);
+        console.log(`Agent ${agent.vaultAddress} has status ${newStatus}.`);
         if (newStatus === AgentStatus.LIQUIDATION) {
             const fBalance = await this.state.context.fAsset.balanceOf(this.address);
             await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
