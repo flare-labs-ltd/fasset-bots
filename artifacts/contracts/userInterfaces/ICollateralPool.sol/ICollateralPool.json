@@ -35,6 +35,12 @@
           "internalType": "uint256",
           "name": "newFAssetFeeDebt",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timelockExpiresAt",
+          "type": "uint256"
         }
       ],
       "name": "Entered",
@@ -195,7 +201,18 @@
         }
       ],
       "name": "enter",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_receivedTokens",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_timelockExpiresAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "payable",
       "type": "function"
     },

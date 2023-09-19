@@ -18,11 +18,13 @@ export interface Entered {
     receivedTokensWei: BN;
     addedFAssetFeesUBA: BN;
     newFAssetFeeDebt: BN;
+    timelockExpiresAt: BN;
     0: string;
     1: BN;
     2: BN;
     3: BN;
     4: BN;
+    5: BN;
   };
 }
 
@@ -138,7 +140,7 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
       _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<{ 0: BN; 1: BN }>;
     sendTransaction(
       _fAssets: number | BN | string,
       _enterWithFullFassets: boolean,
@@ -382,7 +384,7 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
         _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<{ 0: BN; 1: BN }>;
       sendTransaction(
         _fAssets: number | BN | string,
         _enterWithFullFassets: boolean,

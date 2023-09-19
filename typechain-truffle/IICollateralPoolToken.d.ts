@@ -78,25 +78,25 @@ export interface IICollateralPoolTokenInstance
     (
       _account: string,
       _amount: number | BN | string,
-      ignoreTimelocked: boolean,
+      _ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _account: string,
       _amount: number | BN | string,
-      ignoreTimelocked: boolean,
+      _ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _account: string,
       _amount: number | BN | string,
-      ignoreTimelocked: boolean,
+      _ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _account: string,
       _amount: number | BN | string,
-      ignoreTimelocked: boolean,
+      _ignoreTimelocked: boolean,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -146,7 +146,7 @@ export interface IICollateralPoolTokenInstance
       _account: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _account: string,
       _amount: number | BN | string,
@@ -270,25 +270,25 @@ export interface IICollateralPoolTokenInstance
       (
         _account: string,
         _amount: number | BN | string,
-        ignoreTimelocked: boolean,
+        _ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _account: string,
         _amount: number | BN | string,
-        ignoreTimelocked: boolean,
+        _ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _account: string,
         _amount: number | BN | string,
-        ignoreTimelocked: boolean,
+        _ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _account: string,
         _amount: number | BN | string,
-        ignoreTimelocked: boolean,
+        _ignoreTimelocked: boolean,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -338,7 +338,7 @@ export interface IICollateralPoolTokenInstance
         _account: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _account: string,
         _amount: number | BN | string,

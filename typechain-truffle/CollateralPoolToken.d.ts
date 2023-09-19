@@ -219,7 +219,7 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
       _account: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<BN>;
     sendTransaction(
       _account: string,
       _amount: number | BN | string,
@@ -486,7 +486,7 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
         _account: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<BN>;
       sendTransaction(
         _account: string,
         _amount: number | BN | string,

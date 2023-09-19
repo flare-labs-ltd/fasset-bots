@@ -134,7 +134,7 @@
         },
         {
           "internalType": "bool",
-          "name": "ignoreTimelocked",
+          "name": "_ignoreTimelocked",
           "type": "bool"
         }
       ],
@@ -240,7 +240,13 @@
         }
       ],
       "name": "mint",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_timelockExpiresAt",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
