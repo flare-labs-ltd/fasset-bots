@@ -15,7 +15,7 @@ describe("UserBot cli commands unit tests", async () => {
 
     before(async () => {
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
-        userAddress = accounts[0];
+        userAddress = accounts[2];
     });
 
     it("Should create UserBot", async () => {

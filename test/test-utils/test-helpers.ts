@@ -22,7 +22,7 @@ const Whitelist = artifacts.require("Whitelist");
 
 const ownerAccountPrivateKey = requireEnv("OWNER_PRIVATE_KEY");
 const account1PrivateKey = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
-const account2PrivateKey = requireEnv("NATIVE_ACCOUNT2_PRIVATE_KEY");
+const userPrivateKey = requireEnv("USER_PRIVATE_KEY");
 const account3PrivateKey = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
 const deployPrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
 const deployAddress = requireEnv("DEPLOY_ADDRESS");
@@ -31,7 +31,7 @@ export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {
     // owner is always first in array
     // deployer account / current coston governance in always last in array
-    return [ownerAccountPrivateKey, account1PrivateKey, account2PrivateKey, account3PrivateKey, deployPrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, deployPrivateKey];
 }
 
 export async function removeWalletAddressFromDB(orm: ORM, address: string) {
