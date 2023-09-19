@@ -85,7 +85,7 @@ export class FuzzingCustomer {
         if (this.runner.avoidErrors && lots === 0) return;
         const [tickets, remaining] = await this.redeemer
             .requestRedemption(lots)
-            .catch((e) => scope.exitOnExpectedError(e, ["Burn too big for owner", "redeem 0 lots"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"]));
         mintedLots -= lots - Number(remaining);
         this.runner.comment(`redeeming ${tickets.length} tickets, remaining ${remaining} lots`, `${this.name}`);
         // wait for all redemption payments or non-payments

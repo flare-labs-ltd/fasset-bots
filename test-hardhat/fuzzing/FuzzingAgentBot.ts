@@ -70,7 +70,7 @@ export class FuzzingAgentBot {
         // // TODO: buy fassets
         const amountUBA = randomBN(ownersAssets);
         if (this.runner.avoidErrors && amountUBA.isZero()) return;
-        await this.agentBot.agent.selfClose(amountUBA).catch((e) => scope.exitOnExpectedError(e, ["Burn too big for owner", "redeem 0 lots"]));
+        await this.agentBot.agent.selfClose(amountUBA).catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"]));
         this.runner.comment(`self closed successfully`, `${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)}`);
     }
 
