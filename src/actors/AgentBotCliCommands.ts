@@ -230,13 +230,6 @@ export class BotCliCommands {
      */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (!toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).isZero()) {
-            this.botConfig.notifier!.sendActiveWithdrawal(agentVault);
-            logger.info(
-                `Agent ${agentVault} already has an active underlying withdrawal announcement at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()}.`
-            );
-            return null;
-        }
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
