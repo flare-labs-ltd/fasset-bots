@@ -84,7 +84,7 @@ export class Agent {
     }
 
     static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings, index: number = 0): Promise<Agent> {
-        const desiredError = "Returned error: execution reverted: suffix already reserved -- Reason given: suffix already reserved.";
+        const desiredErrorIncludes = "suffix already reserved";
         try {
             // create agent
             const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
@@ -100,7 +100,7 @@ export class Agent {
             // create object
             return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
         } catch (error: any) {
-            if (error instanceof Error && error.message === desiredError) {
+            if (error instanceof Error && error.message.includes(desiredErrorIncludes)) {
                 index++;
                 agentSettings.poolTokenSuffix = this.incrementPoolTokenSuffix(agentSettings.poolTokenSuffix, index);
                 return Agent.create(ctx, ownerAddress, agentSettings, index);
