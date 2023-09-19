@@ -116,7 +116,7 @@ export class AgentBot {
         // agent
         const agent = new Agent(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
         logger.info(
-            `Agent ${agent.vaultAddress} was restore from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
+            `Agent ${agent.vaultAddress} was restored from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
         );
         return new AgentBot(agent, notifier);
     }

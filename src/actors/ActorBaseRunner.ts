@@ -8,7 +8,7 @@ import { Liquidator } from "./Liquidator";
 import { SystemKeeper } from "./SystemKeeper";
 import { logger } from "../utils/logger";
 import { createActorAssetContext } from "../config/create-asset-context";
-import { BotConfig } from "../config/BotConfig";
+import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
 
 export class ActorBaseRunner {
     constructor(
@@ -51,9 +51,9 @@ export class ActorBaseRunner {
      * @param address - actor's native address
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      */
-    static async create(config: BotConfig, address: string, kind: ActorBaseKind): Promise<ActorBaseRunner> {
+    static async create(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig): Promise<ActorBaseRunner> {
         logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
-        const assetContext = await createActorAssetContext(config, config.fAssets[0]);
+        const assetContext = await createActorAssetContext(config, fAsset);
         logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(assetContext, lastBlock);

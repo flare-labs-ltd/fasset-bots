@@ -16,7 +16,7 @@ import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } fr
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
 import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
-import { initWeb3, web3 } from "../../../src/utils/web3";
+import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
@@ -24,6 +24,7 @@ import chaiAsPromised from "chai-as-promised";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
+const fAssetSymbol = "FtestXRP";
 
 describe("Actor tests - coston", async () => {
     let accounts: string[];
@@ -49,7 +50,7 @@ describe("Actor tests - coston", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         // accounts
-        accounts = await initWeb3(runConfig.rpcUrl, getNativeAccountsFromEnv(), null);
+        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), getNativeAccountsFromEnv(), null);
         ownerAddress = requireEnv("OWNER_ADDRESS");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
@@ -59,8 +60,10 @@ describe("Actor tests - coston", async () => {
         orm = botConfig.orm!;
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
-        context = await createAssetContext(botConfig, botConfig.fAssets[0]);
-        actorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0]);
+        const chainConfig1 = botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        context = await createAssetContext(botConfig, chainConfig1!);
+        const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        actorContext = await createActorAssetContext(actorConfig, chainConfig2!);
         // agent default settings
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
         vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
@@ -145,17 +148,17 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should create actor bot runner from config", async () => {
-        const actorBaseRunner1 = await ActorBaseRunner.create(actorConfig, challengerAddress, ActorBaseKind.CHALLENGER);
+        const actorBaseRunner1 = await ActorBaseRunner.create(actorConfig, challengerAddress, ActorBaseKind.CHALLENGER, actorConfig.fAssets[0]);
         expect(actorBaseRunner1.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner1.actor.address).to.eq(challengerAddress);
         expect(actorBaseRunner1.actor instanceof Challenger).to.be.true;
 
-        const actorBaseRunner2 = await ActorBaseRunner.create(actorConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR);
+        const actorBaseRunner2 = await ActorBaseRunner.create(actorConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR, actorConfig.fAssets[0]);
         expect(actorBaseRunner2.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner2.actor.address).to.eq(liquidatorAddress);
         expect(actorBaseRunner2.actor instanceof Liquidator).to.be.true;
 
-        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER);
+        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, actorConfig.fAssets[0]);
         expect(actorBaseRunner3.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;

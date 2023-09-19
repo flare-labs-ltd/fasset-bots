@@ -201,6 +201,7 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: inTestnet,
+            apiTokenKey: process.env.BTC_RPC_API_KEY,
         } as UtxoMccCreate);
     } else if (sourceId === SourceId.DOGE) {
         return new WALLET.DOGE({
@@ -208,13 +209,14 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: inTestnet,
+            apiTokenKey: process.env.DOGE_RPC_API_KEY,
         } as UtxoMccCreate);
     } else {
         return new WALLET.XRP({
             url: walletUrl,
             username: "",
             password: "",
-            apiTokenKey: process.env.FLARE_API_PORTAL_KEY,
+            apiTokenKey: process.env.XRP_RPC_API_KEY,
         } as XrpMccCreate);
     }
 }

@@ -50,13 +50,23 @@ program
     });
 
 program
+    .command("announceExit")
+    .description("announce exit available agent's list")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.announceExitAvailableList(agentVault);
+    });
+
+program
     .command("exit")
     .description("exit available agent's list")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.announceExitAvailableList(agentVault);
+        await cli.exitAvailableList(agentVault);
     });
 
 program
@@ -197,6 +207,15 @@ program
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
         await cli.undelegatePoolCollateral(agentVault);
+    });
+
+program
+    .command("createUnderlyingAccount")
+    .description("create underlying account")
+    .action(async () => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.createUnderlyingAccount();
     });
 
 toplevelRun(async () => {

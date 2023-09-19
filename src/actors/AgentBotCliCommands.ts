@@ -7,7 +7,7 @@ import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { artifacts, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import { readFileSync } from "fs";
 import chalk from "chalk";
@@ -16,6 +16,7 @@ import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -48,7 +49,7 @@ export class BotCliCommands {
         // init web3 and accounts
         this.ownerAddress = requireEnv("OWNER_ADDRESS");
         const nativePrivateKey = requireEnv("OWNER_PRIVATE_KEY");
-        const accounts = await initWeb3(runConfig.rpcUrl, [nativePrivateKey], null);
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) {
             logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid address/private key pair.`);
@@ -128,8 +129,22 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendAgentAnnouncedExitAvailable(agentVault);
         logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
+    }
+
+    /**
+     * Exit agent's available list.
+     */
+    async exitAvailableList(agentVault: string): Promise<void> {
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
+            // agent can exit available
+            await agentBot.exitAvailable(agentEnt);
+        } else {
+            logger.info(`Agent ${agentVault} cannot yet exit available list, allowed at ${toBN(agentEnt.exitAvailableAllowedAtTimestamp).toString()}.`);
+        }
     }
 
     /**
@@ -142,6 +157,7 @@ export class BotCliCommands {
         this.botConfig.notifier!.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = amount;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -185,6 +201,7 @@ export class BotCliCommands {
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
         agentEnt.agentSettingUpdateValidAtName = settingName;
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
@@ -201,7 +218,7 @@ export class BotCliCommands {
             await this.announceExitAvailableList(agentVault);
         }
         agentEnt.waitingForDestructionCleanUp = true;
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
         console.log(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
     }
@@ -222,7 +239,7 @@ export class BotCliCommands {
         }
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
         logger.info(
             `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${
@@ -239,7 +256,7 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
-        await this.botConfig.orm!.em.persist(agentEnt).flush();
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         this.botConfig.notifier!.sendUnderlyingWithdrawalPerformed(agentVault, txHash);
         logger.info(
             `Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`
@@ -262,7 +279,7 @@ export class BotCliCommands {
                 logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 this.botConfig.notifier!.sendConfirmWithdrawUnderlying(agentVault);
             } else {
                 logger.info(
@@ -293,11 +310,11 @@ export class BotCliCommands {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 this.botConfig.notifier!.sendCancelWithdrawUnderlying(agentVault);
             } else {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-                await this.botConfig.orm!.em.persist(agentEnt).flush();
+                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 logger.info(
                     `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
                         .add(announcedUnderlyingConfirmationMinSeconds)
@@ -318,7 +335,7 @@ export class BotCliCommands {
     /**
      * Lists active agents in owner's local db.
      */
-    async listActiveAgents() {
+    async listActiveAgents(): Promise<void> {
         const query = this.botConfig.orm!.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
@@ -353,11 +370,23 @@ export class BotCliCommands {
     /**
      * Undelegates pool collateral.
      */
-    async undelegatePoolCollateral(agentVault: string) {
+    async undelegatePoolCollateral(agentVault: string): Promise<void> {
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.undelegateAll({ from: agentEnt.ownerAddress });
         this.botConfig.notifier!.sendUndelegatePoolCollateral(agentVault, collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
+    }
+
+    /**
+     * Creates underlying account.
+     */
+    async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
+        const address = await this.context.wallet.createAccount();
+        const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
+        const privateKey = (await walletKeys.getKey(address))!;
+        // TODO - can this be done more securely
+        console.log(address, privateKey);
+        return { address, privateKey };
     }
 }

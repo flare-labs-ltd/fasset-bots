@@ -55,7 +55,7 @@ program
     .action(async (collateralReservationId: string, paymentAddress: string, transactionHash: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
-        await minterBot.proveAndExecuteMinting(collateralReservationId, paymentAddress, transactionHash);
+        await minterBot.proveAndExecuteMinting(collateralReservationId, transactionHash, paymentAddress);
     });
 
 program

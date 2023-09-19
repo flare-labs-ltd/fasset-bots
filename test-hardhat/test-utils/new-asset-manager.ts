@@ -102,7 +102,10 @@ export async function deployLibrary(name: string, dependencies: { [key: string]:
     return linkedContract.new();
 }
 
-export async function linkDependencies<T extends Truffle.Contract<any>>(contract: T, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<T> {
+export async function linkDependencies<T extends Truffle.Contract<any>>(
+    contract: T,
+    dependencies: { [key: string]: Truffle.ContractInstance } = {}
+): Promise<T> {
     // normally, detectNetwork is called on new, but it has to be called before link
     if ((contract as any).detectNetwork) {
         await (contract as any).detectNetwork();
@@ -114,7 +117,7 @@ export async function linkDependencies<T extends Truffle.Contract<any>>(contract
         for (const dict of Object.values(originalJson.linkReferences) as any) {
             if (dict[dependencyName] == null) continue;
             const { start, length } = dict[dependencyName][0];
-            dependencyId = originalJson.bytecode.slice(2 * start + 4, 2 * (start + length)).replace(/\$/g, '\\$');
+            dependencyId = originalJson.bytecode.slice(2 * start + 4, 2 * (start + length)).replace(/\$/g, "\\$");
         }
         contract.link(dependencyId ?? dependencyName, dependencies[dependencyName].address);
     }

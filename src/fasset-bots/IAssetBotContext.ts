@@ -29,9 +29,6 @@ export interface IAssetAgentBotContext {
     addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
 }
 
-
-
-
 export interface AgentBotDefaultSettings {
     vaultCollateralToken: string;
     poolTokenSuffix: string;

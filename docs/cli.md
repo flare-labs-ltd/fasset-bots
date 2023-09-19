@@ -14,6 +14,7 @@ Available commands:
 -   `depositVaultCollateral <agentVault> <amount>` - deposit vault collateral to agent vault from owner's address");
 -   `buyPoolCollateral <agentVault> <amount>` - add pool collateral and agent pool tokens
 -   `enter <agentVault>` - enter available agent's list
+-   `announceExit <agentVault>` - announce exit available agent's list
 -   `exit <agentVault>` - exit available agent's list
 -   `updateAgentSetting <agentVault> <agentSettingName> <agentSettingValue> `- set agent's settings
 -   `withdrawVaultCollateral <agentVault> <amount>` - withdraw amount from agent vault to owner's address
