@@ -84,7 +84,7 @@ export class Agent {
     }
 
     static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings, index: number = 0): Promise<Agent> {
-        const desiredError = "VM Exception while processing transaction: reverted with reason string 'suffix already reserved'";
+        const desiredError = "Returned error: execution reverted: suffix already reserved -- Reason given: suffix already reserved.";
         try {
             // create agent
             const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });

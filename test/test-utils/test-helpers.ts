@@ -20,7 +20,7 @@ import { artifacts } from "../../src/utils/web3";
 const ERC20Mock = artifacts.require("ERC20Mock");
 const Whitelist = artifacts.require("Whitelist");
 
-const ownerAccountPrivateKey = requireEnv("USER_PRIVATE_KEY");
+const ownerAccountPrivateKey = requireEnv("OWNER_PRIVATE_KEY");
 const account1PrivateKey = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
 const account2PrivateKey = requireEnv("NATIVE_ACCOUNT2_PRIVATE_KEY");
 const account3PrivateKey = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");

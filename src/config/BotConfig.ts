@@ -171,7 +171,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         vaultCollateralToken: vaultCollateralToken.token,
-        poolTokenSuffix: agentSettingsConfig.poolTokenSuffix + MINUS_CHAR + vaultCollateralToken.tokenFtsoSymbol,
+        poolTokenSuffix: (agentSettingsConfig.poolTokenSuffix + MINUS_CHAR + vaultCollateralToken.tokenFtsoSymbol).toUpperCase(),
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
         mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),

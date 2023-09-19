@@ -69,7 +69,7 @@ describe("AgentBot cli commands unit tests", async () => {
         process.env = JSON.parse(envOrig);
     });
 
-    it("Should create agent bot via bot cli commands", async () => {
+    it("Should not create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fAssetSymbol);
         const agent = await botCliCommands.createAgentVault();

@@ -78,13 +78,13 @@ export class BotCliCommands {
      */
     async createAgentVault(): Promise<Agent | null> {
         try {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
-        const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
-        this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
-        return agentBot.agent;
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+            this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
-    }
+        }
         return null;
     }
 
@@ -272,7 +272,7 @@ export class BotCliCommands {
                 );
                 console.log(
                     `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                    .add(announcedUnderlyingConfirmationMinSeconds)
+                        .add(announcedUnderlyingConfirmationMinSeconds)
                         .toString()}. Current ${latestTimestamp.toString()}.`
                 );
             }
