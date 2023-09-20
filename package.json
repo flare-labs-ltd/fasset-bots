@@ -57,7 +57,7 @@
         "---------BUILD---SCRIPTS": "",
         "prebuild": "rm -rf dist",
         "build": "tsc --allowJs",
-        "watch": "tsc --allowJs --watch",
+        "watch": "tsc --allowJs --watch --incremental",
         "---------LINT---SCRIPTS": "",
         "lint": "eslint \"src/**/*ts\"",
         "---------PRETTIER---SCRIPTS": "",

@@ -41,6 +41,15 @@ class ArtifactsImpl implements ArtifactsWithUpdate {
         const contract = createContract(abi);
         contract._originalJson = abi;
         this.updateContractWeb3(contract);
+        // hack to workaround web3 memory leak https://github.com/web3/web3.js/issues/3042 - only create single instance per address
+        contract._instanceMap = {};
+        const originalAt = contract.at;
+        contract.at = async (address: string) => {
+            if (!contract._instanceMap[address]) {
+                contract._instanceMap[address] = await originalAt.call(contract, address);
+            }
+            return contract._instanceMap[address];
+        };
         return contract;
     }
 

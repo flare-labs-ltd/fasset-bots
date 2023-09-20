@@ -50,9 +50,9 @@ program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<collateralReservationId>")
-    .argument("<paymentAddress>")
     .argument("<transactionHash>")
-    .action(async (collateralReservationId: string, paymentAddress: string, transactionHash: string) => {
+    .argument("<paymentAddress>")
+    .action(async (collateralReservationId: string, transactionHash: string, paymentAddress: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
         await minterBot.proveAndExecuteMinting(collateralReservationId, transactionHash, paymentAddress);
