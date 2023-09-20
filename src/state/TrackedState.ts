@@ -41,7 +41,7 @@ export class TrackedState {
     agentsByPool: Map<string, TrackedAgentState> = new Map(); // map pool_address => tracked agent state
 
     // event decoder
-    eventDecoder = new Web3EventDecoder({ ftsoManager: this.context.ftsoManager, assetManager: this.context.assetManager });
+    eventDecoder = new Web3EventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
 
     // async initialization part
     async initialize(): Promise<void> {
@@ -76,7 +76,7 @@ export class TrackedState {
     async registerStateEvents(events: EvmEvent[]): Promise<void> {
         try {
             for (const event of events) {
-                if (eventIs(event, this.context.ftsoManager, "PriceEpochFinalized")) {
+                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
                     logger.info(`Tracked State received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     [this.prices, this.trustedPrices] = await this.getPrices();
                 } else if (eventIs(event, this.context.assetManager, "SettingChanged")) {
@@ -244,7 +244,7 @@ export class TrackedState {
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
             // handle ftso manager
             const logsFtsoManager = await web3.eth.getPastLogs({
-                address: this.context.ftsoManager.address,
+                address: this.context.priceChangeEmitter.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                 topics: [null],

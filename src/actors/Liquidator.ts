@@ -37,7 +37,7 @@ export class Liquidator extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.ftsoManager, "PriceEpochFinalized")) {
+                if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
                     console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`)
                     logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();

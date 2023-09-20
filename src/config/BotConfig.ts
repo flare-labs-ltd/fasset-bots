@@ -66,6 +66,8 @@ export interface BotFAssetConfig {
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
+    // optional settings
+    priceChangeEmitter?: string;    // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
 export interface AgentSettingsConfig {
