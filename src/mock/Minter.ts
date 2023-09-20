@@ -56,9 +56,7 @@ export class Minter {
     }
 
     async waitForTransactionFinalization(transactionHash: string) {
-        while (await this.context.blockchainIndexer.getTransaction(transactionHash) == null) {
-            await sleep(5000);
-        }
+        await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
     }
 
     async proveMintingPayment(paymentAddress: string, transactionHash: string) {
