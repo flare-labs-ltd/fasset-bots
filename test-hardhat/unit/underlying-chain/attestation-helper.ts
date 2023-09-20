@@ -84,28 +84,6 @@ describe("Attestation client unit tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should not request payment proof - finalization block not found", async () => {
-        await useContext();
-        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
-        const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
-        const blockHeight = await chain.getBlockHeight();
-        chain.finalizationBlocks = 10;
-        await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2))
-            .to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`)
-            .and.be.an.instanceOf(Error);
-    });
-
-    it("Should not request balance decreasing transaction proof - finalization block not found", async () => {
-        await useContext();
-        const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
-        const blockNumber = (await chain.getTransactionBlock(transaction))?.number;
-        const blockHeight = await chain.getBlockHeight();
-        chain.finalizationBlocks = 10;
-        await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(transaction, underlying1))
-            .to.eventually.be.rejectedWith(`finalization block not found (block ${blockNumber}, height ${blockHeight})`)
-            .and.be.an.instanceOf(Error);
-    });
-
     it("Should not obtain payment proof - not finalized", async () => {
         await useContext();
         const round = 10;
@@ -137,33 +115,6 @@ describe("Attestation client unit tests", async () => {
             context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!)
         )
             .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`)
-            .and.be.an.instanceOf(Error);
-    });
-
-    it("Should not receive referenced payment nonexistence proof - finalization block not found", async () => {
-        await useContext();
-        chain.finalizationBlocks = 10;
-        const reference = "reference";
-        const amount = 1;
-        await context.wallet.addTransaction(underlying1, underlying2, amount, reference);
-        const blockNumber = await context.blockchainIndexer.getBlockHeight();
-        const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
-        const endBlockNumber = blockNumber;
-        const endBlockTimestamp = blockTimestamp! + 10;
-        chain.mine(3);
-        const overflowBlock = await context.blockchainIndexer.getBlockAt(endBlockNumber + 1);
-        const blockHeight = await context.blockchainIndexer.getBlockHeight();
-        await expect(
-            context.attestationProvider.requestReferencedPaymentNonexistenceProof(
-                underlying2,
-                reference,
-                toBN(amount),
-                blockNumber,
-                endBlockNumber,
-                endBlockTimestamp!
-            )
-        )
-            .to.eventually.be.rejectedWith(`finalization block not found (block ${overflowBlock!.number + 1}, height ${blockHeight})`)
             .and.be.an.instanceOf(Error);
     });
 

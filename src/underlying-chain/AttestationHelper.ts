@@ -65,11 +65,6 @@ export class AttestationHelper {
             logger.error(`Attestation helper error: transaction not found ${transactionHash}`);
             throw new AttestationHelperError(`transaction not found ${transactionHash}`);
         }
-        const finalizationBlock = await this.chain.getBlockAt(block.number + this.chain.finalizationBlocks);
-        if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);
-            throw new AttestationHelperError(`finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);
-        }
         const request: ARPayment = {
             attestationType: AttestationType.Payment,
             sourceId: this.chainId,
@@ -91,11 +86,6 @@ export class AttestationHelper {
         if (transaction == null || block == null) {
             logger.error(`Attestation helper error: transaction not found ${transactionHash}`);
             throw new AttestationHelperError(`transaction not found ${transactionHash}`);
-        }
-        const finalizationBlock = await this.chain.getBlockAt(block.number + this.chain.finalizationBlocks);
-        if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);
-            throw new AttestationHelperError(`finalization block not found (block ${block.number}, height ${await this.chain.getBlockHeight()})`);
         }
         const request: ARBalanceDecreasingTransaction = {
             attestationType: AttestationType.BalanceDecreasingTransaction,
@@ -132,11 +122,6 @@ export class AttestationHelper {
             throw new AttestationHelperError(
                 `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`
             );
-        }
-        const finalizationBlock = await this.chain.getBlockAt(overflowBlock.number + this.chain.finalizationBlocks);
-        if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (block ${overflowBlock.number}, height ${await this.chain.getBlockHeight()})`);
-            throw new AttestationHelperError(`finalization block not found (block ${overflowBlock.number}, height ${await this.chain.getBlockHeight()})`);
         }
         const request: ARReferencedPaymentNonexistence = {
             attestationType: AttestationType.ReferencedPaymentNonexistence,
