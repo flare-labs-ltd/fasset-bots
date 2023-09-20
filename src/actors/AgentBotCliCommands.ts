@@ -85,6 +85,7 @@ export class BotCliCommands {
             return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
+            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent: ${error}`);
         }
         return null;
     }
