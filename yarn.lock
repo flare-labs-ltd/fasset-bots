@@ -5098,6 +5098,7 @@ __metadata:
     yarn: ^1.22.19
   bin:
     agent-bot: dist/src/cli/agent.js
+    fake-price-reader: dist/src/cli/fakePriceReader.js
     user-bot: dist/src/cli/user.js
   languageName: unknown
   linkType: soft
