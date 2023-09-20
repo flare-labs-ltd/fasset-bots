@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IFtsoManager",
-  "sourceName": "flattened/FlareSmartContracts.sol",
+  "sourceName": "flare-smart-contracts/contracts/userInterfaces/IFtsoManager.sol",
   "abi": [
     {
       "anonymous": false,

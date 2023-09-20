@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IFtso",
-  "sourceName": "flattened/FlareSmartContracts.sol",
+  "contractName": "IIFtso",
+  "sourceName": "flare-smart-contracts/contracts/ftso/interface/IIFtso.sol",
   "abi": [
     {
       "anonymous": false,
@@ -152,6 +152,29 @@
       "type": "event"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_firstEpochStartTs",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_submitPeriodSeconds",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_revealPeriodSeconds",
+          "type": "uint256"
+        }
+      ],
+      "name": "activateFtso",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "active",
       "outputs": [
@@ -159,6 +182,198 @@
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxVotePowerNatThresholdFraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxVotePowerAssetThresholdFraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lowAssetUSDThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_highAssetUSDThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_highAssetTurnoutThresholdBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lowNatTurnoutThresholdBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_trustedAddresses",
+          "type": "address[]"
+        }
+      ],
+      "name": "configureEpochs",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deactivateFtso",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochsConfiguration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_maxVotePowerNatThresholdFraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxVotePowerAssetThresholdFraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lowAssetUSDThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_highAssetUSDThreshold",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_highAssetTurnoutThresholdBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lowNatTurnoutThresholdBIPS",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_trustedAddresses",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "fallbackFinalizePriceEpoch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epochId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_returnRewardData",
+          "type": "bool"
+        }
+      ],
+      "name": "finalizePriceEpoch",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "_eligibleAddresses",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "_natWeights",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalNatWeight",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "forceFinalizePriceEpoch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ftsoManager",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAsset",
+      "outputs": [
+        {
+          "internalType": "contract IIVPToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAssetFtsos",
+      "outputs": [
+        {
+          "internalType": "contract IIFtso[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "stateMutability": "view",
@@ -444,6 +659,129 @@
     },
     {
       "inputs": [],
+      "name": "getVoteWeightingParameters",
+      "outputs": [
+        {
+          "internalType": "contract IIVPToken[]",
+          "name": "_assets",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "_assetMultipliers",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalVotePowerNat",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalVotePowerAsset",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_assetWeightRatio",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_votePowerBlock",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_circulatingSupplyNat",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_fallbackMode",
+          "type": "bool"
+        }
+      ],
+      "name": "initializeCurrentEpochStateForReveal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_voter",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epochId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_price",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_wNatVP",
+          "type": "uint256"
+        }
+      ],
+      "name": "revealPriceSubmitter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IIVPToken",
+          "name": "_asset",
+          "type": "address"
+        }
+      ],
+      "name": "setAsset",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IIFtso[]",
+          "name": "_assetFtsos",
+          "type": "address[]"
+        }
+      ],
+      "name": "setAssetFtsos",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "setVotePowerBlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "symbol",
       "outputs": [
         {
@@ -453,6 +791,61 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_initialPriceUSD",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_initialPriceTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateInitialPrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "wNat",
+      "outputs": [
+        {
+          "internalType": "contract IIVPToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_voter",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "wNatVotePowerCached",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],

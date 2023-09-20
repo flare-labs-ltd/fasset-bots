@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IFtsoRegistry",
-  "sourceName": "flattened/FlareSmartContracts.sol",
+  "sourceName": "flare-smart-contracts/contracts/userInterfaces/IFtsoRegistry.sol",
   "abi": [
     {
       "inputs": [],
