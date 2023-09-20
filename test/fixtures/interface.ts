@@ -4,11 +4,12 @@ export interface CollateralInfo {
   name: string,
   symbol: string,
   decimals: number,
-  ftsoDecimals: number
+  ftsoDecimals: number,
+  defaultPriceUsd5: BN,
+  minCollateralRatioBips?: BN
 }
 
 export interface AssetInfo extends CollateralInfo {
-  minCrBips: number,
   amgDecimals: number,
   lotSize: number
 }
@@ -16,9 +17,9 @@ export interface AssetInfo extends CollateralInfo {
 export interface EcosystemConfig {
   name: string,
   // ftso prices
-  ftsoAssetPrice: BN,
-  ftsoVaultPrice: BN,
-  ftsoPoolPrice: BN,
+  assetFtsoPrice: BN,
+  vaultFtsoPrice: BN,
+  poolFtsoPrice: BN,
   // dex(vault, f-asset)
   dex1VaultReserve: BN,
   dex1FAssetReserve: BN,
@@ -32,6 +33,6 @@ export interface EcosystemConfig {
   poolRedeemingFAsset: BN,
   vautRedeemingFAsset: BN,
   // expected implicit data
-  expectedVaultCr: BN,
-  expectedPoolCr: BN
+  expectedVaultCrBips: BN,
+  expectedPoolCrBips: BN
 }

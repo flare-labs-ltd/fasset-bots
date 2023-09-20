@@ -9,8 +9,6 @@ import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 
-import "hardhat/console.sol";
-
 
 // embedded library
 library LiquidatorMath {
@@ -143,13 +141,13 @@ library LiquidatorMath {
         );
         // prices
         uint8 fAssetDecimals = IERC20Metadata(fAssetToken).decimals();
-        (uint256 fAssetPrice,, uint256 fAssetFtsoDecimals) =
+        (uint256 fAssetFtsoPrice,, uint256 fAssetFtsoDecimals) =
             IPriceReader(_assetManagerSettings.priceReader).getPrice(
                 IERC20Metadata(fAssetToken).symbol()
             );
         {
             // scope to avoid stack too deep error
-            (uint256 vaultPrice,, uint256 vaultFtsoDecimals) =
+            (uint256 vaultFtsoPrice,, uint256 vaultFtsoDecimals) =
                 IPriceReader(_assetManagerSettings.priceReader).getPrice(
                     IERC20Metadata(vaultToken).symbol()
                 );
@@ -157,15 +155,15 @@ library LiquidatorMath {
                 getTokenAToTokenBPriceMulDiv(
                     fAssetDecimals,
                     fAssetFtsoDecimals,
-                    fAssetPrice,
+                    fAssetFtsoPrice,
                     IERC20Metadata(vaultToken).decimals(),
                     vaultFtsoDecimals,
-                    vaultPrice
+                    vaultFtsoPrice
                 );
         }
         {
             // scope to avoid stack too deep error
-            (uint256 poolPrice,, uint256 poolFtsoDecimals) =
+            (uint256 poolFtsoPrice,, uint256 poolFtsoDecimals) =
                 IPriceReader(_assetManagerSettings.priceReader).getPrice(
                     IERC20Metadata(_poolToken).symbol()
                 );
@@ -173,10 +171,10 @@ library LiquidatorMath {
                 getTokenAToTokenBPriceMulDiv(
                     fAssetDecimals,
                     fAssetFtsoDecimals,
-                    fAssetPrice,
+                    fAssetFtsoPrice,
                     IERC20Metadata(_poolToken).decimals(),
                     poolFtsoDecimals,
-                    poolPrice
+                    poolFtsoPrice
                 );
         }
     }

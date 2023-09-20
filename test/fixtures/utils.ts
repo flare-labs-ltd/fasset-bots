@@ -151,6 +151,17 @@ export function assertBnEqual(
   }
 }
 
+export function assertBnGreaterOrEqual(
+  actual: BNish,
+  expected: BNish
+) {
+  const actualBN = toBN(actual)
+  const expectedBN = toBN(expected)
+  if (actualBN.lt(expectedBN)) {
+    throw new Error(`Expected ${actualBN} to be greater or euqal ${expectedBN}`)
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // implicit ecosystem setters
 
@@ -174,6 +185,7 @@ export function getPriceBasedDexReserve(
     .div(expBN(decimalsA))
 }
 
+// prices are in some same currency
 export function collateralForCr(
   crBips: BNish,
   totalMintedUBA: BNish,

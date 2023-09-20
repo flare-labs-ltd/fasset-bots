@@ -1,11 +1,17 @@
 {
-    "solidity.compileUsingRemoteVersion": "v0.8.20+commit.a1b79de6",
-    "files.trimFinalNewlines": true,
-    "files.trimTrailingWhitespace": true,
     "[typescript]": {
         "editor.defaultFormatter": "vscode.typescript-language-features",
         "editor.tabSize": 2,
         "editor.insertSpaces": true,
         "editor.detectIndentation": false
-    }
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false
+    },
+    "solidity.compileUsingRemoteVersion": "v0.8.20+commit.a1b79de6",
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true
 }

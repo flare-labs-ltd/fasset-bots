@@ -21,7 +21,8 @@ contract AssetManagerMock {
     uint256 internal constant AMG_TOKEN_WEI_PRICE_SCALE = 10 ** AMG_TOKEN_WEI_PRICE_SCALE_EXP;
 
     address public wNat;
-    uint256 public minCollateralRatioBIPS;
+    uint256 public minVaultCollateralRatioBIPS;
+    uint256 public minPoolCollateralRatioBIPS;
 
     AssetManagerSettings.Data private settings;
 
@@ -36,9 +37,10 @@ contract AssetManagerMock {
         address _wNat,
         address _fAsset,
         FakePriceReader _priceReader,
-        uint256 _minCollateralRatioBIPS,
         uint64 _lotSizeAMG,
-        uint8 _assetMintingDecimals
+        uint8 _assetMintingDecimals,
+        uint256 _minVaultCollateralRatioBIPS,
+        uint256 _minPoolCollateralRatioBIPS
     ) {
         uint8 assetDecimals = IERC20Metadata(_fAsset).decimals();
         // settings
@@ -49,7 +51,8 @@ contract AssetManagerMock {
         settings.assetMintingGranularityUBA = uint64(10) ** (assetDecimals - _assetMintingDecimals);
         // local mock
         wNat = _wNat;
-        minCollateralRatioBIPS = _minCollateralRatioBIPS;
+        minVaultCollateralRatioBIPS = _minVaultCollateralRatioBIPS;
+        minPoolCollateralRatioBIPS = _minPoolCollateralRatioBIPS;
     }
 
     function liquidate(
@@ -81,12 +84,14 @@ contract AssetManagerMock {
             _maxLiquidationAmountAMG(
                 agentInfo,
                 cr.vaultCR,
-                agentInfo.liquidationPaymentFactorVaultBIPS
+                agentInfo.liquidationPaymentFactorVaultBIPS,
+                minVaultCollateralRatioBIPS
             ),
             _maxLiquidationAmountAMG(
                 agentInfo,
                 cr.poolCR,
-                agentInfo.liquidationPaymentFactorPoolBIPS
+                agentInfo.liquidationPaymentFactorPoolBIPS,
+                minPoolCollateralRatioBIPS
             )
         ));
         return agentInfo;
@@ -149,8 +154,8 @@ contract AssetManagerMock {
             _currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
         // calculate liquidation amount
         uint256 maxLiquidatedAMG = Math.max(
-            _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR, vaultFactor),
-            _maxLiquidationAmountAMG(_agentInfo, _cr.poolCR, poolFactor));
+            _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR, vaultFactor, minVaultCollateralRatioBIPS),
+            _maxLiquidationAmountAMG(_agentInfo, _cr.poolCR, poolFactor, minPoolCollateralRatioBIPS));
         uint256 amountToLiquidateAMG = Math.min(maxLiquidatedAMG, _amountAMG);
         _liquidatedAMG = Math.min(amountToLiquidateAMG, convertUBAToAmg(_agentInfo.mintedUBA));
         // calculate payouts to liquidator
@@ -161,14 +166,13 @@ contract AssetManagerMock {
     function _maxLiquidationAmountAMG(
         AgentInfo.Info memory _agentInfo,
         uint256 _collateralRatioBIPS,
-        uint256 _factorBIPS
+        uint256 _factorBIPS,
+        uint256 _targetRatioBIPS
     )
         private view
         returns (uint256)
     {
-        // otherwise, liquidate just enough to get agent to safety
-        uint256 targetRatioBIPS = minCollateralRatioBIPS;
-        if (targetRatioBIPS <= _collateralRatioBIPS) {
+        if (_targetRatioBIPS <= _collateralRatioBIPS) {
             return 0;               // agent already safe
         }
         uint256 agentMintedAMG = convertUBAToAmg(_agentInfo.mintedUBA);
@@ -176,8 +180,8 @@ contract AssetManagerMock {
             return agentMintedAMG; // cannot achieve target - liquidate all
         }
         uint256 maxLiquidatedAMG = agentMintedAMG.mulDivRoundUp(
-            targetRatioBIPS - _collateralRatioBIPS,
-            targetRatioBIPS - _factorBIPS
+            _targetRatioBIPS - _collateralRatioBIPS,
+            _targetRatioBIPS - _factorBIPS
         );
         // round up to whole number of lots
         maxLiquidatedAMG = maxLiquidatedAMG.roundUp(settings.lotSizeAMG);

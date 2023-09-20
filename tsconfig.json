@@ -15,5 +15,12 @@
     "./typechain-ethers",
     "./typechain-truffle"
   ],
-  "exclude": ["node_modules", "scripts"]
+  "typeRoots": [
+    "node_modules/@types",
+    "test/types"
+  ],
+  "exclude": [
+    "node_modules",
+    "scripts"
+  ]
 }

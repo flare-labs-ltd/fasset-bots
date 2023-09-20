@@ -10,8 +10,8 @@ import "./lib/LiquidatorMath.sol";
 
 import "hardhat/console.sol";
 
-enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
+enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
 // always assume pool = wrapped native
 contract Liquidator is ILiquidator, Ownable {
@@ -40,17 +40,18 @@ contract Liquidator is ILiquidator, Ownable {
     }
 
     modifier flashLoanInitiatorLock() {
-        require(_status == FlashLoanLock.INACTIVE, "Reentrancy blocked");
+        require(_status == FlashLoanLock.INACTIVE,
+            "Liquidator: Reentrancy blocked");
         _status = FlashLoanLock.INITIATOR_ENTER;
         _;
         require(_status == FlashLoanLock.RECEIVER_ENTER,
-            "Reentrancy blocked or flash loan receiver not called");
+            "Liquidator: Reentrancy blocked or flash loan receiver not called");
         _status = FlashLoanLock.INACTIVE;
     }
 
     modifier flashLoanReceiverLock() {
         require(_status == FlashLoanLock.INITIATOR_ENTER,
-            "Flash loan with invalid initiator");
+            "Liquidator: Flash loan with invalid initiator");
         _status = FlashLoanLock.RECEIVER_ENTER;
         _;
     }
@@ -71,19 +72,21 @@ contract Liquidator is ILiquidator, Ownable {
         IAssetManager assetManager = _agentVault.assetManager();
         AssetManagerSettings.Data memory assetManagerSettings = assetManager.getSettings();
         AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));
-        // send vault collateral to owner (so arbitrage fails in case of decreased funds)
+        require(agentInfo.maxLiquidationAmountUBA > 0, "Liquidator: Agent not in liquidation");
+        // send vault collateral to owner, to avoid them being stolen by a malicious flash
+        // loan contract, and also to ensure that arbitrage fails in case of decreased funds
         IERC20 vaultToken = agentInfo.vaultCollateralToken;
         vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
-        require(maxVaultFlashLoan > 0, "No f-asset to liquidate");
         uint256 optimalVaultAmount = LiquidatorMath.getFlashLoanedVaultCollateral(
             address(wNat),
             agentInfo,
             assetManagerSettings,
             _blazeSwap
         );
-        require(optimalVaultAmount > 0, "No arbitrage opportunity");
+        require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
+        require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
         // run flash loan
         _flashLender.flashLoan(
             this,
@@ -96,17 +99,15 @@ contract Liquidator is ILiquidator, Ownable {
                 _blazeSwap
             )
         );
-        // send earnings to sender (any balance held by the contract was
-        // previously sent to the conract owner, so those funds can't be stolen)
+        // send earnings to sender
         vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
     }
 
-    // dangerous: think this through!
-    // cannot reenter due to flashLoanReceiverLock!
-    // can only be run through runArbitrageWithCustomParams and once!
-    // previous point makes sure _token is always vault collateral
-    // tokens are transfered to owner at runArbitrageWithCustomParams,
-    // so contract has zero token balance at each call!
+    // dangerous!
+    // - cannot reenter due to flashLoanReceiverLock
+    // - can only be run once from runArbitrageWithCustomParams call
+    // - runArbitrageWithCustomParams: _token is always vault collateral
+    // - runArbitrageWithCustomParams: contract vault balance at each call is 0
     function onFlashLoan(
         address /* _initiator */,
         address _token,
@@ -117,7 +118,7 @@ contract Liquidator is ILiquidator, Ownable {
         // check that starting contract vault collateral balance
         // is correct (note that anyone can call onFlashLoan)
         uint256 balance = IERC20(_token).balanceOf(address(this));
-        require(balance == _amount, "Incorrect flash loan amount");
+        require(balance == _amount, "Liquidator: Incorrect flash loan amount");
         // execute arbitrage
         (
             IFAsset _fAsset,
@@ -154,7 +155,6 @@ contract Liquidator is ILiquidator, Ownable {
         uint256[] memory amountsRecv;
         // swap vault collateral for f-asset
         _vaultToken.approve(address(_blazeSwap), _vaultAmount);
-        console.log(_vaultAmount);
         (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
             _vaultAmount,
             0,
@@ -175,8 +175,7 @@ contract Liquidator is ILiquidator, Ownable {
             (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
                 obtainedPool,
                 0,
-                toDynamicArray(address(_poolToken),
-                address(_vaultToken)),
+                toDynamicArray(address(_poolToken), address(_vaultToken)),
                 address(this),
                 block.timestamp
             );

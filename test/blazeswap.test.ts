@@ -1,8 +1,8 @@
 import { BlazeSwapRouterInstance } from '../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
 import { ERC20MockInstance } from '../typechain-truffle/contracts/mock/ERC20Mock'
-import { XRP, USDT, WNAT } from './helpers/assets'
-import { MAX_INT, ZERO_ADDRESS } from './helpers/constants'
-import { swapOutput, assertBnEqual, toBN } from './helpers/utils'
+import { XRP, USDT, WNAT } from './fixtures/assets'
+import { MAX_INT, ZERO_ADDRESS } from './fixtures/constants'
+import { swapOutput, assertBnEqual, toBN } from './fixtures/utils'
 
 const ERC20Mock = artifacts.require("ERC20Mock")
 const BlazeSwapManager = artifacts.require("BlazeSwapManager")
