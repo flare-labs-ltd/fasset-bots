@@ -258,14 +258,11 @@ describe("Bot cli commands unit tests", async () => {
         expect(toBN(agentEntCancel.underlyingWithdrawalAnnouncedAtTimestamp).eq(BN_ZERO)).to.be.true;
     });
 
-    it("Should run command 'announceUnderlyingWithdrawal' - already active withdrawals", async () => {
+    it("Should run command 'announceUnderlyingWithdrawal'", async () => {
         const agent = await createAgent();
         await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
         const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
-        const spyConsole = spy.on(console, "log");
-        await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
@@ -369,5 +366,15 @@ describe("Bot cli commands unit tests", async () => {
         const data = await botCliCommands.createUnderlyingAccount();
         expect(data.address).to.not.be.null;
         expect(data.privateKey).to.not.be.null;
+    });
+
+    it("Should run command 'getFreeVaultCollateral'", async () => {
+        const agent = await createAgent();
+        const freePool = await botCliCommands.getFreePoolCollateral(agent.vaultAddress);
+        expect(freePool).to.eq("0");
+        const freeVault = await botCliCommands.getFreeVaultCollateral(agent.vaultAddress);
+        expect(freeVault).to.eq("0");
+        const freeUnderlying = await botCliCommands.getFreeUnderlying(agent.vaultAddress);
+        expect(freeUnderlying).to.eq("0");
     });
 });

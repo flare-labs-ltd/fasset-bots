@@ -382,4 +382,29 @@ export class BotCliCommands {
         console.log(address, privateKey);
         return { address, privateKey };
     }
+
+    async getFreeVaultCollateral(agentVault: string): Promise<string> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const info = await agentBot.agent.getAgentInfo();
+        const freeCollateral = info.freeVaultCollateralWei.toString()
+        logger.info(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`);
+        return freeCollateral;
+    }
+
+    async getFreePoolCollateral(agentVault: string): Promise<string> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const info = await agentBot.agent.getAgentInfo();
+        const freeCollateral = info.freePoolCollateralNATWei.toString()
+        logger.info(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`);
+        return freeCollateral;
+    }
+
+    async getFreeUnderlying(agentVault: string): Promise<string> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const info = await agentBot.agent.getAgentInfo();
+        const freeUnderlying = info.freeUnderlyingBalanceUBA.toString()
+        logger.info(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
+        return freeUnderlying;
+    }
+
 }

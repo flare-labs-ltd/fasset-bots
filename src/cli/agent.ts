@@ -218,6 +218,36 @@ program
         await cli.createUnderlyingAccount();
     });
 
+program
+    .command("freeVaultCollateral")
+    .description("get free vault collateral")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.getFreeVaultCollateral(agentVault);
+    });
+
+program
+    .command("freePoolCollateral")
+    .description("get free pool collateral")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.getFreePoolCollateral(agentVault);
+    });
+
+program
+    .command("freeUnderlying")
+    .description("get free underlying balance")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.getFreeUnderlying(agentVault);
+    });
+
 toplevelRun(async () => {
     await program.parseAsync();
 });
