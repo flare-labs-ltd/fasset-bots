@@ -46,7 +46,7 @@ export class AgentBot {
     ) {}
 
     context = this.agent.context;
-    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, ftsoManager: this.context.ftsoManager });
+    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
     latestProof: ProvedDH<DHConfirmedBlockHeightExists> | null = null;
 
     /**
@@ -211,7 +211,7 @@ export class AgentBot {
                     } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
                         logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
                         await this.handleAgentDestruction(em, event.args.agentVault);
-                    } else if (eventIs(event, this.context.ftsoManager, "PriceEpochFinalized")) {
+                    } else if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
                         logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                         await this.checkAgentForCollateralRatiosAndTopUp();
                     } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
@@ -261,7 +261,7 @@ export class AgentBot {
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
             const logsFtsoManager = await web3.eth.getPastLogs({
-                address: this.context.ftsoManager.address,
+                address: this.context.priceChangeEmitter.address,
                 fromBlock: lastHandled + 1,
                 toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                 topics: [null],

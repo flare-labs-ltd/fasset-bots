@@ -1,10 +1,14 @@
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
+import { JsonLoader } from "./json-loader";
 
 export interface Contract {
     name: string;
     contractName: string;
     address: string;
+    mustSwitchToProduction?: boolean;
 }
+
+export type ContractList = Contract[];
 
 export interface ChainContracts {
     // flare smart contract
@@ -31,9 +35,12 @@ export function newContract(name: string, contractName: string, address: string)
     return { name, contractName, address };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const contractsLoader = new JsonLoader<Contract[]>("run-config/schema/contracts.schema.json", "contracts.json");
+
 export function loadContracts(filename: string): ChainContracts {
     const result: any = {};
-    const contractsList: Contract[] = JSON.parse(readFileSync(filename).toString());
+    const contractsList = contractsLoader.load(filename);
     for (const contract of contractsList) {
         result[contract.name] = contract;
     }

@@ -13,9 +13,26 @@ export interface FakePriceReaderContract
   ): Promise<FakePriceReaderInstance>;
 }
 
-type AllEvents = never;
+export interface PriceEpochFinalized {
+  name: "PriceEpochFinalized";
+  args: {
+    0: string;
+    1: BN;
+  };
+}
+
+type AllEvents = PriceEpochFinalized;
 
 export interface FakePriceReaderInstance extends Truffle.ContractInstance {
+  finalizePrices: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   getPrice(
     _symbol: string,
     txDetails?: Truffle.TransactionDetails
@@ -103,6 +120,15 @@ export interface FakePriceReaderInstance extends Truffle.ContractInstance {
   ): Promise<boolean>;
 
   methods: {
+    finalizePrices: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
     getPrice(
       _symbol: string,
       txDetails?: Truffle.TransactionDetails

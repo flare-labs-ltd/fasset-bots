@@ -202,6 +202,7 @@ export async function createTestAssetContext(
         collaterals,
         ftsos,
         addressUpdater,
+        priceChangeEmitter: ftsoManager,
     };
 }
 
@@ -215,6 +216,7 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext): T
         fAsset: context.fAsset,
         assetFtso: context.assetFtso,
         collaterals: context.collaterals,
+        priceChangeEmitter: context.priceChangeEmitter,
     };
 }
 

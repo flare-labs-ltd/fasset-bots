@@ -1,6 +1,5 @@
 import chalk from "chalk";
-import { readFileSync } from "fs";
-import { BotConfig, BotConfigFile, createBotConfig } from "../config/BotConfig";
+import { BotConfig, createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { Minter } from "../mock/Minter";
@@ -29,7 +28,7 @@ export class UserBot {
     async initialize(configFile: string, fAssetSymbol: string) {
         logger.info(`User ${requireEnv("USER_ADDRESS")} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        const runConfig = JSON.parse(readFileSync(configFile).toString()) as BotConfigFile;
+        const runConfig = loadConfigFile(configFile, `User ${requireEnv("USER_ADDRESS")}`);
         // init web3 and accounts
         this.nativeAddress = requireEnv("USER_ADDRESS");
         const nativePrivateKey = requireEnv("USER_PRIVATE_KEY");

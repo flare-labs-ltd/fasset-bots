@@ -11,7 +11,7 @@ const AssetManager = artifacts.require("AssetManager");
 const AssetManagerController = artifacts.require("AssetManagerController");
 const AddressUpdater = artifacts.require("AddressUpdater");
 const WNat = artifacts.require("WNat");
-const IFtsoManager = artifacts.require("IFtsoManager");
+const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
 const FAsset = artifacts.require("FAsset");
 const IERC20 = artifacts.require("IERC20");
 
@@ -26,20 +26,21 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         throw new Error("Missing wallet configuration");
     }
     let assetManager;
-    let ftsoManager;
+    let priceChangeEmitter;
     let wNat;
     let addressUpdater;
+    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
     if (botConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
-        ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
+        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmiterName]!.address);
         wNat = await WNat.at(contracts.WNat.address);
         addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress("FtsoManager"));
+        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmiterName));
         wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
     }
     const collaterals = await assetManager.getCollateralTypes();
@@ -51,7 +52,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         wallet: chainConfig.wallet,
         attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
-        ftsoManager: ftsoManager,
+        priceChangeEmitter: priceChangeEmitter,
         wNat: wNat,
         fAsset: await FAsset.at(await assetManager.fAsset()),
         collaterals: collaterals,
@@ -68,16 +69,17 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
     let assetManager;
-    let ftsoManager;
+    let priceChangeEmitter;
+    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
     if (trackedStateConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(trackedStateConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
-        ftsoManager = await IFtsoManager.at(contracts.FtsoManager.address);
+        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmiterName]!.address);
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const addressUpdater = await AddressUpdater.at(trackedStateConfig.addressUpdater!);
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        ftsoManager = await IFtsoManager.at(await addressUpdater.getContractAddress("FtsoManager"));
+        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmiterName));
     }
     const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
     return {
@@ -85,7 +87,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         assetManager: assetManager,
-        ftsoManager: ftsoManager,
+        priceChangeEmitter: priceChangeEmitter,
         fAsset: await FAsset.at(await assetManager.fAsset()),
         collaterals: collaterals,
     };

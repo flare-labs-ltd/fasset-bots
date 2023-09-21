@@ -1,4 +1,5 @@
 {
+    "$schema": "./schema/bot-config.schema.json",
     "loopDelay": 5000,
     "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
     "nativeChainInfo": {
@@ -28,7 +29,8 @@
             "requireEOAProof": false,
             "fAssetSymbol": "FfakeXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234"
+            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "priceChangeEmitter": "FakePriceReader"
         }
     ],
     "ormOptions": {

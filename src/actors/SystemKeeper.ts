@@ -37,7 +37,7 @@ export class SystemKeeper extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`SystemKeeper ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.ftsoManager, "PriceEpochFinalized")) {
+                if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
                     logger.info(`SystemKeeper ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
