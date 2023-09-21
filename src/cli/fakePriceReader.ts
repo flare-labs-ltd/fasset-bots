@@ -26,16 +26,6 @@ program
         const options: { config: string } = program.opts();
         const priceReader = (await initEnvironment(options.config, true)) as FakePriceReaderInstance;
         await priceReader.setPrice(symbol, price, { from: deployerAddress });
-    });
-
-program
-    .command("setPriceFromTrusted")
-    .description("set price from trusted providers")
-    .argument("symbol")
-    .argument("price")
-    .action(async (symbol: string, price: string) => {
-        const options: { config: string } = program.opts();
-        const priceReader = (await initEnvironment(options.config, true)) as FakePriceReaderInstance;
         await priceReader.setPriceFromTrustedProviders(symbol, price, { from: deployerAddress });
     });
 
@@ -43,22 +33,17 @@ program
     .command("getPrice")
     .description("get price")
     .argument("symbol")
-    .action(async (symbol: string) => {
+    .option("-t, --trusted", "get price from trusted providers")
+    .action(async (symbol: string, option) => {
         const options: { config: string } = program.opts();
         const priceReader = await initEnvironment(options.config, true);
-        const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPrice(symbol);
-        console.log(`Price: ${price}, Timestamp: ${timestamp}, Decimals: ${decimals}`);
-    });
-
-program
-    .command("getPriceFromTrusted")
-    .description("get price from trusted providers")
-    .argument("symbol")
-    .action(async (symbol: string) => {
-        const options: { config: string } = program.opts();
-        const priceReader = await initEnvironment(options.config, true);
-        const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPriceFromTrustedProviders(symbol);
-        console.log(`Price: ${price}, Timestamp: ${timestamp}, Decimals: ${decimals}`);
+        if (option.trusted) {
+            const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPriceFromTrustedProviders(symbol);
+            console.log(`Price: ${price}, Timestamp: ${timestamp}, Decimals: ${decimals}`);
+        } else {
+            const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPrice(symbol);
+            console.log(`Price: ${price}, Timestamp: ${timestamp}, Decimals: ${decimals}`);
+        }
     });
 
 program
