@@ -1,9 +1,9 @@
 import chalk from "chalk";
 // agent status and settings
-const CCB_TITLE = "CCB ALERT";
-const LIQUIDATION_STARTED_ALERT = "LIQUIDATION STARTED ALERT";
-const FULL_LIQUIDATION_TITLE = "FULL LIQUIDATION ALERT";
-const LIQUIDATION_WAS_PERFORMED_ALERT = "LIQUIDATION WAS PERFORMED ALERT";
+const CCB_TITLE = "CCB";
+const LIQUIDATION_STARTED = "LIQUIDATION STARTED";
+const FULL_LIQUIDATION_TITLE = "FULL LIQUIDATION";
+const LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED";
 const AGENT_DESTROYED = "AGENT DESTROYED";
 const AGENT_CREATED = "AGENT CREATED";
 const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
@@ -14,34 +14,34 @@ const AGENT_ANNOUNCE_DESTROY = "AGENT ANNOUNCE DESTROY";
 const SELF_CLOSE = "SELF CLOSE";
 
 // minting
-const MINTING_CORNER_CASE = "MINTING ALERT";
-const MINTING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR MINTING ALERT";
+const MINTING_CORNER_CASE = "MINTING";
+const MINTING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR MINTING";
 const MINTING_EXECUTED = "MINTING EXECUTED";
 const MINTING_DELETED = "MINTING DELETED";
 const MINTING_STARTED = "MINTING STARTED";
 
 // redemption
-const REDEMPTION_CORNER_CASE = "REDEMPTION ALERT";
-const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED ALERT";
-const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED ALERT";
-const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED ALERT";
-const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION ALERT";
+const REDEMPTION_CORNER_CASE = "REDEMPTION";
+const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED";
+const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED";
+const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED";
+const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION";
 const REDEMPTION_STARTED = "REDEMPTION STARTED";
 const REDEMPTION_PAID = "REDEMPTION PAID";
 const REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED";
 
 // collateral
-const AGENT_COLLATERAL_TOP_UP_ALERT = "AGENT'S COLLATERAL TOP UP ALERT";
-const POOL_COLLATERAL_TOP_UP_ALERT = "POOL'S COLLATERAL TOP UP ALERT";
-const AGENT_COLLATERAL_TOP_UP_FAILED_ALERT = "AGENT'S COLLATERAL TOP UP FAILED ALERT";
-const POOL_COLLATERAL_TOP_UP_FAILED_ALERT = "POOL'S COLLATERAL TOP UP FAILED ALERT";
-const WITHDRAW_VAULT_COLLATERAL = "WITHDRAW VAULT COLLATERAL";
-const WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "WITHDRAW VAULT COLLATERAL ANNOUNCEMENT";
+const AGENT_COLLATERAL_TOP_UP = "AGENT'S COLLATERAL TOP UP";
+const POOL_COLLATERAL_TOP_UP = "POOL'S COLLATERAL TOP UP";
+const AGENT_COLLATERAL_TOP_UP_FAILED = "AGENT'S COLLATERAL TOP UP FAILED";
+const POOL_COLLATERAL_TOP_UP_FAILED = "POOL'S COLLATERAL TOP UP FAILED";
+const WITHDRAW_VAULT_COLLATERAL = "VAULT COLLATERAL WITHDRAWAL";
+const WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "VAULT COLLATERAL WITHDRAWAL ANNOUNCEMENT";
 
 // underlying
-const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE ALERT";
-const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS ALERT";
-const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS ALERT";
+const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE";
+const LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS";
+const LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS";
 const CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT";
 const CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT";
 const ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL";
@@ -53,13 +53,13 @@ const WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL";
 const REDEMPTION_POOL_TOKENS = "REDEEM POOL TOKENS";
 const BUY_POOL_TOKENS = "BUY POOL TOKENS";
 const VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT";
-const WITHDRAW_POOL_FEES = "WITHDRAW POOL FEES";
+const WITHDRAW_POOL_FEES = "POOL FEES WITHDRAWAL";
 const BALANCE_POOL_FEES = "BALANCE POOL FEES";
 const POOL_DELEGATE = "POOL DELEGATION";
 const POOL_UNDELEGATE = "POOL UNDELEGATION";
 
 // other
-const DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK ALERT";
+const DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK";
 
 export class Notifier {
     send(title: string, message?: string) {
@@ -75,7 +75,7 @@ export class Notifier {
     }
 
     sendLiquidationStartAlert(agentVault: string, timestamp: string) {
-        this.send(LIQUIDATION_STARTED_ALERT, `Liquidation has started for agent ${agentVault} at ${timestamp}.`);
+        this.send(LIQUIDATION_STARTED, `Liquidation has started for agent ${agentVault} at ${timestamp}.`);
     }
 
     sendFullLiquidationAlert(agentVault: string, payment1?: string, payment2?: string) {
@@ -89,7 +89,7 @@ export class Notifier {
     }
 
     sendLiquidationWasPerformed(agentVault: string, value: string) {
-        this.send(LIQUIDATION_WAS_PERFORMED_ALERT, `Liquidation was performed for agent ${agentVault} with value of ${value}`);
+        this.send(LIQUIDATION_WAS_PERFORMED, `Liquidation was performed for agent ${agentVault} with value of ${value}`);
     }
 
     sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean) {
@@ -130,21 +130,21 @@ export class Notifier {
 
     sendCollateralTopUpAlert(agentVault: string, value: string, pool: boolean = false) {
         if (pool) {
-            this.send(POOL_COLLATERAL_TOP_UP_ALERT, `Agent ${agentVault} POOL was automatically topped up with collateral ${value} due to price changes.`);
+            this.send(POOL_COLLATERAL_TOP_UP, `Agent ${agentVault} POOL was automatically topped up with collateral ${value} due to price changes.`);
         } else {
-            this.send(AGENT_COLLATERAL_TOP_UP_ALERT, `Agent ${agentVault} was automatically topped up with collateral ${value} due to price changes.`);
+            this.send(AGENT_COLLATERAL_TOP_UP, `Agent ${agentVault} was automatically topped up with collateral ${value} due to price changes.`);
         }
     }
 
     sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool: boolean = false) {
         if (pool) {
             this.send(
-                POOL_COLLATERAL_TOP_UP_FAILED_ALERT,
+                POOL_COLLATERAL_TOP_UP_FAILED,
                 `Agent ${agentVault} POOL could not be automatically topped up with collateral ${value} due to price changes.`
             );
         } else {
             this.send(
-                AGENT_COLLATERAL_TOP_UP_FAILED_ALERT,
+                AGENT_COLLATERAL_TOP_UP_FAILED,
                 `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`
             );
         }
