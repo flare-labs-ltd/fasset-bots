@@ -1,13 +1,12 @@
 import { FilterQuery } from "@mikro-orm/core/typings";
 import { expect, use } from "chai";
-import { readFileSync } from "fs";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, createBotConfig, createAgentBotDefaultSettings, BotConfigFile } from "../../../src/config/BotConfig";
+import { BotConfig, createBotConfig, createAgentBotDefaultSettings, BotConfigFile, loadConfigFile } from "../../../src/config/BotConfig";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -47,8 +46,8 @@ describe("Actor tests - coston", async () => {
     const destroyAgentsAfterTests: string[] = [];
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
-        runSimplifiedConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
+        runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), getNativeAccountsFromEnv(), null);
         ownerAddress = requireEnv("OWNER_ADDRESS");

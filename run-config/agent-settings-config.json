@@ -1,4 +1,5 @@
 {
+    "$schema": "./schema/agent-settings.schema.json",
     "vaultCollateralFtsoSymbol": "testUSDC",
     "poolTokenSuffix": "AGNT",
     "feeBIPS": 1000,

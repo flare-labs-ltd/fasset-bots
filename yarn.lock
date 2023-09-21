@@ -2009,6 +2009,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^16.9.2":
+  version: 16.18.53
+  resolution: "@types/node@npm:16.18.53"
+  checksum: 26c05cde59664360c22e0dda70776ca6f1b35f0b94e4f84d2c21e2afa2e69ac3a2c99bbb57b43405f81df1b2598f6d707ccc7c4c31865f90e45c4625d8400518
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^20.2.5":
   version: 20.4.2
   resolution: "@types/node@npm:20.4.2"
@@ -2328,6 +2335,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ajv@npm:8.12.0, ajv@npm:^8.0.1":
+  version: 8.12.0
+  resolution: "ajv@npm:8.12.0"
+  dependencies:
+    fast-deep-equal: ^3.1.1
+    json-schema-traverse: ^1.0.0
+    require-from-string: ^2.0.2
+    uri-js: ^4.2.2
+  checksum: 4dc13714e316e67537c8b31bc063f99a1d9d9a497eb4bbd55191ac0dcd5e4985bbb71570352ad6f1e76684fb6d790928f96ba3b2d4fd6e10024be9612fe3f001
+  languageName: node
+  linkType: hard
+
 "ajv@npm:^6.10.0, ajv@npm:^6.12.3, ajv@npm:^6.12.4":
   version: 6.12.6
   resolution: "ajv@npm:6.12.6"
@@ -2337,18 +2356,6 @@ __metadata:
     json-schema-traverse: ^0.4.1
     uri-js: ^4.2.2
   checksum: 874972efe5c4202ab0a68379481fbd3d1b5d0a7bd6d3cc21d40d3536ebff3352a2a1fabb632d4fd2cc7fe4cbdcd5ed6782084c9bbf7f32a1536d18f9da5007d4
-  languageName: node
-  linkType: hard
-
-"ajv@npm:^8.0.1":
-  version: 8.12.0
-  resolution: "ajv@npm:8.12.0"
-  dependencies:
-    fast-deep-equal: ^3.1.1
-    json-schema-traverse: ^1.0.0
-    require-from-string: ^2.0.2
-    uri-js: ^4.2.2
-  checksum: 4dc13714e316e67537c8b31bc063f99a1d9d9a497eb4bbd55191ac0dcd5e4985bbb71570352ad6f1e76684fb6d790928f96ba3b2d4fd6e10024be9612fe3f001
   languageName: node
   linkType: hard
 
@@ -5074,6 +5081,7 @@ __metadata:
     "@types/rewire": ^2.5.28
     "@typescript-eslint/eslint-plugin": 5.36.1
     "@typescript-eslint/parser": 5.36.1
+    ajv: 8.12.0
     axios: ^1.3.4
     bn.js: ^4.12.0
     chai: 4.3.6
@@ -5092,6 +5100,7 @@ __metadata:
     source-map-support: 0.5.21
     ts-node: 10.8.0
     typescript: 4.7.3
+    typescript-json-schema: 0.61.0
     web3: 1.10.0
     winston: ^3.10.0
     winston-daily-rotate-file: ^4.7.1
@@ -5734,7 +5743,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:^7.1.6":
+"glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:^7.1.6, glob@npm:^7.1.7":
   version: 7.2.3
   resolution: "glob@npm:7.2.3"
   dependencies:
@@ -8790,6 +8799,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"path-equal@npm:^1.2.5":
+  version: 1.2.5
+  resolution: "path-equal@npm:1.2.5"
+  checksum: 2bef7bcb98c7ae371c52c1562b2fc515bfd03bc1a5571df9a8591038db8d742ba2d1ff39aa5130853e6afb69e773ccba5095f54d2e6d17422ca03ef9047992d7
+  languageName: node
+  linkType: hard
+
 "path-exists@npm:^2.0.0":
   version: 2.1.0
   resolution: "path-exists@npm:2.1.0"
@@ -9690,7 +9706,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"safe-stable-stringify@npm:^2.3.1":
+"safe-stable-stringify@npm:^2.2.0, safe-stable-stringify@npm:^2.3.1":
   version: 2.4.3
   resolution: "safe-stable-stringify@npm:2.4.3"
   checksum: 3aeb64449706ee1f5ad2459fc99648b131d48e7a1fbb608d7c628020177512dc9d94108a5cb61bbc953985d313d0afea6566d243237743e02870490afef04b43
@@ -10663,6 +10679,44 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ts-node@npm:^10.9.1":
+  version: 10.9.1
+  resolution: "ts-node@npm:10.9.1"
+  dependencies:
+    "@cspotcode/source-map-support": ^0.8.0
+    "@tsconfig/node10": ^1.0.7
+    "@tsconfig/node12": ^1.0.7
+    "@tsconfig/node14": ^1.0.0
+    "@tsconfig/node16": ^1.0.2
+    acorn: ^8.4.1
+    acorn-walk: ^8.1.1
+    arg: ^4.1.0
+    create-require: ^1.1.0
+    diff: ^4.0.1
+    make-error: ^1.1.1
+    v8-compile-cache-lib: ^3.0.1
+    yn: 3.1.1
+  peerDependencies:
+    "@swc/core": ">=1.2.50"
+    "@swc/wasm": ">=1.2.50"
+    "@types/node": "*"
+    typescript: ">=2.7"
+  peerDependenciesMeta:
+    "@swc/core":
+      optional: true
+    "@swc/wasm":
+      optional: true
+  bin:
+    ts-node: dist/bin.js
+    ts-node-cwd: dist/bin-cwd.js
+    ts-node-esm: dist/bin-esm.js
+    ts-node-script: dist/bin-script.js
+    ts-node-transpile-only: dist/bin-transpile.js
+    ts-script: dist/bin-script-deprecated.js
+  checksum: 090adff1302ab20bd3486e6b4799e90f97726ed39e02b39e566f8ab674fd5bd5f727f43615debbfc580d33c6d9d1c6b1b3ce7d8e3cca3e20530a145ffa232c35
+  languageName: node
+  linkType: hard
+
 "tsconfig-paths@npm:4.2.0":
   version: 4.2.0
   resolution: "tsconfig-paths@npm:4.2.0"
@@ -10813,6 +10867,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript-json-schema@npm:0.61.0":
+  version: 0.61.0
+  resolution: "typescript-json-schema@npm:0.61.0"
+  dependencies:
+    "@types/json-schema": ^7.0.9
+    "@types/node": ^16.9.2
+    glob: ^7.1.7
+    path-equal: ^1.2.5
+    safe-stable-stringify: ^2.2.0
+    ts-node: ^10.9.1
+    typescript: ~5.1.0
+    yargs: ^17.1.1
+  bin:
+    typescript-json-schema: bin/typescript-json-schema
+  checksum: 8359d5ca8ebcb96dca9cd968b46ea21da40a92ee872a44a7b5c6c8f8f4cd1ffbd0ea457752f3be7d44379ea286ccfaee1d40ab1810321ee45d0ecece80ed45ed
+  languageName: node
+  linkType: hard
+
 "typescript@npm:4.7.3":
   version: 4.7.3
   resolution: "typescript@npm:4.7.3"
@@ -10823,6 +10895,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:~5.1.0":
+  version: 5.1.6
+  resolution: "typescript@npm:5.1.6"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: b2f2c35096035fe1f5facd1e38922ccb8558996331405eb00a5111cc948b2e733163cc22fab5db46992aba7dd520fff637f2c1df4996ff0e134e77d3249a7350
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@4.7.3#~builtin<compat/typescript>":
   version: 4.7.3
   resolution: "typescript@patch:typescript@npm%3A4.7.3#~builtin<compat/typescript>::version=4.7.3&hash=701156"
@@ -10830,6 +10912,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 137d18a77f52254a284960b16ab53d0619f57b69b5d585804b8413f798a1175ce3e774fb95e6a101868577aafe357d8fcfc9171f0dc9fc0c210e9ae59d107cc0
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@~5.1.0#~builtin<compat/typescript>":
+  version: 5.1.6
+  resolution: "typescript@patch:typescript@npm%3A5.1.6#~builtin<compat/typescript>::version=5.1.6&hash=701156"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 21e88b0a0c0226f9cb9fd25b9626fb05b4c0f3fddac521844a13e1f30beb8f14e90bd409a9ac43c812c5946d714d6e0dee12d5d02dfc1c562c5aacfa1f49b606
   languageName: node
   linkType: hard
 
@@ -12704,7 +12796,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:17.7.2":
+"yargs@npm:17.7.2, yargs@npm:^17.1.1":
   version: 17.7.2
   resolution: "yargs@npm:17.7.2"
   dependencies:

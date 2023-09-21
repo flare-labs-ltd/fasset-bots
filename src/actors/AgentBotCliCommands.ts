@@ -5,11 +5,10 @@ import { FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "./AgentBot";
 import { AgentEntity } from "../entities/agent";
 import { createAssetContext } from "../config/create-asset-context";
-import { BotConfig, createAgentBotDefaultSettings, createBotConfig, BotConfigFile } from "../config/BotConfig";
+import { BotConfig, createAgentBotDefaultSettings, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
-import { readFileSync } from "fs";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { getSourceName } from "../verification/sources/sources";
@@ -40,12 +39,7 @@ export class BotCliCommands {
     async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
-        const runConfig = JSON.parse(readFileSync(runConfigFile).toString()) as BotConfigFile;
-        // check arguments
-        if (!runConfig.defaultAgentSettingsPath || !runConfig.ormOptions) {
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} is missing defaultAgentSettingsPath or ormOptions in config`);
-            throw new Error("Missing defaultAgentSettingsPath or ormOptions in config");
-        }
+        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireEnv("OWNER_ADDRESS")}`);
         // init web3 and accounts
         this.ownerAddress = requireEnv("OWNER_ADDRESS");
         const nativePrivateKey = requireEnv("OWNER_PRIVATE_KEY");

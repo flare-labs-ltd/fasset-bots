@@ -4,8 +4,7 @@ import { Command } from "commander";
 import { requireEnv, toplevelRun } from "../utils/helpers";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ChainContracts, loadContracts } from "../config/contracts";
-import { BotConfigFile } from "../config/BotConfig";
-import { readFileSync } from "fs";
+import { loadConfigFile } from "../config/BotConfig";
 import { FakePriceReaderInstance } from "../../typechain-truffle";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
@@ -88,7 +87,7 @@ toplevelRun(async () => {
 });
 
 async function initEnvironment(configFile: string, fakePriceReader: boolean = true) {
-    const runConfig = JSON.parse(readFileSync(configFile).toString()) as BotConfigFile;
+    const runConfig = loadConfigFile(configFile);
     const nativePrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
     const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {

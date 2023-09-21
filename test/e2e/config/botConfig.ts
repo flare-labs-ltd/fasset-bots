@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import {
     BotConfigFile,
     createAttestationHelper,
@@ -9,6 +8,7 @@ import {
     createChainConfig,
     createStateConnectorClient,
     createWalletClient,
+    loadConfigFile,
 } from "../../../src/config/BotConfig";
 import { initWeb3 } from "../../../src/utils/web3";
 import { SourceId } from "../../../src/verification/sources/sources";
@@ -40,8 +40,8 @@ describe("Bot config tests", async () => {
     let accounts: string[];
 
     before(async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
-        actorRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
+        actorRunConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
     });
 

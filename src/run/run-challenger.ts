@@ -1,12 +1,11 @@
 import "dotenv/config";
 
-import { readFileSync } from "fs";
+import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
+import { ActorBaseRunner } from "../actors/ActorBaseRunner";
+import { createBotConfig, loadConfigFile } from "../config/BotConfig";
+import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { requireEnv, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { ActorBaseRunner } from "../actors/ActorBaseRunner";
-import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
-import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 
 const CHALLENGER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT1");
 const CHALLENGER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
@@ -16,7 +15,7 @@ const fAssetSymbol = "FtestXRP";
 toplevelRun(async () => {
     // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
     disableMccTraceManager();
-    const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as BotConfigFile;
+    const runConfig = loadConfigFile(RUN_CONFIG_PATH);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [CHALLENGER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, CHALLENGER_ADDRESS);
     const chainConfig = config.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);

@@ -4,7 +4,6 @@ import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
-import { readFileSync } from "fs";
 import { WALLET } from "simple-wallet";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
@@ -20,31 +19,11 @@ import { Notifier } from "../utils/Notifier";
 import { MINUS_CHAR, requireEnv, toBN } from "../utils/helpers";
 import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
+import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
+import { JsonLoader } from "./json-loader";
+import { logger } from "../utils/logger";
 
-export interface BotConfigFile {
-    defaultAgentSettingsPath?: string; // only for agent bot
-    ormOptions?: CreateOrmOptions; // only for agent bot
-    fAssetInfos: BotFAssetInfo[];
-    // notifierFile: string;
-    loopDelay: number;
-    nativeChainInfo: NativeChainInfo;
-    rpcUrl: string;
-    attestationProviderUrls: string[];
-    stateConnectorAddress: string;
-    stateConnectorProofVerifierAddress: string;
-    // either one must be set
-    addressUpdater?: string;
-    contractsJsonFile?: string;
-}
-
-export interface BotFAssetInfo extends ChainInfo {
-    walletUrl?: string; // only for agent bot
-    inTestnet?: boolean; // only for agent bot, optional also for agent bot
-    indexerUrl: string;
-    // either one must be set
-    assetManager?: string;
-    fAssetSymbol?: string;
-}
+export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
 export interface BotConfig {
     orm?: ORM; // only for agent bot
@@ -70,17 +49,55 @@ export interface BotFAssetConfig {
     priceChangeEmitter?: string;    // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
-export interface AgentSettingsConfig {
-    vaultCollateralFtsoSymbol: string;
-    poolTokenSuffix: string;
-    feeBIPS: string;
-    poolFeeShareBIPS: string;
-    mintingVaultCollateralRatioConstant: number;
-    mintingPoolCollateralRatioConstant: number;
-    poolExitCollateralRatioConstant: number;
-    buyFAssetByAgentFactorBIPS: string;
-    poolTopupCollateralRatioConstant: number;
-    poolTopupTokenPriceFactorBIPS: string;
+const botConfigLoader = new JsonLoader<BotConfigFile>("run-config/schema/bot-config.schema.json", "bot config JSON");
+const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>("run-config/schema/agent-settings.schema.json", "agent settings JSON");
+
+export function loadConfigFile(fpath: string, configInfo?: string) {
+    try {
+        const config = botConfigLoader.load(fpath);
+        validateConfigFile(config);
+        return config;
+    } catch (e) {
+        logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+        throw e;
+    }
+}
+
+function validateConfigFile(config: BotConfigFile) {
+    if (config.addressUpdater == null && config.contractsJsonFile == null) {
+        throw new Error("Missing either contractsJsonFile or addressUpdater in config");
+    }
+    for (const fc of config.fAssetInfos) {
+        if (fc.assetManager == null && fc.fAssetSymbol == null) {
+            throw new Error(`Missing either assetManager or fAssetSymbol in FAsset type ${fc.fAssetSymbol}`);
+        }
+    }
+}
+
+export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
+export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string, ormOptions: CreateOrmOptions, fAssetInfos: AgentBotFAssetInfo[]; };
+
+export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBotConfigFile {
+    try {
+        const config = botConfigLoader.load(fpath);
+        validateConfigFile(config);
+        validateAgentConfigFile(config);
+        return config as AgentBotConfigFile;
+    } catch (e) {
+        logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+        throw e;
+    }
+}
+
+function validateAgentConfigFile(config: BotConfigFile) {
+    if (config.defaultAgentSettingsPath == null || config.ormOptions == null) {
+        throw new Error("Missing defaultAgentSettingsPath or ormOptions in config");
+    }
+    for (const fc of config.fAssetInfos) {
+        if (fc.walletUrl == null) {
+            throw new Error(`Missing walletUrl in FAsset type ${fc.fAssetSymbol}`);
+        }
+    }
 }
 
 /**
@@ -163,7 +180,7 @@ export async function createChainConfig(
  * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
  */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string): Promise<AgentBotDefaultSettings> {
-    const agentSettingsConfig = JSON.parse(readFileSync(agentSettingsConfigPath).toString()) as AgentSettingsConfig;
+    const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
     const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find((token) => {
         return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol;
     });
