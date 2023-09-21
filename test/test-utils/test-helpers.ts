@@ -17,13 +17,14 @@ import { Notifier } from "../../src/utils/Notifier";
 import { loadContracts } from "../../src/config/contracts";
 import { artifacts } from "../../src/utils/web3";
 
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 const Whitelist = artifacts.require("Whitelist");
 
 const ownerAccountPrivateKey = requireEnv("OWNER_PRIVATE_KEY");
 const account1PrivateKey = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
 const userPrivateKey = requireEnv("USER_PRIVATE_KEY");
 const account3PrivateKey = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
+const account4PrivateKey = requireEnv("NATIVE_ACCOUNT4_PRIVATE_KEY");
 const deployPrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
 const deployAddress = requireEnv("DEPLOY_ADDRESS");
 
@@ -31,7 +32,7 @@ export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {
     // owner is always first in array
     // deployer account / current coston governance in always last in array
-    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, deployPrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey, deployPrivateKey];
 }
 
 export async function removeWalletAddressFromDB(orm: ORM, address: string) {
@@ -74,12 +75,12 @@ export async function mintVaultCollateralToOwner(
     ownerAddress: string,
     amount: BNish = depositVaultCollateralAmount
 ): Promise<void> {
-    const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
+    const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
     await vaultCollateralToken.mintAmount(ownerAddress, amount, { from: deployAddress });
 }
 
 export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: string, address: string): Promise<BN> {
-    const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
+    const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
     return await vaultCollateralToken.balanceOf(address);
 }
 
