@@ -46,7 +46,7 @@ export interface BotFAssetConfig {
     assetManager?: string;
     fAssetSymbol?: string;
     // optional settings
-    priceChangeEmitter?: string;    // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
+    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
 const botConfigLoader = new JsonLoader<BotConfigFile>("run-config/schema/bot-config.schema.json", "bot config JSON");
@@ -76,7 +76,7 @@ function validateConfigFile(config: BotConfigFile) {
 }
 
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
-export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string, ormOptions: CreateOrmOptions, fAssetInfos: AgentBotFAssetInfo[]; };
+export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string; ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
 
 export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBotConfigFile {
     try {
@@ -147,7 +147,7 @@ export async function createBotFAssetConfig(
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
-        wallet: wallet
+        wallet: wallet,
     };
 }
 
@@ -175,7 +175,7 @@ export async function createChainConfig(
         stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol,
-        priceChangeEmitter: chainInfo.priceChangeEmitter
+        priceChangeEmitter: chainInfo.priceChangeEmitter,
     };
 }
 

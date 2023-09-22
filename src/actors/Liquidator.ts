@@ -38,11 +38,11 @@ export class Liquidator extends ActorBase {
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
                 if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`)
+                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
-                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`)
+                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     await this.handleMintingExecuted(event.args);
                 }

@@ -31,7 +31,7 @@ describe("XRP attestation/state connector tests", async () => {
 
     before(async () => {
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
-        account =  accounts[0];
+        account = accounts[0];
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
             ATTESTATION_PROVIDER_URLS,

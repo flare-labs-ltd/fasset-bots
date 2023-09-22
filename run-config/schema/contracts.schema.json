@@ -17,11 +17,7 @@
                     "type": "string"
                 }
             },
-            "required": [
-                "address",
-                "contractName",
-                "name"
-            ],
+            "required": ["address", "contractName", "name"],
             "type": "object"
         }
     },
@@ -30,4 +26,3 @@
     },
     "type": "array"
 }
-

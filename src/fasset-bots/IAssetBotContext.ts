@@ -1,4 +1,11 @@
-import { AddressUpdaterInstance, AssetManagerInstance, FAssetInstance, IERC20Instance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
+import {
+    AddressUpdaterInstance,
+    AssetManagerInstance,
+    FAssetInstance,
+    IERC20Instance,
+    IPriceChangeEmitterInstance,
+    WNatInstance,
+} from "../../typechain-truffle";
 import { CollateralType } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";

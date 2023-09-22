@@ -29,7 +29,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
     let priceChangeEmitter;
     let wNat;
     let addressUpdater;
-    const priceChangeEmitterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
+    const priceChangeEmitterName = chainConfig.priceChangeEmitter ?? "FtsoManager";
     if (botConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
@@ -70,7 +70,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
     }
     let assetManager;
     let priceChangeEmitter;
-    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
+    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? "FtsoManager";
     if (trackedStateConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(trackedStateConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);

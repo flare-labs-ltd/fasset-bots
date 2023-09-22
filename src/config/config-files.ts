@@ -41,7 +41,7 @@ export interface BotFAssetInfo extends ChainInfo {
     assetManager?: string;
     fAssetSymbol?: string;
     // optional settings
-    priceChangeEmitter?: string;    // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
+    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
 export interface AgentSettingsConfig {
@@ -57,5 +57,5 @@ export interface AgentSettingsConfig {
     poolTopupTokenPriceFactorBIPS: string | number;
 }
 
-export type Schema_BotConfigFile = BotConfigFile & { $schema?: string; };
-export type Schema_AgentSettingsConfig = AgentSettingsConfig & { $schema?: string; };
+export type Schema_BotConfigFile = BotConfigFile & { $schema?: string };
+export type Schema_AgentSettingsConfig = AgentSettingsConfig & { $schema?: string };

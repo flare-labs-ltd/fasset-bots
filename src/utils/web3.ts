@@ -35,13 +35,13 @@ export function authenticatedHttpProvider(url: string, apiToken?: string): provi
     /* istanbul ignore else */
     if (!apiToken) {
         return new Web3.providers.HttpProvider(url);
-    } else /* istanbul ignore next */ if (authenticatedHttpProvider.useHeader) {
-        const headers = [{ name: 'x-apikey', value: apiToken }];
+    } /* istanbul ignore next */ else if (authenticatedHttpProvider.useHeader) {
+        const headers = [{ name: "x-apikey", value: apiToken }];
         return new Web3.providers.HttpProvider(url, { headers });
     } else {
         /* istanbul ignore next */
-        const sep = url.includes('?') ? '&' : '?';
-        const authUrl = `${url}${sep}x-apikey=${apiToken}`
+        const sep = url.includes("?") ? "&" : "?";
+        const authUrl = `${url}${sep}x-apikey=${apiToken}`;
         return new Web3.providers.HttpProvider(authUrl);
     }
 }

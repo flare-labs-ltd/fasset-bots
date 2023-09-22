@@ -241,5 +241,4 @@ export class Agent {
             return poolTokenSuffix;
         }
     }
-
 }

@@ -9,13 +9,11 @@ export class JsonLoader<T> {
     constructor(
         public schema: string | JSONSchemaType<T>,
         public formatName: string = "JSON"
-    ) { }
+    ) {}
 
     getValidator() {
         if (!this.ajvValidator) {
-            const schema = typeof this.schema === 'string'
-                ? JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>
-                : this.schema;
+            const schema = typeof this.schema === "string" ? (JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>) : this.schema;
             this.ajvValidator = ajv.compile(schema);
         }
         return this.ajvValidator;
@@ -31,7 +29,7 @@ export class JsonLoader<T> {
     validate(data: unknown): T {
         const validator = this.getValidator();
         if (validator(data)) {
-            delete (data as any)['$schema'];    // $schema field is only needed for validation, might interfere otherwise
+            delete (data as any)["$schema"]; // $schema field is only needed for validation, might interfere otherwise
             return data;
         }
         throw new Error(`Invalid ${this.formatName} format: ${JSON.stringify(validator.errors)}`);

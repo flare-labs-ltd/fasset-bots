@@ -288,7 +288,7 @@ function createTestAssetManagerSettings(
         agentMintingCRChangeTimelockSeconds: bnToString(parameters.agentMintingCRChangeTimelockSeconds),
         poolExitAndTopupChangeTimelockSeconds: bnToString(parameters.poolExitAndTopupChangeTimelockSeconds),
         agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds),
-        collateralPoolTokenTimelockSeconds: bnToString(parameters.collateralPoolTokenTimelockSeconds)
+        collateralPoolTokenTimelockSeconds: bnToString(parameters.collateralPoolTokenTimelockSeconds),
     };
 }
 

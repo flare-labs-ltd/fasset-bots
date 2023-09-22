@@ -171,5 +171,4 @@ describe("Actor tests - coston", async () => {
         const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
         await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
-
 });

@@ -382,7 +382,7 @@ export class BotCliCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
         const freeCollateral = info.freeVaultCollateralWei.toString();
-        console.log(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`)
+        console.log(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`);
         logger.info(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`);
         return freeCollateral;
     }
@@ -391,7 +391,7 @@ export class BotCliCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
         const freeCollateral = info.freePoolCollateralNATWei.toString();
-        console.log(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`)
+        console.log(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`);
         logger.info(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`);
         return freeCollateral;
     }
@@ -400,9 +400,8 @@ export class BotCliCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
         const freeUnderlying = info.freeUnderlyingBalanceUBA.toString();
-        console.log(`Agent ${agentVault} has ${freeUnderlying} free underlying.`)
+        console.log(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
         logger.info(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
         return freeUnderlying;
     }
-
 }
