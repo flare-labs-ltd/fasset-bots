@@ -12,6 +12,7 @@
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
+            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "assetManager": "0x68F6322BFf80978eB5b7F672404bC3D0ad77eF32",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"

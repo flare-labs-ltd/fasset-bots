@@ -13,7 +13,7 @@
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 10,
+            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
