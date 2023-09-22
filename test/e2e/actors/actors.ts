@@ -20,6 +20,8 @@ import { createTestAgentBot, createTestChallenger, createTestLiquidator, createT
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
+import { Agent } from "../../../src/fasset/Agent";
+import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
@@ -162,4 +164,12 @@ describe("Actor tests - coston", async () => {
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
     });
+
+    it("Should not create agent - unknown address", async () => {
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
+        const underlyingAddress = "underlying";
+        const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
+        await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
+    });
+
 });

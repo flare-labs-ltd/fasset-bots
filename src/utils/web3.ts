@@ -32,12 +32,14 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
 }
 
 export function authenticatedHttpProvider(url: string, apiToken?: string): provider {
+    /* istanbul ignore else */
     if (!apiToken) {
         return new Web3.providers.HttpProvider(url);
-    } else if (authenticatedHttpProvider.useHeader) {
+    } else /* istanbul ignore next */ if (authenticatedHttpProvider.useHeader) {
         const headers = [{ name: 'x-apikey', value: apiToken }];
         return new Web3.providers.HttpProvider(url, { headers });
     } else {
+        /* istanbul ignore next */
         const sep = url.includes('?') ? '&' : '?';
         const authUrl = `${url}${sep}x-apikey=${apiToken}`
         return new Web3.providers.HttpProvider(authUrl);

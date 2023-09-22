@@ -47,16 +47,6 @@ describe("Create asset context tests", async () => {
         expect(context.chainInfo.chainId).to.eq(botConfig.fAssets[0].chainInfo.chainId);
     });
 
-    it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
-        runConfig.addressUpdater = undefined;
-        runConfig.contractsJsonFile = undefined;
-        botConfig = await createBotConfig(runConfig, accounts[0]);
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
-            .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
-            .and.be.an.instanceOf(Error);
-    });
-
     it("Should not create asset context - wallet must be defined in chain config", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
@@ -115,6 +105,15 @@ describe("Create asset context tests", async () => {
         botConfig = await createBotConfig(runConfig, accounts[0]);
         await expect(getAssetManagerAndController(botConfig.fAssets[0], null, null))
             .to.eventually.be.rejectedWith(`Either addressUpdater or contracts must be defined`)
+            .and.be.an.instanceOf(Error);
+    });
+
+    it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
+        const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-contracts-and-addressUpdater.json";
+        runConfig = JSON.parse(readFileSync(runConfigFile1).toString()) as BotConfigFile;
+        botConfig = await createBotConfig(runConfig, accounts[0]);
+        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+            .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
             .and.be.an.instanceOf(Error);
     });
 

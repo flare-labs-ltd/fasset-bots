@@ -25,6 +25,11 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
+import rewire from "rewire";
+import { readFileSync } from "fs";
+const botConfigInternal = rewire("../../../src/config/BotConfig.ts");
+const validateConfigFile = botConfigInternal.__get__("validateConfigFile");
+const validateAgentConfigFile = botConfigInternal.__get__("validateAgentConfigFile");
 
 const indexerBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
 const indexerDOGEUrl = "https://attestation-coston.aflabs.net/verifier/doge/";
@@ -182,5 +187,34 @@ describe("Bot config tests", async () => {
             OWNER_ADDRESS
         );
         expect(agentBotConfigChain.stateConnector).not.be.null;
+    });
+
+    it("Should not validate config - contractsJsonFile or addressUpdater must be defined", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig.contractsJsonFile = undefined;
+        runConfig.addressUpdater = undefined;
+        const fn = () => {
+            return validateConfigFile(runConfig);
+        };
+        expect(fn).to.throw(`Missing either contractsJsonFile or addressUpdater in config`);
+    });
+
+    it("Should not validate config - assetManager or fAssetSymbol must be defined", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig.fAssetInfos[0].assetManager = undefined;
+        runConfig.fAssetInfos[0].fAssetSymbol = undefined;
+        const fn = () => {
+            return validateConfigFile(runConfig);
+        };
+        expect(fn).to.throw(`Missing either assetManager or fAssetSymbol in FAsset type undefined`);
+    });
+
+    it("Should not validate config - walletUrl must be defined", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig.fAssetInfos[0].walletUrl = undefined;
+        const fn = () => {
+            return validateAgentConfigFile(runConfig);
+        };
+        expect(fn).to.throw(`Missing walletUrl in FAsset type ${runConfig.fAssetInfos[0].fAssetSymbol}`);
     });
 });

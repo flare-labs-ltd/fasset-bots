@@ -21,6 +21,7 @@ import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { Agent } from "../../../src/fasset/Agent";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -647,5 +648,10 @@ describe("Agent bot unit tests", async () => {
         // clean up
         await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
         await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
+    });
+
+    it("Should increment pool token suffix", async () => {
+        const token = "poolTokenSuffix";
+        expect(Agent.incrementPoolTokenSuffix(token, 0)).to.eq(token);
     });
 });

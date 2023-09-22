@@ -1,4 +1,4 @@
-import { initWeb3, web3 } from "../../../src/utils/web3";
+import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -7,6 +7,7 @@ import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
 const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
+import { HttpProvider } from "web3-core";
 
 describe("web3 unit tests", async () => {
     it("Should create provider", async () => {
@@ -34,5 +35,10 @@ describe("web3 unit tests", async () => {
         const accounts = await initWeb3(COSTON_RPC, null, null);
         expect(accounts.length).to.eq(0);
         web3.eth.accounts.wallet.clear();
+    });
+
+    it("Should create http provider", async () => {
+        const prov: HttpProvider = authenticatedHttpProvider(COSTON_RPC) as HttpProvider;
+        expect(prov.host).to.eq(COSTON_RPC);
     });
 });

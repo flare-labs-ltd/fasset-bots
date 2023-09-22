@@ -1,7 +1,9 @@
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
-    "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
     "fAssetInfos": [
         {
             "chainId": 3,
@@ -9,24 +11,18 @@
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 10,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
-        },
-        {
-            "chainId": 3,
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "finalizationBlocks": 10,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FfakeXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "priceChangeEmitter": "FakePriceReader"
+            "walletUrl": "https://s.altnet.rippletest.net:51234"
         }
     ],
+    "ormOptions": {
+        "dbName": "fasset-bots-coston.db",
+        "debug": false,
+        "allowGlobalContext": true,
+        "type": "sqlite"
+    },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
     "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",

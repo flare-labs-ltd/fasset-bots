@@ -14,7 +14,6 @@ import {
     ATTESTATION_PROVIDER_URLS,
     COSTON_RPC,
     INDEXER_URL_XRP,
-    OWNER_ADDRESS,
     STATE_CONNECTOR_ADDRESS,
     STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
 } from "../../test-utils/test-bot-config";
@@ -28,15 +27,17 @@ const finalizationBlocks: number = 6;
 
 describe("XRP attestation/state connector tests", async () => {
     const roundId = 571512;
+    let account: string;
 
     before(async () => {
-        await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        account =  accounts[0];
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS
+            account
         );
     });
 
@@ -133,13 +134,13 @@ describe("State connector tests - decoding", async () => {
         paymentReference: "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
     before(async () => {
-        await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS
+            accounts[0]
         );
         rewiredStateConnectorHelper = new rewiredStateConnectorClientHelperClass(
             ATTESTATION_PROVIDER_URLS,
@@ -147,7 +148,7 @@ describe("State connector tests - decoding", async () => {
             STATE_CONNECTOR_ADDRESS,
             "",
             "",
-            OWNER_ADDRESS
+            accounts[0]
         );
     });
 

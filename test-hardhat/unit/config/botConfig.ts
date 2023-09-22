@@ -2,7 +2,7 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, disableMccTraceManager } from "../../test-utils/helpers";
-import { AgentSettingsConfig, createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
+import { AgentSettingsConfig, createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
 import { web3 } from "../../../src/utils/web3";
 import { readFileSync } from "fs";
 import chaiAsPromised from "chai-as-promised";
@@ -35,5 +35,13 @@ describe("Config unit tests", async () => {
         await expect(createAgentBotDefaultSettings(context, initialAgentPath))
             .to.eventually.be.rejectedWith(`Invalid vault collateral token ${initialAgentSettings.vaultCollateralFtsoSymbol}`)
             .and.be.an.instanceOf(Error);
+    });
+
+    it("Should not initialize", async () => {
+        const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-contracts-and-addressUpdater.json";
+        const fn = () => {
+            return loadConfigFile(runConfigFile1);
+        };
+        expect(fn).to.throw("Missing either contractsJsonFile or addressUpdater in config");
     });
 });

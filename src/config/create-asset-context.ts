@@ -29,18 +29,18 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
     let priceChangeEmitter;
     let wNat;
     let addressUpdater;
-    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
+    const priceChangeEmitterName = chainConfig.priceChangeEmitter ?? 'FtsoManager';
     if (botConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
-        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmiterName]!.address);
+        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmitterName]!.address);
         wNat = await WNat.at(contracts.WNat.address);
         addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         addressUpdater = await AddressUpdater.at(botConfig.addressUpdater!);
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmiterName));
+        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
         wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
     }
     const collaterals = await assetManager.getCollateralTypes();

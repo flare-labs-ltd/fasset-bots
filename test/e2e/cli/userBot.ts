@@ -19,8 +19,10 @@ describe("UserBot cli commands unit tests", async () => {
     });
 
     it("Should create UserBot", async () => {
-        const userBot = await UserBot.create(RUN_CONFIG_PATH, "FtestXRP");
-        expect(userBot.nativeAddress).to.eq(userAddress);
+        const userBot1 = await UserBot.create(RUN_CONFIG_PATH, "FtestXRP");
+        expect(userBot1.nativeAddress).to.eq(userAddress);
+        const userBot2 = await UserBot.create(RUN_CONFIG_PATH, "FfakeXRP");
+        expect(userBot2.nativeAddress).to.eq(userAddress);
     });
 
     it("Should create UserBot - invalid 'fAssetSymbol'", async () => {

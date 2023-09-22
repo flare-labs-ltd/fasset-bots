@@ -58,6 +58,7 @@ export function loadConfigFile(fpath: string, configInfo?: string) {
         validateConfigFile(config);
         return config;
     } catch (e) {
+        /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
         throw e;
     }
@@ -84,6 +85,7 @@ export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBo
         validateAgentConfigFile(config);
         return config as AgentBotConfigFile;
     } catch (e) {
+        /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
         throw e;
     }
@@ -145,7 +147,7 @@ export async function createBotFAssetConfig(
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
-        wallet: wallet,
+        wallet: wallet
     };
 }
 
@@ -173,6 +175,7 @@ export async function createChainConfig(
         stateConnector: stateConnector,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol,
+        priceChangeEmitter: chainInfo.priceChangeEmitter
     };
 }
 

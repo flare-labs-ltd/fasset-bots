@@ -63,7 +63,7 @@ describe("Create asset context unit tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
+    it("Should not get asset manager controller - contractsJsonFile or addressUpdater required", async () => {
         const chainId = 3;
         const fAssetConfig: BotFAssetConfig = {
             chainInfo: {

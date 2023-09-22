@@ -26,7 +26,6 @@ use(spies);
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require("StateConnectorMock");
-const fAssetSymbol = "FtestXRP";
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];

@@ -40,13 +40,13 @@ describe("Attestation client unit tests", async () => {
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
-        await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             sourceId,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS,
+            accounts[0],
             indexerUrl,
             finalizationBlocks
         );

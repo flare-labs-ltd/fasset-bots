@@ -342,12 +342,12 @@ describe("Tracked state tests", async () => {
         // minter enters pool
         await agentB.collateralPool.enter(0, false, { value: toBNExp(100_000, 18), from: minter.address });
         // tweak some pool settings
-        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", 9999, { from: agentB.ownerAddress });
-        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
-        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolFeeShareBIPS", { from: agentB.ownerAddress });
-        await context.assetManager.announceAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", 88600, { from: agentB.ownerAddress });
-        await time.increase(toBN((await context.assetManager.getSettings()).agentFeeChangeTimelockSeconds));
-        await context.assetManager.executeAgentSettingUpdate(agentB.vaultAddress, "poolExitCollateralRatioBIPS", { from: agentB.ownerAddress });
+        const validAt1 = await agentB.announceAgentSettingUpdate("poolFeeShareBIPS", 9999,)
+        await time.increaseTo(validAt1);
+        await agentB.executeAgentSettingUpdate("poolFeeShareBIPS");
+        const validAt2 = await agentB.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", 27000,)
+        await time.increaseTo(validAt2);
+        await agentB.executeAgentSettingUpdate("poolExitCollateralRatioBIPS");
         // minter performs minting
         const lots = 20;
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
