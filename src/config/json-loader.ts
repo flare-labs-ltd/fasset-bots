@@ -21,9 +21,7 @@ export class JsonLoader<T> {
 
     load(filename: string): T {
         const data = JSON.parse(readFileSync(filename).toString());
-        this.getValidator();
-        // return this.validate(data);
-        return data as T;
+        return this.validate(data);
     }
 
     validate(data: unknown): T {
