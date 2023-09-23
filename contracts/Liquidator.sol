@@ -36,7 +36,7 @@ contract Liquidator is ILiquidator, Ownable {
     modifier logGasUsage() {
         uint256 startGas = gasleft();
         _;
-        console.log("gas used", startGas - gasleft());
+        //console.log("gas used", startGas - gasleft());
     }
 
     modifier flashLoanInitiatorLock() {

@@ -7,13 +7,16 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "resolveJsonModule": true
   },
   "include": [
-    "./src",
-    "./test",
-    "./typechain-ethers",
-    "./typechain-truffle"
+    "./src/**/*.ts",
+    "./test/**/*.ts",
+    "./scripts/**/*.ts",
+    "typechain-ethers",
+    "typechain-truffle",
+    "./hardhat.config.ts" // so it picks up ethers
   ],
   "typeRoots": [
     "node_modules/@types",

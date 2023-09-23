@@ -16,10 +16,10 @@ export async function swapOutput(
   tokenOut: ERC20MockInstance,
   amountIn: BNish
 ): Promise<BN> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenIn.address, tokenOut.address)
+  const { 0: reserveIn, 1: reserveOut } = await router.getReserves(tokenIn.address, tokenOut.address)
   const amountInWithFee = toBN(amountIn).muln(997)
-  const numerator = amountInWithFee.mul(reserveB)
-  const denominator = reserveA.muln(1000).add(amountInWithFee)
+  const numerator = amountInWithFee.mul(reserveOut)
+  const denominator = reserveIn.muln(1000).add(amountInWithFee)
   return numerator.div(denominator)
 }
 
@@ -31,9 +31,9 @@ export async function swapInput(
   tokenOut: ERC20MockInstance,
   amountOut: BNish
 ): Promise<BN> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenIn.address, tokenOut.address)
-  const numerator = reserveA.mul(toBN(amountOut)).muln(1000)
-  const denominator = reserveB.sub(toBN(amountOut)).muln(997)
+  const { 0: reserveIn, 1: reserveOut } = await router.getReserves(tokenIn.address, tokenOut.address)
+  const numerator = reserveIn.mul(toBN(amountOut)).muln(1000)
+  const denominator = reserveOut.sub(toBN(amountOut)).muln(997)
   return numerator.div(denominator).addn(1)
 }
 
@@ -117,6 +117,7 @@ function getrandbit(): BN {
   return toBN(Number(Math.random() > 0.5))
 }
 
+// not really uniformly random, but it'll do
 export function randBn(min: BNish, max: BNish): any {
   const ret = toBN(min)
   const diff = toBN(max).sub(ret)
@@ -135,6 +136,17 @@ export function randBn(min: BNish, max: BNish): any {
     }
   }
   return ret
+}
+
+export const randBnInRadius = (center: BNish, radius: BNish) => {
+  const min = toBN(center).sub(toBN(radius))
+  const max = toBN(center).add(toBN(radius))
+  return randBn(min, max)
+}
+
+export const randBnInRelRadius = (center: BNish, radiusPerc: BNish) => {
+  const radius = toBN(center).mul(toBN(radiusPerc)).divn(100)
+  return randBnInRadius(center, radius)
 }
 
 export function assertBnEqual(
@@ -170,19 +182,19 @@ export function assertBnGreaterOrEqual(
 // tokenB/tokenA reserve
 // prices should be in the same currency,
 // e.g. FLR/$, XRP/$
-export function getPriceBasedDexReserve(
+export function priceBasedDexReserve(
   priceA: BNish,
   priceB: BNish,
   decimalsA: BNish,
   decimalsB: BNish,
   reserveA: BNish,
 ): BN {
-  // reserveA / reserveB = priceA / priceB
+  // reserveB / reserveA = priceA / priceB
   return toBN(reserveA)
-    .mul(toBN(priceB))
-    .div(toBN(priceA))
+    .mul(toBN(priceA))
     .mul(expBN(decimalsB))
     .div(expBN(decimalsA))
+    .div(toBN(priceB))
 }
 
 // prices are in some same currency

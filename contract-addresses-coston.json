@@ -1,20 +1,8 @@
 {
-    "liquidator": "",
-    "wNat": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
-    "fAsset": "0xF6D08dC4aA8BC1ee57e938bF352d9B4A25cCeDa9",
-    "dex": [
-        {
-            "address": "0x28B7598C604c81a5688b21E1a26C71092C145a4e",
-            "tokenA": "0xc06496fa0551bf4996fb5df876cbcc6f1d836460",
-            "tokenB": "0xF6D08dC4aA8BC1ee57e938bF352d9B4A25cCeDa9"
-        }
-    ],
-    "agentVault": [
-        {
-            "address": "",
-            "fAsset": "0xF6D08dC4aA8BC1ee57e938bF352d9B4A25cCeDa9",
-            "class1": "0xc06496fa0551bf4996fb5df876cbcc6f1d836460"
-        }
-    ],
-    "liquidationStrategy": "0x2A9d4EBd2196b1f2718400f2ad4Ce716C67C9925"
+    "WNAT": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
+    "USDC": "0xC06496FA0551bf4996fb5Df876cBcC6F1d836460",
+    "assetManagerController": "0x2684149b0aF1CB8B02749faf5280C51e18dd4D90",
+    "blazeSwapRouter": "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4",
+    "flashLender": "0x729A282e9d15beD1cd046D80406d35849457AA23",
+    "liquidator": "0x742C97a8644A71c7418E0a7841f28f0F0deD96e1"
 }

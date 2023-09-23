@@ -3,6 +3,8 @@ import '@typechain/hardhat'
 import '@nomiclabs/hardhat-web3'
 import "@nomiclabs/hardhat-ethers"
 import "@nomiclabs/hardhat-truffle5"
+import "@nomiclabs/hardhat-waffle"
+import "hardhat-gas-reporter"
 
 const config: HardhatUserConfig = {
   // do not change, otherwise blazeswap will not work
@@ -35,7 +37,7 @@ const config: HardhatUserConfig = {
     flare: {
       url: "https://flare-api.flare.network/ext/C/rpc",
       chainId: 14,
-    }
+    },
   },
   typechain: {
     outDir: "typechain-truffle",
@@ -46,6 +48,9 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts"
   },
+  gasReporter: {
+    enabled: false
+  }
 }
 
 export default config

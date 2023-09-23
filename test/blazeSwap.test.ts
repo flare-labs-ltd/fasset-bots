@@ -20,13 +20,13 @@ contract("Tests for BlazeSwapRouter contract", (accounts) => {
     const blazeSwapManager = await BlazeSwapManager.new(accounts[0])
     const blazeSwapFactory = await BlazeSwapFactory.new(blazeSwapManager.address)
     await blazeSwapManager.setFactory(blazeSwapFactory.address)
-    blazeSwapRouter = await BlazeSwapRouter.new(blazeSwapFactory.address, wNat.address, false)
+    blazeSwapRouter = await BlazeSwapRouter.new(blazeSwapFactory.address, wNat.address, true)
     // set tokens
     tokenA = await ERC20Mock.new(USDT.name, USDT.symbol, USDT.decimals)
     tokenB = await ERC20Mock.new(XRP.name, XRP.symbol, XRP.decimals)
   })
 
-  it("should test adding liquidity and swapping", async () => {
+  it("should test adding liquidity", async () => {
     const tokenALiq = toBN(10).pow(toBN(18))
     const tokenBLiq = toBN(2).mul(toBN(10).pow(toBN(6)))
     await tokenA.mint(accounts[0], tokenALiq)

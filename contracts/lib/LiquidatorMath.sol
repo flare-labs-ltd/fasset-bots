@@ -9,6 +9,7 @@ import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 
+import "hardhat/console.sol";
 
 // embedded library
 library LiquidatorMath {
@@ -109,7 +110,9 @@ library LiquidatorMath {
             uint256 _aux1
                 = _liquidatorVars.reserveVaultWeiDex1
                 * _liquidatorVars.reservePoolWeiDex2;
-            require(_aux1 < _amount, "Arbitrage failed due to numeric error");
+            if (_aux1 >= _amount) {
+                return 0;
+            }
             _amount -= _aux1;
         }
         _amount *= 1000;

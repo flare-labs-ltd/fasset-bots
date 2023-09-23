@@ -20,8 +20,8 @@ Ecosystem = namedtuple(
         "collateral_ratio_pool_bips",
         "target_ratio_vault_bips",
         "target_ratio_pool_bips",
-        # note that vault and pool collaterals
-        # are derived from crs, prices and mintedUBA
+        # vault and pool collaterals are derived from crs,
+        # prices and mintedUBA
         "mintedUBA",
     ],
 )
@@ -29,6 +29,8 @@ Ecosystem = namedtuple(
 
 class ArbitrageStrategy(ABC):
     def __init__(self, ec):
+        self.dex1Discrepancy = 0
+        self.dex2Discrepancy = 0
         for key, val in zip(ec._fields, ec):
             setattr(self, key, val)
 
@@ -105,18 +107,32 @@ class ArbitrageStrategy(ABC):
     # Methods to aid in visualisation
 
     def applyPriceDiscrepancyDex1(self, discrepancyBips):
+        self.dex1Discrepancy = discrepancyBips
         self.dex1_vault_reserve = (
             self.dex1_fAsset_reserve
             * (10_000 + discrepancyBips)
-            // self.fAsset_vault_price_bips
+            * self.fAsset_vault_price_bips
+            // 10_000**2
         )
 
     def applyPriceDiscrepancyDex2(self, discrepancyBips):
+        self.dex2Discrepancy = discrepancyBips
         self.dex2_pool_reserve = (
             self.dex2_vault_reserve
             * (10_000 + discrepancyBips)
-            // self.vault_price_pool_bips
+            * self.vault_price_pool_bips
+            // 10_000**2
         )
+
+    # treat liqudity as fAsset reserve and
+    # update vault reserve accordingly
+    def updateDex1Liquidity(self, f):
+        self.dex1_fAsset_reserve = f
+        self.applyPriceDiscrepancyDex1(self.dex1Discrepancy)
+
+    def updateDex2Liquidity(self, v):
+        self.dex2_vault_reserve = v
+        self.applyPriceDiscrepancyDex2(self.dex2Discrepancy)
 
 # implements the optimum calculation of simplified arbitrageProfit function,
 # where we don't account for slippage when swapping pool collateral on dex2
@@ -149,6 +165,7 @@ class SymbolicOptimum(ArbitrageStrategy):
         amount //= ec.dex2_pool_reserve
         return amount
 
+
 class NumericStrategy(ArbitrageStrategy):
     def _optLiquidatedVault(ec):
         return None
@@ -163,8 +180,8 @@ ETH = 1_000_000
 ecosystem = Ecosystem(
     dex1_vault_reserve=30_000 * ETH,
     dex1_fAsset_reserve=60_001 * ETH,
-    dex2_pool_reserve=100_000 * ETH,
-    dex2_vault_reserve=1_333 * ETH,
+    dex2_pool_reserve=10_000 * ETH,
+    dex2_vault_reserve=133 * ETH,
     fAsset_vault_price_bips=5_000,
     vault_price_pool_bips=10_000 * 5_000 // 133,
     liquidation_factor_vault_bips=10_000,
@@ -185,143 +202,170 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-MAX_RESERVES = 100_000_000 * ETH
+MAX_RESERVES = 100_000 * ETH
 MAX_COLLATERAL_RATIO = 40_000
-MAX_TARGET_RATIO = 20_000
+MAX_TARGET_RATIO = 40_000
 MAX_LIQUIDATION_FACTOR = 20_000
 LINSPACE_STEP = 100
+
 
 # The parametrized function to be plotted
 def arbitrageProfit(v, ec: ArbitrageStrategy):
     return [ec.arbitrageProfit(v_) for v_ in v]
 
-v_max = strategy.maxLiquidatedVault()
+# define ax config
+fig, main_ax = plt.subplots()
+main_ax.set_title("Arbitrage profit as a function of liquidated vault collateral")
+main_ax.set_xlabel("Liquidated vault collateral [v]")
+main_ax.set_ylabel("Liquidation profit [p]")
+main_ax.spines["top"].set_visible(False)
+main_ax.spines["right"].set_visible(False)
+main_ax.spines["left"].set_alpha(0.5)
+main_ax.spines["bottom"].set_alpha(0.5)
+main_ax.grid(color="grey", linestyle="-", linewidth=0.25, alpha=0.5)
 
+# calculate vault and profit values
+v_max = strategy.maxLiquidatedVault()
 v = np.linspace(ETH, v_max, LINSPACE_STEP)
 p = np.array(arbitrageProfit(v, strategy))
-
 p_argmax = p.argmax()
 v_opt_real = v[p_argmax]
 p_opt_real = p[p_argmax]
-f_opt_real = strategy._swapDex1(v_opt_real)
-
 v_opt_apx = strategy.optLiquidatedVault()
 p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
-f_opt_apx = strategy._swapDex1(v_opt_apx)
-
-# define ax config
-fig, ax = plt.subplots()
-ax.set_title("Arbitrage profit as a function of liquidated vault collateral")
-ax.set_xlabel('Liquidated vault collateral [v]')
-ax.set_ylabel('Liquidation profit [p]')
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['left'].set_alpha(0.5)
-ax.spines['bottom'].set_alpha(0.5)
-ax.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.5)
 
 # plot curve and two points
-profit_curve, = ax.plot(v, p)
-opt_apx_point = ax.scatter(v_opt_apx, p_opt_apx, color="red")
-opt_real_point = ax.scatter(v_opt_real, p_opt_real, color="green")
+(profit_curve,) = main_ax.plot(v, p)
+opt_apx_point = main_ax.scatter(v_opt_apx, p_opt_apx, color="red")
+opt_real_point = main_ax.scatter(v_opt_real, p_opt_real, color="green")
 
 # adjust the main plot to make room for the sliders
 fig.subplots_adjust(bottom=0.25)
 
-# Make a horizontal slider to control the frequency.
-dex1_vault_reserve_ax = fig.add_axes([0.1, 0.01, 0.8, 0.01])
-dex1_vault_reserve_slider = Slider(
-    ax=dex1_vault_reserve_ax,
-    label='Dex1 f-asset reserves',
-    valmin=ETH,
-    valmax=MAX_RESERVES,
-    valinit=strategy.dex1_vault_reserve
-)
-dex1_price_discrepancy_ax = fig.add_axes([0.1, 0.02, 0.8, 0.01])
-dex1_price_discrepancy_slider = Slider(
-    ax=dex1_price_discrepancy_ax,
-    label='Percentage by which dex1 f-asset price differs from the ftso price',
-    valmin=-10_000,
-    valmax=10_000,
-    valinit=0
-)
-dex1_price_discrepancy_ax = fig.add_axes([0.1, 0.03, 0.8, 0.01])
-dex2_pool_reserve_sider = Slider(
-    ax=dex1_price_discrepancy_ax,
-    label='Dex2 pool reserves',
-    valmin=ETH,
-    valmax=MAX_RESERVES,
-    valinit=strategy.dex2_pool_reserve
-)
-dex2_price_discrepancy_ax = fig.add_axes([0.1, 0.04, 0.8, 0.01])
-dex2_price_discrepancy_slider = Slider(
-    ax=dex2_price_discrepancy_ax,
-    label='Percentage by which dex2 price differs from the ftso price',
-    valmin=-10_000,
-    valmax=-10_000,
-    valinit=0
-)
-collateral_ratio_vault_ax = fig.add_axes([0.1, 0.05, 0.8, 0.01])
-collateral_ratio_vault_slider = Slider(
-    ax=collateral_ratio_vault_ax,
-    label='Vault collateral ratio',
-    valmin=0,
-    valmax=MAX_COLLATERAL_RATIO,
-    valinit=strategy.collateral_ratio_vault_bips
-)
-liquidation_factor_vault_ax = fig.add_axes([0.1, 0.06, 0.8, 0.01])
-liquidation_factor_vault_slider = Slider(
-    ax=liquidation_factor_vault_ax,
-    label='Vault liquidation factor',
-    valmin=0,
-    valmax=MAX_LIQUIDATION_FACTOR,
-    valinit=strategy.liquidation_factor_vault_bips
-)
-liquidation_factor_pool_ax = fig.add_axes([0.1, 0.07, 0.8, 0.01])
-liquidation_factor_pool_slider = Slider(
-    ax=liquidation_factor_pool_ax,
-    label='Pool liquidation factor',
-    valmin=0,
-    valmax=MAX_LIQUIDATION_FACTOR,
-    valinit=strategy.liquidation_factor_pool_bips
-)
-target_ratio_vault_ax = fig.add_axes([0.1, 0.08, 0.8, 0.01])
-target_ratio_vault_slider = Slider(
-    ax=target_ratio_vault_ax,
-    label='Vault target ratio',
-    valmin=0,
-    valmax=MAX_TARGET_RATIO,
-    valinit=strategy.target_ratio_vault_bips
-)
-target_ratio_pool_ax = fig.add_axes([0.1, 0.09, 0.8, 0.01])
-target_ratio_pool_slider = Slider(
-    ax=target_ratio_pool_ax,
-    label='Pool target ratio',
-    valmin=0,
-    valmax=MAX_TARGET_RATIO,
-    valinit=strategy.target_ratio_pool_bips
-)
+slider_configs = [
+    {
+        "label": "Dex1 liquidity",
+        "valmin": ETH,
+        "valmax": MAX_RESERVES,
+        "valinit": strategy.dex1_fAsset_reserve,
+        "color": "green",
+        "on_changed": lambda v: strategy.updateDex1Liquidity(v),
+    },
+    {
+        "label": "Dex2 liquidity",
+        "valmin": ETH,
+        "valmax": MAX_RESERVES,
+        "valinit": strategy.dex2_vault_reserve,
+        "color": "green",
+        "on_changed": lambda v: strategy.updateDex2Liquidity(v),
+    },
+    {
+        "label": "Dex1 price discrepancy",
+        "valmin": -5_000,
+        "valmax": 5_000,
+        "valinit": 0,
+        "color": "orange",
+        "on_changed": lambda v: strategy.applyPriceDiscrepancyDex1(v),
+    },
+    {
+        "label": "Dex2 price discrepancy",
+        "valmin": -5_000,
+        "valmax": 5_000,
+        "valinit": 0,
+        "color": "orange",
+        "on_changed": lambda v: strategy.applyPriceDiscrepancyDex2(v),
+    },
+    {
+        "label": "Vault collateral ratio",
+        "valmin": 0,
+        "valmax": MAX_COLLATERAL_RATIO,
+        "valinit": strategy.collateral_ratio_vault_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "collateral_ratio_vault_bips", v),
+    },
+    {
+        "label": "Pool collateral ratio",
+        "valmin": 0,
+        "valmax": MAX_COLLATERAL_RATIO,
+        "valinit": strategy.collateral_ratio_pool_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "collateral_ratio_pool_bips", v),
+    },
+    {
+        "label": "Vault liquidation factor",
+        "valmin": 0,
+        "valmax": MAX_LIQUIDATION_FACTOR,
+        "valinit": strategy.liquidation_factor_vault_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "liquidation_factor_vault_bips", v),
+    },
+    {
+        "label": "Pool liquidation factor",
+        "valmin": 0,
+        "valmax": MAX_LIQUIDATION_FACTOR,
+        "valinit": strategy.liquidation_factor_pool_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "liquidation_factor_pool_bips", v),
+    },
+    {
+        "label": "Vault target ratio",
+        "valmin": 0,
+        "valmax": MAX_TARGET_RATIO,
+        "valinit": strategy.target_ratio_vault_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "target_ratio_vault_bips", v),
+    },
+    {
+        "label": "Pool target ratio",
+        "valmin": 0,
+        "valmax": MAX_TARGET_RATIO,
+        "valinit": strategy.target_ratio_pool_bips,
+        "color": "green",
+        "on_changed": lambda v: setattr(strategy, "target_ratio_pool_bips", v),
+    }
+]
+
+sliders = []
+bottom_offset = 0.2 / len(slider_configs)
+for i, slider_config in enumerate(reversed(slider_configs)):
+    slider_ax = fig.add_axes([0.1, 0.01 + i * bottom_offset, 0.8, 0.01])
+    sliders.append(
+        Slider(
+            ax=slider_ax,
+            label=slider_config["label"],
+            valmin=slider_config["valmin"],
+            valmax=slider_config["valmax"],
+            valinit=slider_config["valinit"],
+            color=slider_config["color"],
+        )
+    )
+
 
 # The function to be called anytime a slider's value changes
-def update(_):
-    # update data
-    strategy.dex1_vault_reserve = dex1_vault_reserve_slider.val
-    strategy.applyPriceDiscrepancyDex1(dex1_price_discrepancy_slider.val)
-    strategy.dex2_pool_reserve = dex2_pool_reserve_sider.val
-    strategy.applyPriceDiscrepancyDex2(dex2_price_discrepancy_slider.val)
-    strategy.collateral_ratio_vault_bips = collateral_ratio_vault_slider.val
-    # update graph
-    v_max = strategy.maxLiquidatedVault()
-    v = np.linspace(ETH, v_max, LINSPACE_STEP)
-    profit_curve.set_xdata(v)
-    profit_curve.set_ydata(arbitrageProfit(v, strategy))
-    fig.canvas.draw_idle()
+def update_graph(on_changed):
+    def update(val):
+        on_changed(int(val))
+        # recalculate main plot data
+        v_max = strategy.maxLiquidatedVault()
+        v = np.linspace(ETH, v_max, LINSPACE_STEP)
+        p = np.array(arbitrageProfit(v, strategy))
+        # recalculate optimums
+        p_argmax = p.argmax()
+        v_opt_real = v[p_argmax]
+        p_opt_real = p[p_argmax]
+        v_opt_apx = strategy.optLiquidatedVault()
+        p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
+        # reset/redraw everything
+        profit_curve.set_xdata(v)
+        profit_curve.set_ydata(arbitrageProfit(v, strategy))
+        opt_apx_point.set_offsets(np.c_[v_opt_apx, p_opt_apx])
+        opt_real_point.set_offsets(np.c_[v_opt_real, p_opt_real])
+        fig.canvas.draw_idle()
+
+    return update
 
 # register the update function with each slider
-dex1_vault_reserve_slider.on_changed(update)
-dex1_price_discrepancy_slider.on_changed(update)
-dex2_pool_reserve_sider.on_changed(update)
-dex2_price_discrepancy_slider.on_changed(update)
-collateral_ratio_vault_slider.on_changed(update)
+for config, slider in zip(slider_configs, sliders):
+    slider.on_changed(update_graph(config['on_changed']))
 
 plt.show()

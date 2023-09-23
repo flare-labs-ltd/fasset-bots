@@ -32,6 +32,9 @@ export interface EcosystemConfig {
   poolCollateral: BN,
   poolRedeemingFAsset: BN,
   vautRedeemingFAsset: BN,
+  // asset manager settings
+  liquidationFactorBips: BN,
+  liquidationFactorVaultBips: BN,
   // expected implicit data
   expectedVaultCrBips: BN,
   expectedPoolCrBips: BN

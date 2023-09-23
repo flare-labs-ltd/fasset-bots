@@ -8,7 +8,7 @@ export interface AddressesJson {
   fAsset: string // move this to be a key for dexes and agent vaults
   dex: {
     address: string
-    tokenA: string 
+    tokenA: string
     // tokenB = fAsset
   }[]
   agentVault: {
