@@ -1,14 +1,13 @@
 {
   "name": "fasset-liquidator",
   "version": "0.0.0",
-  "description": "Liquidator bot for the f-asset bridge on the Flare network",
+  "description": "Liquidator utilities for the f-asset bridge on the Flare network",
   "scripts": {
     "compile": "rimraf typechain-types typechain-truffle && yarn hardhat compile && yarn typechain-truffle-v5 && yarn typechain-ethers-v6",
     "typechain-ethers-v6": "yarn typechain --target=ethers-v6 --out-dir typechain-ethers \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
     "typechain-truffle-v5": "yarn typechain --target=truffle-v5 --out-dir typechain-truffle \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
     "test": "yarn hardhat test",
-    "fix-blazeswap-hash": "yarn hardhat compile && yarn replace-blazeswap-hash && yarn compile",
-    "replace-blazeswap-hash": "./scripts/replace-blazeswap-hash.sh"
+    "fix-blazeswap-hash": "yarn hardhat compile && ./scripts/replace-blazeswap-hash.sh && yarn compile"
   },
   "license": "MIT",
   "devDependencies": {
@@ -25,7 +24,8 @@
     "@types/dotenv": "^8.2.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.7",
-    "hardhat": "^2.9.3",
+    "hardhat": "^2.17.3",
+    "hardhat-chai-matchers": "^0.0.1",
     "hardhat-gas-reporter": "^1.0.9",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
@@ -38,7 +38,6 @@
     "bn.js": "^5.2.1",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
-    "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#fasset-tests",
-    "flare-smart-contracts": "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
+    "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#fasset-tests"
   }
 }

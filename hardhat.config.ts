@@ -39,9 +39,13 @@ const config: HardhatUserConfig = {
       chainId: 14,
     },
   },
-  typechain: {
+  /* typechain: {
     outDir: "typechain-truffle",
     target: "truffle-v5",
+  }, */
+  typechain: {
+    outDir: "typechain-ethers",
+    target: "ethers-v6",
   },
   paths: {
     sources: "./contracts",

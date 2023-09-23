@@ -3,8 +3,6 @@ import { ethers, network } from 'hardhat'
 
 import { BlazeSwapRouter } from '../typechain-ethers'
 
-console.log(network)
-
 const USDC_MINTER = "0x88278079a62db08fEb125f270102651BbE8F9984"
 const AGENT_ADDRESS = ""
 
@@ -13,7 +11,7 @@ describe("Liquidator", () => {
     // impersonate usdc minter
     await network.provider.request({
       method: "hardhat_impersonateAccount",
-      params: [USDC_MINTER],
+      params: [USDC_MINTER]
     })
     const usdcMinter = await ethers.getSigner(USDC_MINTER)
     // get published contracts
@@ -21,8 +19,10 @@ describe("Liquidator", () => {
     const flashLender = await ethers.getContractAt("FlashLender", addresses.flashLender)
     const wNat = await ethers.getContractAt("ERC20Mock", addresses.WNAT)
     const usdc = await ethers.getContractAt("ERC20Mock", addresses.USDC)
-    const blazeSwap = await ethers.getContractAt("BlazeSwapRouter", addresses.blazeSwapRouter)
+    const blazeSwap = await ethers.getContractAt("BlazeSwapRouter", addresses.blazeSwapRouter) as unknown as BlazeSwapRouter
+    const blazeswap2 = new ethers.Contract(addresses.blazeSwapRouter, blazeSwap.interface, usdcMinter)
     // set up blazeswap
-
+    await blazeSwap.connect().swapExactNATForTokens(1e6)
+    blazeSwap.getAddress()
   })
 })
