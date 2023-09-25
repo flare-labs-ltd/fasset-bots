@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { globSync } from "glob";
 import { basename, dirname, extname, relative } from "path";
-import { ContractFactory, ContractJson, ContractSettings } from "./mini-truffle";
+import { MiniTruffleContract, ContractJson, ContractSettings } from "./mini-truffle";
 
 interface ArtifactData {
     name: string;
@@ -32,7 +32,7 @@ class ArtifactsImpl implements Truffle.Artifacts {
 
     loadContract(path: string): Truffle.Contract<any> {
         const contractJson = JSON.parse(readFileSync(path).toString()) as ContractJson;
-        const contract = new ContractFactory(this.settings, contractJson.contractName, contractJson.abi, contractJson);
+        const contract = new MiniTruffleContract(this.settings, contractJson.contractName, contractJson.abi, contractJson);
         return contract;
     }
 

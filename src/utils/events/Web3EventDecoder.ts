@@ -14,7 +14,8 @@ export class Web3EventDecoder {
     addEvents(abi: AbiItem[], filter?: Array<string | undefined>) {
         for (const item of abi) {
             if (item.type === "event" && (filter == null || filter.includes(item.name))) {
-                this.eventTypes.set((item as any).signature, item);
+                const signature = coder.encodeEventSignature(item);
+                this.eventTypes.set(signature, item);
             }
         }
     }
@@ -28,7 +29,7 @@ export class Web3EventDecoder {
         // based on web3 docs, first topic has to be removed for non-anonymous events
         const topics = evtType.anonymous ? event.topics : event.topics.slice(1);
         const abiInputs = evtType.inputs ?? [];
-        const decodedArgs: any = coder.decodeLog(abiInputs, event.data, topics);
+        const decodedArgs: Record<string, any> = coder.decodeLog(abiInputs, event.data, topics);
         // convert parameters based on type (BN for now)
         abiInputs.forEach((arg, i) => {
             if (/^u?int\d*$/.test(arg.type)) {

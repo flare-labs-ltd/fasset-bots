@@ -7,7 +7,10 @@ import { Web3EventDecoder } from "./events/Web3EventDecoder";
 import { fail, getOrCreate, toBN } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
-type TransactionWaitFor = 'receipt' | 'nonceIncrease' | { confirmations: number };
+type TransactionWaitFor =
+    | { what: 'receipt', timeoutMS?: number }
+    | { what: 'nonceIncrease', pollMS: number, timeoutMS?: number }
+    | { what: 'confirmations', confirmations: number, timeoutMS?: number };
 
 export interface ContractSettings {
     web3: Web3;
@@ -35,9 +38,9 @@ export interface ContractJsonLink {
     };
 }
 
-class ContractInstance implements Truffle.ContractInstance {
+export class MiniTruffleContractInstance implements Truffle.ContractInstance {
     constructor(
-        public _contractFactory: ContractFactory,
+        public _contractFactory: MiniTruffleContract,
         public _settings: ContractSettings,
         public address: string,
         public abi: AbiItem[],
@@ -61,78 +64,78 @@ class ContractInstance implements Truffle.ContractInstance {
     }
 }
 
-export class ContractFactory implements Truffle.Contract<any> {
+export class MiniTruffleContract implements Truffle.Contract<any> {
     constructor(
-        public settings: ContractSettings,
+        public _settings: ContractSettings,
         public contractName: string,
         public abi: AbiItem[],
-        public contractJson?: ContractJson,  // only needed for new
+        public _contractJson?: ContractJson,  // only needed for new
     ) {
+        // console.log("Creating contract", contractName);
     }
 
-    instanceConstructor = createContractInstanceConstructor(this.settings, this.contractName, this.abi);
+    address: string = undefined as any;  // typing in typechain is wrong - should be optional
 
-    constructorAbi?: AbiItem = this.abi.find(it => it.type === 'constructor');
+    _instanceConstructor = createContractInstanceConstructor(this.contractName, this.abi);
 
-    eventDecoder = new Web3EventDecoder(this.abi);
-
-    address = undefined as any;  // typing in typechain is wrong - should be optional
+    _eventDecoder = new Web3EventDecoder(this.abi);
 
     async deployed(): Promise<any> {
         if (!this.address) {
             throw new Error("not deployed from this contract");
         }
-        return new this.instanceConstructor(this, this.settings, this.address);
+        return new this._instanceConstructor(this, this._settings, this.address);
     }
 
     async at(address: string): Promise<any> {
-        return new this.instanceConstructor(this, this.settings, address);
+        return new this._instanceConstructor(this, this._settings, address);
     }
 
     async "new"(...args: any[]): Promise<any> {
-        if (this.constructorAbi == null) {
-            throw new Error("The contract is abstract; cannot deploy");
-        }
-        if (this.contractJson == null) {
+        if (this._contractJson == null) {
             throw new Error("Full contract JSON needed for deploy");
         }
-        const web3Contract = new this.settings.web3.eth.Contract(this.abi);
-        const [methodArgs, config] = splitMethodArgs(this.constructorAbi, args);
-        const data = web3Contract.deploy({ data: this.contractJson.bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
-        const result = await executeMethodSend(this.settings, data, config);
+        if ((this._contractJson.bytecode?.length ?? 0) < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+            throw new Error("The contract is abstract; cannot deploy");
+        }
+        const web3Contract = new this._settings.web3.eth.Contract(this.abi);
+        const constructorAbi = this.abi.find(it => it.type === 'constructor');
+        const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
+        const data = web3Contract.deploy({ data: this._contractJson.bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
+        const result = await executeMethodSend(this._settings, data, config);
         if (result.contractAddress == null) {
             throw new Error("Deploy failed");
         }
-        const instance = new this.instanceConstructor(this, this.settings, result.contractAddress);
+        const instance = new this._instanceConstructor(this, this._settings, result.contractAddress);
         instance.transactionHash = result.transactionHash;
         this.address = result.contractAddress;
         return instance;
     }
 
     link(...args: any) {
-        if (!(args.length === 1 && args[0] instanceof ContractInstance)) {
+        if (!(args.length === 1 && args[0] instanceof MiniTruffleContractInstance)) {
             throw new Error("Only supported `link(instance)`");
         }
         const instance = args[0];
-        if (this.contractJson == null || instance._contractFactory.contractJson == null) {
+        if (this._contractJson == null || instance._contractFactory._contractJson == null) {
             throw new Error("Full contract JSON needed for link");
         }
-        const { contractName, sourceName } = instance._contractFactory.contractJson;
-        const linkRefs = this.contractJson.linkReferences[sourceName][contractName] ?? [];
+        const { contractName, sourceName } = instance._contractFactory._contractJson;
+        const linkRefs = this._contractJson.linkReferences[sourceName][contractName] ?? [];
         for (const { start, length } of linkRefs) {
-            this.contractJson.bytecode = this.contractJson.bytecode.slice(0, 2 * start + 2) +
-                instance.address.slice(2).toLowerCase() + this.contractJson.bytecode.slice(2 * (start + length) + 2);
+            this._contractJson.bytecode = this._contractJson.bytecode.slice(0, 2 * start + 2) +
+                instance.address.slice(2).toLowerCase() + this._contractJson.bytecode.slice(2 * (start + length) + 2);
         }
     }
 }
 
 interface ContractInstanceConstructor {
-    new(contractFactory: ContractFactory, settings: ContractSettings, address: string): ContractInstance;
+    new(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
 }
 
-function createContractInstanceConstructor(settings: ContractSettings, contractName: string, abi: AbiItem[]): ContractInstanceConstructor {
-    const contractConstructor = class extends ContractInstance {
-        constructor(contractFactory: ContractFactory, settings: ContractSettings, address: string) {
+function createContractInstanceConstructor(contractName: string, abi: AbiItem[]): ContractInstanceConstructor {
+    const contractConstructor = class extends MiniTruffleContractInstance {
+        constructor(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string) {
             super(contractFactory, settings, address, abi);
         }
     }
@@ -141,7 +144,7 @@ function createContractInstanceConstructor(settings: ContractSettings, contractN
     // prototype.methods = {};
     for (const method of createNamedMethods(abi).values()) {
         for (const [namesig, item] of method.overloads) {
-            const calls = createMethodCalls(settings, item);
+            const calls = createMethodCalls(item);
             // prototype.methods[namesig] = calls;
             if (prototype[namesig] === undefined) { // do not overwrite predefined methods
                 prototype[namesig] = calls;
@@ -157,31 +160,37 @@ function createContractInstanceConstructor(settings: ContractSettings, contractN
     return contractConstructor;
 }
 
-function createMethodCalls(settings: ContractSettings, method: AbiItem) {
-    const sendFn = async function (this: ContractInstance, ...args: any[]) {
+function createMethodCalls(method: AbiItem) {
+    const callFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
+        // console.log(`call ${method.name}`);
         const [methodArgs, config] = splitMethodArgs(method, args);
         const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        const receipt = await executeMethodSend(settings, encodedArgs, { to: this.address, ...config });
-        const logs = this._contractFactory.eventDecoder.decodeEvents(receipt.logs);
-        return { tx: receipt.transactionHash, receipt, logs };
-    }
-    const callFn = async function (this: ContractInstance, ...args: any[]) {
-        const [methodArgs, config] = splitMethodArgs(method, args);
-        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        const encResult = await executeMethodCall(settings, encodedArgs, { to: this.address, ...config });
+        const encResult = await executeMethodCall(this._settings, encodedArgs, { to: this.address, ...config });
         const outputs = method.outputs ?? [];
         return convertResults(outputs, coder.decodeParameters(outputs, encResult));
     }
-    const estimateGasFn = async function (this: ContractInstance, ...args: any[]) {
+    if (method.stateMutability === 'pure' || method.stateMutability === 'view') {
+        return callFn;
+    }
+    // only for mutable functions
+    const sendFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
+        // console.log(`send ${method.name}`);
         const [methodArgs, config] = splitMethodArgs(method, args);
         const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        return executeMethodEstimateGas(settings, encodedArgs, { to: this.address, ...config });
+        const receipt = await executeMethodSend(this._settings, encodedArgs, { to: this.address, ...config });
+        const logs = this._contractFactory._eventDecoder.decodeEvents(receipt.logs);
+        return { tx: receipt.transactionHash, receipt, logs };
     }
-    const mainFn: any = method.constant ? callFn : sendFn;
-    mainFn.call = callFn;
-    mainFn.sendTransaction = sendFn;
-    mainFn.estimateGas = estimateGasFn;
-    return mainFn;
+    const estimateGasFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
+        // console.log(`estimateGas ${method.name}`);
+        const [methodArgs, config] = splitMethodArgs(method, args);
+        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
+        return executeMethodEstimateGas(this._settings, encodedArgs, { to: this.address, ...config });
+    }
+    sendFn.call = callFn;
+    sendFn.sendTransaction = sendFn;
+    sendFn.estimateGas = estimateGasFn;
+    return sendFn;
 }
 
 interface AbiNamedMethod {
@@ -223,8 +232,8 @@ function convertResults(abi: AbiOutput[], output: any) {
     }
 }
 
-function splitMethodArgs(method: AbiItem, args: any[]): [methodArgs: any[], config: TransactionConfig] {
-    const paramsLen = method.inputs?.length ?? 0;
+function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs: any[], config: TransactionConfig] {
+    const paramsLen = method?.inputs?.length ?? 0;
     if (args.length < paramsLen) throw new Error("Not enough arguments");
     if (args.length > paramsLen + 1) throw new Error("Too many arguments");
     return args.length > paramsLen ? [args.slice(0, paramsLen), args[paramsLen]] : [args, {}];
@@ -242,7 +251,7 @@ async function executeMethodSend(settings: ContractSettings, encodedCall: string
         await web3.eth.call(config);
     }
     const from = typeof config.from === 'string' ? config.from : fail("'from' field is mandatory");
-    const nonce = waitFor === 'nonceIncrease' ? await web3.eth.getTransactionCount(from, 'latest') : 0;
+    const nonce = waitFor.what === 'nonceIncrease' ? await web3.eth.getTransactionCount(from, 'latest') : 0;
     const promiEvent = web3.eth.sendTransaction(config);
     return await waitForFinalization(web3, waitFor, nonce, from, promiEvent);
 }
@@ -262,38 +271,64 @@ async function executeMethodEstimateGas(settings: ContractSettings, encodedCall:
 function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<any>): Promise<TransactionReceipt> {
     return new Promise((resolve, reject) => {
         let finished = false;
-        let timer: NodeJS.Timer | number | null = null;
+        let timeout: NodeJS.Timer | number | null = null;
+        let noncePollTimer: NodeJS.Timer | number | null = null;
         let receipt: TransactionReceipt | null = null;
-        function cleanup() {
-            if (timer != null) {
-                clearInterval(timer);
+        let numberOfConfirmations = -1;
+        const cleanupAndExit = (result: TransactionReceipt | null, error: any) => {
+            if (finished) return;
+            finished = true;
+            if (timeout != null) {
+                clearTimeout(timeout);
+            }
+            if (noncePollTimer != null) {
+                clearInterval(noncePollTimer);
+            }
+            if (result) {
+                resolve(result);
+            } else {
+                reject(error ?? new Error("Error when waiting for finalization"));
             }
         }
-        function checkFinished(finishCondition: boolean) {
-            finished ||= finishCondition;
-            if (finished && receipt != null) {
-                cleanup();
-                resolve(receipt);
-            }
-        }
-        void promiEvent.on("error", (error) => {
-            cleanup();
-            reject(error);
-        });
-        void promiEvent.on("receipt", (rec) => {
-            receipt = rec;
-            checkFinished(waitFor === 'receipt');
-        });
-        if (waitFor === 'nonceIncrease') {
-            timer = setInterval(preventReentrancy(async () => {
+        const checkFinished = preventReentrancy(async () => {
+            let success = false;
+            if (waitFor.what === 'receipt') {
+                success = receipt != null;
+            } else if (waitFor.what === 'confirmations') {
+                success = numberOfConfirmations > waitFor.confirmations;
+            } else if (waitFor.what === 'nonceIncrease') {
                 const nonce = await web3.eth.getTransactionCount(from, 'latest');
-                checkFinished(nonce > initialNonce);
-            }), 1000);
-        } else if (typeof waitFor === 'object') {
-            const confirmations = waitFor.confirmations;
-            void promiEvent.on("confirmation", (confNumber) => {
-                checkFinished(confNumber >= confirmations);
-            });
+                success = nonce > initialNonce;
+            }
+            if (success && receipt != null) {
+                cleanupAndExit(receipt, null);
+            }
+        });
+        // chack for timeout
+        if (waitFor.timeoutMS) {
+            timeout = setTimeout(() => {
+                cleanupAndExit(null, new Error("Timeout waiting for finalization"));
+            }, waitFor.timeoutMS);
+        }
+        // check for errors
+        promiEvent.catch((error) => {
+            cleanupAndExit(null, error);
+        });
+        // set receipt when available
+        promiEvent.on("receipt", (rec) => {
+            receipt = rec;
+            checkFinished().catch(ignore);
+        }).catch(ignore);
+        //
+        if (waitFor.what === 'nonceIncrease') {
+            noncePollTimer = setInterval(() => {
+                checkFinished().catch(ignore);
+            }, waitFor.pollMS);
+        } else if (waitFor.what === 'confirmations') {
+            promiEvent.on("confirmation", (confNumber) => {
+                numberOfConfirmations = confNumber;
+                checkFinished().catch(ignore);
+            }).catch(ignore);
         }
     });
 }
@@ -309,4 +344,9 @@ function preventReentrancy(method: () => Promise<void>) {
             inMethod = false;
         }
     }
+}
+
+function ignore(error: unknown) {
+    // do nothing - the method can be used in promise `.catch()` to prevent
+    // uncought error problems (when errors are properly caught elsewhere)
 }

@@ -16,7 +16,8 @@ export const contractSettings: ContractSettings = {
         hardfork: "london",
     },
     gasMultiplier: 2,
-    waitFor: 'nonceIncrease'
+    waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 }
+    // waitFor: { what: 'receipt', timeoutMS: 10_000 }
 };
 
 export const artifacts: Truffle.Artifacts = createArtifacts(contractSettings);
