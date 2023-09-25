@@ -349,7 +349,7 @@ describe("Tracked state tests", async () => {
         await time.increaseTo(validAt2);
         await agentB.executeAgentSettingUpdate("poolExitCollateralRatioBIPS");
         // minter performs minting
-        const lots = 20;
+        const lots = 33;
         await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
         // increase fAsset allowance
         const fBalance = await context.fAsset.balanceOf(minter.address);

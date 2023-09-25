@@ -159,7 +159,7 @@ describe("Actor tests - coston", async () => {
         expect(actorBaseRunner2.actor.address).to.eq(liquidatorAddress);
         expect(actorBaseRunner2.actor instanceof Liquidator).to.be.true;
 
-        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, actorConfig.fAssets[0]);
+        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, actorConfig.fAssets[1]);
         expect(actorBaseRunner3.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
