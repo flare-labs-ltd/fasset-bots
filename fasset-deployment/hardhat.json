@@ -1,0 +1,127 @@
+[
+  {
+    "name": "GovernanceSettings",
+    "contractName": "GovernanceSettings.sol",
+    "address": "0x1000000000000000000000000000000000000007"
+  },
+  {
+    "name": "AddressUpdater",
+    "contractName": "AddressUpdater.sol",
+    "address": "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf"
+  },
+  {
+    "name": "StateConnector",
+    "contractName": "StateConnectorMock.sol",
+    "address": "0xf784709d2317D872237C4bC22f867d1BAe2913AB"
+  },
+  {
+    "name": "WNat",
+    "contractName": "WNat.sol",
+    "address": "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8"
+  },
+  {
+    "name": "FtsoRegistry",
+    "contractName": "FtsoRegistryMock.sol",
+    "address": "0x8B5B7a6055E54a36fF574bbE40cf2eA68d5554b3"
+  },
+  {
+    "name": "FtsoManager",
+    "contractName": "FtsoManagerMock.sol",
+    "address": "0x20Ce94F404343aD2752A2D01b43fa407db9E0D00"
+  },
+  {
+    "name": "FtsoNat",
+    "contractName": "Ftso.sol",
+    "address": "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5"
+  },
+  {
+    "name": "FtsoAlgo",
+    "contractName": "Ftso.sol",
+    "address": "0x5bcb88A0d20426e451332eE6C4324b0e663c50E0"
+  },
+  {
+    "name": "FtsoBtc",
+    "contractName": "Ftso.sol",
+    "address": "0x58F132FBB86E21545A4Bace3C19f1C05d86d7A22"
+  },
+  {
+    "name": "FtsoDoge",
+    "contractName": "Ftso.sol",
+    "address": "0x18b9306737eaf6E8FC8e737F488a1AE077b18053"
+  },
+  {
+    "name": "FtsoLtc",
+    "contractName": "Ftso.sol",
+    "address": "0x12080583C4F0211eC382d33a273E6D0f9fAb0F75"
+  },
+  {
+    "name": "FtsoXrp",
+    "contractName": "Ftso.sol",
+    "address": "0x0C6c3C47A1f650809B0D1048FDf9603e09473D7E"
+  },
+  {
+    "name": "AttestationClient",
+    "contractName": "AttestationClientSC.sol",
+    "address": "0xBEF0d4b9c089a5883741fC14cbA352055f35DDA2"
+  },
+  {
+    "name": "AgentVaultFactory",
+    "contractName": "AgentVaultFactory.sol",
+    "address": "0xDf73fC454FA018051D4a1509e63D11530A59DE10"
+  },
+  {
+    "name": "AssetManagerController",
+    "contractName": "AssetManagerController.sol",
+    "address": "0x2cfcA5785261fbC88EFFDd46fCFc04c22525F9e4"
+  },
+  {
+    "name": "AssetManager_FALGO",
+    "contractName": "AssetManager.sol",
+    "address": "0xA40A2298B02a8597321580fdAD8518A6d6601b6C"
+  },
+  {
+    "name": "FALGO",
+    "contractName": "FAsset.sol",
+    "address": "0x053568617FFccEe2F75073975CC0e1549Ff9db71"
+  },
+  {
+    "name": "AssetManager_FBTC",
+    "contractName": "AssetManager.sol",
+    "address": "0xb81145Beaa1D00c6A99f8C342c6ce354019Ff737"
+  },
+  {
+    "name": "FBTC",
+    "contractName": "FAsset.sol",
+    "address": "0x78dC73Dab92F57DA506F3538A68A2f163dB8c3A0"
+  },
+  {
+    "name": "AssetManager_FDOGE",
+    "contractName": "AssetManager.sol",
+    "address": "0x2F0fA68F3fD995522E5aB49131c36fc52B6353B2"
+  },
+  {
+    "name": "FDOGE",
+    "contractName": "FAsset.sol",
+    "address": "0xc85759553AEE2D4125aFa8a9421AAf5397b96E6b"
+  },
+  {
+    "name": "AssetManager_FLTC",
+    "contractName": "AssetManager.sol",
+    "address": "0xC26eFfa98B8A2632141562Ae7E34953Cfe5B4888"
+  },
+  {
+    "name": "FLTC",
+    "contractName": "FAsset.sol",
+    "address": "0x49eA5c5714B5F0504842d42DEDCe909ea924565E"
+  },
+  {
+    "name": "AssetManager_FXRP",
+    "contractName": "AssetManager.sol",
+    "address": "0xE96680e011FE0Bb5c9646f5463Ba3587962Cd952"
+  },
+  {
+    "name": "FXRP",
+    "contractName": "FAsset.sol",
+    "address": "0xd0Ff91311967d8279fDcD0d3fA8C49e07B5F2380"
+  }
+]

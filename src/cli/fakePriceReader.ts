@@ -9,7 +9,7 @@ import { FakePriceReaderInstance } from "../../typechain-truffle";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
-const contracts: ChainContracts = loadContracts("../fasset/deployment/deploys/coston.json");
+const contracts: ChainContracts = loadContracts("./fasset-deployment/coston.json");
 const deployerAddress = requireEnv("DEPLOY_ADDRESS");
 
 const program = new Command();
