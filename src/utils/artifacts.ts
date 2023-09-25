@@ -1,9 +1,7 @@
 import { readFileSync } from "fs";
 import { globSync } from "glob";
 import { basename, dirname, extname, relative } from "path";
-import Web3 from "web3";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const createContract = require("@truffle/contract");
+import { ContractFactory, ContractJson, ContractSettings } from "./mini-truffle";
 
 interface ArtifactData {
     name: string;
@@ -11,18 +9,14 @@ interface ArtifactData {
     contract?: Truffle.Contract<any>;
 }
 
-export interface ArtifactsWithUpdate extends Truffle.Artifacts {
-    updateWeb3(web3: Web3): void;
+export function createArtifacts(settings: ContractSettings) {
+    return new ArtifactsImpl(settings);
 }
 
-export function createArtifacts(web3: Web3): ArtifactsWithUpdate {
-    return new ArtifactsImpl(web3);
-}
-
-class ArtifactsImpl implements ArtifactsWithUpdate {
+class ArtifactsImpl implements Truffle.Artifacts {
     private artifactMap?: Map<string, ArtifactData>;
 
-    constructor(private web3: Web3) {}
+    constructor(private settings: ContractSettings) {}
 
     loadArtifactMap(): void {
         this.artifactMap = new Map();
@@ -37,19 +31,8 @@ class ArtifactsImpl implements ArtifactsWithUpdate {
     }
 
     loadContract(path: string): Truffle.Contract<any> {
-        const abi = JSON.parse(readFileSync(path).toString());
-        const contract = createContract(abi);
-        contract._originalJson = abi;
-        this.updateContractWeb3(contract);
-        // hack to workaround web3 memory leak https://github.com/web3/web3.js/issues/3042 - only create single instance per address
-        contract._instanceMap = {};
-        const originalAt = contract.at;
-        contract.at = async (address: string) => {
-            if (!contract._instanceMap[address]) {
-                contract._instanceMap[address] = await originalAt.call(contract, address);
-            }
-            return contract._instanceMap[address];
-        };
+        const contractJson = JSON.parse(readFileSync(path).toString()) as ContractJson;
+        const contract = new ContractFactory(this.settings, contractJson.contractName, contractJson.abi, contractJson);
         return contract;
     }
 
@@ -67,27 +50,5 @@ class ArtifactsImpl implements ArtifactsWithUpdate {
             artifactData.contract = this.loadContract(artifactData.path);
         }
         return artifactData.contract;
-    }
-
-    updateWeb3(web3: Web3): void {
-        this.web3 = web3;
-        /* istanbul ignore else */
-        if (this.artifactMap) {
-            for (const artifact of this.artifactMap.values()) {
-                if (artifact.contract) {
-                    this.updateContractWeb3(artifact.contract);
-                }
-            }
-        }
-    }
-
-    private updateContractWeb3(contract: any): void {
-        if (this.web3.currentProvider != null) {
-            contract.setProvider(this.web3.currentProvider);
-            contract.setWallet(this.web3.eth.accounts.wallet);
-        }
-        if (this.web3.eth.defaultAccount != null) {
-            contract.defaults({ from: this.web3.eth.defaultAccount });
-        }
     }
 }

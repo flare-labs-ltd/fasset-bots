@@ -3,7 +3,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../../../test-utils
 import { disableMccTraceManager } from "../../../test-utils/helpers";
 import { testChainInfo } from "../../../../test/test-utils/TestChainInfo";
 import { web3 } from "../../../../src/utils/web3";
-import { Web3EventDecoder } from "../../../../src/utils/events/Web3EventDecoder";
+import { Web3ContractEventDecoder } from "../../../../src/utils/events/Web3ContractEventDecoder";
 
 describe("Web3 event decoder unit tests", async () => {
     let context: TestAssetBotContext;
@@ -16,7 +16,7 @@ describe("Web3 event decoder unit tests", async () => {
     });
 
     it("Should filter out one event", async () => {
-        const eventDecoder = new Web3EventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager }, ["RewardEpochFinalized"]);
+        const eventDecoder = new Web3ContractEventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager }, { filter: ["RewardEpochFinalized"] });
         expect(eventDecoder.eventTypes.size).to.eq(1);
     });
 
@@ -33,7 +33,7 @@ describe("Web3 event decoder unit tests", async () => {
             topics: ["0x000000000000000000000000ea6abef9ea06253364bb6cf53065dafd2ca122fc"],
             id: "log_f104578b",
         };
-        const eventDecoder = new Web3EventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager });
+        const eventDecoder = new Web3ContractEventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager });
         // set event as anonymous and do some id changes to satisy requirements
         const evtType = eventDecoder.eventTypes.get("0x48f66332f8d4c9cd3dc39336964f371b632b938e98a5b5c921caa4084cb51064");
         evtType!.anonymous = true;

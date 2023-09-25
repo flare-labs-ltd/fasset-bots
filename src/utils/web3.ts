@@ -1,6 +1,7 @@
 import Web3 from "web3";
 import { provider } from "web3-core";
-import { ArtifactsWithUpdate, createArtifacts } from "./artifacts";
+import { createArtifacts } from "./artifacts";
+import { ContractSettings } from "./mini-truffle";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
@@ -8,9 +9,17 @@ const predefinedProviders: Record<string, () => any> = {
 
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();
-export const artifacts: ArtifactsWithUpdate = createArtifacts(web3);
 
-let currentProvider: provider;
+export const contractSettings: ContractSettings = {
+    web3: web3,
+    defaultOptions: {
+        hardfork: "london",
+    },
+    gasMultiplier: 2,
+    waitFor: 'nonceIncrease'
+};
+
+export const artifacts: Truffle.Artifacts = createArtifacts(contractSettings);
 
 /**
  * Initialize web3 and truffle contracts.
@@ -26,10 +35,10 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     /* istanbul ignore next */
     const accounts = walletKeys === "network" ? await web3.eth.getAccounts() : createWalletAccounts(walletKeys);
     web3.eth.defaultAccount = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
-    /* istanbul ignore next */
-    artifacts.updateWeb3(web3);
     return accounts;
 }
+
+let currentProvider: provider;
 
 export function authenticatedHttpProvider(url: string, apiToken?: string): provider {
     /* istanbul ignore else */

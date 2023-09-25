@@ -1585,28 +1585,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/abi-utils@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@truffle/abi-utils@npm:1.0.0"
-  dependencies:
-    change-case: 3.0.2
-    fast-check: 3.1.1
-    web3-utils: 1.10.0
-  checksum: 8d17ea7e23d8b56e8af9e31b3f5593908d115414c3ada5dad241a883ad01b6aea212368b21fe2f10b229ecd381321d3fbea9950a45748b488f39da6e1f9b3bf2
-  languageName: node
-  linkType: hard
-
 "@truffle/blockchain-utils@npm:^0.1.4":
   version: 0.1.4
   resolution: "@truffle/blockchain-utils@npm:0.1.4"
   checksum: b75d3cb4fb9bb4356755cbd50a29b8cfdf0ad7a5d05b8827bbda9de35fd714df0acaa1efccc1a4fcae12297c8039dd3c12de746d35ccfb64cf0bed02d4faf656
-  languageName: node
-  linkType: hard
-
-"@truffle/blockchain-utils@npm:^0.1.7":
-  version: 0.1.7
-  resolution: "@truffle/blockchain-utils@npm:0.1.7"
-  checksum: 4a2bfd5d730b8eaff8c4ad0ba4257d03d12bcd540b1737ee38bb2172193f633268ea31421fb58910150d2ea921a3d6b41d4b9eaf2d6c8e1ad90f9a1eb63247a8
   languageName: node
   linkType: hard
 
@@ -1628,24 +1610,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/codec@npm:^0.15.1":
-  version: 0.15.1
-  resolution: "@truffle/codec@npm:0.15.1"
-  dependencies:
-    "@truffle/abi-utils": ^1.0.0
-    "@truffle/compile-common": ^0.9.5
-    big.js: ^6.0.3
-    bn.js: ^5.1.3
-    cbor: ^5.2.0
-    debug: ^4.3.1
-    lodash: ^4.17.21
-    semver: 7.3.7
-    utf8: ^3.0.0
-    web3-utils: 1.10.0
-  checksum: 88986e17bc8bb52a7e7baf9d820d2e5bdc6cf9cd8c68374c25c6550067b016c1affd88789d3974ee19f36fa951f7920258203777789b0a1833eb7b80af237399
-  languageName: node
-  linkType: hard
-
 "@truffle/compile-common@npm:^0.8.1":
   version: 0.8.1
   resolution: "@truffle/compile-common@npm:0.8.1"
@@ -1656,16 +1620,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/compile-common@npm:^0.9.5":
-  version: 0.9.5
-  resolution: "@truffle/compile-common@npm:0.9.5"
-  dependencies:
-    "@truffle/error": ^0.2.0
-    colors: 1.4.0
-  checksum: ee756bf414d897555ecc7f46b6e4cc221692286b34918af2bfc20fd8493ce8cb80d552802d98cccd6cad961d1ea460459237b942c934ae1427eb8987aa8ef884
-  languageName: node
-  linkType: hard
-
 "@truffle/contract-schema@npm:^3.4.10":
   version: 3.4.10
   resolution: "@truffle/contract-schema@npm:3.4.10"
@@ -1673,16 +1627,6 @@ __metadata:
     ajv: ^6.10.0
     debug: ^4.3.1
   checksum: 52f6263e9ea66b53993b4c22e8d1b41c6cd767a4c685ab8aa3dd4ed85f6bd6fe8921c8b2f0fd2da4074b6929cf3bbf41aa37ca5ce9c3cdd79fa721936cb33940
-  languageName: node
-  linkType: hard
-
-"@truffle/contract-schema@npm:^3.4.14":
-  version: 3.4.14
-  resolution: "@truffle/contract-schema@npm:3.4.14"
-  dependencies:
-    ajv: ^6.10.0
-    debug: ^4.3.1
-  checksum: 4c65221ed293b443ac566f1c8f314f8ccb86da90dff925464239603ea3ffa5099d29646b96e835e8bb5bb4102d7338cbfff8dee1e02720d812d586ecd5c05593
   languageName: node
   linkType: hard
 
@@ -1708,28 +1652,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/contract@npm:^4.6.22":
-  version: 4.6.22
-  resolution: "@truffle/contract@npm:4.6.22"
-  dependencies:
-    "@ensdomains/ensjs": ^2.1.0
-    "@truffle/blockchain-utils": ^0.1.7
-    "@truffle/contract-schema": ^3.4.14
-    "@truffle/debug-utils": ^6.0.50
-    "@truffle/error": ^0.2.0
-    "@truffle/interface-adapter": ^0.5.33
-    bignumber.js: ^7.2.1
-    debug: ^4.3.1
-    ethers: ^4.0.32
-    web3: 1.10.0
-    web3-core-helpers: 1.10.0
-    web3-core-promievent: 1.10.0
-    web3-eth-abi: 1.10.0
-    web3-utils: 1.10.0
-  checksum: ceb09c7019d046a556b24d520b6937dd86ee7d81d22fdc02f2ac48701ebf3ea7f60bd9a713e6de566ad141955a849711e0c00a67e0cc07e20bfd87088c8945f9
-  languageName: node
-  linkType: hard
-
 "@truffle/debug-utils@npm:^6.0.35":
   version: 6.0.35
   resolution: "@truffle/debug-utils@npm:6.0.35"
@@ -1744,31 +1666,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/debug-utils@npm:^6.0.50":
-  version: 6.0.50
-  resolution: "@truffle/debug-utils@npm:6.0.50"
-  dependencies:
-    "@truffle/codec": ^0.15.1
-    "@trufflesuite/chromafi": ^3.0.0
-    bn.js: ^5.1.3
-    chalk: ^2.4.2
-    debug: ^4.3.1
-    highlightjs-solidity: ^2.0.6
-  checksum: c71f86050d1ad4b6e0eb95633407896fea04950be306052acdb5c94946a5870cfcaaf55c422a26dabf0f95345373cea153edb5fdd054fc7c25a352b83946e60d
-  languageName: node
-  linkType: hard
-
 "@truffle/error@npm:^0.1.1":
   version: 0.1.1
   resolution: "@truffle/error@npm:0.1.1"
   checksum: 32c6faca2d221560456e54709b344533bacdbd575506c9feaeffe27ffb8720839a36fd2c0318da2be5bb824c7aa253d2697e4f5ff5d5b0674e937fdd6f024e07
-  languageName: node
-  linkType: hard
-
-"@truffle/error@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@truffle/error@npm:0.2.0"
-  checksum: 7b10ce336a07e8f633108d6e6363d99e53f2bbf28c09f496f1e413c3339e7d8968fda5a781a90bde1952a599ec05871a56f7e36329f66f9efafdb9f35770d8be
   languageName: node
   linkType: hard
 
@@ -1780,17 +1681,6 @@ __metadata:
     ethers: ^4.0.32
     web3: 1.7.4
   checksum: 27eebb43f549bfc6637a48b8aaa1a0db7a8227a936ab41e4806c16d4c46a3c37341ea4b5de244fdb6a133c92ed61489799357beb08fc151d73c1a2b0a230c403
-  languageName: node
-  linkType: hard
-
-"@truffle/interface-adapter@npm:^0.5.33":
-  version: 0.5.33
-  resolution: "@truffle/interface-adapter@npm:0.5.33"
-  dependencies:
-    bn.js: ^5.1.3
-    ethers: ^4.0.32
-    web3: 1.10.0
-  checksum: 0bc53b590221a0c72f581854827cb63f46361ea0503bacbc6eac06af17f015a06bc56b53503007fa5bad634574972ec845da7b93f089d3c35e52cdc54692aa17
   languageName: node
   linkType: hard
 
@@ -5070,7 +4960,6 @@ __metadata:
     "@mikro-orm/sqlite": ^5.7.14
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": ^0.5.16
-    "@truffle/contract": ^4.6.22
     "@types/bn.js": ^5.1.1
     "@types/chai": 4.3.4
     "@types/chai-as-promised": ^7.1.5
@@ -5102,6 +4991,10 @@ __metadata:
     typescript: 4.7.3
     typescript-json-schema: 0.61.0
     web3: 1.10.0
+    web3-core: 1.10.0
+    web3-eth: 1.10.0
+    web3-eth-abi: 1.10.0
+    web3-utils: 1.10.0
     winston: ^3.10.0
     winston-daily-rotate-file: ^4.7.1
     yarn: ^1.22.19
@@ -6133,13 +6026,6 @@ __metadata:
   version: 2.0.5
   resolution: "highlightjs-solidity@npm:2.0.5"
   checksum: 49d94ffa5147a50c7e466ab30ff12021bf27382593ee7c02b278db6b66ea2b431c75512962743388dd2e779fd89ceb20c8939f9f9003b4f43f1fbdfb0c303e12
-  languageName: node
-  linkType: hard
-
-"highlightjs-solidity@npm:^2.0.6":
-  version: 2.0.6
-  resolution: "highlightjs-solidity@npm:2.0.6"
-  checksum: 741c5d8cac2ae9a8448dc114771fdd10c6cecef283b62019c773d44a6297b8ca3cf8a7dd0884488f346614d3f875b44d0a43e1803abd75952d8526733f5ed88e
   languageName: node
   linkType: hard
 

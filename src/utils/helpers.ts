@@ -144,12 +144,12 @@ export function checkedCast<S, T extends S>(obj: S, cls: new (...args: any[]) =>
 /**
  * Get value of key `key` for map. If it doesn't exists, create new value, add it to the map and return it.
  */
-export function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
+export function getOrCreate<K, V, R extends V>(map: Map<K, V>, key: K, create: (key: K) => R): V {
     if (map.has(key)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return map.get(key)!;
     }
-    const value = create();
+    const value = create(key);
     map.set(key, value);
     return value;
 }
@@ -157,7 +157,7 @@ export function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
 /**
  * Get value of key `key` for map. If it doesn't exists, create new value, add it to the map and return it.
  */
-export async function getOrCreateAsync<K, V>(map: Map<K, V>, key: K, create: (key: K) => Promise<V>): Promise<V> {
+export async function getOrCreateAsync<K, V, R extends V>(map: Map<K, V>, key: K, create: (key: K) => Promise<R>): Promise<V> {
     if (map.has(key)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return map.get(key)!;

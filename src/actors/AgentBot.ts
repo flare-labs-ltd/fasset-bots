@@ -8,7 +8,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import {
     BN_ZERO,
     CCB_LIQUIDATION_PREVENTION_FACTOR,
@@ -46,7 +46,7 @@ export class AgentBot {
     ) {}
 
     context = this.agent.context;
-    eventDecoder = new Web3EventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
+    eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
     latestProof: ProvedDH<DHConfirmedBlockHeightExists> | null = null;
 
     /**

@@ -8,7 +8,7 @@ import { Prices } from "./Prices";
 import { eventIs } from "../utils/events/truffle";
 import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
 import { web3 } from "../utils/web3";
-import { Web3EventDecoder } from "../utils/events/Web3EventDecoder";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import assert from "node:assert";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
@@ -41,7 +41,7 @@ export class TrackedState {
     agentsByPool: Map<string, TrackedAgentState> = new Map(); // map pool_address => tracked agent state
 
     // event decoder
-    eventDecoder = new Web3EventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
+    eventDecoder = new Web3ContractEventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
 
     // async initialization part
     async initialize(): Promise<void> {
@@ -231,7 +231,7 @@ export class TrackedState {
                     toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
                     topics: [null],
                 });
-                const eventDecoderCollaterals = new Web3EventDecoder({ collateralDecode: contract });
+                const eventDecoderCollaterals = new Web3ContractEventDecoder({ collateralDecode: contract });
                 events.push(...eventDecoderCollaterals.decodeEvents(logsCollateral));
             }
             // handle asset manager
