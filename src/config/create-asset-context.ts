@@ -33,6 +33,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
     if (botConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(botConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmitterName]!.address);
         wNat = await WNat.at(contracts.WNat.address);
         addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
@@ -70,16 +71,17 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
     }
     let assetManager;
     let priceChangeEmitter;
-    const priceChangeEmiterName = chainConfig.priceChangeEmitter ?? "FtsoManager";
+    const priceChangeEmitterName = chainConfig.priceChangeEmitter ?? "FtsoManager";
     if (trackedStateConfig.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(trackedStateConfig.contractsJsonFile);
         [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
-        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmiterName]!.address);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmitterName]!.address);
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const addressUpdater = await AddressUpdater.at(trackedStateConfig.addressUpdater!);
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
-        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmiterName));
+        priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
     }
     const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
     return {

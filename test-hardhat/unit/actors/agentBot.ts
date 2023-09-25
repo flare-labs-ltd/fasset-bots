@@ -1,7 +1,7 @@
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, requireEnv, toBN } from "../../../src/utils/helpers";
+import { checkedCast, maxBN, requireEnv, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -458,7 +458,7 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         // try to close vault - withdraw class 1
-        await time.increaseTo(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp);
+        await time.increaseTo(maxBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp, agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp));
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         // try to close vault - close
