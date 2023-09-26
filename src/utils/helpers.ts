@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import util from "util";
 import Web3 from "web3";
 import { logger } from "./logger";
 
@@ -312,4 +313,30 @@ export async function retry<T extends (...arg0: any[]) => any>(
         await sleep(currRetry * delay);
         return retry(fn, args, maxTry, currRetry);
     }
+}
+
+/**
+ * Wrap an async method so that it cannot be called twice in parallel.
+ */
+export function preventReentrancy(method: () => Promise<void>) {
+    let inMethod = false;
+    return async () => {
+        if (inMethod) return;
+        inMethod = true;
+        try {
+            await method();
+        } finally {
+            inMethod = false;
+        }
+    };
+}
+
+/**
+ * Improve console.log display by pretty-printing BN end expanding objects.
+ * @param inspectDepth the depth objects in console.log will be expanded
+ */
+export function improveConsoleLog(inspectDepth: number = 10) {
+    const BN = toBN(0).constructor;
+    BN.prototype[util.inspect.custom] = function () { return `BN(${this.toString(10)})`; };
+    util.inspect.defaultOptions.depth = inspectDepth;
 }

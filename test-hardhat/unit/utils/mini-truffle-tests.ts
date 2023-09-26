@@ -1,15 +1,8 @@
-import util from "util";
-import { toBN } from "../../../src/utils/helpers";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import { expectEvent, expectRevert } from "@openzeppelin/test-helpers";
+import { expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-
-
-function improveConsoleLog() {
-    const BN = toBN(0).constructor;
-    BN.prototype[util.inspect.custom] = function () { return `BN(${this.toString(10)})`; }
-    util.inspect.defaultOptions.depth = 10;
-}
+import { improveConsoleLog, preventReentrancy } from "../../../src/utils/helpers";
+import { ContractSettings, MiniTruffleContract, withSettings } from "../../../src/utils/mini-truffle";
+import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -19,6 +12,16 @@ describe("mini truffle and artifacts tests", async () => {
         accounts = await web3.eth.getAccounts();
     });
 
+    it("require with directory should work", async () => {
+        const GovernanceSettings = artifacts.require("flattened/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings");
+        expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName === 'flattened/FlareSmartContracts.sol');
+    });
+
+    it("require with wrong directory should fail", async () => {
+        expect(() => artifacts.require("flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings"))
+            .to.throw("Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings");
+    });
+
     it("should deploy contracts but not interfaces", async () => {
         const GovernanceSettings = artifacts.require("GovernanceSettings");
         const governanceSettings = await GovernanceSettings.new();
@@ -26,10 +29,10 @@ describe("mini truffle and artifacts tests", async () => {
         await expectRevert(IFtsoRegistry.new(), "The contract is abstract; cannot deploy");
     });
 
-    async function createDeployAndCall() {
+    async function createDeployAndCall(settings: ContractSettings) {
         const FakePriceReader = artifacts.require("FakePriceReader");
         // console.log((FakePriceReader as ContractFactory).eventDecoder);
-        const fpr = await FakePriceReader.new(accounts[0]);
+        const fpr = await withSettings(FakePriceReader, settings).new(accounts[0]);
         await fpr.setDecimals("XRP", 5);
         await fpr.setPrice("XRP", 1000);
         await fpr.setPriceFromTrustedProviders("XRP", 1100);
@@ -43,8 +46,27 @@ describe("mini truffle and artifacts tests", async () => {
         expect(Number(decimalsT)).to.equal(5);
     }
 
-    it("should create and deploy a contract", async () => {
-        await createDeployAndCall();
+    it("should create and deploy and call a contract - default settings", async () => {
+        await createDeployAndCall(contractSettings);
+    });
+
+    it("should create, deploy and call a contract - wait for receipt", async () => {
+        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'receipt', timeoutMS: 10_000 } });
+    });
+
+    it("should create, deploy and call a contract - wait for nonce", async () => {
+        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 1000, timeoutMS: 10_000 } });
+    });
+
+    it("should create, deploy and call a contract - wait for 3 confirmations (failure without parallel mining)", async () => {
+        await expectRevert(createDeployAndCall({ ...contractSettings, waitFor: { what: 'confirmations', confirmations: 3, timeoutMS: 1000 } }),
+            "Timeout waiting for finalization");
+    });
+
+    it("should create, deploy and call a contract - wait for 3 confirmations (with parallel mining)", async () => {
+        const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
+        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } });
+        clearInterval(timer);
     });
 
     it("reverts should work", async () => {

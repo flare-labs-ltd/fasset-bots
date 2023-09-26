@@ -142,4 +142,24 @@ describe("Helpers unit tests", async () => {
         const retNum: number | null = null;
         await expect(helperMethods.retry(fetchData, [], 3, retNum!)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
+
+    it("Should prevent reentrancy", async () => {
+        class ReentrancyTest {
+            parallel = 0;
+            maxParallel = 0;
+            async run() {
+                this.parallel++;
+                this.maxParallel = Math.max(this.maxParallel, this.parallel);
+                await helperMethods.sleep(500);
+                this.parallel--;
+            }
+        }
+        const rc1 = new ReentrancyTest();
+        const rc2 = new ReentrancyTest();
+        const reentrant = () => rc1.run();
+        const nonReentrant = helperMethods.preventReentrancy(() => rc2.run());
+        await Promise.all([reentrant(), nonReentrant(), reentrant(), nonReentrant(), nonReentrant(), reentrant()]);
+        expect(rc1.maxParallel).equals(3);
+        expect(rc2.maxParallel).equals(1);
+    });
 });

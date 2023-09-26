@@ -4,7 +4,7 @@ import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
 import { Web3EventDecoder } from "./events/Web3EventDecoder";
-import { fail, getOrCreate, toBN } from "./helpers";
+import { fail, getOrCreate, preventReentrancy, toBN } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
 type TransactionWaitFor =
@@ -62,6 +62,10 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
     sendTransaction(transactionConfig: TransactionConfig): PromiEvent<TransactionReceipt> {
         return this._settings.web3.eth.sendTransaction({ ...this._settings.defaultOptions, ...transactionConfig });
     }
+
+    _withSettings(newSettings: ContractSettings) {
+        return new MiniTruffleContractInstance(this._contractFactory, newSettings, this.address, this.abi);
+    }
 }
 
 export class MiniTruffleContract implements Truffle.Contract<any> {
@@ -82,12 +86,16 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     async deployed(): Promise<any> {
         if (!this.address) {
-            throw new Error("not deployed from this contract");
+            throw new Error("Not deployed from this contract");
         }
         return new this._instanceConstructor(this, this._settings, this.address);
     }
 
     async at(address: string): Promise<any> {
+        const bytecode = await this._settings.web3.eth.getCode(address);
+        if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+            throw new Error(`Cannot create instance of ${this.contractName}; no code at address ${address}`);
+        }
         return new this._instanceConstructor(this, this._settings, address);
     }
 
@@ -95,13 +103,14 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         if (this._contractJson == null) {
             throw new Error("Full contract JSON needed for deploy");
         }
-        if ((this._contractJson.bytecode?.length ?? 0) < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+        const bytecode = this._contractJson.bytecode;
+        if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
             throw new Error("The contract is abstract; cannot deploy");
         }
         const web3Contract = new this._settings.web3.eth.Contract(this.abi);
         const constructorAbi = this.abi.find(it => it.type === 'constructor');
         const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
-        const data = web3Contract.deploy({ data: this._contractJson.bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
+        const data = web3Contract.deploy({ data: bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
         const result = await executeMethodSend(this._settings, data, config);
         if (result.contractAddress == null) {
             throw new Error("Deploy failed");
@@ -127,6 +136,16 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
                 instance.address.slice(2).toLowerCase() + this._contractJson.bytecode.slice(2 * (start + length) + 2);
         }
     }
+
+    _withSettings(newSettings: ContractSettings) {
+        return new MiniTruffleContract(newSettings, this.contractName, this.abi, this._contractJson);
+    }
+}
+
+export function withSettings<T>(contract: Truffle.Contract<T>, newSettings: ContractSettings): Truffle.Contract<T>;
+export function withSettings(instance: Truffle.ContractInstance, newSettings: ContractSettings): Truffle.ContractInstance;
+export function withSettings(ci: any, newSettings: ContractSettings): any {
+    return ci._withSettings(newSettings);
 }
 
 interface ContractInstanceConstructor {
@@ -284,6 +303,10 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
             if (noncePollTimer != null) {
                 clearInterval(noncePollTimer);
             }
+            (promiEvent as any).off("receipt");
+            if (waitFor.what === 'confirmations') {
+                (promiEvent as any).off("confirmation");
+            }
             if (result) {
                 resolve(result);
             } else {
@@ -295,7 +318,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
             if (waitFor.what === 'receipt') {
                 success = receipt != null;
             } else if (waitFor.what === 'confirmations') {
-                success = numberOfConfirmations > waitFor.confirmations;
+                success = numberOfConfirmations >= waitFor.confirmations;
             } else if (waitFor.what === 'nonceIncrease') {
                 const nonce = await web3.eth.getTransactionCount(from, 'latest');
                 success = nonce > initialNonce;
@@ -331,19 +354,6 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
             }).catch(ignore);
         }
     });
-}
-
-function preventReentrancy(method: () => Promise<void>) {
-    let inMethod = false;
-    return async () => {
-        if (inMethod) return;
-        inMethod = true;
-        try {
-            await method();
-        } finally {
-            inMethod = false;
-        }
-    }
 }
 
 function ignore(error: unknown) {
