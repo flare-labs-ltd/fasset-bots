@@ -6,7 +6,7 @@ import { ContractJson, ContractSettings, MiniTruffleContract } from "./mini-truf
 interface ArtifactData {
     name: string;
     path: string;
-    contract?: Truffle.Contract<any>;
+    contractJson?: string;
 }
 
 export function createArtifacts(rootPath: string, settings: ContractSettings) {
@@ -33,25 +33,20 @@ class ArtifactsImpl implements Truffle.Artifacts {
         }
     }
 
-    loadContract(fpath: string): Truffle.Contract<any> {
-        const contractJson = JSON.parse(fs.readFileSync(fpath).toString()) as ContractJson;
-        const contract = new MiniTruffleContract(this.settings, contractJson.contractName, contractJson.abi, contractJson);
-        return contract;
-    }
-
     require(name: string): Truffle.Contract<any> {
         if (this.artifactMap == null) {
             this.loadArtifactMap();
         }
-        /* istanbul ignore next */
-        const artifactData = this.artifactMap?.get(name);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const artifactData = this.artifactMap!.get(name);
         /* istanbul ignore if */
         if (artifactData == null) {
             throw new Error(`Unknown artifact ${name}`);
         }
-        if (artifactData.contract == null) {
-            artifactData.contract = this.loadContract(artifactData.path);
+        if (artifactData.contractJson == null) {
+            artifactData.contractJson = fs.readFileSync(artifactData.path).toString();
         }
-        return artifactData.contract;
+        const contractJson = JSON.parse(artifactData.contractJson) as ContractJson;
+        return new MiniTruffleContract(this.settings, contractJson.contractName, contractJson.abi, contractJson);
     }
 }

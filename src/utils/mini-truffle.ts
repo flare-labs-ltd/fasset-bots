@@ -7,7 +7,7 @@ import { Web3EventDecoder } from "./events/Web3EventDecoder";
 import { fail, getOrCreate, preventReentrancy, toBN } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
-type TransactionWaitFor =
+export type TransactionWaitFor =
     | { what: 'receipt', timeoutMS?: number }
     | { what: 'nonceIncrease', pollMS: number, timeoutMS?: number }
     | { what: 'confirmations', confirmations: number, timeoutMS?: number };
@@ -60,11 +60,12 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
     }
 
     sendTransaction(transactionConfig: TransactionConfig): PromiEvent<TransactionReceipt> {
-        return this._settings.web3.eth.sendTransaction({ ...this._settings.defaultOptions, ...transactionConfig });
+        const config = { ...this._settings.defaultOptions, ...transactionConfig, to: this.address };
+        return this._settings.web3.eth.sendTransaction(config);
     }
 
     _withSettings(newSettings: ContractSettings) {
-        return new MiniTruffleContractInstance(this._contractFactory, newSettings, this.address, this.abi);
+        return new this._contractFactory._instanceConstructor(this._contractFactory, newSettings, this.address);
     }
 }
 
@@ -80,7 +81,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     address: string = undefined as any;  // typing in typechain is wrong - should be optional
 
-    _instanceConstructor = createContractInstanceConstructor(this.contractName, this.abi);
+    _instanceConstructor = createContractInstanceConstructor(this.contractName);
 
     _eventDecoder = new Web3EventDecoder(this.abi);
 
@@ -88,7 +89,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         if (!this.address) {
             throw new Error("Not deployed from this contract");
         }
-        return new this._instanceConstructor(this, this._settings, this.address);
+        return await this.at(this.address);
     }
 
     async at(address: string): Promise<any> {
@@ -107,13 +108,16 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
             throw new Error("The contract is abstract; cannot deploy");
         }
+        if (bytecode.includes('_')) {
+            throw new Error(`Contract ${this.contractName} must be linked before deploy`);
+        }
         const web3Contract = new this._settings.web3.eth.Contract(this.abi);
         const constructorAbi = this.abi.find(it => it.type === 'constructor');
         const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
         const data = web3Contract.deploy({ data: bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
-        const result = await executeMethodSend(this._settings, data, config);
+        const result = await executeMethodSend(this._settings, { ...config, data: data });
         if (result.contractAddress == null) {
-            throw new Error("Deploy failed");
+            throw new Error(`Deploy of contract ${this.contractName} failed`);
         }
         const instance = new this._instanceConstructor(this, this._settings, result.contractAddress);
         instance.transactionHash = result.transactionHash;
@@ -143,7 +147,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 }
 
 export function withSettings<T>(contract: Truffle.Contract<T>, newSettings: ContractSettings): Truffle.Contract<T>;
-export function withSettings(instance: Truffle.ContractInstance, newSettings: ContractSettings): Truffle.ContractInstance;
+export function withSettings<T extends Truffle.ContractInstance>(instance: T, newSettings: ContractSettings): T;
 export function withSettings(ci: any, newSettings: ContractSettings): any {
     return ci._withSettings(newSettings);
 }
@@ -152,73 +156,43 @@ interface ContractInstanceConstructor {
     new(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
 }
 
-function createContractInstanceConstructor(contractName: string, abi: AbiItem[]): ContractInstanceConstructor {
+function createContractInstanceConstructor(contractName: string): ContractInstanceConstructor {
     const contractConstructor = class extends MiniTruffleContractInstance {
         constructor(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string) {
-            super(contractFactory, settings, address, abi);
+            super(contractFactory, settings, address, contractFactory.abi);
+            addContractMethods(this, contractFactory.abi);
         }
     }
     Object.defineProperty(contractConstructor, 'name', { value: contractName, writable: false });
-    const prototype: any = contractConstructor.prototype;
-    // prototype.methods = {};
-    for (const method of createNamedMethods(abi).values()) {
+    return contractConstructor;
+}
+
+function addContractMethods(instance: MiniTruffleContractInstance & { [method: string]: any }, abi: AbiItem[]) {
+    instance.methods = {};
+    for (const method of groupMethodOverloads(abi).values()) {
         for (const [namesig, item] of method.overloads) {
-            const calls = createMethodCalls(item);
-            // prototype.methods[namesig] = calls;
-            if (prototype[namesig] === undefined) { // do not overwrite predefined methods
-                prototype[namesig] = calls;
+            const calls = createMethodCalls(instance, item);
+            instance.methods[namesig] = calls;
+            if (instance[namesig] === undefined) { // do not overwrite predefined methods
+                instance[namesig] = calls;
             }
             if (method.overloads.size === 1) {
-                // prototype.methods[method.name] = calls;
-                if (prototype[method.name] === undefined) { // do not overwrite predefined methods
-                    prototype[method.name] = calls;
+                instance.methods[method.name] = calls;
+                if (instance[method.name] === undefined) { // do not overwrite predefined methods
+                    instance[method.name] = calls;
                 }
             }
         }
     }
-    return contractConstructor;
 }
 
-function createMethodCalls(method: AbiItem) {
-    const callFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
-        // console.log(`call ${method.name}`);
-        const [methodArgs, config] = splitMethodArgs(method, args);
-        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        const encResult = await executeMethodCall(this._settings, encodedArgs, { to: this.address, ...config });
-        const outputs = method.outputs ?? [];
-        return convertResults(outputs, coder.decodeParameters(outputs, encResult));
-    }
-    if (method.stateMutability === 'pure' || method.stateMutability === 'view') {
-        return callFn;
-    }
-    // only for mutable functions
-    const sendFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
-        // console.log(`send ${method.name}`);
-        const [methodArgs, config] = splitMethodArgs(method, args);
-        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        const receipt = await executeMethodSend(this._settings, encodedArgs, { to: this.address, ...config });
-        const logs = this._contractFactory._eventDecoder.decodeEvents(receipt.logs);
-        return { tx: receipt.transactionHash, receipt, logs };
-    }
-    const estimateGasFn = async function (this: MiniTruffleContractInstance, ...args: any[]) {
-        // console.log(`estimateGas ${method.name}`);
-        const [methodArgs, config] = splitMethodArgs(method, args);
-        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
-        return executeMethodEstimateGas(this._settings, encodedArgs, { to: this.address, ...config });
-    }
-    sendFn.call = callFn;
-    sendFn.sendTransaction = sendFn;
-    sendFn.estimateGas = estimateGasFn;
-    return sendFn;
-}
-
-interface AbiNamedMethod {
+interface AbiMethodOverloads {
     name: string;
     overloads: Map<string, AbiItem>;
 }
 
-function createNamedMethods(abi: AbiItem[]) {
-    const namedMethods: Map<string, AbiNamedMethod> = new Map();
+function groupMethodOverloads(abi: AbiItem[]) {
+    const namedMethods: Map<string, AbiMethodOverloads> = new Map();
     for (const item of abi) {
         if (item.type !== 'function' || item.name == null) continue;
         const sigtext = createMethodSignatureText(item);
@@ -231,6 +205,43 @@ function createNamedMethods(abi: AbiItem[]) {
 function createMethodSignatureText(method: AbiItem) {
     const args = (method.inputs ?? []).map(inp => inp.type).join(',');
     return `${method.name}(${args})`;
+}
+
+function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiItem) {
+    const callFn = async function (...args: any[]) {
+        // console.log(`call ${method.name}`);
+        const [methodArgs, config] = splitMethodArgs(method, args);
+        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
+        const encResult = await executeMethodCall(instance._settings, { ...config, to: instance.address, data: encodedArgs });
+        const outputs = method.outputs ?? [];
+        return convertResults(outputs, coder.decodeParameters(outputs, encResult));
+    }
+    if (isConstant(method)) {
+        return callFn;
+    }
+    // only for mutable functions
+    const sendFn = async function (...args: any[]) {
+        // console.log(`send ${method.name}`);
+        const [methodArgs, config] = splitMethodArgs(method, args);
+        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
+        const receipt = await executeMethodSend(instance._settings, { ...config, to: instance.address, data: encodedArgs });
+        const logs = instance._contractFactory._eventDecoder.decodeEvents(receipt.logs);
+        return { tx: receipt.transactionHash, receipt, logs };
+    }
+    const estimateGasFn = async function (...args: any[]) {
+        // console.log(`estimateGas ${method.name}`);
+        const [methodArgs, config] = splitMethodArgs(method, args);
+        const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
+        return executeMethodEstimateGas(instance._settings, { ...config, to: instance.address, data: encodedArgs });
+    }
+    sendFn.call = callFn;
+    sendFn.sendTransaction = sendFn;
+    sendFn.estimateGas = estimateGasFn;
+    return sendFn;
+}
+
+function isConstant(method: AbiItem) {
+    return method.stateMutability === 'pure' || method.stateMutability === 'view';
 }
 
 function formatArguments(args: any[]): any[] {
@@ -258,9 +269,9 @@ function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs:
     return args.length > paramsLen ? [args.slice(0, paramsLen), args[paramsLen]] : [args, {}];
 }
 
-async function executeMethodSend(settings: ContractSettings, encodedCall: string, transactionConfig: TransactionConfig) {
+async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig, data: encodedCall };
+    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
     if (config.gas == null) {
         // estimate gas; should also throw nice errors
         const gas = await web3.eth.estimateGas(config);
@@ -275,15 +286,15 @@ async function executeMethodSend(settings: ContractSettings, encodedCall: string
     return await waitForFinalization(web3, waitFor, nonce, from, promiEvent);
 }
 
-async function executeMethodCall(settings: ContractSettings, encodedCall: string, transactionConfig: TransactionConfig) {
+async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig, data: encodedCall };
+    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
     return await web3.eth.call(config);
 }
 
-async function executeMethodEstimateGas(settings: ContractSettings, encodedCall: string, transactionConfig: TransactionConfig) {
+async function executeMethodEstimateGas(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig, data: encodedCall };
+    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
     return await web3.eth.estimateGas(config);
 }
 

@@ -1,7 +1,7 @@
-import { expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
+import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { improveConsoleLog, preventReentrancy } from "../../../src/utils/helpers";
-import { ContractSettings, MiniTruffleContract, withSettings } from "../../../src/utils/mini-truffle";
+import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
+import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
@@ -63,10 +63,17 @@ describe("mini truffle and artifacts tests", async () => {
             "Timeout waiting for finalization");
     });
 
-    it("should create, deploy and call a contract - wait for 3 confirmations (with parallel mining)", async () => {
+    it("should create, deploy and call a contract - wait for 3 confirmations (with parallel mining), settings on instance", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
         const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
-        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } });
+        const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 3, timeoutMS: 5000 } };
+        await withSettings(fpr, settings).setDecimals("XRP", 5);
         clearInterval(timer);
+        await fpr.setPrice("XRP", 1000);
+        const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+        expect(Number(price)).to.equal(1000);
+        expect(Number(decimals)).to.equal(5);
     });
 
     it("reverts should work", async () => {
@@ -75,4 +82,118 @@ describe("mini truffle and artifacts tests", async () => {
         await expectRevert(fpr.getPrice("BTC"), "price not initialized");
     });
 
+    it("methods .call, .sendTransaction and .estimateGas should work", async () => {
+        const FtsoMock = artifacts.require("FtsoMock");
+        const FtsoRegistryMock = artifacts.require("FtsoRegistryMock");
+        const registry = await FtsoRegistryMock.new();
+        const ftso1 = await FtsoMock.new("BTC", 5);
+        const ftso2 = await FtsoMock.new("XRP", 5);
+        // test .sendTransaction
+        const res = await registry.addFtso.sendTransaction(ftso1.address);
+        const ftsosStep1 = await registry.getSupportedSymbols();
+        expect(ftsosStep1).deep.equals(["BTC"]);
+        // test .call
+        const index = await registry.addFtso.call(ftso2.address);
+        expect(Number(index)).equals(1);
+        const ftsosStep2 = await registry.getSupportedSymbols();
+        expect(ftsosStep2).deep.equals(["BTC"]);
+        // test .estimateGas
+        const gas = await registry.addFtso.estimateGas(ftso2.address);
+        expect(typeof gas).equals('number');
+        expect(gas).greaterThan(20_000);
+        // test direct
+        const res2 = await registry.addFtso(ftso2.address);
+        expect((res2.receipt as TransactionReceipt).gasUsed).equals(gas);
+        const ftsosStep3 = await registry.getSupportedSymbols();
+        expect(ftsosStep3).deep.equals(["BTC", "XRP"]);
+    });
+
+    it("methods .call, .sendTransaction and .estimateGas should work through .methods", async () => {
+        const FtsoMock = artifacts.require("FtsoMock");
+        const FtsoRegistryMock = artifacts.require("FtsoRegistryMock");
+        const registry = await FtsoRegistryMock.new();
+        const ftso1 = await FtsoMock.new("BTC", 5);
+        const ftso2 = await FtsoMock.new("XRP", 5);
+        // test .sendTransaction
+        const res = await registry.methods.addFtso.sendTransaction(ftso1.address);
+        const ftsosStep1 = await registry.getSupportedSymbols();
+        expect(ftsosStep1).deep.equals(["BTC"]);
+        // test .call
+        const index = await registry.methods.addFtso.call(ftso2.address);
+        expect(Number(index)).equals(1);
+        const ftsosStep2 = await registry.getSupportedSymbols();
+        expect(ftsosStep2).deep.equals(["BTC"]);
+        // test .estimateGas
+        const gas = await registry.methods.addFtso.estimateGas(ftso2.address);
+        expect(typeof gas).equals('number');
+        expect(gas).greaterThan(20_000);
+        // test direct
+        const res2 = await registry.methods.addFtso(ftso2.address);
+        expect((res2.receipt as TransactionReceipt).gasUsed).equals(gas);
+        const ftsosStep3 = await registry.getSupportedSymbols();
+        expect(ftsosStep3).deep.equals(["BTC", "XRP"]);
+    });
+
+    it("at should work", async () => {
+        const WNat = artifacts.require("WNat");
+        const wnat = await WNat.new(accounts[0], "Native", "NAT");
+        // allEvents
+        const wnat2 = await WNat.at(wnat.address);
+        expect(wnat2.address).equals(wnat.address);
+        // methods should work
+        await wnat2.deposit({ value: "10000", from: accounts[5] });
+        expect(await web3.eth.getBalance(wnat.address)).equals("10000");
+        expect(String(await wnat.balanceOf(accounts[5]))).equals("10000");
+        expect(String(await wnat2.balanceOf(accounts[5]))).equals("10000");
+    });
+
+    it("at should fail for wrong address", async () => {
+        const WNat = artifacts.require("WNat");
+        await expectRevert(WNat.at(constants.ZERO_ADDRESS),
+            "Cannot create instance of WNat; no code at address 0x0000000000000000000000000000000000000000");
+    });
+
+    it("linking should work", async () => {
+        const CollateralTypes = artifacts.require("CollateralTypes");
+        const collateralTypes = await CollateralTypes.new();
+        const SettingsUpdater = artifacts.require("SettingsUpdater");
+        SettingsUpdater.link(collateralTypes as any);   // typechain info is wrong on hardhat
+        const settingsUpdater = await SettingsUpdater.new();
+    });
+
+    it("unlinked contracts shouldn't deploy", async () => {
+        const SettingsUpdater = artifacts.require("SettingsUpdater");
+        await expectRevert(SettingsUpdater.new(), "Contract SettingsUpdater must be linked before deploy");
+    });
+
+    it("compatibility methods should work on instance", async () => {
+        const WNat = artifacts.require("WNat");
+        const wnat = await WNat.new(accounts[0], "Native", "NAT");
+        // allEvents
+        expect(() => wnat.allEvents()).to.throw("not implemented");
+        // send
+        await wnat.send(10_000, { from: accounts[0] });
+        expect(await web3.eth.getBalance(wnat.address)).equals("10000");
+        // send transaction
+        const wnatMT = wnat as unknown as MiniTruffleContractInstance;
+        const fndata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find(it => it.name === 'withdraw')), ["5000"]);
+        await wnat.sendTransaction({ data: fndata, from: accounts[0] });
+        expect(await web3.eth.getBalance(wnat.address)).equals("5000");
+    });
+
+    it("compatibility methods should work on factory", async () => {
+        const WNat = artifacts.require("WNat");
+        // deployed should not work before deploy
+        await expectRevert(WNat.deployed(), "Not deployed from this contract");
+        // deploy
+        const wnat = await WNat.new(accounts[0], "Native", "NAT");
+        // allEvents
+        const wnat2 = await WNat.deployed();
+        expect(wnat2.address).equals(wnat.address);
+        // methods should work
+        await wnat2.deposit({ value: "10000", from: accounts[5] });
+        expect(await web3.eth.getBalance(wnat.address)).equals("10000");
+        expect(String(await wnat.balanceOf(accounts[5]))).equals("10000");
+        expect(String(await wnat2.balanceOf(accounts[5]))).equals("10000");
+    });
 });
