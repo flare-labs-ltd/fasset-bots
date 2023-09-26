@@ -2,9 +2,14 @@
 
 This repo contains an implementation of an f-asset liquidator on the [Flare network](https://flare.network/).
 
->**Note**: The f-asset bridge is not yet deployed on flare mainnet, it is currently in the testing phase on the flare canary network's testnet coston.
+> **Note**
+> The f-asset bridge is not yet deployed on flare mainnet, it is currently in the testing phase on the flare canary network's testnet coston.
 
->**Note**: It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. Moral: run a challenger.
+> **Note**
+> This repo uses the private gitlab f-asset repo as a node dependancy, so until it is published, build without appropriate ssh key will fail.
+
+> **Warning**
+> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. Moral: run a challenger.
 
 ## Why it's necessary
 
@@ -12,17 +17,18 @@ The f-asset system is a bridge between the Flare network and non-smart contract 
 
 ## Why you should use it
 
-To make profit. All you can lose are gas fees (which on the Flare network are very cheap) as the contract will revert if it does not make any profit. Also you are helping the system secure itself against bad debt, which happens if price changes end up making an agent back less than the value of their minted f-assets.
+To make profit. All you can lose are gas fees (which on the Flare network are very cheap) as flash loan eliminates the need for any kind of initial investment. Also you are helping the system secure itself against bad debt, which happens if price changes end up making an agent back less than the value of their minted f-assets.
 
 ## Assumptions
 
-The main assumption is the healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent collateral for f-asset keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [blazeswap](https://blazeswap.xyz/).
+The two assumptions are:
 
-Another requirement is the f-asset flash loan accessibility. This will be solved soon by making agent's collateral flash-loanable.
+- A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent collateral for f-asset keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [blazeswap](https://blazeswap.xyz/).
+- Flash loan accessibility of the agent's collateral token. This is meant to be solved soon by making agent's collateral flash-loanable.
 
 ## How it works
 
-Every agent in the f-asset system holds two types of collatera - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
+Every agent in the f-asset system holds two types of collateral - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
 - flash loan an optimal value of vault collateral,
 - swap vault collateral for f-asset on a given dex,
 - liquidate obtained f-asset and receive vault and pool collateral,
@@ -33,7 +39,7 @@ Note that a dual strategy is possible, starting with pool collateral instead of 
 - we expect dexes with stablecoin / f-asset pairs to be better liquidated and more stable,
 - liquidation usually outputs less pool collateral than vault collateral, so the second swap will consume less fees.
 
-The contract uses Blazeswap as the default dex, but any v2-uniswap interfaced constant product dex can be used (with the hardcoded 0.3% fee). Also note that flash loan is assumed to have a fixed (or no) fee.
+The contract uses Blaze Swap as the default dex, but any v2-uniswap interfaced constant product dex can be used (with the hardcoded 0.3% fee). It also expects a flash lender contract to be [`ERC3156`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/interfaces/IERC3156FlashLender.sol) and is assumed to have a fixed (or no) fee.
 
 ### Calculations
 

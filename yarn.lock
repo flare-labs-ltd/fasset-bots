@@ -1078,10 +1078,10 @@
     "@nomicfoundation/solidity-analyzer-win32-ia32-msvc" "0.1.1"
     "@nomicfoundation/solidity-analyzer-win32-x64-msvc" "0.1.1"
 
-"@nomiclabs/hardhat-ethers@^2.2.3":
-  version "2.2.3"
-  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.2.3.tgz#b41053e360c31a32c2640c9a45ee981a7e603fe0"
-  integrity sha512-YhzPdzb612X591FOe68q+qXVXGG2ANZRvDo0RRUtimev85rCrAlv/TLMEZw5c+kq9AbzocLTVX/h2jVIFPL9Xg==
+"@nomiclabs/hardhat-ethers@^3.0.0-beta.0":
+  version "3.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-3.0.0-beta.0.tgz#0ab529b9977e8354dd8e29d750f9cb5109948d5e"
+  integrity sha512-oV0PZ+UPFiLjV2wVKxYP/OXCJhcqGMTvoVQG2di4EE/2pqgEGDGXdPNfDiRemv6UfK8aGvtvsmU+hM+OrPR7fQ==
 
 "@nomiclabs/hardhat-truffle5@^2.0.7":
   version "2.0.7"

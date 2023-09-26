@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "fasset/contracts/fasset/mock/FakeERC20.sol"; // compile for tests
 
 
 contract ERC20Mock is ERC20 {

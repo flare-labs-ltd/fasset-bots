@@ -1,8 +1,8 @@
 import BN from 'bn.js'
 import { BlazeSwapRouterInstance } from '../../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
 import { ERC20MockInstance } from '../../typechain-truffle/contracts/mock/ERC20Mock'
-import { AssetInfo } from './interface'
-import { ZERO_ADDRESS, MAX_INT } from './constants'
+import { AssetInfo } from '../fixtures/interface'
+import { ZERO_ADDRESS, MAX_INT } from '../fixtures/constants'
 
 
 ////////////////////////////////////////////////////////////////////////////

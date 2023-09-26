@@ -2,6 +2,10 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from math import isqrt
 
+# make a plot of liquidation reward dependant on invested vault collateral,
+# and color red a point on x-axis of our optimum and green vault collateral
+# yielding full liquidation
+
 Ecosystem = namedtuple(
     "Ecosystem",
     [
@@ -29,8 +33,8 @@ Ecosystem = namedtuple(
 
 class ArbitrageStrategy(ABC):
     def __init__(self, ec):
-        self.dex1Discrepancy = 0
-        self.dex2Discrepancy = 0
+        self.dex1_discrepancy = 0
+        self.dex2_discrepancy = 0
         for key, val in zip(ec._fields, ec):
             setattr(self, key, val)
 
@@ -107,7 +111,7 @@ class ArbitrageStrategy(ABC):
     # Methods to aid in visualisation
 
     def applyPriceDiscrepancyDex1(self, discrepancyBips):
-        self.dex1Discrepancy = discrepancyBips
+        self.dex1_discrepancy = discrepancyBips
         self.dex1_vault_reserve = (
             self.dex1_fAsset_reserve
             * (10_000 + discrepancyBips)
@@ -116,7 +120,7 @@ class ArbitrageStrategy(ABC):
         )
 
     def applyPriceDiscrepancyDex2(self, discrepancyBips):
-        self.dex2Discrepancy = discrepancyBips
+        self.dex2_discrepancy = discrepancyBips
         self.dex2_pool_reserve = (
             self.dex2_vault_reserve
             * (10_000 + discrepancyBips)
@@ -128,11 +132,12 @@ class ArbitrageStrategy(ABC):
     # update vault reserve accordingly
     def updateDex1Liquidity(self, f):
         self.dex1_fAsset_reserve = f
-        self.applyPriceDiscrepancyDex1(self.dex1Discrepancy)
+        self.applyPriceDiscrepancyDex1(self.dex1_discrepancy)
 
     def updateDex2Liquidity(self, v):
         self.dex2_vault_reserve = v
-        self.applyPriceDiscrepancyDex2(self.dex2Discrepancy)
+        self.applyPriceDiscrepancyDex2(self.dex2_discrepancy)
+
 
 # implements the optimum calculation of simplified arbitrageProfit function,
 # where we don't account for slippage when swapping pool collateral on dex2
@@ -171,9 +176,8 @@ class NumericStrategy(ArbitrageStrategy):
         return None
 
 
-# make a plot of liquidation reward dependant on invested vault collateral,
-# and color red a point on x-axis of our optimum and green vault collateral
-# yielding full liquidation
+######################################################################
+## define initial ecosystem
 
 ETH = 1_000_000
 
@@ -213,6 +217,7 @@ LINSPACE_STEP = 100
 def arbitrageProfit(v, ec: ArbitrageStrategy):
     return [ec.arbitrageProfit(v_) for v_ in v]
 
+
 # define ax config
 fig, main_ax = plt.subplots()
 main_ax.set_title("Arbitrage profit as a function of liquidated vault collateral")
@@ -226,13 +231,17 @@ main_ax.grid(color="grey", linestyle="-", linewidth=0.25, alpha=0.5)
 
 # calculate vault and profit values
 v_max = strategy.maxLiquidatedVault()
-v = np.linspace(ETH, v_max, LINSPACE_STEP)
+v = np.linspace(0, v_max, LINSPACE_STEP)
 p = np.array(arbitrageProfit(v, strategy))
 p_argmax = p.argmax()
 v_opt_real = v[p_argmax]
 p_opt_real = p[p_argmax]
 v_opt_apx = strategy.optLiquidatedVault()
 p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
+
+# set domains
+main_ax.set_xlim(0, v_max)
+main_ax.set_ylim(0, p.max())
 
 # plot curve and two points
 (profit_curve,) = main_ax.plot(v, p)
@@ -309,7 +318,7 @@ slider_configs = [
     },
     {
         "label": "Vault target ratio",
-        "valmin": 0,
+        "valmin": 10_000,
         "valmax": MAX_TARGET_RATIO,
         "valinit": strategy.target_ratio_vault_bips,
         "color": "green",
@@ -317,18 +326,18 @@ slider_configs = [
     },
     {
         "label": "Pool target ratio",
-        "valmin": 0,
+        "valmin": 10_000,
         "valmax": MAX_TARGET_RATIO,
         "valinit": strategy.target_ratio_pool_bips,
         "color": "green",
         "on_changed": lambda v: setattr(strategy, "target_ratio_pool_bips", v),
-    }
+    },
 ]
 
 sliders = []
 bottom_offset = 0.2 / len(slider_configs)
-for i, slider_config in enumerate(reversed(slider_configs)):
-    slider_ax = fig.add_axes([0.1, 0.01 + i * bottom_offset, 0.8, 0.01])
+for i, slider_config in enumerate(slider_configs):
+    slider_ax = fig.add_axes([0.1, 0.21 - i * bottom_offset, 0.8, 0.01])
     sliders.append(
         Slider(
             ax=slider_ax,
@@ -355,6 +364,9 @@ def update_graph(on_changed):
         p_opt_real = p[p_argmax]
         v_opt_apx = strategy.optLiquidatedVault()
         p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
+        # reset domains
+        main_ax.set_xlim(0, v_max)
+        main_ax.set_ylim(0, p.max())
         # reset/redraw everything
         profit_curve.set_xdata(v)
         profit_curve.set_ydata(arbitrageProfit(v, strategy))
@@ -364,8 +376,9 @@ def update_graph(on_changed):
 
     return update
 
+
 # register the update function with each slider
 for config, slider in zip(slider_configs, sliders):
-    slider.on_changed(update_graph(config['on_changed']))
+    slider.on_changed(update_graph(config["on_changed"]))
 
 plt.show()

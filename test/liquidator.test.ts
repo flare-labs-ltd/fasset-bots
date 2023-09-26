@@ -13,7 +13,7 @@ import { EcosystemConfig } from './fixtures/interface'
 import {
   addLiquidity, swapOutput, swapInput, lotSizeAmg, amgSizeUba,
   assertBnEqual, assertBnGreaterOrEqual, toBN, BNish, expBN
-} from "./fixtures/utils"
+} from "./helpers/utils"
 import { XRP as ASSET, USDT as VAULT, WNAT as POOL } from './fixtures/assets'
 import { healthyEcosystemConfigs, unhealthyEcosystemConfigs, semiHealthyEcosystemConfigs } from './fixtures/ecosystem'
 
