@@ -1,7 +1,7 @@
-import { readFileSync } from "fs";
+import fs from "fs";
 import { globSync } from "glob";
-import { basename, dirname, extname, relative } from "path";
-import { MiniTruffleContract, ContractJson, ContractSettings } from "./mini-truffle";
+import path from "path";
+import { ContractJson, ContractSettings, MiniTruffleContract } from "./mini-truffle";
 
 interface ArtifactData {
     name: string;
@@ -9,29 +9,32 @@ interface ArtifactData {
     contract?: Truffle.Contract<any>;
 }
 
-export function createArtifacts(settings: ContractSettings) {
-    return new ArtifactsImpl(settings);
+export function createArtifacts(rootPath: string, settings: ContractSettings) {
+    return new ArtifactsImpl(rootPath, settings);
 }
 
 class ArtifactsImpl implements Truffle.Artifacts {
     private artifactMap?: Map<string, ArtifactData>;
 
-    constructor(private settings: ContractSettings) {}
+    constructor(
+        private rootPath: string,
+        private settings: ContractSettings,
+    ) {}
 
     loadArtifactMap(): void {
         this.artifactMap = new Map();
-        const paths = globSync("artifacts/**/*.json");
-        for (const path of paths) {
-            const name = basename(path, extname(path));
-            const solPath = relative("artifacts/", dirname(path)).replace(/\\/g, "/");
-            const data: ArtifactData = { name: name, path: path };
+        const paths = globSync(path.join(this.rootPath, "**/*.json").replace(/\\/g, "/"));
+        for (const fpath of paths) {
+            const name = path.basename(fpath, path.extname(fpath));
+            const solPath = path.relative(this.rootPath, path.dirname(fpath)).replace(/\\/g, "/");
+            const data: ArtifactData = { name: name, path: fpath };
             this.artifactMap.set(name, data);
             this.artifactMap.set(`${solPath}:${name}`, data);
         }
     }
 
-    loadContract(path: string): Truffle.Contract<any> {
-        const contractJson = JSON.parse(readFileSync(path).toString()) as ContractJson;
+    loadContract(fpath: string): Truffle.Contract<any> {
+        const contractJson = JSON.parse(fs.readFileSync(fpath).toString()) as ContractJson;
         const contract = new MiniTruffleContract(this.settings, contractJson.contractName, contractJson.abi, contractJson);
         return contract;
     }

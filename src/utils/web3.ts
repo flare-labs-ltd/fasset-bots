@@ -2,10 +2,13 @@ import Web3 from "web3";
 import { provider } from "web3-core";
 import { createArtifacts } from "./artifacts";
 import { ContractSettings } from "./mini-truffle";
+import path from "path";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
 };
+
+const artifactsRootPath = path.normalize(path.resolve(__dirname, '../../artifacts'));
 
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();
@@ -20,7 +23,7 @@ export const contractSettings: ContractSettings = {
     // waitFor: { what: 'receipt', timeoutMS: 10_000 }
 };
 
-export const artifacts: Truffle.Artifacts = createArtifacts(contractSettings);
+export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);
 
 /**
  * Initialize web3 and truffle contracts.
