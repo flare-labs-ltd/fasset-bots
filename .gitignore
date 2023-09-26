@@ -35,3 +35,6 @@ coverage/
 # local db
 *.db
 *.db-journal
+
+# tmp
+test/e2e/actors/tmp.ts
