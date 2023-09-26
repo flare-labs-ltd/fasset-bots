@@ -1,7 +1,7 @@
 import fs from "fs";
 import { globSync } from "glob";
 import path from "path";
-import { ContractJson, ContractSettings, MiniTruffleContract } from "./mini-truffle";
+import { ContractJson, ContractSettings, MiniTruffleContract } from "./contracts";
 
 interface ArtifactData {
     name: string;

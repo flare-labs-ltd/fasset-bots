@@ -1,7 +1,7 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
-import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle";
+import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {

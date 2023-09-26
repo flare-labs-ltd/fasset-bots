@@ -3,9 +3,9 @@
 import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
-import { Web3EventDecoder } from "./events/Web3EventDecoder";
-import { fail, getOrCreate, preventReentrancy, toBN } from "./helpers";
-import { web3DeepNormalize } from "./web3normalize";
+import { Web3EventDecoder } from "../events/Web3EventDecoder";
+import { fail, getOrCreate, preventReentrancy, toBN } from "../helpers";
+import { web3DeepNormalize } from "../web3normalize";
 
 export type TransactionWaitFor =
     | { what: 'receipt', timeoutMS?: number }
@@ -372,3 +372,14 @@ function ignore(error: unknown) {
     // do nothing - the method can be used in promise `.catch()` to prevent
     // uncought error problems (when errors are properly caught elsewhere)
 }
+
+export const MiniTruffleContractsFunctions = {
+    groupMethodOverloads,
+    createMethodSignatureText,
+    createMethodCalls,
+    convertResults,
+    executeMethodSend,
+    executeMethodCall,
+    executeMethodEstimateGas,
+    waitForFinalization
+};

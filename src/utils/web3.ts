@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import { provider } from "web3-core";
-import { createArtifacts } from "./artifacts";
-import { ContractSettings } from "./mini-truffle";
+import { createArtifacts } from "./mini-truffle/artifacts";
+import { ContractSettings } from "./mini-truffle/contracts";
 import path from "path";
 
 const predefinedProviders: Record<string, () => any> = {
