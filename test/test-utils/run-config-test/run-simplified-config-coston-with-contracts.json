@@ -13,6 +13,18 @@
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
+        },
+        {
+            "chainId": 3,
+            "name": "Fake XRP",
+            "symbol": "fakeXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "finalizationBlocks": 10,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FfakeXRP",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "priceChangeEmitter": "FakePriceReader"
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
