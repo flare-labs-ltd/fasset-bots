@@ -74,7 +74,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         public _settings: ContractSettings,
         public contractName: string,
         public abi: AbiItem[],
-        public _contractJson?: ContractJson,  // only needed for new
+        public _contractJson: ContractJson,  // only needed for new
     ) {
         // console.log("Creating contract", contractName);
     }
@@ -87,7 +87,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     async deployed(): Promise<any> {
         if (!this.address) {
-            throw new Error("Not deployed from this contract");
+            throw new Error(`Contract ${this.contractName} has not been deployed`);
         }
         return await this.at(this.address);
     }
@@ -101,12 +101,9 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
     }
 
     async "new"(...args: any[]): Promise<any> {
-        if (this._contractJson == null) {
-            throw new Error("Full contract JSON needed for deploy");
-        }
         const bytecode = this._contractJson.bytecode;
         if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
-            throw new Error("The contract is abstract; cannot deploy");
+            throw new Error(`Contract ${this.contractName} is abstract; cannot deploy`);
         }
         if (bytecode.includes('_')) {
             throw new Error(`Contract ${this.contractName} must be linked before deploy`);
@@ -116,8 +113,9 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
         const data = web3Contract.deploy({ data: bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
         const result = await executeMethodSend(this._settings, { ...config, data: data });
+        /* istanbul ignore if */
         if (result.contractAddress == null) {
-            throw new Error(`Deploy of contract ${this.contractName} failed`);
+            throw new Error(`Deploy of contract ${this.contractName} failed`);  // I don't know if this can happen
         }
         const instance = new this._instanceConstructor(this, this._settings, result.contractAddress);
         instance.transactionHash = result.transactionHash;
@@ -127,12 +125,9 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     link(...args: any) {
         if (!(args.length === 1 && args[0] instanceof MiniTruffleContractInstance)) {
-            throw new Error("Only supported `link(instance)`");
+            throw new Error(`Only supported variant is '${this.contractName}.link(instance)'`);
         }
         const instance = args[0];
-        if (this._contractJson == null || instance._contractFactory._contractJson == null) {
-            throw new Error("Full contract JSON needed for link");
-        }
         const { contractName, sourceName } = instance._contractFactory._contractJson;
         const linkRefs = this._contractJson.linkReferences[sourceName][contractName] ?? [];
         for (const { start, length } of linkRefs) {
@@ -264,8 +259,12 @@ function convertResults(abi: AbiOutput[], output: any) {
 
 function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs: any[], config: TransactionConfig] {
     const paramsLen = method?.inputs?.length ?? 0;
-    if (args.length < paramsLen) throw new Error("Not enough arguments");
-    if (args.length > paramsLen + 1) throw new Error("Too many arguments");
+    if (args.length < paramsLen) {
+        throw new Error("Not enough arguments");
+    }
+    if (args.length > paramsLen + 1) {
+        throw new Error("Too many arguments");
+    }
     return args.length > paramsLen ? [args.slice(0, paramsLen), args[paramsLen]] : [args, {}];
 }
 
@@ -330,7 +329,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
                 success = receipt != null;
             } else if (waitFor.what === 'confirmations') {
                 success = numberOfConfirmations >= waitFor.confirmations;
-            } else if (waitFor.what === 'nonceIncrease') {
+            } else if (waitFor.what === 'nonceIncrease') { /* istanbul ignore else */
                 const nonce = await web3.eth.getTransactionCount(from, 'latest');
                 success = nonce > initialNonce;
             }
@@ -355,6 +354,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
         }).catch(ignore);
         //
         if (waitFor.what === 'nonceIncrease') {
+            /* istanbul ignore next */
             noncePollTimer = setInterval(() => {
                 checkFinished().catch(ignore);
             }, waitFor.pollMS);
@@ -367,6 +367,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
     });
 }
 
+/* istanbul ignore next */
 function ignore(error: unknown) {
     // do nothing - the method can be used in promise `.catch()` to prevent
     // uncought error problems (when errors are properly caught elsewhere)

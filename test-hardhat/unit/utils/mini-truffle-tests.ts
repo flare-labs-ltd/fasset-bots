@@ -26,7 +26,7 @@ describe("mini truffle and artifacts tests", async () => {
         const GovernanceSettings = artifacts.require("GovernanceSettings");
         const governanceSettings = await GovernanceSettings.new();
         const IFtsoRegistry = artifacts.require("IFtsoRegistry");
-        await expectRevert(IFtsoRegistry.new(), "The contract is abstract; cannot deploy");
+        await expectRevert(IFtsoRegistry.new(), "Contract IFtsoRegistry is abstract; cannot deploy");
     });
 
     async function createDeployAndCall(settings: ContractSettings) {
@@ -157,7 +157,11 @@ describe("mini truffle and artifacts tests", async () => {
         const CollateralTypes = artifacts.require("CollateralTypes");
         const collateralTypes = await CollateralTypes.new();
         const SettingsUpdater = artifacts.require("SettingsUpdater");
-        SettingsUpdater.link(collateralTypes as any);   // typechain info is wrong on hardhat
+        // both link variants in typechain don't work
+        expect(() => SettingsUpdater.link(CollateralTypes)).to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
+        expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address)).to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
+        // typechain info is wrong on hardhat, so we have to cast to any
+        SettingsUpdater.link(collateralTypes as any);
         const settingsUpdater = await SettingsUpdater.new();
     });
 
@@ -184,7 +188,7 @@ describe("mini truffle and artifacts tests", async () => {
     it("compatibility methods should work on factory", async () => {
         const WNat = artifacts.require("WNat");
         // deployed should not work before deploy
-        await expectRevert(WNat.deployed(), "Not deployed from this contract");
+        await expectRevert(WNat.deployed(), "Contract WNat has not been deployed");
         // deploy
         const wnat = await WNat.new(accounts[0], "Native", "NAT");
         // allEvents
@@ -195,5 +199,20 @@ describe("mini truffle and artifacts tests", async () => {
         expect(await web3.eth.getBalance(wnat.address)).equals("10000");
         expect(String(await wnat.balanceOf(accounts[5]))).equals("10000");
         expect(String(await wnat2.balanceOf(accounts[5]))).equals("10000");
+    });
+
+    it("invalid number of parameters should fail", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        await expectRevert((fpr as any).setDecimals("XRP", 5, 1, { from: accounts[0] }), "Too many arguments");
+        await expectRevert((fpr as any).setDecimals("XRP"), "Not enough arguments");
+    });
+
+    it("calls should work with explicit gas and fail with too little gas", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        const gas = await fpr.setDecimals.estimateGas("XRP", 5);
+        await fpr.setDecimals("XRP", 5, { gas: gas });
+        await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
     });
 });
