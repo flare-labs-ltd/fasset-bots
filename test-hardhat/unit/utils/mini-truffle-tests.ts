@@ -165,6 +165,13 @@ describe("mini truffle and artifacts tests", async () => {
         expect(ftsosStep3).deep.equals(["BTC", "XRP"]);
     });
 
+    it("from field must be set or default", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        const fprNoDefaultAcc = withSettings(fpr, { ...contractSettings, defaultAccount: null });
+        await expectRevert(fprNoDefaultAcc.setDecimals("XRP", 5), "'from' field is mandatory");
+    });
+
     it("at should work", async () => {
         const WNat = artifacts.require("WNat");
         const wnat = await WNat.new(accounts[0], "Native", "NAT");
@@ -232,6 +239,7 @@ describe("mini truffle and artifacts tests", async () => {
         // send
         await wnat.send(10_000, { from: accounts[0] });
         expect(await web3.eth.getBalance(wnat.address)).equals("10000");
+        expect(() => wnat.send(10_000)).to.throw('The send transactions "from" field must be defined!');
         // send transaction
         const wnatMT = wnat as unknown as MiniTruffleContractInstance;
         const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find(it => it.name === 'withdraw')), ["5000"]);
@@ -253,6 +261,16 @@ describe("mini truffle and artifacts tests", async () => {
         expect(await web3.eth.getBalance(wnat.address)).equals("10000");
         expect(String(await wnat.balanceOf(accounts[5]))).equals("10000");
         expect(String(await wnat2.balanceOf(accounts[5]))).equals("10000");
+    });
+
+    it("should not overwrite predefined fields", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader") as MiniTruffleContract;
+        FakePriceReader.abi = [...FakePriceReader.abi, { type: "function", name: "address", inputs: [] }];
+        const fpr = await FakePriceReader.new(accounts[0]);
+        expect(typeof fpr.address).equals("string");
+        expect(typeof fpr["address()"]).equals("function");
+        expect(typeof fpr.methods.address).equals("function");
+        expect(typeof fpr.methods["address()"]).equals("function");
     });
 
     it("invalid number of parameters should fail", async () => {

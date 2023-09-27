@@ -1,8 +1,8 @@
+import path from "path";
 import Web3 from "web3";
 import { provider } from "web3-core";
 import { createArtifacts } from "./mini-truffle/artifacts";
 import { ContractSettings } from "./mini-truffle/contracts";
-import path from "path";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
@@ -19,8 +19,9 @@ export const contractSettings: ContractSettings = {
         hardfork: "london",
     },
     gasMultiplier: 2,
-    waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 }
+    waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 },
     // waitFor: { what: 'receipt', timeoutMS: 10_000 }
+    defaultAccount: getDefaultAccount()
 };
 
 export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);
@@ -38,7 +39,9 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     }
     /* istanbul ignore next */
     const accounts = walletKeys === "network" ? await web3.eth.getAccounts() : createWalletAccounts(walletKeys);
-    web3.eth.defaultAccount = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
+    const defaultAccountAddress = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
+    web3.eth.defaultAccount = defaultAccountAddress;
+    contractSettings.defaultAccount = defaultAccountAddress;
     return accounts;
 }
 
@@ -85,9 +88,21 @@ function createWalletAccounts(walletPrivateKeys: string[] | null) {
 }
 
 function createWeb3() {
+    // use injected web3 if it exists
     return (global as any).web3 ?? new Web3();
 }
 
 export function usingGlobalWeb3() {
     return web3 === (global as any).web3;
+}
+
+function getDefaultAccount() {
+    // use accounts[0] as default account under Hardhat
+    const hre = (global as any).hre;
+    /* istanbul ignore next */
+    if (hre?.network?.config?.accounts?.[0]?.privateKey) {
+        return web3.eth.accounts.privateKeyToAccount(hre.network.config.accounts[0].privateKey).address;
+    } else {
+        return web3.eth.defaultAccount;
+    }
 }

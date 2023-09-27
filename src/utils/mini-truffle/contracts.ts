@@ -4,7 +4,7 @@ import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
-import { fail, getOrCreate, preventReentrancy, replaceStringRange, toBN } from "../helpers";
+import { getOrCreate, preventReentrancy, replaceStringRange, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 
 export type TransactionWaitFor =
@@ -17,6 +17,7 @@ export interface ContractSettings {
     defaultOptions: TransactionConfig;
     gasMultiplier: number;
     waitFor: TransactionWaitFor;
+    defaultAccount: string | null;
 }
 
 // Hardhat format of compiled contract JSON
@@ -55,8 +56,8 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
         throw new Error("not implemented");
     }
 
-    send(value: Required<TransactionConfig>["value"], txParams?: TransactionConfig): PromiEvent<TransactionReceipt> {
-        return this.sendTransaction(txParams ? { ...txParams, value } : { value });
+    send(value: Required<TransactionConfig>["value"], txParams: TransactionConfig = {}): PromiEvent<TransactionReceipt> {
+        return this.sendTransaction({ ...txParams, value });
     }
 
     sendTransaction(transactionConfig: TransactionConfig): PromiEvent<TransactionReceipt> {
@@ -167,15 +168,13 @@ function createContractInstanceConstructor(contractName: string): ContractInstan
 function addContractMethods(instance: MiniTruffleContractInstance & { [method: string]: any }, abi: AbiItem[]) {
     instance.methods = {};
     for (const method of groupMethodOverloads(abi).values()) {
-        for (const [namesig, item] of method.overloads) {
+        for (const [nameWithSignature, item] of method.overloads) {
             const calls = createMethodCalls(instance, item);
-            instance.methods[namesig] = calls;
-            if (instance[namesig] === undefined) { // do not overwrite predefined methods
-                instance[namesig] = calls;
-            }
+            instance.methods[nameWithSignature] = calls;
+            instance[nameWithSignature] = calls;
             if (method.overloads.size === 1) {
                 instance.methods[method.name] = calls;
-                if (instance[method.name] === undefined) { // do not overwrite predefined methods
+                if (!(method.name in instance)) { // do not overwrite predefined methods
                     instance[method.name] = calls;
                 }
             }
@@ -192,14 +191,15 @@ function groupMethodOverloads(abi: AbiItem[]) {
     const namedMethods: Map<string, AbiMethodOverloads> = new Map();
     for (const item of abi) {
         if (item.type !== 'function' || item.name == null) continue;
-        const sigtext = createMethodSignatureText(item);
+        const nameWithSignature = createMethodNameWithSignature(item);
         const namedMethod = getOrCreate(namedMethods, item.name, (name) => ({ name, overloads: new Map() }));
-        namedMethod.overloads.set(sigtext, item);
+        namedMethod.overloads.set(nameWithSignature, item);
     }
     return namedMethods;
 }
 
-function createMethodSignatureText(method: AbiItem) {
+function createMethodNameWithSignature(method: AbiItem) {
+    /* istanbul ignore next: method.inputs cannot really be undefined - web3 contract fails if it is */
     const args = (method.inputs ?? []).map(inp => inp.type).join(',');
     return `${method.name}(${args})`;
 }
@@ -210,6 +210,7 @@ function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiIte
         const [methodArgs, config] = splitMethodArgs(method, args);
         const encodedArgs = coder.encodeFunctionCall(method, formatArguments(methodArgs));
         const encResult = await executeMethodCall(instance._settings, { ...config, to: instance.address, data: encodedArgs });
+        /* istanbul ignore next: method.outputs cannot really be undefined - web3 contract fails if it is */
         const outputs = method.outputs ?? [];
         return convertResults(outputs, coder.decodeParameters(outputs, encResult));
     }
@@ -247,16 +248,22 @@ function formatArguments(args: any[]): any[] {
 
 function convertResults(abi: AbiOutput[], output: any) {
     if (abi.length === 1) {
-        return /^u?int\d+$/.test(abi[0].type) ? toBN(output[0]) : output[0];
+        return decodeArgument(abi[0], output[0]);
     } else {
         const result: any = {};
-        for (const [i, outAbi] of abi.entries()) {
-            const decVal = /^u?int\d+$/.test(outAbi.type) ? toBN(output[i]) : output[i];
-            result[i] = decVal;
-            if (outAbi.name) result[outAbi.name] = decVal;
+        for (const [i, abiItem] of abi.entries()) {
+            result[i] = decodeArgument(abiItem, output[i]);
+            /* istanbul ignore else */
+            if (abiItem.name) {
+                result[abiItem.name] = result[i];
+            }
         }
         return result;
     }
+}
+
+function decodeArgument(abiItem: AbiOutput, value: any) {
+    return /^u?int\d+$/.test(abiItem.type) ? toBN(value) : value;
 }
 
 function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs: any[], config: TransactionConfig] {
@@ -271,8 +278,8 @@ function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs:
 }
 
 async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
-    const { web3, gasMultiplier, waitFor, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
+    const { web3, gasMultiplier, waitFor } = settings;
+    const config = mergeConfig(settings, transactionConfig);
     if (config.gas == null) {
         // estimate gas; should also throw nice errors
         const gas = await web3.eth.estimateGas(config);
@@ -281,22 +288,32 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
         // do a call to catch errors without wasting gas for transaction
         await web3.eth.call(config);
     }
-    const from = typeof config.from === 'string' ? config.from : fail("'from' field is mandatory");
-    const nonce = waitFor.what === 'nonceIncrease' ? await web3.eth.getTransactionCount(from, 'latest') : 0;
+    const nonce = waitFor.what === 'nonceIncrease' ? await web3.eth.getTransactionCount(config.from, 'latest') : 0;
     const promiEvent = web3.eth.sendTransaction(config);
-    return await waitForFinalization(web3, waitFor, nonce, from, promiEvent);
+    return await waitForFinalization(web3, waitFor, nonce, config.from, promiEvent);
 }
 
 async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
-    const { web3, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
-    return await web3.eth.call(config);
+    const config = mergeConfig(settings, transactionConfig);
+    return await settings.web3.eth.call(config);
 }
 
 async function executeMethodEstimateGas(settings: ContractSettings, transactionConfig: TransactionConfig) {
-    const { web3, defaultOptions } = settings;
-    const config: TransactionConfig = { ...defaultOptions, ...transactionConfig };
-    return await web3.eth.estimateGas(config);
+    const config = mergeConfig(settings, transactionConfig);
+    return await settings.web3.eth.estimateGas(config);
+}
+
+type TransactionConfigWithFrom = TransactionConfig & { from: string; };
+
+function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfigWithFrom {
+    const config: TransactionConfig = { ...settings.defaultOptions, ...transactionConfig };
+    if (config.from == null && settings.defaultAccount != null) {
+        config.from = settings.defaultAccount;
+    }
+    if (typeof config.from !== 'string') {
+        throw new Error("'from' field is mandatory");
+    }
+    return config as TransactionConfigWithFrom;
 }
 
 function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<any>): Promise<TransactionReceipt> {
@@ -324,6 +341,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
             if (result) {
                 resolve(result);
             } else {
+                /* istanbul ignore next: error should not be null, but just in case */
                 reject(error ?? new Error("Error when waiting for finalization"));
             }
         }
@@ -384,7 +402,7 @@ function ignore(error: unknown) {
 
 export const MiniTruffleContractsFunctions = {
     groupMethodOverloads,
-    createMethodSignatureText,
+    createMethodSignatureText: createMethodNameWithSignature,
     createMethodCalls,
     convertResults,
     executeMethodSend,
