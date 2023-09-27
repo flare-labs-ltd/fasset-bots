@@ -340,3 +340,10 @@ export function improveConsoleLog(inspectDepth: number = 10) {
     BN.prototype[util.inspect.custom] = function () { return `BN(${this.toString(10)})`; };
     util.inspect.defaultOptions.depth = inspectDepth;
 }
+
+/**
+ * Replaces the substring of `str` from `start` to `start + length` with `replacement`.
+ */
+export function replaceStringRange(str: string, start: number, length: number, replacement: string) {
+    return str.slice(0, start) + replacement + str.slice(start + length);
+}

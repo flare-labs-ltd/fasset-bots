@@ -4,7 +4,7 @@ import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
-import { fail, getOrCreate, preventReentrancy, toBN } from "../helpers";
+import { fail, getOrCreate, preventReentrancy, replaceStringRange, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 
 export type TransactionWaitFor =
@@ -24,9 +24,9 @@ export interface ContractJson {
     contractName: string;
     sourceName: string;
     abi: AbiItem[];
-    bytecode: string;
-    deployedBytecode: string;
-    linkReferences: ContractJsonLink;
+    bytecode?: string;
+    deployedBytecode?: string;
+    linkReferences?: ContractJsonLink;
 }
 
 export interface ContractJsonLink {
@@ -74,7 +74,8 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         public _settings: ContractSettings,
         public contractName: string,
         public abi: AbiItem[],
-        public _contractJson: ContractJson,  // only needed for new
+        public _bytecode: string | undefined,
+        public _contractJson: ContractJson,     // only needed for linking
     ) {
         // console.log("Creating contract", contractName);
     }
@@ -101,17 +102,16 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
     }
 
     async "new"(...args: any[]): Promise<any> {
-        const bytecode = this._contractJson.bytecode;
-        if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+        if (this._bytecode == null || this._bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
             throw new Error(`Contract ${this.contractName} is abstract; cannot deploy`);
         }
-        if (bytecode.includes('_')) {
+        if (this._bytecode.includes('_')) {
             throw new Error(`Contract ${this.contractName} must be linked before deploy`);
         }
         const web3Contract = new this._settings.web3.eth.Contract(this.abi);
         const constructorAbi = this.abi.find(it => it.type === 'constructor');
         const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
-        const data = web3Contract.deploy({ data: bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
+        const data = web3Contract.deploy({ data: this._bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
         const result = await executeMethodSend(this._settings, { ...config, data: data });
         /* istanbul ignore if */
         if (result.contractAddress == null) {
@@ -124,20 +124,22 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
     }
 
     link(...args: any) {
+        if (this._bytecode == null || this._bytecode.length < 4) {
+            throw new Error(`Contract ${this.contractName} is abstract; cannot link`);
+        }
         if (!(args.length === 1 && args[0] instanceof MiniTruffleContractInstance)) {
             throw new Error(`Only supported variant is '${this.contractName}.link(instance)'`);
         }
         const instance = args[0];
         const { contractName, sourceName } = instance._contractFactory._contractJson;
-        const linkRefs = this._contractJson.linkReferences[sourceName][contractName] ?? [];
+        const linkRefs = this._contractJson.linkReferences?.[sourceName]?.[contractName] ?? [];
         for (const { start, length } of linkRefs) {
-            this._contractJson.bytecode = this._contractJson.bytecode.slice(0, 2 * start + 2) +
-                instance.address.slice(2).toLowerCase() + this._contractJson.bytecode.slice(2 * (start + length) + 2);
+            this._bytecode = replaceStringRange(this._bytecode, 2 * start + 2, 2 * length, instance.address.slice(2).toLowerCase());
         }
     }
 
     _withSettings(newSettings: ContractSettings) {
-        return new MiniTruffleContract(newSettings, this.contractName, this.abi, this._contractJson);
+        return new MiniTruffleContract(newSettings, this.contractName, this.abi, this._bytecode, this._contractJson);
     }
 }
 

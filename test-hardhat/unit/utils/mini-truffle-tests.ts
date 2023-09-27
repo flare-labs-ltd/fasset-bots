@@ -22,7 +22,7 @@ describe("mini truffle and artifacts tests", async () => {
             .to.throw("Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings");
     });
 
-    it("should deploy contracts but not interfaces", async () => {
+    it("should deploy contracts but not interfaces / abstract contracts", async () => {
         const GovernanceSettings = artifacts.require("GovernanceSettings");
         const governanceSettings = await GovernanceSettings.new();
         const IFtsoRegistry = artifacts.require("IFtsoRegistry");
@@ -194,6 +194,29 @@ describe("mini truffle and artifacts tests", async () => {
         // typechain info is wrong on hardhat, so we have to cast to any
         SettingsUpdater.link(collateralTypes as any);
         const settingsUpdater = await SettingsUpdater.new();
+    });
+
+    it("should not link abstract contracts", async () => {
+        const CollateralTypes = artifacts.require("CollateralTypes");
+        const collateralTypes = await CollateralTypes.new();
+        const IFtsoRegistry = artifacts.require("IFtsoRegistry");
+        expect(() => IFtsoRegistry.link(collateralTypes as any)).to.throw("Contract IFtsoRegistry is abstract; cannot link");
+    });
+
+    it("should not link if contract has no link references or wrong library is linked", async () => {
+        const AgentsExternal = artifacts.require("AgentsExternal");
+        const agentsExternal = await AgentsExternal.new();
+        const CollateralTypes = artifacts.require("CollateralTypes");
+        const collateralTypes = await CollateralTypes.new();
+        const SettingsUpdater = artifacts.require("SettingsUpdater") as MiniTruffleContract;
+        const origBytecode = SettingsUpdater._bytecode;
+        // try to link with non-dependency
+        SettingsUpdater.link(agentsExternal);
+        expect(SettingsUpdater._bytecode).equals(origBytecode);
+        // try to link without dependencies
+        SettingsUpdater._contractJson = { ...SettingsUpdater._contractJson, linkReferences: undefined };
+        SettingsUpdater.link(collateralTypes);
+        expect(SettingsUpdater._bytecode).equals(origBytecode);
     });
 
     it("unlinked contracts shouldn't deploy", async () => {

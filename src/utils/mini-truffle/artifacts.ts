@@ -6,7 +6,7 @@ import { ContractJson, ContractSettings, MiniTruffleContract } from "./contracts
 interface ArtifactData {
     name: string;
     path: string;
-    contractJson?: string;
+    contractJson?: ContractJson;
 }
 
 export function createArtifacts(rootPath: string, settings: ContractSettings) {
@@ -21,32 +21,36 @@ class ArtifactsImpl implements Truffle.Artifacts {
         private settings: ContractSettings,
     ) {}
 
-    loadArtifactMap(): void {
-        this.artifactMap = new Map();
+    loadArtifactMap() {
+        const artifactMap = new Map<string, ArtifactData>();
         const paths = globSync(path.join(this.rootPath, "**/*.json").replace(/\\/g, "/"));
         for (const fpath of paths) {
             const name = path.basename(fpath, path.extname(fpath));
             const solPath = path.relative(this.rootPath, path.dirname(fpath)).replace(/\\/g, "/");
             const data: ArtifactData = { name: name, path: fpath };
-            this.artifactMap.set(name, data);
-            this.artifactMap.set(`${solPath}:${name}`, data);
+            artifactMap.set(name, data);
+            artifactMap.set(`${solPath}:${name}`, data);
         }
+        return artifactMap;
+    }
+
+    loadContractJson(fpath: string) {
+        const jsonText = fs.readFileSync(fpath).toString();
+        return JSON.parse(jsonText) as ContractJson;
     }
 
     require(name: string): Truffle.Contract<any> {
         if (this.artifactMap == null) {
-            this.loadArtifactMap();
+            this.artifactMap = this.loadArtifactMap();
         }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const artifactData = this.artifactMap!.get(name);
-        /* istanbul ignore if */
+        const artifactData = this.artifactMap.get(name);
         if (artifactData == null) {
             throw new Error(`Unknown artifact ${name}`);
         }
         if (artifactData.contractJson == null) {
-            artifactData.contractJson = fs.readFileSync(artifactData.path).toString();
+            artifactData.contractJson = this.loadContractJson(artifactData.path);
         }
-        const contractJson = JSON.parse(artifactData.contractJson) as ContractJson;
-        return new MiniTruffleContract(this.settings, contractJson.contractName, contractJson.abi, contractJson);
+        const json = artifactData.contractJson;
+        return new MiniTruffleContract(this.settings, json.contractName, json.abi, json.bytecode, json);
     }
 }
