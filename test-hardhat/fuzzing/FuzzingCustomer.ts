@@ -61,7 +61,7 @@ export class FuzzingCustomer {
             );
         // pay
         let txHash = null;
-        if (coinFlip(0.5)) {
+        if (coinFlip(0.8)) {
             txHash = await this.minter.performMintingPayment(crt);
             // wait for finalization
             await this.runner.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO check if ok, there is scope in original

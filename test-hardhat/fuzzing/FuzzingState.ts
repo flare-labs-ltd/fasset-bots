@@ -2,6 +2,7 @@ import { IAssetActorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { MockChainWallet } from "../../src/mock/MockChain";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
+import { toBN } from "../../src/utils/helpers";
 import { FuzzingStateAgent } from "./FuzzingStateAgent";
 
 export class FuzzingState extends TrackedState {
@@ -13,6 +14,8 @@ export class FuzzingState extends TrackedState {
         super(context, lastEventBlockHandled);
     }
 
+    fAssetBalance = toBN(0);
+
     override agents!: Map<string, FuzzingStateAgent>;
     override agentsByUnderlying!: Map<string, FuzzingStateAgent>;
     override agentsByPool!: Map<string, FuzzingStateAgent>;
@@ -23,5 +26,10 @@ export class FuzzingState extends TrackedState {
 
     protected override newAgent(data: InitialAgentData): FuzzingStateAgent {
         return new FuzzingStateAgent(this, data, this.wallet);
+    }
+
+    get fAssetTotalBalance(): BN {
+        //TODO
+        return toBN(0);
     }
 }

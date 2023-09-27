@@ -34,7 +34,7 @@ const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
 const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
-const depositUnderlying = toBNExp(1000, 6);
+const depositUnderlying = toBNExp(100_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
 
 export function disableMccTraceManager() {
