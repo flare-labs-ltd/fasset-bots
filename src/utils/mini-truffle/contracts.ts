@@ -313,9 +313,11 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
             if (noncePollTimer != null) {
                 clearInterval(noncePollTimer);
             }
-            (promiEvent as any).off("receipt");
-            if (waitFor.what === 'confirmations') {
-                (promiEvent as any).off("confirmation");
+            if (waitForFinalization.cleanupHandlers) {
+                (promiEvent as any).off("receipt");
+                if (waitFor.what === 'confirmations') {
+                    (promiEvent as any).off("confirmation");
+                }
             }
             if (result) {
                 resolve(result);
@@ -329,7 +331,7 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
                 success = receipt != null;
             } else if (waitFor.what === 'confirmations') {
                 success = numberOfConfirmations >= waitFor.confirmations;
-            } else if (waitFor.what === 'nonceIncrease') { /* istanbul ignore else */
+            } else /* istanbul ignore else: exhaustive */ if (waitFor.what === 'nonceIncrease') {
                 const nonce = await web3.eth.getTransactionCount(from, 'latest');
                 success = nonce > initialNonce;
             }
@@ -350,11 +352,12 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
         // set receipt when available
         promiEvent.on("receipt", (rec) => {
             receipt = rec;
-            checkFinished().catch(ignore);
+            if (waitFor.what === 'receipt' || waitForFinalization.alwaysCheckFinishedOnReceipt) {
+                checkFinished().catch(ignore);
+            }
         }).catch(ignore);
         //
         if (waitFor.what === 'nonceIncrease') {
-            /* istanbul ignore next */
             noncePollTimer = setInterval(() => {
                 checkFinished().catch(ignore);
             }, waitFor.pollMS);
@@ -366,6 +369,10 @@ function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNon
         }
     });
 }
+
+// testing/debugging flags - the defaults are optimal, but may be switched off in tests to access some parts of code
+waitForFinalization.alwaysCheckFinishedOnReceipt = true;
+waitForFinalization.cleanupHandlers = true;
 
 /* istanbul ignore next */
 function ignore(error: unknown) {

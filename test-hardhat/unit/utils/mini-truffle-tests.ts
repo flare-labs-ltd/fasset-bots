@@ -1,7 +1,7 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
-import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
+import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, MiniTruffleContractsFunctions, withSettings } from "../../../src/utils/mini-truffle/contracts";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
@@ -51,11 +51,20 @@ describe("mini truffle and artifacts tests", async () => {
     });
 
     it("should create, deploy and call a contract - wait for receipt", async () => {
-        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'receipt', timeoutMS: 10_000 } });
+        await createDeployAndCall({ ...contractSettings, waitFor: { what: 'receipt' } });
     });
 
     it("should create, deploy and call a contract - wait for nonce", async () => {
         await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 1000, timeoutMS: 10_000 } });
+    });
+
+    it("should create, deploy and call a contract - wait for nonce (don't check on receipt)", async () => {
+        MiniTruffleContractsFunctions.waitForFinalization.alwaysCheckFinishedOnReceipt = false;
+        try {
+            await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 100, timeoutMS: 10_000 } });
+        } finally {
+            MiniTruffleContractsFunctions.waitForFinalization.alwaysCheckFinishedOnReceipt = true;
+        }
     });
 
     it("should create, deploy and call a contract - wait for 3 confirmations (failure without parallel mining)", async () => {
@@ -74,6 +83,28 @@ describe("mini truffle and artifacts tests", async () => {
         const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
         expect(Number(price)).to.equal(1000);
         expect(Number(decimals)).to.equal(5);
+    });
+
+    it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        try {
+            MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
+            const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
+            await withSettings(fpr, settings).setDecimals("XRP", 5);
+            await withSettings(fpr, settings).setPrice("XRP", 800);
+            clearInterval(timer);
+            await fpr.setPriceFromTrustedProviders("XRP", 1000);
+            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+            expect(Number(price)).to.equal(800);
+            expect(Number(decimals)).to.equal(5);
+            const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
+            expect(Number(price1)).to.equal(1000);
+            expect(Number(decimals1)).to.equal(5);
+        } finally {
+            MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
+        }
     });
 
     it("reverts should work", async () => {
@@ -180,8 +211,8 @@ describe("mini truffle and artifacts tests", async () => {
         expect(await web3.eth.getBalance(wnat.address)).equals("10000");
         // send transaction
         const wnatMT = wnat as unknown as MiniTruffleContractInstance;
-        const fndata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find(it => it.name === 'withdraw')), ["5000"]);
-        await wnat.sendTransaction({ data: fndata, from: accounts[0] });
+        const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find(it => it.name === 'withdraw')), ["5000"]);
+        await wnat.sendTransaction({ data: calldata, from: accounts[0] });
         expect(await web3.eth.getBalance(wnat.address)).equals("5000");
     });
 
@@ -214,5 +245,15 @@ describe("mini truffle and artifacts tests", async () => {
         const gas = await fpr.setDecimals.estimateGas("XRP", 5);
         await fpr.setDecimals("XRP", 5, { gas: gas });
         await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
+    });
+
+    it("error handling in direct send transaction should work", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find(it => it.name === 'setPrice')), ["XRP", "5"]);
+        const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+        const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
+        await expectRevert(MiniTruffleContractsFunctions.waitForFinalization(contractSettings.web3, contractSettings.waitFor, nonce, accounts[0], promiEvent),
+            "price not initialized");
     });
 });
