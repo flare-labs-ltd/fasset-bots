@@ -384,9 +384,6 @@ describe("Fuzzing tests", async () => {
         // total supply
         const fAssetSupply = await context.fAsset.totalSupply();
         checker.checkEquality("fAsset supply", fAssetSupply, commonTrackedState.fAssetSupply, true);
-        // // total balances
-        // const totalBalances = commonTrackedState.fAssetTotalBalance;
-        // checker.checkEquality('fAsset supply / total balances', fAssetSupply, totalBalances);
         // total minted value by all agents
         const totalMintedUBA = sumBN(commonTrackedState.agents.values(), (agent) => agent.mintedUBA);
         checker.checkEquality("fAsset supply/total minted by agents", fAssetSupply, totalMintedUBA, true);
