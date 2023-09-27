@@ -224,17 +224,22 @@ export class BotCliCommands {
      * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
      */
     async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
-        this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
-        logger.info(
-            `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${
-                announce.paymentReference
-            }.`
-        );
-        return announce.paymentReference;
+        try {
+            const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
+            agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
+            await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+            this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
+            logger.info(
+                `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${
+                    announce.paymentReference
+                }.`
+            );
+            return announce.paymentReference;
+        } catch (error) {
+            return null;
+            console.error(error);
+        }
     }
 
     /**
