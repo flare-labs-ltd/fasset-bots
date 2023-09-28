@@ -4,8 +4,9 @@ import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
-import { getOrCreate, preventReentrancy, replaceStringRange, sleep, toBN } from "../helpers";
+import { getOrCreate, replaceStringRange, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
+import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancelable-promises";
 
 export type TransactionWaitFor =
     | { what: 'receipt', timeoutMS?: number }
@@ -303,12 +304,6 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     return await settings.web3.eth.estimateGas(config);
 }
 
-export class PromiseCancelled extends Error {
-    constructor(message = "Promise cancelled") {
-        super(message);
-    }
-}
-
 type TransactionConfigWithFrom = TransactionConfig & { from: string; };
 
 function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfigWithFrom {
@@ -323,60 +318,76 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
 }
 
 async function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<TransactionReceipt>): Promise<TransactionReceipt> {
-    if (waitFor.timeoutMS) {
-        const result = await Promise.race([
-            waitForFinalizationInner(web3, waitFor, initialNonce, from, promiEvent),
-            sleep(waitFor.timeoutMS).then(() => {
-                console.log("Timer expired");
-                return Promise.reject(new Error("Timeout waiting for finalization"));
-            })
-        ]);
-        return result;
-    } else {
-        return waitForFinalizationInner(web3, waitFor, initialNonce, from, promiEvent);
+    async function waitForFinalizationInner(): Promise<TransactionReceipt> {
+        if (waitFor.what === 'receipt') {
+            return await toCancelablePromise(promiEvent, cancelToken);
+        } else if (waitFor.what === 'confirmations') {
+            return await waitConfirmations(promiEvent, waitFor.confirmations, cancelToken);
+        } else /* waitFor.what === 'nonceIncrease' */ {
+            const receipt = await toCancelablePromise(promiEvent, cancelToken);
+            await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
+            return receipt;
+        }
+    }
+
+    const cancelToken = new CancelToken();
+    try {
+        if (waitFor.timeoutMS) {
+            const result = await Promise.race([
+                waitForFinalizationInner(),
+                cancelableSleep(waitFor.timeoutMS, cancelToken).then(() => Promise.reject(new Error("Timeout waiting for finalization")))
+            ]);
+            return result;
+        } else {
+            return await waitForFinalizationInner();
+        }
+    } finally {
+        cancelToken.cancel();
     }
 }
 
-async function waitForFinalizationInner(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<TransactionReceipt>): Promise<TransactionReceipt> {
-    const waitConf = waitFor.what === 'confirmations' ? waitConfirmations(promiEvent, waitFor.confirmations) : null;
-    const receipt = await promiEvent;
-    if (waitFor.what === 'receipt') {
-        return receipt;
-    } else if (waitFor.what === 'confirmations') {
-        await waitConf;
-    } else {
-        await waitNonceIncrease(web3, from, initialNonce, waitFor.pollMS);
-    }
-    return receipt;
-}
-
-function waitConfirmations(promiEvent: PromiEvent<any>, confirmationsRequired: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-        promiEvent.on("confirmation", (confirmations) => {
-            console.log("Confirmation", confirmations);
-            if (confirmations >= confirmationsRequired) {
-                resolve();
-            }
-        }).catch(ignore);
+function toCancelablePromise(promiEvent: PromiEvent<TransactionReceipt>, cancelToken: CancelToken): Promise<TransactionReceipt> {
+    let cancelRegistration: CancelTokenRegistration;
+    return new Promise<TransactionReceipt>((resolve, reject) => {
+        promiEvent.on('receipt', (receipt) => resolve(receipt)).catch(ignore);
+        promiEvent.on('error', (error) => reject(error)).catch(ignore);
+        cancelRegistration = cancelToken.register(reject);
+    }).finally(() => {
+        cancelRegistration.unregister();
+        (promiEvent as any).off('receipt');
+        (promiEvent as any).off('error');
     });
 }
 
-async function waitNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number): Promise<void> {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const nonce = await web3.eth.getTransactionCount(address, 'latest');
-        if (nonce > initialNonce) break;
-        await sleep(pollMS);
+function waitConfirmations(promiEvent: PromiEvent<any>, confirmationsRequired: number, cancelToken: CancelToken): Promise<TransactionReceipt> {
+    let cancelRegistration: CancelTokenRegistration;
+    return new Promise<TransactionReceipt>((resolve, reject) => {
+        promiEvent.on("confirmation", (confirmations, receipt) => {
+            console.log("Confirmation", confirmations);
+            if (confirmations >= confirmationsRequired) {
+                resolve(receipt);
+            }
+        }).catch(ignore);
+        cancelRegistration = cancelToken.register(reject);
+    }).finally(() => {
+        cancelRegistration.unregister();
+        (promiEvent as any).off('confirmation');
+    });
+}
+
+async function waitForNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number, cancelToken: CancelToken): Promise<void> {
+    for (let i = 0; ; i++) {
+        if (i > 0 || waitForFinalization.checkForNonceOnReceipt) {
+            const nonce = await web3.eth.getTransactionCount(address, 'latest');
+            cancelToken.check();    // prevent returning value if cancelled
+            if (nonce > initialNonce) break;
+        }
+        await cancelableSleep(pollMS, cancelToken);
     }
 }
 
-function preventUncaughtError<T>(promise: Promise<T>) {
-    promise.catch(() => { /**/ });
-    return promise; // will still reject everybody await-ing it
-}
-
 // testing/debugging flags - the defaults are optimal, but may be switched off in tests to access some parts of code
-waitForFinalization.alwaysCheckFinishedOnReceipt = true;
+waitForFinalization.checkForNonceOnReceipt = true;
 waitForFinalization.cleanupHandlers = true;
 
 /* istanbul ignore next */

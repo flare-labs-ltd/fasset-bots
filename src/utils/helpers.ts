@@ -212,7 +212,6 @@ export function toplevelRun(main: () => Promise<void>) {
 /**
  * Future is a promise that can be resolved/rejected "from the outside" by calling future.resolve/reject.
  */
-
 /* istanbul ignore next */
 export class Future<T> extends Promise<T> {
     readonly resolve: (value: T | PromiseLike<T>) => void;
@@ -229,23 +228,10 @@ export class Future<T> extends Promise<T> {
         this.reject = _reject;
     }
 
-    onCancel(cleanupFunc: () => void) {
-        this.finally(() => {
-            cleanupFunc();              // prevent uncaught exception errors due to CancelledError
-        }).catch(() => { /**/ });
-    }
-
-    cancel() {
-        this.catch(() => { /**/ });     // prevent uncaught exception errors due to CancelledError
-        this.reject(new PromiseCancelled("Promise cancelled"));
-    }
-
     static get [Symbol.species]() {
         return Promise;
     }
 }
-
-export class PromiseCancelled extends Error { }
 
 // Error handling
 

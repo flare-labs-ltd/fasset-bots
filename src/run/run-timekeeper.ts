@@ -26,14 +26,14 @@ toplevelRun(async () => {
     }
     // run
     console.log("Timekeeper bot started, press CTRL+C to end");
-    const stopped = new Future<boolean>();
-    process.on("SIGINT", () => {
-        console.log("Timekeeper bot stopping...");
-        for (const timekeeper of timekeepers) {
-            timekeeper.clear();
-        }
-        stopped.resolve(true);
+    await new Promise<void>((resolve) => {
+        process.on("SIGINT", () => {
+            console.log("Timekeeper bot stopping...");
+            resolve();
+        });
     });
-    await stopped;
+    for (const timekeeper of timekeepers) {
+        timekeeper.clear();
+    }
     console.log("Timekeeper bot stopped");
 });

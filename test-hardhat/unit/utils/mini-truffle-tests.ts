@@ -59,11 +59,11 @@ describe("mini truffle and artifacts tests", async () => {
     });
 
     it("should create, deploy and call a contract - wait for nonce (don't check on receipt)", async () => {
-        MiniTruffleContractsFunctions.waitForFinalization.alwaysCheckFinishedOnReceipt = false;
+        MiniTruffleContractsFunctions.waitForFinalization.checkForNonceOnReceipt = false;
         try {
             await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 100, timeoutMS: 10_000 } });
         } finally {
-            MiniTruffleContractsFunctions.waitForFinalization.alwaysCheckFinishedOnReceipt = true;
+            MiniTruffleContractsFunctions.waitForFinalization.checkForNonceOnReceipt = true;
         }
     });
 
