@@ -84,7 +84,7 @@ export function toHex(x: string | number | BN, padToBytes?: number) {
  * @param size
  * @returns
  */
-export function fromUnprefixedBytes(bytes: string, type: string, size: number) {
+export function fromUnprefixedBytes(bytes: string, type: string, size: number): string | number | BN {
   switch (type) {
     case "AttestationType":
       return toBN(prefix0x(bytes)).toNumber();

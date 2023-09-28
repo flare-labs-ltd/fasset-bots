@@ -9,7 +9,7 @@ export class TimeKeeper {
         public intervalInMs: number
     ) {}
 
-    interval?: NodeJS.Timer;
+    interval?: NodeJS.Timeout;
 
     /**
      * Prove that a block with given number and timestamp exists and
