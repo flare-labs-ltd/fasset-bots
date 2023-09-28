@@ -1171,13 +1171,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mikro-orm/cli@npm:5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/cli@npm:5.8.3"
+"@mikro-orm/cli@npm:5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/cli@npm:5.8.4"
   dependencies:
     "@jercle/yargonaut": 1.1.5
-    "@mikro-orm/core": ~5.8.3
-    "@mikro-orm/knex": ~5.8.3
+    "@mikro-orm/core": ~5.8.4
+    "@mikro-orm/knex": ~5.8.4
     fs-extra: 11.1.1
     tsconfig-paths: 4.2.0
     yargs: 17.7.2
@@ -1216,20 +1216,20 @@ __metadata:
   bin:
     mikro-orm: cli.js
     mikro-orm-esm: esm.js
-  checksum: 96b858a5036ca854c71575865d964790c1aeb7b2bdb83f93e91f0e508f43de70c2660351a44a2f985c11eea09a5ba5126f3d979edfbcab60cb473ad53b298982
+  checksum: aab11deb55bb84538b8c5d0b30f6c0cb86f22ca7a2e470cf43be63c4ddb4fea35c3c0748bbed09063df725b1999a480dbb71a9d1bddb9d45e22f9229aa9fe57f
   languageName: node
   linkType: hard
 
-"@mikro-orm/core@npm:5.8.3, @mikro-orm/core@npm:~5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/core@npm:5.8.3"
+"@mikro-orm/core@npm:5.8.4, @mikro-orm/core@npm:~5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/core@npm:5.8.4"
   dependencies:
     acorn-loose: 8.3.0
     acorn-walk: 8.2.0
     dotenv: 16.3.1
     fs-extra: 11.1.1
     globby: 11.1.0
-    mikro-orm: ~5.8.3
+    mikro-orm: ~5.8.4
     reflect-metadata: 0.1.13
   peerDependencies:
     "@mikro-orm/better-sqlite": ^5.0.0
@@ -1263,13 +1263,13 @@ __metadata:
       optional: true
     "@mikro-orm/sqlite":
       optional: true
-  checksum: ffdd064fce1f0f57e01d7f426b0a734b1773c52fca160e674532de110644f7d1d0da22572b52d5a670d3981b6a9d50209fa9a50b3b525ae27216cee765f65964
+  checksum: d3b92d5865f8036f0b6056a8163f80a01ad805ddbdff7633d94da386671ee07a6ba57a488d5584062985742b9299272a7a8127729de94c6b0699fdbabfea8646
   languageName: node
   linkType: hard
 
-"@mikro-orm/knex@npm:~5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/knex@npm:5.8.3"
+"@mikro-orm/knex@npm:~5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/knex@npm:5.8.4"
   dependencies:
     fs-extra: 11.1.1
     knex: 2.5.1
@@ -1301,15 +1301,15 @@ __metadata:
       optional: true
     sqlite3:
       optional: true
-  checksum: e3ce3cf11d44703f8634a5a925ea698a05c3cfb664b3f6c027901989fb60b84f83680a58a09ab554fabac7509c971f3101d411f4330cfa8724a86a1e4d771c6c
+  checksum: cec3c048ec9f337540618a2fadba21dc1b42af7e0bd21ad36993bac092d29922d482c5016f29e0d8fb0acedd5d2d0380499f5801d92aa07d0c4f70550c440e91
   languageName: node
   linkType: hard
 
-"@mikro-orm/mysql@npm:5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/mysql@npm:5.8.3"
+"@mikro-orm/mysql@npm:5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/mysql@npm:5.8.4"
   dependencies:
-    "@mikro-orm/knex": ~5.8.3
+    "@mikro-orm/knex": ~5.8.4
     mysql2: 3.6.1
   peerDependencies:
     "@mikro-orm/core": ^5.0.0
@@ -1323,15 +1323,15 @@ __metadata:
       optional: true
     "@mikro-orm/seeder":
       optional: true
-  checksum: 0f55d3cb4207721301401a1ec0802862af80f37395c6bb5e151314ecabd2b479a5bcfd58b0dfc2838a9ef6b75bdf5ce46b591254ec9491c53a12c2ef9e0374bf
+  checksum: d4dff20d9611d121f056ac66a26e6c9d915190e8653f424eb438696b63c4b4d41c7d8d99f1b6110acbc80607e2a15e562f60b213a8b56bd4e08cd96fc8c52c3b
   languageName: node
   linkType: hard
 
-"@mikro-orm/postgresql@npm:5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/postgresql@npm:5.8.3"
+"@mikro-orm/postgresql@npm:5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/postgresql@npm:5.8.4"
   dependencies:
-    "@mikro-orm/knex": ~5.8.3
+    "@mikro-orm/knex": ~5.8.4
     pg: 8.11.3
   peerDependencies:
     "@mikro-orm/core": ^5.0.0
@@ -1345,15 +1345,15 @@ __metadata:
       optional: true
     "@mikro-orm/seeder":
       optional: true
-  checksum: f1a015b40ca47dd1113d971c4f3185c22d980a47b8edba1a25e28ac1b8e201c07daf1b09a61d1e16f685f194949cb875ea2c115c830b14c624ea3502659b53a7
+  checksum: 7069ac3b2c0823ccefe620feab5b5ff1ff10677a4d501b47ae4acbfc69afb309516a0dd6f7e1fe13b9e2a274a98a622b516d17592fd1e1f44e334942a3777586
   languageName: node
   linkType: hard
 
-"@mikro-orm/sqlite@npm:5.8.3":
-  version: 5.8.3
-  resolution: "@mikro-orm/sqlite@npm:5.8.3"
+"@mikro-orm/sqlite@npm:5.8.4":
+  version: 5.8.4
+  resolution: "@mikro-orm/sqlite@npm:5.8.4"
   dependencies:
-    "@mikro-orm/knex": ~5.8.3
+    "@mikro-orm/knex": ~5.8.4
     fs-extra: 11.1.1
     sqlite3: 5.1.6
     sqlstring-sqlite: 0.1.1
@@ -1369,7 +1369,7 @@ __metadata:
       optional: true
     "@mikro-orm/seeder":
       optional: true
-  checksum: fb894b1acbacd8a10b5c6a01c66b44bb9386d55cfedd402d97b7a2148d279f13683bce9a61e4c6183315086ae2d63626ed645e7912bc239595be3e78b040840f
+  checksum: 0c19b674a228d0ef21458cf3d2d842b37f9022d1422f3f94795a5d089066047be51863e27335a9ea6af405a9ae313e8bf3df0b5277bff5dad445d0924a646f74
   languageName: node
   linkType: hard
 
@@ -5419,11 +5419,11 @@ __metadata:
   dependencies:
     "@flarenetwork/mcc": 3.2.0
     "@istanbuljs/nyc-config-typescript": 1.0.2
-    "@mikro-orm/cli": 5.8.3
-    "@mikro-orm/core": 5.8.3
-    "@mikro-orm/mysql": 5.8.3
-    "@mikro-orm/postgresql": 5.8.3
-    "@mikro-orm/sqlite": 5.8.3
+    "@mikro-orm/cli": 5.8.4
+    "@mikro-orm/core": 5.8.4
+    "@mikro-orm/mysql": 5.8.4
+    "@mikro-orm/postgresql": 5.8.4
+    "@mikro-orm/sqlite": 5.8.4
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": 0.5.16
     "@truffle/contract": 4.6.31
@@ -7963,10 +7963,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mikro-orm@npm:~5.8.3":
-  version: 5.8.3
-  resolution: "mikro-orm@npm:5.8.3"
-  checksum: e0fdf3b8ad6d5482473932253346591a6d6e558adcae0b2446910684fa832a28ceb794809df901b0367d6cec868cd74699fe46a5830d5393db0c2caf65583a11
+"mikro-orm@npm:~5.8.4":
+  version: 5.8.4
+  resolution: "mikro-orm@npm:5.8.4"
+  checksum: 54c07e5f0288c3488bd96e3d493754af8b565cdf875193b09afae57b7fa449f8e478491bf2d1302e73ae5408a3a9292e293e14c94971f1dd82b2f3c8aac69682
   languageName: node
   linkType: hard
 
