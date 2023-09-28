@@ -34,6 +34,6 @@ toplevelRun(async () => {
         }
         stopped.resolve(true);
     });
-    await stopped.promise;
+    await stopped;
     console.log("Timekeeper bot stopped");
 });

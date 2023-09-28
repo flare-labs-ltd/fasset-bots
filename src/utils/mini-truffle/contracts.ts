@@ -4,7 +4,7 @@ import Web3 from "web3";
 import coder from "web3-eth-abi";
 import { AbiOutput } from "web3-utils";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
-import { getOrCreate, preventReentrancy, replaceStringRange, toBN } from "../helpers";
+import { getOrCreate, preventReentrancy, replaceStringRange, sleep, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 
 export type TransactionWaitFor =
@@ -303,6 +303,12 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     return await settings.web3.eth.estimateGas(config);
 }
 
+export class PromiseCancelled extends Error {
+    constructor(message = "Promise cancelled") {
+        super(message);
+    }
+}
+
 type TransactionConfigWithFrom = TransactionConfig & { from: string; };
 
 function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfigWithFrom {
@@ -316,78 +322,57 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
     return config as TransactionConfigWithFrom;
 }
 
-function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<any>): Promise<TransactionReceipt> {
+async function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<TransactionReceipt>): Promise<TransactionReceipt> {
+    if (waitFor.timeoutMS) {
+        const result = await Promise.race([
+            waitForFinalizationInner(web3, waitFor, initialNonce, from, promiEvent),
+            sleep(waitFor.timeoutMS).then(() => {
+                console.log("Timer expired");
+                return Promise.reject(new Error("Timeout waiting for finalization"));
+            })
+        ]);
+        return result;
+    } else {
+        return waitForFinalizationInner(web3, waitFor, initialNonce, from, promiEvent);
+    }
+}
+
+async function waitForFinalizationInner(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<TransactionReceipt>): Promise<TransactionReceipt> {
+    const waitConf = waitFor.what === 'confirmations' ? waitConfirmations(promiEvent, waitFor.confirmations) : null;
+    const receipt = await promiEvent;
+    if (waitFor.what === 'receipt') {
+        return receipt;
+    } else if (waitFor.what === 'confirmations') {
+        await waitConf;
+    } else {
+        await waitNonceIncrease(web3, from, initialNonce, waitFor.pollMS);
+    }
+    return receipt;
+}
+
+function waitConfirmations(promiEvent: PromiEvent<any>, confirmationsRequired: number): Promise<void> {
     return new Promise((resolve, reject) => {
-        let finished = false;
-        let timeout: NodeJS.Timer | number | null = null;
-        let noncePollTimer: NodeJS.Timer | number | null = null;
-        let receipt: TransactionReceipt | null = null;
-        let numberOfConfirmations = -1;
-        const cleanupAndExit = (result: TransactionReceipt | null, error: any) => {
-            if (finished) return;
-            finished = true;
-            if (timeout != null) {
-                clearTimeout(timeout);
-            }
-            if (noncePollTimer != null) {
-                clearInterval(noncePollTimer);
-            }
-            if (waitForFinalization.cleanupHandlers) {
-                (promiEvent as any).off("receipt");
-                if (waitFor.what === 'confirmations') {
-                    (promiEvent as any).off("confirmation");
-                }
-            }
-            if (result) {
-                resolve(result);
-            } else {
-                /* istanbul ignore next: error should not be null, but just in case */
-                reject(error ?? new Error("Error when waiting for finalization"));
-            }
-        }
-        const checkFinished = preventReentrancy(async () => {
-            let success = false;
-            if (waitFor.what === 'receipt') {
-                success = receipt != null;
-            } else if (waitFor.what === 'confirmations') {
-                success = numberOfConfirmations >= waitFor.confirmations;
-            } else /* istanbul ignore else: exhaustive */ if (waitFor.what === 'nonceIncrease') {
-                const nonce = await web3.eth.getTransactionCount(from, 'latest');
-                success = nonce > initialNonce;
-            }
-            if (success && receipt != null) {
-                cleanupAndExit(receipt, null);
-            }
-        });
-        // chack for timeout
-        if (waitFor.timeoutMS) {
-            timeout = setTimeout(() => {
-                cleanupAndExit(null, new Error("Timeout waiting for finalization"));
-            }, waitFor.timeoutMS);
-        }
-        // check for errors
-        promiEvent.catch((error) => {
-            cleanupAndExit(null, error);
-        });
-        // set receipt when available
-        promiEvent.on("receipt", (rec) => {
-            receipt = rec;
-            if (waitFor.what === 'receipt' || waitForFinalization.alwaysCheckFinishedOnReceipt) {
-                checkFinished().catch(ignore);
+        promiEvent.on("confirmation", (confirmations) => {
+            console.log("Confirmation", confirmations);
+            if (confirmations >= confirmationsRequired) {
+                resolve();
             }
         }).catch(ignore);
-        //
-        if (waitFor.what === 'nonceIncrease') {
-            noncePollTimer = setInterval(() => {
-                checkFinished().catch(ignore);
-            }, waitFor.pollMS);
-        } else if (waitFor.what === 'confirmations') {
-            promiEvent.on("confirmation", (confNumber) => {
-                numberOfConfirmations = confNumber;
-                checkFinished().catch(ignore);
-            }).catch(ignore);
-        }
     });
+}
+
+async function waitNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number): Promise<void> {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const nonce = await web3.eth.getTransactionCount(address, 'latest');
+        if (nonce > initialNonce) break;
+        await sleep(pollMS);
+    }
+}
+
+function preventUncaughtError<T>(promise: Promise<T>) {
+    promise.catch(() => { /**/ });
+    return promise; // will still reject everybody await-ing it
 }
 
 // testing/debugging flags - the defaults are optimal, but may be switched off in tests to access some parts of code
@@ -408,5 +393,5 @@ export const MiniTruffleContractsFunctions = {
     executeMethodSend,
     executeMethodCall,
     executeMethodEstimateGas,
-    waitForFinalization
+    waitForFinalization,
 };
