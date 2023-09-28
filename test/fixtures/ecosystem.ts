@@ -1,5 +1,6 @@
 import { EcosystemConfig } from "./interface"
-import { lotSizeUba, toBN, expBN, randBnInRadius, randBnInRelRadius, priceBasedDexReserve, collateralForCr } from "../helpers/utils"
+import { lotSizeUba, toBN, expBN, randBnInRadius, randBnInRelRadius } from "../helpers/utils"
+import { priceBasedDexReserve, collateralForCr } from "../helpers/contract-utils"
 import { USDT as VAULT, WNAT as POOL, XRP as ASSET } from "./assets"
 
 const defaultDex1FAssetReserve = expBN(ASSET.decimals + 10)

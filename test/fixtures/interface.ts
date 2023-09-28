@@ -1,41 +1,46 @@
 import BN from 'bn.js'
 
-export interface CollateralInfo {
-  name: string,
-  symbol: string,
-  decimals: number,
-  ftsoDecimals: number,
-  defaultPriceUsd5: BN,
-  minCollateralRatioBips?: BN
+interface BaseAsset {
+  name: string
+  symbol: string
+  decimals: number
+  ftsoDecimals: number
+  defaultPriceUsd5: BN
 }
 
-export interface AssetInfo extends CollateralInfo {
-  amgDecimals: number,
+
+export interface CollateralAsset extends BaseAsset {
+  kind: "vault" | "pool"
+  minCollateralRatioBips: BN
+}
+
+export interface UnderlyingAsset extends BaseAsset {
+  amgDecimals: number
   lotSize: number
 }
 
 export interface EcosystemConfig {
-  name: string,
+  name: string
   // ftso prices
-  assetFtsoPrice: BN,
-  vaultFtsoPrice: BN,
-  poolFtsoPrice: BN,
+  assetFtsoPrice: BN
+  vaultFtsoPrice: BN
+  poolFtsoPrice: BN
   // dex(vault, f-asset)
-  dex1VaultReserve: BN,
-  dex1FAssetReserve: BN,
+  dex1VaultReserve: BN
+  dex1FAssetReserve: BN
   // dex(pool, vault)
-  dex2PoolReserve: BN,
-  dex2VaultReserve: BN,
+  dex2PoolReserve: BN
+  dex2VaultReserve: BN
   // agent settings
-  mintedUBA: BN,
-  vaultCollateral: BN,
-  poolCollateral: BN,
-  poolRedeemingFAsset: BN,
-  vautRedeemingFAsset: BN,
+  mintedUBA: BN
+  vaultCollateral: BN
+  poolCollateral: BN
+  poolRedeemingFAsset: BN
+  vautRedeemingFAsset: BN
   // asset manager settings
-  liquidationFactorBips: BN,
-  liquidationFactorVaultBips: BN,
+  liquidationFactorBips: BN
+  liquidationFactorVaultBips: BN
   // expected implicit data
-  expectedVaultCrBips: BN,
+  expectedVaultCrBips: BN
   expectedPoolCrBips: BN
 }

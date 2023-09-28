@@ -10,10 +10,9 @@ import { LiquidatorInstance } from '../typechain-truffle/contracts/Liquidator'
 import BN from 'bn.js'
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { EcosystemConfig } from './fixtures/interface'
-import {
-  addLiquidity, swapOutput, swapInput, lotSizeAmg, amgSizeUba,
-  assertBnEqual, assertBnGreaterOrEqual, toBN, BNish, expBN
-} from "./helpers/utils"
+import { lotSizeAmg, amgSizeUba, assertBnEqual, assertBnGreaterOrEqual, toBN, BNish } from './helpers/utils'
+import { addLiquidity, swapOutput, swapInput } from "./helpers/contract-utils"
+// fixtures
 import { XRP as ASSET, USDT as VAULT, WNAT as POOL } from './fixtures/assets'
 import { healthyEcosystemConfigs, unhealthyEcosystemConfigs, semiHealthyEcosystemConfigs } from './fixtures/ecosystem'
 
@@ -56,42 +55,6 @@ contract("Tests for Liquidator contract", (accounts) => {
     await priceReader.setPrice(fAssetSymbol, priceAsset)
     await priceReader.setPrice(VAULT.symbol, priceVault)
     await priceReader.setPrice(POOL.symbol, pricePool)
-  }
-
-  // mocks asset price increase
-  async function setAgentCr(
-    assetManager: AssetManagerMockInstance,
-    agent: AgentMockInstance,
-    crBips: BNish,
-    vaultCr: boolean = true
-  ): Promise<void> {
-    const COLLATERAL = (vaultCr) ? VAULT : POOL
-    const agentInfo = await assetManager.getAgentInfo(agent.address)
-    const totalMintedUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.redeemingUBA))
-    const collateralWei = toBN((vaultCr)
-      ? agentInfo.totalVaultCollateralWei
-      : agentInfo.totalPoolCollateralNATWei
-    )
-    // calculate necessary price of asset, expressed in collateral wei
-    // P(Vw, Fu) = v / (f Cr)
-    // P(Vw, Fu) = P(Vw, S) * P(S, Fu)
-    const assetUBAPriceCollateralWei = collateralWei
-      .muln(10_000)
-      .div(totalMintedUBA)
-      .div(toBN(crBips))
-    // asset price in USD with f-asset ftso decimals
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await priceReader.getPrice(COLLATERAL.symbol)
-    const { 2: fAssetFtsoDecimals } = await priceReader.getPrice(await fAsset.symbol())
-    // calculate new ftso price for the asset
-    // P(SF, F) = 10^((dF + fV) - (dV + fF)) P(SV, V) P(Vw, Fu)
-    const expPlus = collateralFtsoDecimals.add(await fAsset.decimals())
-    const expMinus = fAssetFtsoDecimals.addn(COLLATERAL.decimals)
-    const assetFtsoPrice = collateralFtsoPrice
-      .mul(assetUBAPriceCollateralWei)
-      .mul(toBN(10).pow(expPlus))
-      .div(toBN(10).pow(expMinus))
-    // set new ftso price for the asset
-    await priceReader.setPrice(await fAsset.symbol(), assetFtsoPrice)
   }
 
   async function liquidationOutput(

@@ -83,4 +83,5 @@ yarn test
 For testing we use hardhat with truffle. For the client-side bot implementation, ethers should/will be used, as it is both lightweight and powerful, so it can be intergrated into frontend.
 
 ## TODO
-- [ ] handle situations when dex reserves are smaller than swapping amounts.
+- [ ] handle situations when dex reserves are smaller than swapping amounts,
+- [ ] add UBA and Wei to Liquidator contract variables.
