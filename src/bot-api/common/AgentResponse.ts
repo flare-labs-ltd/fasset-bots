@@ -6,6 +6,14 @@ export interface AgentCreateResponse {
     underlyingAddress: string
 }
 
-export interface AgentBalance{
+export interface AgentBalance {
     balance: string
 }
+
+export interface AgentUnderlying {
+    paymentReference?: string | null
+    transactionHash?: string
+    address?: string
+    privateKey?: string
+}
+

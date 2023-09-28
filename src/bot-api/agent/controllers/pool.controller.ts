@@ -1,0 +1,63 @@
+import { Controller, Get, Param, Post } from "@nestjs/common";
+import { AgentService } from "../services/agent.service";
+import { ApiTags } from "@nestjs/swagger";
+import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
+import { AgentBalance } from "../../common/AgentResponse";
+
+@ApiTags("Pool Collateral")
+@Controller("api/pool")
+export class PoolController {
+    constructor(private readonly agentService: AgentService) {}
+
+    @Post("collateral/buy:fAssetSymbol/:agentVaultAddress/:amount")
+    public async buyPoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.buyPoolCollateral(fAssetSymbol, agentVaultAddress, amount));
+    }
+
+    @Get("collateral/freeBalance:fAssetSymbol/:agentVaultAddress")
+    public async freePoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentBalance>> {
+        return handleApiResponse(this.agentService.freePoolCollateral(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Post("fee/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")
+    public async withdrawPoolFees(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.withdrawPoolFees(fAssetSymbol, agentVaultAddress, amount));
+    }
+
+    @Get("fee/balance/:fAssetSymbol/:agentVaultAddress")
+    public async poolFeesBalance(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentBalance>> {
+        return handleApiResponse(this.agentService.poolFeesBalance(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Get("delegate/:fAssetSymbol/:agentVaultAddress/:recipientAddress/:bips")
+    public async delegatePoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("recipientAddress") recipientAddress: string,
+        @Param("bips") bips: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.delegatePoolCollateral(fAssetSymbol, agentVaultAddress, recipientAddress, bips));
+    }
+
+    @Get("undelegate/:fAssetSymbol/:agentVaultAddress")
+    public async undelegatePoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.undelegatePoolCollateral(fAssetSymbol, agentVaultAddress));
+    }
+}

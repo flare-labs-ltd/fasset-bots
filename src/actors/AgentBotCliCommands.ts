@@ -169,12 +169,12 @@ export class BotCliCommands {
     /**
      * Returns agent's pool fee balance.
      */
-    async poolFeesBalance(agentVault: string): Promise<BN> {
+    async poolFeesBalance(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const balance = await agentBot.agent.poolFeeBalance();
         this.botConfig.notifier!.sendBalancePoolFees(agentVault, balance.toString());
         logger.info(`Agent ${agentVault} has pool fee ${balance.toString()}.`);
-        return balance;
+        return balance.toString();
     }
 
     /**
@@ -237,8 +237,8 @@ export class BotCliCommands {
             );
             return announce.paymentReference;
         } catch (error) {
-            return null;
             console.error(error);
+            return null;
         }
     }
 
