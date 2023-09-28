@@ -6,6 +6,6 @@ export interface AgentCreateResponse {
     underlyingAddress: string
 }
 
-export interface AgentPoolFeeBalance{
+export interface AgentBalance{
     balance: string
 }

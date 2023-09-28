@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { BotCliCommands } from "../../actors/AgentBotCliCommands";
-import { AgentCreateResponse, AgentPoolFeeBalance } from "../common/AgentResponse";
+import { AgentCreateResponse, AgentBalance } from "../common/AgentResponse";
 
 @Injectable()
 export class AgentService {
@@ -39,11 +39,27 @@ export class AgentService {
         await cli.withdrawPoolFees(agentVaultAddress, amount);
     }
 
-    async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentPoolFeeBalance> {
+    async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
+      const cli = await BotCliCommands.create(fAssetSymbol);
+      const balance = await cli.poolFeesBalance(agentVaultAddress);
+      return { balance: balance.toString() };
+  }
+
+    async freePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await BotCliCommands.create(fAssetSymbol);
-        const balance = await cli.poolFeesBalance(agentVaultAddress);
+        const balance = await cli.getFreePoolCollateral(agentVaultAddress);
         return { balance: balance.toString() };
     }
+
+    async delegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string, recipientAddress: string, bips: string): Promise<void> {
+      const cli = await BotCliCommands.create(fAssetSymbol);
+      await cli.delegatePoolCollateral(agentVaultAddress, recipientAddress, bips);
+  }
+
+    async undelegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
+      const cli = await BotCliCommands.create(fAssetSymbol);
+      await cli.undelegatePoolCollateral(agentVaultAddress);
+  }
 
     async enterAvailable(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
         const cli = await BotCliCommands.create(fAssetSymbol);
