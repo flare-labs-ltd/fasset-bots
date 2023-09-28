@@ -5,3 +5,7 @@ export interface AgentCreateResponse {
     collateralPoolTokenAddress: string,
     underlyingAddress: string
 }
+
+export interface AgentPoolFeeBalance{
+    balance: string
+}
