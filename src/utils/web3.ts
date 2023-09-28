@@ -2,7 +2,7 @@ import path from "path";
 import Web3 from "web3";
 import { provider } from "web3-core";
 import { createArtifacts } from "./mini-truffle/artifacts";
-import { ContractSettings } from "./mini-truffle/contracts";
+import { ContractSettings } from "./mini-truffle/types";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),

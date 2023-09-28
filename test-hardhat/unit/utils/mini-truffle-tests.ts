@@ -1,8 +1,11 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
-import { ContractSettings, MiniTruffleContract, MiniTruffleContractInstance, MiniTruffleContractsFunctions, withSettings } from "../../../src/utils/mini-truffle/contracts";
+import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
+import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
+import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle/finalization";
+import { CancelToken } from "../../../src/utils/mini-truffle/cancelable-promises";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -58,15 +61,6 @@ describe("mini truffle and artifacts tests", async () => {
         await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 1000, timeoutMS: 10_000 } });
     });
 
-    it("should create, deploy and call a contract - wait for nonce (don't check on receipt)", async () => {
-        MiniTruffleContractsFunctions.waitForFinalization.checkForNonceOnReceipt = false;
-        try {
-            await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 100, timeoutMS: 10_000 } });
-        } finally {
-            MiniTruffleContractsFunctions.waitForFinalization.checkForNonceOnReceipt = true;
-        }
-    });
-
     it("should create, deploy and call a contract - wait for 3 confirmations (failure without parallel mining)", async () => {
         await expectRevert(createDeployAndCall({ ...contractSettings, waitFor: { what: 'confirmations', confirmations: 3, timeoutMS: 1000 } }),
             "Timeout waiting for finalization");
@@ -85,27 +79,27 @@ describe("mini truffle and artifacts tests", async () => {
         expect(Number(decimals)).to.equal(5);
     });
 
-    it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
-        const FakePriceReader = artifacts.require("FakePriceReader");
-        const fpr = await FakePriceReader.new(accounts[0]);
-        try {
-            MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
-            const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
-            const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
-            await withSettings(fpr, settings).setDecimals("XRP", 5);
-            await withSettings(fpr, settings).setPrice("XRP", 800);
-            clearInterval(timer);
-            await fpr.setPriceFromTrustedProviders("XRP", 1000);
-            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
-            expect(Number(price)).to.equal(800);
-            expect(Number(decimals)).to.equal(5);
-            const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
-            expect(Number(price1)).to.equal(1000);
-            expect(Number(decimals1)).to.equal(5);
-        } finally {
-            MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
-        }
-    });
+    // it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
+    //     const FakePriceReader = artifacts.require("FakePriceReader");
+    //     const fpr = await FakePriceReader.new(accounts[0]);
+    //     try {
+    //         MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
+    //         const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
+    //         const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
+    //         await withSettings(fpr, settings).setDecimals("XRP", 5);
+    //         await withSettings(fpr, settings).setPrice("XRP", 800);
+    //         clearInterval(timer);
+    //         await fpr.setPriceFromTrustedProviders("XRP", 1000);
+    //         const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+    //         expect(Number(price)).to.equal(800);
+    //         expect(Number(decimals)).to.equal(5);
+    //         const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
+    //         expect(Number(price1)).to.equal(1000);
+    //         expect(Number(decimals1)).to.equal(5);
+    //     } finally {
+    //         MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
+    //     }
+    // });
 
     it("reverts should work", async () => {
         const FakePriceReader = artifacts.require("FakePriceReader");
@@ -288,13 +282,33 @@ describe("mini truffle and artifacts tests", async () => {
         await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
     });
 
-    it("error handling in direct send transaction should work", async () => {
+    async function lowLevelExecuteMethodWithError(waitFor: TransactionWaitFor) {
         const FakePriceReader = artifacts.require("FakePriceReader");
         const fpr = await FakePriceReader.new(accounts[0]);
         const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find(it => it.name === 'setPrice')), ["XRP", "5"]);
         const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
         const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
-        await expectRevert(MiniTruffleContractsFunctions.waitForFinalization(contractSettings.web3, contractSettings.waitFor, nonce, accounts[0], promiEvent),
-            "price not initialized");
+        return waitForFinalization(contractSettings.web3, waitFor, nonce, accounts[0], promiEvent);
+    }
+
+    it("error handling in direct send transaction should work (different wait types)", async () => {
+        await expectRevert(lowLevelExecuteMethodWithError({ what: 'receipt', timeoutMS: 10_000 }), "price not initialized");
+        await expectRevert(lowLevelExecuteMethodWithError({ what: 'confirmations', confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
+        await expectRevert(lowLevelExecuteMethodWithError({ what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 }), "price not initialized");
     });
+
+    it("should call a contract - wait for nonce (low level, always wait at least one tick)", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find(it => it.name === 'setDecimals')), ["XRP", "8"]);
+        const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+        const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
+        const cancelToken = new CancelToken();
+        const waitNonce = waitForNonceIncrease(web3, accounts[0], nonce, 500, cancelToken);
+        const receipt = await waitForReceipt(promiEvent, cancelToken);
+        await waitNonce;    // should work
+        const { 2: decimals } = await fpr.getPrice("XRP");
+        expect(Number(decimals)).to.equal(8);
+    });
+
 });
