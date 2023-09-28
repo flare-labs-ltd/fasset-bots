@@ -12,11 +12,7 @@ export async function runAgentServer() {
     app.use(helmet());
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-    const config = new DocumentBuilder()
-        .setTitle("FAsset agent bot api")
-        .setDescription("FAsset agent bot api")
-        .setVersion("1.0")
-        .build();
+    const config = new DocumentBuilder().setTitle("FAsset agent bot api").setDescription("FAsset agent bot api").setVersion("1.0").build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup("api-doc", app, document);
 

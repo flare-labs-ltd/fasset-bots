@@ -58,7 +58,7 @@ export class UnderlyingController {
     }
 
     @Get("create/:fAssetSymbol")
-    public async createUnderlying(@Param("fAssetSymbol") fAssetSymbol: string,): Promise<ApiResponseWrapper<AgentUnderlying>> {
+    public async createUnderlying(@Param("fAssetSymbol") fAssetSymbol: string): Promise<ApiResponseWrapper<AgentUnderlying>> {
         return handleApiResponse(this.agentService.createUnderlying(fAssetSymbol));
     }
 }

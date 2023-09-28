@@ -51,7 +51,7 @@ export class AgentController {
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
         @Param("settingName") settingName: string,
-        @Param("settingValue") settingValue: string,
+        @Param("settingValue") settingValue: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.updateAgentSetting(fAssetSymbol, agentVaultAddress, settingName, settingValue));
     }

@@ -2,17 +2,17 @@
     "$schema": "https://json.schemastore.org/nest-cli",
     "collection": "@nestjs/schematics",
     "sourceRoot": "src/bot-api/agent",
-      "entryFile": "main",
+    "entryFile": "main",
     "compilerOptions": {
-      "tsConfigPath": "src/bot-api/agent/tsconfig.app.json",
-      "plugins": [
-        {
-          "name": "@nestjs/swagger",
-          "options": {
-            "classValidatorShim": false,
-            "introspectComments": true
-          }
-        }
-      ]
+        "tsConfigPath": "src/bot-api/agent/tsconfig.app.json",
+        "plugins": [
+            {
+                "name": "@nestjs/swagger",
+                "options": {
+                    "classValidatorShim": false,
+                    "introspectComments": true
+                }
+            }
+        ]
     }
-  }
+}
