@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
 import { ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
@@ -10,6 +10,7 @@ export class UnderlyingController {
     constructor(private readonly agentService: AgentService) {}
 
     @Post("withdraw/announce/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async announceUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -18,6 +19,7 @@ export class UnderlyingController {
     }
 
     @Post("withdraw/perform/:fAssetSymbol/:agentVaultAddress/:amount/:destinationAddress/:paymentReference")
+    @HttpCode(200)
     public async performUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -29,6 +31,7 @@ export class UnderlyingController {
     }
 
     @Post("withdraw/confirm/:fAssetSymbol/:agentVaultAddress/:transactionHash")
+    @HttpCode(200)
     public async confirmUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -38,6 +41,7 @@ export class UnderlyingController {
     }
 
     @Post("withdraw/cancel/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async cancelUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string

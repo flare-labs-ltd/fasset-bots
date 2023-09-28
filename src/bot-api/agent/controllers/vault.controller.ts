@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
 import { ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
@@ -10,6 +10,7 @@ export class AgentVaultController {
     constructor(private readonly agentService: AgentService) {}
 
     @Post("collateral/deposit/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
     public async depositVaultCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -19,6 +20,7 @@ export class AgentVaultController {
     }
 
     @Post("collateral/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
     public async withdrawVaultCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -36,6 +38,7 @@ export class AgentVaultController {
     }
 
     @Post("close/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async closeVault(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string

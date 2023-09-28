@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
 import { ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
@@ -10,6 +10,7 @@ export class PoolController {
     constructor(private readonly agentService: AgentService) {}
 
     @Post("collateral/buy:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
     public async buyPoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -27,6 +28,7 @@ export class PoolController {
     }
 
     @Post("fee/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
     public async withdrawPoolFees(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,

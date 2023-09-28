@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
 import { ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
@@ -15,11 +15,13 @@ export class AgentController {
     }
 
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async enter(@Param("fAssetSymbol") fAssetSymbol: string, @Param("agentVaultAddress") agentVaultAddress: string): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.enterAvailable(fAssetSymbol, agentVaultAddress));
     }
 
     @Post("available/announceExit/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async announceExit(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -28,11 +30,13 @@ export class AgentController {
     }
 
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
     public async exit(@Param("fAssetSymbol") fAssetSymbol: string, @Param("agentVaultAddress") agentVaultAddress: string): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.exitAvailable(fAssetSymbol, agentVaultAddress));
     }
 
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
+    @HttpCode(200)
     public async selfClose(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -42,6 +46,7 @@ export class AgentController {
     }
 
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")
+    @HttpCode(200)
     public async updateAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
