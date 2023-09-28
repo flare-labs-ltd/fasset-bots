@@ -55,8 +55,8 @@ export class BotCliCommands {
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol.`);
-            throw new CommandLineError("Invalid FAsset symbol");
+            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol ${fAssetSymbol}.`);
+            throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
