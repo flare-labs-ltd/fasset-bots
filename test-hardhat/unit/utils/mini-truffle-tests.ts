@@ -1,6 +1,6 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
+import { Future, improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
@@ -79,27 +79,27 @@ describe("mini truffle and artifacts tests", async () => {
         expect(Number(decimals)).to.equal(5);
     });
 
-    // it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
-    //     const FakePriceReader = artifacts.require("FakePriceReader");
-    //     const fpr = await FakePriceReader.new(accounts[0]);
-    //     try {
-    //         MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
-    //         const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
-    //         const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
-    //         await withSettings(fpr, settings).setDecimals("XRP", 5);
-    //         await withSettings(fpr, settings).setPrice("XRP", 800);
-    //         clearInterval(timer);
-    //         await fpr.setPriceFromTrustedProviders("XRP", 1000);
-    //         const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
-    //         expect(Number(price)).to.equal(800);
-    //         expect(Number(decimals)).to.equal(5);
-    //         const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
-    //         expect(Number(price1)).to.equal(1000);
-    //         expect(Number(decimals1)).to.equal(5);
-    //     } finally {
-    //         MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
-    //     }
-    // });
+    it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
+        const FakePriceReader = artifacts.require("FakePriceReader");
+        const fpr = await FakePriceReader.new(accounts[0]);
+        try {
+            // MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
+            const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
+            await withSettings(fpr, settings).setDecimals("XRP", 5);
+            await withSettings(fpr, settings).setPrice("XRP", 800);
+            clearInterval(timer);
+            await fpr.setPriceFromTrustedProviders("XRP", 1000);
+            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+            expect(Number(price)).to.equal(800);
+            expect(Number(decimals)).to.equal(5);
+            const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
+            expect(Number(price1)).to.equal(1000);
+            expect(Number(decimals1)).to.equal(5);
+        } finally {
+            // MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
+        }
+    });
 
     it("reverts should work", async () => {
         const FakePriceReader = artifacts.require("FakePriceReader");
@@ -309,6 +309,16 @@ describe("mini truffle and artifacts tests", async () => {
         await waitNonce;    // should work
         const { 2: decimals } = await fpr.getPrice("XRP");
         expect(Number(decimals)).to.equal(8);
+    });
+
+    it("cancel token should correctly handle already cancelled promises", async () => {
+        const cancelToken = new CancelToken();
+        cancelToken.cancel();
+        const promise1 = new Future<void>();
+        const registration1 = cancelToken.register((err) => promise1.reject(err));
+        await expectRevert(promise1, "Promise cancelled");
+        registration1.unregister(); // should succeed
+        expect(() => cancelToken.check()).to.throw("Promise cancelled");
     });
 
 });
