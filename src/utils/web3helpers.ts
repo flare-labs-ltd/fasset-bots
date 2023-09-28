@@ -12,7 +12,7 @@ export async function latestBlockTimestamp() {
 /**
  * Return latest block timestamp as BN (seconds since 1.1.1970).
  */
-export async function latestBlockTimestampBN() {
+export async function latestBlockTimestampBN(): Promise<BN> {
     const block = await web3.eth.getBlock("latest");
     return Web3.utils.toBN(block.timestamp);
 }
