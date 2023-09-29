@@ -7,7 +7,7 @@ import { ContractJson, ContractSettings } from "./types";
 interface ArtifactData {
     name: string;
     path: string;
-    contractJson?: ContractJson;
+    contractJson?: string;
 }
 
 export function createArtifacts(rootPath: string, settings: ContractSettings) {
@@ -35,11 +35,6 @@ class ArtifactsImpl implements Truffle.Artifacts {
         return artifactMap;
     }
 
-    loadContractJson(fpath: string) {
-        const jsonText = fs.readFileSync(fpath).toString();
-        return JSON.parse(jsonText) as ContractJson;
-    }
-
     require(name: string): Truffle.Contract<any> {
         if (this.artifactMap == null) {
             this.artifactMap = this.loadArtifactMap();
@@ -49,9 +44,9 @@ class ArtifactsImpl implements Truffle.Artifacts {
             throw new Error(`Unknown artifact ${name}`);
         }
         if (artifactData.contractJson == null) {
-            artifactData.contractJson = this.loadContractJson(artifactData.path);
+            artifactData.contractJson = fs.readFileSync(artifactData.path).toString();
         }
-        const json = artifactData.contractJson;
+        const json = JSON.parse(artifactData.contractJson) as ContractJson;
         return new MiniTruffleContract(this.settings, json.contractName, json.abi, json.bytecode, json);
     }
 }
