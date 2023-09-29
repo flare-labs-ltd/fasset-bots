@@ -1,10 +1,10 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
-import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle/cancelable-promises";
-import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
-import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle/finalization";
-import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle/types";
+import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle-contracts/cancelable-promises";
+import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle-contracts/contracts";
+import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
+import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
