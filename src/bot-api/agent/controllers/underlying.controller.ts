@@ -1,11 +1,14 @@
-import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance, AgentUnderlying } from "../../common/AgentResponse";
 
 @ApiTags("Underlying")
 @Controller("api/underlying")
+@UseGuards(AuthGuard("api-key"))
+@ApiSecurity("X-API-KEY")
 export class UnderlyingController {
     constructor(private readonly agentService: AgentService) {}
 

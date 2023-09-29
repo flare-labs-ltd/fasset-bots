@@ -1,11 +1,14 @@
-import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance } from "../../common/AgentResponse";
 
 @ApiTags("Pool Collateral")
 @Controller("api/pool")
+@UseGuards(AuthGuard("api-key"))
+@ApiSecurity("X-API-KEY")
 export class PoolController {
     constructor(private readonly agentService: AgentService) {}
 
