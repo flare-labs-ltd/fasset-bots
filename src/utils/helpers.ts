@@ -12,8 +12,8 @@ export type Dict<T> = { [key: string]: T };
 export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export const BN_ZERO = new BN(0);
-export const BN_ONE = Web3.utils.toBN(1);
-export const BN_TEN = Web3.utils.toBN(10);
+export const BN_ONE: BN = Web3.utils.toBN(1);
+export const BN_TEN: BN = Web3.utils.toBN(10);
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 

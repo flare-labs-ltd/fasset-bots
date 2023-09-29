@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Agents",
+    "contractName": "contracts/fasset/library/Agents.sol",
+    "address": "0xE91bBe8ee03560E3dda2786f95335F5399813Ca0"
+  },
+  {
+    "name": "AvailableAgents",
+    "contractName": "contracts/fasset/library/AvailableAgents.sol",
+    "address": "0x3870a14c5057f596e385ea21537792fE4fF4C1BE"
+  },
+  {
+    "name": "Challenges",
+    "contractName": "contracts/fasset/library/Challenges.sol",
+    "address": "0x4977FC58783ceBCC310311C800B786EcAf45F98f"
+  },
+  {
+    "name": "CollateralReservations",
+    "contractName": "contracts/fasset/library/CollateralReservations.sol",
+    "address": "0x32eF223A01fB55Fd862E6E30d5F4A3b2d44f9586"
+  },
+  {
+    "name": "FullAgentInfo",
+    "contractName": "contracts/fasset/library/FullAgentInfo.sol",
+    "address": "0x20CbDcC1d471D4c41382eD6013d9561070C3eD48"
+  },
+  {
+    "name": "Liquidation",
+    "contractName": "contracts/fasset/library/Liquidation.sol",
+    "address": "0x7F0936Be36D1961D68b3334eC751Ad8F934f1739"
+  },
+  {
+    "name": "Minting",
+    "contractName": "contracts/fasset/library/Minting.sol",
+    "address": "0xbC7Ab6F930D83CB7e80A207d4dD3DD80aA8a2153"
+  },
+  {
+    "name": "Redemption",
+    "contractName": "contracts/fasset/library/Redemption.sol",
+    "address": "0xf45C720549136d5E2d6a5A2F12573A36E36C3411"
+  },
+  {
+    "name": "SettingsUpdater",
+    "contractName": "contracts/fasset/library/SettingsUpdater.sol",
+    "address": "0x7997A4c8b8E97d289989431B996AB1C6a9975Ad9"
+  },
+  {
+    "name": "StateUpdater",
+    "contractName": "contracts/fasset/library/StateUpdater.sol",
+    "address": "0x2E5a2652BDB3da24249EaDf9028a6D75e20D86C5"
+  },
+  {
+    "name": "UnderlyingFreeBalance",
+    "contractName": "contracts/fasset/library/UnderlyingFreeBalance.sol",
+    "address": "0xb1DcE3617838AcbCa7f9CC84d475eF4414d92C06"
+  },
+  {
+    "name": "UnderlyingWithdrawalAnnouncements",
+    "contractName": "contracts/fasset/library/UnderlyingWithdrawalAnnouncements.sol",
+    "address": "0x63b9792E7A95e3aa037255E8cAa0Dfd76f7383e7"
+  }
+]

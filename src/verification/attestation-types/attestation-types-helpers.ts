@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import glob from "glob";
+import { glob } from "glob";
 import Web3 from "web3";
 import { AttestationTypeScheme, DataHashScheme, NumberLike, SupportedSolidityType, WeightedRandomChoice } from "./attestation-types";
 

@@ -15,3 +15,4 @@ hardhat.config.ts
 .gitlab-ci.yml
 .eslintrc.json
 scripts/types.d.ts
+fasset-deployment/*

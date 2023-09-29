@@ -66,7 +66,7 @@ describe("Fuzzing tests", async () => {
     const AVOID_ERRORS = getEnv("AVOID_ERRORS", "boolean", true);
     const CHANGE_PRICE_AT = getEnv("CHANGE_PRICE_AT", "range", [3, 88]);
     const CHANGE_PRICE_FACTOR = getEnv("CHANGE_PRICE_FACTOR", "json", { asset: [10, 12], default: [1, 1] }) as { [key: string]: [number, number] };
-    const ILLEGAL_PROB = getEnv("ILLEGAL_PROB", "number", 4); // likelihood of illegal operations (not normalized)
+    const ILLEGAL_PROB = getEnv("ILLEGAL_PROB", "number", 1); // likelihood of illegal operations (not normalized)
 
     const agentBots: FuzzingAgentBot[] = [];
     const customers: FuzzingCustomer[] = [];
@@ -177,7 +177,6 @@ describe("Fuzzing tests", async () => {
             [testSelfMint, 10],
             [testSelfClose, 10],
             [testUnderlyingWithdrawal, 40],
-            [refreshAvailableAgents, 6],
             [testIllegalTransaction, ILLEGAL_PROB],
             [testDoublePayment, ILLEGAL_PROB],
         ];
@@ -233,6 +232,8 @@ describe("Fuzzing tests", async () => {
                 await challenger.runStep();
                 // run tracked state
                 await commonTrackedState.readUnhandledEvents();
+                // update agents
+                await refreshAvailableAgents();
             } catch (e) {
                 expectErrors(e, []);
             }
@@ -262,7 +263,7 @@ describe("Fuzzing tests", async () => {
         }
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
         await checkInvariants(true); // all events are flushed, state must match
-        // assert.isTrue(fuzzingState.failedExpectations.length === 0, "fuzzing state has expectation failures");
+        // assert.isTrue(commonTrackedState.failedExpectations.length === 0, "fuzzing state has expectation failures");
     });
 
     function createAgentOptions(): AgentBotDefaultSettings {
@@ -383,9 +384,6 @@ describe("Fuzzing tests", async () => {
         // total supply
         const fAssetSupply = await context.fAsset.totalSupply();
         checker.checkEquality("fAsset supply", fAssetSupply, commonTrackedState.fAssetSupply, true);
-        // // total balances
-        // const totalBalances = commonTrackedState.fAssetBalance.total();
-        // checker.checkEquality('fAsset supply / total balances', fAssetSupply, totalBalances);
         // total minted value by all agents
         const totalMintedUBA = sumBN(commonTrackedState.agents.values(), (agent) => agent.mintedUBA);
         checker.checkEquality("fAsset supply/total minted by agents", fAssetSupply, totalMintedUBA, true);

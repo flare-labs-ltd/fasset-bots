@@ -92,7 +92,7 @@ export class MerkleTree {
     /**
      * Merkle root as a BN (big number from BN.js)
      */
-    get rootBN() {
+    get rootBN(): BN {
         const rt = this.root;
         return rt ? Web3.utils.toBN(rt) : Web3.utils.toBN(0);
     }

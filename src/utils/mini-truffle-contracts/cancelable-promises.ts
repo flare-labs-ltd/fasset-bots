@@ -44,7 +44,7 @@ export class CancelToken {
 
 export function cancelableSleep(ms: number, cancelToken: CancelToken) {
     let cancelRegistration: CancelTokenRegistration;
-    let timer: NodeJS.Timer;
+    let timer: NodeJS.Timeout;
     return new Promise<void>((resolve, reject) => {
         timer = setTimeout(() => resolve(), ms);
         cancelRegistration = cancelToken.register(reject);

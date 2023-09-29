@@ -9,6 +9,7 @@ if ! [ -d ${fassetsdir} ]; then echo "Missing dir ${fassetsdir}"; exit 1; fi
 
 rm -rf artifacts; mkdir -p artifacts
 rm -rf typechain-truffle; mkdir -p typechain-truffle
+rm -rf fasset-deployment; mkdir -p fasset-deployment
 
 # build
 cd ${fassetsdir}
@@ -28,3 +29,9 @@ cp ${projdir}/scripts/types.d.ts ${projdir}/typechain-truffle
 cd ${projdir}
 mkdir -p artifacts/flattened
 mv artifacts/flare-sc artifacts/flattened/FlareSmartContracts.sol
+
+
+# copy contract addresses
+
+cd ${fassetsdir}/deployment/deploys
+cp -R . ${projdir}/fasset-deployment

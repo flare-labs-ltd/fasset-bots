@@ -90,7 +90,6 @@ describe("Attestation client unit tests", async () => {
         // request balance decreasing
         const requestDecreasing = await attestationHelper.requestBalanceDecreasingTransactionProof(transaction, fundedAddressXRP);
         // request non payment
-        // const blockHeight = await attestationHelper.chain.getBlockHeight();
         const blockId = (await attestationHelper.chain.getTransactionBlock(transaction))!;
         const block = (await attestationHelper.chain.getBlockAt(blockId.number))!;
         const requestNonPayment = await attestationHelper.requestReferencedPaymentNonexistenceProof(
@@ -99,7 +98,7 @@ describe("Attestation client unit tests", async () => {
             toBN(2000000),
             block.number - 10,
             block.number,
-            block.timestamp
+            block.timestamp + 20
         );
 
         // wait for round finalizations

@@ -340,7 +340,7 @@ describe("mini truffle and artifacts tests", async () => {
             let counter = 0;
             let testCounter = 0;
             const mainTimer = setInterval(() => { counter++; }, 200);
-            let testTimer: NodeJS.Timer;
+            let testTimer: NodeJS.Timeout;
             try {
                 let testRegistration: CancelTokenRegistration;
                 const testCancelable = new Promise<void>((resolve, reject) => {

@@ -1,7 +1,7 @@
 {
     "$schema": "./schema/bot-config.schema.json",
     "loopDelay": 5000,
-    "contractsJsonFile": "../fasset/deployment/deploys/coston.json",
+    "contractsJsonFile": "./fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -13,7 +13,7 @@
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 10,
+            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
