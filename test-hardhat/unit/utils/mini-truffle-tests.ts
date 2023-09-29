@@ -1,11 +1,11 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { Future, improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
+import { improveConsoleLog, preventReentrancy, requireNotNull } from "../../../src/utils/helpers";
+import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle/cancelable-promises";
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle/contracts";
+import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle/finalization";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
-import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle/finalization";
-import { CancelToken } from "../../../src/utils/mini-truffle/cancelable-promises";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -314,10 +314,12 @@ describe("mini truffle and artifacts tests", async () => {
     it("cancel token should correctly handle already cancelled promises", async () => {
         const cancelToken = new CancelToken();
         cancelToken.cancel();
-        const promise1 = new Future<void>();
-        const registration1 = cancelToken.register((err) => promise1.reject(err));
+        let registration1: CancelTokenRegistration;
+        const promise1 = new Promise((resolve, reject) => {
+            registration1 = cancelToken.register((err) => reject(err));
+        });
         await expectRevert(promise1, "Promise cancelled");
-        registration1.unregister(); // should succeed
+        registration1!.unregister(); // should succeed
         expect(() => cancelToken.check()).to.throw("Promise cancelled");
     });
 

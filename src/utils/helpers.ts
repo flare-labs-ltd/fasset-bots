@@ -209,30 +209,6 @@ export function toplevelRun(main: () => Promise<void>) {
         });
 }
 
-/**
- * Future is a promise that can be resolved/rejected "from the outside" by calling future.resolve/reject.
- */
-/* istanbul ignore next */
-export class Future<T> extends Promise<T> {
-    readonly resolve: (value: T | PromiseLike<T>) => void;
-    readonly reject: (error: any) => void;
-
-    constructor() {
-        let _resolve: any;
-        let _reject: any;
-        super((resolve, reject) => {
-            _resolve = resolve;
-            _reject = reject;
-        });
-        this.resolve = _resolve;
-        this.reject = _reject;
-    }
-
-    static get [Symbol.species]() {
-        return Promise;
-    }
-}
-
 // Error handling
 
 export function fail(messageOrError: string | Error): never {
