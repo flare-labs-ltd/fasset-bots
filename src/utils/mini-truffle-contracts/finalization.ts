@@ -49,7 +49,7 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
         promiEvent.on("confirmation", (confirmations, receipt) => {
-            console.log("Confirmation", confirmations);
+            // console.log("Confirmation", confirmations);
             if (confirmations >= confirmationsRequired) {
                 resolve(receipt);
             }

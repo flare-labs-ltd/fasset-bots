@@ -16,7 +16,6 @@ export const web3: Web3 = createWeb3();
 export const contractSettings: ContractSettings = {
     web3: web3,
     defaultOptions: {
-        hardfork: "london",
     },
     gasMultiplier: 2,
     waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 },

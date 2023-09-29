@@ -144,6 +144,9 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
 async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor } = settings;
     const config = mergeConfig(settings, transactionConfig);
+    if (typeof config.from !== 'string') {
+        throw new Error("'from' field is mandatory");
+    }
     if (config.gas == null) {
         // estimate gas; should also throw nice errors
         const gas = await web3.eth.estimateGas(config);
@@ -167,15 +170,10 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     return await settings.web3.eth.estimateGas(config);
 }
 
-type TransactionConfigWithFrom = TransactionConfig & { from: string; };
-
-function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfigWithFrom {
+function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfig {
     const config: TransactionConfig = { ...settings.defaultOptions, ...transactionConfig };
     if (config.from == null && settings.defaultAccount != null) {
         config.from = settings.defaultAccount;
     }
-    if (typeof config.from !== 'string') {
-        throw new Error("'from' field is mandatory");
-    }
-    return config as TransactionConfigWithFrom;
+    return config;
 }
