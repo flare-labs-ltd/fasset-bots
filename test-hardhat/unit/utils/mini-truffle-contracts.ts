@@ -351,6 +351,8 @@ describe("mini truffle and artifacts tests", async () => {
                     clearInterval(testTimer);
                 });
                 testCancelable.catch(); // prevent uncought promise rejection
+                // check should work
+                cancelToken.check();
                 // wait 0.5 sec
                 await sleep(500);
                 // cancel test timer and take snapshots
@@ -359,7 +361,9 @@ describe("mini truffle and artifacts tests", async () => {
                 const snapshotCounter = counter;
                 const snapshotTestCounter = testCounter;
                 expect(Math.abs(counter - testCounter)).to.be.lessThanOrEqual(1);
+                // token should be cancelled now
                 await expectRevert(testCancelable, "Promise cancelled");
+                expect(() => cancelToken.check()).to.throw("Promise cancelled");
                 // wait another sec
                 await sleep(1000);
                 // now main counter should have increased but test counter not
