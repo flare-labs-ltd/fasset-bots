@@ -7,14 +7,14 @@ import { abi as flashLenderAbi, bytecode as flashLenderBytecode } from '../artif
 dotenv.config()
 
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY!
-const addresses = require(`../${process.env.CONTRACTS!}`)
-const provider = new JsonRpcProvider(process.env.RPC_URL)
+const addresses = require(`../${process.env.CONTRACT_ADDRESSES!}`)
+const provider = new JsonRpcProvider(process.env.RPC_URL!)
 const signer = new Wallet(privateKey, provider)
 
 async function deployLiquidator() {
   const factory = new ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
   const contract = await factory.deploy(
-    addresses.WNAT,
+    addresses.wNat,
     addresses.flashLender,
     addresses.blazeSwapRouter
   )
@@ -24,7 +24,7 @@ async function deployLiquidator() {
 
 async function deployFlashLender() {
   const factory = new ContractFactory(flashLenderAbi, flashLenderBytecode, signer)
-  const contract = await factory.deploy(addresses.USDC!)
+  const contract = await factory.deploy(addresses.usdc!)
   const address = await contract.getAddress()
   console.log(`flash lender deployed at ${address}`)
 }

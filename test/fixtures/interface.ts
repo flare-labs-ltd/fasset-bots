@@ -4,10 +4,10 @@ interface BaseAsset {
   name: string
   symbol: string
   decimals: number
+  ftsoSymbol: string
   ftsoDecimals: number
   defaultPriceUsd5: BN
 }
-
 
 export interface CollateralAsset extends BaseAsset {
   kind: "vault" | "pool"

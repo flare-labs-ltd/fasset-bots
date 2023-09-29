@@ -6,7 +6,7 @@
     "compile": "rimraf typechain-types typechain-truffle && yarn hardhat compile && yarn typechain-truffle-v5 && yarn typechain-ethers-v6",
     "typechain-ethers-v6": "yarn typechain --target=ethers-v6 --out-dir typechain-ethers \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
     "typechain-truffle-v5": "yarn typechain --target=truffle-v5 --out-dir typechain-truffle \"artifacts/!(build-info|flattened)/**/+([a-zA-Z0-9_]).json\"",
-    "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10506816",
+    "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10538902",
     "test": "yarn hardhat test",
     "fix-blazeswap-hash": "yarn hardhat compile && ./scripts/replace-blazeswap-hash.sh && yarn compile"
   },

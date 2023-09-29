@@ -51,10 +51,9 @@ contract("Tests for Liquidator contract", (accounts) => {
     priceVault: BNish,
     pricePool: BNish
   ): Promise<void> {
-    const fAssetSymbol = await fAsset.symbol()
-    await priceReader.setPrice(fAssetSymbol, priceAsset)
-    await priceReader.setPrice(VAULT.symbol, priceVault)
-    await priceReader.setPrice(POOL.symbol, pricePool)
+    await priceReader.setPrice(ASSET.ftsoSymbol, priceAsset)
+    await priceReader.setPrice(VAULT.ftsoSymbol, priceVault)
+    await priceReader.setPrice(POOL.ftsoSymbol, pricePool)
   }
 
   async function liquidationOutput(
@@ -167,28 +166,19 @@ contract("Tests for Liquidator contract", (accounts) => {
     const fAssets = await swapOutput(blazeSwap, vault, fAsset, liquidatedVault)
     const [vaultProfit, poolProfit] = await liquidationOutput(agent, fAssets)
     const poolProfitSwapped = await swapOutput(blazeSwap, pool, vault, poolProfit)
-    /* const [m, d] = await calcTokenATokenBPriceMulDiv(priceReader, vault, fAsset)
-    const [m2, d2] = await calcTokenATokenBPriceMulDiv(priceReader, pool, vault)
-    console.log("invested vault        ", liquidatedVault.toString())
-    console.log("ftsoed f-assets       ", toBN(liquidatedVault).mul(m).div(d).toString())
-    console.log("swappd f-assets       ", fAssets.toString())
-    console.log("vault from liquidation", vaultProfit.toString())
-    console.log("ftsoed pool value     ", toBN(poolProfit).mul(m2).div(d2).toString())
-    console.log("vault from swapped    ", poolProfitSwapped.toString()) */
     return vaultProfit.add(poolProfitSwapped).sub(toBN(liquidatedVault))
   }
 
   beforeEach(async function () {
-    const fAssetSymbol = "f" + ASSET.symbol
     // set tokens
-    fAsset = await ERC20Mock.new(fAssetSymbol, fAssetSymbol, ASSET.decimals)
+    fAsset = await ERC20Mock.new(ASSET.symbol, ASSET.symbol, ASSET.decimals)
     vault = await ERC20Mock.new(VAULT.name, VAULT.symbol, VAULT.decimals)
     pool = await ERC20Mock.new(POOL.name, POOL.symbol, POOL.decimals)
     // set up price reader
     priceReader = await FakePriceReader.new(accounts[0])
-    await priceReader.setDecimals(fAssetSymbol, ASSET.ftsoDecimals)
-    await priceReader.setDecimals(VAULT.symbol, VAULT.ftsoDecimals)
-    await priceReader.setDecimals(POOL.symbol, POOL.ftsoDecimals)
+    await priceReader.setDecimals(ASSET.ftsoSymbol, ASSET.ftsoDecimals)
+    await priceReader.setDecimals(VAULT.ftsoSymbol, VAULT.ftsoDecimals)
+    await priceReader.setDecimals(POOL.ftsoSymbol, POOL.ftsoDecimals)
     // set asset manager
     assetManager = await AssetManagerMock.new(
       pool.address,
@@ -197,7 +187,10 @@ contract("Tests for Liquidator contract", (accounts) => {
       lotSizeAmg(ASSET),
       ASSET.amgDecimals,
       VAULT.minCollateralRatioBips!,
-      POOL.minCollateralRatioBips!
+      POOL.minCollateralRatioBips!,
+      ASSET.ftsoSymbol,
+      VAULT.ftsoSymbol,
+      POOL.ftsoSymbol
     )
     // set agent
     agent = await AgentMock.new(assetManager.address, vault.address)

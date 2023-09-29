@@ -11,7 +11,7 @@ export async function waitFinalize(
   const nonce = await provider.getTransactionCount(signer)
   const res = await (await prms).wait()
   while ((await provider.getTransactionCount(signerAddress)) == nonce) {
-      await sleep(100)
+    await sleep(100)
   }
   return res!
 }
@@ -93,23 +93,24 @@ export function assetPriceForAgentCr(
   collateralFtsoPrice: bigint,
   collateralFtsoDecimals: bigint,
   collateralTokenDecimals: bigint,
-  assetFtsoDecimals: bigint,
-  assetTokenDecimals: bigint
+  fAssetFtsoDecimals: bigint,
+  fAssetTokenDecimals: bigint
 ): bigint {
-  // calculate necessary price of asset, expressed in collateral wei
-  // P(Vw, Fu) = v / (f Cr)
-  // P(Vw, Fu) = P(Vw, S) * P(S, Fu)
-  const assetUBAPriceCollateralWei = collateralWei
+  // price of f-asset UBA in collateral Wei
+  // v / (P(Fu, Vw) f) = R
+  // P(Fu, Vw) = v / (f R)
+  // new ftso price for the asset
+  // P(Fu, Vw) = 10^((dV + fV) - (dF + fF)) P(F, SF) / P(V, SV)
+  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) P(Fu, Vw)
+  // put together
+  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) v / (f R)
+  const expPlus = fAssetTokenDecimals + fAssetFtsoDecimals
+  const expMinus = collateralTokenDecimals + collateralFtsoDecimals
+  return BigInt(10) ** expPlus
+    * collateralFtsoPrice
+    * collateralWei
     * BigInt(10_000)
-    / totalMintedUBA
-    / crBips
-  // calculate new ftso price for the asset
-  // P(SF, F) = 10^((dF + fV) - (dV + fF)) P(SV, V) P(Vw, Fu)
-  const expPlus = collateralFtsoDecimals + assetTokenDecimals
-  const expMinus = assetFtsoDecimals + collateralTokenDecimals
-  const assetFtsoPrice = collateralFtsoPrice
-    * assetUBAPriceCollateralWei
-    * BigInt(10) ** expPlus
     / BigInt(10) ** expMinus
-  return assetFtsoPrice
+    / crBips
+    / totalMintedUBA
 }

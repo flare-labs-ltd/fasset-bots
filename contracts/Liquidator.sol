@@ -8,8 +8,6 @@ import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
 import "./lib/LiquidatorMath.sol";
 
-import "hardhat/console.sol";
-
 
 enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
@@ -33,12 +31,6 @@ contract Liquidator is ILiquidator, Ownable {
         blazeswap = _blazeSwap;
     }
 
-    modifier logGasUsage() {
-        uint256 startGas = gasleft();
-        _;
-        //console.log("gas used", startGas - gasleft());
-    }
-
     modifier flashLoanInitiatorLock() {
         require(_status == FlashLoanLock.INACTIVE,
             "Liquidator: Reentrancy blocked");
@@ -58,7 +50,7 @@ contract Liquidator is ILiquidator, Ownable {
 
     function runArbitrage(
         IIAgentVault _agentVault
-    ) external logGasUsage {
+    ) external {
         runArbitrageWithCustomParams(_agentVault, flashLender, blazeswap);
     }
 
@@ -79,19 +71,20 @@ contract Liquidator is ILiquidator, Ownable {
         vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
+        require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
         uint256 optimalVaultAmount = LiquidatorMath.getFlashLoanedVaultCollateral(
             address(wNat),
+            assetManager,
+            _blazeSwap,
             agentInfo,
-            assetManagerSettings,
-            _blazeSwap
+            assetManagerSettings
         );
-        require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
         require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
         // run flash loan
         _flashLender.flashLoan(
             this,
             address(vaultToken),
-            Math.min(optimalVaultAmount, maxVaultFlashLoan),
+            Math.min(maxVaultFlashLoan, optimalVaultAmount),
             abi.encode(
                 assetManagerSettings.fAsset,
                 assetManager,
@@ -162,7 +155,6 @@ contract Liquidator is ILiquidator, Ownable {
             address(this),
             block.timestamp
         );
-        _vaultToken.approve(address(_blazeSwap), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -179,7 +171,6 @@ contract Liquidator is ILiquidator, Ownable {
                 address(this),
                 block.timestamp
             );
-            _poolToken.approve(address(_blazeSwap), 0);
         }
     }
 

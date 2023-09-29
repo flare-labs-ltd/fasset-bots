@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "fasset/contracts/utils/lib/MathUtils.sol";
 import "fasset/contracts/utils/lib/SafePct.sol";
-import "fasset/contracts/fasset/library/CollateralTypes.sol";
+import "fasset/contracts/fasset/mock/FakePriceReader.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/AssetManagerSettings.sol";
-import "fasset/contracts/fasset/mock/FakePriceReader.sol";
+import "fasset/contracts/fasset/library/CollateralTypes.sol";
 import "./AgentMock.sol";
 import "./AssetManagerMock.sol";
 
@@ -23,6 +23,10 @@ contract AssetManagerMock {
     address public wNat;
     uint256 public minVaultCollateralRatioBIPS;
     uint256 public minPoolCollateralRatioBIPS;
+
+    string internal assetFtsoSymbol;
+    string internal vaultFtsoSymbol;
+    string internal poolFtsoSymbol;
 
     AssetManagerSettings.Data private settings;
 
@@ -40,7 +44,11 @@ contract AssetManagerMock {
         uint64 _lotSizeAMG,
         uint8 _assetMintingDecimals,
         uint256 _minVaultCollateralRatioBIPS,
-        uint256 _minPoolCollateralRatioBIPS
+        uint256 _minPoolCollateralRatioBIPS,
+        // ftso symbols
+        string memory _assetSymbol,
+        string memory _vaultSymbol,
+        string memory _poolSymbol
     ) {
         uint8 assetDecimals = IERC20Metadata(_fAsset).decimals();
         // settings
@@ -53,6 +61,10 @@ contract AssetManagerMock {
         wNat = _wNat;
         minVaultCollateralRatioBIPS = _minVaultCollateralRatioBIPS;
         minPoolCollateralRatioBIPS = _minPoolCollateralRatioBIPS;
+        // ftso symbols
+        assetFtsoSymbol = _assetSymbol;
+        vaultFtsoSymbol = _vaultSymbol;
+        poolFtsoSymbol = _poolSymbol;
     }
 
     function liquidate(
@@ -110,6 +122,18 @@ contract AssetManagerMock {
 
     function getWNat() external view returns (address) {
         return wNat;
+    }
+
+    function getCollateralType(
+        CollateralType.Class /* _class */,
+        IERC20 _token
+    ) external view returns (CollateralType.Data memory _collateralData) {
+        _collateralData.assetFtsoSymbol = assetFtsoSymbol;
+        if (address(_token) == wNat) {
+            _collateralData.tokenFtsoSymbol = poolFtsoSymbol;
+        } else {
+            _collateralData.tokenFtsoSymbol = vaultFtsoSymbol;
+        }
     }
 
     ////////////////////////////////////////////////////////////////
