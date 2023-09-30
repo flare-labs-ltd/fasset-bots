@@ -104,8 +104,7 @@
         "web3-eth-abi": "1.10.2",
         "web3-utils": "1.10.2",
         "winston": "3.10.0",
-        "winston-daily-rotate-file": "4.7.1",
-        "yarn": "1.22.19"
+        "winston-daily-rotate-file": "4.7.1"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",

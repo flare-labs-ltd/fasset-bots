@@ -8,9 +8,11 @@
         "esModuleInterop": true,
         "outDir": "./dist",
         "sourceMap": true,
+        "allowSyntheticDefaultImports": true,
         "forceConsistentCasingInFileNames": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
+        "skipLibCheck": true,
         "typeRoots": [
             "test/types",
             "node_modules/@types"

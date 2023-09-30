@@ -5353,7 +5353,6 @@ __metadata:
     web3-utils: 1.10.2
     winston: 3.10.0
     winston-daily-rotate-file: 4.7.1
-    yarn: 1.22.19
   bin:
     agent-bot: dist/src/cli/agent.js
     fake-price-reader: dist/src/cli/fakePriceReader.js
@@ -12981,16 +12980,6 @@ __metadata:
     y18n: ^3.2.1
     yargs-parser: ^2.4.1
   checksum: 5d0a45dceaf8cff1c6a7164b2c944755a09cced3cb1d585bbc79ffed758ef9f9b54ead0879e3dacfc696ccd15fec9e6e29183c24517d7f578b47cd0614a3851d
-  languageName: node
-  linkType: hard
-
-"yarn@npm:1.22.19":
-  version: 1.22.19
-  resolution: "yarn@npm:1.22.19"
-  bin:
-    yarn: bin/yarn.js
-    yarnpkg: bin/yarn.js
-  checksum: b43d2cc5fee7e933beb12a8aee7dfceca9e9ef2dd17c5d04d15a12ab7bec5f5744ea34a07b86e013da7f291a18c4e1ad8f70e150f5ed2f4666e6723c7f0a8452
   languageName: node
   linkType: hard
 
