@@ -64,7 +64,7 @@ From those vaules we can derive:
 - `liquidate_w(f) = f PW RW`: obtained pool collateral when liquidating `f` f-assets,
 - `profit(v) = liquidate_v(min(swap_v_for_f(v), fm)) + swap_w_for_v(liquidate_w(min(swap_v_for_f(v), fm))) - v`: vault collateral profit of our arbitrage strategy.
 
-Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `scripts/liquidation_arbitrage_calculation.nb` file.
+Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `notes/liquidation_arbitrage_calculation.nb` file. Also, there is `notes/simulation.py` file that visualizes how blockchain conditions affect the profit in regards to initially invested vault collateral.
 
 ## Dev notes
 
@@ -76,11 +76,36 @@ then run
 ```sh
 yarn && yarn compile
 ```
-and test with
+
+### Tests
+
+> **Important**
+> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `yarn fix-blazeswap-hash`.
+
+Unit tests are written for blaze swap and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection with ftso price data, dex reserves and agent collateral ratios):
+- *healthy*: dex prices are sufficiently aligned with the ftso prices and dex slippage is low enough, which allows for a profitable full agent liquidation,
+- *semi-healthy*: either dex prices are not aligned with the ftso prices or dex slippage is too high, which allows for a profitable partial agent liquidation,
+- *unhealthy*: dex prices are not aligned with the ftso prices (specifically, f-asset to vault collateral dex price is much higher than that derived from ftsos), which makes any kind of agent liquidation unprofitable.
+
+Run those tests with
 ```sh
-yarn test
+yarn test test/unit/blazeSwap.test.ts test/unit/liquidator.test.ts
 ```
-For testing we use hardhat with truffle. For the client-side bot implementation, ethers should/will be used, as it is both lightweight and powerful, so it can be intergrated into frontend.
+
+The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. For this test, first fork the network in one terminal with
+```sh
+yarn fork
+```
+then run the test in another terminal with
+```sh
+yarn test test/integration/liquidator.test.ts
+```
+
+> **Warning**
+> For forked test, we need to be able to change asset prices on coston, which requires an authorized account's private key to be stored in `.env` file, under the `DEPLOYER_PRIVATE_KEY` field. This private key is not publicly available, so integration tests are currently only for internal use.
+
+> **Note**
+> For unit testing we use hardhat with truffle. For interactions with the actual rpc's, we use ethers.js, as it is both lightweight and powerful, so it can also be intergrated into frontend.
 
 ## TODO
 - [ ] handle situations when dex reserves are smaller than swapping amounts,

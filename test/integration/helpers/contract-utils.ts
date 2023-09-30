@@ -1,6 +1,10 @@
 import { ethers } from "ethers"
-import { IBlazeSwapRouter, IERC20Metadata } from "../../typechain-ethers"
-import { sleep } from "./utils"
+import { IBlazeSwapRouter, IERC20Metadata } from "../../../typechain-ethers"
+import { sleep } from "../../helpers/utils"
+
+
+////////////////////////////////////////////////////////////////////////////
+// general ethers-specific
 
 export async function waitFinalize(
   provider: ethers.JsonRpcProvider,
@@ -15,6 +19,9 @@ export async function waitFinalize(
   }
   return res!
 }
+
+////////////////////////////////////////////////////////////////////////////
+// blazeswap liquidity
 
 export async function addLiquidity(
   blazeSwapRouter: IBlazeSwapRouter,

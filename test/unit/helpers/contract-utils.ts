@@ -1,6 +1,6 @@
-import { ERC20Instance } from '../../typechain-truffle/@openzeppelin/contracts/token/ERC20/ERC20'
-import { BlazeSwapRouterInstance } from '../../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
-import { ERC20MockInstance } from '../../typechain-truffle/contracts/mock/ERC20Mock'
+import { ERC20Instance } from '../../../typechain-truffle/@openzeppelin/contracts/token/ERC20/ERC20'
+import { BlazeSwapRouterInstance } from '../../../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
+import { ERC20MockInstance } from '../../../typechain-truffle/contracts/mock/ERC20Mock'
 import { ZERO_ADDRESS, MAX_INT } from './constants'
 import { BNish, toBN, expBN } from './utils'
 

@@ -1,8 +1,8 @@
 require('dotenv').config()
 import { ethers } from 'ethers'
-import { IERC20Metadata } from '../typechain-ethers'
+import { IERC20Metadata } from '../../typechain-ethers'
 import { EcosystemContracts, getContracts, getAgentContracts } from './helpers/contracts'
-import { assetPriceForAgentCr, priceBasedDexReserve, addLiquidity, waitFinalize } from './helpers/contract-utils-ethers'
+import { assetPriceForAgentCr, priceBasedDexReserve, addLiquidity, waitFinalize } from './helpers/contract-utils'
 
 // usdc balance of deployer (should basically be infinite)
 const USDC_BALANCE = BigInt(100_000_000) * ethers.WeiPerEther

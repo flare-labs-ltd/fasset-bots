@@ -3,16 +3,16 @@ import {
   IWNat, FakeERC20, FlashLender, BlazeSwapRouter,
   Liquidator, IIAgentVault, IIAssetManager,
   IFAssetMetadata, FakePriceReader
-} from '../../typechain-ethers'
-import { abi as liquidatorAbi } from '../../artifacts/contracts/Liquidator.sol/Liquidator.json'
-import { abi as fakeERC20Abi } from '../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
-import { abi as wNatAbi } from '../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
-import { abi as flashLenderAbi } from '../../artifacts/contracts/FlashLender.sol/FlashLender.json'
-import { abi as blazeSwapRouterAbi } from '../../artifacts/blazeswap/contracts/periphery/BlazeSwapRouter.sol/BlazeSwapRouter.json'
-import { abi as agentAbi } from '../../artifacts/fasset/contracts/fasset/interface/IIAgentVault.sol/IIAgentVault.json'
-import { abi as assetManagerAbi } from '../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
-import { abi as fAssetAbi } from '../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
-import { abi as fakePriceReaderAbi } from '../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
+} from '../../../typechain-ethers'
+import { abi as liquidatorAbi } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
+import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
+import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
+import { abi as flashLenderAbi } from '../../../artifacts/contracts/FlashLender.sol/FlashLender.json'
+import { abi as blazeSwapRouterAbi } from '../../../artifacts/blazeswap/contracts/periphery/BlazeSwapRouter.sol/BlazeSwapRouter.json'
+import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAgentVault.sol/IIAgentVault.json'
+import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
+import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
+import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
 
 export interface AddressesJson {
   wNat: string

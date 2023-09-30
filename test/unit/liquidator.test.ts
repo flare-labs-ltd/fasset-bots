@@ -1,11 +1,11 @@
 // typechain truffle (importing from index doesn't pick up types)
-import { FakePriceReaderInstance } from '../typechain-truffle/fasset/contracts/fasset/mock/FakePriceReader'
-import { ERC20MockInstance } from '../typechain-truffle/contracts/mock/ERC20Mock'
-import { AssetManagerMockInstance } from '../typechain-truffle/contracts/mock/AssetManagerMock'
-import { AgentMockInstance } from '../typechain-truffle/contracts/mock/AgentMock'
-import { BlazeSwapRouterInstance } from '../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
-import { FlashLenderInstance } from '../typechain-truffle/contracts/FlashLender'
-import { LiquidatorInstance } from '../typechain-truffle/contracts/Liquidator'
+import { FakePriceReaderInstance } from '../../typechain-truffle/fasset/contracts/fasset/mock/FakePriceReader'
+import { ERC20MockInstance } from '../../typechain-truffle/contracts/mock/ERC20Mock'
+import { AssetManagerMockInstance } from '../../typechain-truffle/contracts/mock/AssetManagerMock'
+import { AgentMockInstance } from '../../typechain-truffle/contracts/mock/AgentMock'
+import { BlazeSwapRouterInstance } from '../../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
+import { FlashLenderInstance } from '../../typechain-truffle/contracts/FlashLender'
+import { LiquidatorInstance } from '../../typechain-truffle/contracts/Liquidator'
 // actual imports
 import BN from 'bn.js'
 import { expectRevert } from "@openzeppelin/test-helpers"

@@ -1,5 +1,5 @@
-import { BlazeSwapRouterInstance } from '../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
-import { ERC20MockInstance } from '../typechain-truffle/contracts/mock/ERC20Mock'
+import { BlazeSwapRouterInstance } from '../../typechain-truffle/blazeswap/contracts/periphery/BlazeSwapRouter'
+import { ERC20MockInstance } from '../../typechain-truffle/contracts/mock/ERC20Mock'
 import { XRP, USDT, WNAT } from './fixtures/assets'
 import { MAX_INT, ZERO_ADDRESS } from './helpers/constants'
 import { assertBnEqual, toBN } from './helpers/utils'
