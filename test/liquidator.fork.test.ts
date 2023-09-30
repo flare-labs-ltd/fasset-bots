@@ -1,10 +1,8 @@
 require('dotenv').config()
-import { describe, beforeEach } from 'mocha'
 import { ethers } from 'ethers'
+import { IERC20Metadata } from '../typechain-ethers'
 import { EcosystemContracts, getContracts, getAgentContracts } from './helpers/contracts'
 import { assetPriceForAgentCr, priceBasedDexReserve, addLiquidity, waitFinalize } from './helpers/contract-utils-ethers'
-import { IERC20Metadata } from '../typechain-ethers'
-import { sleep } from '../src/util'
 
 // usdc balance of deployer (should basically be infinite)
 const USDC_BALANCE = BigInt(100_000_000) * ethers.WeiPerEther
@@ -124,6 +122,7 @@ describe("Liquidator", () => {
     // check that liquidator made a profit
     const liquidatorUsdcBalance = await contracts.usdc.balanceOf(liquidator)
     assert.notEqual(liquidatorUsdcBalance, BigInt(0))
-    console.log("liquidator USDC profit:", liquidatorUsdcBalance)
+    console.log("liquidator USDC profit:", liquidatorUsdcBalance.toString(), "wei")
+    console.log("liquidated:", (agentInfo1.mintedUBA - agentInfo2.mintedUBA).toString(), "UBA")
   })
 })
