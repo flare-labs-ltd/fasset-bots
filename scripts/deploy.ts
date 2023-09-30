@@ -5,7 +5,7 @@ import { abi as flashLenderAbi, bytecode as flashLenderBytecode } from '../artif
 
 
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY!
-const addresses = require(`../${process.env.CONTRACT_ADDRESSES!}`)
+const addresses = require("../addresses.json")[process.env.NETWORK!]
 const provider = new JsonRpcProvider(process.env.RPC_URL!)
 const signer = new Wallet(privateKey, provider)
 

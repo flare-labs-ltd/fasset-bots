@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { IBlazeSwapRouter, IERC20Metadata } from "../../../typechain-ethers"
-import { sleep } from "../../helpers/utils"
+import { sleep } from "../../utils"
 
 
 ////////////////////////////////////////////////////////////////////////////

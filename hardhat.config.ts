@@ -38,7 +38,7 @@ const config: HardhatUserConfig = {
     },
   },
   typechain: {
-    outDir: "typechain-types",
+    outDir: "typechain-truffle",
     target: "ethers-v6",
   },
   paths: {

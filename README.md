@@ -77,22 +77,32 @@ then run
 yarn && yarn compile
 ```
 
+### Deployment
+
+To deploy the liquidator contract, log the network name inside `.env` file under the key `NETWORK`, then run
+```sh
+yarn ts-node scripts/deploy.ts
+```
+
 ### Tests
+
+> **Warning**
+> Neither unit nor integration tests will run yet, as unit tests require access to the private `fasset` repository on gitlab, and integration tests require an authorized account's private key, which can change the mocked FTOS's prices on coston.
 
 > **Important**
 > Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `yarn fix-blazeswap-hash`.
 
-Unit tests are written for blaze swap and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection with ftso price data, dex reserves and agent collateral ratios):
-- *healthy*: dex prices are sufficiently aligned with the ftso prices and dex slippage is low enough, which allows for a profitable full agent liquidation,
-- *semi-healthy*: either dex prices are not aligned with the ftso prices or dex slippage is too high, which allows for a profitable partial agent liquidation,
-- *unhealthy*: dex prices are not aligned with the ftso prices (specifically, f-asset to vault collateral dex price is much higher than that derived from ftsos), which makes any kind of agent liquidation unprofitable.
+Unit tests are written for blaze swap and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
+- *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which allows for a profitable full agent liquidation,
+- *semi-healthy*: either dex prices are not aligned with the FTSO prices or dex slippage is too high, which allows for a profitable partial agent liquidation,
+- *unhealthy*: dex prices are not aligned with the FTSO prices (specifically, f-asset to vault collateral price is much higher than the one derived from FTSOs), which makes any kind of agent liquidation unprofitable.
 
 Run those tests with
 ```sh
 yarn test test/unit/blazeSwap.test.ts test/unit/liquidator.test.ts
 ```
 
-The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. For this test, first fork the network in one terminal with
+The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. It requires a private key corresponding to address `0x88278079a62db08fEb125f270102651BbE8F9984` to be logged into `.env` file under the key `DEPLOYER_PRIVATE_KEY`. With this, first fork the network in one terminal
 ```sh
 yarn fork
 ```
@@ -101,12 +111,10 @@ then run the test in another terminal with
 yarn test test/integration/liquidator.test.ts
 ```
 
-> **Warning**
-> For forked test, we need to be able to change asset prices on coston, which requires an authorized account's private key to be stored in `.env` file, under the `DEPLOYER_PRIVATE_KEY` field. This private key is not publicly available, so integration tests are currently only for internal use.
-
 > **Note**
 > For unit testing we use hardhat with truffle. For interactions with the actual rpc's, we use ethers.js, as it is both lightweight and powerful, so it can also be intergrated into frontend.
 
 ## TODO
 - [ ] handle situations when dex reserves are smaller than swapping amounts,
-- [ ] add UBA and Wei to Liquidator contract variables.
+- [ ] add UBA and Wei to Liquidator contract variables,
+- [ ] CLI for deployment (parameter is the used network).

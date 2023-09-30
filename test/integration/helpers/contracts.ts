@@ -1,4 +1,4 @@
-import { Provider, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import {
   IWNat, FakeERC20, FlashLender, BlazeSwapRouter,
   Liquidator, IIAgentVault, IIAssetManager,
@@ -42,7 +42,8 @@ export interface AgentContracts {
 export interface EcosystemContracts extends BaseContracts, AgentContracts {}
 
 export function getAddresses(network: string): AddressesJson {
-  return require(`../../contract-addresses-${network}.json`)
+  const addresses = require(`../../addresses.json`)
+  return addresses[network]
 }
 
 export function getContracts(
