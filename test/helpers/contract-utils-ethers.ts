@@ -22,7 +22,7 @@ export async function addLiquidity(
   tokenB: IERC20Metadata,
   amountA: bigint,
   amountB: bigint,
-  liquidityProvider: ethers.Wallet,
+  liquidityProvider: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
   await waitFinalize(provider, liquidityProvider,

@@ -1,10 +1,8 @@
-import * as dotenv from 'dotenv'
+require('dotenv').config()
 import { ContractFactory, Wallet, JsonRpcProvider } from 'ethers'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../artifacts/contracts/Liquidator.sol/Liquidator.json'
 import { abi as flashLenderAbi, bytecode as flashLenderBytecode } from '../artifacts/contracts/FlashLender.sol/FlashLender.json'
 
-
-dotenv.config()
 
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY!
 const addresses = require(`../${process.env.CONTRACT_ADDRESSES!}`)
