@@ -217,7 +217,7 @@ describe("Bot cli commands unit tests", async () => {
         await minter.executeMinting(crt, txHash);
         // show balance
         const fees = await botCliCommands.poolFeesBalance(agent.vaultAddress);
-        expect(fees.gtn(0)).to.be.true;
+        expect(toBN(fees).gtn(0)).to.be.true;
     });
 
     it("Should withdraw pool fees", async () => {
@@ -234,9 +234,9 @@ describe("Bot cli commands unit tests", async () => {
         await minter.executeMinting(crt, txHash);
         // withdraw pool fees
         const amount = await botCliCommands.poolFeesBalance(agent.vaultAddress);
-        await botCliCommands.withdrawPoolFees(agent.vaultAddress, amount.divn(2).toString());
+        await botCliCommands.withdrawPoolFees(agent.vaultAddress, toBN(amount).divn(2).toString());
         const amountAfter = await botCliCommands.poolFeesBalance(agent.vaultAddress);
-        expect(amount.gt(amountAfter)).to.be.true;
+        expect(toBN(amount).gt(toBN(amountAfter))).to.be.true;
     });
 
     it("Should run command 'announceUnderlyingWithdrawal' and 'cancelUnderlyingWithdrawal'", async () => {

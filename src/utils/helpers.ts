@@ -2,6 +2,7 @@ import BN from "bn.js";
 import util from "util";
 import Web3 from "web3";
 import { logger } from "./logger";
+import crypto from "crypto";
 
 export type BNish = BN | number | string;
 
@@ -300,6 +301,15 @@ export async function retry<T extends (...arg0: any[]) => any>(
         await sleep(currRetry * delay);
         return retry(fn, args, maxTry, currRetry);
     }
+}
+
+export function generateRandomHexString(numBytes: number) {
+    const randomString = crypto.randomBytes(numBytes).toString("hex");
+    return randomString;
+}
+
+export function createSha256Hash(data: string) {
+    return crypto.createHash("sha256").update(data).digest("hex");
 }
 
 /**

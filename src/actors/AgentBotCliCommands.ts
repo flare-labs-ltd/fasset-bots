@@ -55,8 +55,8 @@ export class BotCliCommands {
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol.`);
-            throw new CommandLineError("Invalid FAsset symbol");
+            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol ${fAssetSymbol}.`);
+            throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
@@ -169,12 +169,12 @@ export class BotCliCommands {
     /**
      * Returns agent's pool fee balance.
      */
-    async poolFeesBalance(agentVault: string): Promise<BN> {
+    async poolFeesBalance(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const balance = await agentBot.agent.poolFeeBalance();
         this.botConfig.notifier!.sendBalancePoolFees(agentVault, balance.toString());
         logger.info(`Agent ${agentVault} has pool fee ${balance.toString()}.`);
-        return balance;
+        return balance.toString();
     }
 
     /**
@@ -237,8 +237,8 @@ export class BotCliCommands {
             );
             return announce.paymentReference;
         } catch (error) {
-            return null;
             console.error(error);
+            return null;
         }
     }
 
@@ -372,13 +372,12 @@ export class BotCliCommands {
     }
 
     /**
-     * Creates underlying account.
+     * Creates underlying account
      */
     async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
         const address = await this.context.wallet.createAccount();
         const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
         const privateKey = (await walletKeys.getKey(address))!;
-        // TODO - can this be done more securely
         console.log(address, privateKey);
         return { address, privateKey };
     }
