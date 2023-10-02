@@ -50,7 +50,6 @@ export class AgentBot {
     latestProof: ProvedDH<DHConfirmedBlockHeightExists> | null = null;
 
     /**
-     *
      * Creates instance of AgentBot with newly created underlying address and with provided agent default settings.
      * Certain AgentBot properties are also stored in persistent state.
      * @param rootEm entity manager

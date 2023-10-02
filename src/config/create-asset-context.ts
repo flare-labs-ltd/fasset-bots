@@ -1,4 +1,4 @@
-import { AddressUpdaterInstance, AssetManagerControllerInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
 import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
@@ -118,7 +118,7 @@ async function getAssetManagerAndController(chainConfig: BotFAssetConfig, addres
     }
 }
 
-async function findAssetManager(assetManagerController: AssetManagerControllerInstance, fAssetSymbol: string) {
+async function findAssetManager(assetManagerController: AssetManagerControllerInstance, fAssetSymbol: string): Promise<AssetManagerInstance> {
     const assetManagers = await assetManagerController.getAssetManagers();
     for (const addr of assetManagers) {
         const assetManager = await AssetManager.at(addr);

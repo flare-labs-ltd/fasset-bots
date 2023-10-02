@@ -52,7 +52,13 @@ export interface BotFAssetConfig {
 const botConfigLoader = new JsonLoader<BotConfigFile>("run-config/schema/bot-config.schema.json", "bot config JSON");
 const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>("run-config/schema/agent-settings.schema.json", "agent settings JSON");
 
-export function loadConfigFile(fpath: string, configInfo?: string) {
+/**
+ * Loads configuration file and checks it.
+ * @param fpath configuration file path
+ * @param configInfo
+ * @returns instance BotConfigFile
+ */
+export function loadConfigFile(fpath: string, configInfo?: string): BotConfigFile {
     try {
         const config = botConfigLoader.load(fpath);
         validateConfigFile(config);
@@ -64,7 +70,11 @@ export function loadConfigFile(fpath: string, configInfo?: string) {
     }
 }
 
-function validateConfigFile(config: BotConfigFile) {
+/**
+ * Validates configuration.
+ * @param config instance of interface BotConfigFile
+ */
+function validateConfigFile(config: BotConfigFile): void {
     if (config.addressUpdater == null && config.contractsJsonFile == null) {
         throw new Error("Missing either contractsJsonFile or addressUpdater in config");
     }
@@ -78,6 +88,12 @@ function validateConfigFile(config: BotConfigFile) {
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
 export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string; ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
 
+/**
+ * Loads agent configuration file and checks it.
+ * @param fpath configuration file path
+ * @param configInfo
+ * @returns instance AgentBotConfigFile
+ */
 export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBotConfigFile {
     try {
         const config = botConfigLoader.load(fpath);
@@ -91,7 +107,12 @@ export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBo
     }
 }
 
-function validateAgentConfigFile(config: BotConfigFile) {
+
+/**
+ * Validates agent configuration.
+ * @param config instance BotConfigFile
+ */
+function validateAgentConfigFile(config: BotConfigFile): void {
     if (config.defaultAgentSettingsPath == null || config.ormOptions == null) {
         throw new Error("Missing defaultAgentSettingsPath or ormOptions in config");
     }
@@ -104,6 +125,9 @@ function validateAgentConfigFile(config: BotConfigFile) {
 
 /**
  * Creates bot configuration from initial run config file.
+ * @param runConfig instance of BotConfigFile
+ * @param ownerAddress native owner address
+ * @returns instance BotConfig
  */
 export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: string): Promise<BotConfig> {
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
@@ -134,6 +158,13 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 
 /**
  * Creates BotFAssetConfig configuration from chain info.
+ * @param chainInfo instance of BotFAssetInfo
+ * @param em entity manager
+ * @param attestationProviderUrls list of attestation provider's urls
+ * @param scProofVerifierAddress SCProofVerifier's contract address
+ * @param stateConnectorAddress  StateConnector's contract address
+ * @param ownerAddress native owner address
+ * @returns instance of BotFAssetConfig
  */
 export async function createBotFAssetConfig(
     chainInfo: BotFAssetInfo,
@@ -153,6 +184,12 @@ export async function createBotFAssetConfig(
 
 /**
  * Helper for BotFAssetConfig configuration from chain info.
+ * @param chainInfo instance of BotFAssetInfo
+ * @param attestationProviderUrls list of attestation provider's urls
+ * @param scProofVerifierAddress SCProofVerifier's contract address
+ * @param stateConnectorAddress  StateConnector's contract address
+ * @param ownerAddress native owner address
+ * @returns instance of BotFAssetConfig
  */
 export async function createChainConfig(
     chainInfo: BotFAssetInfo,
@@ -181,6 +218,9 @@ export async function createChainConfig(
 
 /**
  * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
+ * @param context fasset agent bot context
+ * @param agentSettingsConfigPath path to default agent configuration file
+ * @returns instance of AgentBotDefaultSettings
  */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
@@ -208,6 +248,10 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
 
 /**
  * Creates wallet client.
+ * @param sourceId chain source
+ * @param walletUrl chain's url
+ * @param inTestnet if testnet should be used, optional parameter
+ * @returns instance of Wallet implementation according to sourceId
  */
 export function createWalletClient(
     sourceId: SourceId,
@@ -245,6 +289,10 @@ export function createWalletClient(
 
 /**
  * Creates blockchain indexer helper. Relevant urls and api keys are provided in .env.
+ * @param sourceId chain source
+ * @param indexerUrl indexer's url
+ * @param finalizationBlocks number of blocks after which transaction is considered confirmed
+ * @returns instance of BlockchainIndexerHelper
  */
 export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string, finalizationBlocks: number): BlockchainIndexerHelper {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
@@ -254,6 +302,11 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
 
 /**
  * Creates blockchain wallet helper using wallet client.
+ * @param sourceId chain source
+ * @param em entity manager
+ * @param walletUrl chain's url
+ * @param inTestnet if testnet should be used, optional parameter
+ * @returns instance of BlockchainWalletHelper
  */
 export function createBlockchainWalletHelper(
     sourceId: SourceId,
@@ -273,6 +326,14 @@ export function createBlockchainWalletHelper(
 
 /**
  * Creates attestation helper.
+ * @param sourceId chain source
+ * @param attestationProviderUrls list of attestation provider's urls
+ * @param scProofVerifierAddress SCProofVerifier's contract address
+ * @param stateConnectorAddress StateConnector's contract address
+ * @param owner native owner address
+ * @param indexerUrl indexer's url
+ * @param finalizationBlocks number of blocks after which transaction is considered confirmed
+ * @returns instance of AttestationHelper
  */
 export async function createAttestationHelper(
     sourceId: SourceId,
@@ -290,6 +351,12 @@ export async function createAttestationHelper(
 
 /**
  * Creates state connector client
+ * @param indexerWebServerUrl indexer's url
+ * @param attestationProviderUrls list of attestation provider's urls
+ * @param scProofVerifierAddress SCProofVerifier's contract address
+ * @param stateConnectorAddress StateConnector's contract address
+ * @param owner native owner address
+ * @returns instance of StateConnectorClientHelper
  */
 export async function createStateConnectorClient(
     indexerWebServerUrl: string,
