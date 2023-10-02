@@ -77,7 +77,7 @@
         "testHH:fuzzer": "yarn testHH test-hardhat/fuzzing/FAssetFuzzing.ts",
         "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
         "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration",
-        "cover:testHH": "nyc --silent --no-clean yarn testHH_all:unit; nyc --silent --no-clean yarn testHH_all:integration",
+        "cover:testHH": "nyc --silent --no-clean yarn testHH_all",
         "cover:report": "yarn nyc report --reporter=lcov --reporter=text",
         "---------GENERATE---SCRIPTS": "",
         "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json",
