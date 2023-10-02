@@ -35,7 +35,8 @@ describe("Web3 event decoder unit tests", async () => {
         };
         const eventDecoder = new Web3EventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager });
         // set event as anonymous and do some id changes to satisy requirements
-        const evtType = eventDecoder.eventTypes.get("0x48f66332f8d4c9cd3dc39336964f371b632b938e98a5b5c921caa4084cb51064");
+        // must make a copy, otherwise later tests break
+        const evtType = JSON.parse(JSON.stringify(eventDecoder.eventTypes.get("0x48f66332f8d4c9cd3dc39336964f371b632b938e98a5b5c921caa4084cb51064"))) as AbiItem;
         evtType!.anonymous = true;
         evtType!.name = undefined;
         eventDecoder.eventTypes.set("0x000000000000000000000000ea6abef9ea06253364bb6cf53065dafd2ca122fc", evtType!);
