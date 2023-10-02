@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule } from "@nestjs/config";
 import { AgentService } from "./services/agent.service";
 import { AgentController } from "./controllers/agent.controller";
 import { AgentVaultController } from "./controllers/vault.controller";

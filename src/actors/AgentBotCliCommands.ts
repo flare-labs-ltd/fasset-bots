@@ -378,7 +378,7 @@ export class BotCliCommands {
         const address = await this.context.wallet.createAccount();
         const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
         const privateKey = (await walletKeys.getKey(address))!;
-       console.log(address, privateKey);
+        console.log(address, privateKey);
         return { address, privateKey };
     }
 

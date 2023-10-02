@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import Web3 from "web3";
 import { logger } from "./logger";
-import crypto from 'crypto';
+import crypto from "crypto";
 
 export type BNish = BN | number | string;
 
@@ -321,5 +321,5 @@ export function generateRandomHexString(numBytes: number) {
 }
 
 export function createSha256Hash(data: string) {
-    return crypto.createHash('sha256').update(data).digest('hex');
+    return crypto.createHash("sha256").update(data).digest("hex");
 }
