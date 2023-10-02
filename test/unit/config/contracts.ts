@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { loadContracts, saveContracts } from "../../../src/config/contracts";
 import { existsSync, rm } from "fs";
 
-const filename = "../fasset/deployment/deploys/hardhat.json";
+const filename = "./fasset-deployment/hardhat.json";
 const newFilename = "./test/unit/config/savedContracts.json";
 describe("Contracts config tests", async () => {
     it("Should load contracts", async () => {
