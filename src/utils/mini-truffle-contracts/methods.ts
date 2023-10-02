@@ -134,10 +134,11 @@ function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs:
 }
 
 export async function executeConstructor(settings: ContractSettings, abi: AbiItem[], bytecode: string, args: any[]) {
-    const web3Contract = new settings.web3.eth.Contract(abi);
     const constructorAbi = abi.find(it => it.type === 'constructor');
     const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
-    const data = web3Contract.deploy({ data: bytecode, arguments: formatArguments(methodArgs) }).encodeABI();
+    const encodedArgs = constructorAbi?.inputs != null ? coder.encodeParameters(constructorAbi.inputs, methodArgs) : '';
+    // deploy data must be bytecode followed by the abi encoded args
+    const data = bytecode + encodedArgs.slice(2);
     return await executeMethodSend(settings, { ...config, data: data });
 }
 

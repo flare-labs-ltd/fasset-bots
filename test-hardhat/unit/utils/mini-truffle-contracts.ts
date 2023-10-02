@@ -121,6 +121,10 @@ describe("mini truffle and artifacts tests", async () => {
             expect(await web3.eth.getBalance(wnat.address)).equals("10000");
             expect(String(await wnat.balanceOf(accounts[5]))).equals("10000");
             expect(String(await wnat2.balanceOf(accounts[5]))).equals("10000");
+            // constructor args are correct
+            expect(await wnat2.governance()).equals(accounts[0]);
+            expect(await wnat2.name()).equals("Native");
+            expect(await wnat2.symbol()).equals("NAT");
         });
 
         it("at should fail for wrong address", async () => {
