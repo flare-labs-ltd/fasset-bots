@@ -372,14 +372,13 @@ export class BotCliCommands {
     }
 
     /**
-     * Creates underlying account.
+     * Creates underlying account
      */
     async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
         const address = await this.context.wallet.createAccount();
         const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
         const privateKey = (await walletKeys.getKey(address))!;
-        // TODO - can this be done more securely
-        console.log(address, privateKey);
+       console.log(address, privateKey);
         return { address, privateKey };
     }
 
