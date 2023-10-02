@@ -1,25 +1,21 @@
+import coder from "web3-eth-abi";
 import { isNotNull, toBN } from "../helpers";
+import { RawEvent } from "./Web3ContractEventDecoder";
 import { EvmEvent } from "./common";
-import { web3 } from "../web3";
 
-export declare type RawEvent = import("web3-core").Log;
 
 export class Web3EventDecoder {
     public eventTypes = new Map<string, AbiItem>(); // signature (topic[0]) => type
-    public contractNames = new Map<string, string>(); // address => name
 
-    constructor(contracts: { [name: string]: Truffle.ContractInstance }, filter?: string[]) {
-        this.addContracts(contracts, filter);
+    constructor(abi: AbiItem[] = [], filter?: Array<string | undefined>) {
+        this.addEvents(abi, filter);
     }
 
-    addContracts(contracts: { [name: string]: Truffle.ContractInstance }, filter?: string[]) {
-        for (const contractName of Object.keys(contracts)) {
-            const contract = contracts[contractName];
-            this.contractNames.set(contract.address, contractName);
-            for (const item of contract.abi) {
-                if (item.type === "event" && (filter == null || filter.includes(item.name!))) {
-                    this.eventTypes.set((item as any).signature, item);
-                }
+    addEvents(abi: AbiItem[], filter?: Array<string | undefined>) {
+        for (const item of abi) {
+            if (item.type === "event" && (filter == null || filter.includes(item.name))) {
+                const signature = coder.encodeEventSignature(item);
+                this.eventTypes.set(signature, item);
             }
         }
     }
@@ -32,9 +28,10 @@ export class Web3EventDecoder {
         }
         // based on web3 docs, first topic has to be removed for non-anonymous events
         const topics = evtType.anonymous ? event.topics : event.topics.slice(1);
-        const decodedArgs: any = web3.eth.abi.decodeLog(evtType.inputs!, event.data, topics);
+        const abiInputs = evtType.inputs ?? [];
+        const decodedArgs: Record<string, any> = coder.decodeLog(abiInputs, event.data, topics);
         // convert parameters based on type (BN for now)
-        evtType.inputs!.forEach((arg, i) => {
+        abiInputs.forEach((arg, i) => {
             if (/^u?int\d*$/.test(arg.type)) {
                 decodedArgs[i] = decodedArgs[arg.name] = toBN(decodedArgs[i]);
             } else if (/^u?int\d*\[\]$/.test(arg.type)) {

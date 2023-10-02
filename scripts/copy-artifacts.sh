@@ -25,6 +25,11 @@ cd ${fassetsdir}
 cp -R typechain-truffle ${projdir}
 cp ${projdir}/scripts/types.d.ts ${projdir}/typechain-truffle
 
+# fix some paths so that sourceName always matches the actual dir
+cd ${projdir}
+mkdir -p artifacts/flattened
+mv artifacts/flare-sc artifacts/flattened/FlareSmartContracts.sol
+
 
 # copy contract addresses
 

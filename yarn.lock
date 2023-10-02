@@ -2260,7 +2260,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@truffle/contract@npm:4.6.31, @truffle/contract@npm:^4.0.35":
+"@truffle/contract@npm:^4.0.35":
   version: 4.6.31
   resolution: "@truffle/contract@npm:4.6.31"
   dependencies:
@@ -5921,7 +5921,6 @@ __metadata:
     "@nestjs/websockets": ^10.2.6
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": 0.5.16
-    "@truffle/contract": 4.6.31
     "@types/bn.js": 5.1.2
     "@types/chai": 4.3.6
     "@types/chai-as-promised": 7.1.6
@@ -5964,6 +5963,10 @@ __metadata:
     typescript: 5.2.2
     typescript-json-schema: 0.61.0
     web3: 1.10.2
+    web3-core: 1.10.2
+    web3-eth: 1.10.2
+    web3-eth-abi: 1.10.2
+    web3-utils: 1.10.2
     winston: 3.10.0
     winston-daily-rotate-file: 4.7.1
   bin:

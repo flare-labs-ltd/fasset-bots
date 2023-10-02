@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import util from "util";
 import Web3 from "web3";
 import { logger } from "./logger";
 import crypto from "crypto";
@@ -145,12 +146,12 @@ export function checkedCast<S, T extends S>(obj: S, cls: new (...args: any[]) =>
 /**
  * Get value of key `key` for map. If it doesn't exists, create new value, add it to the map and return it.
  */
-export function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
+export function getOrCreate<K, V, R extends V>(map: Map<K, V>, key: K, create: (key: K) => R): V {
     if (map.has(key)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return map.get(key)!;
     }
-    const value = create();
+    const value = create(key);
     map.set(key, value);
     return value;
 }
@@ -158,7 +159,7 @@ export function getOrCreate<K, V>(map: Map<K, V>, key: K, create: () => V): V {
 /**
  * Get value of key `key` for map. If it doesn't exists, create new value, add it to the map and return it.
  */
-export async function getOrCreateAsync<K, V>(map: Map<K, V>, key: K, create: (key: K) => Promise<V>): Promise<V> {
+export async function getOrCreateAsync<K, V, R extends V>(map: Map<K, V>, key: K, create: (key: K) => Promise<R>): Promise<V> {
     if (map.has(key)) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return map.get(key)!;
@@ -207,19 +208,6 @@ export function toplevelRun(main: () => Promise<void>) {
         .finally(() => {
             process.exit(0);
         });
-}
-
-/**
- * Future is a promise that can be resolved/rejected "from the outside" by calling future.resolve/reject.
- */
-/* istanbul ignore next */
-export class Future<T> {
-    resolve!: (value: T | PromiseLike<T>) => void;
-    reject!: (error: any) => void;
-    promise = new Promise<T>((resolve, reject) => {
-        this.resolve = resolve;
-        this.reject = reject;
-    });
 }
 
 // Error handling
@@ -322,4 +310,37 @@ export function generateRandomHexString(numBytes: number) {
 
 export function createSha256Hash(data: string) {
     return crypto.createHash("sha256").update(data).digest("hex");
+}
+
+/**
+ * Wrap an async method so that it cannot be called twice in parallel.
+ */
+export function preventReentrancy(method: () => Promise<void>) {
+    let inMethod = false;
+    return async () => {
+        if (inMethod) return;
+        inMethod = true;
+        try {
+            await method();
+        } finally {
+            inMethod = false;
+        }
+    };
+}
+
+/**
+ * Improve console.log display by pretty-printing BN end expanding objects.
+ * @param inspectDepth the depth objects in console.log will be expanded
+ */
+export function improveConsoleLog(inspectDepth: number = 10) {
+    const BN = toBN(0).constructor;
+    BN.prototype[util.inspect.custom] = function () { return `BN(${this.toString(10)})`; };
+    util.inspect.defaultOptions.depth = inspectDepth;
+}
+
+/**
+ * Replaces the substring of `str` from `start` to `start + length` with `replacement`.
+ */
+export function replaceStringRange(str: string, start: number, length: number, replacement: string) {
+    return str.slice(0, start) + replacement + str.slice(start + length);
 }

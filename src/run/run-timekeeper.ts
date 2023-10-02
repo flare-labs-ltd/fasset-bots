@@ -4,7 +4,7 @@ import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
-import { Future, requireEnv, toplevelRun } from "../utils/helpers";
+import { requireEnv, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT3");
@@ -26,14 +26,14 @@ toplevelRun(async () => {
     }
     // run
     console.log("Timekeeper bot started, press CTRL+C to end");
-    const stopped = new Future<boolean>();
-    process.on("SIGINT", () => {
-        console.log("Timekeeper bot stopping...");
-        for (const timekeeper of timekeepers) {
-            timekeeper.clear();
-        }
-        stopped.resolve(true);
+    await new Promise<void>((resolve) => {
+        process.on("SIGINT", () => {
+            console.log("Timekeeper bot stopping...");
+            resolve();
+        });
     });
-    await stopped.promise;
+    for (const timekeeper of timekeepers) {
+        timekeeper.clear();
+    }
     console.log("Timekeeper bot stopped");
 });
