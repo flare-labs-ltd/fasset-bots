@@ -14,7 +14,11 @@ import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fass
 import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
 
-export interface AddressesJson {
+interface AddressesJson {
+  [network: string]: NetworkAddressesJson
+}
+
+export interface NetworkAddressesJson {
   wNat: string
   usdc: string
   assetManagerController: string
@@ -41,8 +45,8 @@ export interface AgentContracts {
 
 export interface EcosystemContracts extends BaseContracts, AgentContracts {}
 
-export function getAddresses(network: string): AddressesJson {
-  const addresses = require(`../../addresses.json`)
+export function getAddresses(network: string): NetworkAddressesJson {
+  const addresses = require(`../../addresses.json`) as AddressesJson
   return addresses[network]
 }
 

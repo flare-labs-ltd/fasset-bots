@@ -106,7 +106,7 @@ The above tests mock the f-asset's asset manager contract. For non-mocked contra
 ```sh
 yarn fork
 ```
-then run the test in another terminal with
+then run the test in another terminal
 ```sh
 yarn test test/integration/liquidator.test.ts
 ```
