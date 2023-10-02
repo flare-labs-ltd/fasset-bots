@@ -3,6 +3,9 @@ import { replaceStringRange } from "../helpers";
 import { createContractInstanceConstructor, executeConstructor } from "./methods";
 import { ContractJson, ContractSettings } from "./types";
 
+/**
+ * Simple implementation of Truffle.ContractInstance.
+ */
 export class MiniTruffleContractInstance implements Truffle.ContractInstance {
     constructor(
         public _contractFactory: MiniTruffleContract,
@@ -26,15 +29,22 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
     }
 
     sendTransaction(transactionConfig: TransactionConfig): PromiEvent<TransactionReceipt> {
-        const config = { ...this._settings.defaultOptions, ...transactionConfig, to: this.address };
+        const config = { ...this._settings.defaultTransactionConfig, ...transactionConfig, to: this.address };
         return this._settings.web3.eth.sendTransaction(config);
     }
 
+    /**
+     * Create a copy of this instance wrapper with different settings.
+     * Allows for e.g. changing finalization method for a certain call.
+     */
     _withSettings(newSettings: ContractSettings) {
         return new this._contractFactory._instanceConstructor(this._contractFactory, newSettings, this.address);
     }
 }
 
+/**
+ * Simple implementation of Truffle.Contract.
+ */
 export class MiniTruffleContract implements Truffle.Contract<any> {
     constructor(
         public _settings: ContractSettings,
@@ -100,6 +110,10 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         }
     }
 
+    /**
+     * Create a copy of this contract wrapper with different settings.
+     * Allows for e.g. changing finalization method for a certain instance.
+     */
     _withSettings(newSettings: ContractSettings) {
         return new MiniTruffleContract(newSettings, this.contractName, this.abi, this._bytecode, this._contractJson);
     }

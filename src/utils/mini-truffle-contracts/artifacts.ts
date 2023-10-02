@@ -22,6 +22,10 @@ class ArtifactsImpl implements Truffle.Artifacts {
         private settings: ContractSettings,
     ) {}
 
+    /**
+     * Reads path of all artifacts in artifact root path and creates a map for fast searching in artifacts.require.
+     * @returns the generated map
+     */
     loadArtifactMap() {
         const artifactMap = new Map<string, ArtifactData>();
         const paths = globSync(path.join(this.rootPath, "**/*.json").replace(/\\/g, "/"));
@@ -35,6 +39,11 @@ class ArtifactsImpl implements Truffle.Artifacts {
         return artifactMap;
     }
 
+    /**
+     * Load a contract from the artifacts root path. Can search by contract name or full path.
+     * @param name either "ContractName" or "full/path/contract.sol:ContractName"
+     * @returns a Truffle.Contract instance
+     */
     require(name: string): Truffle.Contract<any> {
         if (this.artifactMap == null) {
             this.artifactMap = this.loadArtifactMap();

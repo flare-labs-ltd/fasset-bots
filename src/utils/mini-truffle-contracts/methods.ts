@@ -6,10 +6,18 @@ import { waitForFinalization } from "./finalization";
 import { ContractSettings } from "./types";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
 
+/**
+ * Constructor for instances of given contract.
+ */
 export interface ContractInstanceConstructor {
     new(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
 }
 
+/**
+ * Dynamically create a constructor for instances of a MiniTruffleContract.
+ * @param contractName The name of the contract, will be used as the name of contract instance constructor.
+ * @returns The constructor function.
+ */
 export function createContractInstanceConstructor(contractName: string): ContractInstanceConstructor {
     const contractConstructor = class extends MiniTruffleContractInstance {
         constructor(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string) {
@@ -21,6 +29,9 @@ export function createContractInstanceConstructor(contractName: string): Contrac
     return contractConstructor;
 }
 
+/**
+ * Add all methods defined in ABI to a contract instance.
+ */
 function addContractMethods(instance: MiniTruffleContractInstance & { [method: string]: any; }, abi: AbiItem[]) {
     instance.methods = {};
     for (const method of groupMethodOverloads(abi).values()) {
@@ -38,11 +49,17 @@ function addContractMethods(instance: MiniTruffleContractInstance & { [method: s
     }
 }
 
+/**
+ * A group of methods with same name but different parameters.
+ */
 interface AbiMethodOverloads {
     name: string;
     overloads: Map<string, AbiItem>;
 }
 
+/**
+ * Group contract methods into groups with same name.
+ */
 function groupMethodOverloads(abi: AbiItem[]) {
     const namedMethods: Map<string, AbiMethodOverloads> = new Map();
     for (const item of abi) {
@@ -54,12 +71,18 @@ function groupMethodOverloads(abi: AbiItem[]) {
     return namedMethods;
 }
 
+/**
+ * For an aby name, create decorated name e.g. `name(int256,bytes32)`.
+ */
 function createMethodNameWithSignature(method: AbiItem) {
     /* istanbul ignore next: method.inputs cannot really be undefined - web3 contract fails if it is */
     const args = (method.inputs ?? []).map(inp => inp.type).join(',');
     return `${method.name}(${args})`;
 }
 
+/**
+ * Return truffle-contract-like method execution function for an ABI method item.
+ */
 function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiItem) {
     const callFn = async function (...args: any[]) {
         // console.log(`call ${method.name}`);
@@ -94,14 +117,23 @@ function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiIte
     return sendFn;
 }
 
+/**
+ * True for `view` and `pure` methods.
+ */
 function isConstant(method: AbiItem) {
     return method.stateMutability === 'pure' || method.stateMutability === 'view';
 }
 
+/**
+ * Convert all BN aruments to string.
+ */
 function formatArguments(args: any[]): any[] {
     return web3DeepNormalize(args);
 }
 
+/**
+ * Convert numeric string results to BN (only on toplevel for now - truffle does the same).
+ */
 function convertResults(abi: AbiOutput[], output: any) {
     if (abi.length === 1) {
         return decodeArgument(abi[0], output[0]);
@@ -118,10 +150,17 @@ function convertResults(abi: AbiOutput[], output: any) {
     }
 }
 
+/**
+ * Convert numeric argument to BN, others are returned unchanged.
+ */
 function decodeArgument(abiItem: AbiOutput, value: any) {
     return /^u?int\d+$/.test(abiItem.type) ? toBN(value) : value;
 }
 
+/**
+ * Last argument to a truffle method is optional TransactionConfig.
+ * This function splits arguments into contract method arguments and transaction config.
+ */
 function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs: any[], config: TransactionConfig] {
     const paramsLen = method?.inputs?.length ?? 0;
     if (args.length < paramsLen) {
@@ -133,6 +172,9 @@ function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs:
     return args.length > paramsLen ? [args.slice(0, paramsLen), args[paramsLen]] : [args, {}];
 }
 
+/**
+ * Deploy a contract.
+ */
 export async function executeConstructor(settings: ContractSettings, abi: AbiItem[], bytecode: string, args: any[]) {
     const constructorAbi = abi.find(it => it.type === 'constructor');
     const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
@@ -142,6 +184,9 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
     return await executeMethodSend(settings, { ...config, data: data });
 }
 
+/**
+ * Send a transaction for a contract method. Estimate gas before.
+ */
 async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor } = settings;
     const config = mergeConfig(settings, transactionConfig);
@@ -166,13 +211,19 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
     return await settings.web3.eth.call(config);
 }
 
+/**
+ * Estimate gas usage of a method call.
+ */
 async function executeMethodEstimateGas(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
     return await settings.web3.eth.estimateGas(config);
 }
 
+/**
+ * Call a contract method without creating transaction (doesn't use gas and doesn't change on-chain state).
+ */
 function mergeConfig(settings: ContractSettings, transactionConfig: TransactionConfig): TransactionConfig {
-    const config: TransactionConfig = { ...settings.defaultOptions, ...transactionConfig };
+    const config: TransactionConfig = { ...settings.defaultTransactionConfig, ...transactionConfig };
     if (config.from == null && settings.defaultAccount != null) {
         config.from = settings.defaultAccount;
     }
