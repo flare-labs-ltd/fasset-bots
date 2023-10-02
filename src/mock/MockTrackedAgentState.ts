@@ -1,5 +1,5 @@
-import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
-import { TrackedState } from "./TrackedState";
+import { InitialAgentData, TrackedAgentState } from "../state/TrackedAgentState";
+import { TrackedState } from "../state/TrackedState";
 
 export class MockTrackedAgentState extends TrackedAgentState {
     constructor(

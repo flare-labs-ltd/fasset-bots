@@ -1,6 +1,6 @@
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
-import { MockTrackedAgentState } from "../state/MockTrackedAgentState";
+import { MockTrackedAgentState } from "./MockTrackedAgentState";
 import { InitialAgentData } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { EventArgs, EvmEvent } from "../utils/events/common";
