@@ -96,6 +96,9 @@ export class Challenger extends ActorBase {
         this.lastEventUnderlyingBlockHandled = to;
     }
 
+    /**
+     * @param transaction received underlying transaction
+     */
     handleUnderlyingTransaction(transaction: ITransaction): void {
         for (const [address] of transaction.inputs) {
             const agent = this.state.agentsByUnderlying.get(address);
@@ -113,6 +116,10 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @param agentVault agent's vault address
+     * @param transactionHash underlying transaction's hash
+     */
     async handleTransactionConfirmed(agentVault: string, transactionHash: string): Promise<void> {
         this.deleteUnconfirmedTransaction(agentVault, transactionHash);
         // also re-check free balance
@@ -120,6 +127,9 @@ export class Challenger extends ActorBase {
         this.checkForNegativeFreeBalance(agent);
     }
 
+    /**
+     * @param args event's RedemptionRequested arguments
+     */
     handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
         this.activeRedemptions.set(args.paymentReference, {
             agentAddress: args.agentVault,
@@ -130,6 +140,9 @@ export class Challenger extends ActorBase {
         });
     }
 
+    /**
+     * @param args object containing redemption request id, agent's vault address and underlying transaction hash
+     */
     async handleRedemptionFinished(args: { requestId: BN; agentVault: string; transactionHash: string }): Promise<void> {
         // clean up transactionForPaymentReference tracking - after redemption is finished the payment reference is immediately illegal anyway
         const reference = PaymentReference.redemption(args.requestId);
@@ -141,7 +154,11 @@ export class Challenger extends ActorBase {
 
     // illegal transactions
 
-    checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState) {
+    /**
+     * @param transaction underlying transaction
+     * @param agent instance of TrackedAgentState
+     */
+    checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState): void {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         const transactionValid =
             PaymentReference.isValid(transaction.reference) &&
@@ -153,6 +170,11 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @param scope
+     * @param transaction underlying transaction
+     * @param agent instance of TrackedAgentState
+     */
     async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
@@ -176,6 +198,10 @@ export class Challenger extends ActorBase {
 
     // double payments
 
+    /**
+     * @param transaction underlying transaction
+     * @param agent instance of TrackedAgentState
+     */
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
         if (!PaymentReference.isValid(transaction.reference)) return; // handled by illegal payment challenge
@@ -187,6 +213,12 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @param scope
+     * @param tx1hash underlying transaction made with same payment reference as tx2hash
+     * @param tx2hash underlying transaction made with same payment reference as tx1hash
+     * @param agent instance of TrackedAgentState
+     */
     async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
@@ -205,6 +237,9 @@ export class Challenger extends ActorBase {
 
     // free balance negative
 
+    /**
+     * @param agent instance of TrackedAgentState
+     */
     checkForNegativeFreeBalance(agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
@@ -239,6 +274,11 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @param scope
+     * @param transactionHashes list of 'unauthorized' transaction hashes
+     * @param agent instance of TrackedAgentState
+     */
     async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for free negative balance.`);
         await this.singleChallengePerAgent(agent, async () => {
@@ -254,21 +294,37 @@ export class Challenger extends ActorBase {
 
     // utils
 
+    /**
+     * @param agent instance of TrackedAgentState
+     * @param reference payment reference
+     */
     isValidRedemptionReference(agent: TrackedAgentState, reference: string) {
         const redemption = this.activeRedemptions.get(reference);
         if (redemption == null) return false;
         return agent.vaultAddress === redemption.agentAddress;
     }
 
+    /**
+     * @param agent instance of TrackedAgentState
+     * @param reference payment reference
+     */
     isValidAnnouncedPaymentReference(agent: TrackedAgentState, reference: string) {
         return !agent.announcedUnderlyingWithdrawalId.isZero() && reference === PaymentReference.announcedWithdrawal(agent.announcedUnderlyingWithdrawalId);
     }
 
+    /**
+     * @param agent instance of TrackedAgentState
+     * @param transaction underlying transaction
+     */
     addUnconfirmedTransaction(agent: TrackedAgentState, transaction: ITransaction) {
         getOrCreate(this.unconfirmedTransactions, agent.vaultAddress, () => new Map()).set(transaction.hash, transaction);
         logger.info(`Challenger ${this.address} stored unconfirmed underlying transaction ${transaction.hash}.`);
     }
 
+    /**
+     * @param agentVault agent's vault address
+     * @param transactionHash underlying transaction hash
+     */
     deleteUnconfirmedTransaction(agentVault: string, transactionHash: string) {
         const agentTransactions = this.unconfirmedTransactions.get(agentVault);
         if (agentTransactions) {
@@ -278,6 +334,11 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @param scope
+     * @param txHash underlying transaction hash
+     * @param underlyingAddressString underlying address
+     */
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
         await this.state.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         return await this.state.context.attestationProvider
@@ -285,6 +346,10 @@ export class Challenger extends ActorBase {
             .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
 
+    /**
+     * @param agentVault agent's vault address
+     * @param body
+     */
     async singleChallengePerAgent(agent: TrackedAgentState, body: () => Promise<void>) {
         while (this.challengedAgents.has(agent.vaultAddress)) {
             await sleep(1);
@@ -298,6 +363,9 @@ export class Challenger extends ActorBase {
         }
     }
 
+    /**
+     * @returns underlying block height
+     */
     async getLatestUnderlyingBlock(): Promise<number> {
         const blockHeight = await this.state.context.blockchainIndexer.getBlockHeight();
         return blockHeight;

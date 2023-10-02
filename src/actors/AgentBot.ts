@@ -51,8 +51,14 @@ export class AgentBot {
 
     /**
      *
-     * Creates AgentBot with newly created underlying address and with provided agent default settings.
+     * Creates instance of AgentBot with newly created underlying address and with provided agent default settings.
      * Certain AgentBot properties are also stored in persistent state.
+     * @param rootEm entity manager
+     * @param context fasset agent bot context
+     * @param ownerAddress agent's owner native address
+     * @param agentSettingsConfig desired agent's initial setting
+     * @param notifier
+     * @returns instance of AgentBot class
      */
     static async create(
         rootEm: EM,
@@ -93,6 +99,9 @@ export class AgentBot {
 
     /**
      * This method fixes the underlying address to be used by given AgentBot owner.
+     * @param context fasset agent bot context
+     * @param underlyingAddress agent's underlying address
+     * @param ownerAddress agent's owner native address
      */
     static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
@@ -103,7 +112,11 @@ export class AgentBot {
     }
 
     /**
-     * Create AgentBot from persistent state.
+     * Creates instance of AgentBot from persistent state.
+     * @param context fasset agent bot context
+     * @param agentEntity stored agent entity
+     * @param notifier
+     * @returns instance of AgentBot class
      */
     static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifier: Notifier): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
@@ -122,9 +135,11 @@ export class AgentBot {
     }
 
     /**
-     * Activate agent's underlying XRP account by depositing 10 XRP from owner's underlying.
+     * Activates agent's underlying XRP account by depositing 10 XRP from owner's underlying.
+     * @param context fasset agent bot context
+     * @param agentUnderlyingAddress agent's underlying address
      */
-    static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string) {
+    static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
         const ownerAddress = requireEnv("OWNER_ADDRESS");
         try {
             if (context.chainInfo.chainId != SourceId.XRP) return;
@@ -149,6 +164,7 @@ export class AgentBot {
      * Secondly it checks if there are any redemptions in persistent storage, that needs to be handled.
      * Thirdly, it checks if there are any actions ready to be handled for AgentBot in persistent state (such actions that need announcement beforehand or that are time locked).
      * Lastly, it checks if there are any daily tasks that need to be handled (like mintings or redemptions caught in corner case).
+     * @param rootEm entity manager
      */
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
@@ -159,6 +175,7 @@ export class AgentBot {
 
     /**
      * Performs appropriate actions according to received events.
+     * @param rootEm entity manager
      */
     async handleEvents(rootEm: EM): Promise<void> {
         await rootEm
@@ -243,6 +260,8 @@ export class AgentBot {
 
     /**
      * Checks is there are any new events from assetManager.
+     * @param em entity manager
+     * @returns list of EvmEvents
      */
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -277,6 +296,7 @@ export class AgentBot {
 
     /**
      * Once a day checks corner cases and claims.
+     * @param rootEm entity manager
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -393,7 +413,6 @@ export class AgentBot {
 
         try {
             // airdrop distribution rewards
-            // TODO: is it enough to input only last month, catch revert if nothing to claim?
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);
             const IDistributionToDelegators = artifacts.require("IDistributionToDelegators");
             const distributionToDelegators = await IDistributionToDelegators.at(await addressUpdater.getContractAddress("DistributionToDelegators"));
@@ -414,6 +433,7 @@ export class AgentBot {
 
     /**
      * Checks if any minting or redemption is stuck in corner case.
+     * @param rootEm entity manager
      */
     async handleCornerCases(rootEm: EM): Promise<void> {
         try {
@@ -429,6 +449,7 @@ export class AgentBot {
 
     /**
      * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
+     * @param rootEm entity manager
      */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
@@ -643,6 +664,7 @@ export class AgentBot {
 
     /**
      * AgentBot exits available if already allowed
+     * @param agentEnt agent entity
      */
     async exitAvailable(agentEnt: AgentEntity) {
         logger.info(`Agent ${this.agent.vaultAddress} is waiting to exit available list.`);
@@ -663,6 +685,8 @@ export class AgentBot {
 
     /**
      * Stores received collateral reservation as minting in persistent state.
+     * @param em entity manager
+     * @param request event's CollateralReserved arguments
      */
     mintingStarted(em: EM, request: EventArgs<CollateralReserved>): void {
         em.create(
@@ -687,12 +711,18 @@ export class AgentBot {
 
     /**
      * Returns minting by required id from persistent state.
+     * @param em entity manager
+     * @param requestId collateral reservation id
+     * @returns instance of AgentMinting
      */
     async findMinting(em: EM, requestId: BN): Promise<AgentMinting> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
     }
 
+    /**
+     * @param rootEm entity manager
+     */
     async handleOpenMintings(rootEm: EM): Promise<void> {
         const openMintings = await this.openMintings(rootEm, true);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
@@ -704,6 +734,9 @@ export class AgentBot {
 
     /**
      * Returns minting with state other than DONE.
+     * @param em entity manager
+     * @param onlyIds if true, only AgentMinting's entity ids are return
+     * @return list of AgentMinting's instances
      */
     async openMintings(em: EM, onlyIds: boolean): Promise<AgentMinting[]> {
         let query = em.createQueryBuilder(AgentMinting);
@@ -716,6 +749,8 @@ export class AgentBot {
 
     /**
      * Marks stored minting in persistent state as DONE.
+     * @param minting AgentMinting entity
+     * @param executed if true, notifies about executed minting, otherwise notifies about deleted minting
      */
     mintingExecuted(minting: AgentMinting, executed: boolean): void {
         minting.state = AgentMintingState.DONE;
@@ -730,6 +765,8 @@ export class AgentBot {
 
     /**
      * Handles mintings stored in persistent state according to their state.
+     * @param rootEm entity manager
+     * @param id AgentMinting's entity id
      */
     async nextMintingStep(rootEm: EM, id: number): Promise<void> {
         await rootEm
@@ -768,6 +805,7 @@ export class AgentBot {
      * If time for payment expired, it checks via indexer if transaction for payment exists.
      * If it does exists, then it requests for payment proof - see requestPaymentProofForMinting().
      * If it does not exist, then it request non payment proof - see requestNonPaymentProofForMinting().
+     * @param minting AgentMinting entity
      */
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
         const proof = await this.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
@@ -820,6 +858,9 @@ export class AgentBot {
 
     /**
      * Sends request for minting payment proof, sets state for minting in persistent state to REQUEST_PAYMENT_PROOF and sends notification to owner,
+     * @param minting AgentMinting entity
+     * @param txHash transaction hash for minting payment
+     * @param sourceAddress minter's underlying address
      */
     async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
         logger.info(
@@ -844,6 +885,7 @@ export class AgentBot {
 
     /**
      * Sends request for minting non payment proof, sets state for minting in persistent state to REQUEST_NON_PAYMENT_PROOF and sends notification to owner,
+     * @param minting AgentMinting entity
      */
     async requestNonPaymentProofForMinting(minting: AgentMinting): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for non payment proof for minting ${minting.requestId.toString()}.`);
@@ -872,6 +914,7 @@ export class AgentBot {
     /**
      * When minting is in state REQUEST_NON_PAYMENT_PROOF, it obtains non payment proof, calls mintingPaymentDefault and sets minting in persistent state to DONE.
      * If proof cannot be obtained, it sends notification to owner.
+     * @param minting AgentMinting entity
      */
     async checkNonPayment(minting: AgentMinting): Promise<void> {
         logger.info(
@@ -910,6 +953,7 @@ export class AgentBot {
     /**
      * When minting is in state REQUEST_PAYMENT_PROOF, it obtains payment proof, calls executeMinting and sets minting in persistent state to DONE.
      * If proof cannot be obtained, it sends notification to owner.
+     * @param minting AgentMinting entity
      */
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
         logger.info(
@@ -944,6 +988,8 @@ export class AgentBot {
 
     /**
      * Stores received redemption request as redemption in persistent state.
+     * @param em entity manager
+     * @param request event's RedemptionRequested arguments
      */
     redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>): void {
         em.create(
@@ -967,6 +1013,9 @@ export class AgentBot {
 
     /**
      * Marks stored redemption in persistent state as DONE, then it checks AgentBot's and owner's underlying balance.
+     * @param em entity manager
+     * @param requestId redemption request id
+     * @param agentVault agent's vault address
      */
     async redemptionFinished(em: EM, requestId: BN, agentVault: string): Promise<void> {
         const redemption = await this.findRedemption(em, requestId);
@@ -977,12 +1026,18 @@ export class AgentBot {
 
     /**
      * Returns redemption by required id from persistent state.
+     * @param em entity manager
+     * @param requestId redemption request id
+     * @param instance of AgentRedemption
      */
     async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
         const agentAddress = this.agent.vaultAddress;
         return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
     }
 
+    /**
+     * @param rootEm entity manager
+     */
     async handleOpenRedemptions(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
@@ -992,6 +1047,9 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
     }
 
+    /**
+     * @param rootEm entity manager
+     */
     async handleOpenRedemptionsForCornerCase(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, false);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
@@ -1014,6 +1072,9 @@ export class AgentBot {
 
     /**
      * Returns minting with state other than DONE.
+     * @param em entity manager
+     * @param onlyIds if true, only AgentRedemption's entity ids are return
+     * * @return list of AgentRedemption's instances
      */
     async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
         let query = em.createQueryBuilder(AgentRedemption);
@@ -1026,6 +1087,8 @@ export class AgentBot {
 
     /**
      * Handles redemptions stored in persistent state according to their state.
+     * @param rootEm entity manager
+     * @param id AgentRedemption's entity id
      */
     async nextRedemptionStep(rootEm: EM, id: number): Promise<void> {
         await rootEm
@@ -1060,6 +1123,7 @@ export class AgentBot {
     /**
      * When redemption is in state STARTED, it checks if payment can be done in time.
      * Then it performs payment and sets the state of redemption in persistent state as PAID.
+     * @param redemption AgentRedemption entity
      */
     async payForRedemption(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
@@ -1097,6 +1161,7 @@ export class AgentBot {
 
     /**
      * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
+     * @param redemption AgentRedemption entity
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
@@ -1111,6 +1176,7 @@ export class AgentBot {
 
     /**
      * Sends request for redemption payment proof, sets state for redemption in persistent state to REQUESTED_PROOF.
+     * @param redemption AgentRedemption entity
      */
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         logger.info(
@@ -1141,6 +1207,7 @@ export class AgentBot {
      * When redemption is in state REQUESTED_PROOF, it obtains payment proof, calls confirmRedemptionPayment and sets the state of redemption in persistent state as DONE.
      * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
      * If proof cannot be obtained, it sends notification to owner.
+     * @param redemption AgentRedemption entity
      */
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
         logger.info(
@@ -1184,6 +1251,9 @@ export class AgentBot {
 
     /**
      * Checks if proof has expired in indexer.
+     * @param lastUnderlyingBlock last underlying block to perform payment
+     * @param lastUnderlyingTimestamp last underlying timestamp to perform payment
+     * @returns proved attestation provider data
      */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
@@ -1202,6 +1272,8 @@ export class AgentBot {
 
     /**
      * Marks stored AgentBot in persistent state as inactive after event 'AgentDestroyed' is received.
+     * @param em entity manager
+     * @param vaultAddress agent's vault address
      */
     async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
         const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
@@ -1212,6 +1284,7 @@ export class AgentBot {
 
     /**
      * Checks AgentBot's and owner's underlying balance after redemption is finished. If AgentBot's balance is too low, it tries to top it up from owner's account. See 'underlyingTopUp(...)'.
+     * @param agentVault agent's vault address
      */
     async checkUnderlyingBalance(agentVault: string): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
@@ -1229,6 +1302,9 @@ export class AgentBot {
     /**
      * Tries to top up AgentBot's underlying account from owner's. It notifies about successful and unsuccessful try.
      * It also checks owner's underlying balance and notifies when it is too low.
+     * @param amount amount to transfer from owner's underlying address to agent's underlying address
+     * @param agentVault agent's vault address
+     * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
         const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
@@ -1363,6 +1439,10 @@ export class AgentBot {
     /**
      * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
      * If value is less than zero, top up is not needed.
+     * @param requiredCrBIPS required collateral ratio for healthy state (in BIPS)
+     * @param agentInfo AgentInfo object
+     * @param cp CollateralPrice object
+     * @return required amount for top up to reach healthy collateral ratio
      */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
         const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;

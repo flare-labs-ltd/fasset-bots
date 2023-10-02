@@ -53,6 +53,9 @@ export class Liquidator extends ActorBase {
         }
     }
 
+    /**
+     * @param args event's MintingExecuted arguments
+     */
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
         this.runner.startThread(async (scope) => {
@@ -73,6 +76,7 @@ export class Liquidator extends ActorBase {
 
     /**
      * Checks if agent's status. If status is LIQUIDATION, then liquidate agent with all of the liquidator's fAssets.
+     * @param agent instance of TrackedAgentState
      */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         logger.info(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);

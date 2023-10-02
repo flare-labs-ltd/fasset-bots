@@ -13,9 +13,9 @@
     "license": "MIT",
     "bin": {
         "agent-bot": "dist/src/cli/agent.js",
+        "api-key": "dist/src/cli/apiKey.js",
         "fake-price-reader": "dist/src/cli/fakePriceReader.js",
-        "user-bot": "dist/src/cli/user.js",
-        "api-key": "dist/src/cli/apiKey.js"
+        "user-bot": "dist/src/cli/user.js"
     },
     "nyc": {
         "extends": "@istanbuljs/nyc-config-typescript",
@@ -78,7 +78,7 @@
         "testHH:fuzzer": "yarn testHH test-hardhat/fuzzing/FAssetFuzzing.ts",
         "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
         "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration",
-        "cover:testHH": "nyc --silent --no-clean yarn testHH_all",
+        "cover:testHH": "nyc --silent --no-clean yarn testHH_all:unit; nyc --silent --no-clean yarn testHH_all:integration",
         "cover:report": "yarn nyc report --reporter=lcov --reporter=text",
         "---------GENERATE---SCRIPTS": "",
         "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json",

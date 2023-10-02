@@ -51,6 +51,9 @@ export class SystemKeeper extends ActorBase {
         }
     }
 
+    /**
+     * @param args event's MintingExecuted arguments
+     */
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
         this.runner.startThread(async (scope) => {
@@ -71,6 +74,7 @@ export class SystemKeeper extends ActorBase {
 
     /**
      * Checks agent's status and start or end liquidation accordingly to agent's status.
+     * @param agent instance of TrackedAgentState
      */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         logger.info(`SystemKeeper ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);

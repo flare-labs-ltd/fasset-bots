@@ -19,13 +19,24 @@ export class UserBot {
     nativeAddress!: string;
     underlyingAddress!: string;
 
-    static async create(configFile: string, fAssetSymbol: string) {
+    /**
+     * Creates instance of UserBot.
+     * @param config path to configuration file
+     * @param fAssetSymbol symbol for the fasset
+     * @returns instance of UserBot
+     */
+    static async create(configFile: string, fAssetSymbol: string): Promise<UserBot> {
         const bot = new UserBot();
         await bot.initialize(configFile, fAssetSymbol);
         return bot;
     }
 
-    async initialize(configFile: string, fAssetSymbol: string) {
+    /**
+     * Initializes asset context from AgentBotRunConfig.
+     * @param configFile path to configuration file
+     * @param fAssetSymbol symbol for the fasset
+     */
+    async initialize(configFile: string, fAssetSymbol: string): Promise<void> {
         logger.info(`User ${requireEnv("USER_ADDRESS")} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         const runConfig = loadConfigFile(configFile, `User ${requireEnv("USER_ADDRESS")}`);
@@ -54,6 +65,9 @@ export class UserBot {
         logger.info(`User ${requireEnv("USER_ADDRESS")} successfully finished initializing cli environment.`);
     }
 
+    /**
+     * Updates underlying block and timestamp on fasset contracts.
+     */
     async updateUnderlyingTime() {
         logger.info(`User ${requireEnv("USER_ADDRESS")} started updating underlying block time.`);
         console.log("Updating underlying block time....");
@@ -61,7 +75,11 @@ export class UserBot {
         logger.info(`User ${requireEnv("USER_ADDRESS")} finished updating underlying block time.`);
     }
 
-    async getAvailableAgents() {
+    /**
+     * Gets available agents.
+     * @returns list of objects AvailableAgentInfo
+     */
+    async getAvailableAgents(): Promise<AvailableAgentInfo[]> {
         const result: AvailableAgentInfo[] = [];
         const chunkSize = 10;
         let start = 0;
@@ -75,7 +93,12 @@ export class UserBot {
         return result;
     }
 
-    async mint(agentVault: string, lots: BNish) {
+    /**
+     * Mints desired amount of lots against desired agent.
+     * @param agentVault agent's vault address
+     * @param lots number of lots to mint
+     */
+    async mint(agentVault: string, lots: BNish): Promise<void> {
         logger.info(`User ${requireEnv("USER_ADDRESS")} started minting with agent ${agentVault}.`);
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Reserving collateral...");
@@ -98,7 +121,13 @@ export class UserBot {
         logger.info(`User ${requireEnv("USER_ADDRESS")} finished minting with agent ${agentVault}.`);
     }
 
-    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string) {
+    /**
+     * Proves minting payment and executes minting.
+     * @param collateralReservationId collateral reservation id
+     * @param transactionHash transaction hash of minting payment
+     * @param paymentAddress agent's underlying address
+     */
+    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
         logger.info(
@@ -127,6 +156,10 @@ export class UserBot {
         );
     }
 
+    /**
+     * Redeems desired amount of lots.
+     * @param lots number of lots to redeem
+     */
     async redeem(lots: BNish) {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
@@ -157,6 +190,14 @@ export class UserBot {
         logger.info(loggedRequests);
     }
 
+    /**
+     * Calls redemption default after proving underlying non payment for redemption.
+     * @param amountUBA amount to be paid in redemption
+     * @param paymentReference payment reference to be used in redemption
+     * @param firstUnderlyingBlock underlying block in which redemption request was created
+     * @param lastUnderlyingBlock last underlying block within payment performed
+     * @param lastUnderlyingTimestamp last underlying timestamp within payment performed
+     */
     async redemptionDefault(
         amountUBA: BNish,
         paymentReference: string,

@@ -18,6 +18,9 @@ export class ActorBaseRunner {
 
     private stopRequested = false;
 
+    /**
+     * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
+     */
     async run(kind: ActorBaseKind): Promise<void> {
         this.stopRequested = false;
         while (!this.stopRequested) {
@@ -33,6 +36,7 @@ export class ActorBaseRunner {
     /**
      * This is the main method, where "automatic" logic is gathered.
      * It runs actor runsStep method, which handles required events and other.
+     * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      */
     async runStep(kind: ActorBaseKind): Promise<void> {
         try {
@@ -46,10 +50,11 @@ export class ActorBaseRunner {
     }
 
     /**
-     * Creates ActorBase runner from ActorConfig, native address and kind of actor (Challenger, Liquidator or SystemKeeper)
+     * Creates instance ActorBaseRunner from ActorConfig, native address and kind of actor (Challenger, Liquidator or SystemKeeper)
      * @param config - configs to run bot
      * @param address - actor's native address
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
+     * @returns instance of ActorBaseRunner
      */
     static async create(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig): Promise<ActorBaseRunner> {
         logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);

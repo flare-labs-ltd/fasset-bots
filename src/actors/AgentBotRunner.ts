@@ -61,6 +61,7 @@ export class AgentBotRunner {
     /**
      * Creates AgentBot runner from AgentBotConfig
      * @param botConfig - configs to run bot
+     * @returns instance of AgentBotRunner
      */
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to create AgentBotRunner.`);
