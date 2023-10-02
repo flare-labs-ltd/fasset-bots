@@ -2,7 +2,27 @@ import "dotenv/config";
 
 import "@nomiclabs/hardhat-web3";
 import fs from "fs";
-import { HardhatUserConfig } from "hardhat/config";
+import { globSync } from "glob";
+import { TASK_TEST_GET_TEST_FILES } from 'hardhat/builtin-tasks/task-names';
+import { HardhatUserConfig, task } from "hardhat/config";
+import path from "path";
+import { TraceManager } from "@flarenetwork/mcc";
+import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
+
+// disable MCC trace manager in hardhat tests
+TraceManager.enabled = false;
+TraceManagerSimpleWallet.enabled = false;
+
+// allow glob patterns in test file args
+task(TASK_TEST_GET_TEST_FILES, async ({ testFiles }: { testFiles: string[] }, { config }) => {
+    const cwd = process.cwd();
+    if (testFiles.length === 0) {
+        const testPath = path.relative(cwd, config.paths.tests).replace(/\\/g, '/');    // glob doesn't work with windows paths
+        testFiles = [testPath + '/**/*.{js,ts}'];
+    }
+    return testFiles.flatMap(pattern => globSync(pattern) as string[])
+        .map(fname => path.resolve(cwd, fname));
+});
 
 const accounts = [
     // In Truffle, default account is always the first one.
