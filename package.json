@@ -56,9 +56,8 @@
         "publish": "echo npm publish",
         "pack": "npm pack",
         "---------BUILD---SCRIPTS": "",
-        "prebuild": "rm -rf dist",
-        "build": "tsc --allowJs",
-        "watch": "tsc --allowJs --watch --incremental",
+        "build": "rm -rf dist && mkdir dist && cp -R -u artifacts/ dist/ && tsc --allowJs",
+        "watch": "yarn build --watch --incremental",
         "---------LINT---SCRIPTS": "",
         "lint": "eslint \"src/**/*ts\"",
         "---------PRETTIER---SCRIPTS": "",
@@ -122,8 +121,7 @@
         "simple-wallet": "link:../simple-wallet",
         "web3": "1.10.2",
         "winston": "3.10.0",
-        "winston-daily-rotate-file": "4.7.1",
-        "yarn": "1.22.19"
+        "winston-daily-rotate-file": "4.7.1"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
