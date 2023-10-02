@@ -1,7 +1,7 @@
 import Ajv, { JSONSchemaType, ValidateFunction } from "ajv";
 import { readFileSync } from "fs";
 
-const ajv = new Ajv();
+const ajv = new Ajv({ allowUnionTypes: true });
 
 export class JsonLoader<T> {
     private ajvValidator?: ValidateFunction<T>;
@@ -13,7 +13,9 @@ export class JsonLoader<T> {
 
     getValidator() {
         if (!this.ajvValidator) {
-            const schema = typeof this.schema === "string" ? (JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>) : this.schema;
+            const schema = typeof this.schema === "string"
+                ? JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>
+                : this.schema;
             this.ajvValidator = ajv.compile(schema);
         }
         return this.ajvValidator;
