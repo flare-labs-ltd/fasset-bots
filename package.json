@@ -30,7 +30,8 @@
             "src/mock/*.ts",
             "src/run/*.ts",
             "src/cli/*.ts",
-            "src/utils/printlog.ts"
+            "src/utils/printlog.ts",
+            "src/bot-api/agent/*.ts"
         ],
         "reporter": [
             "html",
