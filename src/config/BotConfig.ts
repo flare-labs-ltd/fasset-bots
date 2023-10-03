@@ -97,7 +97,6 @@ export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: str
 export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBotConfigFile {
     try {
         const config = botConfigLoader.load(fpath);
-        validateConfigFile(config);
         validateAgentConfigFile(config);
         return config as AgentBotConfigFile;
     } catch (e) {
