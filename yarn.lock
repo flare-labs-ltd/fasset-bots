@@ -1412,7 +1412,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:^10.2.6":
+"@nestjs/common@npm:10.2.6":
   version: 10.2.6
   resolution: "@nestjs/common@npm:10.2.6"
   dependencies:
@@ -1433,7 +1433,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/config@npm:^3.1.1":
+"@nestjs/config@npm:3.1.1":
   version: 3.1.1
   resolution: "@nestjs/config@npm:3.1.1"
   dependencies:
@@ -1448,7 +1448,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:^10.2.6":
+"@nestjs/core@npm:10.2.6":
   version: 10.2.6
   resolution: "@nestjs/core@npm:10.2.6"
   dependencies:
@@ -1493,7 +1493,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/passport@npm:^10.0.2":
+"@nestjs/passport@npm:10.0.2":
   version: 10.0.2
   resolution: "@nestjs/passport@npm:10.0.2"
   peerDependencies:
@@ -1503,7 +1503,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/platform-express@npm:^10.2.6":
+"@nestjs/platform-express@npm:10.2.6":
   version: 10.2.6
   resolution: "@nestjs/platform-express@npm:10.2.6"
   dependencies:
@@ -1519,7 +1519,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/platform-ws@npm:^10.2.6":
+"@nestjs/platform-ws@npm:10.2.6":
   version: 10.2.6
   resolution: "@nestjs/platform-ws@npm:10.2.6"
   dependencies:
@@ -1548,7 +1548,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/swagger@npm:^7.1.12":
+"@nestjs/swagger@npm:7.1.12":
   version: 7.1.12
   resolution: "@nestjs/swagger@npm:7.1.12"
   dependencies:
@@ -1594,7 +1594,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/websockets@npm:^10.2.6":
+"@nestjs/websockets@npm:10.2.6":
   version: 10.2.6
   resolution: "@nestjs/websockets@npm:10.2.6"
   dependencies:
@@ -2609,7 +2609,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/passport-http@npm:^0.3.9":
+"@types/passport-http@npm:0.3.9":
   version: 0.3.9
   resolution: "@types/passport-http@npm:0.3.9"
   dependencies:
@@ -4323,14 +4323,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"class-transformer@npm:^0.5.1":
+"class-transformer@npm:0.5.1":
   version: 0.5.1
   resolution: "class-transformer@npm:0.5.1"
   checksum: f191c8b4cc4239990f5efdd790cabdd852c243ed66248e39f6616a349c910c6eed2d9fd1fbf7ee6ea89f69b4f1d0b493b27347fe0cd0ae26b47c3745a805b6d3
   languageName: node
   linkType: hard
 
-"class-validator@npm:^0.14.0":
+"class-validator@npm:0.14.0":
   version: 0.14.0
   resolution: "class-validator@npm:0.14.0"
   dependencies:
@@ -5909,16 +5909,16 @@ __metadata:
     "@mikro-orm/postgresql": 5.8.4
     "@mikro-orm/sqlite": 5.8.4
     "@nestjs/cli": ^10.1.18
-    "@nestjs/common": ^10.2.6
-    "@nestjs/config": ^3.1.1
-    "@nestjs/core": ^10.2.6
-    "@nestjs/passport": ^10.0.2
-    "@nestjs/platform-express": ^10.2.6
-    "@nestjs/platform-ws": ^10.2.6
+    "@nestjs/common": 10.2.6
+    "@nestjs/config": 3.1.1
+    "@nestjs/core": 10.2.6
+    "@nestjs/passport": 10.0.2
+    "@nestjs/platform-express": 10.2.6
+    "@nestjs/platform-ws": 10.2.6
     "@nestjs/schematics": ^10.0.2
-    "@nestjs/swagger": ^7.1.12
+    "@nestjs/swagger": 7.1.12
     "@nestjs/testing": ^10.2.6
-    "@nestjs/websockets": ^10.2.6
+    "@nestjs/websockets": 10.2.6
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": 0.5.16
     "@types/bn.js": 5.1.2
@@ -5930,7 +5930,7 @@ __metadata:
     "@types/mocha": 10.0.1
     "@types/node": 20.7.0
     "@types/passport": ^1.0.13
-    "@types/passport-http": ^0.3.9
+    "@types/passport-http": 0.3.9
     "@types/passport-strategy": ^0.2.36
     "@types/rewire": 2.5.28
     "@typescript-eslint/eslint-plugin": 6.7.3
@@ -5941,22 +5941,22 @@ __metadata:
     chai: 4.3.8
     chai-as-promised: 7.1.1
     chai-spies: 1.0.0
-    class-transformer: ^0.5.1
-    class-validator: ^0.14.0
+    class-transformer: 0.5.1
+    class-validator: 0.14.0
     commander: 11.0.0
     dotenv: 16.3.1
     eslint: 8.50.0
     glob: 10.3.10
     hardhat: 2.17.3
-    helmet: ^7.0.0
+    helmet: 7.0.0
     mocha: 10.2.0
     nyc: 15.1.0
-    passport: ^0.6.0
-    passport-headerapikey: ^1.2.2
+    passport: 0.6.0
+    passport-headerapikey: 1.2.2
     prettier: 3.0.3
-    reflect-metadata: ^0.1.13
+    reflect-metadata: 0.1.13
     rewire: 7.0.0
-    rxjs: ^7.8.1
+    rxjs: 7.8.1
     simple-wallet: "link:../simple-wallet"
     source-map-support: 0.5.21
     ts-node: 10.9.1
@@ -6985,7 +6985,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"helmet@npm:^7.0.0":
+"helmet@npm:7.0.0":
   version: 7.0.0
   resolution: "helmet@npm:7.0.0"
   checksum: 3622b8b68b7ac4736369fe7717adb5b87ddcdcda7c11c13277d79fb5670acab032e8c971835565b1d2144d234f3e0dbcd327a44249b9e61f0f64c0c753faf1bc
@@ -9650,7 +9650,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"passport-headerapikey@npm:^1.2.2":
+"passport-headerapikey@npm:1.2.2":
   version: 1.2.2
   resolution: "passport-headerapikey@npm:1.2.2"
   dependencies:
@@ -9667,7 +9667,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"passport@npm:^0.6.0":
+"passport@npm:0.6.0":
   version: 0.6.0
   resolution: "passport@npm:0.6.0"
   dependencies:
@@ -10253,7 +10253,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"reflect-metadata@npm:0.1.13, reflect-metadata@npm:^0.1.13":
+"reflect-metadata@npm:0.1.13":
   version: 0.1.13
   resolution: "reflect-metadata@npm:0.1.13"
   checksum: 798d379a7b6f6455501145419505c97dd11cbc23857a386add2b9ef15963ccf15a48d9d15507afe01d4cd74116df8a213247200bac00320bd7c11ddeaa5e8fb4
@@ -10593,7 +10593,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:7.8.1, rxjs@npm:^7.5.5, rxjs@npm:^7.8.1":
+"rxjs@npm:7.8.1, rxjs@npm:^7.5.5":
   version: 7.8.1
   resolution: "rxjs@npm:7.8.1"
   dependencies:
