@@ -262,6 +262,8 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
         const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        const res = await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
+        expect(res).to.be.null;
     });
 
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {

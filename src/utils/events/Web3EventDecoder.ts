@@ -29,6 +29,7 @@ export class Web3EventDecoder {
         }
         // based on web3 docs, first topic has to be removed for non-anonymous events
         const topics = evtType.anonymous ? event.topics : event.topics.slice(1);
+        /* istanbul ignore next */
         const abiInputs = evtType.inputs ?? [];
         const decodedArgs: Record<string, any> = coder.decodeLog(abiInputs, event.data, topics);
         // convert parameters based on type (BN for now)
