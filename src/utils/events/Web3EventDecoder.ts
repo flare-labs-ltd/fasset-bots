@@ -1,4 +1,5 @@
 import coder from "web3-eth-abi";
+import { AbiItem } from "web3-utils";
 import { isNotNull, toBN } from "../helpers";
 import { RawEvent } from "./Web3ContractEventDecoder";
 import { EvmEvent } from "./common";

@@ -13,15 +13,21 @@ const artifactsRootPath = path.normalize(path.resolve(__dirname, '../../artifact
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();
 
-export const contractSettings: ContractSettings = {
+/**
+ * Default setting used by all contract instances.
+ * WARNING: the settings are not copied when creating new instance.
+ *   So changing this structure will change settings in every instance, except the ones creted by `withSettings(...)`.
+ */
+export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaults({
     web3: web3,
     defaultTransactionConfig: {
     },
-    gasMultiplier: 2,
+    gas: 'auto',
+    gasMultiplier: 1.5,
+    defaultAccount: web3.eth.defaultAccount,
     waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 },
-    // waitFor: { what: 'receipt', timeoutMS: 10_000 }
-    defaultAccount: getDefaultAccount()
-};
+    // waitFor: { what: 'receipt', timeoutMS: 10_000 },
+});
 
 export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);
 
@@ -95,13 +101,25 @@ export function usingGlobalWeb3() {
     return web3 === (global as any).web3;
 }
 
-function getDefaultAccount() {
-    // use accounts[0] as default account under Hardhat
-    const hre = (global as any).hre;
-    /* istanbul ignore next */
-    if (hre?.network?.config?.accounts?.[0]?.privateKey) {
-        return web3.eth.accounts.privateKeyToAccount(hre.network.config.accounts[0].privateKey).address;
-    } else {
-        return web3.eth.defaultAccount;
+/* istanbul ignore next */
+function updateWithHardhatNetworkDefaults(settings: ContractSettings): ContractSettings {
+    const networkConfig = (global as any).hre?.network?.config ?? {};
+    function firstAccountAddress() {
+        // use accounts[0] as default account under Hardhat
+        const accounts0 = networkConfig.accounts?.[0];
+        const accounts0PrivateKey = accounts0?.privateKey ?? accounts0;
+        if (accounts0PrivateKey) {
+            return web3.eth.accounts.privateKeyToAccount(accounts0PrivateKey).address;
+        } else {
+            return web3.eth.defaultAccount;
+        }
     }
+    return {
+        web3: settings.web3,
+        defaultTransactionConfig: {},
+        gas: typeof settings.gas === 'number' ? settings.gas : networkConfig.gas ?? 'auto',
+        gasMultiplier: settings.gasMultiplier,  // ignore networkConfig - it has value 1 even if not set explicitly
+        defaultAccount: settings.defaultAccount ?? networkConfig.from ?? firstAccountAddress(),
+        waitFor: settings.waitFor,
+    };
 }

@@ -1,4 +1,6 @@
 import Web3 from "web3";
+import { TransactionConfig } from "web3-core";
+import { AbiItem } from "web3-utils";
 
 /**
  * Possible finalization methods.
@@ -23,19 +25,24 @@ export interface ContractSettings {
     defaultTransactionConfig: TransactionConfig;
 
     /**
+     * The amount of gas to use in sendTransaction. If set to 'auto', it will be calculated as `estimateGas() * gasMultiplier`.
+     */
+    gas: number | 'auto';
+
+    /**
      * The number that the result of `estimateGas()` is multiplied with for limiting the gas in send transaction.
      */
     gasMultiplier: number;
 
     /**
-     * Default transaction finalization settings.
-     */
-    waitFor: TransactionWaitFor;
-
-    /**
      * Default account address from which the transactions are sent in the absence of `from` field.
      */
     defaultAccount: string | null;
+
+    /**
+     * Default transaction finalization settings.
+     */
+    waitFor: TransactionWaitFor;
 }
 
 

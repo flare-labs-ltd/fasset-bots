@@ -1,5 +1,6 @@
+import { TransactionConfig } from "web3-core";
 import coder from "web3-eth-abi";
-import { AbiOutput } from "web3-utils";
+import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { waitForFinalization } from "./finalization";
@@ -185,7 +186,7 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
 }
 
 /**
- * Send a transaction for a contract method. Estimate gas before.
+ * Send a transaction for a contract method. Estimate gas before if needed.
  */
 async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor } = settings;
@@ -193,13 +194,9 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     if (typeof config.from !== 'string') {
         throw new Error("'from' field is mandatory");
     }
-    if (config.gas == null) {
-        // estimate gas; should also throw nice errors
+    if (config.gas == null && settings.gas == 'auto') {
         const gas = await web3.eth.estimateGas(config);
-        config.gas = gas * gasMultiplier;
-    } else {
-        // do a call to catch errors without wasting gas for transaction
-        await web3.eth.call(config);
+        config.gas = Math.floor(gas * gasMultiplier);
     }
     const nonce = waitFor.what === 'nonceIncrease' ? await web3.eth.getTransactionCount(config.from, 'latest') : 0;
     const promiEvent = web3.eth.sendTransaction(config);
@@ -226,6 +223,9 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
     const config: TransactionConfig = { ...settings.defaultTransactionConfig, ...transactionConfig };
     if (config.from == null && settings.defaultAccount != null) {
         config.from = settings.defaultAccount;
+    }
+    if (config.gas == null && typeof settings.gas === 'number') {
+        config.gas = settings.gas;
     }
     return config;
 }
