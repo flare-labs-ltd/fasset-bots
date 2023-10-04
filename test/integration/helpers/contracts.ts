@@ -46,7 +46,7 @@ export interface AgentContracts {
 export interface EcosystemContracts extends BaseContracts, AgentContracts {}
 
 export function getAddresses(network: string): NetworkAddressesJson {
-  const addresses = require(`../../addresses.json`) as AddressesJson
+  const addresses = require(`../../../addresses.json`) as AddressesJson
   return addresses[network]
 }
 
