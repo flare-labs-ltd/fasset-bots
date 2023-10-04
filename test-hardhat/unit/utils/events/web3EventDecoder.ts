@@ -51,7 +51,6 @@ describe("Web3 event decoder unit tests", async () => {
         eventDecoder.eventTypes.set("0x000000000000000000000000ea6abef9ea06253364bb6cf53065dafd2ca122fc", evtType!);
         // decode event
         const decode = eventDecoder.decodeEvent(rawEvent);
-        console.log(decode);
         expect(decode?.event).eq("<unknown>");
         // change address
         const otherAddress = context.assetFtso.address;
