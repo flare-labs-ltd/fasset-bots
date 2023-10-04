@@ -19,6 +19,12 @@ export interface UnderlyingAsset extends BaseAsset {
   lotSize: number
 }
 
+export interface AssetConfig {
+  asset: UnderlyingAsset
+  vault: CollateralAsset
+  pool: CollateralAsset
+}
+
 export interface EcosystemConfig {
   name: string
   // ftso prices

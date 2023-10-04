@@ -1,6 +1,7 @@
 
 import BN from 'bn.js'
 import { UnderlyingAsset } from '../fixtures/interface'
+import * as crypto from 'crypto'
 
 ////////////////////////////////////////////////////////////////////////////
 // f-asset conversions
@@ -38,23 +39,10 @@ function getrandbit(): BN {
 
 // not really uniformly random, but it'll do
 export function randBn(min: BNish, max: BNish): BN {
-  const ret = toBN(min)
-  const diff = toBN(max).sub(ret)
-  const bitlen = diff.bitLength()
-  let boundbit = true
-  for (let i = bitlen-1; i >= 0; i--) {
-    const randbit = getrandbit()
-    if (boundbit) {
-      if (diff.testn(i)) {
-        ret.iadd(randbit.shln(i))
-        boundbit = randbit.eqn(1)
-      }
-    }
-    else {
-      ret.iadd(toBN(randbit).shln(i))
-    }
-  }
-  return ret
+  const bitlen = toBN(max).sub(toBN(min)).bitLength()
+  const bytelen = Math.ceil(bitlen / 8)
+  const randbits = new BN(crypto.randomBytes(bytelen))
+  return toBN(min).add(randbits).mod(toBN(max))
 }
 
 export const randBnInRadius = (center: BNish, radius: BNish) => {

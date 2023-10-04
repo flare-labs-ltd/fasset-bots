@@ -1,6 +1,12 @@
 import BN from 'bn.js'
 import { CollateralAsset, UnderlyingAsset } from './interface'
 
+
+/**
+ * warning: ftsoDecimals should always be 5,
+ * can't vauch for the correctness of tests executions otherwise
+ */
+
 export const XRP: UnderlyingAsset = {
   name: "Ripple",
   symbol: "XRP",
@@ -23,11 +29,11 @@ export const USDT: CollateralAsset = {
   kind: "vault"
 }
 
-export const WNAT: CollateralAsset = {
-  name: "Wrapped NAT",
-  symbol: "WNAT",
+export const WFLR: CollateralAsset = {
+  name: "Wrapped Flare",
+  symbol: "WFLR",
   decimals: 18,
-  ftsoSymbol: "WNAT",
+  ftsoSymbol: "WFLR",
   ftsoDecimals: 5,
   defaultPriceUsd5: new BN(1_333),
   minCollateralRatioBips: new BN(20_000),
@@ -35,7 +41,7 @@ export const WNAT: CollateralAsset = {
 }
 
 export const ETH: CollateralAsset = {
-  name: "Ethereum",
+  name: "Ether",
   symbol: "ETH",
   decimals: 18,
   ftsoSymbol: "ETH",
