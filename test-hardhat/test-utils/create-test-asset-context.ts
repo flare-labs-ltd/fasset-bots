@@ -156,7 +156,7 @@ export async function createTestAssetContext(
     // collaterals
     const collaterals = createTestCollaterals(contracts, chainInfo, stablecoins);
     // create asset manager
-    const parameterFilename = `../fasset/deployment/config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
+    const parameterFilename = `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     const settings = createTestAssetManagerSettings(
         contracts,

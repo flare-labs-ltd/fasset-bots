@@ -157,7 +157,7 @@ export async function mintAndDepositVaultCollateralToOwner(
 }
 
 export async function createTestContext(governance: string, setMaxTrustedPriceAgeSeconds: number) {
-    const parameterFilename = `../fasset/deployment/config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
+    const parameterFilename = `./fasset-config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
     return await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
