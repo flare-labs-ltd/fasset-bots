@@ -173,7 +173,7 @@ export class Notifier {
         if (!requestId) {
             this.send(
                 DAILY_TASK_NO_PROOF_OBTAINED,
-                `Agent ${agentVault} cannot obtain proof confirmed block heigh existence in round ${roundId} with requested data ${requestData}.`
+                `Agent ${agentVault} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
             );
         } else {
             if (redemption) {
