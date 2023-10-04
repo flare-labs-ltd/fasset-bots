@@ -9,8 +9,8 @@ import { LiquidatorInstance } from '../../typechain-truffle/contracts/Liquidator
 // actual imports
 import BN from 'bn.js'
 import { expectRevert } from "@openzeppelin/test-helpers"
-import { AssetConfig, EcosystemConfig } from './fixtures/interface'
-import { lotSizeAmg, amgSizeUba, assertBnEqual, assertBnGreaterOrEqual, toBN, BNish } from './helpers/utils'
+import { AssetConfig, CollateralAsset, EcosystemConfig, UnderlyingAsset } from './fixtures/interface'
+import { lotSizeAmg, ubaToAmg, assertBnEqual, assertBnGreaterOrEqual, toBN, BNish } from './helpers/utils'
 import { addLiquidity, swapOutput, swapInput } from "./helpers/contract-utils"
 // fixtures
 import { XRP, USDT, WFLR } from './fixtures/assets'
@@ -18,7 +18,7 @@ import { EcosystemFactory } from './fixtures/ecosystem'
 
 
 // config for used assets
-const assetConfig = {
+const assetConfig: AssetConfig = {
   asset: XRP,
   vault: USDT,
   pool: WFLR
@@ -66,20 +66,17 @@ contract("Tests for Liquidator contract", (accounts) => {
     await priceReader.setPrice(assetConfig.pool.ftsoSymbol, pricePool)
   }
 
-  async function liquidationOutput(
-    agent: AgentMockInstance,
-    amountFAssetUba: BNish
-  ): Promise<[BN, BN]> {
+  async function liquidationOutput(amountFAssetUba: BNish): Promise<[BN, BN]> {
     const agentInfo = await assetManager.getAgentInfo(agent.address)
-    const amountFAssetAmg = ubaToAmg(amountFAssetUba)
+    const amountFAssetAmg = ubaToAmg(assetConfig.asset, amountFAssetUba)
     // for vault
-    const amgPriceVault = await calcAmgToTokenWeiPrice(priceReader, vault)
+    const amgPriceVault = await calcAmgToTokenWeiPrice(assetConfig.vault)
     const amgWithVaultFactor = amountFAssetAmg
       .mul(toBN(agentInfo.liquidationPaymentFactorVaultBIPS))
       .divn(10_000)
     const amountVault = amgToTokenWei(amgWithVaultFactor, amgPriceVault)
     // for pool
-    const amgPricePool = await calcAmgToTokenWeiPrice(priceReader, pool)
+    const amgPricePool = await calcAmgToTokenWeiPrice(assetConfig.pool)
     const amgWithPoolFactor = amountFAssetAmg
       .mul(toBN(agentInfo.liquidationPaymentFactorPoolBIPS))
       .divn(10_000)
@@ -87,42 +84,14 @@ contract("Tests for Liquidator contract", (accounts) => {
     return [amountVault, amountPool]
   }
 
-  async function getAgentCrsBips(agent: AgentMockInstance): Promise<[BN, BN]> {
-    const agentInfo = await assetManager.getAgentInfo(agent.address)
-    return [
-      toBN(agentInfo.vaultCollateralRatioBIPS),
-      toBN(agentInfo.poolCollateralRatioBIPS)
-    ]
-  }
-
-  async function getAgentMaxLiquidatedFAsset(agent: AgentMockInstance): Promise<BN> {
-    const agentInfo = await assetManager.getAgentInfo(agent.address)
-    return toBN(agentInfo.maxLiquidationAmountUBA)
-  }
-
-  async function getMintedFAsset(agent: AgentMockInstance): Promise<BN> {
-    const agentInfo = await assetManager.getAgentInfo(agent.address)
-    return toBN(agentInfo.mintedUBA)
-  }
-
-  function ubaToAmg(uba: BNish): BN {
-    return toBN(uba).div(amgSizeUba(assetConfig.asset))
-  }
-
   // this is how prices are calculated in the asset manager contract
-  async function calcAmgToTokenWeiPrice(
-    priceReader: FakePriceReaderInstance,
-    token: ERC20MockInstance,
-  ): Promise<BN> {
-    const fAssetSymbol = await fAsset.symbol()
-    const tokenSymbol = await token.symbol()
-    const tokenDecimals = await token.decimals()
-    const { 0: tokenFtsoPrice, 2: tokenFtsoDecimals } = await priceReader.getPrice(tokenSymbol)
-    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals } = await priceReader.getPrice(fAssetSymbol)
-    const expPlus = tokenDecimals.add(tokenFtsoDecimals).addn(AMG_TOKEN_WEI_PRICE_SCALE_EXP)
+  async function calcAmgToTokenWeiPrice(collateral: CollateralAsset): Promise<BN> {
+    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await priceReader.getPrice(collateral.ftsoSymbol)
+    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals } = await priceReader.getPrice(assetConfig.asset.ftsoSymbol)
+    const expPlus = collateralFtsoDecimals.addn(collateral.decimals).addn(AMG_TOKEN_WEI_PRICE_SCALE_EXP)
     const expMinus = fAssetFtsoDecimals.addn(assetConfig.asset.amgDecimals)
     const scale = toBN(10).pow(expPlus.sub(expMinus))
-    return toBN(fAssetFtsoPrice).mul(scale).div(tokenFtsoPrice)
+    return toBN(fAssetFtsoPrice).mul(scale).div(collateralFtsoPrice)
   }
 
   function amgToTokenWei(
@@ -133,33 +102,25 @@ contract("Tests for Liquidator contract", (accounts) => {
   }
 
   // this is how prices are calculated in the liquidator contract
-  async function calcUbaTokenPriceMulDiv(
-    priceReader: FakePriceReaderInstance,
-    token: ERC20MockInstance
-  ): Promise<[BN, BN]> {
-    return calcTokenATokenBPriceMulDiv(priceReader, fAsset, token)
+  async function calcUbaTokenPriceMulDiv(collateral: CollateralAsset): Promise<[BN, BN]> {
+    return calcTokenATokenBPriceMulDiv(assetConfig.asset, collateral)
   }
 
   async function calcTokenATokenBPriceMulDiv(
-    priceReader: FakePriceReaderInstance,
-    tokenA: ERC20MockInstance,
-    tokenB: ERC20MockInstance
+    assetA: CollateralAsset | UnderlyingAsset,
+    assetB: CollateralAsset | UnderlyingAsset
   ): Promise<[BN, BN]> {
-    const tokenASymbol = await tokenA.symbol()
-    const tokenBSymbol = await tokenB.symbol()
-    const decimalsA = await tokenA.decimals()
-    const decimalsB = await tokenB.decimals()
-    const { 0: tokenAPrice, 2: tokenAFtsoDecimals } = await priceReader.getPrice(tokenASymbol)
-    const { 0: tokenBPrice, 2: tokenBFtsoDecimals } = await priceReader.getPrice(tokenBSymbol)
+    const { 0: assetAPrice, 2: assetAFtsoDecimals } = await priceReader.getPrice(assetA.ftsoSymbol)
+    const { 0: assetBPrice, 2: assetBFtsoDecimals } = await priceReader.getPrice(assetB.ftsoSymbol)
     return [
-      tokenAPrice.mul(toBN(10).pow(decimalsB.add(tokenBFtsoDecimals))),
-      tokenBPrice.mul(toBN(10).pow(decimalsA.add(tokenAFtsoDecimals)))
+      assetAPrice.mul(toBN(10).pow(assetBFtsoDecimals.addn(assetB.decimals))),
+      assetBPrice.mul(toBN(10).pow(assetAFtsoDecimals.addn(assetA.decimals)))
     ]
   }
 
-  async function arbitrageProfit(agent: AgentMockInstance, liquidatedVault: BNish): Promise<BN> {
+  async function arbitrageProfit(liquidatedVault: BNish): Promise<BN> {
     const fAssets = await swapOutput(blazeSwap, vault, fAsset, liquidatedVault)
-    const [vaultProfit, poolProfit] = await liquidationOutput(agent, fAssets)
+    const [vaultProfit, poolProfit] = await liquidationOutput(fAssets)
     const poolProfitSwapped = await swapOutput(blazeSwap, pool, vault, poolProfit)
     return vaultProfit.add(poolProfitSwapped).sub(toBN(liquidatedVault))
   }
@@ -175,9 +136,30 @@ contract("Tests for Liquidator contract", (accounts) => {
     await agent.depositPoolCollateral(config.poolCollateral)
     await agent.mint(minterAccount, config.mintedUBA)
     // check that agent cr is as expected
-    const [vaultCrBeforeLiquidation, poolCrBeforeLiquidation] = await getAgentCrsBips(agent)
+    const [vaultCrBeforeLiquidation, poolCrBeforeLiquidation] = await getAgentCrsBips()
     assertBnEqual(vaultCrBeforeLiquidation, config.expectedVaultCrBips, 1)
     assertBnEqual(poolCrBeforeLiquidation, config.expectedPoolCrBips, 1)
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // agent getters
+
+  async function getAgentCrsBips(): Promise<[BN, BN]> {
+    const agentInfo = await assetManager.getAgentInfo(agent.address)
+    return [
+      toBN(agentInfo.vaultCollateralRatioBIPS),
+      toBN(agentInfo.poolCollateralRatioBIPS)
+    ]
+  }
+
+  async function getAgentMaxLiquidatedFAsset(): Promise<BN> {
+    const agentInfo = await assetManager.getAgentInfo(agent.address)
+    return toBN(agentInfo.maxLiquidationAmountUBA)
+  }
+
+  async function getMintedFAsset(): Promise<BN> {
+    const agentInfo = await assetManager.getAgentInfo(agent.address)
+    return toBN(agentInfo.mintedUBA)
   }
 
   beforeEach(async function () {
@@ -229,22 +211,22 @@ contract("Tests for Liquidator contract", (accounts) => {
         // setup ecosystem
         await setupEcosystem(config)
         // perform arbitrage by liquidation
-        const maxLiquidatedFAsset = await getAgentMaxLiquidatedFAsset(agent)
+        const maxLiquidatedFAsset = await getAgentMaxLiquidatedFAsset()
         const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
-        const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(agent, maxLiquidatedFAsset)
+        const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(maxLiquidatedFAsset)
         const expectedSwappedPool = await swapOutput(blazeSwap, pool, vault, expectedLiqPool)
-        const mintedFAssetBefore = await getMintedFAsset(agent)
+        const mintedFAssetBefore = await getMintedFAsset()
         const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
         const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
         await liquidator.runArbitrage(agent.address, { from: liquidatorAccount })
-        const mintedFAssetAfter = await getMintedFAsset(agent)
+        const mintedFAssetAfter = await getMintedFAsset()
         const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
         const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
         // check that max fAsset was liquidated (this relies on constructed state settings)
         const liquidatedFAsset = mintedFAssetBefore.sub(mintedFAssetAfter)
         assertBnEqual(liquidatedFAsset, maxLiquidatedFAsset)
         // check that both collateral ratios are again above their minimums
-        const [crVaultAfterLiq, crPoolAfterLiq] = await getAgentCrsBips(agent)
+        const [crVaultAfterLiq, crPoolAfterLiq] = await getAgentCrsBips()
         assertBnGreaterOrEqual(crVaultAfterLiq, assetConfig.vault.minCollateralRatioBips!)
         assertBnGreaterOrEqual(crPoolAfterLiq, assetConfig.pool.minCollateralRatioBips!)
         // check that agent lost appropriate amounts of both collaterals
@@ -271,15 +253,15 @@ contract("Tests for Liquidator contract", (accounts) => {
         // setup ecosystem
         await setupEcosystem(config)
         // calculate full liquidation profit
-        const maxLiquidatedFAsset = await getAgentMaxLiquidatedFAsset(agent)
+        const maxLiquidatedFAsset = await getAgentMaxLiquidatedFAsset()
         const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
-        const fullLiquidationProfit = await arbitrageProfit(agent, maxLiquidatedVault)
+        const fullLiquidationProfit = await arbitrageProfit(maxLiquidatedVault)
         // perform arbitrage by liquidation and check that whole arbitrage would fail
-        const mintedFAssetBefore = await getMintedFAsset(agent)
+        const mintedFAssetBefore = await getMintedFAsset()
         const agentVaultBalanceBefore = await vault.balanceOf(agent.address)
         const agentPoolBalanceBefore = await pool.balanceOf(agent.address)
         await liquidator.runArbitrage(agent.address, { from: liquidatorAccount })
-        const mintedFAssetAfter = await getMintedFAsset(agent)
+        const mintedFAssetAfter = await getMintedFAsset()
         const agentVaultBalanceAfter = await vault.balanceOf(agent.address)
         const agentPoolBalanceAfter = await pool.balanceOf(agent.address)
         // check that liquidation was not full and that this liquidation was more profitable than the full one
@@ -313,11 +295,11 @@ contract("Tests for Liquidator contract", (accounts) => {
   describe("calculation", () => {
     it("should test calculating asset price in pool token in two ways", async () => {
       await setFtsoPrices(50_000, 100_000, 1_333)
-      for (let token of [pool, vault]) {
-        const price1 = await calcAmgToTokenWeiPrice(priceReader, token)
-        const [price2Mul, price2Div] = await calcUbaTokenPriceMulDiv(priceReader, token)
+      for (let asset of [assetConfig.pool, assetConfig.vault]) {
+        const price1 = await calcAmgToTokenWeiPrice(asset)
+        const [price2Mul, price2Div] = await calcUbaTokenPriceMulDiv(asset)
         const amountUBA = toBN(1_000_000_000)
-        const amountWei1 = amgToTokenWei(ubaToAmg(amountUBA), price1)
+        const amountWei1 = amgToTokenWei(ubaToAmg(assetConfig.asset, amountUBA), price1)
         const amountWei2 = amountUBA.mul(price2Mul).div(price2Div)
         assertBnEqual(amountWei1, amountWei2)
       }

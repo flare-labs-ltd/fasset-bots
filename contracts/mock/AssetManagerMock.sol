@@ -237,23 +237,22 @@ contract AssetManagerMock {
         private view
         returns (uint256, uint256)
     {
-        IERC20Metadata _fAsset = IERC20Metadata(settings.fAsset);
         IERC20Metadata token;
-        uint256 redeemingAMG;
+        string memory tokenFtsoSymbol;
         uint256 collateralWei;
         if (_pool) {
             token = IERC20Metadata(wNat);
-            redeemingAMG = convertUBAToAmg(_agentInfo.poolRedeemingUBA);
+            tokenFtsoSymbol = poolFtsoSymbol;
             collateralWei = _agentInfo.totalPoolCollateralNATWei;
         } else {
             token = IERC20Metadata(address(_agentInfo.vaultCollateralToken));
-            redeemingAMG = convertUBAToAmg(_agentInfo.redeemingUBA);
+            tokenFtsoSymbol = vaultFtsoSymbol;
             collateralWei = _agentInfo.totalVaultCollateralWei;
         }
         (uint256 assetPrice,, uint256 assetFtsoDecimals) =
-            IPriceReader(settings.priceReader).getPrice(_fAsset.symbol());
+            IPriceReader(settings.priceReader).getPrice(assetFtsoSymbol);
         (uint256 tokenPrice,, uint256 tokenFtsoDecimals) =
-            IPriceReader(settings.priceReader).getPrice(token.symbol());
+            IPriceReader(settings.priceReader).getPrice(tokenFtsoSymbol);
         uint256 amgToTokenWeiPrice = calcAmgToTokenWeiPrice(
             token.decimals(),
             tokenPrice,
@@ -261,7 +260,7 @@ contract AssetManagerMock {
             assetPrice,
             assetFtsoDecimals
         );
-        uint256 totalAMG = uint256(convertUBAToAmg(_agentInfo.mintedUBA)) + uint256(redeemingAMG);
+        uint256 totalAMG = uint256(convertUBAToAmg(_agentInfo.mintedUBA));
         if (totalAMG == 0) return (1e10, amgToTokenWeiPrice); // nothing minted
         uint256 backingTokenWei = convertAmgToTokenWei(totalAMG, amgToTokenWeiPrice);
         return (collateralWei.mulDiv(SafePct.MAX_BIPS, backingTokenWei), amgToTokenWeiPrice);

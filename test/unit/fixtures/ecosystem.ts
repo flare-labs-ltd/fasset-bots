@@ -171,9 +171,9 @@ export class EcosystemFactory {
     const poolCrBips = randBnInRadius(18_000, 4_000)
     // slightly randomized ftso prices
     const ftsoPrices = {
-      assetFtsoPrice: randBnInRelRadius(this.baseEcosystem.assetFtsoPrice, 3),
+      assetFtsoPrice: randBnInRelRadius(this.baseEcosystem.assetFtsoPrice, 2),
       vaultFtsoPrice: randBnInRelRadius(this.baseEcosystem.vaultFtsoPrice, 1),
-      poolFtsoPrice: randBnInRelRadius(this.baseEcosystem.poolFtsoPrice, 3),
+      poolFtsoPrice: randBnInRelRadius(this.baseEcosystem.poolFtsoPrice, 2),
     }
     // randomized config
     return {

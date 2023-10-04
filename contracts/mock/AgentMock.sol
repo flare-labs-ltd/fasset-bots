@@ -57,11 +57,6 @@ contract AgentMock {
         return _amount;
     }
 
-    function setRedeemingCollateral(uint256 _amountUBA, bool pool) external {
-        if (!pool) info.redeemingUBA = _amountUBA;
-        else info.poolRedeemingUBA = _amountUBA;
-    }
-
     function getInfo() external view returns (AgentInfo.Info memory) {
         return info;
     }

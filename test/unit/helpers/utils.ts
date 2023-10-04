@@ -22,6 +22,10 @@ export function roundDownToAmg(fAsset: UnderlyingAsset, amount: BNish): BN {
   return toBN(amount).div(amgSizeUba(fAsset)).mul(amgSizeUba(fAsset))
 }
 
+export function ubaToAmg(fAsset: UnderlyingAsset, uba: BNish): BN {
+  return toBN(uba).div(amgSizeUba(fAsset))
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // bn extensions
 
@@ -33,16 +37,13 @@ export const minBN = (a: BN, b: BN): BN => a.lt(b) ? a : b
 
 export const expBN = (y: BNish): BN => toBN(10).pow(toBN(y))
 
-function getrandbit(): BN {
-  return toBN(Number(Math.random() > 0.5))
-}
-
 // not really uniformly random, but it'll do
 export function randBn(min: BNish, max: BNish): BN {
-  const bitlen = toBN(max).sub(toBN(min)).bitLength()
+  const diff = toBN(max).sub(toBN(min))
+  const bitlen = diff.bitLength()
   const bytelen = Math.ceil(bitlen / 8)
-  const randbits = new BN(crypto.randomBytes(bytelen))
-  return toBN(min).add(randbits).mod(toBN(max))
+  const randbytes = new BN(crypto.randomBytes(bytelen))
+  return toBN(min).add(randbytes.mod(diff))
 }
 
 export const randBnInRadius = (center: BNish, radius: BNish) => {

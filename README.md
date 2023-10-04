@@ -115,6 +115,5 @@ yarn test test/integration/liquidator.test.ts
 > For unit testing we use hardhat with truffle. For interactions with the actual rpc's, we use ethers.js, as it is both lightweight and powerful, so it can also be intergrated into frontend.
 
 ## TODO
-- [ ] handle situations when dex reserves are smaller than swapping amounts,
 - [ ] add UBA and Wei to Liquidator contract variables,
 - [ ] CLI for deployment (parameter is the used network).

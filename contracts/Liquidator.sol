@@ -14,11 +14,13 @@ enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 // always assume pool = wrapped native
 contract Liquidator is ILiquidator, Ownable {
 
-    IWNat public immutable wNat; // wrapped native address is constant
-    IERC3156FlashLender public flashLender;
-    IBlazeSwapRouter public blazeswap;
+    // those are initialized once and cannot be changed
+    IWNat public immutable wNat;
+    IERC3156FlashLender public immutable flashLender;
+    IBlazeSwapRouter public immutable blazeswap;
 
-    // needed for flash loan to only get executed once from runArbitrage
+    // takes care of flash loan getting executed exactly once
+    // when ran from runArbitrageWithCustomParams
     FlashLoanLock private _status;
 
     constructor(
