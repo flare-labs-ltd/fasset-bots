@@ -1,3 +1,5 @@
+import { TransactionConfig } from "web3-core";
+import { AbiItem } from "web3-utils";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
 import { replaceStringRange } from "../helpers";
 import { createContractInstanceConstructor, executeConstructor } from "./methods";
