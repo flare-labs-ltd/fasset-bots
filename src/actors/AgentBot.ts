@@ -374,6 +374,9 @@ export class AgentBot {
                         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                         agentEnt.dailyProofRequestData!
                     );
+                    // request new block height proof
+                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
+                    await rootEm.persistAndFlush(agentEnt);
                 }
             }
         }
