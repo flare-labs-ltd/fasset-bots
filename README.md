@@ -92,9 +92,9 @@ yarn ts-node scripts/deploy.ts
 > **Important**
 > Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `yarn fix-blazeswap-hash`.
 
-Unit tests are written for blaze swap and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
+Unit tests are written for blaze swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
 - *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which allows for a profitable full agent liquidation,
-- *semi-healthy*: either dex prices are not aligned with the FTSO prices or dex slippage is too high, which allows for a profitable partial agent liquidation,
+- *semi-healthy*: dex slippage makes only partial agent liquidation profitable,
 - *unhealthy*: dex prices are not aligned with the FTSO prices (specifically, f-asset to vault collateral price is much higher than the one derived from FTSOs), which makes any kind of agent liquidation unprofitable.
 
 Run those tests with

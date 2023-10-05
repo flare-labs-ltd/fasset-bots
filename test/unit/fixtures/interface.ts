@@ -41,8 +41,6 @@ export interface EcosystemConfig {
   mintedUBA: BN
   vaultCollateral: BN
   poolCollateral: BN
-  poolRedeemingFAsset: BN
-  vautRedeemingFAsset: BN
   // asset manager settings
   liquidationFactorBips: BN
   liquidationFactorVaultBips: BN

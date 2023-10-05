@@ -61,7 +61,7 @@ export class EcosystemFactory {
       // collateral ratios are stable
       mintedUBA: this.defaultMintedUBA,
       vaultCollateral: collateralForCr(
-        15_000, // mincr = 150%
+        this.config.vault.minCollateralRatioBips,
         this.defaultMintedUBA,
         this.config.asset.defaultPriceUsd5,
         this.config.vault.defaultPriceUsd5,
@@ -69,21 +69,19 @@ export class EcosystemFactory {
         this.config.vault.decimals
       ),
       poolCollateral: collateralForCr(
-        20_000, // mincr = 200%
+        this.config.pool.minCollateralRatioBips,
         this.defaultMintedUBA,
         this.config.asset.defaultPriceUsd5,
         this.config.pool.defaultPriceUsd5,
         this.config.asset.decimals,
         this.config.pool.decimals
       ),
-      poolRedeemingFAsset: toBN(0),
-      vautRedeemingFAsset: toBN(0),
       // asset manager has reasonable liquidation settings
       liquidationFactorBips: toBN(12_000),
       liquidationFactorVaultBips: toBN(10_000),
       // configs should implicitly set the following data
-      expectedVaultCrBips: toBN(15_000),
-      expectedPoolCrBips: toBN(20_000)
+      expectedVaultCrBips: this.config.vault.minCollateralRatioBips,
+      expectedPoolCrBips: this.config.pool.minCollateralRatioBips
     }
   }
 

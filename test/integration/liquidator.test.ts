@@ -1,7 +1,8 @@
 require('dotenv').config()
 import { ethers } from 'ethers'
 import { IERC20Metadata } from '../../typechain-ethers'
-import { EcosystemContracts, getContracts, getAgentContracts } from './helpers/contracts'
+import { EcosystemContracts } from './helpers/interface'
+import { getContracts, getAgentContracts } from './helpers/contracts'
 import { assetPriceForAgentCr, priceBasedDexReserve, addLiquidity, waitFinalize } from './helpers/contract-utils'
 
 // usdc balance of deployer (should basically be infinite)
@@ -20,10 +21,7 @@ describe("Liquidator", () => {
 
   // obtains the f-assets's price that results
   // in agent having collateral ratio of crBips
-  async function getCollateralForCr(
-    collateralKind: "vault" | "pool",
-    crBips: number
-  ): Promise<bigint> {
+  async function getCollateralForCr(collateralKind: "vault" | "pool", crBips: number): Promise<bigint> {
     const agentInfo = await contracts.assetManager.getAgentInfo(contracts.agent)
     const totalMintedUBA = agentInfo.mintedUBA + agentInfo.redeemingUBA + agentInfo.reservedUBA
     let collateralWei
@@ -52,7 +50,7 @@ describe("Liquidator", () => {
     )
   }
 
-  // set price of tokenA in tokenB
+  // set dex price of tokenA in tokenB
   // both prices in the same currency,
   // e.g. FLR/$, XRP/$
   async function setDexPairPrice(
@@ -61,8 +59,7 @@ describe("Liquidator", () => {
     priceA: bigint,
     priceB: bigint,
     reserveA: bigint,
-    liquidityProvider: ethers.Signer,
-    provider: ethers.JsonRpcProvider
+    liquidityProvider: ethers.Signer
   ): Promise<void> {
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
@@ -109,8 +106,8 @@ describe("Liquidator", () => {
     // align dex reserve ratios with the ftso prices
     const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
     const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
-    await setDexPairPrice(contracts.fAsset, contracts.usdc, assetPrice, usdcPrice, availableFAsset, deployer, provider)
-    await setDexPairPrice(contracts.wNat, contracts.usdc, wNatPrice, usdcPrice, availableWNat, deployer, provider)
+    await setDexPairPrice(contracts.fAsset, contracts.usdc, assetPrice, usdcPrice, availableFAsset, deployer)
+    await setDexPairPrice(contracts.wNat, contracts.usdc, wNatPrice, usdcPrice, availableWNat, deployer)
     // liquidate agent
     await waitFinalize(provider, liquidator, contracts.assetManager.connect(liquidator).startLiquidation(contracts.agent))
     const agentInfo1 = await contracts.assetManager.getAgentInfo(contracts.agent)
