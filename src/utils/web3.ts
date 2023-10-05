@@ -3,12 +3,13 @@ import Web3 from "web3";
 import { provider } from "web3-core";
 import { createArtifacts } from "./mini-truffle-contracts/artifacts";
 import { ContractSettings } from "./mini-truffle-contracts/types";
+import { findPackageRoot } from "./helpers";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
 };
 
-const artifactsRootPath = path.normalize(path.resolve(__dirname, "../../artifacts"));
+const artifactsRootPath = path.resolve(findPackageRoot(__dirname), 'artifacts');
 
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();

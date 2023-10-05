@@ -1,5 +1,7 @@
 import BN from "bn.js";
 import util from "util";
+import path from "path";
+import fs from "fs";
 import Web3 from "web3";
 import { logger } from "./logger";
 import crypto from "crypto";
@@ -346,4 +348,28 @@ export function improveConsoleLog(inspectDepth: number = 10) {
  */
 export function replaceStringRange(str: string, start: number, length: number, replacement: string) {
     return str.slice(0, start) + replacement + str.slice(start + length);
+}
+
+/**
+ * Find the package root than contains the directory.
+ * @param moduleDir the directory of a module, typically use `__dirname`
+ * @returns the directory of the modules's package root.
+ */
+export function findPackageRoot(moduleDir: string) {
+    let dir = path.resolve(moduleDir);
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const packageJson = path.resolve(dir, 'package.json');
+        const hasPackageJson = fs.existsSync(packageJson) && fs.statSync(packageJson).isFile();
+        const nodeModules = path.resolve(dir, 'node_modules');
+        const hasNodeModules = fs.existsSync(nodeModules) && fs.statSync(nodeModules).isDirectory();
+        if (hasPackageJson && hasNodeModules) {
+            return dir;
+        }
+        if (path.dirname(dir) === dir) {
+            // arrived at filesystem root without finding package root
+            throw new Error("Cannot find package root");
+        }
+        dir = path.dirname(dir);
+    }
 }
