@@ -1,38 +1,34 @@
 import { FilterQuery } from "@mikro-orm/core";
-import { ORM } from "../../src/config/orm";
-import { WalletAddress } from "../../src/entities/wallet";
-import { Agent } from "../../src/fasset/Agent";
-import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { EventArgs } from "../../src/utils/events/common";
-import { SourceId } from "../../src/verification/sources/sources";
-import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
-import { BotConfig, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
-import { requiredEventArgs } from "../../src/utils/events/truffle";
-import { BN_ZERO, BNish, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { AgentBot } from "../../src/actors/AgentBot";
-import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
+import { ORM } from "../../src/config/orm";
 import { AgentEntity } from "../../src/entities/agent";
+import { WalletAddress } from "../../src/entities/wallet";
+import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { Agent } from "../../src/fasset/Agent";
+import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
+import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { Notifier } from "../../src/utils/Notifier";
-import { loadContracts } from "../../src/config/contracts";
+import { EventArgs } from "../../src/utils/events/common";
+import { requiredEventArgs } from "../../src/utils/events/truffle";
+import { BN_ZERO, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
+import { SourceId } from "../../src/verification/sources/sources";
+import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 
 const FakeERC20 = artifacts.require("FakeERC20");
-const Whitelist = artifacts.require("Whitelist");
 
 const ownerAccountPrivateKey = requireEnv("OWNER_PRIVATE_KEY");
 const account1PrivateKey = requireEnv("NATIVE_ACCOUNT1_PRIVATE_KEY");
 const userPrivateKey = requireEnv("USER_PRIVATE_KEY");
 const account3PrivateKey = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
 const account4PrivateKey = requireEnv("NATIVE_ACCOUNT4_PRIVATE_KEY");
-const deployPrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
-const deployAddress = requireEnv("DEPLOY_ADDRESS");
 
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {
     // owner is always first in array
     // deployer account / current coston governance in always last in array
-    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey, deployPrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey];
 }
 
 export async function removeWalletAddressFromDB(orm: ORM, address: string) {
@@ -68,15 +64,6 @@ export async function receiveBlockAndTransaction(
         };
     }
     return null;
-}
-
-export async function mintVaultCollateralToOwner(
-    vaultCollateralTokenAddress: string,
-    ownerAddress: string,
-    amount: BNish = depositVaultCollateralAmount
-): Promise<void> {
-    const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
-    await vaultCollateralToken.mintAmount(ownerAddress, amount, { from: deployAddress });
 }
 
 export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: string, address: string): Promise<BN> {
@@ -140,12 +127,6 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
         agentEnt.active = false;
         await orm.em.persistAndFlush(agentEnt);
     }
-}
-
-export async function whitelistAgent(botConfig: BotConfig, ownerAddress: string) {
-    const contracts = loadContracts(botConfig.contractsJsonFile!);
-    const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
-    await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployAddress });
 }
 
 export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
