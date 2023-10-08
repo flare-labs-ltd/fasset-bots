@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     20509,        564]
-NotebookOptionsPosition[     19006,        533]
-NotebookOutlinePosition[     19411,        549]
-CellTagsIndexPosition[     19368,        546]
+NotebookDataLength[     20996,        571]
+NotebookOptionsPosition[     19490,        540]
+NotebookOutlinePosition[     19896,        556]
+CellTagsIndexPosition[     19853,        553]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -127,16 +127,17 @@ Cell[TextData[Cell[BoxData[{
   TraditionalForm], "\[IndentingNewLine]", 
  FormBox[
   RowBox[{
-   RowBox[{"Note", " ", "that", " ", "swap", " ", "for", " ", 
-    SubscriptBox["dex", "2"], " ", "the", " ", "calculation", " ", "is", " ", 
-    "too", " ", "complex"}], ",", " ", 
+   RowBox[{"Swap", " ", "for", " ", 
+    SubscriptBox["dex", "2"], " ", "made", " ", "optimum", " ", "calculation",
+     " ", "too", " ", "complex"}], ",", " ", 
    RowBox[{
-   "so", " ", "we", " ", "simplify", " ", "it", " ", "by", " ", "not", " ", 
-    "accounting", " ", "for", " ", 
+   "so", " ", "we", " ", "simplified", " ", "it", " ", "by", " ", "ignoring", 
+    " ", 
+    SubscriptBox["dex", "2"], " ", 
     RowBox[{"slippage", ".", " ", "It"}], " ", "should", " ", "not", " ", 
-    "matter", " ", "too", " ", "much", " ", "if", " ", "dex", " ", "has", " ",
-     "enough", " ", "pool", " ", "collateral", " ", 
-    RowBox[{"reserves", "."}]}]}], 
+    "matter", " ", "too", " ", "much", " ", "if", " ", 
+    SubscriptBox["dex", "2"], " ", "has", " ", "enough", " ", 
+    RowBox[{"liquidity", "."}]}]}], 
   TraditionalForm]}],ExpressionUUID->"765700ab-2a5c-4f09-aafb-9d81db3394d6"]],\
  "Text",
  CellChangeTimes->{{3.9031162932208633`*^9, 3.9031165967534885`*^9}, {
@@ -146,8 +147,8 @@ Cell[TextData[Cell[BoxData[{
   3.9031866641029034`*^9}, {3.9031886974162416`*^9, 3.903188702130861*^9}, {
   3.9032882602540073`*^9, 3.9032882607777987`*^9}, {3.9035341046356077`*^9, 
   3.9035341053456373`*^9}, {3.9035348458095245`*^9, 3.90353489444337*^9}, {
-  3.9047487013034306`*^9, 
-  3.9047487307573986`*^9}},ExpressionUUID->"82180e06-fd4d-4c7d-9a35-\
+  3.9047487013034306`*^9, 3.9047487307573986`*^9}, {3.9055970852153683`*^9, 
+  3.9055971424273195`*^9}},ExpressionUUID->"82180e06-fd4d-4c7d-9a35-\
 692622d2af33"],
 
 Cell[BoxData[{
@@ -341,33 +342,20 @@ Cell[BoxData[
  CellLabel->"Out[49]=",ExpressionUUID->"0568c3db-3595-44d9-bc92-d1ddb4880b68"]
 }, Open  ]],
 
-Cell[TextData[{
- "Note that that the tradeoff between avoiding 256-bit overflows and numeric \
-errors made the calculation of the optimal vault collateral be implemented in \
-the below order. In this way, we cap the numeric error at about ",
- Cell[BoxData[
-  FormBox[
-   SqrtBox[
-    SubscriptBox["F", 
-     SubscriptBox["dex", "1"]]], TraditionalForm]],ExpressionUUID->
-  "d01740ea-b78c-4b79-9982-d59733de2aaf"],
- " + ",
- Cell[BoxData[
-  FormBox[
-   SqrtBox[
-    SubscriptBox["W", 
-     SubscriptBox["dex", "2"]]], TraditionalForm]],ExpressionUUID->
-  "7c747010-c62b-4d06-b374-8d1d725ae4cc"],
- "."
-}], "Text",
+Cell["\<\
+Note that that the tradeoff between numeric errors and avoiding 256-bit \
+overflows made the calculation of the optimal vault collateral be implemented \
+in the below order.\
+\>", "Text",
  CellChangeTimes->{{3.9031889559175625`*^9, 3.9031889661197834`*^9}, {
   3.903189227439418*^9, 3.9031892666858563`*^9}, {3.9031893643955493`*^9, 
   3.9031893693605413`*^9}, {3.903189490254855*^9, 3.9031895135994396`*^9}, {
   3.90318960500953*^9, 3.903189634751243*^9}, {3.9031899254401755`*^9, 
   3.903190019084835*^9}, {3.904012918949246*^9, 3.9040129460852146`*^9}, {
   3.9040129820777035`*^9, 3.9040130470931406`*^9}, {3.904051233395976*^9, 
-  3.904051250831775*^9}, {3.9047486396034985`*^9, 
-  3.9047486705054607`*^9}},ExpressionUUID->"c538d92f-4980-44e9-9cc1-\
+  3.904051250831775*^9}, {3.9047486396034985`*^9, 3.9047486705054607`*^9}, {
+  3.9055968628480835`*^9, 3.9055968801978626`*^9}, {3.905597051951571*^9, 
+  3.90559705770068*^9}},ExpressionUUID->"c538d92f-4980-44e9-9cc1-\
 2f63826e0569"],
 
 Cell[CellGroupData[{
@@ -468,12 +456,31 @@ Cell[BoxData[
  CellLabel->"Out[10]=",ExpressionUUID->"425ff5c3-c020-4357-9a3c-d01afc4fa112"]
 }, Open  ]],
 
-Cell["\<\
-In the end we have to cap this value by the vault collateral that gets \
-swapped to max liquidation f-asset amount.\
-\>", "Text",
- CellChangeTimes->{{3.903185481850884*^9, 
-  3.903185515340127*^9}},ExpressionUUID->"4d0bd073-b434-4bc3-be11-\
+Cell[TextData[{
+ "In this way, we cap the numeric error at about ",
+ Cell[BoxData[
+  FormBox[
+   SqrtBox[
+    SubscriptBox["F", 
+     SubscriptBox["dex", "1"]]], TraditionalForm]],ExpressionUUID->
+  "9b4934d5-4d28-4962-92bc-619646635904"],
+ " + ",
+ Cell[BoxData[
+  FormBox[
+   SqrtBox[
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]]], TraditionalForm]],ExpressionUUID->
+  "1b64d37b-ae87-4583-b674-9b25ff59e8e9"],
+ ". This cap might be problematic if our vault collateral had a small amount \
+of decimals, in comparison to either pool collateral or f-asset token. For \
+now this is not the case, as all vault collateral type tokens use 18 \
+decimals, with f-asset tokens usually using less, and wrapped native using \
+18.\n\nIn the end we have to cap this value by the vault collateral that gets \
+swapped to max liquidation f-asset amount."
+}], "Text",
+ CellChangeTimes->{{3.903185481850884*^9, 3.903185515340127*^9}, {
+  3.905596881843457*^9, 
+  3.905597039760017*^9}},ExpressionUUID->"4d0bd073-b434-4bc3-be11-\
 6749ea372c2b"],
 
 Cell[CellGroupData[{
@@ -531,8 +538,8 @@ or equal than ",
   3.9047486121130714`*^9}},ExpressionUUID->"d5705be0-4844-4a4e-a7fb-\
 6ea238ba3880"]
 },
-WindowSize->{701.5, 721.},
-WindowMargins->{{Automatic, 155}, {Automatic, 16}},
+WindowSize->{1280, 732},
+WindowMargins->{{-5.5, Automatic}, {Automatic, -5.5}},
 FrontEndVersion->"13.2 for Microsoft Windows (64-bit) (January 30, 2023)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"fa279a33-0442-400d-b6fd-3eab6b480b15"
@@ -548,24 +555,24 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 4802, 130, 394, "Text",ExpressionUUID->"82180e06-fd4d-4c7d-9a35-692622d2af33"],
-Cell[5363, 152, 3087, 84, 134, "Input",ExpressionUUID->"f709db59-644d-46b1-9390-c93ac5c9cb4c"],
-Cell[8453, 238, 293, 4, 35, "Text",ExpressionUUID->"f0513101-83d3-439f-8bab-ef380286ecdc"],
+Cell[558, 20, 4832, 131, 347, "Text",ExpressionUUID->"82180e06-fd4d-4c7d-9a35-692622d2af33"],
+Cell[5393, 153, 3087, 84, 114, "Input",ExpressionUUID->"f709db59-644d-46b1-9390-c93ac5c9cb4c"],
+Cell[8483, 239, 293, 4, 35, "Text",ExpressionUUID->"f0513101-83d3-439f-8bab-ef380286ecdc"],
 Cell[CellGroupData[{
-Cell[8771, 246, 2113, 45, 86, "Input",ExpressionUUID->"4bcf5699-246b-4407-a012-fa42f83d9e93"],
-Cell[10887, 293, 1782, 47, 80, "Output",ExpressionUUID->"0568c3db-3595-44d9-bc92-d1ddb4880b68"]
+Cell[8801, 247, 2113, 45, 86, "Input",ExpressionUUID->"4bcf5699-246b-4407-a012-fa42f83d9e93"],
+Cell[10917, 294, 1782, 47, 80, "Output",ExpressionUUID->"0568c3db-3595-44d9-bc92-d1ddb4880b68"]
 }, Open  ]],
-Cell[12684, 343, 1191, 27, 86, "Text",ExpressionUUID->"c538d92f-4980-44e9-9cc1-2f63826e0569"],
+Cell[12714, 344, 876, 14, 35, "Text",ExpressionUUID->"c538d92f-4980-44e9-9cc1-2f63826e0569"],
 Cell[CellGroupData[{
-Cell[13900, 374, 1547, 48, 74, "Input",ExpressionUUID->"96f82651-58d8-4050-8cea-7e5a19e465ca"],
-Cell[15450, 424, 1322, 43, 61, "Output",ExpressionUUID->"425ff5c3-c020-4357-9a3c-d01afc4fa112"]
+Cell[13615, 362, 1547, 48, 31, "Input",ExpressionUUID->"96f82651-58d8-4050-8cea-7e5a19e465ca"],
+Cell[15165, 412, 1322, 43, 61, "Output",ExpressionUUID->"425ff5c3-c020-4357-9a3c-d01afc4fa112"]
 }, Open  ]],
-Cell[16787, 470, 265, 6, 58, "Text",ExpressionUUID->"4d0bd073-b434-4bc3-be11-6749ea372c2b"],
+Cell[16502, 458, 1034, 25, 109, "Text",ExpressionUUID->"4d0bd073-b434-4bc3-be11-6749ea372c2b"],
 Cell[CellGroupData[{
-Cell[17077, 480, 498, 12, 31, "Input",ExpressionUUID->"d61f5898-1609-43d8-af28-189cb9d95e73"],
-Cell[17578, 494, 670, 18, 56, "Output",ExpressionUUID->"6c0f0c31-c573-4576-998f-568058620d97"]
+Cell[17561, 487, 498, 12, 31, "Input",ExpressionUUID->"d61f5898-1609-43d8-af28-189cb9d95e73"],
+Cell[18062, 501, 670, 18, 56, "Output",ExpressionUUID->"6c0f0c31-c573-4576-998f-568058620d97"]
 }, Open  ]],
-Cell[18263, 515, 739, 16, 81, "Text",ExpressionUUID->"d5705be0-4844-4a4e-a7fb-6ea238ba3880"]
+Cell[18747, 522, 739, 16, 58, "Text",ExpressionUUID->"d5705be0-4844-4a4e-a7fb-6ea238ba3880"]
 }
 ]
 *)
