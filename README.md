@@ -23,7 +23,7 @@ To make profit. All you can lose are gas fees (which on the Flare network are ve
 
 The two assumptions are:
 
-- A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent collateral for f-asset keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [blazeswap](https://blazeswap.xyz/).
+- A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent collateral for f-asset keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [Blaze Swap](https://blazeswap.xyz/).
 - Flash loan accessibility of the agent's collateral token. This is meant to be solved soon by making agent's collateral flash-loanable.
 
 ## How it works
@@ -110,9 +110,6 @@ then run the test in another terminal
 ```sh
 yarn test test/integration/liquidator.test.ts
 ```
-
-> **Note**
-> For unit testing we use hardhat with truffle. For interactions with the actual rpc's, we use ethers.js, as it is both lightweight and powerful, so it can also be intergrated into frontend.
 
 ## TODO
 - [ ] add UBA and Wei to Liquidator contract variables,
