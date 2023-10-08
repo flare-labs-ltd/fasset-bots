@@ -155,3 +155,4 @@ typechain/
 typechain-types/
 typechain-truffle/
 typechain-ethers/
+types/

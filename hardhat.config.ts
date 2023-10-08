@@ -1,8 +1,5 @@
-import { HardhatUserConfig } from "hardhat/config"
-import '@typechain/hardhat'
-import '@nomiclabs/hardhat-web3'
-import "@nomiclabs/hardhat-truffle5"
-import "hardhat-gas-reporter"
+import "@nomicfoundation/hardhat-toolbox";
+import type { HardhatUserConfig } from "hardhat/config"
 
 const config: HardhatUserConfig = {
   // do not change, otherwise blazeswap will not work
@@ -38,8 +35,8 @@ const config: HardhatUserConfig = {
     },
   },
   typechain: {
-    outDir: "typechain-truffle",
-    target: "truffle-v5",
+    outDir: "types",
+    target: "ethers-v6",
   },
   paths: {
     sources: "./contracts",
