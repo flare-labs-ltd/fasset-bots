@@ -1,4 +1,3 @@
-import BN from 'bn.js'
 import { CollateralAsset, UnderlyingAsset } from './interface'
 
 
@@ -10,43 +9,43 @@ import { CollateralAsset, UnderlyingAsset } from './interface'
 export const XRP: UnderlyingAsset = {
   name: "Ripple",
   symbol: "XRP",
-  decimals: 6,
+  decimals: BigInt(6),
   ftsoSymbol: "ftsoXRP",
-  ftsoDecimals: 5,
-  amgDecimals: 4,
-  lotSize: 20,
-  defaultPriceUsd5: new BN(50_000)
+  ftsoDecimals: BigInt(5),
+  amgDecimals: BigInt(4),
+  lotSize: BigInt(20),
+  defaultPriceUsd5: BigInt(50_000)
 }
 
 export const USDT: CollateralAsset = {
   name: "Tether USD",
   symbol: "USDT",
-  decimals: 18,
+  decimals: BigInt(18),
   ftsoSymbol: "ftsoUSDT",
-  ftsoDecimals: 5,
-  defaultPriceUsd5: new BN(100_000),
-  minCollateralRatioBips: new BN(15_000),
+  ftsoDecimals: BigInt(5),
+  defaultPriceUsd5: BigInt(100_000),
+  minCollateralRatioBips: BigInt(15_000),
   kind: "vault"
 }
 
 export const WFLR: CollateralAsset = {
   name: "Wrapped Flare",
   symbol: "WFLR",
-  decimals: 18,
+  decimals: BigInt(18),
   ftsoSymbol: "ftsoWFLR",
-  ftsoDecimals: 5,
-  defaultPriceUsd5: new BN(1_333),
-  minCollateralRatioBips: new BN(20_000),
+  ftsoDecimals: BigInt(5),
+  defaultPriceUsd5: BigInt(1_333),
+  minCollateralRatioBips: BigInt(20_000),
   kind: "pool"
 }
 
 export const ETH: CollateralAsset = {
   name: "Ether",
   symbol: "ETH",
-  decimals: 18,
+  decimals: BigInt(18),
   ftsoSymbol: "ftsoETH",
-  ftsoDecimals: 5,
-  defaultPriceUsd5: new BN(1_650_300_000),
-  minCollateralRatioBips: new BN(18_000),
+  ftsoDecimals: BigInt(5),
+  defaultPriceUsd5: BigInt(1_650_300_000),
+  minCollateralRatioBips: BigInt(18_000),
   kind: "vault"
 }

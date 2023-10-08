@@ -14,9 +14,8 @@
     "./src/**/*.ts",
     "./test/**/*.ts",
     "./scripts/**/*.ts",
-    "typechain-ethers",
-    "typechain-truffle",
-    "./hardhat.config.ts" // so it picks up ethers
+    "./hardhat.config.ts", // so it picks up ethers
+    "types"
   ],
   "typeRoots": [
     "node_modules/@types",

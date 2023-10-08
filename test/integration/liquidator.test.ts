@@ -1,9 +1,12 @@
 require('dotenv').config()
 import { ethers } from 'ethers'
-import { IERC20Metadata } from '../../typechain-ethers'
-import { EcosystemContracts } from './helpers/interface'
+import { assert } from 'chai'
+import { assetPriceForAgentCr, priceBasedDexReserve } from '../calculations'
+import { waitFinalize } from '../utils'
 import { getContracts, getAgentContracts } from './helpers/contracts'
-import { assetPriceForAgentCr, priceBasedDexReserve, addLiquidity, waitFinalize } from './helpers/contract-utils'
+import { addLiquidity } from './helpers/utils'
+import type { IERC20Metadata } from '../../types'
+import type { EcosystemContracts } from './helpers/interface'
 
 // usdc balance of deployer (should basically be infinite)
 const USDC_BALANCE = BigInt(100_000_000) * ethers.WeiPerEther

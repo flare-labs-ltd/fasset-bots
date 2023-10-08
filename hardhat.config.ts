@@ -34,14 +34,15 @@ const config: HardhatUserConfig = {
       chainId: 14,
     },
   },
-  typechain: {
-    outDir: "types",
-    target: "ethers-v6",
-  },
   paths: {
     sources: "./contracts",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
+    tests: "./test"
+  },
+  typechain: {
+    outDir: "types",
+    target: "ethers-v6",
   },
   gasReporter: {
     enabled: false

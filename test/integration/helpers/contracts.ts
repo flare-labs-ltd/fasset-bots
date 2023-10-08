@@ -8,7 +8,7 @@ import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/inte
 import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
 import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
-import { NetworkAddressesJson, AddressesJson, BaseContracts, AgentContracts } from './interface'
+import type { NetworkAddressesJson, AddressesJson, BaseContracts, AgentContracts } from './interface'
 
 
 export function getAddresses(network: string): NetworkAddressesJson {

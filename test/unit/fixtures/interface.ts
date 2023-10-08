@@ -1,22 +1,20 @@
-import BN from 'bn.js'
-
 interface BaseAsset {
   name: string
   symbol: string
-  decimals: number
+  decimals: bigint
   ftsoSymbol: string
-  ftsoDecimals: number
-  defaultPriceUsd5: BN
+  ftsoDecimals: bigint
+  defaultPriceUsd5: bigint
 }
 
 export interface CollateralAsset extends BaseAsset {
   kind: "vault" | "pool"
-  minCollateralRatioBips: BN
+  minCollateralRatioBips: bigint
 }
 
 export interface UnderlyingAsset extends BaseAsset {
-  amgDecimals: number
-  lotSize: number
+  amgDecimals: bigint
+  lotSize: bigint
 }
 
 export interface AssetConfig {
@@ -28,23 +26,23 @@ export interface AssetConfig {
 export interface EcosystemConfig {
   name: string
   // ftso prices
-  assetFtsoPrice: BN
-  vaultFtsoPrice: BN
-  poolFtsoPrice: BN
+  assetFtsoPrice: bigint
+  vaultFtsoPrice: bigint
+  poolFtsoPrice: bigint
   // dex(vault, f-asset)
-  dex1VaultReserve: BN
-  dex1FAssetReserve: BN
+  dex1VaultReserve: bigint
+  dex1FAssetReserve: bigint
   // dex(pool, vault)
-  dex2PoolReserve: BN
-  dex2VaultReserve: BN
+  dex2PoolReserve: bigint
+  dex2VaultReserve: bigint
   // agent settings
-  mintedUBA: BN
-  vaultCollateral: BN
-  poolCollateral: BN
+  mintedUBA: bigint
+  vaultCollateral: bigint
+  poolCollateral: bigint
   // asset manager settings
-  liquidationFactorBips: BN
-  liquidationFactorVaultBips: BN
+  liquidationFactorBips: bigint
+  liquidationFactorVaultBips: bigint
   // expected implicit data
-  expectedVaultCrBips: BN
-  expectedPoolCrBips: BN
+  expectedVaultCrBips: bigint
+  expectedPoolCrBips: bigint
 }

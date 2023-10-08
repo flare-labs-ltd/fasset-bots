@@ -1,8 +1,8 @@
-import {
+import type {
   IWNat, FakeERC20, FlashLender, BlazeSwapRouter,
   Liquidator, IIAgentVault, IIAssetManager,
   IFAssetMetadata, FakePriceReader
-} from '../../../typechain-ethers'
+} from '../../../types'
 
 
 export interface AddressesJson {
