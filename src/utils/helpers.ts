@@ -334,6 +334,7 @@ export function preventReentrancy(method: () => Promise<void>) {
  */
 export function improveConsoleLog(inspectDepth: number = 10) {
     const BN = toBN(0).constructor;
+    /* istanbul ignore next */
     BN.prototype[util.inspect.custom] = function () { return `BN(${this.toString(10)})`; };
     util.inspect.defaultOptions.depth = inspectDepth;
 }
