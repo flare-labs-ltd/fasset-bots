@@ -13,10 +13,10 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
         public _contractFactory: MiniTruffleContract,
         public _settings: ContractSettings,
         public address: string,
-        public abi: AbiItem[],
-    ) { }
+        public abi: AbiItem[]
+    ) {}
 
-    transactionHash: string = undefined as any;  // typing in typechain is wrong - should be optional
+    transactionHash: string = undefined as any; // typing in typechain is wrong - should be optional
 
     // following property is not supported (web3 contract leaks memory and we don't need it), so we leave it undefined
     contract = undefined as any;
@@ -53,12 +53,12 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         public contractName: string,
         public abi: AbiItem[],
         public _bytecode: string | undefined,
-        public _contractJson: ContractJson,     // only needed for linking
+        public _contractJson: ContractJson // only needed for linking
     ) {
         // console.log("Creating contract", contractName);
     }
 
-    address: string = undefined as any;  // typing in typechain is wrong - should be optional
+    address: string = undefined as any; // typing in typechain is wrong - should be optional
 
     _instanceConstructor = createContractInstanceConstructor(this.contractName);
 
@@ -73,17 +73,19 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     async at(address: string): Promise<any> {
         const bytecode = await this._settings.web3.eth.getCode(address);
-        if (bytecode == null || bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+        if (bytecode == null || bytecode.length < 4) {
+            // need at least one byte of bytecode (there is also 0x prefix)
             throw new Error(`Cannot create instance of ${this.contractName}; no code at address ${address}`);
         }
         return new this._instanceConstructor(this, this._settings, address);
     }
 
-    async "new"(...args: any[]): Promise<any> {
-        if (this._bytecode == null || this._bytecode.length < 4) {    // need at least one byte of bytecode (there is also 0x prefix)
+    async new(...args: any[]): Promise<any> {
+        if (this._bytecode == null || this._bytecode.length < 4) {
+            // need at least one byte of bytecode (there is also 0x prefix)
             throw new Error(`Contract ${this.contractName} is abstract; cannot deploy`);
         }
-        if (this._bytecode.includes('_')) {
+        if (this._bytecode.includes("_")) {
             throw new Error(`Contract ${this.contractName} must be linked before deploy`);
         }
         const result = await executeConstructor(this._settings, this.abi, this._bytecode, args);

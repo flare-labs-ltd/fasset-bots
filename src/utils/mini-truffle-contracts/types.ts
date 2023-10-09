@@ -6,9 +6,9 @@ import { AbiItem } from "web3-utils";
  * Possible finalization methods.
  */
 export type TransactionWaitFor =
-    | { what: 'receipt'; timeoutMS?: number; }
-    | { what: 'nonceIncrease'; pollMS: number; timeoutMS?: number; }
-    | { what: 'confirmations'; confirmations: number; timeoutMS?: number; };
+    | { what: "receipt"; timeoutMS?: number }
+    | { what: "nonceIncrease"; pollMS: number; timeoutMS?: number }
+    | { what: "confirmations"; confirmations: number; timeoutMS?: number };
 
 /**
  * Settings that affect the calls of contract methods through mini truffle.
@@ -27,7 +27,7 @@ export interface ContractSettings {
     /**
      * The amount of gas to use in sendTransaction. If set to 'auto', it will be calculated as `estimateGas() * gasMultiplier`.
      */
-    gas: number | 'auto';
+    gas: number | "auto";
 
     /**
      * The number that the result of `estimateGas()` is multiplied with for limiting the gas in send transaction.
@@ -44,7 +44,6 @@ export interface ContractSettings {
      */
     waitFor: TransactionWaitFor;
 }
-
 
 /**
  * Hardhat format of compiled contract JSON.

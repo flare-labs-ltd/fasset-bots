@@ -39,7 +39,9 @@ export class CancelToken {
             this.registrations.add(rejectFn);
         }
         return {
-            unregister: () => { this.registrations.delete(rejectFn); }
+            unregister: () => {
+                this.registrations.delete(rejectFn);
+            },
         };
     }
 

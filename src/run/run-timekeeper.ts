@@ -10,6 +10,7 @@ import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT3");
 const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-timeKeeper-coston-testxrp.json";
+const INTERVAL: number = 120_000; // in ms
 
 toplevelRun(async () => {
     // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
@@ -20,7 +21,7 @@ toplevelRun(async () => {
     const timekeepers: TimeKeeper[] = [];
     for (const chain of config.fAssets) {
         const assetContext = await createActorAssetContext(config, chain);
-        const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, 120_000);
+        const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, INTERVAL);
         timekeepers.push(timekeeper);
         timekeeper.run();
     }

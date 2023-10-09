@@ -18,12 +18,7 @@ async function whitelistAgent(configFileName: string, ownerAddress: string) {
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
-async function mintFakeTokens(
-    configFileName: string,
-    tokenSymbol: string,
-    recipientAddress: string,
-    amount: BNish
-): Promise<void> {
+async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;

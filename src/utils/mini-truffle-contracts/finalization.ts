@@ -11,13 +11,19 @@ import { TransactionWaitFor } from "./types";
  * @param promiEvent The web3 transaction send result.
  * @returns Transaction receipt.
  */
-export async function waitForFinalization(web3: Web3, waitFor: TransactionWaitFor, initialNonce: number, from: string, promiEvent: PromiEvent<TransactionReceipt>): Promise<TransactionReceipt> {
+export async function waitForFinalization(
+    web3: Web3,
+    waitFor: TransactionWaitFor,
+    initialNonce: number,
+    from: string,
+    promiEvent: PromiEvent<TransactionReceipt>
+): Promise<TransactionReceipt> {
     async function waitForFinalizationInner(): Promise<TransactionReceipt> {
-        if (waitFor.what === 'receipt') {
+        if (waitFor.what === "receipt") {
             return await waitForReceipt(promiEvent, cancelToken);
-        } else if (waitFor.what === 'confirmations') {
+        } else if (waitFor.what === "confirmations") {
             return await waitForConfirmations(promiEvent, waitFor.confirmations, cancelToken);
-        } else /* waitFor.what === 'nonceIncrease' */ {
+        } /* waitFor.what === 'nonceIncrease' */ else {
             const receipt = await waitForReceipt(promiEvent, cancelToken);
             await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
             return receipt;
@@ -29,7 +35,7 @@ export async function waitForFinalization(web3: Web3, waitFor: TransactionWaitFo
         if (waitFor.timeoutMS) {
             const result = await Promise.race([
                 waitForFinalizationInner(),
-                cancelableSleep(waitFor.timeoutMS, cancelToken).then(() => Promise.reject(new Error("Timeout waiting for finalization")))
+                cancelableSleep(waitFor.timeoutMS, cancelToken).then(() => Promise.reject(new Error("Timeout waiting for finalization"))),
             ]);
             return result;
         } else {
@@ -48,13 +54,13 @@ export async function waitForFinalization(web3: Web3, waitFor: TransactionWaitFo
 export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cancelToken: CancelToken): Promise<TransactionReceipt> {
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
-        promiEvent.on('receipt', (receipt) => resolve(receipt)).catch(ignore);
-        promiEvent.on('error', (error) => reject(error)).catch(ignore);
+        promiEvent.on("receipt", (receipt) => resolve(receipt)).catch(ignore);
+        promiEvent.on("error", (error) => reject(error)).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
-        (promiEvent as any).off('receipt');
-        (promiEvent as any).off('error');
+        (promiEvent as any).off("receipt");
+        (promiEvent as any).off("error");
     });
 }
 
@@ -68,18 +74,20 @@ export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cance
 export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsRequired: number, cancelToken: CancelToken): Promise<TransactionReceipt> {
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
-        promiEvent.on("confirmation", (confirmations, receipt) => {
-            // console.log("Confirmation", confirmations);
-            if (confirmations >= confirmationsRequired) {
-                resolve(receipt);
-            }
-        }).catch(ignore);
-        promiEvent.on('error', (error) => reject(error)).catch(ignore);
+        promiEvent
+            .on("confirmation", (confirmations, receipt) => {
+                // console.log("Confirmation", confirmations);
+                if (confirmations >= confirmationsRequired) {
+                    resolve(receipt);
+                }
+            })
+            .catch(ignore);
+        promiEvent.on("error", (error) => reject(error)).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
-        (promiEvent as any).off('confirmation');
-        (promiEvent as any).off('error');
+        (promiEvent as any).off("confirmation");
+        (promiEvent as any).off("error");
     });
 }
 
@@ -93,7 +101,7 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
  */
 export async function waitForNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number, cancelToken: CancelToken): Promise<void> {
     for (let i = 0; ; i++) {
-        const nonce = await web3.eth.getTransactionCount(address, 'latest');
+        const nonce = await web3.eth.getTransactionCount(address, "latest");
         cancelToken.check(); // prevent returning value if cancelled
         if (nonce > initialNonce) break;
         await cancelableSleep(pollMS, cancelToken);

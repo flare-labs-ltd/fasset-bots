@@ -102,7 +102,10 @@ export async function deployLibrary(name: string, dependencies: { [key: string]:
     return linkedContract.new();
 }
 
-export async function linkDependencies<T extends Truffle.Contract<any>>(contract: T, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<T> {
+export async function linkDependencies<T extends Truffle.Contract<any>>(
+    contract: T,
+    dependencies: { [key: string]: Truffle.ContractInstance } = {}
+): Promise<T> {
     for (const dependencyName of Object.keys(dependencies)) {
         contract.link(dependencies[dependencyName] as any);
     }

@@ -8,7 +8,7 @@ const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
 };
 
-const artifactsRootPath = path.normalize(path.resolve(__dirname, '../../artifacts'));
+const artifactsRootPath = path.normalize(path.resolve(__dirname, "../../artifacts"));
 
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();
@@ -20,12 +20,11 @@ export const web3: Web3 = createWeb3();
  */
 export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaults({
     web3: web3,
-    defaultTransactionConfig: {
-    },
-    gas: 'auto',
+    defaultTransactionConfig: {},
+    gas: "auto",
     gasMultiplier: 1.5,
     defaultAccount: web3.eth.defaultAccount,
-    waitFor: { what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 },
+    waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 },
     // waitFor: { what: 'receipt', timeoutMS: 10_000 },
 });
 
@@ -117,8 +116,8 @@ function updateWithHardhatNetworkDefaults(settings: ContractSettings): ContractS
     return {
         web3: settings.web3,
         defaultTransactionConfig: {},
-        gas: typeof settings.gas === 'number' ? settings.gas : networkConfig.gas ?? 'auto',
-        gasMultiplier: settings.gasMultiplier,  // ignore networkConfig - it has value 1 even if not set explicitly
+        gas: typeof settings.gas === "number" ? settings.gas : networkConfig.gas ?? "auto",
+        gasMultiplier: settings.gasMultiplier, // ignore networkConfig - it has value 1 even if not set explicitly
         defaultAccount: settings.defaultAccount ?? networkConfig.from ?? firstAccountAddress(),
         waitFor: settings.waitFor,
     };

@@ -106,7 +106,6 @@ export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBo
     }
 }
 
-
 /**
  * Validates agent configuration.
  * @param config instance BotConfigFile

@@ -4,7 +4,6 @@ import { isNotNull, toBN } from "../helpers";
 import { RawEvent } from "./Web3ContractEventDecoder";
 import { EvmEvent } from "./common";
 
-
 export class Web3EventDecoder {
     public eventTypes = new Map<string, AbiItem>(); // signature (topic[0]) => type
 

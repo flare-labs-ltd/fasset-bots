@@ -13,9 +13,7 @@ export class JsonLoader<T> {
 
     getValidator() {
         if (!this.ajvValidator) {
-            const schema = typeof this.schema === "string"
-                ? JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>
-                : this.schema;
+            const schema = typeof this.schema === "string" ? (JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>) : this.schema;
             this.ajvValidator = ajv.compile(schema);
         }
         return this.ajvValidator;

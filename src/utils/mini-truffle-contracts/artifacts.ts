@@ -19,7 +19,7 @@ class ArtifactsImpl implements Truffle.Artifacts {
 
     constructor(
         private rootPath: string,
-        private settings: ContractSettings,
+        private settings: ContractSettings
     ) {}
 
     /**

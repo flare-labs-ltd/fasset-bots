@@ -11,7 +11,7 @@ import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
  * Constructor for instances of given contract.
  */
 export interface ContractInstanceConstructor {
-    new(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
+    new (contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
 }
 
 /**
@@ -26,14 +26,14 @@ export function createContractInstanceConstructor(contractName: string): Contrac
             addContractMethods(this, contractFactory.abi);
         }
     };
-    Object.defineProperty(contractConstructor, 'name', { value: contractName, writable: false });
+    Object.defineProperty(contractConstructor, "name", { value: contractName, writable: false });
     return contractConstructor;
 }
 
 /**
  * Add all methods defined in ABI to a contract instance.
  */
-function addContractMethods(instance: MiniTruffleContractInstance & { [method: string]: any; }, abi: AbiItem[]) {
+function addContractMethods(instance: MiniTruffleContractInstance & { [method: string]: any }, abi: AbiItem[]) {
     instance.methods = {};
     for (const method of groupMethodOverloads(abi).values()) {
         for (const [nameWithSignature, item] of method.overloads) {
@@ -42,7 +42,8 @@ function addContractMethods(instance: MiniTruffleContractInstance & { [method: s
             instance[nameWithSignature] = calls;
             if (method.overloads.size === 1) {
                 instance.methods[method.name] = calls;
-                if (!(method.name in instance)) { // do not overwrite predefined methods
+                if (!(method.name in instance)) {
+                    // do not overwrite predefined methods
                     instance[method.name] = calls;
                 }
             }
@@ -64,7 +65,7 @@ interface AbiMethodOverloads {
 function groupMethodOverloads(abi: AbiItem[]) {
     const namedMethods: Map<string, AbiMethodOverloads> = new Map();
     for (const item of abi) {
-        if (item.type !== 'function' || item.name == null) continue;
+        if (item.type !== "function" || item.name == null) continue;
         const nameWithSignature = createMethodNameWithSignature(item);
         const namedMethod = getOrCreate(namedMethods, item.name, (name) => ({ name, overloads: new Map() }));
         namedMethod.overloads.set(nameWithSignature, item);
@@ -77,7 +78,7 @@ function groupMethodOverloads(abi: AbiItem[]) {
  */
 function createMethodNameWithSignature(method: AbiItem) {
     /* istanbul ignore next: method.inputs cannot really be undefined - web3 contract fails if it is */
-    const args = (method.inputs ?? []).map(inp => inp.type).join(',');
+    const args = (method.inputs ?? []).map((inp) => inp.type).join(",");
     return `${method.name}(${args})`;
 }
 
@@ -122,7 +123,7 @@ function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiIte
  * True for `view` and `pure` methods.
  */
 function isConstant(method: AbiItem) {
-    return method.stateMutability === 'pure' || method.stateMutability === 'view';
+    return method.stateMutability === "pure" || method.stateMutability === "view";
 }
 
 /**
@@ -177,9 +178,9 @@ function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs:
  * Deploy a contract.
  */
 export async function executeConstructor(settings: ContractSettings, abi: AbiItem[], bytecode: string, args: any[]) {
-    const constructorAbi = abi.find(it => it.type === 'constructor');
+    const constructorAbi = abi.find((it) => it.type === "constructor");
     const [methodArgs, config] = splitMethodArgs(constructorAbi, args);
-    const encodedArgs = constructorAbi?.inputs != null ? coder.encodeParameters(constructorAbi.inputs, methodArgs) : '';
+    const encodedArgs = constructorAbi?.inputs != null ? coder.encodeParameters(constructorAbi.inputs, methodArgs) : "";
     // deploy data must be bytecode followed by the abi encoded args
     const data = bytecode + encodedArgs.slice(2);
     return await executeMethodSend(settings, { ...config, data: data });
@@ -191,14 +192,14 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
 async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor } = settings;
     const config = mergeConfig(settings, transactionConfig);
-    if (typeof config.from !== 'string') {
+    if (typeof config.from !== "string") {
         throw new Error("'from' field is mandatory");
     }
-    if (config.gas == null && settings.gas == 'auto') {
+    if (config.gas == null && settings.gas == "auto") {
         const gas = await web3.eth.estimateGas(config);
         config.gas = Math.floor(gas * gasMultiplier);
     }
-    const nonce = waitFor.what === 'nonceIncrease' ? await web3.eth.getTransactionCount(config.from, 'latest') : 0;
+    const nonce = waitFor.what === "nonceIncrease" ? await web3.eth.getTransactionCount(config.from, "latest") : 0;
     const promiEvent = web3.eth.sendTransaction(config);
     return await waitForFinalization(web3, waitFor, nonce, config.from, promiEvent);
 }
@@ -224,7 +225,7 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
     if (config.from == null && settings.defaultAccount != null) {
         config.from = settings.defaultAccount;
     }
-    if (config.gas == null && typeof settings.gas === 'number') {
+    if (config.gas == null && typeof settings.gas === "number") {
         config.gas = settings.gas;
     }
     return config;

@@ -18,12 +18,13 @@ describe("mini truffle and artifacts tests", async () => {
     describe("artifacts", () => {
         it("require with directory should work", async () => {
             const GovernanceSettings = artifacts.require("flattened/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings");
-            expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName === 'flattened/FlareSmartContracts.sol');
+            expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName === "flattened/FlareSmartContracts.sol");
         });
 
         it("require with wrong directory should fail", async () => {
-            expect(() => artifacts.require("flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings"))
-                .to.throw("Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings");
+            expect(() => artifacts.require("flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings")).to.throw(
+                "Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings"
+            );
         });
     });
 
@@ -43,7 +44,7 @@ describe("mini truffle and artifacts tests", async () => {
             await fpr.setPrice("XRP", 1000);
             await fpr.setPriceFromTrustedProviders("XRP", 1100);
             const res = await fpr.finalizePrices();
-            expectEvent(res, 'PriceEpochFinalized');
+            expectEvent(res, "PriceEpochFinalized");
             const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
             expect(Number(price)).to.equal(1000);
             expect(Number(decimals)).to.equal(5);
@@ -75,7 +76,7 @@ describe("mini truffle and artifacts tests", async () => {
             expect(ftsosStep2).deep.equals(["BTC"]);
             // test .estimateGas
             const gas = await registry.addFtso.estimateGas(ftso2.address);
-            expect(typeof gas).equals('number');
+            expect(typeof gas).equals("number");
             expect(gas).greaterThan(20_000);
             // test direct
             const res2 = await registry.addFtso(ftso2.address);
@@ -101,7 +102,7 @@ describe("mini truffle and artifacts tests", async () => {
             expect(ftsosStep2).deep.equals(["BTC"]);
             // test .estimateGas
             const gas = await registry.methods.addFtso.estimateGas(ftso2.address);
-            expect(typeof gas).equals('number');
+            expect(typeof gas).equals("number");
             expect(gas).greaterThan(20_000);
             // test direct
             const res2 = await registry.methods.addFtso(ftso2.address);
@@ -129,8 +130,10 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("at should fail for wrong address", async () => {
             const WNat = artifacts.require("WNat");
-            await expectRevert(WNat.at(constants.ZERO_ADDRESS),
-                "Cannot create instance of WNat; no code at address 0x0000000000000000000000000000000000000000");
+            await expectRevert(
+                WNat.at(constants.ZERO_ADDRESS),
+                "Cannot create instance of WNat; no code at address 0x0000000000000000000000000000000000000000"
+            );
         });
 
         it("'from' field must be set or default", async () => {
@@ -175,7 +178,7 @@ describe("mini truffle and artifacts tests", async () => {
             await fpr.setPrice("XRP", 1000);
             await fpr.setPriceFromTrustedProviders("XRP", 1100);
             const res = await fpr.finalizePrices();
-            expectEvent(res, 'PriceEpochFinalized');
+            expectEvent(res, "PriceEpochFinalized");
             const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
             expect(Number(price)).to.equal(1000);
             expect(Number(decimals)).to.equal(5);
@@ -185,23 +188,28 @@ describe("mini truffle and artifacts tests", async () => {
         }
 
         it("should create, deploy and call a contract - wait for receipt", async () => {
-            await createDeployAndCall({ ...contractSettings, waitFor: { what: 'receipt' } });
+            await createDeployAndCall({ ...contractSettings, waitFor: { what: "receipt" } });
         });
 
         it("should create, deploy and call a contract - wait for nonce", async () => {
-            await createDeployAndCall({ ...contractSettings, waitFor: { what: 'nonceIncrease', pollMS: 1000, timeoutMS: 10_000 } });
+            await createDeployAndCall({ ...contractSettings, waitFor: { what: "nonceIncrease", pollMS: 1000, timeoutMS: 10_000 } });
         });
 
         it("should create, deploy and call a contract - wait for 3 confirmations (failure without parallel mining)", async () => {
-            await expectRevert(createDeployAndCall({ ...contractSettings, waitFor: { what: 'confirmations', confirmations: 3, timeoutMS: 1000 } }),
-                "Timeout waiting for finalization");
+            await expectRevert(
+                createDeployAndCall({ ...contractSettings, waitFor: { what: "confirmations", confirmations: 3, timeoutMS: 1000 } }),
+                "Timeout waiting for finalization"
+            );
         });
 
         it("should create, deploy and call a contract - wait for 3 confirmations (with parallel mining), settings on instance", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
-            const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 3, timeoutMS: 5000 } };
+            const timer = setInterval(
+                preventReentrancy(() => time.advanceBlock()),
+                200
+            );
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 3, timeoutMS: 5000 } };
             await withSettings(fpr, settings).setDecimals("XRP", 5);
             clearInterval(timer);
             await fpr.setPrice("XRP", 1000);
@@ -215,8 +223,11 @@ describe("mini truffle and artifacts tests", async () => {
             const fpr = await FakePriceReader.new(accounts[0]);
             try {
                 // MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
-                const timer = setInterval(preventReentrancy(() => time.advanceBlock()), 200);
-                const settings: ContractSettings = { ...contractSettings, waitFor: { what: 'confirmations', confirmations: 2, timeoutMS: 5000 } };
+                const timer = setInterval(
+                    preventReentrancy(() => time.advanceBlock()),
+                    200
+                );
+                const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 2, timeoutMS: 5000 } };
                 await withSettings(fpr, settings).setDecimals("XRP", 5);
                 await withSettings(fpr, settings).setPrice("XRP", 800);
                 clearInterval(timer);
@@ -235,28 +246,28 @@ describe("mini truffle and artifacts tests", async () => {
         async function lowLevelExecuteMethodWithError(waitFor: TransactionWaitFor) {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find(it => it.name === 'setPrice')), ["XRP", "5"]);
-            const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find((it) => it.name === "setPrice")), ["XRP", "5"]);
+            const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
             const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
             return waitForFinalization(contractSettings.web3, waitFor, nonce, accounts[0], promiEvent);
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
-            await expectRevert(lowLevelExecuteMethodWithError({ what: 'receipt', timeoutMS: 10_000 }), "price not initialized");
-            await expectRevert(lowLevelExecuteMethodWithError({ what: 'confirmations', confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
-            await expectRevert(lowLevelExecuteMethodWithError({ what: 'nonceIncrease', pollMS: 500, timeoutMS: 10_000 }), "price not initialized");
+            await expectRevert(lowLevelExecuteMethodWithError({ what: "receipt", timeoutMS: 10_000 }), "price not initialized");
+            await expectRevert(lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
+            await expectRevert(lowLevelExecuteMethodWithError({ what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 }), "price not initialized");
         });
 
         it("should call a contract - wait for nonce (low level, always wait at least one tick)", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find(it => it.name === 'setDecimals')), ["XRP", "8"]);
-            const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find((it) => it.name === "setDecimals")), ["XRP", "8"]);
+            const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
             const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
             const cancelToken = new CancelToken();
             const waitNonce = waitForNonceIncrease(web3, accounts[0], nonce, 500, cancelToken);
             const receipt = await waitForReceipt(promiEvent, cancelToken);
-            await waitNonce;    // should work
+            await waitNonce; // should work
             const { 2: decimals } = await fpr.getPrice("XRP");
             expect(Number(decimals)).to.equal(8);
         });
@@ -269,7 +280,9 @@ describe("mini truffle and artifacts tests", async () => {
             const SettingsUpdater = artifacts.require("SettingsUpdater");
             // both link variants in typechain don't work
             expect(() => SettingsUpdater.link(CollateralTypes)).to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
-            expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address)).to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
+            expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address)).to.throw(
+                "Only supported variant is 'SettingsUpdater.link(instance)'"
+            );
             // typechain info is wrong on hardhat, so we have to cast to any
             SettingsUpdater.link(collateralTypes as any);
             const settingsUpdater = await SettingsUpdater.new();
@@ -316,7 +329,7 @@ describe("mini truffle and artifacts tests", async () => {
             expect(() => wnat.send(10_000)).to.throw('The send transactions "from" field must be defined!');
             // send transaction
             const wnatMT = wnat as unknown as MiniTruffleContractInstance;
-            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find(it => it.name === 'withdraw')), ["5000"]);
+            const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(wnatMT.abi.find((it) => it.name === "withdraw")), ["5000"]);
             await wnat.sendTransaction({ data: calldata, from: accounts[0] });
             expect(await web3.eth.getBalance(wnat.address)).equals("5000");
         });
@@ -343,12 +356,16 @@ describe("mini truffle and artifacts tests", async () => {
             const cancelToken = new CancelToken();
             let counter = 0;
             let testCounter = 0;
-            const mainTimer = setInterval(() => { counter++; }, 200);
+            const mainTimer = setInterval(() => {
+                counter++;
+            }, 200);
             let testTimer: NodeJS.Timeout;
             try {
                 let testRegistration: CancelTokenRegistration;
                 const testCancelable = new Promise<void>((resolve, reject) => {
-                    testTimer = setInterval(() => { testCounter++; }, 200);
+                    testTimer = setInterval(() => {
+                        testCounter++;
+                    }, 200);
                     testRegistration = cancelToken.register(reject);
                 }).finally(() => {
                     testRegistration.unregister();
