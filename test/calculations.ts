@@ -1,29 +1,20 @@
 ////////////////////////////////////////////////////////////////////////////
-// blaze swap
+// conversions
 
-// calculates the amount of tokenB received
-// when swapping amountA of tokenA
-export async function swapOutput(
-  reserveA: bigint,
-  reserveB: bigint,
-  amountA: bigint
-): Promise<bigint> {
-  const amountAWithFee = BigInt(997) * amountA
-  const numerator = amountAWithFee * reserveB
-  const denominator = BigInt(1000) * reserveA + amountAWithFee
-  return numerator / denominator
+export function convertUsd5ToTokens(
+  amountUsd5: bigint,
+  tokenDecimals: bigint,
+  tokenPriceUsd5: bigint
+): bigint {
+  return amountUsd5 * BigInt(10) ** tokenDecimals / tokenPriceUsd5
 }
 
-// calculates the amount of tokenB needed
-// to swap to obtain amountA of tokenIn
-export async function swapInput(
-  reserveA: bigint,
-  reserveB: bigint,
-  amountB: bigint
-): Promise<bigint> {
-  const numerator = BigInt(1000) * reserveA * amountB
-  const denominator = BigInt(997) * (reserveB - amountB)
-  return numerator / denominator + BigInt(1)
+export function roundUpWithPrecision(
+  amount: bigint,
+  precision: bigint
+): bigint {
+  const aux = amount % precision;
+  return (aux == BigInt(0)) ? amount : amount + precision - aux;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -96,4 +87,32 @@ export function assetPriceForAgentCr(
     / BigInt(10) ** expMinus
     / crBips
     / totalMintedUBA
+}
+
+////////////////////////////////////////////////////////////////////////////
+// blaze swap
+
+// calculates the amount of tokenB received
+// when swapping amountA of tokenA
+export async function swapOutput(
+  reserveA: bigint,
+  reserveB: bigint,
+  amountA: bigint
+): Promise<bigint> {
+  const amountAWithFee = BigInt(997) * amountA
+  const numerator = amountAWithFee * reserveB
+  const denominator = BigInt(1000) * reserveA + amountAWithFee
+  return numerator / denominator
+}
+
+// calculates the amount of tokenB needed
+// to swap to obtain amountA of tokenIn
+export async function swapInput(
+  reserveA: bigint,
+  reserveB: bigint,
+  amountB: bigint
+): Promise<bigint> {
+  const numerator = BigInt(1000) * reserveA * amountB
+  const denominator = BigInt(997) * (reserveB - amountB)
+  return numerator / denominator + BigInt(1)
 }

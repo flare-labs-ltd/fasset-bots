@@ -270,10 +270,7 @@ library LiquidatorMath {
         uint256 _precision
     ) private pure returns (uint256) {
         uint256 _aux = _amount % _precision;
-        if (_aux == 0) {
-            return _amount;
-        }
-        return _amount + _precision - _aux;
+        return (_aux == 0) ? _amount : _amount + _precision - _aux;
     }
 
 }

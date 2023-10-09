@@ -45,7 +45,7 @@ export const ETH: CollateralAsset = {
   decimals: BigInt(18),
   ftsoSymbol: "ftsoETH",
   ftsoDecimals: BigInt(5),
-  defaultPriceUsd5: BigInt(1_650_300_000),
+  defaultPriceUsd5: BigInt(165_030_000),
   minCollateralRatioBips: BigInt(18_000),
   kind: "vault"
 }

@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { lotSizeAmg, ubaToAmg, addLiquidity, swapOutput, swapInput } from './helpers/utils'
 import { getFactories } from './helpers/factories'
-import { XRP, USDT, WFLR } from './fixtures/assets'
+import { XRP, WFLR, ETH } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type {
@@ -18,7 +18,7 @@ import type {
 // config for used assets
 const assetConfig: AssetConfig = {
   asset: XRP,
-  vault: USDT,
+  vault: ETH,
   pool: WFLR
 }
 // factory for creating various ecosystems
@@ -183,11 +183,12 @@ describe("Tests for Liquidator contract", () => {
   describe("scenarios with random ecosystems", () => {
 
     ecosystemFactory.getHealthyEcosystems(10).forEach((config: EcosystemConfig) => {
-      it(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
+      it.only(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
         // setup ecosystem
         await setupEcosystem(config)
         // perform arbitrage by liquidation
         const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await assetManager.getAgentInfo(agent)
+        expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
         const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
         const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(maxLiquidatedFAsset)
         const expectedSwappedPool = await swapOutput(blazeSwap, pool, vault, expectedLiqPool)

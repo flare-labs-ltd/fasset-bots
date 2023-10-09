@@ -1,6 +1,6 @@
 import { AssetConfig, EcosystemConfig } from "./interface"
-import { lotSizeUba, randBigInt, randBigIntInRadius, randBigIntInRelRadius } from "../helpers/utils"
-import { priceBasedDexReserve, collateralForCr } from "../../calculations"
+import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../helpers/utils"
+import { priceBasedDexReserve, collateralForCr, convertUsd5ToTokens, roundUpWithPrecision } from "../../calculations"
 
 
 export class EcosystemFactory {
@@ -18,10 +18,29 @@ export class EcosystemFactory {
   public unhealthyEcosystem: EcosystemConfig
 
   constructor(public config: AssetConfig) {
-    // determine default values
-    this.defaultDex1FAssetReserve = BigInt(10) ** BigInt(config.asset.decimals + BigInt(10))
-    this.defaultDex2VaultReserve = BigInt(10) ** BigInt(config.vault.decimals + BigInt(10))
-    this.defaultMintedUBA = BigInt(1e5) * lotSizeUba(config.asset)
+    // customly configured reserves and minted f-assets (by their value in usd5)
+    const defaultDex1LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
+    const defaultDex2LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
+    const defaultMintedFAssetValueUsd5 = BigInt(10) ** BigInt(5 + 6) // million$
+    // convert to actual reserves and minted f-assets
+    this.defaultDex1FAssetReserve = convertUsd5ToTokens(
+      defaultDex1LiquidityUsd5,
+      config.asset.decimals,
+      config.asset.defaultPriceUsd5
+    )
+    this.defaultDex2VaultReserve = convertUsd5ToTokens(
+      defaultDex2LiquidityUsd5,
+      config.vault.decimals,
+      config.vault.defaultPriceUsd5
+    )
+    this.defaultMintedUBA = roundUpWithPrecision( // in lots
+      convertUsd5ToTokens(
+        defaultMintedFAssetValueUsd5,
+        config.asset.decimals,
+        config.asset.defaultPriceUsd5
+      ),
+      lotSizeUba(config.asset)
+    )
     // get fixed example ecosystem configs
     this.baseEcosystem = this.getBaseEcosystem()
     this.healthyEcosystemWithVaultUnderwater = this.getHealthyEcosystemWithVaultUnderwater()
@@ -91,7 +110,7 @@ export class EcosystemFactory {
   }
 
   protected getHealthyEcosystemWithVaultUnderwater(): EcosystemConfig {
-    const vaultCrBips = this.config.vault.minCollateralRatioBips - BigInt(2_000)
+    const vaultCrBips = (this.config.vault.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
       ...this.baseEcosystem,
       name: 'vault cr underwater',
@@ -108,7 +127,7 @@ export class EcosystemFactory {
   }
 
   protected getHealthyEcosystemWithPoolUnderwater(): EcosystemConfig {
-    const poolCrBips = this.config.pool.minCollateralRatioBips - BigInt(1_000)
+    const poolCrBips = (this.config.pool.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
       ...this.baseEcosystem,
       name: 'pool cr underwater',

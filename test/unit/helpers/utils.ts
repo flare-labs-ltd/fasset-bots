@@ -13,24 +13,24 @@ import type { UnderlyingAsset } from '../fixtures/interface'
 // when swapping amountA of tokenA
 export async function swapOutput(
   router: BlazeSwapRouter,
-  tokenIn: ERC20,
-  tokenOut: ERC20,
-  amountIn: bigint
+  tokenA: ERC20,
+  tokenB: ERC20,
+  amountA: bigint
 ): Promise<bigint> {
-  const { 0: reserveIn, 1: reserveOut } = await router.getReserves(tokenIn, tokenOut)
-  return calc.swapOutput(reserveIn, reserveOut, amountIn)
+  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA, tokenB)
+  return calc.swapOutput(reserveA, reserveB, amountA)
 }
 
 // calculates the amount of tokenB needed
-// to swap to obtain amountA of tokenIn
+// to swap to obtain amountA of tokenA
 export async function swapInput(
   router: BlazeSwapRouter,
-  tokenIn: ERC20,
-  tokenOut: ERC20,
-  amountOut: bigint
+  tokenA: ERC20,
+  tokenB: ERC20,
+  amountB: bigint
 ): Promise<bigint> {
-  const { 0: reserveIn, 1: reserveOut } = await router.getReserves(tokenIn, tokenOut)
-  return calc.swapInput(reserveIn, reserveOut, amountOut)
+  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA, tokenB)
+  return calc.swapInput(reserveA, reserveB, amountB)
 }
 
 export async function addLiquidity(
@@ -80,8 +80,6 @@ export function ubaToAmg(fAsset: UnderlyingAsset, uba: bigint): bigint {
 
 ////////////////////////////////////////////////////////////////////////////
 // bigint extensions
-
-export type bigintish = bigint | number | string
 
 // not really uniformly random, but it'll do
 export function randBigInt(min: bigint, max: bigint): bigint {
