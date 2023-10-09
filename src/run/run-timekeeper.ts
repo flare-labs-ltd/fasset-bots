@@ -4,7 +4,7 @@ import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
-import { requireEnv, toplevelRun } from "../utils/helpers";
+import { requireEnv, sleep, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT3");
@@ -24,6 +24,8 @@ toplevelRun(async () => {
         const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, INTERVAL);
         timekeepers.push(timekeeper);
         timekeeper.run();
+        // to avoid 'nonce too low' and 'replacement transaction underpriced'
+        await sleep(config.loopDelay);
     }
     // run
     console.log("Timekeeper bot started, press CTRL+C to end");

@@ -1,5 +1,5 @@
 {
-    "loopDelay": 93000,
+    "loopDelay": 5000,
     "contractsJsonFile": "./fasset-deployment/coston.json",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
