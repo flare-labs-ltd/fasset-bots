@@ -131,6 +131,10 @@ describe("Tests for Liquidator contract", () => {
     } = await assetManager.getAgentInfo(agent)
     expect(vaultCrBeforeLiquidation).to.be.closeTo(config.expectedVaultCrBips, 1)
     expect(poolCrBeforeLiquidation).to.be.closeTo(config.expectedPoolCrBips, 1)
+    // put agent in full liquidation if configured so (this implies agent did an illegal operation)
+    if (config.fullLiquidation) await assetManager.putAgentInFullLiquidation(agent)
+    const { status: agentStatus } = await assetManager.getAgentInfo(agent)
+    expect(agentStatus).to.equal(config.fullLiquidation ? 3 : 0)
   }
 
   beforeEach(async function () {

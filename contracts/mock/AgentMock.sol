@@ -6,6 +6,7 @@ import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "./ERC20Mock.sol";
 import "./AssetManagerMock.sol";
 
+
 contract AgentMock {
     AgentInfo.Info private info;
     AssetManagerMock public assetManager;
@@ -23,6 +24,11 @@ contract AgentMock {
         fAssetToken = ERC20Mock(_assetManager.fAsset());
         // store vault collateral token in info
         info.vaultCollateralToken = IERC20(_vaultCollateralToken);
+    }
+
+    modifier onlyAssetManager() {
+        require(msg.sender == address(assetManager), "only asset manager");
+        _;
     }
 
     function mint(address _target, uint256 _amountUBA) external {
@@ -45,19 +51,32 @@ contract AgentMock {
         poolCollateralToken.mint(address(this), _amount);
     }
 
-    function payoutFromVault(address _target, uint256 _amount) external returns (uint256) {
+    function payoutFromVault(
+        address _target,
+        uint256 _amount
+    ) external onlyAssetManager returns (uint256) {
         info.totalVaultCollateralWei -= _amount;
         vaultCollateralToken.transfer(_target, _amount);
         return _amount;
     }
 
-    function payoutFromPool(address _target, uint256 _amount) external returns (uint256) {
+    function payoutFromPool(
+        address _target,
+        uint256 _amount
+    ) external onlyAssetManager returns (uint256) {
         info.totalPoolCollateralNATWei -= _amount;
         poolCollateralToken.transfer(_target, _amount);
         return _amount;
     }
 
-    function getInfo() external view returns (AgentInfo.Info memory) {
+    function putInFullLiquidation() external onlyAssetManager {
+        info.status = AgentInfo.Status.FULL_LIQUIDATION;
+    }
+
+    function getInfo()
+        external view onlyAssetManager
+        returns (AgentInfo.Info memory)
+    {
         return info;
     }
 

@@ -80,6 +80,7 @@ export class EcosystemFactory {
         this.config.asset.decimals,
         this.config.pool.decimals
       ),
+      fullLiquidation: false,
       // asset manager has reasonable liquidation settings
       liquidationFactorBips: liquidationFactorBips,
       liquidationFactorVaultBips: liquidationFactorVaultBips,
@@ -212,6 +213,7 @@ export class EcosystemFactory {
         this.config.asset.decimals,
         this.config.pool.decimals
       ),
+      fullLiquidation: Math.random() > 0.5,
       expectedVaultCrBips: vaultCrBips,
       expectedPoolCrBips: poolCrBips
     }

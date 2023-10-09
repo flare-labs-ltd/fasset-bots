@@ -92,14 +92,14 @@ yarn ts-node scripts/deploy.ts
 > **Important**
 > Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `yarn fix-blazeswap-hash`.
 
-Unit tests are written for blaze swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
-- *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which allows for a profitable full agent liquidation,
-- *semi-healthy*: dex slippage makes only partial agent liquidation profitable,
+Unit tests are written for Blaze Swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
+- *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which makes full agent liquidation the most profitable arbitrage option,
+- *semi-healthy*: dex slippage due to low liquidity makes optimal arbitrage profit occur at partial agent liquidation,
 - *unhealthy*: dex prices are not aligned with the FTSO prices (specifically, f-asset to vault collateral price is much higher than the one derived from FTSOs), which makes any kind of agent liquidation unprofitable.
 
 Run those tests with
 ```sh
-yarn test test/unit/blazeSwap.test.ts test/unit/liquidator.test.ts
+yarn test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts
 ```
 
 The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. It requires a private key corresponding to address `0x88278079a62db08fEb125f270102651BbE8F9984` to be logged into `.env` file under the key `DEPLOYER_PRIVATE_KEY`. With this, first fork the network in one terminal

@@ -67,6 +67,9 @@ contract AssetManagerMock {
         poolFtsoSymbol = _poolSymbol;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // asset manager getters
+
     function liquidate(
         address _agentVault,
         uint256 _amountUBA
@@ -76,44 +79,6 @@ contract AssetManagerMock {
     {
         // check that agent is in liquidation
         return _liquidate(msg.sender, _agentVault, _amountUBA);
-    }
-
-    function getAgentInfo(
-        address _agentVault
-    )
-        external view
-        returns (AgentInfo.Info memory)
-    {
-        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
-        agentInfo.poolCollateralRatioBIPS = cr.poolCR;
-        (
-            agentInfo.liquidationPaymentFactorVaultBIPS,
-            agentInfo.liquidationPaymentFactorPoolBIPS
-        ) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
-        agentInfo.maxLiquidationAmountUBA = convertAmgToUBA(Math.max(
-            _maxLiquidationAmountAMG(
-                agentInfo,
-                cr.vaultCR,
-                agentInfo.liquidationPaymentFactorVaultBIPS,
-                minVaultCollateralRatioBIPS
-            ),
-            _maxLiquidationAmountAMG(
-                agentInfo,
-                cr.poolCR,
-                agentInfo.liquidationPaymentFactorPoolBIPS,
-                minPoolCollateralRatioBIPS
-            )
-        ));
-        return agentInfo;
-    }
-
-    function getSettings()
-        external view
-        returns (AssetManagerSettings.Data memory)
-    {
-        return settings;
     }
 
     function fAsset() public view returns (address) {
@@ -196,6 +161,9 @@ contract AssetManagerMock {
         private view
         returns (uint256)
     {
+        if (_agentInfo.status == AgentInfo.Status.FULL_LIQUIDATION) {
+            return convertUBAToAmg(_agentInfo.mintedUBA);
+        }
         if (_targetRatioBIPS <= _collateralRatioBIPS) {
             return 0;               // agent already safe
         }
@@ -340,5 +308,50 @@ contract AssetManagerMock {
     ) external {
         liquidationCollateralFactorBIPS = _liquidationCollateralFactorBIPS;
         liquidationFactorVaultCollateralBIPS = _liquidationFactorVaultCollateralBIPS;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // mocks
+
+    function putAgentInFullLiquidation(address _agentVault) external {
+        AgentMock(_agentVault).putInFullLiquidation();
+    }
+
+    function getAgentInfo(
+        address _agentVault
+    )
+        external view
+        returns (AgentInfo.Info memory)
+    {
+        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
+        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
+        agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
+        agentInfo.poolCollateralRatioBIPS = cr.poolCR;
+        (
+            agentInfo.liquidationPaymentFactorVaultBIPS,
+            agentInfo.liquidationPaymentFactorPoolBIPS
+        ) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
+        agentInfo.maxLiquidationAmountUBA = convertAmgToUBA(Math.max(
+            _maxLiquidationAmountAMG(
+                agentInfo,
+                cr.vaultCR,
+                agentInfo.liquidationPaymentFactorVaultBIPS,
+                minVaultCollateralRatioBIPS
+            ),
+            _maxLiquidationAmountAMG(
+                agentInfo,
+                cr.poolCR,
+                agentInfo.liquidationPaymentFactorPoolBIPS,
+                minPoolCollateralRatioBIPS
+            )
+        ));
+        return agentInfo;
+    }
+
+    function getSettings()
+        external view
+        returns (AssetManagerSettings.Data memory)
+    {
+        return settings;
     }
 }

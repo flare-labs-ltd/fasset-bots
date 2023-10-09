@@ -1,10 +1,10 @@
 import { ethers } from 'hardhat'
+import { expect } from 'chai'
+import { XRP, USDT, WFLR } from './fixtures/assets'
+import { swapOutput } from './helpers/utils'
+import { getFactories } from './helpers/factories'
 import type { BlazeSwapRouter, ERC20Mock } from '../../types'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
-import { XRP, USDT, WFLR } from './fixtures/assets'
-import { assertBigIntEqual } from './helpers/utils'
-import { swapOutput } from './helpers/contract-utils'
-import { getFactories } from './helpers/factories'
 
 
 describe("Tests for BlazeSwapRouter contract", () => {
@@ -42,8 +42,8 @@ describe("Tests for BlazeSwapRouter contract", () => {
       ethers.MaxUint256
     )
     const { 0: reserveA, 1: reserveB } = await blazeSwapRouter.getReserves(tokenA, tokenB)
-    assertBigIntEqual(reserveA, tokenALiq)
-    assertBigIntEqual(reserveB, tokenBLiq)
+    expect(reserveA).to.equal(tokenALiq)
+    expect(reserveB).to.equal(tokenBLiq)
   })
 
   it("should swap", async () => {
@@ -54,7 +54,7 @@ describe("Tests for BlazeSwapRouter contract", () => {
     await blazeSwapRouter.connect(accounts[1]).swapExactTokensForTokens(
       swapA, 0, [tokenA, tokenB], accounts[1], ethers.MaxUint256
     )
-    assertBigIntEqual(await tokenB.balanceOf(accounts[1]), expectedB)
+    expect(await tokenB.balanceOf(accounts[1])).to.equal(expectedB)
   })
 
 })

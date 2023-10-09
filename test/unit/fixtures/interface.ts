@@ -39,6 +39,7 @@ export interface EcosystemConfig {
   mintedUBA: bigint
   vaultCollateral: bigint
   poolCollateral: bigint
+  fullLiquidation: boolean
   // asset manager settings
   liquidationFactorBips: bigint
   liquidationFactorVaultBips: bigint
