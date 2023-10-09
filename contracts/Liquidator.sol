@@ -157,6 +157,7 @@ contract Liquidator is ILiquidator, Ownable {
             address(this),
             block.timestamp
         );
+        _vaultToken.approve(address(_blazeSwap), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -173,6 +174,7 @@ contract Liquidator is ILiquidator, Ownable {
                 address(this),
                 block.timestamp
             );
+            _poolToken.approve(address(_blazeSwap), 0);
         }
     }
 
