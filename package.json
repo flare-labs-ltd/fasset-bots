@@ -6,7 +6,8 @@
     "clean": "rimraf ./artifacts ./cache ./coverage ./types ./coverage.json && yarn typechain",
     "compile": "yarn clean && cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
     "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413",
-    "test": "yarn hardhat test",
+    "test-unit": "yarn hardhat test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts",
+    "test-integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000",
     "fix-blazeswap-hash": "./scripts/replace-blazeswap-hash.sh"
   },
   "license": "MIT",

@@ -99,7 +99,7 @@ Unit tests are written for Blaze Swap (to describe what is expected from the use
 
 Run those tests with
 ```sh
-yarn test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts
+yarn test-unit
 ```
 
 The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. It requires a private key corresponding to address `0x88278079a62db08fEb125f270102651BbE8F9984` to be logged into `.env` file under the key `DEPLOYER_PRIVATE_KEY`. With this, first fork the network in one terminal
@@ -108,7 +108,7 @@ yarn fork
 ```
 then run the test in another terminal
 ```sh
-yarn test test/integration/liquidator.test.ts
+yarn test-integration
 ```
 
 ## TODO
