@@ -29,7 +29,11 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(attestationProvider: AttestationHelper, assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>, caller: string): Promise<number> {
+export async function proveAndUpdateUnderlyingBlock(
+    attestationProvider: AttestationHelper,
+    assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>,
+    caller: string
+): Promise<number> {
     const proof = await attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(assetManager));
     await assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);

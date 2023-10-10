@@ -148,11 +148,6 @@
             "type": "string"
         }
     },
-    "required": [
-        "fAssetInfos",
-        "loopDelay",
-        "nativeChainInfo",
-        "rpcUrl"
-    ],
+    "required": ["fAssetInfos", "loopDelay", "nativeChainInfo", "rpcUrl"],
     "type": "object"
 }

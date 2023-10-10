@@ -55,7 +55,9 @@ describe("Attestation client unit tests", async () => {
     it("Should prove confirmed block height existence", async () => {
         await useContext();
         chain.mine(chain.finalizationBlocks + 1);
-        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
+        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(
+            await attestationWindowSeconds(context.assetManager)
+        );
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 

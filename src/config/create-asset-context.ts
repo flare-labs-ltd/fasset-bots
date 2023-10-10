@@ -72,7 +72,11 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
 /**
  * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
  */
-export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotFAssetConfig, actorKind: ActorBaseKind): Promise<IAssetActorContext> {
+export async function createActorAssetContext(
+    trackedStateConfig: BotConfig,
+    chainConfig: BotFAssetConfig,
+    actorKind: ActorBaseKind
+): Promise<IAssetActorContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");
     }
@@ -100,7 +104,10 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
     return {
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
-        attestationProvider: (actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId) : undefined,
+        attestationProvider:
+            actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER
+                ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId)
+                : undefined,
         assetManager: assetManager,
         priceChangeEmitter: priceChangeEmitter,
         fAsset: await FAsset.at(await assetManager.fAsset()),

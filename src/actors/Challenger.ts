@@ -341,8 +341,8 @@ export class Challenger extends ActorBase {
      */
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
         await this.state.context.blockchainIndexer!.waitForUnderlyingTransactionFinalization(txHash);
-        return await this.state.context.attestationProvider!
-            .proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
+        return await this.state.context
+            .attestationProvider!.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
 

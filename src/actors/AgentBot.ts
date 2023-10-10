@@ -321,7 +321,9 @@ export class AgentBot {
         ) {
             if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
                 logger.info(`Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`);
-                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context.assetManager));
+                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(
+                    await attestationWindowSeconds(this.context.assetManager)
+                );
                 if (request) {
                     agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
                     agentEnt.dailyProofRequestRound = request.round;

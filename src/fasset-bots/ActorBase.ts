@@ -5,7 +5,7 @@ export enum ActorBaseKind {
     CHALLENGER,
     LIQUIDATOR,
     SYSTEM_KEEPER,
-    TIME_KEEPER
+    TIME_KEEPER,
 }
 
 export class ActorBase {

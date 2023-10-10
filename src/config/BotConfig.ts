@@ -194,14 +194,13 @@ export async function createChainConfig(
     stateConnectorAddress: string | undefined,
     ownerAddress: string
 ): Promise<BotFAssetConfig> {
-    const blockchainIndexerClient = chainInfo.indexerUrl ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks) : undefined;
-    const stateConnector = stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls ? await createStateConnectorClient(
-        chainInfo.indexerUrl,
-        attestationProviderUrls,
-        scProofVerifierAddress,
-        stateConnectorAddress,
-        ownerAddress
-    ) : undefined;
+    const blockchainIndexerClient = chainInfo.indexerUrl
+        ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks)
+        : undefined;
+    const stateConnector =
+        stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls
+            ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
+            : undefined;
     return {
         chainInfo: chainInfo,
         blockchainIndexerClient: blockchainIndexerClient,
