@@ -64,7 +64,7 @@ describe("Actor tests - coston", async () => {
         const chainConfig1 = botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         context = await createAssetContext(botConfig, chainConfig1!);
         const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        actorContext = await createActorAssetContext(actorConfig, chainConfig2!);
+        actorContext = await createActorAssetContext(actorConfig, chainConfig2!, ActorBaseKind.CHALLENGER);
         // agent default settings
         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
         vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;

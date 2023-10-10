@@ -68,7 +68,7 @@ describe("Agent bot tests", async () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
-        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
     });
 
     it("Should perform minting", async () => {
@@ -264,7 +264,7 @@ describe("Agent bot tests", async () => {
             .convertUBAToTokenWei(crt.valueUBA)
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
             .divn(MAX_BIPS);
-        const proof = await agentBot.agent.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        const proof = await agentBot.agent.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.ownerAddress, value: burnNats ?? BN_ZERO });
         await agentBot.runStep(orm.em);
         // should have an closed minting

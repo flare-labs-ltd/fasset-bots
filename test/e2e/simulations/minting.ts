@@ -84,7 +84,7 @@ describe.skip("Agent bot simulation - coston", async () => {
         await agentBot.runStep(orm.em);
         const lots = 1;
         // update underlying block manually
-        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // reserve collateral
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
         // pay
@@ -101,7 +101,7 @@ describe.skip("Agent bot simulation - coston", async () => {
         }
         await agentBot.runStep(orm.em);
         // update underlying block manually
-        await proveAndUpdateUnderlyingBlock(context, ownerAddress);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(lots);
         const rdReq = rdReqs[0];

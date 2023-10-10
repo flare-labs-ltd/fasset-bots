@@ -54,7 +54,7 @@ export async function createTestAgentBotAndDepositCollaterals(
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer.getBlockHeight());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {

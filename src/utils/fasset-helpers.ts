@@ -1,6 +1,10 @@
-import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerInstance } from "../../typechain-truffle/AssetManager";
+import { AssetManagerEvents, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
+import { AttestationHelper } from "../underlying-chain/AttestationHelper";
+import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
+import { ContractWithEvents } from "./events/truffle";
 import { toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
@@ -25,19 +29,19 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  * to prevent current block being too outdated, which gives too short time for
  * minting or redemption payment.
  */
-export async function proveAndUpdateUnderlyingBlock(context: IAssetActorContext, caller: string): Promise<number> {
-    const proof = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
-    await context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });
+export async function proveAndUpdateUnderlyingBlock(attestationProvider: AttestationHelper, assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>, caller: string): Promise<number> {
+    const proof = await attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(assetManager));
+    await assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });
     return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
 }
 
-export async function attestationWindowSeconds(context: IAssetActorContext): Promise<number> {
-    const settings = await context.assetManager.getSettings();
+export async function attestationWindowSeconds(assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>): Promise<number> {
+    const settings = await assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
 
-export async function latestUnderlyingBlock(context: IAssetActorContext): Promise<IBlock | null> {
-    const blockHeight = await context.blockchainIndexer.getBlockHeight();
-    const latestBlock = await context.blockchainIndexer.getBlockAt(blockHeight);
+export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock | null> {
+    const blockHeight = await blockchainIndexer.getBlockHeight();
+    const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);
     return latestBlock;
 }

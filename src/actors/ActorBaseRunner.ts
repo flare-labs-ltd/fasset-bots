@@ -58,7 +58,7 @@ export class ActorBaseRunner {
      */
     static async create(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig): Promise<ActorBaseRunner> {
         logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
-        const assetContext = await createActorAssetContext(config, fAsset);
+        const assetContext = await createActorAssetContext(config, fAsset, kind);
         logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(assetContext, lastBlock);
@@ -66,7 +66,7 @@ export class ActorBaseRunner {
         logger.info(`${ActorBaseKind[kind]} ${address} initialized tracked state for ActorBaseRunner.`);
         let actor: ActorBase;
         if (kind === ActorBaseKind.CHALLENGER) {
-            const blockHeight = await assetContext.blockchainIndexer.getBlockHeight();
+            const blockHeight = await assetContext.blockchainIndexer!.getBlockHeight();
             actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight);
         } else if (kind === ActorBaseKind.LIQUIDATOR) {
             actor = new Liquidator(new ScopedRunner(), address, trackedState);

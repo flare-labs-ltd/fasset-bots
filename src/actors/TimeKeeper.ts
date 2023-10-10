@@ -21,7 +21,7 @@ export class TimeKeeper {
     async updateUnderlyingBlock() {
         try {
             logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
-            await proveAndUpdateUnderlyingBlock(this.context, this.address);
+            await proveAndUpdateUnderlyingBlock(this.context.attestationProvider!, this.context.assetManager, this.address);
             const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
             logger.info(
                 `Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`

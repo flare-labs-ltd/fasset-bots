@@ -52,9 +52,9 @@ export interface AgentBotDefaultSettings {
 // lightweight context
 export interface IAssetActorContext {
     nativeChainInfo: NativeChainInfo;
-    blockchainIndexer: BlockchainIndexerHelper;
+    blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
     collaterals: CollateralType[];
-    attestationProvider: AttestationHelper;
+    attestationProvider?: AttestationHelper; // only for challenger
     // contracts
     priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;

@@ -6,6 +6,7 @@ import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
 import { requireEnv, sleep, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { ActorBaseKind } from "../fasset-bots/ActorBase";
 
 const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT3");
 const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
@@ -20,7 +21,7 @@ toplevelRun(async () => {
     const config = await createBotConfig(runConfig, TIMEKEEPER_ADDRESS);
     const timekeepers: TimeKeeper[] = [];
     for (const chain of config.fAssets) {
-        const assetContext = await createActorAssetContext(config, chain);
+        const assetContext = await createActorAssetContext(config, chain, ActorBaseKind.TIME_KEEPER);
         const timekeeper = new TimeKeeper(TIMEKEEPER_ADDRESS, assetContext, INTERVAL);
         timekeepers.push(timekeeper);
         timekeeper.run();

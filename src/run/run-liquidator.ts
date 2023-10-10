@@ -9,7 +9,7 @@ import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 const LIQUIDATOR_ADDRESS: string = requireEnv("NATIVE_ACCOUNT2");
 const LIQUIDATOR_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT2_PRIVATE_KEY");
-const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
+const RUN_CONFIG_PATH: string = "./run-config/run-config-liquidator-coston-testxrp.json";
 const fAssetSymbol = "FfakeXRP";
 
 toplevelRun(async () => {

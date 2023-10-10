@@ -55,7 +55,7 @@ describe("Attestation client unit tests", async () => {
     it("Should prove confirmed block height existence", async () => {
         await useContext();
         chain.mine(chain.finalizationBlocks + 1);
-        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 
@@ -96,9 +96,9 @@ describe("Attestation client unit tests", async () => {
         await useContext();
         chain.mine(chain.finalizationBlocks + 1);
         const round = 1;
-        await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         const waitRound = context.attestationProvider.waitForRoundFinalization(round);
-        await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         const finalized = await context.attestationProvider.roundFinalized(round);
         expect(finalized).to.be.true;
     });
@@ -150,7 +150,7 @@ describe("Attestation client unit tests", async () => {
     it("Should not prove confirmed block height existence", async () => {
         await useContext(true);
         chain.mine(chain.finalizationBlocks + 1);
-        await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context)))
+        await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager)))
             .to.eventually.be.rejectedWith(`confirmedBlockHeightExists: not proved`)
             .and.be.an.instanceOf(Error);
     });

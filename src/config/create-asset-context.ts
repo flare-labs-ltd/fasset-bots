@@ -1,4 +1,5 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
+import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
@@ -24,6 +25,12 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
     }
     if (!chainConfig.wallet) {
         throw new Error("Missing wallet configuration");
+    }
+    if (!chainConfig.blockchainIndexerClient) {
+        throw new Error("Missing blockchain indexer configuration");
+    }
+    if (!chainConfig.stateConnector) {
+        throw new Error("Missing state connector configuration");
     }
     let assetManager;
     let priceChangeEmitter;
@@ -65,9 +72,15 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
 /**
  * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
  */
-export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetActorContext> {
+export async function createActorAssetContext(trackedStateConfig: BotConfig, chainConfig: BotFAssetConfig, actorKind: ActorBaseKind): Promise<IAssetActorContext> {
     if (!trackedStateConfig.addressUpdater && !trackedStateConfig.contractsJsonFile) {
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");
+    }
+    if ((actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) && !chainConfig.blockchainIndexerClient) {
+        throw new Error("Missing blockchain indexer configuration");
+    }
+    if ((actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) && !chainConfig.stateConnector) {
+        throw new Error("Missing state connector configuration");
     }
     let assetManager;
     let priceChangeEmitter;
@@ -87,7 +100,7 @@ export async function createActorAssetContext(trackedStateConfig: BotConfig, cha
     return {
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
+        attestationProvider: (actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId) : undefined,
         assetManager: assetManager,
         priceChangeEmitter: priceChangeEmitter,
         fAsset: await FAsset.at(await assetManager.fAsset()),

@@ -40,8 +40,8 @@ export interface BotConfig {
 export interface BotFAssetConfig {
     wallet?: IBlockChainWallet; // only for agent bot
     chainInfo: ChainInfo;
-    blockchainIndexerClient: BlockchainIndexerHelper;
-    stateConnector: IStateConnectorClient;
+    blockchainIndexerClient?: BlockchainIndexerHelper; // only for agent bot and challenger
+    stateConnector?: IStateConnectorClient; // only for agent bot, challenger and timeKeeper
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
@@ -111,9 +111,7 @@ export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBo
  * @param config instance BotConfigFile
  */
 function validateAgentConfigFile(config: BotConfigFile): void {
-    if (config.defaultAgentSettingsPath == null || config.ormOptions == null) {
-        throw new Error("Missing defaultAgentSettingsPath or ormOptions in config");
-    }
+    validateConfigFile(config);
     for (const fc of config.fAssetInfos) {
         if (fc.walletUrl == null) {
             throw new Error(`Missing walletUrl in FAsset type ${fc.fAssetSymbol}`);
@@ -167,9 +165,9 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 export async function createBotFAssetConfig(
     chainInfo: BotFAssetInfo,
     em: EM | undefined,
-    attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
+    attestationProviderUrls: string[] | undefined,
+    scProofVerifierAddress: string | undefined,
+    stateConnectorAddress: string | undefined,
     ownerAddress: string
 ): Promise<BotFAssetConfig> {
     const wallet = chainInfo.walletUrl && em ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
@@ -191,19 +189,19 @@ export async function createBotFAssetConfig(
  */
 export async function createChainConfig(
     chainInfo: BotFAssetInfo,
-    attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
+    attestationProviderUrls: string[] | undefined,
+    scProofVerifierAddress: string | undefined,
+    stateConnectorAddress: string | undefined,
     ownerAddress: string
 ): Promise<BotFAssetConfig> {
-    const blockchainIndexerClient = createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks);
-    const stateConnector = await createStateConnectorClient(
+    const blockchainIndexerClient = chainInfo.indexerUrl ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks) : undefined;
+    const stateConnector = stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls ? await createStateConnectorClient(
         chainInfo.indexerUrl,
         attestationProviderUrls,
         scProofVerifierAddress,
         stateConnectorAddress,
         ownerAddress
-    );
+    ) : undefined;
     return {
         chainInfo: chainInfo,
         blockchainIndexerClient: blockchainIndexerClient,

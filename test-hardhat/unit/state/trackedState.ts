@@ -398,7 +398,7 @@ describe("Tracked state tests", async () => {
             .convertUBAToTokenWei(crt.valueUBA)
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
             .divn(MAX_BIPS);
-        const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context));
+        const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
