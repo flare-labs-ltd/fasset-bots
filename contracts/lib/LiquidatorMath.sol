@@ -66,10 +66,7 @@ library LiquidatorMath {
                 ),  _assetManagerSettings.assetMintingGranularityUBA
             ), liquidatorVars.maxLiquidatedFAssetUBA
         );
-        if (optFAssetAmountUBA == 0) {
-            return 0;
-        }
-        return Math.min(
+        return (optFAssetAmountUBA == 0) ? 0 : Math.min(
             getBlazeSwapAmountIn(
                 optFAssetAmountUBA,
                 liquidatorVars.reserveVaultWeiDex1,

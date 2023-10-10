@@ -9,7 +9,7 @@ This repo contains an implementation of an f-asset liquidator on the [Flare netw
 > This repo uses the private gitlab f-asset repo as a node dependancy, so until it is published, build without appropriate ssh key will fail.
 
 > **Warning**
-> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. Moral: run a challenger.
+> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent.
 
 ## Why it's necessary
 
@@ -23,13 +23,13 @@ To make profit. All you can lose are gas fees (which on the Flare network are ve
 
 The two assumptions are:
 
-- A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent collateral for f-asset keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [Blaze Swap](https://blazeswap.xyz/).
-- Flash loan accessibility of the agent's collateral token. This is meant to be solved soon by making agent's collateral flash-loanable.
+- A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent's vault collateral for f-asset, while keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [Blaze Swap](https://blazeswap.xyz/).
+- Vault collateral's flash loan accessibility. This is meant to be solved soon by making agent's vault collateral flash-loanable.
 
 ## How it works
 
 Every agent in the f-asset system holds two types of collateral - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
-- flash loan an optimal value of vault collateral,
+- flash loan an optimal value of vault collateral (for calculations, see `notes/README.md`),
 - swap vault collateral for f-asset on a given dex,
 - liquidate obtained f-asset and receive vault and pool collateral,
 - swap pool collateral on another given dex for vault collateral,
@@ -40,31 +40,6 @@ Note that a dual strategy is possible, starting with pool collateral instead of 
 - liquidation usually outputs less pool collateral than vault collateral, so the second swap will consume less fees.
 
 The contract uses Blaze Swap as the default dex, but any v2-uniswap interfaced constant product dex can be used (with the hardcoded 0.3% fee). It also expects a flash lender contract to be [`ERC3156`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/interfaces/IERC3156FlashLender.sol) and is assumed to have a fixed (or no) fee.
-
-### Calculations
-
-Let `d1` be a vault collateral / f-asset pair dex, `d2` be a pool collateral / vault collateral pair dex, and `a` an agent in liquidation. We define the following variables:
-- `Vd1`: the vault collateral reserve of dex `d1`,
-- `Fd1`: the f-asset reserve of dex `d1`,
-- `Wd2`: the pool collateral reserve of dex `d2`,
-- `Vd2`: the vault collateral reserve of dex `d2`,
-- `δ1`: dex1's fee (for uniswap hardcoded to 0.3%),
-- `δ2`: dex2's fee (for uniswap hardcoded to 0.3%),
-- `Fa`: the total f-asset minted/backed by agent `a`,
-- `RV`: vault collateral reward ratio for f-asset liquidation,
-- `RW`: pool collateral reward ratio for f-asset liquidation,
-- `fm`: maximum liquidated f-asset (before getting agent back to safety),
-- `PV`: the f-asset price in vault collateral, determined using Flare nework price oracle,
-- `PW`: the f-asset price in pool collateral, determined using Flare nework price oracle.
-
-From those vaules we can derive:
-- `swap_v_for_f(v) = Fd1 v (1 - δ1) / (v (1 - δ1) + Vd1)`: obtained f-assets when swapping `v` vault collateral for f-asset on dex `d1`,
-- `swap_w_for_v(w) = Vd2 w (1 - δ2) / (w (1 - δ2) + Wd2)`: obtained vault collateral when swapping `w` pool collateral for vault collateral on dex `d2`,
-- `liquidate_v(f) = f PV RV`: obtained vault collateral when liquidating `f` f-assets,
-- `liquidate_w(f) = f PW RW`: obtained pool collateral when liquidating `f` f-assets,
-- `profit(v) = liquidate_v(min(swap_v_for_f(v), fm)) + swap_w_for_v(liquidate_w(min(swap_v_for_f(v), fm))) - v`: vault collateral profit of our arbitrage strategy.
-
-Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `notes/liquidation_arbitrage_calculation.nb` file. Also, there is `notes/simulation.py` file that visualizes how blockchain conditions affect the profit in regards to initially invested vault collateral.
 
 ## Dev notes
 

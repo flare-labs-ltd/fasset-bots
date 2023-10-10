@@ -183,7 +183,7 @@ describe("Tests for Liquidator contract", () => {
   describe("scenarios with random ecosystems", () => {
 
     ecosystemFactory.getHealthyEcosystems(10).forEach((config: EcosystemConfig) => {
-      it.only(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
+      it(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
         // setup ecosystem
         await setupEcosystem(config)
         // perform arbitrage by liquidation
