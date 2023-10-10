@@ -1,8 +1,0 @@
-printWidth: 100
-tabWidth: 2
-singleQuote: true
-semi: false
-jsxSingleQuote: true
-quoteProps: as-needed
-trailingComma: none
-bracketSpacing: true

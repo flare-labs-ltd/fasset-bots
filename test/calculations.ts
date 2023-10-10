@@ -13,8 +13,8 @@ export function roundUpWithPrecision(
   amount: bigint,
   precision: bigint
 ): bigint {
-  const aux = amount % precision;
-  return (aux == BigInt(0)) ? amount : amount + precision - aux;
+  const aux = amount % precision
+  return (aux == BigInt(0)) ? amount : amount + precision - aux
 }
 
 ////////////////////////////////////////////////////////////////////////////
