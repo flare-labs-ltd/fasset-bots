@@ -497,11 +497,18 @@ export class AgentBot {
                 // agent waiting for setting update
                 if (toBN(agentEnt.agentSettingUpdateValidAtTimestamp).lte(latestTimestamp)) {
                     // agent can update setting
-                    await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
-                    this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
-                    logger.info(`Agent ${this.agent.vaultAddress} updated agent setting ${agentEnt.agentSettingUpdateValidAtName}.`);
-                    agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
-                    agentEnt.agentSettingUpdateValidAtName = "";
+                    try {
+                        await this.agent.executeAgentSettingUpdate(agentEnt.agentSettingUpdateValidAtName);
+                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
+                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting ${agentEnt.agentSettingUpdateValidAtName}.`);
+                        agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
+                        agentEnt.agentSettingUpdateValidAtName = "";
+                    } catch (error) {
+                        console.error(`Error updating setting for agent ${this.agent.vaultAddress}, ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting: ${error}`);
+                        agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
+                        agentEnt.agentSettingUpdateValidAtName = "";
+                    }
                 } else {
                     logger.info(
                         `Agent ${
