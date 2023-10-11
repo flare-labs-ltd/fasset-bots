@@ -30,6 +30,7 @@ import { readFileSync } from "fs";
 const botConfigInternal = rewire("../../../src/config/BotConfig.ts");
 const validateConfigFile = botConfigInternal.__get__("validateConfigFile");
 const validateAgentConfigFile = botConfigInternal.__get__("validateAgentConfigFile");
+const supportedSourceIdInt = botConfigInternal.__get__("supportedSourceId");
 
 const indexerBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
 const indexerDOGEUrl = "https://attestation-coston.aflabs.net/verifier/doge/";
@@ -216,5 +217,13 @@ describe("Bot config tests", async () => {
             return validateAgentConfigFile(runConfig);
         };
         expect(fn).to.throw(`Missing walletUrl in FAsset type ${runConfig.fAssetInfos[0].fAssetSymbol}`);
+    });
+
+    it("Should return supported source id", () => {
+        expect(supportedSourceIdInt(SourceId.ALGO)).to.be.false;
+        expect(supportedSourceIdInt(SourceId.LTC)).to.be.false;
+        expect(supportedSourceIdInt(SourceId.XRP)).to.be.true;
+        expect(supportedSourceIdInt(SourceId.DOGE)).to.be.true;
+        expect(supportedSourceIdInt(SourceId.BTC)).to.be.true;
     });
 });

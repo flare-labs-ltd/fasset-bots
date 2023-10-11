@@ -54,13 +54,13 @@ const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>("run-config/sche
 
 /**
  * Loads configuration file and checks it.
- * @param fpath configuration file path
+ * @param fPath configuration file path
  * @param configInfo
  * @returns instance BotConfigFile
  */
-export function loadConfigFile(fpath: string, configInfo?: string): BotConfigFile {
+export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     try {
-        const config = botConfigLoader.load(fpath);
+        const config = botConfigLoader.load(fPath);
         validateConfigFile(config);
         return config;
     } catch (e) {
@@ -90,13 +90,13 @@ export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: str
 
 /**
  * Loads agent configuration file and checks it.
- * @param fpath configuration file path
+ * @param fPath configuration file path
  * @param configInfo
  * @returns instance AgentBotConfigFile
  */
-export function loadAgentConfigFile(fpath: string, configInfo?: string): AgentBotConfigFile {
+export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBotConfigFile {
     try {
-        const config = botConfigLoader.load(fpath);
+        const config = botConfigLoader.load(fPath);
         validateAgentConfigFile(config);
         return config as AgentBotConfigFile;
     } catch (e) {
@@ -365,6 +365,7 @@ export async function createStateConnectorClient(
 }
 
 function supportedSourceId(sourceId: SourceId) {
+    console.log("HEREHERE")
     if (sourceId === SourceId.XRP || sourceId === SourceId.BTC || sourceId === SourceId.DOGE) {
         return true;
     }

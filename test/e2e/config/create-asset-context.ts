@@ -85,8 +85,16 @@ describe("Create asset context tests", async () => {
     it("Should create simplified asset context from address updater", async () => {
         actorRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
         actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
-        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.CHALLENGER);
+        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.TIME_KEEPER);
         expect(context).is.not.null;
+    });
+
+    it("Should create simplified asset context from address updater and not define attestationProvider", async () => {
+        actorRunConfig = JSON.parse(readFileSync(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
+        actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
+        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.LIQUIDATOR);
+        expect(context).is.not.null;
+        expect(context.attestationProvider).to.be.undefined;
     });
 
     it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
@@ -119,20 +127,26 @@ describe("Create asset context tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should not create asset context - blockchain indexer must be defined in chain config", async () => {
+    it("Should not create actor asset context - blockchain indexer must be defined in chain config", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].blockchainIndexerClient = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.CHALLENGER))
+            .to.eventually.be.rejectedWith(`Missing blockchain indexer configuration`)
+            .and.be.an.instanceOf(Error);
+        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.TIME_KEEPER))
             .to.eventually.be.rejectedWith(`Missing blockchain indexer configuration`)
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should not create asset context - state connector must be defined in chain config", async () => {
+    it("Should not create actor asset context - state connector must be defined in chain config", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].stateConnector = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.CHALLENGER))
+            .to.eventually.be.rejectedWith(`Missing state connector configuration`)
+            .and.be.an.instanceOf(Error);
+        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.TIME_KEEPER))
             .to.eventually.be.rejectedWith(`Missing state connector configuration`)
             .and.be.an.instanceOf(Error);
     });
