@@ -365,7 +365,6 @@ export async function createStateConnectorClient(
 }
 
 function supportedSourceId(sourceId: SourceId) {
-    console.log("HEREHERE")
     if (sourceId === SourceId.XRP || sourceId === SourceId.BTC || sourceId === SourceId.DOGE) {
         return true;
     }
