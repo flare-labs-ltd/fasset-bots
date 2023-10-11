@@ -14,8 +14,9 @@ export class EcosystemFactory {
   public healthyEcosystemWithPoolUnderwater: EcosystemConfig
   public healthyEcosystemWithZeroVaultCollateral: EcosystemConfig
   public healthyEcosystemWithZeroPoolCollateral: EcosystemConfig
-  public semiHealthyEcosystem: EcosystemConfig
-  public unhealthyEcosystem: EcosystemConfig
+  public semiHealthyEcosystemWithHighSlippage: EcosystemConfig
+  public unhealthyEcosystemWithHighFAssetDexPrice: EcosystemConfig
+  public unhealthyEcosystemWithBadDebt: EcosystemConfig
 
   constructor(public config: AssetConfig) {
     // customly configured reserves and minted f-assets (by their value in usd5)
@@ -47,8 +48,9 @@ export class EcosystemFactory {
     this.healthyEcosystemWithPoolUnderwater = this.getHealthyEcosystemWithPoolUnderwater()
     this.healthyEcosystemWithZeroVaultCollateral = this.getHealthyEcosystemWithZeroVaultCollateral()
     this.healthyEcosystemWithZeroPoolCollateral = this.getHealthyEcosystemWithZeroPoolCollateral()
-    this.semiHealthyEcosystem = this.getSemiHealthyEcosystem()
-    this.unhealthyEcosystem = this.getUnhealthyEcosystem()
+    this.semiHealthyEcosystemWithHighSlippage = this.getSemiHealthyEcosystemWithHighSlippage()
+    this.unhealthyEcosystemWithHighFAssetDexPrice = this.getUnhealthyEcosystemWithHighFAssetDexPrice()
+    this.unhealthyEcosystemWithBadDebt = this.getUnhealthyEcosystemWithBadDebt()
   }
 
   protected getBaseEcosystem(): EcosystemConfig {
@@ -161,7 +163,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getSemiHealthyEcosystem(): EcosystemConfig {
+  protected getSemiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
       name: 'arbitrage not possible, dex1 has too high slippage due to low liquidity',
@@ -180,7 +182,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getUnhealthyEcosystem(): EcosystemConfig {
+  protected getUnhealthyEcosystemWithHighFAssetDexPrice(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
       name: 'arbitrage not possible, dex1 f-asset price too high',
@@ -189,7 +191,32 @@ export class EcosystemFactory {
     }
   }
 
-  protected getRandomizedHealthyEcosystem(name: string): EcosystemConfig {
+  protected getUnhealthyEcosystemWithBadDebt(): EcosystemConfig {
+    return {
+      ...this.baseEcosystem,
+      name: 'vault and pool cr combined is below 1, causing bad debt',
+      vaultCollateral: collateralForCr(
+        BigInt(5000),
+        this.baseEcosystem.mintedUBA,
+        this.baseEcosystem.assetFtsoPrice,
+        this.baseEcosystem.vaultFtsoPrice,
+        this.config.asset.decimals,
+        this.config.vault.decimals
+      ),
+      poolCollateral: collateralForCr(
+        BigInt(4000),
+        this.baseEcosystem.mintedUBA,
+        this.baseEcosystem.assetFtsoPrice,
+        this.baseEcosystem.poolFtsoPrice,
+        this.config.asset.decimals,
+        this.config.pool.decimals
+      ),
+      expectedVaultCrBips: BigInt(5000),
+      expectedPoolCrBips: BigInt(4000)
+    }
+  }
+
+  protected randomizeEcosystem(ecosystem: EcosystemConfig, name: string): EcosystemConfig {
     // slightly randomized crs (combined ratio must still be > 1)
     const vaultCrBips = randBigInt(
       this.config.vault.minCollateralRatioBips / BigInt(2),
@@ -201,24 +228,24 @@ export class EcosystemFactory {
     )
     // slightly randomized ftso prices
     const ftsoPrices = {
-      assetFtsoPrice: randBigIntInRelRadius(this.baseEcosystem.assetFtsoPrice, 2),
-      vaultFtsoPrice: randBigIntInRelRadius(this.baseEcosystem.vaultFtsoPrice, 1),
-      poolFtsoPrice: randBigIntInRelRadius(this.baseEcosystem.poolFtsoPrice, 2),
+      assetFtsoPrice: randBigIntInRelRadius(ecosystem.assetFtsoPrice, 2),
+      vaultFtsoPrice: randBigIntInRelRadius(ecosystem.vaultFtsoPrice, 1),
+      poolFtsoPrice: randBigIntInRelRadius(ecosystem.poolFtsoPrice, 2),
     }
     // randomized config
     return {
-      ...this.baseEcosystem,
+      ...ecosystem,
       ...ftsoPrices,
       name: name,
       // slightly randomized dex reserves
-      dex1VaultReserve: randBigIntInRelRadius(this.baseEcosystem.dex1VaultReserve, 2),
-      dex1FAssetReserve: randBigIntInRelRadius(this.baseEcosystem.dex1FAssetReserve, 2),
-      dex2PoolReserve: randBigIntInRelRadius(this.baseEcosystem.dex2PoolReserve, 2),
-      dex2VaultReserve: randBigIntInRelRadius(this.baseEcosystem.dex2VaultReserve, 2),
+      dex1VaultReserve: randBigIntInRelRadius(ecosystem.dex1VaultReserve, 2),
+      dex1FAssetReserve: randBigIntInRelRadius(ecosystem.dex1FAssetReserve, 2),
+      dex2PoolReserve: randBigIntInRelRadius(ecosystem.dex2PoolReserve, 2),
+      dex2VaultReserve: randBigIntInRelRadius(ecosystem.dex2VaultReserve, 2),
       // slightly randomized minted f-assets
       vaultCollateral: collateralForCr(
         vaultCrBips,
-        this.defaultMintedUBA,
+        ecosystem.mintedUBA,
         ftsoPrices.assetFtsoPrice,
         ftsoPrices.vaultFtsoPrice,
         this.config.asset.decimals,
@@ -226,7 +253,7 @@ export class EcosystemFactory {
       ),
       poolCollateral: collateralForCr(
         poolCrBips,
-        this.defaultMintedUBA,
+        ecosystem.mintedUBA,
         ftsoPrices.assetFtsoPrice,
         ftsoPrices.poolFtsoPrice,
         this.config.asset.decimals,
@@ -246,16 +273,30 @@ export class EcosystemFactory {
       this.healthyEcosystemWithZeroPoolCollateral
     ]
     for (let i = 0; i < count; i++) {
-      configs.push(this.getRandomizedHealthyEcosystem(`randomized healthy ecosystem ${i}`))
+      configs.push(this.randomizeEcosystem(
+        this.baseEcosystem,
+        `randomized healthy ecosystem ${i}`))
     }
     return configs
   }
 
   public getSemiHealthyEcosystems(count: number): EcosystemConfig[] {
-    return [this.semiHealthyEcosystem]
+    const configs: EcosystemConfig[] = [
+      this.semiHealthyEcosystemWithHighSlippage
+    ]
+    for (let i = 0; i < count; i++) {
+      configs.push(this.randomizeEcosystem(
+        this.semiHealthyEcosystemWithHighSlippage,
+        `randomized semi-healthy ecosystem ${i}`))
+    }
+    return configs
   }
 
   public getUnhealthyEcosystems(count: number): EcosystemConfig[] {
-    return [this.unhealthyEcosystem]
+    const configs: EcosystemConfig[] = [
+      this.unhealthyEcosystemWithHighFAssetDexPrice,
+      this.unhealthyEcosystemWithBadDebt
+    ]
+    return configs
   }
 }

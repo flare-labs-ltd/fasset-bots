@@ -182,7 +182,7 @@ describe("Tests for Liquidator contract", () => {
 
   describe("scenarios with random ecosystems", () => {
 
-    ecosystemFactory.getHealthyEcosystems(10).forEach((config: EcosystemConfig) => {
+    ecosystemFactory.getHealthyEcosystems(20).forEach((config: EcosystemConfig) => {
       it(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
         // setup ecosystem
         await setupEcosystem(config)
@@ -228,7 +228,7 @@ describe("Tests for Liquidator contract", () => {
       })
     })
 
-    ecosystemFactory.getSemiHealthyEcosystems(1).forEach((config: EcosystemConfig) => {
+    ecosystemFactory.getSemiHealthyEcosystems(20).forEach((config: EcosystemConfig) => {
       it(`should optimally liquidate less than max f-assets due to semi-healthy ecosystem config: ${config.name}`, async () => {
         // setup ecosystem
         await setupEcosystem(config)
