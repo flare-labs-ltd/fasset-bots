@@ -2,9 +2,7 @@ import { ethers } from "ethers"
 import { waitFinalize } from "../../utils"
 import type { IBlazeSwapRouter, IERC20Metadata } from "../../../types"
 
-////////////////////////////////////////////////////////////////////////////
-// blazeswap liquidity
-
+// blazeswap add liquidity with wait finalize
 export async function addLiquidity(
   blazeSwapRouter: IBlazeSwapRouter,
   tokenA: IERC20Metadata,

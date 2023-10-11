@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import {
+import type {
   BlazeSwapRouter__factory, BlazeSwapManager__factory, BlazeSwapFactory__factory,
   ERC20Mock__factory, FakePriceReader__factory, FlashLender__factory,
   AssetManagerMock__factory, AgentMock__factory, Liquidator__factory

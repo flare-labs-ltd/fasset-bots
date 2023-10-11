@@ -1,6 +1,6 @@
-import { AssetConfig, EcosystemConfig } from "./interface"
 import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../helpers/utils"
 import { priceBasedDexReserve, collateralForCr, convertUsd5ToTokens, roundUpWithPrecision } from "../../calculations"
+import type { AssetConfig, EcosystemConfig } from "./interface"
 
 
 export class EcosystemFactory {
