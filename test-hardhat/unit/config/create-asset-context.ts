@@ -10,6 +10,7 @@ import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorCl
 import { MockChain } from "../../../src/mock/MockChain";
 import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
+import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
@@ -84,7 +85,7 @@ describe("Create asset context unit tests", async () => {
             fAssets: [fAssetConfig],
             nativeChainInfo: testNativeChainInfo,
         };
-        await expect(createActorAssetContext(config, fAssetConfig))
+        await expect(createActorAssetContext(config, fAssetConfig, ActorBaseKind.CHALLENGER))
             .to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`)
             .and.be.an.instanceOf(Error);
     });

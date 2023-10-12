@@ -87,7 +87,7 @@ export class Challenger extends ActorBase {
         const from = this.lastEventUnderlyingBlockHandled;
         const to = await this.getLatestUnderlyingBlock();
         logger.info(`Challenger ${this.address} started reading unhandled underlying transactions FROM ${from} TO ${to}.`);
-        const transactions = await this.state.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
+        const transactions = await this.state.context.blockchainIndexer!.getTransactionsWithinBlockRange(from, to);
         logger.info(`Challenger ${this.address} finished reading unhandled underlying transactions FROM ${from} TO ${to}.`);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
@@ -340,9 +340,9 @@ export class Challenger extends ActorBase {
      * @param underlyingAddressString underlying address
      */
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
-        await this.state.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
-        return await this.state.context.attestationProvider
-            .proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
+        await this.state.context.blockchainIndexer!.waitForUnderlyingTransactionFinalization(txHash);
+        return await this.state.context
+            .attestationProvider!.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
     }
 
@@ -367,7 +367,7 @@ export class Challenger extends ActorBase {
      * @returns underlying block height
      */
     async getLatestUnderlyingBlock(): Promise<number> {
-        const blockHeight = await this.state.context.blockchainIndexer.getBlockHeight();
+        const blockHeight = await this.state.context.blockchainIndexer!.getBlockHeight();
         return blockHeight;
     }
 }

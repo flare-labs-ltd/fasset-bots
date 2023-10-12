@@ -272,7 +272,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 1 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
         // create minting
@@ -295,7 +295,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 2 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
         // create minting
@@ -318,7 +318,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 3 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
         // create redemption
@@ -340,7 +340,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not receive proof 4 - no proof", async () => {
-        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context));
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);

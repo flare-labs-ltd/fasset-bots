@@ -71,7 +71,7 @@ export class UserBot {
     async updateUnderlyingTime() {
         logger.info(`User ${requireEnv("USER_ADDRESS")} started updating underlying block time.`);
         console.log("Updating underlying block time....");
-        await proveAndUpdateUnderlyingBlock(this.context, this.nativeAddress);
+        await proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.nativeAddress);
         logger.info(`User ${requireEnv("USER_ADDRESS")} finished updating underlying block time.`);
     }
 

@@ -299,7 +299,7 @@ export class AgentBot {
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const latestBlock = await latestUnderlyingBlock(this.context);
+        const latestBlock = await latestUnderlyingBlock(this.context.blockchainIndexer);
         /* istanbul ignore else */
         if (latestBlock) {
             logger.info(
@@ -321,7 +321,9 @@ export class AgentBot {
         ) {
             if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
                 logger.info(`Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`);
-                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context));
+                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(
+                    await attestationWindowSeconds(this.context.assetManager)
+                );
                 if (request) {
                     agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
                     agentEnt.dailyProofRequestRound = request.round;
