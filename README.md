@@ -14,9 +14,11 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ## Install
 
-Clone project. Install `fasset` and `simple-wallet` in the same directory as `fasset-bots`.
+Clone project. Clone and install `simple-wallet` repository in the same directory as `fasset-bots`.
 
 Run `yarn` and `yarn build`.
+
+(Alternatively also clone and install `fasset` repository in the same directory as `fasset-bots`. Run script `./scripts/copy-artifacts.sh` to update deployment and config `fasset` settings.)
 
 ## Configurations
 
@@ -28,7 +30,7 @@ In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `node d
 
 The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The runner will initiate needed context and connect to native network (Flare/Songbird). Then it will constantly check if any active agent stored in persistent state should handle any incoming events (see [Agent](./docs/actors/agent.md)).
 
-In order to create new agent, deposit funds and some do some other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot`.
+In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot`.
 
 ## Command line interface for Agent bots `agent-bot`
 
