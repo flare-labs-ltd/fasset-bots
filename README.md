@@ -36,11 +36,20 @@ In order to create new agent, deposit funds and do other manual operations, comm
 
 Command line interface can be access by running command `yarn agent-bot`. For more see [here](./docs/cli.md).
 
+
+## Apis for Agent bots
+
+Same commands as in cli `agent-bot` can be run vi apis. For more see [here](./docs/api.md).
+
 ## How to run other bots (Challenger, Liquidator and SystemKeeper)
 
 Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 
 Example for such script using actor base runner for Challenger can be found in [`run-challenger.ts`](./src/run/run-challenger.ts) and run by command `node dist/src/run/run-challenger.js`. (Make sure you ran `yarn build` before).
+
+## Command line interface for user bot `user-bot` and api key `api-key`
+
+For more see [here](./docs/cli.md).
 
 ## Helpers
 
