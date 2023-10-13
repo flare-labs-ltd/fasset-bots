@@ -21,7 +21,8 @@ The constructor takes in **address** (native address) and **asset context** (IAs
 ```javascript
    constructor(
         public address: string,
-       public context: IAssetActorContext
+       public context: IAssetActorContext,
+       public intervalInMs: number
    ) { }
 ```
 
