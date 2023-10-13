@@ -38,3 +38,5 @@ coverage/
 
 # tmp
 test/e2e/actors/tmp.ts
+
+*.Identifier

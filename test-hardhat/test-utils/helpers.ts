@@ -1,6 +1,5 @@
 import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
-import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
@@ -38,7 +37,6 @@ export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-
 
 export function disableMccTraceManager() {
     TraceManager.enabled = false;
-    TraceManagerSimpleWallet.enabled = false;
 }
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {

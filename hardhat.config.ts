@@ -7,11 +7,9 @@ import { TASK_TEST_GET_TEST_FILES } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, task } from "hardhat/config";
 import path from "path";
 import { TraceManager } from "@flarenetwork/mcc";
-import { TraceManager as TraceManagerSimpleWallet } from "simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace";
 
 // disable MCC trace manager in hardhat tests
 TraceManager.enabled = false;
-TraceManagerSimpleWallet.enabled = false;
 
 // allow glob patterns in test file args
 task(TASK_TEST_GET_TEST_FILES, async ({ testFiles }: { testFiles: string[] }, { config }) => {
