@@ -65,7 +65,7 @@ Available commands:
 
 ## Setup
 
-Configuration and environment file must be provided, before running cli commands. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
+Configuration and environment file must be provided, before running cli commands. See relevant user variables in [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
 
 ## How to use
 
