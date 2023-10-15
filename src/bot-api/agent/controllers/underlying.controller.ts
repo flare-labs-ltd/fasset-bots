@@ -12,7 +12,7 @@ import { AgentBalance, AgentUnderlying } from "../../common/AgentResponse";
 export class UnderlyingController {
     constructor(private readonly agentService: AgentService) {}
 
-    @Post("withdraw/announce/:fAssetSymbol/:agentVaultAddress")
+    @Get("withdraw/announce/:fAssetSymbol/:agentVaultAddress")
     @HttpCode(200)
     public async announceUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -21,7 +21,7 @@ export class UnderlyingController {
         return handleApiResponse(this.agentService.announceUnderlyingWithdrawal(fAssetSymbol, agentVaultAddress));
     }
 
-    @Post("withdraw/perform/:fAssetSymbol/:agentVaultAddress/:amount/:destinationAddress/:paymentReference")
+    @Get("withdraw/perform/:fAssetSymbol/:agentVaultAddress/:amount/:destinationAddress/:paymentReference")
     @HttpCode(200)
     public async performUnderlyingWithdrawal(
         @Param("fAssetSymbol") fAssetSymbol: string,

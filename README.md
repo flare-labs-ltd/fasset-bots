@@ -32,14 +32,14 @@ The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The run
 
 In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot`.
 
-## Command line interface for Agent bots `agent-bot`
+## Command line interface for Agent bot `agent-bot`
 
 Command line interface can be access by running command `yarn agent-bot`. For more see [here](./docs/cli.md).
 
 
-## Apis for Agent bots
+## REST APIs for Agent bot
 
-Same commands as in cli `agent-bot` can be run vi apis. For more see [here](./docs/api.md).
+Same commands as in cli `agent-bot` can be run via REST APIs. For more see [here](./docs/api.md).
 
 ## How to run other bots (Challenger, Liquidator and SystemKeeper)
 

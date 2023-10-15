@@ -48,7 +48,7 @@ export class PoolController {
         return handleApiResponse(this.agentService.poolFeesBalance(fAssetSymbol, agentVaultAddress));
     }
 
-    @Get("delegate/:fAssetSymbol/:agentVaultAddress/:recipientAddress/:bips")
+    @Post("delegate/:fAssetSymbol/:agentVaultAddress/:recipientAddress/:bips")
     public async delegatePoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -58,7 +58,7 @@ export class PoolController {
         return handleApiResponse(this.agentService.delegatePoolCollateral(fAssetSymbol, agentVaultAddress, recipientAddress, bips));
     }
 
-    @Get("undelegate/:fAssetSymbol/:agentVaultAddress")
+    @Post("undelegate/:fAssetSymbol/:agentVaultAddress")
     public async undelegatePoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string

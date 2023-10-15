@@ -13,8 +13,8 @@ export async function runAgentServer() {
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
     const config = new DocumentBuilder()
-        .setTitle("FAsset agent bot api")
-        .setDescription("FAsset agent bot api")
+        .setTitle("FAsset agent bot REST APIs")
+        .setDescription("FAsset agent bot REST APIs")
         .addApiKey({ type: "apiKey", name: "X-API-KEY", in: "header" }, "X-API-KEY")
         .setVersion("1.0")
         .build();

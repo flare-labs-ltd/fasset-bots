@@ -6,7 +6,7 @@ Configuration and environment file must be provided, before running cli commands
 
 ## How to use
 
-Usage: `agent-bot [command] <arg> -f [fAssetSymbol]`
+Usage: `yarn agent-bot [command] <arg> -f [fAssetSymbol]`
 
 Available commands:
 
@@ -53,7 +53,7 @@ For more about agent's settings check [AgentSettings.sol](https://gitlab.com/fla
 
 ## How to use
 
-Usage: `api-key [command]`
+Usage: `yarn api-key [command]`
 
 Available commands:
 
@@ -69,7 +69,7 @@ Configuration and environment file must be provided, before running cli commands
 
 ## How to use
 
-Usage: `agent-bot [command] <arg> -f [fAssetSymbol] -c [configFilePath]`
+Usage: `yarn user-bot [command] <arg> -f [fAssetSymbol] -c [configFilePath]`
 
 Available commands:
 
