@@ -274,13 +274,15 @@ export class BlockchainIndexerHelper implements IBlockChain {
             );
         } else if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
-                txs.push({
-                    hash: tx.transactionId,
-                    inputs: await this.handleInputsOutputs(tx, true),
-                    outputs: await this.handleInputsOutputs(tx, false),
-                    reference: tx.paymentReference,
-                    status: this.successStatus(tx),
-                });
+                if (tx.transactionType != "EMPTY_BLOCK_INDICATOR") {
+                    txs.push({
+                        hash: tx.transactionId,
+                        inputs: await this.handleInputsOutputs(tx, true),
+                        outputs: await this.handleInputsOutputs(tx, false),
+                        reference: tx.paymentReference,
+                        status: this.successStatus(tx),
+                    });
+                }
             }
         }
         return txs;

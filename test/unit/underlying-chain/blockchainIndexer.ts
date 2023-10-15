@@ -187,7 +187,7 @@ describe("XRP blockchain tests via indexer", async () => {
 
     it("Should get transaction by reference - invalid reference", async () => {
         await expect(blockchainIndexerClient.getTransactionsByReference("txHash"))
-            .to.eventually.be.rejectedWith(`Cannot retrieve transaction by reference txHash: ERROR: Invalid payment reference, Invalid payment reference`)
+            .to.eventually.be.rejectedWith(`Cannot retrieve transaction by reference txHash: ERROR: Invalid payment reference`)
             .and.be.an.instanceOf(Error);
     });
 
