@@ -7,6 +7,7 @@ const LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED";
 const AGENT_DESTROYED = "AGENT DESTROYED";
 const AGENT_CREATED = "AGENT CREATED";
 const AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE";
+const AGENT_SETTING_UPDATE_FAILED = "AGENT SETTING UPDATE FAILED";
 const AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE";
 const AGENT_EXIT_AVAILABLE = "AGENT EXITED AVAILABLE";
 const AGENT_EXIT_AVAILABLE_ANNOUNCEMENT = "AGENT ANNOUNCED EXIT AVAILABLE";
@@ -304,5 +305,9 @@ export class Notifier {
 
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
         this.send(POOL_UNDELEGATE, `Agent ${agentVault} undelegated all pool collateral ${poolCollateral}.`);
+    }
+
+    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+        this.send(AGENT_SETTING_UPDATE_FAILED, `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore.`);
     }
 }

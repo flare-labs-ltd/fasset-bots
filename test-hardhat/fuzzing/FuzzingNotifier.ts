@@ -152,4 +152,7 @@ export class FuzzingNotifier {
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
         this.sendUndelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral);
     }
+    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+        this.notifier.sendAgentCannotUpdateSettingExpired(this.eventFormatter.formatAddress(agentVault), setting);
+    }
 }

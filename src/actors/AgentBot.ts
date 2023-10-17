@@ -506,8 +506,8 @@ export class AgentBot {
                         agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                         agentEnt.agentSettingUpdateValidAtName = "";
                     } catch (error) {
-                        console.error(`Error updating setting for agent ${this.agent.vaultAddress}, ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting: ${error}`);
+                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${agentEnt.agentSettingUpdateValidAtName}: ${error}`);
                         agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                         agentEnt.agentSettingUpdateValidAtName = "";
                     }

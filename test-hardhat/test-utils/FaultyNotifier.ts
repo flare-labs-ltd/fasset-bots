@@ -141,4 +141,7 @@ export class FaultyNotifier implements Notifier {
     sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
         throw new Error("Method not implemented.");
     }
+    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+        throw new Error("Method not implemented.");
+    }
 }
