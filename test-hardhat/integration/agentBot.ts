@@ -603,7 +603,7 @@ describe("Agent bot tests", async () => {
         assert.equal(status2, AgentStatus.CCB);
         // run bot
         await agentBot.handleEvents(orm.em);
-        expect(spyConsole).to.have.been.called.once;
+        expect(spyConsole).to.have.been.called.exactly(4);
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {

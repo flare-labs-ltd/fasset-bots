@@ -1,7 +1,9 @@
-import { Entity, Enum, EnumType, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
+import { EvmEvent, eventIndex } from "../utils/events/common";
+
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -28,7 +30,13 @@ export class AgentEntity {
     active!: boolean;
 
     @Property({ nullable: true })
-    lastEventBlockHandled!: number;
+    lastEventBlockRead!: number;
+
+    @Property({ nullable: true })
+    lastEventIdHandled!: number
+
+    @OneToMany(() => UnhandledEvent, event => event.agent)
+    unhandledEvents = new Collection<UnhandledEvent>(this);
 
     // agent destroy
 
@@ -196,6 +204,35 @@ export class AgentRedemption {
 
     @Property({ nullable: true })
     proofRequestData?: string;
+}
+
+@Entity()
+export class UnhandledEvent {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @ManyToOne(() => AgentEntity)
+    agent!: AgentEntity;
+
+    @Property()
+    eventId!: number
+    
+    @Property()
+    blockNumber!: number
+
+    @Property()
+    transactionIndex!: number
+
+    @Property()
+    logIndex!: number
+
+    constructor(agent: AgentEntity, event: EvmEvent) {
+        this.agent = agent;
+        this.eventId = eventIndex(event);
+        this.blockNumber = event.blockNumber;
+        this.transactionIndex = event.transactionIndex;
+        this.logIndex = event.logIndex;
+    }
 }
 
 export enum DailyProofState {

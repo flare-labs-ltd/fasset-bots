@@ -1,12 +1,12 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, UnhandledEvent } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
-import { EventArgs, EvmEvent } from "../utils/events/common";
+import { EventArgs, EvmEvent, eventIndex } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import {
@@ -85,7 +85,7 @@ export class AgentBot {
             agentEntity.vaultAddress = agent.vaultAddress;
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
-            agentEntity.lastEventBlockHandled = lastBlock;
+            agentEntity.lastEventBlockRead = lastBlock;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
             agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
@@ -177,84 +177,109 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleEvents(rootEm: EM): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const events = await this.readUnhandledEvents(em);
-                // Note: only update db here, so that retrying on error won't retry on-chain operations.
-                for (const event of events) {
-                    if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
-                        this.mintingStarted(em, event.args);
-                    } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationDeleted' with data ${formatArgs(event.args)}.`);
-                        const minting = await this.findMinting(em, event.args.collateralReservationId);
-                        this.mintingExecuted(minting, false);
-                    } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
-                        if (!event.args.collateralReservationId.isZero()) {
-                            logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
-                            const minting = await this.findMinting(em, event.args.collateralReservationId);
-                            this.mintingExecuted(minting, true);
-                        }
-                    } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
-                        this.redemptionStarted(em, event.args);
-                    } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer, event.args.agentVault);
-                    } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-                        await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
-                        this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer, event.args.agentVault);
-                    } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-                        await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
-                        this.notifier.sendRedemptionFailedOrBlocked(
-                            event.args.requestId.toString(),
-                            event.args.transactionHash,
-                            event.args.redeemer,
-                            event.args.agentVault,
-                            event.args.failureReason
-                        );
-                    } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-                        await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
-                        this.notifier.sendRedemptionFailedOrBlocked(
-                            event.args.requestId.toString(),
-                            event.args.transactionHash,
-                            event.args.redeemer,
-                            event.args.agentVault
-                        );
-                    } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
-                        await this.handleAgentDestruction(em, event.args.agentVault);
-                    } else if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
-                        await this.checkAgentForCollateralRatiosAndTopUp();
-                    } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendCCBAlert(event.args.agentVault, event.args.timestamp);
-                    } else if (eventIs(event, this.context.assetManager, "LiquidationStarted")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendLiquidationStartAlert(event.args.agentVault, event.args.timestamp);
-                    } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendLiquidationWasPerformed(event.args.agentVault, event.args.valueUBA);
-                    } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendFullLiquidationAlert(event.args.agentVault);
-                    } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
-                    } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
-                        logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
-                        this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
-                    }
-                }
-            })
-            .catch((error) => {
-                console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events: ${error}`);
-            });
+        try {
+            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            let events = await this.readUnhandledEvents(rootEm);
+            if (agentEnt.lastEventIdHandled !== null) {
+                events = events.filter((_event) =>
+                    // if event's block was not yet seen it's unhandled
+                       _event.blockNumber > agentEnt.lastEventBlockRead + 1
+                    // if event is from the block we saw events from (lastEventBlockRead + 1),
+                    // but its event index is higher than the last one we handled, it's unhandled
+                    || _event.blockNumber == agentEnt.lastEventBlockRead + 1
+                    && eventIndex(_event) > agentEnt.lastEventIdHandled
+                )
+            }
+            for (const event of events) {
+                await rootEm.transactional(async (em) => {
+                    // log event is handled here! Transaction committing should be done at the last possible step!
+                    agentEnt.lastEventIdHandled = eventIndex(event);
+                    // if current event's block is two blocks past the last one handled, log we handled all events the previous one
+                    // this requires that events are ordered by block number first
+                    if (event.blockNumber > agentEnt.lastEventBlockRead + 1)
+                        agentEnt.lastEventBlockRead += 1;
+                    // handle the event
+                    await this.handleEvent(em, event)
+                }).catch(error => {
+                    agentEnt.unhandledEvents.add(new UnhandledEvent(agentEnt, event))
+                    console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                })
+            }
+        } catch (error) {
+            console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events: ${error}`);
+        }
+    }
+
+    async handleEvent(em: EM, event: EvmEvent): Promise<void> {
+        if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
+            this.mintingStarted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationDeleted' with data ${formatArgs(event.args)}.`);
+            const minting = await this.findMinting(em, event.args.collateralReservationId);
+            this.mintingExecuted(minting, false);
+        } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
+            if (!event.args.collateralReservationId.isZero()) {
+                logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
+                const minting = await this.findMinting(em, event.args.collateralReservationId);
+                this.mintingExecuted(minting, true);
+            }
+        } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
+            this.redemptionStarted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer, event.args.agentVault);
+        } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
+            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer, event.args.agentVault);
+        } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
+            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            this.notifier.sendRedemptionFailedOrBlocked(
+                event.args.requestId.toString(),
+                event.args.transactionHash,
+                event.args.redeemer,
+                event.args.agentVault,
+                event.args.failureReason
+            );
+        } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
+            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            this.notifier.sendRedemptionFailedOrBlocked(
+                event.args.requestId.toString(),
+                event.args.transactionHash,
+                event.args.redeemer,
+                event.args.agentVault
+            );
+        } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
+            await this.handleAgentDestruction(em, event.args.agentVault);
+        } else if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
+            await this.checkAgentForCollateralRatiosAndTopUp();
+        } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendCCBAlert(event.args.agentVault, event.args.timestamp);
+        } else if (eventIs(event, this.context.assetManager, "LiquidationStarted")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendLiquidationStartAlert(event.args.agentVault, event.args.timestamp);
+        } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendLiquidationWasPerformed(event.args.agentVault, event.args.valueUBA);
+        } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendFullLiquidationAlert(event.args.agentVault);
+        } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash1, event.args.transactionHash2);
+        } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
+            this.notifier.sendFullLiquidationAlert(event.args.agentVault, event.args.transactionHash);
+        }
     }
 
     /**
@@ -264,13 +289,13 @@ export class AgentBot {
      */
     async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        logger.info(`Agent ${this.agent.vaultAddress} started reading unhandled native events FROM block ${agentEnt.lastEventBlockHandled}`);
+        logger.info(`Agent ${this.agent.vaultAddress} started reading unhandled native events FROM block ${agentEnt.lastEventBlockRead}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
         const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        for (let lastHandled = agentEnt.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
+        for (let lastHandled = agentEnt.lastEventBlockRead; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.agent.assetManager.address,
                 fromBlock: lastHandled + 1,
@@ -286,10 +311,9 @@ export class AgentBot {
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
-        // mark as handled
-        events.sort((a, b) => a.blockNumber - b.blockNumber);
-        agentEnt.lastEventBlockHandled = lastBlock;
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading unhandled native events TO block ${agentEnt.lastEventBlockHandled}`);
+        // sort events first by their block numbers, then internally by their event index
+        events.sort((a, b) => a.blockNumber !== b.blockNumber ? a.blockNumber - b.blockNumber : eventIndex(a) - eventIndex(b));
+        logger.info(`Agent ${this.agent.vaultAddress} finished reading unhandled native events TO block ${agentEnt.lastEventBlockRead}`);
         return events;
     }
 

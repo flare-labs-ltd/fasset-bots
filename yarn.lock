@@ -2602,6 +2602,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/object-hash@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "@types/object-hash@npm:3.0.4"
+  checksum: 0c9f3c9262a7a4e5e5a5ee6c3bd513e05296f0c5e9c198ec99c5d9a4d9f4a6b2e2f19db7b28beab077de3713e04eb7aea5eb25e54b8f6c85a16753f6f9f463a5
+  languageName: node
+  linkType: hard
+
 "@types/parse-json@npm:^4.0.0":
   version: 4.0.0
   resolution: "@types/parse-json@npm:4.0.0"
@@ -5929,6 +5936,7 @@ __metadata:
     "@types/glob": 8.1.0
     "@types/mocha": 10.0.1
     "@types/node": 20.7.0
+    "@types/object-hash": ^3.0.4
     "@types/passport": ^1.0.13
     "@types/passport-http": 0.3.9
     "@types/passport-strategy": ^0.2.36
@@ -5951,6 +5959,7 @@ __metadata:
     helmet: 7.0.0
     mocha: 10.2.0
     nyc: 15.1.0
+    object-hash: ^3.0.0
     passport: 0.6.0
     passport-headerapikey: 1.2.2
     prettier: 3.0.3
@@ -9282,7 +9291,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"object-hash@npm:3.0.0":
+"object-hash@npm:3.0.0, object-hash@npm:^3.0.0":
   version: 3.0.0
   resolution: "object-hash@npm:3.0.0"
   checksum: 80b4904bb3857c52cc1bfd0b52c0352532ca12ed3b8a6ff06a90cd209dfda1b95cee059a7625eb9da29537027f68ac4619363491eedb2f5d3dddbba97494fd6c

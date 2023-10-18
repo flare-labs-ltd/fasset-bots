@@ -19,7 +19,7 @@ import { formatArgs } from "../utils/formatting";
 export class TrackedState {
     constructor(
         public context: IAssetActorContext,
-        private lastEventBlockHandled: number
+        private lastEventBlockRead: number
     ) {}
 
     // state
@@ -216,12 +216,12 @@ export class TrackedState {
     }
 
     async readUnhandledEvents(): Promise<EvmEvent[]> {
-        logger.info(`Tracked State started reading unhandled native events FROM block ${this.lastEventBlockHandled}.`);
+        logger.info(`Tracked State started reading unhandled native events FROM block ${this.lastEventBlockRead}.`);
         // get all needed logs for state
         const nci = this.context.nativeChainInfo;
         const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
-        for (let lastHandled = this.lastEventBlockHandled; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
+        for (let lastHandled = this.lastEventBlockRead; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
             // handle collaterals
             for (const collateral of this.collaterals.list) {
                 const contract = await tokenContract(collateral.token);
@@ -252,10 +252,10 @@ export class TrackedState {
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
-        this.lastEventBlockHandled = lastBlock;
+        this.lastEventBlockRead = lastBlock;
         // run state events
         events.sort((a, b) => a.blockNumber - b.blockNumber);
-        logger.info(`Tracked State finished reading unhandled native events TO block ${this.lastEventBlockHandled}.`);
+        logger.info(`Tracked State finished reading unhandled native events TO block ${this.lastEventBlockRead}.`);
         await this.registerStateEvents(events);
         return events;
     }

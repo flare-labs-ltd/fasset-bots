@@ -8,10 +8,10 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 export class MockTrackedState extends TrackedState {
     constructor(
         context: IAssetActorContext,
-        lastEventBlockHandled: number,
+        lastEventBlockRead: number,
         public trackedState: TrackedState | null
     ) {
-        super(context, lastEventBlockHandled);
+        super(context, lastEventBlockRead);
     }
 
     // tracked agents
