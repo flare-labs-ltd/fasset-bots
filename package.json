@@ -49,6 +49,7 @@
         ]
     },
     "files": [
+        "/artifacts",
         "/dist",
         "/src"
     ],
@@ -57,7 +58,7 @@
         "publish": "echo npm publish",
         "pack": "npm pack",
         "---------BUILD---SCRIPTS": "",
-        "build": "rm -rf dist && mkdir dist && cp -R -u artifacts/ dist/ && tsc --allowJs",
+        "build": "rm -rf dist && tsc --allowJs",
         "watch": "yarn build --watch --incremental",
         "---------LINT---SCRIPTS": "",
         "lint": "eslint \"src/**/*ts\"",
