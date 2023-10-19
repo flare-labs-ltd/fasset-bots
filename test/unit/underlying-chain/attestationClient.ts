@@ -66,7 +66,7 @@ describe("Attestation client unit tests", async () => {
             finalizationBlocks
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
-            .to.eventually.be.rejectedWith(`There aren't any attestation providers.`)
+            .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
             .and.be.an.instanceOf(Error);
     });
 
