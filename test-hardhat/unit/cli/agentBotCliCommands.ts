@@ -20,6 +20,7 @@ import { createTestMinter, disableMccTraceManager, mintAndDepositVaultCollateral
 import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 use(spies);
 
@@ -58,7 +59,7 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands = new BotCliCommands();
         botCliCommands.context = context;
         botCliCommands.ownerAddress = ownerAddress;
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,

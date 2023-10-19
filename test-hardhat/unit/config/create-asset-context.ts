@@ -11,6 +11,7 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
@@ -45,7 +46,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         const chainConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
@@ -65,7 +66,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - contractsJsonFile or addressUpdater required", async () => {
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         const fAssetConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,

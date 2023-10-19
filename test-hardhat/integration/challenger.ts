@@ -8,8 +8,6 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
-import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
-import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
 import {
     createTestAgentBotAndMakeAvailable,
     createCRAndPerformMintingAndRunSteps,
@@ -28,6 +26,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
+import { Payment } from "state-connector-protocol";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -323,7 +322,7 @@ describe("Challenger tests", async () => {
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
         const proof = await context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
-        const paymentProof = proof.result as ProvedDH<DHPayment>;
+        const paymentProof = proof.result as Payment.Proof;
         const res = await context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: agentBot.agent.ownerAddress });
         // finish redemption
         await agentBot.runStep(orm.em);

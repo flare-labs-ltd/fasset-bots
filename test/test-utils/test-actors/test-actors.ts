@@ -1,7 +1,6 @@
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Minter } from "../../../src/mock/Minter";
 import { BNish, fail } from "../../../src/utils/helpers";
-import { SourceId } from "../../../src/verification/sources/sources";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { ORM } from "../../../src/config/orm";
 import { AgentBot } from "../../../src/actors/AgentBot";
@@ -13,6 +12,7 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { cleanUp } from "../test-helpers";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");

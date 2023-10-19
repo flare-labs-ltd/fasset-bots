@@ -16,6 +16,7 @@ import { assert, expect, spy, use } from "chai";
 import { createTestAgentAndMakeAvailable, createTestRedeemer, disableMccTraceManager } from "../../test-utils/helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { UserBot } from "../../../src/actors/UserBot";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 use(spies);
 
@@ -54,7 +55,7 @@ describe("Bot cli commands unit tests", async () => {
         userBot.context = context;
         userBot.nativeAddress = ownerAddress;
         userBot.underlyingAddress = userUnderlyingAddress;
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         userBot.botConfig = {
             rpcUrl: "",
             loopDelay: 0,

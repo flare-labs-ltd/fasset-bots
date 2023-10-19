@@ -11,11 +11,11 @@ import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { getSourceName } from "../verification/sources/sources";
 import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
+import { decodeAttestationName } from "state-connector-protocol";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -373,7 +373,7 @@ export class BotCliCommands {
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
             console.log(
-                `Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${getSourceName(
+                `Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(
                     agent.chainId
                 )}`
             );

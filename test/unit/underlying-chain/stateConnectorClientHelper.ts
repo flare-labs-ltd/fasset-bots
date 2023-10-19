@@ -4,11 +4,8 @@ import { createBlockchainIndexerHelper, createStateConnectorClient } from "../..
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32, requireEnv, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
 use(chaiAsPromised);
-import { AttestationType } from "../../../src/verification/generated/attestation-types-enum";
-import { ARConfirmedBlockHeightExists } from "../../../src/verification/generated/attestation-request-types";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
 import {
     ATTESTATION_PROVIDER_URLS,
@@ -17,6 +14,7 @@ import {
     STATE_CONNECTOR_ADDRESS,
     STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
 } from "../../test-utils/test-bot-config";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 

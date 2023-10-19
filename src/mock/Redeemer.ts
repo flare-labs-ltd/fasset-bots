@@ -5,9 +5,9 @@ import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
 import { ProvedDH } from "../underlying-chain/AttestationHelper";
-import { DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { ReferencedPaymentNonexistence } from "state-connector-protocol";
 
 export class Redeemer {
     constructor(
@@ -67,7 +67,7 @@ export class Redeemer {
             Number(lastUnderlyingTimestamp));
     }
 
-    async executePaymentDefault(requestId: BNish, proof: ProvedDH<DHReferencedPaymentNonexistence>) {
+    async executePaymentDefault(requestId: BNish, proof: ReferencedPaymentNonexistence.Proof) {
         const res = await this.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: this.address });
         return requiredEventArgs(res, 'RedemptionDefault');
     }

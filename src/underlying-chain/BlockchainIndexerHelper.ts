@@ -1,10 +1,10 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { getSourceName, SourceId } from "../verification/sources/sources";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN } from "../utils/helpers";
 import { BTC_MDU } from "@flarenetwork/mcc";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
+import { SourceId } from "./SourceId";
 
 export class BlockChainIndexerHelperError extends Error {
     constructor(message: string) {
@@ -329,7 +329,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private get isUTXOchain(): boolean {
-        return getSourceName(this.sourceId) === "BTC" || getSourceName(this.sourceId) === "DOGE" || getSourceName(this.sourceId) === "LTC";
+        return this.sourceId === SourceId.BTC || this.sourceId === SourceId.DOGE || this.sourceId === SourceId.LTC;
     }
 
     private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {

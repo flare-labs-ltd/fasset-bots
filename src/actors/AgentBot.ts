@@ -1,14 +1,21 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
+import { ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, UnhandledEvent } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { Agent } from "../fasset/Agent";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { ProvedDH } from "../underlying-chain/AttestationHelper";
+import { CollateralPrice } from "../state/CollateralPrice";
+import { SourceId } from "../underlying-chain/SourceId";
+import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
+import { Notifier } from "../utils/Notifier";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventIndex } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
+import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
+import { formatArgs } from "../utils/formatting";
 import {
     BN_ZERO,
     CCB_LIQUIDATION_PREVENTION_FACTOR,
@@ -21,18 +28,10 @@ import {
     requireEnv,
     toBN,
 } from "../utils/helpers";
-import { Notifier } from "../utils/Notifier";
-import { artifacts, web3 } from "../utils/web3";
-import { DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
-import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { CollateralPrice } from "../state/CollateralPrice";
-import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
-import { web3DeepNormalize } from "../utils/web3normalize";
 import { logger } from "../utils/logger";
-import { formatArgs } from "../utils/formatting";
-import { SourceId } from "../verification/sources/sources";
-import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { Agent } from "../fasset/Agent";
+import { artifacts, web3 } from "../utils/web3";
+import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { web3DeepNormalize } from "../utils/web3normalize";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -47,7 +46,7 @@ export class AgentBot {
 
     context = this.agent.context;
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
-    latestProof: ProvedDH<DHConfirmedBlockHeightExists> | null = null;
+    latestProof: ConfirmedBlockHeightExists.Proof | null = null;
 
     /**
      * Creates instance of AgentBot with newly created underlying address and with provided agent default settings.
@@ -381,7 +380,7 @@ export class AgentBot {
                     logger.info(
                         `Agent ${this.agent.vaultAddress} obtained confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
                     );
-                    this.latestProof = proof.result as ProvedDH<DHConfirmedBlockHeightExists>;
+                    this.latestProof = proof.result as ConfirmedBlockHeightExists.Proof;
 
                     agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
                     await this.handleCornerCases(rootEm);
@@ -967,7 +966,7 @@ export class AgentBot {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
-            const nonPaymentProof = proof.result as ProvedDH<DHReferencedPaymentNonexistence>;
+            const nonPaymentProof = proof.result as ReferencedPaymentNonexistence.Proof;
             await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
             this.mintingExecuted(minting, true);
@@ -1006,7 +1005,7 @@ export class AgentBot {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
-            const paymentProof = proof.result as ProvedDH<DHPayment>;
+            const paymentProof = proof.result as Payment.Proof;
             await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
             logger.info(
@@ -1260,7 +1259,7 @@ export class AgentBot {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`
             );
-            const paymentProof = proof.result as ProvedDH<DHPayment>;
+            const paymentProof = proof.result as Payment.Proof;
             await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             logger.info(
@@ -1290,12 +1289,12 @@ export class AgentBot {
      * @param lastUnderlyingTimestamp last underlying timestamp to perform payment
      * @returns proved attestation provider data
      */
-    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ProvedDH<DHConfirmedBlockHeightExists> | null> {
+    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | null> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
         const proof = this.latestProof;
         if (proof) {
-            const lqwBlock = toBN(proof.lowestQueryWindowBlockNumber);
-            const lqwBTimestamp = toBN(proof.lowestQueryWindowBlockTimestamp);
+            const lqwBlock = toBN(proof.data.responseBody.lowestQueryWindowBlockNumber);
+            const lqwBTimestamp = toBN(proof.data.responseBody.lowestQueryWindowBlockTimestamp);
             if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
                 logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CANNOT be obtained from indexer.`);
                 return proof;

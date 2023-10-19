@@ -13,8 +13,8 @@ import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { BN_ZERO, requireEnv, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
-import { SourceId } from "../../src/verification/sources/sources";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { SourceId } from "../../src/underlying-chain/SourceId";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 

@@ -1,4 +1,4 @@
-import { DHBalanceDecreasingTransaction, DHConfirmedBlockHeightExists, DHPayment, DHReferencedPaymentNonexistence } from "../verification/generated/attestation-hash-types";
+import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "state-connector-protocol";
 import { MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
 
@@ -8,20 +8,20 @@ export class MockAlwaysFailsAttestationProver {
         public queryWindowSeconds: number,
     ) { }
 
-    payment(transactionHash: string, transactionBlockNumber: number, inUtxo: number, utxo: number): DHPayment {
+    payment(transactionHash: string, transactionBlockNumber: number, inUtxo: number, utxo: number): Payment.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.payment: failed`);
     }
 
-    balanceDecreasingTransaction(transactionHash: string, transactionBlockNumber: number, sourceAddressIndicator: string): DHBalanceDecreasingTransaction {
+    balanceDecreasingTransaction(transactionHash: string, transactionBlockNumber: number, sourceAddressIndicator: string): BalanceDecreasingTransaction.ResponseBody {
         const method = 'balanceDecreasingTransaction';
         throw new MockAttestationProverError(`AttestationProver.balanceDecreasingTransaction: failed`);
     }
 
-    referencedPaymentNonexistence(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): DHReferencedPaymentNonexistence {
+    referencedPaymentNonexistence(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): ReferencedPaymentNonexistence.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.referencedPaymentNonexistence: failed`);
     }
 
-    confirmedBlockHeightExists(blockNumber: number, queryWindow: number): DHConfirmedBlockHeightExists {
+    confirmedBlockHeightExists(blockNumber: number, queryWindow: number): ConfirmedBlockHeightExists.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.confirmedBlockHeightExists: failed`);
     }
 }

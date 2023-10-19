@@ -17,11 +17,11 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
 import { MINUS_CHAR, requireEnv, toBN } from "../utils/helpers";
-import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
+import { SourceId } from "../underlying-chain/SourceId";
 
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
