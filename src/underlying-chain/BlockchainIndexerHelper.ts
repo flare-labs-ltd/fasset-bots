@@ -437,7 +437,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const transaction = await this.getTransaction(txHash);
         if (transaction != null) return transaction;
         let currentBlockHeight = await this.getBlockHeight();
-        const waitBlocks = maxBlocksToWaitForTx ?? Math.max(this.finalizationBlocks, 1);
+        const waitBlocks = maxBlocksToWaitForTx ?? this.finalizationBlocks;
         while (currentBlockHeight < currentBlockHeight + waitBlocks) {
             await sleep(1000);
             const transaction = await this.getTransaction(txHash);
