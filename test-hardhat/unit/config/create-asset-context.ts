@@ -1,6 +1,5 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { disableMccTraceManager } from "../../test-utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
@@ -26,7 +25,6 @@ describe("Create asset context unit tests", async () => {
     let collateralTypes: CollateralType[];
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         collateralTypes = await context.assetManager.getCollateralTypes();

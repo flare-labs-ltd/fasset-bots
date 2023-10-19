@@ -93,7 +93,6 @@
         "agent_api_start:debug": "yarn nest start --debug --watch"
     },
     "dependencies": {
-        "@flarenetwork/mcc": "3.2.0",
         "@mikro-orm/cli": "5.8.4",
         "@mikro-orm/core": "5.8.4",
         "@mikro-orm/mysql": "5.8.4",

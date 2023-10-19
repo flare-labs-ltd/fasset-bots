@@ -13,7 +13,7 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentAndMakeAvailable, createTestRedeemer, disableMccTraceManager } from "../../test-utils/helpers";
+import { createTestAgentAndMakeAvailable, createTestRedeemer } from "../../test-utils/helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { UserBot } from "../../../src/actors/UserBot";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
@@ -36,7 +36,6 @@ describe("Bot cli commands unit tests", async () => {
     let agent: Agent;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts

@@ -1,10 +1,15 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN } from "../utils/helpers";
-import { BTC_MDU } from "@flarenetwork/mcc";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { SourceId } from "./SourceId";
+
+// Satoshi to BTC 100_000_000
+export const BTC_MDU = 1e8;
+
+// Ripple drops 1_000_000
+export const XRP_MDU = 1e6;
 
 export class BlockChainIndexerHelperError extends Error {
     constructor(message: string) {

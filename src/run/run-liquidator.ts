@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
@@ -13,8 +12,6 @@ const RUN_CONFIG_PATH: string = "./run-config/run-config-liquidator-coston-testx
 const fAssetSymbol = "FfakeXRP";
 
 toplevelRun(async () => {
-    // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
-    disableMccTraceManager();
     const runConfig = loadConfigFile(RUN_CONFIG_PATH);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [LIQUIDATOR_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, LIQUIDATOR_ADDRESS);

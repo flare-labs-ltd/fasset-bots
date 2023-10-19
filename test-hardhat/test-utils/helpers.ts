@@ -1,4 +1,3 @@
-import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
@@ -34,10 +33,6 @@ const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(100_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
-
-export function disableMccTraceManager() {
-    TraceManager.enabled = false;
-}
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);

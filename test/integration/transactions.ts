@@ -7,7 +7,7 @@ import { createTestOrmOptions } from "../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { SourceId } from "../../src/underlying-chain/SourceId";
-import { prefix0x } from "@flarenetwork/mcc";
+import { prefix0x } from "../../src/utils/helpers";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;

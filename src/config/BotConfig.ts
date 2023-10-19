@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
@@ -263,7 +262,7 @@ export function createWalletClient(
             password: "",
             inTestnet: inTestnet,
             apiTokenKey: process.env.BTC_RPC_API_KEY,
-        } as UtxoMccCreate);
+        }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE) {
         return new WALLET.DOGE({
             url: walletUrl,
@@ -271,14 +270,14 @@ export function createWalletClient(
             password: "",
             inTestnet: inTestnet,
             apiTokenKey: process.env.DOGE_RPC_API_KEY,
-        } as UtxoMccCreate);
+        }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
             url: walletUrl,
             username: "",
             password: "",
             apiTokenKey: process.env.XRP_RPC_API_KEY,
-        } as XrpMccCreate);
+        }); // XrpMccCreate
     }
 }
 

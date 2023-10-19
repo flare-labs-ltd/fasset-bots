@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, disableMccTraceManager } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT } from "../../test-utils/helpers";
 import { AgentSettingsConfig, createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
 import { web3 } from "../../../src/utils/web3";
 import { readFileSync } from "fs";
@@ -14,7 +14,6 @@ describe("Config unit tests", async () => {
     let context: TestAssetBotContext;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
     });
 

@@ -3,7 +3,7 @@ import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAgentBot, createTestAgentBotRunner, disableMccTraceManager } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
@@ -21,7 +21,6 @@ describe("Agent bot runner tests", async () => {
     const contexts: Map<string, TestAssetBotContext> = new Map();
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
