@@ -76,7 +76,8 @@ export async function createTestAssetContext(
     requireEOAAddressProof?: boolean,
     customParameters?: any,
     updateExecutor?: string,
-    useAlwaysFailsProver?: boolean
+    useAlwaysFailsProver?: boolean,
+    assetManagerControllerAddress?: string
 ): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
@@ -168,7 +169,7 @@ export async function createTestAssetContext(
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(
         governance,
-        assetManagerController,
+        assetManagerControllerAddress ?  assetManagerControllerAddress :assetManagerController,
         chainInfo.name,
         chainInfo.symbol,
         chainInfo.decimals,

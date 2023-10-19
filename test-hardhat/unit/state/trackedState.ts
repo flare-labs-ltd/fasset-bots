@@ -87,6 +87,7 @@ describe("Tracked state tests", async () => {
     let trackedState: TrackedState;
     let governance: string;
     let updateExecutor: string;
+    let assetManagerControllerAddress: string;
 
     before(async () => {
         disableMccTraceManager();
@@ -96,10 +97,11 @@ describe("Tracked state tests", async () => {
         redeemerAddress = accounts[5];
         governance = accounts[0];
         updateExecutor = accounts[11];
+        assetManagerControllerAddress = accounts[301];
     });
 
     beforeEach(async () => {
-        context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor);
+        context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor, undefined, assetManagerControllerAddress);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
@@ -608,14 +610,14 @@ describe("Tracked state tests", async () => {
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(deposit)).to.be.true;
     });
 
-    it("Should handle event 'CollateralTypeAdded' and 'CollateralTypeDeprecated'", async () => {
+    it("Should handle events 'CollateralTypeAdded', 'CollateralTypeDeprecated' and 'AgentCollateralTypeChanged", async () => {
         const collateralsBefore = trackedState.collaterals.list.length;
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
         newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
-        newCollateral.tokenFtsoSymbol = "NT";
-        newCollateral.assetFtsoSymbol = "NT";
+        newCollateral.tokenFtsoSymbol = "XRP";
+        newCollateral.assetFtsoSymbol = "USDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
         await trackedState.readUnhandledEvents();
         const collateralsAfter = trackedState.collaterals.list.length;
@@ -627,14 +629,35 @@ describe("Tracked state tests", async () => {
         const settings = await context.assetManager.getSettings();
         await context.assetManagerController.deprecateCollateralType(
             [context.assetManager.address],
-            newCollateral.collateralClass,
-            newCollateral.token,
+            agentVaultCollateral.collateralClass,
+            agentVaultCollateral.token,
             settings.tokenInvalidationTimeMinSeconds,
             { from: governance }
         );
         await trackedState.readUnhandledEvents();
-        const getCollateral1 = trackedState.collaterals.get(newCollateral.collateralClass, newCollateral.token);
+        const getCollateral1 = trackedState.collaterals.get(agentVaultCollateral.collateralClass, agentVaultCollateral.token);
         expect(toBN(getCollateral1.validUntil).gtn(0)).to.be.true;
+        // switch collateral
+        await agentB.assetManager.switchVaultCollateral(agentB.vaultAddress, newCollateral.token, { from: agentB.ownerAddress });
+        await trackedState.readUnhandledEvents();
+        expect(trackedState.agents.get(agentB.agentVault.address)?.agentSettings.vaultCollateralToken).to.eq(newCollateral.token);
+    });
+
+    it("Should handle event 'AgentCollateralTypeChanged'", async () => {
+        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        await trackedState.readUnhandledEvents();
+        const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
+        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
+        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
+        await trackedState.readUnhandledEvents();
+        await context.assetManager.updateSettings(
+            web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
+            web3.eth.abi.encodeParameters(["address", "address"], [context.assetManagerController.address, newWnat.address]),
+            { from: assetManagerControllerAddress }
+        );
+        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, {from: agentB.ownerAddress});
+        await trackedState.readUnhandledEvents();
+        expect(spyCollateralChanged).to.be.called.exactly(0);
     });
 
     it("Should handle event 'CollateralRatiosChanged'", async () => {

@@ -2,7 +2,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { BN_ZERO, toBN } from "../utils/helpers";
 import { Prices } from "./Prices";
 import { eventIs } from "../utils/events/truffle";
@@ -131,6 +131,11 @@ export class TrackedState {
                     logger.info(`Tracked State received event 'CollateralTypeDeprecated' with data ${formatArgs(event.args)}.`);
                     const collateral = this.collaterals.get(event.args.collateralClass, event.args.collateralToken);
                     collateral.validUntil = toBN(event.args.validUntil);
+                } else if (eventIs(event, this.context.assetManager, "AgentCollateralTypeChanged")) {
+                    logger.info(`Tracked State received event 'AgentCollateralTypeChanged' with data ${formatArgs(event.args)}.`);
+                    if (event.args.collateralClass.toNumber() === CollateralClass.VAULT) {
+                        (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentCollateralTypeChanged(event.args);
+                    }
                 } else if (eventIs(event, this.context.assetManager, "AgentVaultCreated")) {
                     logger.info(`Tracked State received event 'AgentVaultCreated' with data ${formatArgs(event.args)}.`);
                     this.createAgent(event.args);
