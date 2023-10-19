@@ -1,7 +1,6 @@
 import { Payment } from "state-connector-protocol";
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";

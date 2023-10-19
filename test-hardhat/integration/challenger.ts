@@ -26,7 +26,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
-import { Payment } from "state-connector-protocol";
+import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -322,8 +322,8 @@ describe("Challenger tests", async () => {
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
         const proof = await context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
-        const paymentProof = proof.result as Payment.Proof;
-        const res = await context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: agentBot.agent.ownerAddress });
+        if (!attestationProved(proof)) assert.fail("not proved");
+        const res = await context.assetManager.confirmRedemptionPayment(proof, redemption.requestId, { from: agentBot.agent.ownerAddress });
         // finish redemption
         await agentBot.runStep(orm.em);
         expect(redemption.state).eq(AgentRedemptionState.DONE);

@@ -8,11 +8,11 @@ export class MockAlwaysFailsAttestationProver {
         public queryWindowSeconds: number,
     ) { }
 
-    payment(transactionHash: string, transactionBlockNumber: number, inUtxo: number, utxo: number): Payment.ResponseBody {
+    payment(transactionHash: string, inUtxo: number, utxo: number): Payment.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.payment: failed`);
     }
 
-    balanceDecreasingTransaction(transactionHash: string, transactionBlockNumber: number, sourceAddressIndicator: string): BalanceDecreasingTransaction.ResponseBody {
+    balanceDecreasingTransaction(transactionHash: string, sourceAddressIndicator: string): BalanceDecreasingTransaction.ResponseBody {
         const method = 'balanceDecreasingTransaction';
         throw new MockAttestationProverError(`AttestationProver.balanceDecreasingTransaction: failed`);
     }

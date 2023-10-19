@@ -1,5 +1,5 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
-import { ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "state-connector-protocol";
+import { ConfirmedBlockHeightExists } from "state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, UnhandledEvent } from "../entities/agent";
@@ -32,6 +32,8 @@ import { logger } from "../utils/logger";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { attestationProved } from "../underlying-chain/AttestationHelper";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -370,17 +372,17 @@ export class AgentBot {
                     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                     agentEnt.dailyProofRequestData!
                 );
-                if (!proof.finalized) {
+                if (proof === AttestationNotProved.NOT_FINALIZED) {
                     logger.info(
                         `Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
                     );
                     return;
                 }
-                if (proof.result && proof.result.merkleProof) {
+                if (attestationProved(proof)) {
                     logger.info(
                         `Agent ${this.agent.vaultAddress} obtained confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`
                     );
-                    this.latestProof = proof.result as ConfirmedBlockHeightExists.Proof;
+                    this.latestProof = proof;
 
                     agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
                     await this.handleCornerCases(rootEm);
@@ -956,17 +958,17 @@ export class AgentBot {
         );
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
-        if (!proof.finalized) {
+        if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(
                 `Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
             return;
         }
-        if (proof.result && proof.result.merkleProof) {
+        if (attestationProved(proof)) {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
-            const nonPaymentProof = proof.result as ReferencedPaymentNonexistence.Proof;
+            const nonPaymentProof = proof;
             await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
             this.mintingExecuted(minting, true);
@@ -995,17 +997,17 @@ export class AgentBot {
         );
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
-        if (!proof.finalized) {
+        if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(
                 `Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
             return;
         }
-        if (proof.result && proof.result.merkleProof) {
+        if (attestationProved(proof)) {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
-            const paymentProof = proof.result as Payment.Proof;
+            const paymentProof = proof;
             await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.ownerAddress });
             minting.state = AgentMintingState.DONE;
             logger.info(
@@ -1249,17 +1251,17 @@ export class AgentBot {
         );
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
-        if (!proof.finalized) {
+        if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(
                 `Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`
             );
             return;
         }
-        if (proof.result && proof.result.merkleProof) {
+        if (attestationProved(proof)) {
             logger.info(
                 `Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`
             );
-            const paymentProof = proof.result as Payment.Proof;
+            const paymentProof = proof;
             await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.ownerAddress });
             redemption.state = AgentRedemptionState.DONE;
             logger.info(

@@ -4,7 +4,6 @@ import { Agent } from "../fasset/Agent";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, toBN } from "../utils/helpers";
-import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { ReferencedPaymentNonexistence } from "state-connector-protocol";

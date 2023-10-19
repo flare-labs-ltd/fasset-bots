@@ -36,7 +36,7 @@ export async function proveAndUpdateUnderlyingBlock(
 ): Promise<number> {
     const proof = await attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(assetManager));
     await assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });
-    return toNumber(proof.blockNumber) + toNumber(proof.numberOfConfirmations);
+    return toNumber(proof.data.requestBody.blockNumber) + toNumber(proof.data.responseBody.numberOfConfirmations);
 }
 
 export async function attestationWindowSeconds(assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>): Promise<number> {
