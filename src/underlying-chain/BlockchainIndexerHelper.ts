@@ -260,7 +260,6 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorMessage = resp.data.errorMessage;
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
-        /* istanbul ignore else */
         if (status != "OK") {
             logger.error(
                 `Block chain indexer helper error: cannot retrieve transactions between block ${from} and ${to}: ${status}: ${
@@ -272,8 +271,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     errorDetails ? errorDetails : ""
                 }`
             );
-        } else if (status === "OK" && dataArray.length > 0) {
+        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
+                /* istanbul ignore else */
                 if (tx.transactionType != "EMPTY_BLOCK_INDICATOR") {
                     txs.push({
                         hash: tx.transactionId,
@@ -320,7 +320,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             throw new BlockChainIndexerHelperError(
                 `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
             );
-        } else if (status === "OK" && dataArray.length > 0) {
+        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
             });

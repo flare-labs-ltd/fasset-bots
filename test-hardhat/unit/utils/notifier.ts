@@ -291,4 +291,10 @@ describe("Notifier tests", async () => {
         notifier.sendUndelegatePoolCollateral("agentVault", "pool");
         expect(spySend).to.have.been.called.once;
     });
+
+    it("Should send agent setting update expired", async () => {
+        const spySend = spy.on(notifier, "sendAgentCannotUpdateSettingExpired");
+        notifier.sendAgentCannotUpdateSettingExpired("agentVault", "setting");
+        expect(spySend).to.have.been.called.once;
+    });
 });
