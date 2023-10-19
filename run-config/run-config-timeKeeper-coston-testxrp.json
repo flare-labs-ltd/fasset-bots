@@ -4,7 +4,7 @@
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
         {
-            "chainId": 3,
+            "chainId": "XRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -15,7 +15,7 @@
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         },
         {
-            "chainId": 3,
+            "chainId": "XRP",
             "name": "Fake XRP",
             "symbol": "fakeXRP",
             "decimals": 6,

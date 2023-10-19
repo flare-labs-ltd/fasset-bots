@@ -21,6 +21,7 @@ import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-file
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
+import { encodeAttestationName } from "state-connector-protocol";
 
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -128,6 +129,9 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
+        if (!chainInfo.chainId.startsWith("0x")) {
+            chainInfo.chainId = encodeAttestationName(chainInfo.chainId);
+        }
         fAssets.push(
             await createBotFAssetConfig(
                 chainInfo,
