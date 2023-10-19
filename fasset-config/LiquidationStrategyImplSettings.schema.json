@@ -28,6 +28,10 @@
             "type": "integer"
         }
     },
-    "required": ["liquidationCollateralFactorBIPS", "liquidationFactorVaultCollateralBIPS", "liquidationStepSeconds"],
+    "required": [
+        "liquidationCollateralFactorBIPS",
+        "liquidationFactorVaultCollateralBIPS",
+        "liquidationStepSeconds"
+    ],
     "type": "object"
 }

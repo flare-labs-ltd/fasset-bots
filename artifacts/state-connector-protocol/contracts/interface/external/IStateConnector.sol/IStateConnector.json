@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IStateConnector",
-  "sourceName": "contracts/generated/interface/IStateConnector.sol",
+  "sourceName": "state-connector-protocol/contracts/interface/external/IStateConnector.sol",
   "abi": [
     {
       "anonymous": false,

@@ -1,0 +1,488 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "SCProofVerifier",
+  "sourceName": "contracts/stateConnector/implementation/SCProofVerifier.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IMerkleRootStorage",
+          "name": "_merkleRootStorage",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "merkleRootStorage",
+      "outputs": [
+        {
+          "internalType": "contract IMerkleRootStorage",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressIndicator",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyBalanceDecreasingTransaction",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "queryWindow",
+                      "type": "uint64"
+                    }
+                  ],
+                  "internalType": "struct ConfirmedBlockHeightExists.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "numberOfConfirmations",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "lowestQueryWindowBlockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "lowestQueryWindowBlockTimestamp",
+                      "type": "uint64"
+                    }
+                  ],
+                  "internalType": "struct ConfirmedBlockHeightExists.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct ConfirmedBlockHeightExists.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct ConfirmedBlockHeightExists.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyConfirmedBlockHeightExists",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "inUtxo",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint16",
+                      "name": "utxo",
+                      "type": "uint16"
+                    }
+                  ],
+                  "internalType": "struct Payment.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "receivingAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "intendedReceivingAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "intendedSpentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "receivedAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "intendedReceivedAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "oneToOne",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint8",
+                      "name": "status",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Payment.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct Payment.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct Payment.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyPayment",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "minimalBlockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "deadlineBlockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "deadlineTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "destinationAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct ReferencedPaymentNonexistence.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "minimalBlockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "firstOverflowBlockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "firstOverflowBlockTimestamp",
+                      "type": "uint64"
+                    }
+                  ],
+                  "internalType": "struct ReferencedPaymentNonexistence.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct ReferencedPaymentNonexistence.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct ReferencedPaymentNonexistence.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyReferencedPaymentNonexistence",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561001057600080fd5b50604051610b53380380610b5383398101604081905261002f91610040565b6001600160a01b0316608052610070565b60006020828403121561005257600080fd5b81516001600160a01b038116811461006957600080fd5b9392505050565b608051610aad6100a66000396000818160af0152818161010b0152818161022e015281816102ee01526103ae0152610aad6000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c80633f66c4e31461005c5780635e30ebfb146100845780636ec659c71461009757806377387b30146100aa578063be4b1ed8146100e9575b600080fd5b61006f61006a3660046104f4565b6100fc565b60405190151581526020015b60405180910390f35b61006f61009236600461052f565b61021f565b61006f6100a536600461056a565b6102df565b6100d17f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161007b565b61006f6100f73660046105a5565b61039f565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761014060808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610184573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101a89190610617565b836020016040516020016101bc9190610709565b60408051601f1981840301815291905280516020909101206101de858061078d565b8080602002602001604051908101604052809392919081815260200183836020028082843760009201919091525092949392505061045f9050565b92915050565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761026360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa1580156102a7573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102cb9190610617565b836020016040516020016101bc91906107dd565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761032360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610367573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061038b9190610617565b836020016040516020016101bc919061089f565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b3576103e360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610427573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061044b9190610617565b836020016040516020016101bc9190610985565b60008261046c8584610475565b14949350505050565b600081815b84518110156104ba576104a68286838151811061049957610499610a3a565b60200260200101516104c2565b9150806104b281610a50565b91505061047a565b509392505050565b60008183106104de5760008281526020849052604090206104ed565b60008381526020839052604090205b9392505050565b60006020828403121561050657600080fd5b81356001600160401b0381111561051c57600080fd5b820161028081850312156104ed57600080fd5b60006020828403121561054157600080fd5b81356001600160401b0381111561055757600080fd5b820161016081850312156104ed57600080fd5b60006020828403121561057c57600080fd5b81356001600160401b0381111561059257600080fd5b820161018081850312156104ed57600080fd5b6000602082840312156105b757600080fd5b81356001600160401b038111156105cd57600080fd5b82016101c081850312156104ed57600080fd5b80356001600160401b03811681146105f757600080fd5b919050565b60006020828403121561060e57600080fd5b6104ed826105e0565b60006020828403121561062957600080fd5b5051919050565b803580151581146105f757600080fd5b803560ff811681146105f757600080fd5b61066b8261065e836105e0565b6001600160401b03169052565b610677602082016105e0565b6001600160401b03811660208401525060408101356040830152606081013560608301526080810135608083015260a081013560a083015260c081013560c083015260e081013560e08301526101008082013581840152506101208082013581840152506101406106e9818301610630565b1515908301526101606106fd828201610640565b60ff1692019190915250565b81358152602080830135908201526102608101610728604084016105e0565b6001600160401b03808216604085015280610745606087016105e0565b16606085015250506080830135608083015260a083013560a083015260c083013561ffff811680821461077757600080fd5b60c08401525061021960e0808401908501610651565b6000808335601e198436030181126107a457600080fd5b8301803591506001600160401b038211156107be57600080fd5b6020019150600581901b36038213156107d657600080fd5b9250929050565b813581526020808301359082015261014081016107fc604084016105e0565b6001600160401b03808216604085015280610819606087016105e0565b1660608501528061082c608087016105e0565b1660808501528061083f60a087016105e0565b1660a08501528061085260c087016105e0565b1660c08501528061086560e087016105e0565b1660e085015261010091508061087c8387016105e0565b16828501526101209150806108928387016105e0565b1682850152505092915050565b813581526020808301359082015261016081016108be604084016105e0565b6001600160401b038082166040850152806108db606087016105e0565b1660608501526080850135608085015260a085013560a08501528061090260c087016105e0565b1660c08501528061091560e087016105e0565b1660e085015250506101008381013590830152610120808401359083015261014092830135929091019190915290565b6001600160401b0380610957836105e0565b16835280610967602084016105e0565b1660208401528061097a604084016105e0565b166040840152505050565b81358152602080830135908201526101a081016109a4604084016105e0565b6001600160401b038082166040850152806109c1606087016105e0565b166060850152806109d4608087016105e0565b166080850152806109e760a087016105e0565b1660a0850152806109fa60c087016105e0565b1660c0850152505060e0838101359083015261010080840135908301526101208084013590830152610140610a33818401828601610945565b5092915050565b634e487b7160e01b600052603260045260246000fd5b600060018201610a7057634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220f2fc557e74e014351ccfd35380405ee20250b21c92167aafd573f65f455eb80764736f6c63430008140033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100575760003560e01c80633f66c4e31461005c5780635e30ebfb146100845780636ec659c71461009757806377387b30146100aa578063be4b1ed8146100e9575b600080fd5b61006f61006a3660046104f4565b6100fc565b60405190151581526020015b60405180910390f35b61006f61009236600461052f565b61021f565b61006f6100a536600461056a565b6102df565b6100d17f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161007b565b61006f6100f73660046105a5565b61039f565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761014060808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610184573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101a89190610617565b836020016040516020016101bc9190610709565b60408051601f1981840301815291905280516020909101206101de858061078d565b8080602002602001604051908101604052809392919081815260200183836020028082843760009201919091525092949392505061045f9050565b92915050565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761026360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa1580156102a7573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102cb9190610617565b836020016040516020016101bc91906107dd565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b35761032360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610367573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061038b9190610617565b836020016040516020016101bc919061089f565b60006102196001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016633c70b3576103e360808601606087016105fc565b6040516001600160e01b031960e084901b1681526001600160401b039091166004820152602401602060405180830381865afa158015610427573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061044b9190610617565b836020016040516020016101bc9190610985565b60008261046c8584610475565b14949350505050565b600081815b84518110156104ba576104a68286838151811061049957610499610a3a565b60200260200101516104c2565b9150806104b281610a50565b91505061047a565b509392505050565b60008183106104de5760008281526020849052604090206104ed565b60008381526020839052604090205b9392505050565b60006020828403121561050657600080fd5b81356001600160401b0381111561051c57600080fd5b820161028081850312156104ed57600080fd5b60006020828403121561054157600080fd5b81356001600160401b0381111561055757600080fd5b820161016081850312156104ed57600080fd5b60006020828403121561057c57600080fd5b81356001600160401b0381111561059257600080fd5b820161018081850312156104ed57600080fd5b6000602082840312156105b757600080fd5b81356001600160401b038111156105cd57600080fd5b82016101c081850312156104ed57600080fd5b80356001600160401b03811681146105f757600080fd5b919050565b60006020828403121561060e57600080fd5b6104ed826105e0565b60006020828403121561062957600080fd5b5051919050565b803580151581146105f757600080fd5b803560ff811681146105f757600080fd5b61066b8261065e836105e0565b6001600160401b03169052565b610677602082016105e0565b6001600160401b03811660208401525060408101356040830152606081013560608301526080810135608083015260a081013560a083015260c081013560c083015260e081013560e08301526101008082013581840152506101208082013581840152506101406106e9818301610630565b1515908301526101606106fd828201610640565b60ff1692019190915250565b81358152602080830135908201526102608101610728604084016105e0565b6001600160401b03808216604085015280610745606087016105e0565b16606085015250506080830135608083015260a083013560a083015260c083013561ffff811680821461077757600080fd5b60c08401525061021960e0808401908501610651565b6000808335601e198436030181126107a457600080fd5b8301803591506001600160401b038211156107be57600080fd5b6020019150600581901b36038213156107d657600080fd5b9250929050565b813581526020808301359082015261014081016107fc604084016105e0565b6001600160401b03808216604085015280610819606087016105e0565b1660608501528061082c608087016105e0565b1660808501528061083f60a087016105e0565b1660a08501528061085260c087016105e0565b1660c08501528061086560e087016105e0565b1660e085015261010091508061087c8387016105e0565b16828501526101209150806108928387016105e0565b1682850152505092915050565b813581526020808301359082015261016081016108be604084016105e0565b6001600160401b038082166040850152806108db606087016105e0565b1660608501526080850135608085015260a085013560a08501528061090260c087016105e0565b1660c08501528061091560e087016105e0565b1660e085015250506101008381013590830152610120808401359083015261014092830135929091019190915290565b6001600160401b0380610957836105e0565b16835280610967602084016105e0565b1660208401528061097a604084016105e0565b166040840152505050565b81358152602080830135908201526101a081016109a4604084016105e0565b6001600160401b038082166040850152806109c1606087016105e0565b166060850152806109d4608087016105e0565b166080850152806109e760a087016105e0565b1660a0850152806109fa60c087016105e0565b1660c0850152505060e0838101359083015261010080840135908301526101208084013590830152610140610a33818401828601610945565b5092915050565b634e487b7160e01b600052603260045260246000fd5b600060018201610a7057634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220f2fc557e74e014351ccfd35380405ee20250b21c92167aafd573f65f455eb80764736f6c63430008140033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
