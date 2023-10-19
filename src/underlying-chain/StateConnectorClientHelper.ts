@@ -113,7 +113,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
-        const response = await this.verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareAttestation`, request)
+        const response = await this.verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
             .catch((e: AxiosError) => {
                 logger.error(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
                 throw new StateConnectorError(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);

@@ -16,6 +16,7 @@ import {
 } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, encodeAttestationName } from "state-connector-protocol";
+import { AttestationProof } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
@@ -153,65 +154,30 @@ describe("State connector tests - decoding", async () => {
         );
     });
 
-    it("Should decode proofs - payment", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responsePayment, Payment.TYPE, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responsePayment.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responsePayment.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responsePayment.blockTimestamp))).to.be.true;
-    });
-
-    it("Should decode proofs - block height", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseBlockHeight, ConfirmedBlockHeightExists.TYPE, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseBlockHeight.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responseBlockHeight.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responseBlockHeight.blockTimestamp))).to.be.true;
-    });
-
-    it("Should decode proofs - non payment", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseNonPayment, ReferencedPaymentNonexistence.TYPE, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseNonPayment.stateConnectorRound);
-        expect(toBN(decoded.deadlineBlockNumber).eq(toBN(responseNonPayment.deadlineBlockNumber))).to.be.true;
-        expect(toBN(decoded.deadlineTimestamp).eq(toBN(responseNonPayment.deadlineTimestamp))).to.be.true;
-        expect(toBN(decoded.amount).eq(toBN(responseNonPayment.amount))).to.be.true;
-    });
-
-    it("Should decode proofs - decreasing balance", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseBalanceDecreasing, BalanceDecreasingTransaction.TYPE, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseBalanceDecreasing.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responseBalanceDecreasing.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responseBalanceDecreasing.blockTimestamp))).to.be.true;
-        expect(toBN(decoded.spentAmount).eq(toBN(responseBalanceDecreasing.spentAmount))).to.be.true;
-    });
-
-    it("Should not decode proofs - invalid type", async () => {
-        const fn = () => {
-            return rewiredStateConnectorHelper.decodeProof(responseBalanceDecreasing, invalidAttestationType, merkleProof);
-        };
-        expect(fn).to.throw(`Invalid attestation type ${invalidAttestationType}`);
-    });
-
-    it("Should check if last client", async () => {
-        const all = rewiredStateConnectorHelper.clients.length;
-        const isLast = rewiredStateConnectorHelper.lastClient(all - 1);
-        const notLast = rewiredStateConnectorHelper.lastClient(all);
-        expect(isLast).to.be.true;
-        expect(notLast).to.be.false;
-    });
-
     it("Should not verify proof - invalid attestation type", async () => {
-        const proofData = {
-            stateConnectorRound: "571512",
+        const proofData: ConfirmedBlockHeightExists.Proof = {
+            data: {
+                attestationType: invalidAttestationType,
+                sourceId: SourceId.XRP,
+                lowestUsedTimestamp: "1687489872",
+                votingRound: "571512",
+                requestBody: {
+                    blockNumber: "38888113",
+                    queryWindow: "86400",
+                },
+                responseBody: {
+                    blockTimestamp: "1687489980",
+                    numberOfConfirmations: "1",
+                    lowestQueryWindowBlockNumber: "38888079",
+                    lowestQueryWindowBlockTimestamp: "1687489872",
+                },
+            },
             merkleProof: [
                 "0x06132641cdcc7358d02ee84b09c6c005d03b046f5da3cc3f0d02bcbd04fbcbc4",
                 "0xcae4c715a94dae234c49acc329915a28ba853435d6f4fb858a5a0a120beac520",
             ],
-            blockNumber: "38888113",
-            blockTimestamp: "1687489980",
-            numberOfConfirmations: "1",
-            lowestQueryWindowBlockNumber: "38888079",
-            lowestQueryWindowBlockTimestamp: "1687489872",
-        };
-        await expect(rewiredStateConnectorHelper.verifyProof(sourceId, invalidAttestationType, proofData))
+        }
+        await expect(rewiredStateConnectorHelper.verifyProof(proofData))
             .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
             .and.be.an.instanceOf(Error);
     });
