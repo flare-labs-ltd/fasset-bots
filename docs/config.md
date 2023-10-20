@@ -45,7 +45,6 @@ Example:
     "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
     "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
 }
-
 ```
 
 ### Agent bot environment file
@@ -100,4 +99,3 @@ AGENT_BOT_API_KEY_HASH=
 ### Other bots configuration file
 
 In order to run other actor bots same instance of configuration must be provided, but not all atributes are required for those bots (check interface `BotConfigFile` in [config-files.ts](../src/config/config-files.ts)) and [examples](../run-config/).
-

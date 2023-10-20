@@ -36,7 +36,6 @@ In order to create new agent, deposit funds and do other manual operations, comm
 
 Command line interface can be access by running command `yarn agent-bot`. For more see [here](./docs/cli.md).
 
-
 ## REST APIs for Agent bot
 
 Same commands as in cli `agent-bot` can be run via REST APIs. For more see [here](./docs/api.md).

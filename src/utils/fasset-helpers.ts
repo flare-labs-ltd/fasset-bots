@@ -1,5 +1,5 @@
 import { AssetManagerInstance } from "../../typechain-truffle/AssetManager";
-import { AssetManagerEvents, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerEvents } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";

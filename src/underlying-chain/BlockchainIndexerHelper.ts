@@ -271,7 +271,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     errorDetails ? errorDetails : ""
                 }`
             );
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
+        } /* istanbul ignore else */ else if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 /* istanbul ignore else */
                 if (tx.transactionType != "EMPTY_BLOCK_INDICATOR") {
@@ -320,7 +320,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             throw new BlockChainIndexerHelperError(
                 `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
             );
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
+        } /* istanbul ignore else */ else if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
             });

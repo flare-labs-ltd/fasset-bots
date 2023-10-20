@@ -660,7 +660,7 @@ describe("Tracked state tests", async () => {
             web3.eth.abi.encodeParameters(["address", "address"], [context.assetManagerController.address, newWnat.address]),
             { from: assetManagerControllerAddress }
         );
-        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, {from: agentB.ownerAddress});
+        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         expect(spyCollateralChanged).to.be.called.exactly(0);
     });

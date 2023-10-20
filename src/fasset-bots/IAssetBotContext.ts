@@ -1,10 +1,4 @@
-import {
-    AddressUpdaterInstance,
-    AssetManagerInstance,
-    FAssetInstance,
-    IPriceChangeEmitterInstance,
-    WNatInstance,
-} from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
