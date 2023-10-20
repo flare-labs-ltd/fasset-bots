@@ -13,7 +13,6 @@ import { createActorAssetContext } from "../../../src/config/create-asset-contex
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
-const createStableCoins = createAssetContextInternal.__get__("createStableCoins");
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 
@@ -29,12 +28,6 @@ describe("Create asset context unit tests", async () => {
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         collateralTypes = await context.assetManager.getCollateralTypes();
-    });
-
-    it("Should create stable coins", async () => {
-        const stableCoinsArray = collateralTypes.filter((token) => Number(token.collateralClass) === CollateralClass.VAULT);
-        const stableCoins = await createStableCoins(collateralTypes);
-        expect(stableCoinsArray.length).eq(Object.keys(stableCoins).length);
     });
 
     it("Should not find asset manager - fasset symbol not found", async () => {

@@ -70,7 +70,7 @@ export class TrackedState {
     }
 
     async getPrices(): Promise<[Prices, Prices]> {
-        return await Prices.getPrices(this.settings, this.context.collaterals);
+        return await Prices.getPrices(this.settings, this.collaterals);
     }
 
     async registerStateEvents(events: EvmEvent[]): Promise<void> {
