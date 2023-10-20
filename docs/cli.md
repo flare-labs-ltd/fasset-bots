@@ -34,7 +34,6 @@ Available commands:
 -   `freePoolCollateral` - get free pool collateral
 -   `freeUnderlying` - get free underlying balance
 
-
 ### Agent's settings:
 
 For more about agent's settings check [AgentSettings.sol](https://gitlab.com/flarenetwork/fasset/-/blob/main/contracts/userInterfaces/data/AgentSettings.sol) in Fasset repository.
@@ -48,7 +47,6 @@ For more about agent's settings check [AgentSettings.sol](https://gitlab.com/fla
 -   poolTopupCollateralRatioBIPS
 -   poolTopupTokenPriceFactorBIPS
 
-
 # CLI `api-key`
 
 ## How to use
@@ -58,8 +56,6 @@ Usage: `yarn api-key [command]`
 Available commands:
 
 -   `create` - create api key and its hash
-
-
 
 # CLI `user-bot`
 
@@ -78,8 +74,3 @@ Available commands:
 -   `mintExecute <collateralReservationId> <transactionHash> <paymentAddress>` - try to execute the minting that was paid but the execution failed
 -   `redeem <amountLots>` - trigger redemption
 -   `redemptionDefault <amount> <reference> <firstBlock> <lastBlock> <lastTs>` - get paid in collateral if the agent failed to pay redemption underlying
-
-
-
-
-

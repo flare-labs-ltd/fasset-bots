@@ -45,7 +45,6 @@ Example:
     "stateConnectorProofVerifierAddress": "0x3551096766115b622bD02EF156b151A9D996Fb6E",
     "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
 }
-
 ```
 
 ### Agent bot environment file

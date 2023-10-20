@@ -1,4 +1,4 @@
-import hash from 'object-hash'
+import hash from "object-hash";
 
 // same as Truffle.AnyEvent
 export interface EventSelector {
@@ -45,5 +45,5 @@ export type ExtractedEventArgs<E extends EventSelector, N extends E["name"]> = N
 // takes first 5 bytes of event hash and converts it to a number
 // node's max int is 9007199254740991 > 256**5 so no overflow
 export function eventIndex(event: any): number {
-    return parseInt(hash(event, { encoding: 'hex' }).slice(0,10), 16)
+    return parseInt(hash(event, { encoding: "hex" }).slice(0, 10), 16);
 }
