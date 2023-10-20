@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
@@ -14,8 +13,6 @@ const RUN_CONFIG_PATH: string = "./run-config/run-config-timeKeeper-coston-testx
 const INTERVAL: number = 120_000; // in ms
 
 toplevelRun(async () => {
-    // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
-    disableMccTraceManager();
     const runConfig = loadConfigFile(RUN_CONFIG_PATH);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [TIMEKEEPER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, TIMEKEEPER_ADDRESS);

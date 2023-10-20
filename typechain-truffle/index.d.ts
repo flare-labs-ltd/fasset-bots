@@ -71,18 +71,15 @@ import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { WhitelistMockContract } from "./WhitelistMock";
-import { SCProofVerifierContract } from "./SCProofVerifier";
-import { SCProofVerifierBaseContract } from "./SCProofVerifierBase";
-import { SCProofVerifierMockContract } from "./SCProofVerifierMock";
-import { StateConnectorMockContract } from "./StateConnectorMock";
-import { ISCProofVerifierContract } from "./ISCProofVerifier";
-import { IStateConnectorContract } from "./IStateConnector";
 import { AddressUpdatableContract } from "./AddressUpdatable";
 import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
 import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
+import { SCProofVerifierContract } from "./SCProofVerifier";
+import { ISCProofVerifierContract } from "./ISCProofVerifier";
+import { StateConnectorMockContract } from "./StateConnectorMock";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
@@ -124,6 +121,8 @@ import { IGovernanceSettingsContract } from "./IGovernanceSettings";
 import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
 import { IVPContractEventsContract } from "./IVPContractEvents";
 import { IVPTokenContract } from "./IVPToken";
+import { IMerkleRootStorageContract } from "./IMerkleRootStorage";
+import { IStateConnectorContract } from "./IStateConnector";
 
 declare global {
   namespace Truffle {
@@ -209,12 +208,6 @@ declare global {
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
       require(name: "WhitelistMock"): WhitelistMockContract;
-      require(name: "SCProofVerifier"): SCProofVerifierContract;
-      require(name: "SCProofVerifierBase"): SCProofVerifierBaseContract;
-      require(name: "SCProofVerifierMock"): SCProofVerifierMockContract;
-      require(name: "StateConnectorMock"): StateConnectorMockContract;
-      require(name: "ISCProofVerifier"): ISCProofVerifierContract;
-      require(name: "IStateConnector"): IStateConnectorContract;
       require(name: "AddressUpdatable"): AddressUpdatableContract;
       require(name: "Governed"): GovernedContract;
       require(name: "GovernedBase"): GovernedBaseContract;
@@ -223,6 +216,9 @@ declare global {
       require(
         name: "GovernedWithTimelockMock"
       ): GovernedWithTimelockMockContract;
+      require(name: "SCProofVerifier"): SCProofVerifierContract;
+      require(name: "ISCProofVerifier"): ISCProofVerifierContract;
+      require(name: "StateConnectorMock"): StateConnectorMockContract;
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
@@ -266,6 +262,8 @@ declare global {
       require(name: "IGovernanceVotePower"): IGovernanceVotePowerContract;
       require(name: "IVPContractEvents"): IVPContractEventsContract;
       require(name: "IVPToken"): IVPTokenContract;
+      require(name: "IMerkleRootStorage"): IMerkleRootStorageContract;
+      require(name: "IStateConnector"): IStateConnectorContract;
     }
   }
 }
@@ -463,30 +461,6 @@ export {
 } from "./FtsoRegistryMock";
 export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
 export {
-  SCProofVerifierContract,
-  SCProofVerifierInstance,
-} from "./SCProofVerifier";
-export {
-  SCProofVerifierBaseContract,
-  SCProofVerifierBaseInstance,
-} from "./SCProofVerifierBase";
-export {
-  SCProofVerifierMockContract,
-  SCProofVerifierMockInstance,
-} from "./SCProofVerifierMock";
-export {
-  StateConnectorMockContract,
-  StateConnectorMockInstance,
-} from "./StateConnectorMock";
-export {
-  ISCProofVerifierContract,
-  ISCProofVerifierInstance,
-} from "./ISCProofVerifier";
-export {
-  IStateConnectorContract,
-  IStateConnectorInstance,
-} from "./IStateConnector";
-export {
   AddressUpdatableContract,
   AddressUpdatableInstance,
 } from "./AddressUpdatable";
@@ -501,6 +475,18 @@ export {
   GovernedWithTimelockMockContract,
   GovernedWithTimelockMockInstance,
 } from "./GovernedWithTimelockMock";
+export {
+  SCProofVerifierContract,
+  SCProofVerifierInstance,
+} from "./SCProofVerifier";
+export {
+  ISCProofVerifierContract,
+  ISCProofVerifierInstance,
+} from "./ISCProofVerifier";
+export {
+  StateConnectorMockContract,
+  StateConnectorMockInstance,
+} from "./StateConnectorMock";
 export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
 export {
@@ -611,3 +597,11 @@ export {
   IVPContractEventsInstance,
 } from "./IVPContractEvents";
 export { IVPTokenContract, IVPTokenInstance } from "./IVPToken";
+export {
+  IMerkleRootStorageContract,
+  IMerkleRootStorageInstance,
+} from "./IMerkleRootStorage";
+export {
+  IStateConnectorContract,
+  IStateConnectorInstance,
+} from "./IStateConnector";

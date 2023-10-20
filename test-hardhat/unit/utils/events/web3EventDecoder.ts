@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { TestAssetBotContext, createTestAssetContext } from "../../../test-utils/create-test-asset-context";
-import { disableMccTraceManager } from "../../../test-utils/helpers";
 import { testChainInfo } from "../../../../test/test-utils/TestChainInfo";
 import { web3 } from "../../../../src/utils/web3";
 import { Web3ContractEventDecoder } from "../../../../src/utils/events/Web3ContractEventDecoder";
@@ -10,7 +9,6 @@ describe("Web3 event decoder unit tests", async () => {
     let accounts: string[];
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
     });

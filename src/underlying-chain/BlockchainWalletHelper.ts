@@ -1,9 +1,8 @@
 import { EntityManager } from "@mikro-orm/core";
 import { WalletClient } from "simple-wallet";
-import { toBN } from "../utils/helpers";
+import { toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import { DBWalletKeys } from "./WalletKeys";
-import { unPrefix0x } from "../verification/attestation-types/attestation-types-utils";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(

@@ -8,15 +8,12 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
-import { ProvedDH } from "../../src/underlying-chain/AttestationHelper";
-import { DHPayment } from "../../src/verification/generated/attestation-hash-types";
 import {
     createTestAgentBotAndMakeAvailable,
     createCRAndPerformMintingAndRunSteps,
     createTestChallenger,
     createTestMinter,
     createTestRedeemer,
-    disableMccTraceManager,
     getAgentStatus,
 } from "../test-utils/helpers";
 import { TrackedState } from "../../src/state/TrackedState";
@@ -28,6 +25,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
+import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -46,7 +44,6 @@ describe("Challenger tests", async () => {
     let state: TrackedState;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
@@ -323,8 +320,8 @@ describe("Challenger tests", async () => {
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
         const proof = await context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
-        const paymentProof = proof.result as ProvedDH<DHPayment>;
-        const res = await context.assetManager.confirmRedemptionPayment(paymentProof, redemption.requestId, { from: agentBot.agent.ownerAddress });
+        if (!attestationProved(proof)) assert.fail("not proved");
+        const res = await context.assetManager.confirmRedemptionPayment(proof, redemption.requestId, { from: agentBot.agent.ownerAddress });
         // finish redemption
         await agentBot.runStep(orm.em);
         expect(redemption.state).eq(AgentRedemptionState.DONE);

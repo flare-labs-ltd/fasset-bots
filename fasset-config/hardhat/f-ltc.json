@@ -1,7 +1,7 @@
 {
     "$schema": "../asset-manager-parameters.schema.json",
     "burnAddress": "0x000000000000000000000000000000000000dEaD",
-    "chainId": 1,
+    "chainName": "LTC",
     "assetName": "Litecoin",
     "assetSymbol": "LTC",
     "assetDecimals": 8,
@@ -10,7 +10,10 @@
     "poolTokenSuffix": "LTC",
     "assetMintingDecimals": 8,
     "userWhitelist": null,
-    "underlyingAddressValidator": ["TrivialAddressValidatorMock", []],
+    "underlyingAddressValidator": [
+        "TrivialAddressValidatorMock",
+        []
+    ],
     "liquidationStrategy": "LiquidationStrategyImpl",
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",

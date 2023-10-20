@@ -1,6 +1,5 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { disableMccTraceManager } from "../../test-utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
@@ -11,6 +10,7 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
@@ -24,7 +24,6 @@ describe("Create asset context unit tests", async () => {
     let collateralTypes: CollateralType[];
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         collateralTypes = await context.assetManager.getCollateralTypes();
@@ -38,7 +37,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         const chainConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
@@ -58,7 +57,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - contractsJsonFile or addressUpdater required", async () => {
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         const fAssetConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,

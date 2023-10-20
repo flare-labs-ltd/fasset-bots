@@ -11,7 +11,6 @@ import {
     loadConfigFile,
 } from "../../../src/config/BotConfig";
 import { initWeb3 } from "../../../src/utils/web3";
-import { SourceId } from "../../../src/verification/sources/sources";
 import {
     ATTESTATION_PROVIDER_URLS,
     COSTON_RPC,
@@ -27,6 +26,7 @@ import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 import rewire from "rewire";
 import { readFileSync } from "fs";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 const botConfigInternal = rewire("../../../src/config/BotConfig.ts");
 const validateConfigFile = botConfigInternal.__get__("validateConfigFile");
 const validateAgentConfigFile = botConfigInternal.__get__("validateAgentConfigFile");

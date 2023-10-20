@@ -22,7 +22,6 @@ import {
     createTestAgentBAndMakeAvailable,
     createCRAndPerformMinting,
     createTestMinter,
-    disableMccTraceManager,
     mintAndDepositVaultCollateralToOwner,
     createTestRedeemer,
     fromAgentInfoToInitialAgentData,
@@ -99,7 +98,6 @@ describe("Tracked state tests", async () => {
     }
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];

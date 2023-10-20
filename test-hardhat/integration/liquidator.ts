@@ -13,7 +13,6 @@ import {
     createCRAndPerformMintingAndRunSteps,
     createTestLiquidator,
     createTestMinter,
-    disableMccTraceManager,
     getAgentStatus,
     createTestAgentBotAndMakeAvailable,
     createCRAndPerformMinting,
@@ -43,7 +42,6 @@ describe("Liquidator tests", async () => {
     let state: TrackedState;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];

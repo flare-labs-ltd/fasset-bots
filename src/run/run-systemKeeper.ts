@@ -5,7 +5,6 @@ import { requireEnv, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
-import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 
 const SYSTEM_KEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT4");
@@ -14,8 +13,6 @@ const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testx
 const fAssetSymbol = "FfakeXRP";
 
 toplevelRun(async () => {
-    // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
-    disableMccTraceManager();
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as BotConfigFile;
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [SYSTEM_KEEPER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, SYSTEM_KEEPER_ADDRESS);

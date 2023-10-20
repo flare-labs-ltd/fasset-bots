@@ -14,148 +14,209 @@ type AllEvents = never;
 
 export interface ISCProofVerifierInstance extends Truffle.ContractInstance {
   verifyBalanceDecreasingTransaction(
-    _chainId: number | BN | string,
-    _data: {
+    _proof: {
       merkleProof: string[];
-      stateConnectorRound: number | BN | string;
-      blockNumber: number | BN | string;
-      blockTimestamp: number | BN | string;
-      transactionHash: string;
-      sourceAddressIndicator: string;
-      sourceAddressHash: string;
-      spentAmount: number | BN | string;
-      paymentReference: string;
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: { transactionId: string; sourceAddressIndicator: string };
+        responseBody: {
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          sourceAddressHash: string;
+          spentAmount: number | BN | string;
+          standardPaymentReference: string;
+        };
+      };
     },
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   verifyConfirmedBlockHeightExists(
-    _chainId: number | BN | string,
-    _data: {
+    _proof: {
       merkleProof: string[];
-      stateConnectorRound: number | BN | string;
-      blockNumber: number | BN | string;
-      blockTimestamp: number | BN | string;
-      numberOfConfirmations: number | BN | string;
-      lowestQueryWindowBlockNumber: number | BN | string;
-      lowestQueryWindowBlockTimestamp: number | BN | string;
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: {
+          blockNumber: number | BN | string;
+          queryWindow: number | BN | string;
+        };
+        responseBody: {
+          blockTimestamp: number | BN | string;
+          numberOfConfirmations: number | BN | string;
+          lowestQueryWindowBlockNumber: number | BN | string;
+          lowestQueryWindowBlockTimestamp: number | BN | string;
+        };
+      };
     },
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   verifyPayment(
-    _chainId: number | BN | string,
-    _data: {
+    _proof: {
       merkleProof: string[];
-      stateConnectorRound: number | BN | string;
-      blockNumber: number | BN | string;
-      blockTimestamp: number | BN | string;
-      transactionHash: string;
-      inUtxo: number | BN | string;
-      utxo: number | BN | string;
-      sourceAddressHash: string;
-      intendedSourceAddressHash: string;
-      receivingAddressHash: string;
-      intendedReceivingAddressHash: string;
-      spentAmount: number | BN | string;
-      intendedSpentAmount: number | BN | string;
-      receivedAmount: number | BN | string;
-      intendedReceivedAmount: number | BN | string;
-      paymentReference: string;
-      oneToOne: boolean;
-      status: number | BN | string;
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: {
+          transactionId: string;
+          inUtxo: number | BN | string;
+          utxo: number | BN | string;
+        };
+        responseBody: {
+          blockNumber: number | BN | string;
+          blockTimestamp: number | BN | string;
+          sourceAddressHash: string;
+          receivingAddressHash: string;
+          intendedReceivingAddressHash: string;
+          spentAmount: number | BN | string;
+          intendedSpentAmount: number | BN | string;
+          receivedAmount: number | BN | string;
+          intendedReceivedAmount: number | BN | string;
+          standardPaymentReference: string;
+          oneToOne: boolean;
+          status: number | BN | string;
+        };
+      };
     },
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   verifyReferencedPaymentNonexistence(
-    _chainId: number | BN | string,
-    _data: {
+    _proof: {
       merkleProof: string[];
-      stateConnectorRound: number | BN | string;
-      deadlineBlockNumber: number | BN | string;
-      deadlineTimestamp: number | BN | string;
-      destinationAddressHash: string;
-      paymentReference: string;
-      amount: number | BN | string;
-      lowerBoundaryBlockNumber: number | BN | string;
-      lowerBoundaryBlockTimestamp: number | BN | string;
-      firstOverflowBlockNumber: number | BN | string;
-      firstOverflowBlockTimestamp: number | BN | string;
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: {
+          minimalBlockNumber: number | BN | string;
+          deadlineBlockNumber: number | BN | string;
+          deadlineTimestamp: number | BN | string;
+          destinationAddressHash: string;
+          amount: number | BN | string;
+          standardPaymentReference: string;
+        };
+        responseBody: {
+          minimalBlockTimestamp: number | BN | string;
+          firstOverflowBlockNumber: number | BN | string;
+          firstOverflowBlockTimestamp: number | BN | string;
+        };
+      };
     },
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   methods: {
     verifyBalanceDecreasingTransaction(
-      _chainId: number | BN | string,
-      _data: {
+      _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
     verifyConfirmedBlockHeightExists(
-      _chainId: number | BN | string,
-      _data: {
+      _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
     verifyPayment(
-      _chainId: number | BN | string,
-      _data: {
+      _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
     verifyReferencedPaymentNonexistence(
-      _chainId: number | BN | string,
-      _data: {
+      _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
