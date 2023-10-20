@@ -392,20 +392,28 @@ describe("Agent bot unit tests", async () => {
     it("Should update agent settings", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const settingName = "feeBIPS";
-        const settingValue = "1100";
-        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
-        agentEnt.agentSettingUpdateValidAtName = settingName;
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
+        const validAtPoolFeeShareBIPS = await agentBot.agent.announceAgentSettingUpdate("poolFeeShareBIPS", 4100);
+        agentEnt.agentSettingUpdateValidAtFeeBIPS = validAtFeeBIPS;
+        agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAtPoolFeeShareBIPS;
+        
+        await time.increase(10);
+        const validAtpoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
+        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAtpoolTopupTokenPriceFactorBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtTimestamp).eq(validAt)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eq(validAtFeeBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).eq(validAtPoolFeeShareBIPS)).to.be.true;
         // allowed
-        await time.increaseTo(validAt);
+        await time.increaseTo(validAtFeeBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");
+        expect(agentEnt.agentSettingUpdateValidAtFeeBIPS.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS.eqn(0)).to.be.true;
+
+        await time.increaseTo(validAtpoolTopupTokenPriceFactorBIPS);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
 
     it("Should exit available", async () => {

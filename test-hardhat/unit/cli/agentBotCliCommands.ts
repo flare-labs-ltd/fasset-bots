@@ -199,8 +199,7 @@ describe("Bot cli commands unit tests", async () => {
         const settingValue = "1100";
         await botCliCommands.updateAgentSetting(agent.vaultAddress, settingName, settingValue);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtTimestamp).gtn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtName).to.eq(settingName);
+        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gtn(0)).to.be.true;
     });
 
     it("Should get pool fees balance'", async () => {

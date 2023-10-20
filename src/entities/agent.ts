@@ -66,10 +66,28 @@ export class AgentEntity {
     // agent update settings
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtTimestamp: BN = BN_ZERO;
+    agentSettingUpdateValidAtFeeBIPS: BN = BN_ZERO;
 
-    @Property()
-    agentSettingUpdateValidAtName: string = "";
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtPoolFeeShareBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtMintingVaultCRBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtMintingPoolCRBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtPoolExitCRBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtPoolTopupCRBIPS: BN = BN_ZERO;
+
+    @Property({ type: BNType })
+    agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
 
     // agent withdraw vault collateral
 
