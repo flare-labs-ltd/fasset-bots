@@ -389,7 +389,8 @@ describe("Agent bot unit tests", async () => {
         expect(agentVaultCollateralBalance).to.eq("0");
     });
 
-    it("Should update agent settings", async () => {
+    it("Should update agent settings and catch it if update expires", async () => {
+        const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const settingName = "feeBIPS";
@@ -403,6 +404,16 @@ describe("Agent bot unit tests", async () => {
         expect(toBN(agentEnt.agentSettingUpdateValidAtTimestamp).eq(validAt)).to.be.true;
         // allowed
         await time.increaseTo(validAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");
+        // update again
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
+        agentEnt.agentSettingUpdateValidAtTimestamp = validAt2;
+        agentEnt.agentSettingUpdateValidAtName = settingName;
+        await orm.em.persist(agentEnt).flush();
+        // cannot update, update expired
+        await time.increaseTo(validAt2.add(invalidUpdateSeconds));
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
         expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");

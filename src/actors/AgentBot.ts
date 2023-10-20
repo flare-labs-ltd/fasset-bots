@@ -481,6 +481,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+        const desiredSettingsUpdateErrorIncludes = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -531,12 +532,14 @@ export class AgentBot {
                         agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                         agentEnt.agentSettingUpdateValidAtName = "";
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
-                        logger.error(
-                            `Agent ${this.agent.vaultAddress} run into error while updating setting ${agentEnt.agentSettingUpdateValidAtName}: ${error}`
-                        );
-                        agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
-                        agentEnt.agentSettingUpdateValidAtName = "";
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
+                            logger.error(
+                                `Agent ${this.agent.vaultAddress} run into error while updating setting ${agentEnt.agentSettingUpdateValidAtName}: ${error}`
+                            );
+                            agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
+                            agentEnt.agentSettingUpdateValidAtName = "";
+                        }
                     }
                 } else {
                     logger.info(
