@@ -12,7 +12,6 @@ import {
     createTestAgent,
     createTestAgentAndMakeAvailable,
     createTestMinter,
-    disableMccTraceManager,
     mintAndDepositVaultCollateralToOwner,
 } from "../../test-utils/helpers";
 use(spies);
@@ -29,7 +28,6 @@ describe("Agent unit tests", async () => {
     let chain: MockChain;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
     });
 

@@ -1,4 +1,3 @@
-import { TraceManager } from "@flarenetwork/mcc";
 import assert from "node:assert";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
@@ -27,6 +26,7 @@ import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { artifacts } from "../../src/utils/web3";
 
 const ERC20Mock = artifacts.require("ERC20Mock");
+const IERC20 = artifacts.require("IERC20");
 
 const agentUnderlying: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
@@ -34,10 +34,6 @@ const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(100_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
-
-export function disableMccTraceManager() {
-    TraceManager.enabled = false;
-}
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
@@ -142,14 +138,14 @@ export async function createTestAgentBotAndMakeAvailable(
     return agentBot;
 }
 
-export async function mintAndDepositVaultCollateralToOwner(
+export async function mintAndDepositVaultCollateralToOwner( //TODO
     context: IAssetAgentBotContext,
     agent: Agent,
     depositAmount: BNish,
     ownerAddress: string
 ): Promise<IERC20Instance> {
     const vaultCollateralToken = await agent.getVaultCollateral();
-    const vaultCollateralTokenContract = requireNotNull(Object.values(context.stablecoins).find((token) => token.address === vaultCollateralToken?.token));
+    const vaultCollateralTokenContract = await IERC20.at(vaultCollateralToken.token);
     await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress);
     return vaultCollateralTokenContract;
 }

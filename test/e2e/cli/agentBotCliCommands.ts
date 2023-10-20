@@ -4,8 +4,8 @@ import { initWeb3 } from "../../../src/utils/web3";
 import spies from "chai-spies";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
-import { SourceId } from "../../../src/verification/sources/sources";
 import chaiAsPromised from "chai-as-promised";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 use(spies);
 

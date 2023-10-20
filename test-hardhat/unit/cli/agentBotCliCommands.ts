@@ -16,10 +16,11 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestMinter, disableMccTraceManager, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 use(spies);
 
@@ -42,7 +43,6 @@ describe("Bot cli commands unit tests", async () => {
     }
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
@@ -58,7 +58,7 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands = new BotCliCommands();
         botCliCommands.context = context;
         botCliCommands.ownerAddress = ownerAddress;
-        const chainId = 3;
+        const chainId = SourceId.XRP;
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,

@@ -5,6 +5,7 @@ import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
 import {
     AgentAvailable,
+    AgentCollateralTypeChanged,
     CollateralReservationDeleted,
     CollateralReserved,
     DustChanged,
@@ -226,6 +227,11 @@ export class TrackedAgentState {
     handleLiquidationPerformed(args: EventArgs<LiquidationPerformed>): void {
         this.mintedUBA = this.mintedUBA.sub(toBN(args.valueUBA));
         logger.info(`Tracked State Agent handled liquidation performed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    // handlers: collateral changed
+    handleAgentCollateralTypeChanged(args: EventArgs<AgentCollateralTypeChanged>): void {
+        this.agentSettings.vaultCollateralToken = args.token;
     }
 
     // handlers: underlying withdrawal

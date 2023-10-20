@@ -1,12 +1,11 @@
+import { Payment } from "state-connector-protocol";
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { ProvedDH } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, fail, sleep } from "../utils/helpers";
+import { BNish, fail } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { DHPayment } from "../verification/generated/attestation-hash-types";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
 
@@ -64,7 +63,7 @@ export class Minter {
         return await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, paymentAddress);
     }
 
-    async executeProvedMinting(collateralReservationId: BNish, proof: ProvedDH<DHPayment>) {
+    async executeProvedMinting(collateralReservationId: BNish, proof: Payment.Proof) {
         const res = await this.assetManager.executeMinting(web3DeepNormalize(proof), String(collateralReservationId), { from: this.address });
         return requiredEventArgs(res, 'MintingExecuted');
     }

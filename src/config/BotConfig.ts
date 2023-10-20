@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { UtxoMccCreate, XrpMccCreate } from "@flarenetwork/mcc";
 import { EntityManager } from "@mikro-orm/core/EntityManager";
 import { Connection } from "@mikro-orm/core/connections/Connection";
 import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
@@ -17,11 +16,12 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
 import { MINUS_CHAR, requireEnv, toBN } from "../utils/helpers";
-import { SourceId } from "../verification/sources/sources";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
+import { SourceId } from "../underlying-chain/SourceId";
+import { encodeAttestationName } from "state-connector-protocol";
 
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -129,6 +129,9 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
+        if (!chainInfo.chainId.startsWith("0x")) {
+            chainInfo.chainId = encodeAttestationName(chainInfo.chainId);
+        }
         fAssets.push(
             await createBotFAssetConfig(
                 chainInfo,
@@ -263,7 +266,7 @@ export function createWalletClient(
             password: "",
             inTestnet: inTestnet,
             apiTokenKey: process.env.BTC_RPC_API_KEY,
-        } as UtxoMccCreate);
+        }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE) {
         return new WALLET.DOGE({
             url: walletUrl,
@@ -271,14 +274,14 @@ export function createWalletClient(
             password: "",
             inTestnet: inTestnet,
             apiTokenKey: process.env.DOGE_RPC_API_KEY,
-        } as UtxoMccCreate);
+        }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
             url: walletUrl,
             username: "",
             password: "",
             apiTokenKey: process.env.XRP_RPC_API_KEY,
-        } as XrpMccCreate);
+        }); // XrpMccCreate
     }
 }
 

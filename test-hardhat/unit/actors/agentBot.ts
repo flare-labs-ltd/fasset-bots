@@ -13,7 +13,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentBot, createTestAgentBotAndMakeAvailable, disableMccTraceManager, mintVaultCollateralToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
@@ -34,7 +34,6 @@ describe("Agent bot unit tests", async () => {
     let chain: MockChain;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });

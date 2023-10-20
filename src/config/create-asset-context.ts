@@ -1,7 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IAssetAgentBotContext, IAssetActorContext } from "../fasset-bots/IAssetBotContext";
-import { CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
@@ -14,7 +13,6 @@ const AddressUpdater = artifacts.require("AddressUpdater");
 const WNat = artifacts.require("WNat");
 const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
 const FAsset = artifacts.require("FAsset");
-const IERC20 = artifacts.require("IERC20");
 
 /**
  * Creates asset context needed for AgentBot.
@@ -51,8 +49,6 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
         wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
     }
-    const collaterals = await assetManager.getCollateralTypes();
-    const stableCoins = await createStableCoins(collaterals);
     return {
         nativeChainInfo: botConfig.nativeChainInfo,
         chainInfo: chainConfig.chainInfo,
@@ -63,8 +59,6 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         priceChangeEmitter: priceChangeEmitter,
         wNat: wNat,
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        collaterals: collaterals,
-        stablecoins: stableCoins,
         addressUpdater: addressUpdater,
     };
 }
@@ -100,7 +94,6 @@ export async function createActorAssetContext(
         [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
         priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
     }
-    const collaterals: CollateralType[] = await assetManager.getCollateralTypes();
     return {
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
@@ -111,7 +104,6 @@ export async function createActorAssetContext(
         assetManager: assetManager,
         priceChangeEmitter: priceChangeEmitter,
         fAsset: await FAsset.at(await assetManager.fAsset()),
-        collaterals: collaterals,
     };
 }
 
@@ -148,15 +140,4 @@ async function findAssetManager(assetManagerController: AssetManagerControllerIn
         }
     }
     throw new Error(`FAsset symbol ${fAssetSymbol} not found`);
-}
-
-async function createStableCoins(collaterals: CollateralType[]) {
-    const stableCoinsArray = collaterals.filter((token) => Number(token.collateralClass) === CollateralClass.VAULT);
-    const stableCoins: { [key: string]: any } = {};
-    for (const collateralToken of stableCoinsArray) {
-        const tokenName: string = collateralToken.tokenFtsoSymbol;
-        const token = await IERC20.at(collateralToken.token);
-        stableCoins[tokenName] = token;
-    }
-    return stableCoins;
 }

@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetAgentBotContext, IAssetActorContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetActorContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -18,7 +18,7 @@ import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { ContractWithEvents } from "../../src/utils/events/truffle";
-import { AssetManagerControllerInstance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, IERC20Instance } from "../../typechain-truffle";
 import { artifacts } from "../../src/utils/web3";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
@@ -58,6 +58,8 @@ export type TestAssetBotContext = Modify<
         ftsos: TestFtsos;
         blockchainIndexer: MockIndexer;
         assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;
+        stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
+        collaterals: CollateralType[];
     }
 >;
 
@@ -67,6 +69,8 @@ export type TestAssetTrackedStateContext = Modify<
         assetFtso: FtsoMockInstance;
         ftsoManager: FtsoManagerMockInstance;
         blockchainIndexer: MockIndexer;
+        stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
+        collaterals: CollateralType[];
     }
 >;
 
@@ -76,7 +80,8 @@ export async function createTestAssetContext(
     requireEOAAddressProof?: boolean,
     customParameters?: any,
     updateExecutor?: string,
-    useAlwaysFailsProver?: boolean
+    useAlwaysFailsProver?: boolean,
+    assetManagerControllerAddress?: string
 ): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
@@ -168,7 +173,7 @@ export async function createTestAssetContext(
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(
         governance,
-        assetManagerController,
+        assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
         chainInfo.name,
         chainInfo.symbol,
         chainInfo.decimals,
@@ -198,11 +203,11 @@ export async function createTestAssetContext(
         fAsset,
         natFtso,
         assetFtso,
-        stablecoins,
-        collaterals,
         ftsos,
         addressUpdater,
         priceChangeEmitter: ftsoManager,
+        collaterals,
+        stablecoins
     };
 }
 
@@ -215,8 +220,9 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext): T
         ftsoManager: context.ftsoManager,
         fAsset: context.fAsset,
         assetFtso: context.assetFtso,
-        collaterals: context.collaterals,
         priceChangeEmitter: context.priceChangeEmitter,
+        collaterals: context.collaterals,
+        stablecoins: context.stablecoins
     };
 }
 

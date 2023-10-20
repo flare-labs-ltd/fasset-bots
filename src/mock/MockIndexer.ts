@@ -1,8 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock, IBlockId, ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { SourceId } from "../verification/sources/sources";
 import { MockChain } from "./MockChain";
+import { SourceId } from "../underlying-chain/SourceId";
 
 export class MockIndexer extends BlockchainIndexerHelper {
 
@@ -74,4 +74,3 @@ export class MockIndexer extends BlockchainIndexerHelper {
         return [];
     }
 }
-

@@ -1,26 +1,22 @@
+import { constants } from "@openzeppelin/test-helpers";
+import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT, MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "state-connector-protocol";
 import { StateConnectorMockInstance } from "../../typechain-truffle";
-import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { MerkleTree } from "../utils/MerkleTree";
-import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
-import { ZERO_BYTES32, filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
-import { MIC_SALT } from "../verification/attestation-types/attestation-types";
-import { DHType } from "../verification/generated/attestation-hash-types";
-import { ARBalanceDecreasingTransaction, ARBase, ARConfirmedBlockHeightExists, ARPayment, ARReferencedPaymentNonexistence } from "../verification/generated/attestation-request-types";
-import { AttestationType } from "../verification/generated/attestation-types-enum";
-import { SourceId } from "../verification/sources/sources";
+import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
+import { SourceId } from "../underlying-chain/SourceId";
+import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { findRequiredEvent } from "../utils/events/truffle";
+import { filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
 import { MockAlwaysFailsAttestationProver } from "./MockAlwaysFailsAttestationProver";
 import { MockAttestationProver, MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
 
-interface DHProof {
-    attestationType: AttestationType;
-    sourceId: SourceId;
-    data: DHType;
+interface RoundProof {
+    response: ARESBase;
     hash: string;
 }
 
 interface FinalizedRound {
-    proofs: { [requestData: string]: DHProof };
+    proofs: { [requestData: string]: RoundProof };
     tree: MerkleTree;
 }
 
@@ -41,7 +37,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
 
     constructor(
         public stateConnector: StateConnectorMockInstance,
-        public supportedChains: { [chainId: number]: MockChain },
+        public supportedChains: { [chainId: string]: MockChain },
         public finalizationType: AutoFinalizationType,
         public useAlwaysFailsProver: boolean = false
     ) {
@@ -50,7 +46,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     rounds: string[][] = [];
     finalizedRounds: FinalizedRound[] = [];
     queryWindowSeconds = 86400;
-    definitionStore = new StaticAttestationDefinitionStore();
+    definitionStore = new AttestationDefinitionStore();
 
     setTimedFinalization(timedRoundSeconds: number) {
         this.finalizationType = 'timed';
@@ -82,11 +78,19 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         // add message integrity code to request data - for this, we have to obtain the response before submitting request
         const responseData = this.proveParsedRequest(request);
         if (responseData == null) return null;  // cannot prove request (yet)
-        const mic = this.definitionStore.dataHash(request, responseData, MIC_SALT);
+        const mic = this.definitionStore.attestationResponseHash(responseData, MIC_SALT);
         if (mic == null) {
             throw new StateConnectorClientError(`StateConnectorClient: invalid attestation data`);
         }
         const data = this.definitionStore.encodeRequest({ ...request, messageIntegrityCode: mic });
+        // submit request and mock listening to event
+        const res = await this.stateConnector.requestAttestations(data);
+        const event = findRequiredEvent(res, 'AttestationRequest');
+        return await this.handleAttestationRequest(event);
+    }
+
+    async handleAttestationRequest(event: Truffle.TransactionLog<AttestationRequest>) {
+        const data = event.args.data;
         // start new round?
         if (this.finalizedRounds.length >= this.rounds.length) {
             this.rounds.push([]);
@@ -101,15 +105,17 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         return { round, data };
     }
 
-    async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
+    async obtainProof(round: number, requestData: string): Promise<OptionalAttestationProof> {
         if (round >= this.finalizedRounds.length) {
-            return { finalized: false, result: null };  // not yet finalized
+            return AttestationNotProved.NOT_FINALIZED;
         }
-        const proof = this.finalizedRounds[round].proofs[requestData];
+        const finalizedRound = this.finalizedRounds[round];
+        const proof = finalizedRound.proofs[requestData];
         if (proof == null) {
-            return { finalized: true, result: null };   // disproved
+            return AttestationNotProved.DISPROVED;
         }
-        return { finalized: true, result: proof.data }; // proved
+        const merkleProof = finalizedRound.tree.getProof(proof.hash) ?? [];
+        return { merkleProof, data: proof.response }; // proved
     }
 
     finalizing = false;
@@ -133,7 +139,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
             this.rounds.push([]);
         }
         // verify and collect proof data of requests
-        const proofs: { [data: string]: DHProof } = {};
+        const proofs: { [data: string]: RoundProof } = {};
         for (const reqData of this.rounds[round]) {
             const proof = this.proveRequest(reqData, round);
             if (proof != null) {
@@ -143,59 +149,43 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         // build merkle tree
         const hashes = Object.values(proofs).map(proof => proof.hash);
         const tree = new MerkleTree(hashes);
-        await this.stateConnector.setMerkleRoot(round, tree.root ?? ZERO_BYTES32);
-        for (const proof of Object.values(proofs)) {
-            proof.data.merkleProof = tree.getProofForValue(proof.hash) ?? [];
-        }
+        await this.stateConnector.setMerkleRoot(round, tree.root ?? constants.ZERO_BYTES32);
         // add new finalized round
         this.finalizedRounds.push({ proofs, tree });
     }
 
-    private proveRequest(requestData: string, stateConnectorRound: number): DHProof | null {
+    private proveRequest(requestData: string, stateConnectorRound: number): RoundProof | null {
         const request = this.definitionStore.parseRequest<ARBase>(requestData);
         const response = this.proveParsedRequest(request);
         if (response == null) return null;
         // verify MIC (message integrity code) - stateConnectorRound field must be 0
-        const mic = this.definitionStore.dataHash(request, response, MIC_SALT);
+        const mic = this.definitionStore.attestationResponseHash(response, MIC_SALT);
         if (mic == null || mic !== request.messageIntegrityCode) {
             throw new StateConnectorClientError(`StateConnectorClient: invalid message integrity code`);
         }
+        // now set correct voting round
+        response.votingRound = String(stateConnectorRound);
         // calculate hash for Merkle tree - requires correct stateConnectorRound field
-        response.stateConnectorRound = stateConnectorRound;
-        const hash = this.definitionStore.dataHash(request, response);
+        const hash = this.definitionStore.attestationResponseHash(response);
         if (hash == null) {
-            throw new StateConnectorClientError(`StateConnectorClient: invalid attestation response`);
+            throw new StateConnectorClientError(`StateConnectorClient: invalid attestation reponse`);
         }
-        return { attestationType: request.attestationType, sourceId: request.sourceId, data: response, hash: hash };
+        return { response, hash };
     }
 
-    private proveParsedRequest(parsedRequest: ARBase): DHType | null {
+    private proveParsedRequest(parsedRequest: ARBase): ARESBase | null {
         try {
             const chain = this.supportedChains[parsedRequest.sourceId];
             if (chain == null) throw new StateConnectorClientError(`StateConnectorClient: unsupported chain ${parsedRequest.sourceId}`);
-            const prover = this.useAlwaysFailsProver ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds) : new MockAttestationProver(chain, this.queryWindowSeconds);
-            switch (parsedRequest.attestationType) {
-                case AttestationType.Payment: {
-                    const request = parsedRequest as ARPayment;
-                    return prover.payment(request.id, toNumber(request.blockNumber), toNumber(request.inUtxo), toNumber(request.utxo));
-                }
-                case AttestationType.BalanceDecreasingTransaction: {
-                    const request = parsedRequest as ARBalanceDecreasingTransaction;
-                    return prover.balanceDecreasingTransaction(request.id, toNumber(request.blockNumber), request.sourceAddressIndicator);
-                }
-                case AttestationType.ReferencedPaymentNonexistence: {
-                    const request = parsedRequest as ARReferencedPaymentNonexistence;
-                    return prover.referencedPaymentNonexistence(request.destinationAddressHash, request.paymentReference, toBN(request.amount),
-                        toNumber(request.minimalBlockNumber), toNumber(request.deadlineBlockNumber), toNumber(request.deadlineTimestamp));
-                }
-                case AttestationType.ConfirmedBlockHeightExists: {
-                    const request = parsedRequest as ARConfirmedBlockHeightExists;
-                    return prover.confirmedBlockHeightExists(toNumber(request.blockNumber), toNumber(request.queryWindow));
-                }
-                default: {
-                    throw new StateConnectorClientError(`StateConnectorClient: unsupported attestation request ${AttestationType[parsedRequest.attestationType]} (${parsedRequest.attestationType})`);
-                }
-            }
+            const responseBody = this.proveParsedRequestBody(chain, parsedRequest);
+            return {
+                attestationType: parsedRequest.attestationType,
+                sourceId: parsedRequest.sourceId,
+                votingRound: '0',                   // must be 0 for hash, later set to correct value
+                lowestUsedTimestamp: String(0),     // no window limit in mock
+                requestBody: parsedRequest.requestBody,
+                responseBody: responseBody,
+            };
         } catch (e) {
             if (e instanceof MockAttestationProverError) {
                 const stack = filterStackTrace(e);
@@ -203,6 +193,32 @@ export class MockStateConnectorClient implements IStateConnectorClient {
                 return null;
             }
             throw e;    // other errors not allowed
+        }
+    }
+
+    private proveParsedRequestBody(chain: MockChain, parsedRequest: ARBase) {
+        const prover = this.useAlwaysFailsProver ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds) : new MockAttestationProver(chain, this.queryWindowSeconds);
+        switch (parsedRequest.attestationType) {
+            case Payment.TYPE: {
+                const request = parsedRequest.requestBody as Payment.RequestBody;
+                return prover.payment(request.transactionId, toNumber(request.inUtxo), toNumber(request.utxo));
+            }
+            case BalanceDecreasingTransaction.TYPE: {
+                const request = parsedRequest.requestBody as BalanceDecreasingTransaction.RequestBody;
+                return prover.balanceDecreasingTransaction(request.transactionId, request.sourceAddressIndicator);
+            }
+            case ReferencedPaymentNonexistence.TYPE: {
+                const request = parsedRequest.requestBody as ReferencedPaymentNonexistence.RequestBody;
+                return prover.referencedPaymentNonexistence(request.destinationAddressHash, request.standardPaymentReference, toBN(request.amount),
+                    toNumber(request.minimalBlockNumber), toNumber(request.deadlineBlockNumber), toNumber(request.deadlineTimestamp));
+            }
+            case ConfirmedBlockHeightExists.TYPE: {
+                const request = parsedRequest.requestBody as ConfirmedBlockHeightExists.RequestBody;
+                return prover.confirmedBlockHeightExists(toNumber(request.blockNumber), toNumber(request.queryWindow));
+            }
+            default: {
+                throw new StateConnectorClientError(`StateConnectorClient: unsupported attestation request ${decodeAttestationName(parsedRequest.attestationType)} (${parsedRequest.attestationType})`);
+            }
         }
     }
 }

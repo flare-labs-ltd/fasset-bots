@@ -15,7 +15,7 @@ export class AgentEntity {
     collateralPoolAddress!: string;
 
     @Property()
-    chainId!: number;
+    chainId!: string;
 
     @Property()
     chainSymbol!: string;
@@ -234,7 +234,7 @@ export class UnhandledEvent {
 
     @Property()
     eventId!: number
-    
+
     @Property()
     blockNumber!: number
 

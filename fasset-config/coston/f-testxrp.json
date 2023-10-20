@@ -1,7 +1,7 @@
 {
     "$schema": "../asset-manager-parameters.schema.json",
     "burnAddress": "0x000000000000000000000000000000000000dEaD",
-    "chainId": 3,
+    "chainName": "XRP",
     "assetName": "Test XRP",
     "assetSymbol": "testXRP",
     "assetDecimals": 6,
@@ -10,13 +10,24 @@
     "poolTokenSuffix": "TXRP",
     "assetMintingDecimals": 6,
     "userWhitelist": null,
-    "underlyingAddressValidator": ["RippleAddressValidator", []],
+    "underlyingAddressValidator": [
+        "RippleAddressValidator",
+        []
+    ],
     "liquidationStrategy": "LiquidationStrategyImpl",
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",
         "liquidationStepSeconds": 90,
-        "liquidationCollateralFactorBIPS": [12000, 16000, 20000],
-        "liquidationFactorVaultCollateralBIPS": [10000, 10000, 10000]
+        "liquidationCollateralFactorBIPS": [
+            12000,
+            16000,
+            20000
+        ],
+        "liquidationFactorVaultCollateralBIPS": [
+            10000,
+            10000,
+            10000
+        ]
     },
     "poolCollateral": {
         "token": "WNat",

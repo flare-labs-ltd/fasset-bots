@@ -93,7 +93,6 @@
         "agent_api_start:debug": "yarn nest start --debug --watch"
     },
     "dependencies": {
-        "@flarenetwork/mcc": "3.2.0",
         "@mikro-orm/cli": "5.8.4",
         "@mikro-orm/core": "5.8.4",
         "@mikro-orm/mysql": "5.8.4",
@@ -122,6 +121,7 @@
         "reflect-metadata": "0.1.13",
         "rxjs": "7.8.1",
         "simple-wallet": "link:../simple-wallet",
+        "state-connector-protocol": "git+https://gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b",
         "web3": "1.10.2",
         "web3-core": "1.10.2",
         "web3-eth": "1.10.2",

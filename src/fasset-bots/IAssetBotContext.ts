@@ -2,11 +2,9 @@ import {
     AddressUpdaterInstance,
     AssetManagerInstance,
     FAssetInstance,
-    IERC20Instance,
     IPriceChangeEmitterInstance,
     WNatInstance,
 } from "../../typechain-truffle";
-import { CollateralType } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
@@ -31,8 +29,6 @@ export interface IAssetAgentBotContext {
     wNat: ContractWithEvents<WNatInstance, WNatEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
-    stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
-    collaterals: CollateralType[];
     addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
 }
 
@@ -53,7 +49,6 @@ export interface AgentBotDefaultSettings {
 export interface IAssetActorContext {
     nativeChainInfo: NativeChainInfo;
     blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
-    collaterals: CollateralType[];
     attestationProvider?: AttestationHelper; // only for challenger
     // contracts
     priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;

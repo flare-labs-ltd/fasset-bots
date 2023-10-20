@@ -11,7 +11,7 @@ import {
     UnderlyingWithdrawalConfirmed,
 } from "../../typechain-truffle/AssetManager";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, MINUS_CHAR, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, MINUS_CHAR, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -27,6 +27,7 @@ import { artifacts } from "../utils/web3";
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
+const IERC20 = artifacts.require("IERC20");
 
 export class Agent {
     constructor(
@@ -125,7 +126,7 @@ export class Agent {
      */
     async depositVaultCollateral(amountTokenWei: BNish) {
         const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        const vaultCollateralToken = requireNotNull(Object.values(this.context.stablecoins).find((token) => token.address === vaultCollateralTokenAddress));
+        const vaultCollateralToken = await IERC20.at(vaultCollateralTokenAddress);
         await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
         return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.ownerAddress });
     }
