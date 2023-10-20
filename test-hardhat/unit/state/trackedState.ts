@@ -89,6 +89,15 @@ describe("Tracked state tests", async () => {
     let updateExecutor: string;
     let assetManagerControllerAddress: string;
 
+    async function createContextAndInitializeTrackedState(assetManagerControllerAddress?: string): Promise<void> {
+        context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor, undefined, assetManagerControllerAddress);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
+        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
+        const lastBlock = await web3.eth.getBlockNumber();
+        trackedState = new TrackedState(trackedStateContext, lastBlock);
+        await trackedState.initialize();
+    }
+
     before(async () => {
         disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
@@ -101,12 +110,7 @@ describe("Tracked state tests", async () => {
     });
 
     beforeEach(async () => {
-        context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor, undefined, assetManagerControllerAddress);
-        trackedStateContext = getTestAssetTrackedStateContext(context);
-        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        const lastBlock = await web3.eth.getBlockNumber();
-        trackedState = new TrackedState(trackedStateContext, lastBlock);
-        await trackedState.initialize();
+        await createContextAndInitializeTrackedState();
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
@@ -644,6 +648,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'AgentCollateralTypeChanged'", async () => {
+        await createContextAndInitializeTrackedState(assetManagerControllerAddress);
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
