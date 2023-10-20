@@ -1,6 +1,5 @@
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { disableMccTraceManager } from "../../test-utils/helpers";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
@@ -18,7 +17,6 @@ describe("Actor base runner tests", async () => {
     let ownerAddress: string;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
     });

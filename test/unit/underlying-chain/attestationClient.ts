@@ -12,14 +12,14 @@ import {
     createTestOrmOptions,
 } from "../../test-utils/test-bot-config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
-import { SourceId } from "../../../src/verification/sources/sources";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 import { ORM } from "../../../src/config/orm";
-import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 use(chaiAsPromised);
 
 const accountPrivateKey = requireEnv("USER_PRIVATE_KEY");
@@ -66,7 +66,7 @@ describe("Attestation client unit tests", async () => {
             finalizationBlocks
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
-            .to.eventually.be.rejectedWith(`There aren't any attestation providers.`)
+            .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
             .and.be.an.instanceOf(Error);
     });
 
@@ -76,7 +76,7 @@ describe("Attestation client unit tests", async () => {
         const requestBlock = await attestationHelper.requestConfirmedBlockHeightExistsProof(windowSeconds);
         // obtain to soon
         const res1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round, requestBlock!.data);
-        expect(res1.finalized).to.be.false;
+        expect(res1).to.be.equal(AttestationNotProved.NOT_FINALIZED);
         // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined, true);
@@ -112,13 +112,12 @@ describe("Attestation client unit tests", async () => {
         const proofPayment = await attestationHelper.stateConnector.obtainProof(requestPayment!.round, requestPayment!.data);
         const proofDecreasing = await attestationHelper.stateConnector.obtainProof(requestDecreasing!.round, requestDecreasing!.data);
         const proofNonPayment = await attestationHelper.stateConnector.obtainProof(requestNonPayment!.round, requestNonPayment!.data);
-        expect(proofBlock.finalized).to.be.true;
-        expect(proofPayment.finalized).to.be.true;
-        expect(proofDecreasing.finalized).to.be.true;
-        expect(proofNonPayment.finalized).to.be.true;
+        expect(proofBlock).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
+        expect(proofPayment).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
+        expect(proofDecreasing).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
+        expect(proofNonPayment).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
 
         const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round - 2, requestBlock!.data);
-        expect(proofBlock1.finalized).to.be.true;
-        expect(proofBlock1.result).to.be.null;
+        expect(proofBlock1).to.be.equal(AttestationNotProved.DISPROVED);
     });
 });

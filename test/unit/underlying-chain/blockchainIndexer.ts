@@ -1,7 +1,6 @@
 import { expect, use } from "chai";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
-import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
 import { requireEnv, toBN } from "../../../src/utils/helpers";
 import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
@@ -9,6 +8,7 @@ const rewiredBlockchainIndexerHelper = rewire("../../../src/underlying-chain/Blo
 const rewiredBlockchainIndexerHelperClass = rewiredBlockchainIndexerHelper.__get__("BlockchainIndexerHelper");
 import chaiAsPromised from "chai-as-promised";
 import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 
 describe("XRP blockchain tests via indexer", async () => {

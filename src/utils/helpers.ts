@@ -351,6 +351,20 @@ export function replaceStringRange(str: string, start: number, length: number, r
 }
 
 /**
+ * Unprefixes a string with 0x if it is prefixed.
+ */
+export function unPrefix0x(str: string) {
+    return str.replace(/^0x/i, '');
+}
+
+/**
+ * Prefixes a string with 0x if it is not already prefixed.
+ */
+export function prefix0x(str: string) {
+    return str.match(/^0x/i) ? str : "0x" + str;
+}
+
+/**
  * Find the package root than contains the directory.
  * @param moduleDir the directory of a module, typically use `__dirname`
  * @returns the directory of the modules's package root.

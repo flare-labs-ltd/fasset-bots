@@ -4,7 +4,7 @@
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
         {
-            "chainId": 3,
+            "chainId": "XRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,

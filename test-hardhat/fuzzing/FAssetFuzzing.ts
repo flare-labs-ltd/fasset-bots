@@ -1,5 +1,5 @@
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
-import { createTestAgentBAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter, disableMccTraceManager } from "../test-utils/helpers";
+import { createTestAgentBAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { artifacts, web3 } from "../../src/utils/web3";
@@ -80,7 +80,6 @@ describe("Fuzzing tests", async () => {
     let notifier: Notifier;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         governance = accounts[1];
         // create context

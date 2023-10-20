@@ -1,7 +1,7 @@
 {
     "$schema": "../asset-manager-parameters.schema.json",
     "burnAddress": "0x000000000000000000000000000000000000dEaD",
-    "chainId": 4,
+    "chainName": "ALGO",
     "assetName": "Algorand",
     "assetSymbol": "ALGO",
     "assetDecimals": 6,
@@ -10,7 +10,10 @@
     "poolTokenSuffix": "ALGO",
     "assetMintingDecimals": 6,
     "userWhitelist": null,
-    "underlyingAddressValidator": ["TrivialAddressValidatorMock", []],
+    "underlyingAddressValidator": [
+        "TrivialAddressValidatorMock",
+        []
+    ],
     "liquidationStrategy": "LiquidationStrategyImpl",
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",

@@ -24,7 +24,7 @@ export interface AssetManagerContract
       priceReader: string;
       assetDecimals: number | BN | string;
       assetMintingDecimals: number | BN | string;
-      chainId: number | BN | string;
+      chainId: string;
       averageBlockTimeMS: number | BN | string;
       mintingPoolHoldingsRequiredBIPS: number | BN | string;
       collateralReservationFeeBIPS: number | BN | string;
@@ -1017,23 +1017,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1041,23 +1049,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1065,23 +1081,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1089,23 +1113,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1116,23 +1148,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1140,23 +1180,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1164,23 +1212,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1188,23 +1244,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1215,23 +1279,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1239,23 +1311,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1263,23 +1343,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1287,23 +1375,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1455,25 +1551,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1481,25 +1595,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1507,25 +1639,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1533,25 +1683,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1603,23 +1771,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1627,23 +1803,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1651,23 +1835,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1675,23 +1867,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1722,12 +1922,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1735,12 +1945,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1748,12 +1968,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1761,12 +1991,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -1777,14 +2017,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1792,14 +2041,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1807,14 +2065,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1822,14 +2089,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -1984,7 +2260,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     priceReader: string;
     assetDecimals: BN;
     assetMintingDecimals: BN;
-    chainId: BN;
+    chainId: string;
     averageBlockTimeMS: BN;
     mintingPoolHoldingsRequiredBIPS: BN;
     collateralReservationFeeBIPS: BN;
@@ -2027,14 +2303,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -2042,14 +2327,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -2057,14 +2351,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -2072,14 +2375,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -2150,16 +2462,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2167,16 +2488,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2184,16 +2514,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2201,16 +2540,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2232,92 +2580,124 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -2408,16 +2788,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2425,16 +2814,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2442,16 +2840,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2459,16 +2866,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        deadlineBlockNumber: number | BN | string;
-        deadlineTimestamp: number | BN | string;
-        destinationAddressHash: string;
-        paymentReference: string;
-        amount: number | BN | string;
-        lowerBoundaryBlockNumber: number | BN | string;
-        lowerBoundaryBlockTimestamp: number | BN | string;
-        firstOverflowBlockNumber: number | BN | string;
-        firstOverflowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            minimalBlockNumber: number | BN | string;
+            deadlineBlockNumber: number | BN | string;
+            deadlineTimestamp: number | BN | string;
+            destinationAddressHash: string;
+            amount: number | BN | string;
+            standardPaymentReference: string;
+          };
+          responseBody: {
+            minimalBlockTimestamp: number | BN | string;
+            firstOverflowBlockNumber: number | BN | string;
+            firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2529,23 +2945,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       _lots: number | BN | string,
@@ -2554,23 +2978,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       _lots: number | BN | string,
@@ -2579,23 +3011,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       _lots: number | BN | string,
@@ -2604,23 +3044,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _payment: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        inUtxo: number | BN | string;
-        utxo: number | BN | string;
-        sourceAddressHash: string;
-        intendedSourceAddressHash: string;
-        receivingAddressHash: string;
-        intendedReceivingAddressHash: string;
-        spentAmount: number | BN | string;
-        intendedSpentAmount: number | BN | string;
-        receivedAmount: number | BN | string;
-        intendedReceivedAmount: number | BN | string;
-        paymentReference: string;
-        oneToOne: boolean;
-        status: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            inUtxo: number | BN | string;
+            utxo: number | BN | string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            receivingAddressHash: string;
+            intendedReceivingAddressHash: string;
+            spentAmount: number | BN | string;
+            intendedSpentAmount: number | BN | string;
+            receivedAmount: number | BN | string;
+            intendedReceivedAmount: number | BN | string;
+            standardPaymentReference: string;
+            oneToOne: boolean;
+            status: number | BN | string;
+          };
+        };
       },
       _agentVault: string,
       _lots: number | BN | string,
@@ -2752,12 +3200,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2765,12 +3223,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     call(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2778,12 +3246,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2791,12 +3269,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     estimateGas(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
@@ -2830,48 +3318,88 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _proof: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        numberOfConfirmations: number | BN | string;
-        lowestQueryWindowBlockNumber: number | BN | string;
-        lowestQueryWindowBlockTimestamp: number | BN | string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            blockNumber: number | BN | string;
+            queryWindow: number | BN | string;
+          };
+          responseBody: {
+            blockTimestamp: number | BN | string;
+            numberOfConfirmations: number | BN | string;
+            lowestQueryWindowBlockNumber: number | BN | string;
+            lowestQueryWindowBlockTimestamp: number | BN | string;
+          };
+        };
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -3203,23 +3731,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3227,23 +3763,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3251,23 +3795,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3275,23 +3827,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3302,23 +3862,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3326,23 +3894,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3350,23 +3926,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3374,23 +3958,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3401,23 +3993,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3425,23 +4025,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3449,23 +4057,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3473,23 +4089,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3643,25 +4267,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3669,25 +4311,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3695,25 +4355,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3721,25 +4399,43 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3791,23 +4487,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3815,23 +4519,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3839,23 +4551,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3863,23 +4583,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3910,12 +4638,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3923,12 +4661,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3936,12 +4684,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3949,12 +4707,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -3965,14 +4733,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3980,14 +4757,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -3995,14 +4781,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4010,14 +4805,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4172,7 +4976,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       priceReader: string;
       assetDecimals: BN;
       assetMintingDecimals: BN;
-      chainId: BN;
+      chainId: string;
       averageBlockTimeMS: BN;
       mintingPoolHoldingsRequiredBIPS: BN;
       collateralReservationFeeBIPS: BN;
@@ -4215,14 +5019,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4230,14 +5043,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4245,14 +5067,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4260,14 +5091,23 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
@@ -4338,16 +5178,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4355,16 +5204,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4372,16 +5230,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4389,16 +5256,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4420,92 +5296,124 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -4596,16 +5504,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4613,16 +5530,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4630,16 +5556,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4647,16 +5582,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          deadlineBlockNumber: number | BN | string;
-          deadlineTimestamp: number | BN | string;
-          destinationAddressHash: string;
-          paymentReference: string;
-          amount: number | BN | string;
-          lowerBoundaryBlockNumber: number | BN | string;
-          lowerBoundaryBlockTimestamp: number | BN | string;
-          firstOverflowBlockNumber: number | BN | string;
-          firstOverflowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              minimalBlockNumber: number | BN | string;
+              deadlineBlockNumber: number | BN | string;
+              deadlineTimestamp: number | BN | string;
+              destinationAddressHash: string;
+              amount: number | BN | string;
+              standardPaymentReference: string;
+            };
+            responseBody: {
+              minimalBlockTimestamp: number | BN | string;
+              firstOverflowBlockNumber: number | BN | string;
+              firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4717,23 +5661,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         _lots: number | BN | string,
@@ -4742,23 +5694,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         _lots: number | BN | string,
@@ -4767,23 +5727,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         _lots: number | BN | string,
@@ -4792,23 +5760,31 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _payment: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          inUtxo: number | BN | string;
-          utxo: number | BN | string;
-          sourceAddressHash: string;
-          intendedSourceAddressHash: string;
-          receivingAddressHash: string;
-          intendedReceivingAddressHash: string;
-          spentAmount: number | BN | string;
-          intendedSpentAmount: number | BN | string;
-          receivedAmount: number | BN | string;
-          intendedReceivedAmount: number | BN | string;
-          paymentReference: string;
-          oneToOne: boolean;
-          status: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              inUtxo: number | BN | string;
+              utxo: number | BN | string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              receivingAddressHash: string;
+              intendedReceivingAddressHash: string;
+              spentAmount: number | BN | string;
+              intendedSpentAmount: number | BN | string;
+              receivedAmount: number | BN | string;
+              intendedReceivedAmount: number | BN | string;
+              standardPaymentReference: string;
+              oneToOne: boolean;
+              status: number | BN | string;
+            };
+          };
         },
         _agentVault: string,
         _lots: number | BN | string,
@@ -4940,12 +5916,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4953,12 +5939,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       call(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4966,12 +5962,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -4979,12 +5985,22 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       estimateGas(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
@@ -5018,48 +6034,88 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _proof: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          numberOfConfirmations: number | BN | string;
-          lowestQueryWindowBlockNumber: number | BN | string;
-          lowestQueryWindowBlockTimestamp: number | BN | string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              blockNumber: number | BN | string;
+              queryWindow: number | BN | string;
+            };
+            responseBody: {
+              blockTimestamp: number | BN | string;
+              numberOfConfirmations: number | BN | string;
+              lowestQueryWindowBlockNumber: number | BN | string;
+              lowestQueryWindowBlockTimestamp: number | BN | string;
+            };
+          };
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;

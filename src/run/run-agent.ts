@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { disableMccTraceManager } from "../../test-hardhat/test-utils/helpers";
 import { AgentBotRunner } from "../actors/AgentBotRunner";
 import { createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { requireEnv, toplevelRun } from "../utils/helpers";
@@ -13,8 +12,6 @@ const OWNER_UNDERLYING_PRIVATE_KEY: string = requireEnv("OWNER_UNDERLYING_PRIVAT
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 
 toplevelRun(async () => {
-    // to avoid RangeError: Map maximum size exceeded in /home/fasset-bots/simple-wallet/node_modules/@flarenetwork/mcc/dist/src/utils/trace.js:18:44
-    disableMccTraceManager();
     const runConfig = loadAgentConfigFile(RUN_CONFIG_PATH);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [OWNER_PRIVATE_KEY], null);
     const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);

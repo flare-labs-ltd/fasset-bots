@@ -6,6 +6,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
+import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 use(chaiAsPromised);
 
 const underlying1 = "UNDERLYING1";
@@ -90,8 +91,7 @@ describe("Attestation client unit tests", async () => {
         await useContext();
         const round = 10;
         const res = await context.attestationProvider.obtainPaymentProof(round, "");
-        expect(res.finalized).to.be.false;
-        expect(res.result).to.be.null;
+        expect(res).to.be.equal(AttestationNotProved.NOT_FINALIZED);
     });
 
     it("Should wait for round finalization", async () => {

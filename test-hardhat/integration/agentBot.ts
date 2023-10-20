@@ -18,7 +18,6 @@ import {
     createTestAgentBotAndMakeAvailable,
     createTestMinter,
     createTestRedeemer,
-    disableMccTraceManager,
     getAgentStatus,
     mintVaultCollateralToOwner,
 } from "../test-utils/helpers";
@@ -49,7 +48,6 @@ describe("Agent bot tests", async () => {
     let redeemer: Redeemer;
 
     before(async () => {
-        disableMccTraceManager();
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         ownerAddress = accounts[3];

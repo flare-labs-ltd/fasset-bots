@@ -147,10 +147,10 @@
             "minimum": 0,
             "type": "integer"
         },
-        "chainId": {
-            "description": "Chain id as used in the state connector.",
+        "chainName": {
+            "description": "Chain name; must match the state connector chainId, when encoded as bytes.",
             "minimum": 0,
-            "type": "integer"
+            "type": "string"
         },
         "collateralPoolFactory": {
             "description": "The factory contract for creating agent collateral pools.\nCan be a contract address (0x...) or a name in contracts.json.\nOptional, default is 'CollateralPoolFactory' in contracts.json.",
@@ -319,7 +319,10 @@
         "userWhitelist": {
             "description": "If non-null, the whitelist contains a list of accounts that can call public methods\n(minting, redeeming, challenging, etc.)\nIf null, there will be no user whitelisting.\nCan be a contract address (0x...) or a name in contracts.json.",
             "pattern": "^\\w+$",
-            "type": ["null", "string"]
+            "type": [
+                "null",
+                "string"
+            ]
         },
         "vaultCollateralBuyForFlareFactorBIPS": {
             "description": "On some rare occasions (stuck minting, locked fassets after termination), the agent has to unlock\ncollateral. For this, part of collateral corresponding to FTSO asset value is burned and the rest is released.\nHowever, we cannot burn typical vault collateral (stablecoins), so the agent must buy them for NAT\nat FTSO price multiplied with this factor (should be a bit above 1) and then we burn the NATs.",
@@ -354,7 +357,7 @@
         "burnAddress",
         "buybackCollateralFactorBIPS",
         "ccbTimeSeconds",
-        "chainId",
+        "chainName",
         "collateralPoolTokenTimelockSeconds",
         "collateralReservationFeeBIPS",
         "confirmationByOthersAfterSeconds",
@@ -390,3 +393,4 @@
     ],
     "type": "object"
 }
+

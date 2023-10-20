@@ -2,12 +2,12 @@ import { createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { SourceId } from "../../../src/verification/sources/sources";
 import { createTestOrmOptions } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 
 let orm: ORM;

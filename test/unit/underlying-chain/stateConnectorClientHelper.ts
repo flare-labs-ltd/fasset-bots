@@ -4,11 +4,8 @@ import { createBlockchainIndexerHelper, createStateConnectorClient } from "../..
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32, requireEnv, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { SourceId } from "../../../src/verification/sources/sources";
 import rewire from "rewire";
 use(chaiAsPromised);
-import { AttestationType } from "../../../src/verification/generated/attestation-types-enum";
-import { ARConfirmedBlockHeightExists } from "../../../src/verification/generated/attestation-request-types";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
 import {
     ATTESTATION_PROVIDER_URLS,
@@ -17,6 +14,9 @@ import {
     STATE_CONNECTOR_ADDRESS,
     STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
 } from "../../test-utils/test-bot-config";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, encodeAttestationName } from "state-connector-protocol";
+import { AttestationProof } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
@@ -60,12 +60,14 @@ describe("XRP attestation/state connector tests", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, finalizationBlocks);
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
-        const request: ARConfirmedBlockHeightExists = {
-            attestationType: AttestationType.ConfirmedBlockHeightExists,
+        const request: ConfirmedBlockHeightExists.Request = {
+            attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: sourceId,
-            blockNumber: blockHeight - testChainInfo.xrp.finalizationBlocks,
-            queryWindow: queryWindow,
             messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
+                queryWindow: String(queryWindow),
+            }
         };
         const resp = await stateConnectorClient.submitRequest(request);
         expect(resp!.round).to.be.greaterThan(0);
@@ -81,7 +83,7 @@ describe("XRP attestation/state connector tests", async () => {
 });
 
 describe("State connector tests - decoding", async () => {
-    const invalidAttestationType = -1;
+    const invalidAttestationType = encodeAttestationName("invalid");
     let rewiredStateConnectorHelper: typeof rewiredStateConnectorClientHelperClass;
     const merkleProof = ["0xa2a603a9acad0bca95be28b9cea549b9b1cbe32519ff1389156b6d3c439535d4"];
     const responsePayment = {
@@ -152,65 +154,30 @@ describe("State connector tests - decoding", async () => {
         );
     });
 
-    it("Should decode proofs - payment", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responsePayment, AttestationType.Payment, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responsePayment.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responsePayment.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responsePayment.blockTimestamp))).to.be.true;
-    });
-
-    it("Should decode proofs - block height", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseBlockHeight, AttestationType.ConfirmedBlockHeightExists, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseBlockHeight.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responseBlockHeight.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responseBlockHeight.blockTimestamp))).to.be.true;
-    });
-
-    it("Should decode proofs - non payment", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseNonPayment, AttestationType.ReferencedPaymentNonexistence, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseNonPayment.stateConnectorRound);
-        expect(toBN(decoded.deadlineBlockNumber).eq(toBN(responseNonPayment.deadlineBlockNumber))).to.be.true;
-        expect(toBN(decoded.deadlineTimestamp).eq(toBN(responseNonPayment.deadlineTimestamp))).to.be.true;
-        expect(toBN(decoded.amount).eq(toBN(responseNonPayment.amount))).to.be.true;
-    });
-
-    it("Should decode proofs - decreasing balance", async () => {
-        const decoded = rewiredStateConnectorHelper.decodeProof(responseBalanceDecreasing, AttestationType.BalanceDecreasingTransaction, merkleProof);
-        expect(decoded.stateConnectorRound).to.eq(responseBalanceDecreasing.stateConnectorRound);
-        expect(toBN(decoded.blockNumber).eq(toBN(responseBalanceDecreasing.blockNumber))).to.be.true;
-        expect(toBN(decoded.blockTimestamp).eq(toBN(responseBalanceDecreasing.blockTimestamp))).to.be.true;
-        expect(toBN(decoded.spentAmount).eq(toBN(responseBalanceDecreasing.spentAmount))).to.be.true;
-    });
-
-    it("Should not decode proofs - invalid type", async () => {
-        const fn = () => {
-            return rewiredStateConnectorHelper.decodeProof(responseBalanceDecreasing, invalidAttestationType as AttestationType, merkleProof);
-        };
-        expect(fn).to.throw(`Invalid attestation type ${invalidAttestationType}`);
-    });
-
-    it("Should check if last client", async () => {
-        const all = rewiredStateConnectorHelper.clients.length;
-        const isLast = rewiredStateConnectorHelper.lastClient(all - 1);
-        const notLast = rewiredStateConnectorHelper.lastClient(all);
-        expect(isLast).to.be.true;
-        expect(notLast).to.be.false;
-    });
-
     it("Should not verify proof - invalid attestation type", async () => {
-        const proofData = {
-            stateConnectorRound: "571512",
+        const proofData: ConfirmedBlockHeightExists.Proof = {
+            data: {
+                attestationType: invalidAttestationType,
+                sourceId: SourceId.XRP,
+                lowestUsedTimestamp: "1687489872",
+                votingRound: "571512",
+                requestBody: {
+                    blockNumber: "38888113",
+                    queryWindow: "86400",
+                },
+                responseBody: {
+                    blockTimestamp: "1687489980",
+                    numberOfConfirmations: "1",
+                    lowestQueryWindowBlockNumber: "38888079",
+                    lowestQueryWindowBlockTimestamp: "1687489872",
+                },
+            },
             merkleProof: [
                 "0x06132641cdcc7358d02ee84b09c6c005d03b046f5da3cc3f0d02bcbd04fbcbc4",
                 "0xcae4c715a94dae234c49acc329915a28ba853435d6f4fb858a5a0a120beac520",
             ],
-            blockNumber: "38888113",
-            blockTimestamp: "1687489980",
-            numberOfConfirmations: "1",
-            lowestQueryWindowBlockNumber: "38888079",
-            lowestQueryWindowBlockTimestamp: "1687489872",
-        };
-        await expect(rewiredStateConnectorHelper.verifyProof(sourceId, invalidAttestationType, proofData))
+        }
+        await expect(rewiredStateConnectorHelper.verifyProof(proofData))
             .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
             .and.be.an.instanceOf(Error);
     });

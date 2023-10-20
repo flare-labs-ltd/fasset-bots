@@ -21,7 +21,7 @@ Example:
     },
     "fAssetInfos": [
         {
-            "chainId": 3,
+            "chainId": "XRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -100,4 +100,3 @@ AGENT_BOT_API_KEY_HASH=
 ### Other bots configuration file
 
 In order to run other actor bots same instance of configuration must be provided, but not all atributes are required for those bots (check interface `BotConfigFile` in [config-files.ts](../src/config/config-files.ts)) and [examples](../run-config/).
-

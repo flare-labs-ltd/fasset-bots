@@ -1,28 +1,43 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "state-connector-protocol";
 import { IStateConnectorInstance, SCProofVerifierInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN, toNumber } from "../utils/helpers";
-import { MerkleTree } from "../utils/MerkleTree";
-import { web3DeepNormalize } from "../utils/web3normalize";
-import {
-    DHBalanceDecreasingTransaction,
-    DHConfirmedBlockHeightExists,
-    DHPayment,
-    DHReferencedPaymentNonexistence,
-    DHType,
-} from "../verification/generated/attestation-hash-types";
-import { AttestationType } from "../verification/generated/attestation-types-enum";
-import { AttestationRequestId, AttestationResponse, IStateConnectorClient } from "./interfaces/IStateConnectorClient";
-import { ARBase } from "../verification/generated/attestation-request-types";
-import { StaticAttestationDefinitionStore } from "../utils/StaticAttestationDefinitionStore";
-import { logger } from "../utils/logger";
 import { formatArgs } from "../utils/formatting";
+import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toNumber } from "../utils/helpers";
+import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
+import { web3DeepNormalize } from "../utils/web3normalize";
+import { attestationProved } from "./AttestationHelper";
+import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
         super(message);
     }
+}
+
+export interface PrepareRequestResult {
+    abiEncodedRequest: string;
+}
+
+export interface ProofRequest {
+    roundId: number;
+    requestBytes: string;
+}
+
+export interface ApiWrapper<T> {
+    status: string;
+    data?: T;
+    errorMessage?: string;
+}
+
+export interface VotingRoundResult<RES> {
+    roundId: number;
+    hash: string;
+    requestBytes: string;
+    request: any;
+    response: RES;
+    merkleProof: string[];
 }
 
 export class StateConnectorClientHelper implements IStateConnectorClient {
@@ -33,7 +48,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     scProofVerifier!: SCProofVerifierInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
-    definitionStore = new StaticAttestationDefinitionStore();
+    definitionStore = new AttestationDefinitionStore();
 
     constructor(
         public attestationProviderUrls: string[],
@@ -79,6 +94,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
         return false;
     }
+
     async waitForRoundFinalization(round: number): Promise<void> {
         logger.info(`State connector helper: waiting for round ${round} finalization`);
         let roundFinalized = false;
@@ -89,39 +105,27 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         logger.info(`State connector helper: round ${round} is finalized`);
     }
 
-    async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
+    async submitRequest(request: ARBase): Promise<AttestationRequestId> {
         const attReq = await retry(this.submitRequestToStateConnector.bind(this), [request], DEFAULT_RETRIES);
         logger.info(`State connector helper: retrieved attestation request ${formatArgs(attReq)}`);
         return attReq;
     }
 
-    async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId | null> {
-        const response = await this.verifier.post("/query/prepareAttestation", request);
-        const status = response.data.status;
-        const data = response.data.data;
-        const errorMessage = response.data.errorMessage;
-        const errorDetails = response.data.errorDetails;
-        /* istanbul ignore else */
-        if (status === "OK") {
-            const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
-            const attReq = requiredEventArgs(txRes, "AttestationRequest");
-            const calculated_round_id = this.timestampToRoundId(toNumber(attReq.timestamp));
-            return {
-                round: calculated_round_id,
-                data: data,
-            };
-        } else {
-            logger.error(
-                `State connector error: cannot submit request ${formatArgs(request)}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new StateConnectorError(
-                `State connector error: cannot submit request ${formatArgs(request)}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-        }
+    async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
+        const attestationName = decodeAttestationName(request.attestationType);
+        const response = await this.verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
+            .catch((e: AxiosError) => {
+                logger.error(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+                throw new StateConnectorError(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+            });
+        const data = response.data.abiEncodedRequest;
+        const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
+        const attReq = requiredEventArgs(txRes, "AttestationRequest");
+        const calculatedRoundId = this.timestampToRoundId(toNumber(attReq.timestamp));
+        return {
+            round: calculatedRoundId,
+            data: data,
+        };
     }
 
     timestampToRoundId(timestamp: number): number {
@@ -129,196 +133,88 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         return Math.floor((timestamp - this.firstEpochStartTime) / this.roundDurationSec);
     }
 
-    async obtainProof(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
+    async obtainProof(round: number, requestData: string): Promise<OptionalAttestationProof> {
         const proof = await retry(this.obtainProofFromStateConnector.bind(this), [round, requestData], DEFAULT_RETRIES);
         logger.info(`State connector helper: obtained proof ${formatArgs(proof)}`);
         return proof;
     }
 
-    async obtainProofFromStateConnector(round: number, requestData: string): Promise<AttestationResponse<DHType>> {
+    async obtainProofFromStateConnector(roundId: number, requestBytes: string): Promise<OptionalAttestationProof> {
         try {
-            for (const [i, client] of this.clients.entries()) {
-                const resp = await client.get(`/api/proof/votes-for-round/${round}`);
-                const status = resp.data.status;
-                const data = resp.data.data;
-
-                // is the round finalized?
-                if (status !== "OK") {
-                    return { finalized: false, result: null };
-                }
-
-                // find response matching requestData
-                let matchedResponse: any = null;
-                for (const item of data) {
-                    const encoded = this.definitionStore.encodeRequest(item.request);
-                    if (encoded.toUpperCase() === requestData.toUpperCase()) {
-                        matchedResponse = item;
-                    }
-                }
-                if (matchedResponse == null) {
-                    // round is finalized, but this request hasn't been proved (it is false)
-                    if (this.lastClient(i)) {
-                        return { finalized: true, result: null };
-                    } else {
-                        continue;
-                    }
-                }
-
-                // build Merkle tree, obtain proof, and check root
-                const hashes: string[] = data.map((item: any) => item.hash) as string[];
-                const tree = new MerkleTree(hashes);
-                const index = tree.sortedHashes.findIndex((hash) => hash === matchedResponse.hash);
-                const proof = tree.getProof(index);
-                /* istanbul ignore next */
+            let disproved = 0;
+            for (const client of this.clients) {
+                const proof = await this.obtainProofFromStateConnectorForClient(client, roundId, requestBytes);
                 if (proof == null) {
-                    // this should never happen, unless there is bug in the MerkleTree implementation
-                    logger.error(`State connector error: cannot obtain Merkle proof`);
-                    throw new StateConnectorError(`Cannot obtain Merkle proof`);
+                    continue;    // client failure
                 }
-
-                // gets the root and checks that it is available (throws if it is not)
-                const scFinalizedRoot = await this.stateConnector.merkleRoot(round);
-                /* istanbul ignore next */
-                if (scFinalizedRoot !== tree.root) {
-                    // this can only happen if the attestation provider from where we picked data is
-                    // inconsistent with the finalized Merkle root in the blockchain
-                    // skip to next attestation provider
-                    if (this.lastClient(i)) {
-                        logger.error(`State connector error: SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
-                        throw new StateConnectorError(`SC Merkle roots mismatch ${scFinalizedRoot} != ${tree.root}`);
-                    } else {
-                        continue;
-                    }
+                if (proof === AttestationNotProved.NOT_FINALIZED) {
+                    return AttestationNotProved.NOT_FINALIZED;
                 }
-
-                // convert the proof
-                const proofData = this.decodeProof(matchedResponse.response, matchedResponse.request.attestationType, proof);
-
-                // extra verification - should never fail, since Merkle root matches
-                const verified = this.verifyProof(matchedResponse.request.sourceId, matchedResponse.request.attestationType, proofData);
-                /* istanbul ignore next */
-                if (!verified) {
-                    logger.error(`State connector error: proof does not verify!!`);
-                    throw new StateConnectorError("Proof does not verify!!!");
+                if (!attestationProved(proof)) {
+                    ++disproved;
                 }
-
-                return { finalized: true, result: proofData };
+                return proof;
             }
-            logger.error(`State connector error: there aren't any attestation providers`);
-            throw new StateConnectorError("There aren't any attestation providers.");
+            if (disproved > 0) {
+                return AttestationNotProved.DISPROVED;
+            }
+            throw new StateConnectorError("There aren't any working attestation providers.");
         } catch (e) {
-            /* istanbul ignore else */
-            if (e instanceof StateConnectorError) {
-                logger.error(`State connector error: ${e}`);
-                throw e;
-            }
+            logger.error(`State connector error: ${e}`);
             /* istanbul ignore next */
-            logger.error(`State connector error: ${String(e)}`);
-            /* istanbul ignore next */
-            throw new StateConnectorError(String(e));
+            throw (e instanceof StateConnectorError) ? e : new StateConnectorError(String(e));
         }
     }
 
-    private async verifyProof(sourceId: BNish, type: AttestationType, proofData: DHType): Promise<boolean> {
+    async obtainProofFromStateConnectorForClient(client: AxiosInstance, roundId: number, requestBytes: string): Promise<OptionalAttestationProof | null> {
+        const request: ProofRequest = { roundId, requestBytes };
+        let response: AxiosResponse<ApiWrapper<VotingRoundResult<ARESBase>>>;
+        try {
+            response = await client.post<ApiWrapper<VotingRoundResult<ARESBase>>>(`/api/proof/get-specific-proof`, request);
+        } catch (e: any) {
+            logger.error(e.response?.data?.errorMessage ?? String(e));
+            return null;    // network error, client probably down - skip it
+        }
+        const status = response.data.status;
+        // is the round finalized?
+        if (status === "PENDING") {
+            return AttestationNotProved.NOT_FINALIZED;
+        }
+        // no proof from this client, probably disproved
+        if (status !== "OK") {
+            logger.error(response.data.errorMessage);
+            return AttestationNotProved.DISPROVED;
+        }
+        // obtained valid proof
+        const data = response.data.data!;
+        const proof: AttestationProof = {
+            data: data.response,
+            merkleProof: data.merkleProof
+        };
+        const verified = this.verifyProof(proof);
+        /* istanbul ignore next */
+        if (!verified) {
+            logger.error(`State connector error: proof does not verify!!`);
+            return null;    // client has invalid proofs, skip it
+        }
+        return proof;
+    }
+
+    private async verifyProof(proofData: AttestationProof): Promise<boolean> {
         const normalizedProofData = web3DeepNormalize(proofData);
-        switch (type) {
-            case AttestationType.Payment:
-                return await this.scProofVerifier.verifyPayment(sourceId, normalizedProofData as any);
-            case AttestationType.BalanceDecreasingTransaction:
-                return await this.scProofVerifier.verifyBalanceDecreasingTransaction(sourceId, normalizedProofData as any);
-            case AttestationType.ConfirmedBlockHeightExists:
-                return await this.scProofVerifier.verifyConfirmedBlockHeightExists(sourceId, normalizedProofData as any);
-            case AttestationType.ReferencedPaymentNonexistence:
-                return await this.scProofVerifier.verifyReferencedPaymentNonexistence(sourceId, normalizedProofData as any);
+        switch (proofData.data.attestationType) {
+            case Payment.TYPE:
+                return await this.scProofVerifier.verifyPayment(normalizedProofData);
+            case BalanceDecreasingTransaction.TYPE:
+                return await this.scProofVerifier.verifyBalanceDecreasingTransaction(normalizedProofData);
+            case ConfirmedBlockHeightExists.TYPE:
+                return await this.scProofVerifier.verifyConfirmedBlockHeightExists(normalizedProofData);
+            case ReferencedPaymentNonexistence.TYPE:
+                return await this.scProofVerifier.verifyReferencedPaymentNonexistence(normalizedProofData);
             default:
-                logger.error(`State connector error: invalid attestation type ${type}`);
-                throw new StateConnectorError(`Invalid attestation type ${type}`);
+                logger.error(`State connector error: invalid attestation type ${proofData.data.attestationType}`);
+                throw new StateConnectorError(`Invalid attestation type ${proofData.data.attestationType}`);
         }
-    }
-
-    private decodeProof(matchedResponse: any, type: AttestationType, proof: string[]): DHType {
-        switch (type) {
-            case AttestationType.Payment:
-                return this.decodePayment(matchedResponse, proof);
-            case AttestationType.BalanceDecreasingTransaction:
-                return this.decodeBalanceDecreasingTransaction(matchedResponse, proof);
-            case AttestationType.ConfirmedBlockHeightExists:
-                return this.decodeConfirmedBlockHeightExists(matchedResponse, proof);
-            case AttestationType.ReferencedPaymentNonexistence:
-                return this.decodeReferencedPaymentNonexistence(matchedResponse, proof);
-            default:
-                logger.error(`State connector error: invalid attestation type ${type}`);
-                throw new StateConnectorError(`Invalid attestation type ${type}`);
-        }
-    }
-
-    private decodePayment(matchedResponse: any, proof: string[]): DHPayment {
-        return {
-            stateConnectorRound: matchedResponse.stateConnectorRound,
-            merkleProof: proof,
-            blockNumber: toBN(matchedResponse.blockNumber),
-            blockTimestamp: toBN(matchedResponse.blockTimestamp),
-            transactionHash: matchedResponse.transactionHash,
-            inUtxo: toBN(matchedResponse.inUtxo),
-            utxo: toBN(matchedResponse.utxo),
-            sourceAddressHash: matchedResponse.sourceAddressHash,
-            intendedSourceAddressHash: matchedResponse.intendedSourceAddressHash,
-            receivingAddressHash: matchedResponse.receivingAddressHash,
-            intendedReceivingAddressHash: matchedResponse.intendedReceivingAddressHash,
-            spentAmount: toBN(matchedResponse.spentAmount),
-            intendedSpentAmount: toBN(matchedResponse.intendedSpentAmount),
-            receivedAmount: toBN(matchedResponse.receivedAmount),
-            intendedReceivedAmount: toBN(matchedResponse.intendedReceivedAmount),
-            paymentReference: matchedResponse.paymentReference,
-            oneToOne: matchedResponse.oneToOne,
-            status: toBN(matchedResponse.status),
-        };
-    }
-
-    private decodeBalanceDecreasingTransaction(matchedResponse: any, proof: string[]): DHBalanceDecreasingTransaction {
-        return {
-            stateConnectorRound: matchedResponse.stateConnectorRound,
-            merkleProof: proof,
-            blockNumber: toBN(matchedResponse.blockNumber),
-            blockTimestamp: toBN(matchedResponse.blockTimestamp),
-            transactionHash: matchedResponse.transactionHash,
-            sourceAddressIndicator: matchedResponse.sourceAddressIndicator,
-            sourceAddressHash: matchedResponse.sourceAddressHash,
-            spentAmount: toBN(matchedResponse.spentAmount),
-            paymentReference: matchedResponse.paymentReference,
-        };
-    }
-
-    private decodeConfirmedBlockHeightExists(matchedResponse: any, proof: string[]): DHConfirmedBlockHeightExists {
-        return {
-            stateConnectorRound: matchedResponse.stateConnectorRound,
-            merkleProof: proof,
-            blockNumber: toBN(matchedResponse.blockNumber),
-            blockTimestamp: toBN(matchedResponse.blockTimestamp),
-            numberOfConfirmations: toBN(matchedResponse.numberOfConfirmations),
-            lowestQueryWindowBlockNumber: toBN(matchedResponse.lowestQueryWindowBlockNumber),
-            lowestQueryWindowBlockTimestamp: toBN(matchedResponse.lowestQueryWindowBlockTimestamp),
-        };
-    }
-
-    private decodeReferencedPaymentNonexistence(matchedResponse: any, proof: string[]): DHReferencedPaymentNonexistence {
-        return {
-            stateConnectorRound: matchedResponse.stateConnectorRound,
-            merkleProof: proof,
-            deadlineBlockNumber: toBN(matchedResponse.deadlineBlockNumber),
-            deadlineTimestamp: toBN(matchedResponse.deadlineTimestamp),
-            destinationAddressHash: matchedResponse.destinationAddressHash,
-            paymentReference: matchedResponse.paymentReference,
-            amount: toBN(matchedResponse.amount),
-            lowerBoundaryBlockNumber: toBN(matchedResponse.lowerBoundaryBlockNumber),
-            lowerBoundaryBlockTimestamp: toBN(matchedResponse.lowerBoundaryBlockTimestamp),
-            firstOverflowBlockNumber: toBN(matchedResponse.firstOverflowBlockNumber),
-            firstOverflowBlockTimestamp: toBN(matchedResponse.firstOverflowBlockTimestamp),
-        };
-    }
-
-    private lastClient(i: number): boolean {
-        return i === this.clients.length - 1;
     }
 
     private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
