@@ -665,4 +665,15 @@ describe("Agent bot unit tests", async () => {
         const token = "poolTokenSuffix";
         expect(Agent.incrementPoolTokenSuffix(token, 0)).to.eq(token);
     });
+
+    it("Should catch error in handleEvents", async () => {
+        const spyError = spy.on(console, "error");
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // change vault address to force catching error
+        agentEnt.vaultAddress = ownerAddress;
+        await orm.em.persist(agentEnt).flush();
+        await agentBot.handleEvents(orm.em);
+        expect(spyError).to.have.been.called.once;
+    });
 });
