@@ -1,4 +1,4 @@
-import { EventArgs, EvmEvent } from "../utils/events/common";
+import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
 import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
@@ -19,7 +19,7 @@ import { formatArgs } from "../utils/formatting";
 export class TrackedState {
     constructor(
         public context: IAssetActorContext,
-        private lastEventBlockRead: number
+        private currentEventBlock: number
     ) {}
 
     // state
@@ -42,6 +42,9 @@ export class TrackedState {
 
     // event decoder
     eventDecoder = new Web3ContractEventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
+
+    // event handling
+    unhandledEvents: EvmEvent[] = [];
 
     // async initialization part
     async initialize(): Promise<void> {
@@ -74,8 +77,8 @@ export class TrackedState {
     }
 
     async registerStateEvents(events: EvmEvent[]): Promise<void> {
-        try {
-            for (const event of events) {
+        for (const event of events) {
+            try {
                 if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
                     logger.info(`Tracked State received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     [this.prices, this.trustedPrices] = await this.getPrices();
@@ -213,27 +216,28 @@ export class TrackedState {
                         this.agentsByPool.get(event.args.to)?.depositPoolCollateral(toBN(event.args.value));
                     }
                 }
+            } catch (error) {
+                this.unhandledEvents.push(event);
+                console.error(`Error handling events for Tracked State: ${error}`);
+                logger.error(`Tracked State run into error while handling events: ${error}`);
             }
-        } catch (error) {
-            console.error(`Error handling events for Tracked State: ${error}`);
-            logger.error(`Tracked State run into error while handling events: ${error}`);
         }
     }
 
     async readUnhandledEvents(): Promise<EvmEvent[]> {
-        logger.info(`Tracked State started reading unhandled native events FROM block ${this.lastEventBlockRead}.`);
+        logger.info(`Tracked State started reading native events FROM block ${this.currentEventBlock}.`);
         // get all needed logs for state
         const nci = this.context.nativeChainInfo;
         const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
-        for (let lastHandled = this.lastEventBlockRead; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
+        for (let lastHandled = this.currentEventBlock; lastHandled <= lastBlock; lastHandled += nci.readLogsChunkSize) {
             // handle collaterals
             for (const collateral of this.collaterals.list) {
                 const contract = await tokenContract(collateral.token);
                 const logsCollateral = await web3.eth.getPastLogs({
                     address: contract.address,
-                    fromBlock: lastHandled + 1,
-                    toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                    fromBlock: lastHandled,
+                    toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
                     topics: [null],
                 });
                 const eventDecoderCollaterals = new Web3ContractEventDecoder({ collateralDecode: contract });
@@ -242,25 +246,25 @@ export class TrackedState {
             // handle asset manager
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
-                fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                fromBlock: lastHandled,
+                toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
             // handle ftso manager
             const logsFtsoManager = await web3.eth.getPastLogs({
                 address: this.context.priceChangeEmitter.address,
-                fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                fromBlock: lastHandled,
+                toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null],
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // mark as handled
-        this.lastEventBlockRead = lastBlock;
+        this.currentEventBlock = lastBlock + 1;
         // run state events
-        events.sort((a, b) => a.blockNumber - b.blockNumber);
-        logger.info(`Tracked State finished reading unhandled native events TO block ${this.lastEventBlockRead}.`);
+        events.sort(eventOrder);
+        logger.info(`Tracked State finished reading native events TO block ${lastBlock}.`);
         await this.registerStateEvents(events);
         return events;
     }

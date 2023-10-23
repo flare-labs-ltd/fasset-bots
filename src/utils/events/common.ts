@@ -1,5 +1,3 @@
-import hash from "object-hash";
-
 // same as Truffle.AnyEvent
 export interface EventSelector {
     name: string;
@@ -42,8 +40,20 @@ export type ExtractEvent<E extends EventSelector, N extends E["name"]> = Selecte
 
 export type ExtractedEventArgs<E extends EventSelector, N extends E["name"]> = NamedFields<ExtractEvent<E, N>["args"]>;
 
-// takes first 5 bytes of event hash and converts it to a number
-// node's max int is 9007199254740991 > 256**5 so no overflow
-export function eventIndex(event: any): number {
-    return parseInt(hash(event, { encoding: "hex" }).slice(0, 10), 16);
+
+interface EventId {
+    blockNumber: number;
+    transactionIndex: number;
+    logIndex: number;
+}
+
+// order function when comparing two events
+export function eventOrder(event1: EventId, event2: EventId): number {
+    if (event1.blockNumber !== event2.blockNumber) {
+        return event1.blockNumber - event2.blockNumber;
+    } else if (event1.transactionIndex !== event2.transactionIndex) {
+        return event1.transactionIndex - event2.transactionIndex;
+    } else {
+        return event1.logIndex - event2.logIndex;
+    }
 }

@@ -2,7 +2,8 @@ import { Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, P
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
-import { EvmEvent, eventIndex } from "../utils/events/common";
+import { EvmEvent } from "../utils/events/common";
+import { eventOrder } from "../utils/events/common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -29,13 +30,32 @@ export class AgentEntity {
     active!: boolean;
 
     @Property({ nullable: true })
-    lastEventBlockRead!: number;
+    currentEventBlock!: number;
 
-    @Property({ nullable: true })
-    lastEventIdHandled!: number;
+    @OneToMany(() => EventEntity, event => event.agent, { orphanRemoval: true })
+    events = new Collection<EventEntity>(this);
 
-    @OneToMany(() => UnhandledEvent, (event) => event.agent)
-    unhandledEvents = new Collection<UnhandledEvent>(this);
+    addEvent(event: EventEntity): void {
+        if (this.events.isInitialized()) {
+            // remove previously handled events before adding this one
+            // we track the last read event along with all the unhandled ones!
+            this.events.remove(this.events.filter(event => event.handled))
+        }
+        this.events.add(event)
+    }
+
+    lastEventRead(): EventEntity | undefined {
+        if (this.events.isInitialized()) {
+            const ordered = this.events.getItems().sort(eventOrder)
+            return ordered[ordered.length - 1]
+        }
+    }
+
+    unhandledEvents(): EventEntity[] {
+        return this.events.isInitialized()
+            ? this.events.getItems().filter(event => !event.handled)
+            : []
+    }
 
     // agent destroy
 
@@ -206,15 +226,9 @@ export class AgentRedemption {
 }
 
 @Entity()
-export class UnhandledEvent {
+export class EventEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
-
-    @ManyToOne(() => AgentEntity)
-    agent!: AgentEntity;
-
-    @Property()
-    eventId!: number;
 
     @Property()
     blockNumber!: number;
@@ -225,12 +239,18 @@ export class UnhandledEvent {
     @Property()
     logIndex!: number;
 
-    constructor(agent: AgentEntity, event: EvmEvent) {
-        this.agent = agent;
-        this.eventId = eventIndex(event);
+    @Property()
+    handled: boolean = false;
+
+    @ManyToOne(() => AgentEntity)
+    agent!: AgentEntity;
+
+    constructor(agent: AgentEntity, event: EvmEvent, handled: boolean) {
         this.blockNumber = event.blockNumber;
         this.transactionIndex = event.transactionIndex;
         this.logIndex = event.logIndex;
+        this.handled = handled;
+        this.agent = agent;
     }
 }
 
