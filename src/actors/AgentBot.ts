@@ -2,7 +2,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { ConfirmedBlockHeightExists } from "state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, UnhandledEvent } from "../entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, EventEntity } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { Agent } from "../fasset/Agent";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -12,7 +12,7 @@ import { SourceId } from "../underlying-chain/SourceId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { Notifier } from "../utils/Notifier";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
-import { EventArgs, EvmEvent, eventIndex } from "../utils/events/common";
+import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
@@ -86,7 +86,7 @@ export class AgentBot {
             agentEntity.vaultAddress = agent.vaultAddress;
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
-            agentEntity.lastEventBlockRead = lastBlock;
+            agentEntity.currentEventBlock = lastBlock + 1;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
             agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
@@ -180,33 +180,23 @@ export class AgentBot {
     async handleEvents(rootEm: EM): Promise<void> {
         try {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            let events = await this.readUnhandledEvents(rootEm);
-            if (agentEnt.lastEventIdHandled !== null) {
-                events = events.filter(
-                    (_event) =>
-                        // if event's block was not yet seen it's unhandled
-                        _event.blockNumber > agentEnt.lastEventBlockRead + 1 ||
-                        // if event is from the block we saw events from (lastEventBlockRead + 1),
-                        // but its event index is higher than the last one we handled, it's unhandled
-                        (_event.blockNumber == agentEnt.lastEventBlockRead + 1 && eventIndex(_event) > agentEnt.lastEventIdHandled)
-                );
+            const lastEventRead = agentEnt.lastEventRead();
+            let events = await this.readNewEvents(rootEm);
+            if (lastEventRead !== undefined) {
+                events = events.filter(event => eventOrder(event, lastEventRead) > 0);
             }
             for (const event of events) {
-                await rootEm
-                    .transactional(async (em) => {
-                        // log event is handled here! Transaction committing should be done at the last possible step!
-                        agentEnt.lastEventIdHandled = eventIndex(event);
-                        // if current event's block is two blocks past the last one handled, log we handled all events the previous one
-                        // this requires that events are ordered by block number first
-                        if (event.blockNumber > agentEnt.lastEventBlockRead + 1) agentEnt.lastEventBlockRead += 1;
-                        // handle the event
-                        await this.handleEvent(em, event);
-                    })
-                    .catch((error) => {
-                        agentEnt.unhandledEvents.add(new UnhandledEvent(agentEnt, event));
-                        console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
-                    });
+                await rootEm.transactional(async (em) => {
+                    // log event is handled here! Transaction committing should be done at the last possible step!
+                    agentEnt.addEvent(new EventEntity(agentEnt, event, true));
+                    agentEnt.currentEventBlock = event.blockNumber;
+                    // handle the event
+                    await this.handleEvent(em, event)
+                }).catch(error => {
+                    agentEnt.addEvent(new EventEntity(agentEnt, event, false))
+                    console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                });
             }
         } catch (error) {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
@@ -289,33 +279,33 @@ export class AgentBot {
      * @param em entity manager
      * @returns list of EvmEvents
      */
-    async readUnhandledEvents(em: EM): Promise<EvmEvent[]> {
+    async readNewEvents(em: EM): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        logger.info(`Agent ${this.agent.vaultAddress} started reading unhandled native events FROM block ${agentEnt.lastEventBlockRead}`);
+        logger.info(`Agent ${this.agent.vaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
         const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        for (let lastHandled = agentEnt.lastEventBlockRead; lastHandled < lastBlock; lastHandled += nci.readLogsChunkSize) {
+        for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.agent.assetManager.address,
-                fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null, encodedVaultAddress],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
             const logsFtsoManager = await web3.eth.getPastLogs({
                 address: this.context.priceChangeEmitter.address,
-                fromBlock: lastHandled + 1,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize, lastBlock),
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null],
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // sort events first by their block numbers, then internally by their event index
-        events.sort((a, b) => (a.blockNumber !== b.blockNumber ? a.blockNumber - b.blockNumber : eventIndex(a) - eventIndex(b)));
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading unhandled native events TO block ${agentEnt.lastEventBlockRead}`);
+        events.sort(eventOrder);
+        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         return events;
     }
 
