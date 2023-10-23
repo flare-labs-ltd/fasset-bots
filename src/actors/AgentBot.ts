@@ -182,30 +182,31 @@ export class AgentBot {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             let events = await this.readUnhandledEvents(rootEm);
             if (agentEnt.lastEventIdHandled !== null) {
-                events = events.filter((_event) =>
-                    // if event's block was not yet seen it's unhandled
-                       _event.blockNumber > agentEnt.lastEventBlockRead + 1
-                    // if event is from the block we saw events from (lastEventBlockRead + 1),
-                    // but its event index is higher than the last one we handled, it's unhandled
-                    || _event.blockNumber == agentEnt.lastEventBlockRead + 1
-                    && eventIndex(_event) > agentEnt.lastEventIdHandled
-                )
+                events = events.filter(
+                    (_event) =>
+                        // if event's block was not yet seen it's unhandled
+                        _event.blockNumber > agentEnt.lastEventBlockRead + 1 ||
+                        // if event is from the block we saw events from (lastEventBlockRead + 1),
+                        // but its event index is higher than the last one we handled, it's unhandled
+                        (_event.blockNumber == agentEnt.lastEventBlockRead + 1 && eventIndex(_event) > agentEnt.lastEventIdHandled)
+                );
             }
             for (const event of events) {
-                await rootEm.transactional(async (em) => {
-                    // log event is handled here! Transaction committing should be done at the last possible step!
-                    agentEnt.lastEventIdHandled = eventIndex(event);
-                    // if current event's block is two blocks past the last one handled, log we handled all events the previous one
-                    // this requires that events are ordered by block number first
-                    if (event.blockNumber > agentEnt.lastEventBlockRead + 1)
-                        agentEnt.lastEventBlockRead += 1;
-                    // handle the event
-                    await this.handleEvent(em, event)
-                }).catch(error => {
-                    agentEnt.unhandledEvents.add(new UnhandledEvent(agentEnt, event))
-                    console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                    logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
-                })
+                await rootEm
+                    .transactional(async (em) => {
+                        // log event is handled here! Transaction committing should be done at the last possible step!
+                        agentEnt.lastEventIdHandled = eventIndex(event);
+                        // if current event's block is two blocks past the last one handled, log we handled all events the previous one
+                        // this requires that events are ordered by block number first
+                        if (event.blockNumber > agentEnt.lastEventBlockRead + 1) agentEnt.lastEventBlockRead += 1;
+                        // handle the event
+                        await this.handleEvent(em, event);
+                    })
+                    .catch((error) => {
+                        agentEnt.unhandledEvents.add(new UnhandledEvent(agentEnt, event));
+                        console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                    });
             }
         } catch (error) {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
@@ -313,7 +314,7 @@ export class AgentBot {
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
         // sort events first by their block numbers, then internally by their event index
-        events.sort((a, b) => a.blockNumber !== b.blockNumber ? a.blockNumber - b.blockNumber : eventIndex(a) - eventIndex(b));
+        events.sort((a, b) => (a.blockNumber !== b.blockNumber ? a.blockNumber - b.blockNumber : eventIndex(a) - eventIndex(b)));
         logger.info(`Agent ${this.agent.vaultAddress} finished reading unhandled native events TO block ${agentEnt.lastEventBlockRead}`);
         return events;
     }
@@ -481,6 +482,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+        const desiredSettingsUpdateErrorIncludes = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -531,10 +533,14 @@ export class AgentBot {
                         agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
                         agentEnt.agentSettingUpdateValidAtName = "";
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${agentEnt.agentSettingUpdateValidAtName}: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
-                        agentEnt.agentSettingUpdateValidAtName = "";
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, agentEnt.agentSettingUpdateValidAtName);
+                            logger.error(
+                                `Agent ${this.agent.vaultAddress} run into error while updating setting ${agentEnt.agentSettingUpdateValidAtName}: ${error}`
+                            );
+                            agentEnt.agentSettingUpdateValidAtTimestamp = BN_ZERO;
+                            agentEnt.agentSettingUpdateValidAtName = "";
+                        }
                     }
                 } else {
                     logger.info(

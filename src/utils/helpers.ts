@@ -373,9 +373,9 @@ export function findPackageRoot(moduleDir: string) {
     let dir = path.resolve(moduleDir);
     // eslint-disable-next-line no-constant-condition
     while (true) {
-        const packageJson = path.resolve(dir, 'package.json');
+        const packageJson = path.resolve(dir, "package.json");
         const hasPackageJson = fs.existsSync(packageJson) && fs.statSync(packageJson).isFile();
-        const nodeModules = path.resolve(dir, 'node_modules');
+        const nodeModules = path.resolve(dir, "node_modules");
         const hasNodeModules = fs.existsSync(nodeModules) && fs.statSync(nodeModules).isDirectory();
         if (hasPackageJson && hasNodeModules) {
             return dir;

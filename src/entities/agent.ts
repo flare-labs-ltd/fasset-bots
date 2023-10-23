@@ -4,7 +4,6 @@ import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
 import { EvmEvent, eventIndex } from "../utils/events/common";
 
-
 @Entity({ tableName: "agent" })
 export class AgentEntity {
     // vaultAddress is unique across chains (but can repeat in different native networks, so don't use the same db for agents in Songbird and Flare)
@@ -33,9 +32,9 @@ export class AgentEntity {
     lastEventBlockRead!: number;
 
     @Property({ nullable: true })
-    lastEventIdHandled!: number
+    lastEventIdHandled!: number;
 
-    @OneToMany(() => UnhandledEvent, event => event.agent)
+    @OneToMany(() => UnhandledEvent, (event) => event.agent)
     unhandledEvents = new Collection<UnhandledEvent>(this);
 
     // agent destroy
@@ -215,16 +214,16 @@ export class UnhandledEvent {
     agent!: AgentEntity;
 
     @Property()
-    eventId!: number
+    eventId!: number;
 
     @Property()
-    blockNumber!: number
+    blockNumber!: number;
 
     @Property()
-    transactionIndex!: number
+    transactionIndex!: number;
 
     @Property()
-    logIndex!: number
+    logIndex!: number;
 
     constructor(agent: AgentEntity, event: EvmEvent) {
         this.agent = agent;

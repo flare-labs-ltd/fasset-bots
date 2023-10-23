@@ -18,14 +18,13 @@ All responses include the following fields:
 | `data`         |        | Contains the requested data (depending on the request).             |
 | `errorMessage` | string | Contains the description of the error. Undefined if status is "OK". |
 
-
 ## Agent bot APIs
 
 Agent bot web service routes are documented using the Swagger interface at the `/api-doc` route. They are separated in following groups:
 
-- AGENT:
+-   AGENT:
 
-    - GET `/api/agent/create/{fAssetSymbol}`: Given parameter `fAssetSymbol`, returns JSON response containing essential agent data:
+    -   GET `/api/agent/create/{fAssetSymbol}`: Given parameter `fAssetSymbol`, returns JSON response containing essential agent data:
 
     | Field                        | Type   | Description                   |
     | ---------------------------- | ------ | ----------------------------- |
@@ -35,82 +34,85 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | `collateralPoolTokenAddress` | string | Collateral pool token address |
     | `underlyingAddress`          | string | Agent underlying address      |
 
-    - POST `/api/agent/available/enter/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agent/available/enter/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/agent/available/announceExit/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agent/available/announceExit/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/agent/available/exit/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agent/available/exit/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/agent/selfClose/{fAssetSymbol}/{agentVaultAddress}/{amountUBA}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amountUBA`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agent/selfClose/{fAssetSymbol}/{agentVaultAddress}/{amountUBA}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amountUBA`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/agent/settings/update/{fAssetSymbol}/{agentVaultAddress}/{settingName}/{settingValue}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `settingName` and `settingValue`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agent/settings/update/{fAssetSymbol}/{agentVaultAddress}/{settingName}/{settingValue}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `settingName` and `settingValue`, returns one of the possible`status` responses, depending on the success of operation.
 
-- AGENT VAULT:
+-   AGENT VAULT:
 
-    - POST `/api/agentVault/collateral/deposit/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agentVault/collateral/deposit/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/agentVault/collateral/withdraw/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agentVault/collateral/withdraw/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - GET `/api/agentVault/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: : Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing vault collateral free balance:
+    -   GET `/api/agentVault/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: : Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing vault collateral free balance:
 
     | Field     | Type   | Description             |
     | --------- | ------ | ----------------------- |
     | `balance` | string | Collateral free balance |
 
+<<<<<<< HEAD
     - POST `/api/agentVault/collateral/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
 
     - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+=======
+    -   POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol`, and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+>>>>>>> 5d694f87f9adf02a95f517a2b2aec89544dc2492
 
-- POOL COLLATERAL:
+-   POOL COLLATERAL:
 
-    - POST `/api/pool/collateral/buy{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/pool/collateral/buy{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - GET `/api/pool/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing pool collateral free balance:
+    -   GET `/api/pool/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing pool collateral free balance:
 
     | Field     | Type   | Description       |
     | --------- | ------ | ----------------- |
     | `balance` | string | Pool free balance |
 
-    - POST `/api/pool/fee/withdraw/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/pool/fee/withdraw/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - GET `/api/pool/fee/balance/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing pool fee balance:
+    -   GET `/api/pool/fee/balance/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing pool fee balance:
 
     | Field     | Type   | Description      |
     | --------- | ------ | ---------------- |
     | `balance` | string | Pool fee balance |
 
-    - POST `/api/pool/delegate/{fAssetSymbol}/{agentVaultAddress}/{recipientAddress}/{bips}`: Given parameters `fAssetSymbol` `agentVaultAddress`, `recipientAddress` and `bips`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/pool/delegate/{fAssetSymbol}/{agentVaultAddress}/{recipientAddress}/{bips}`: Given parameters `fAssetSymbol` `agentVaultAddress`, `recipientAddress` and `bips`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/pool/undelegate/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/pool/undelegate/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
     - POST `/api/pool/upgradeWNat/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-- UNDERLYING
+-   UNDERLYING
 
-    - GET `/api/underlying/withdraw/announce/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing announce underlying data:
+    -   GET `/api/underlying/withdraw/announce/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing announce underlying data:
 
     | Field              | Type   | Description       |
     | ------------------ | ------ | ----------------- |
     | `paymentReference` | string | Payment reference |
 
-
-    - GET `/api/underlying/withdraw/perform/{fAssetSymbol}/{agentVaultAddress}/{amount}/{destinationAddress}/{paymentReference}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `amount`, `destinationAddress` and `paymentReference`, returns JSON response containing payment underlying data:
+    -   GET `/api/underlying/withdraw/perform/{fAssetSymbol}/{agentVaultAddress}/{amount}/{destinationAddress}/{paymentReference}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `amount`, `destinationAddress` and `paymentReference`, returns JSON response containing payment underlying data:
 
     | Field             | Type   | Description                |
     | ----------------- | ------ | -------------------------- |
     | `transactionHash` | string | Transaction hash reference |
 
-    - POST `/api/underlying/withdraw/confirm/{fAssetSymbol}/{agentVaultAddress}/{transactionHash}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `transactionHash`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/underlying/withdraw/confirm/{fAssetSymbol}/{agentVaultAddress}/{transactionHash}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `transactionHash`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/underlying/withdraw/cancel/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/underlying/withdraw/cancel/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - GET `/api/underlying/freeBalance/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing underlying free balance:
+    -   GET `/api/underlying/freeBalance/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing underlying free balance:
 
     | Field     | Type   | Description             |
     | --------- | ------ | ----------------------- |
     | `balance` | string | Underlying free balance |
 
-    - GET `/api/underlying/create/{fAssetSymbol}`: Given parameter `fAssetSymbol`, returns JSON response containing underlying account information:
+    -   GET `/api/underlying/create/{fAssetSymbol}`: Given parameter `fAssetSymbol`, returns JSON response containing underlying account information:
 
     | Field        | Type   | Description            |
     | ------------ | ------ | ---------------------- |
