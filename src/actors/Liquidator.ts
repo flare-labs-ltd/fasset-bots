@@ -38,13 +38,14 @@ export class Liquidator extends ActorBase {
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
                 if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
-                    console.log(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     await this.handleMintingExecuted(event.args);
+                } else if (eventIs(event, this.state.context.assetManager, "FullLiquidationStarted")) {
+                    logger.info(`Liquidator ${this.address} received event 'FullLiquidationStarted' with data ${formatArgs(event.args)}.`);
+                    await this.handleFullLiquidationStarted(event.args);
                 }
             }
         } catch (error) {
@@ -60,6 +61,16 @@ export class Liquidator extends ActorBase {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
         this.runner.startThread(async (scope) => {
             await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
+        });
+    }
+
+    /**
+     * @param args event's FullLiquidationStarted arguments
+     */
+    async handleFullLiquidationStarted(args: EventArgs<MintingExecuted>): Promise<void> {
+        const agent = await this.state.getAgentTriggerAdd(args.agentVault);
+        this.runner.startThread(async (scope) => {
+            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, []));
         });
     }
 
@@ -84,10 +95,14 @@ export class Liquidator extends ActorBase {
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         console.log(`Agent ${agent.vaultAddress} has status ${newStatus}.`);
         if (newStatus === AgentStatus.LIQUIDATION) {
-            const fBalance = await this.state.context.fAsset.balanceOf(this.address);
-            await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
-            logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
+            await this.liquidateAgent(agent);
         }
         logger.info(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
+    }
+
+    private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
+        const fBalance = await this.state.context.fAsset.balanceOf(this.address);
+        await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
+        logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
     }
 }
