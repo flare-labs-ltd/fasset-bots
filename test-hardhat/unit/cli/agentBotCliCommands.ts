@@ -413,7 +413,6 @@ describe("Bot cli commands unit tests", async () => {
         );
         await botCliCommands.upgradeWNatContract(agent.vaultAddress);
         const token = (await agent.getPoolCollateral()).token;
-        console.log(await agent.getPoolCollateral());
         expect(token).to.equal(newWnat.address);
         //change context back
         botCliCommands.context = context;
