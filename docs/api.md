@@ -57,7 +57,9 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | --------- | ------ | ----------------------- |
     | `balance` | string | Collateral free balance |
 
-    - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol`, and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    - POST `/api/agentVault/collateral/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
+
+    - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
 - POOL COLLATERAL:
 
@@ -80,6 +82,8 @@ Agent bot web service routes are documented using the Swagger interface at the `
     - POST `/api/pool/delegate/{fAssetSymbol}/{agentVaultAddress}/{recipientAddress}/{bips}`: Given parameters `fAssetSymbol` `agentVaultAddress`, `recipientAddress` and `bips`, returns one of the possible`status` responses, depending on the success of operation.
 
     - POST `/api/pool/undelegate/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+
+    - POST `/api/pool/upgradeWNat/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
 - UNDERLYING
 

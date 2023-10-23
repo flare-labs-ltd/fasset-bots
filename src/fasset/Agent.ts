@@ -369,4 +369,19 @@ export class Agent {
             return poolTokenSuffix;
         }
     }
+
+    /**
+     * Switches vault collateral. If the current agent's vault collateral token gets deprecated, the agent must switch with this method.
+     * @param token vault collateral token address
+     */
+    async switchVaultCollateral(token: string): Promise<void> {
+        await this.assetManager.switchVaultCollateral(this.vaultAddress, token, { from: this.ownerAddress });
+    }
+
+    /**
+     * Upgrades WNat contract. It swaps old WNat tokens for new ones and sets it for use by the pool.
+     */
+    async upgradeWNatContract(): Promise<void> {
+        await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.ownerAddress });
+    }
 }

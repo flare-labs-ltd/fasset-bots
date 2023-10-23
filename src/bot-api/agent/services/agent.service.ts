@@ -142,4 +142,14 @@ export class AgentService {
         const account = await cli.createUnderlyingAccount();
         return { address: account.address, privateKey: account.privateKey };
     }
+
+    async switchVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, tokenAddress: string): Promise<void> {
+        const cli = await BotCliCommands.create(fAssetSymbol);
+        await cli.switchVaultCollateral(agentVaultAddress, tokenAddress);
+    }
+
+    async upgradeWNat(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
+        const cli = await BotCliCommands.create(fAssetSymbol);
+        await cli.upgradeWNatContract(agentVaultAddress);
+    }
 }

@@ -33,6 +33,8 @@ Available commands:
 -   `freeVaultCollateral` - get free vault collateral
 -   `freePoolCollateral` - get free pool collateral
 -   `freeUnderlying` - get free underlying balance
+-   `switchVaultCollateral` - switch vault collateral
+-   `upgradeWNat` - upgrade WNat contract
 
 
 ### Agent's settings:

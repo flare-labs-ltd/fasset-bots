@@ -21,12 +21,16 @@ import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { Test } from "mocha";
 use(chaiAsPromised);
 use(spies);
 
 const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require("StateConnectorMock");
+
+const ERC20Mock = artifacts.require("ERC20Mock");
+const CollateralPool = artifacts.require("CollateralPool");
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -36,9 +40,10 @@ describe("Bot cli commands unit tests", async () => {
     let minterAddress: string;
     let botCliCommands: BotCliCommands;
     let chain: MockChain;
+    let governance: string;
 
-    async function createAgent(): Promise<Agent> {
-        const agentBot = await createTestAgentBot(context, botCliCommands.botConfig.orm!, botCliCommands.ownerAddress);
+    async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.botConfig.orm!, botCliCommands.ownerAddress);
         return agentBot.agent;
     }
 
@@ -46,13 +51,14 @@ describe("Bot cli commands unit tests", async () => {
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
+        governance = accounts[0];
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
     });
 
     beforeEach(async () => {
         orm.em.clear();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
         botCliCommands = new BotCliCommands();
@@ -353,7 +359,7 @@ describe("Bot cli commands unit tests", async () => {
         expect(data.privateKey).to.not.be.null;
     });
 
-    it("Should run command 'getFreeVaultCollateral'", async () => {
+    it("Should run command 'getFreePoolCollateral', 'getFreeVaultCollateral' and 'getFreeUnderlying'", async () => {
         const agent = await createAgent();
         const freePool = await botCliCommands.getFreePoolCollateral(agent.vaultAddress);
         expect(freePool).to.eq("0");
@@ -361,5 +367,55 @@ describe("Bot cli commands unit tests", async () => {
         expect(freeVault).to.eq("0");
         const freeUnderlying = await botCliCommands.getFreeUnderlying(agent.vaultAddress);
         expect(freeUnderlying).to.eq("0");
+    });
+
+    it("Should run command switch vault collateral", async () => {
+        const agent = await createAgent();
+        const agentVaultCollateral = await agent.getVaultCollateral();
+        const newCollateral = Object.assign({}, agentVaultCollateral);
+        newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
+        newCollateral.tokenFtsoSymbol = "XRP";
+        newCollateral.assetFtsoSymbol = "USDC";
+        await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
+        // deprecate
+        const settings = await context.assetManager.getSettings();
+        await context.assetManagerController.deprecateCollateralType(
+            [context.assetManager.address],
+            agentVaultCollateral.collateralClass,
+            agentVaultCollateral.token,
+            settings.tokenInvalidationTimeMinSeconds,
+            { from: governance }
+        );
+        // switch collateral
+        await botCliCommands.switchVaultCollateral(agent.agentVault.address, newCollateral.token);
+        const agentVaultCollateralNew = await agent.getVaultCollateral();
+        expect(agentVaultCollateralNew.token).to.eq(newCollateral.token);
+    });
+
+    it("Should upgrade WNat", async () => {
+        const assetManagerControllerAddress = accounts[301];
+        const localContext = await createTestAssetContext(
+            governance,
+            testChainInfo.xrp,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            assetManagerControllerAddress
+        );
+        const agent = await createAgent(localContext);
+        botCliCommands.context = localContext;
+        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
+        await localContext.assetManager.updateSettings(
+            web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
+            web3.eth.abi.encodeParameters(["address", "address"], [localContext.assetManagerController.address, newWnat.address]),
+            { from: assetManagerControllerAddress }
+        );
+        await botCliCommands.upgradeWNatContract(agent.vaultAddress);
+        const token = (await agent.getPoolCollateral()).token;
+        console.log(await agent.getPoolCollateral());
+        expect(token).to.equal(newWnat.address);
+        //change context back
+        botCliCommands.context = context;
     });
 });
