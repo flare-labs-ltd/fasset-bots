@@ -9,7 +9,7 @@ import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, requireEnv, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, requireConfigVariable, toBN, toBNExp } from "../../src/utils/helpers";
 import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
@@ -46,7 +46,7 @@ export async function createTestAgentBot(
     notifier: Notifier = new Notifier(),
     options?: AgentBotDefaultSettings
 ): Promise<AgentBot> {
-    const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
+    const ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);

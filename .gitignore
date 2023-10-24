@@ -27,6 +27,7 @@ coverage.json
 .nyc_output/
 coverage/
 
+## env
 .env
 .env.temp
 
@@ -40,3 +41,6 @@ coverage/
 test/e2e/actors/tmp.ts
 
 *.Identifier
+
+# app config
+app-config.json

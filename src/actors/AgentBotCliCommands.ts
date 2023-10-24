@@ -8,7 +8,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CommandLineError, requireConfigVariable, requireEnv, toBN } from "../utils/helpers";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { Agent } from "../fasset/Agent";
@@ -46,16 +46,16 @@ export class BotCliCommands {
      * @param runConfigFile path to configuration file
      */
     async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
-        logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} started to initialize cli environment.`);
+        logger.info(`Owner ${requireConfigVariable("owner.native_address")} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
-        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireEnv("OWNER_ADDRESS")}`);
+        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireConfigVariable("owner.native_address")}`);
         // init web3 and accounts
-        this.ownerAddress = requireEnv("OWNER_ADDRESS");
-        const nativePrivateKey = requireEnv("OWNER_PRIVATE_KEY");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
+        this.ownerAddress = requireConfigVariable("owner.native_address");
+        const nativePrivateKey = requireConfigVariable("owner.native_private_key");
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) {
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid address/private key pair.`);
+            logger.error(`Owner ${requireConfigVariable("owner.native_address")} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
@@ -64,17 +64,17 @@ export class BotCliCommands {
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} has invalid FAsset symbol ${fAssetSymbol}.`);
+            logger.error(`Owner ${requireConfigVariable("owner.native_address")} has invalid FAsset symbol ${fAssetSymbol}.`);
             throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
-        const underlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
-        const underlyingPrivateKey = requireEnv("OWNER_UNDERLYING_PRIVATE_KEY");
+        const underlyingAddress = requireConfigVariable("owner.underlying_address");
+        const underlyingPrivateKey = requireConfigVariable("owner.underlying_private_key");
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
-        logger.info(`Owner ${requireEnv("OWNER_ADDRESS")} successfully finished initializing cli environment.`);
+        logger.info(`Owner ${requireConfigVariable("owner.native_address")} successfully finished initializing cli environment.`);
     }
 
     /**
@@ -87,8 +87,8 @@ export class BotCliCommands {
             this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
             return agentBot.agent;
         } catch (error) {
-            console.log(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent.`);
-            logger.error(`Owner ${requireEnv("OWNER_ADDRESS")} couldn't create agent: ${error}`);
+            console.log(`Owner ${requireConfigVariable("owner.native_address")} couldn't create agent.`);
+            logger.error(`Owner ${requireConfigVariable("owner.native_address")} couldn't create agent: ${error}`);
         }
         return null;
     }

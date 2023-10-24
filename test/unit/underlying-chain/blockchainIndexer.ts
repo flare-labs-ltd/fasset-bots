@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import rewire from "rewire";
-import { requireEnv, toBN } from "../../../src/utils/helpers";
+import { requireConfigVariable, toBN } from "../../../src/utils/helpers";
 import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
 const rewiredBlockchainIndexerHelper = rewire("../../../src/underlying-chain/BlockchainIndexerHelper");
 const rewiredBlockchainIndexerHelperClass = rewiredBlockchainIndexerHelper.__get__("BlockchainIndexerHelper");
@@ -284,7 +284,7 @@ describe("BTC blockchain tests via indexer", async () => {
     let txHash: string;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, sourceId, finalizationBlocks, requireEnv("INDEXER_API_KEY"));
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, sourceId, finalizationBlocks, requireConfigVariable("apiKey.indexer"));
         blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
         // TODO could be done better
         const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl, finalizationBlocks);

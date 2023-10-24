@@ -3,13 +3,13 @@ import "dotenv/config";
 import { Command } from "commander";
 import { loadConfigFile } from "../config/BotConfig";
 import { loadContracts } from "../config/contracts";
-import { BNish, requireEnv, requireNotNull, toplevelRun } from "../utils/helpers";
+import { BNish, requireConfigVariable, requireNotNull, toplevelRun } from "../utils/helpers";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const Whitelist = artifacts.require("Whitelist");
 
-const deployerAddress = requireEnv("DEPLOY_ADDRESS");
+const deployerAddress = requireConfigVariable("deployer.native_address");
 
 async function whitelistAgent(configFileName: string, ownerAddress: string) {
     const config = await initEnvironment(configFileName);
@@ -28,8 +28,8 @@ async function mintFakeTokens(configFileName: string, tokenSymbol: string, recip
 
 async function initEnvironment(configFile: string) {
     const config = loadConfigFile(configFile);
-    const nativePrivateKey = requireEnv("DEPLOY_PRIVATE_KEY");
-    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, process.env.NATIVE_RPC_API_KEY), [nativePrivateKey], null);
+    const nativePrivateKey = requireConfigVariable("deployer.native_private_key");
+    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, defineAppConfig().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");
     }

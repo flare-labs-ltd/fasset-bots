@@ -1,7 +1,7 @@
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { checkedCast, maxBN, requireEnv, toBN } from "../../../src/utils/helpers";
+import { checkedCast, maxBN, requireConfigVariable, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -47,7 +47,7 @@ describe("Agent bot unit tests", async () => {
         chain.secondsPerBlock = 1;
         // accounts
         ownerAddress = accounts[3];
-        ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
+        ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
     });
 
     afterEach(function () {

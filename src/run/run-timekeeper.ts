@@ -3,18 +3,18 @@ import "dotenv/config";
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
-import { requireEnv, sleep, toplevelRun } from "../utils/helpers";
+import { requireConfigVariable, sleep, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 
-const TIMEKEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT3");
-const TIMEKEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT3_PRIVATE_KEY");
+const TIMEKEEPER_ADDRESS: string = requireConfigVariable("timeKeeper.native_address");
+const TIMEKEEPER_PRIVATE_KEY: string = requireConfigVariable("timeKeeper.native_private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-timeKeeper-coston-testxrp.json";
 const INTERVAL: number = 120_000; // in ms
 
 toplevelRun(async () => {
     const runConfig = loadConfigFile(RUN_CONFIG_PATH);
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [TIMEKEEPER_PRIVATE_KEY], null);
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [TIMEKEEPER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, TIMEKEEPER_ADDRESS);
     const timekeepers: TimeKeeper[] = [];
     for (const chain of config.fAssets) {

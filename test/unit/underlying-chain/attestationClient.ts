@@ -1,5 +1,5 @@
-import { requireEnv, sleep, toBN } from "../../../src/utils/helpers";
-import { artifacts, initWeb3 } from "../../../src/utils/web3";
+import { requireConfigVariable, sleep, toBN } from "../../../src/utils/helpers";
+import { initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
@@ -22,7 +22,7 @@ import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 use(chaiAsPromised);
 
-const accountPrivateKey = requireEnv("USER_PRIVATE_KEY");
+const accountPrivateKey = requireConfigVariable("owner.native_private_key");
 const sourceId = SourceId.XRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";

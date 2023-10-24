@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
-import { ZERO_BYTES32, requireEnv, toBN } from "../../../src/utils/helpers";
+import { ZERO_BYTES32, requireConfigVariable, toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 use(chaiAsPromised);
@@ -21,7 +21,7 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const accountPrivateKey = requireEnv("USER_PRIVATE_KEY");
+const accountPrivateKey = requireConfigVariable("user.native_private_key");
 const sourceId = SourceId.XRP;
 const finalizationBlocks: number = 6;
 

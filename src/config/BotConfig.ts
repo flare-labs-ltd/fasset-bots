@@ -15,13 +15,14 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
-import { MINUS_CHAR, requireEnv, toBN } from "../utils/helpers";
+import { MINUS_CHAR, requireConfigVariable, toBN } from "../utils/helpers";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
 import { encodeAttestationName } from "state-connector-protocol";
+import { defineAppConfig } from "./AppConfig";
 
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -265,7 +266,7 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: inTestnet,
-            apiTokenKey: process.env.BTC_RPC_API_KEY,
+            apiTokenKey: defineAppConfig().apiKey.btc_rpc,
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE) {
         return new WALLET.DOGE({
@@ -273,14 +274,14 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: inTestnet,
-            apiTokenKey: process.env.DOGE_RPC_API_KEY,
+            apiTokenKey: defineAppConfig().apiKey.doge_rpc,
         }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
             url: walletUrl,
             username: "",
             password: "",
-            apiTokenKey: process.env.XRP_RPC_API_KEY,
+            apiTokenKey: defineAppConfig().apiKey.xrp_rpc,
         }); // XrpMccCreate
     }
 }
@@ -294,7 +295,7 @@ export function createWalletClient(
  */
 export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string, finalizationBlocks: number): BlockchainIndexerHelper {
     if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
-    const apiKey = requireEnv("INDEXER_API_KEY");
+    const apiKey = requireConfigVariable("apiKey.indexer");
     return new BlockchainIndexerHelper(indexerUrl, sourceId, finalizationBlocks, apiKey);
 }
 
@@ -363,7 +364,7 @@ export async function createStateConnectorClient(
     stateConnectorAddress: string,
     owner: string
 ): Promise<StateConnectorClientHelper> {
-    const apiKey = requireEnv("INDEXER_API_KEY");
+    const apiKey = requireConfigVariable("apiKey.indexer");
     return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
 }
 

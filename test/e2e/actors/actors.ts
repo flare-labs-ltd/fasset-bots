@@ -14,7 +14,7 @@ import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
-import { requireEnv, toBN, toBNExp } from "../../../src/utils/helpers";
+import { requireConfigVariable, toBN, toBNExp } from "../../../src/utils/helpers";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
@@ -51,8 +51,8 @@ describe("Actor tests - coston", async () => {
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
-        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), getNativeAccountsFromEnv(), null);
-        ownerAddress = requireEnv("OWNER_ADDRESS");
+        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
+        ownerAddress = requireConfigVariable("owner.native_address");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];

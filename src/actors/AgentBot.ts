@@ -25,7 +25,7 @@ import {
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
     STABLE_COIN_LOW_BALANCE,
     XRP_ACTIVATE_BALANCE,
-    requireEnv,
+    requireConfigVariable,
     toBN,
 } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -140,12 +140,12 @@ export class AgentBot {
      * @param agentUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
-        const ownerAddress = requireEnv("OWNER_ADDRESS");
+        const ownerAddress = requireConfigVariable("owner.native_address");
         try {
             if (context.chainInfo.chainId != SourceId.XRP) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
-            const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
-            const reference = requireEnv("OWNER_ADDRESS");
+            const ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
+            const reference = requireConfigVariable("owner.native_address");
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
@@ -1339,7 +1339,7 @@ export class AgentBot {
      * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireEnv("OWNER_UNDERLYING_ADDRESS");
+        const ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
         try {
             logger.info(
                 `Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`

@@ -1,20 +1,20 @@
 import "dotenv/config";
 
 import { readFileSync } from "fs";
-import { requireEnv, toplevelRun } from "../utils/helpers";
+import { requireConfigVariable, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 
-const SYSTEM_KEEPER_ADDRESS: string = requireEnv("NATIVE_ACCOUNT4");
-const SYSTEM_KEEPER_PRIVATE_KEY: string = requireEnv("NATIVE_ACCOUNT4_PRIVATE_KEY");
+const SYSTEM_KEEPER_ADDRESS: string = requireConfigVariable("systemKeeper.native_address");
+const SYSTEM_KEEPER_PRIVATE_KEY: string = requireConfigVariable("systemKeeper.native_private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
 const fAssetSymbol = "FfakeXRP";
 
 toplevelRun(async () => {
     const runConfig = JSON.parse(readFileSync(RUN_CONFIG_PATH).toString()) as BotConfigFile;
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, process.env.NATIVE_RPC_API_KEY), [SYSTEM_KEEPER_PRIVATE_KEY], null);
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [SYSTEM_KEEPER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, SYSTEM_KEEPER_ADDRESS);
     const chainConfig = config.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
     if (chainConfig == null) {
