@@ -3,7 +3,7 @@ import coder from "web3-eth-abi";
 import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
-import { waitForFinalization } from "./finalization";
+import { transactionLogger, waitForFinalization } from "./finalization";
 import { ContractSettings } from "./types";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
 
@@ -186,6 +186,8 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
     return await executeMethodSend(settings, { ...config, data: data });
 }
 
+let transactionId = 0;
+
 /**
  * Send a transaction for a contract method. Estimate gas before if needed.
  */
@@ -200,8 +202,10 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
         config.gas = Math.floor(gas * gasMultiplier);
     }
     const nonce = waitFor.what === "nonceIncrease" ? await web3.eth.getTransactionCount(config.from, "latest") : 0;
+    ++transactionId;
+    transactionLogger.info("SEND", { transactionId, waitFor, transaction: config });
     const promiEvent = web3.eth.sendTransaction(config);
-    return await waitForFinalization(web3, waitFor, nonce, config.from, promiEvent);
+    return await waitForFinalization(transactionId, web3, waitFor, nonce, config.from, promiEvent);
 }
 
 async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
