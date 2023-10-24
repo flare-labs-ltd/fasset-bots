@@ -8,10 +8,10 @@ import { FuzzingStateAgent } from "./FuzzingStateAgent";
 export class FuzzingState extends TrackedState {
     constructor(
         public context: IAssetActorContext,
-        lastEventBlockRead: number,
+        currentEventBlock: number,
         public wallet: MockChainWallet
     ) {
-        super(context, lastEventBlockRead);
+        super(context, currentEventBlock);
     }
 
     override agents!: Map<string, FuzzingStateAgent>;

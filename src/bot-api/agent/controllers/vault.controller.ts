@@ -32,12 +32,21 @@ export class AgentVaultController {
         return handleApiResponse(this.agentService.withdrawVaultCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
-    @Get("collateral/freeBalance:fAssetSymbol/:agentVaultAddress")
+    @Get("collateral/freeBalance/:fAssetSymbol/:agentVaultAddress")
     public async getFreeVaultCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<AgentBalance>> {
         return handleApiResponse(this.agentService.getFreeVaultCollateral(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Post("collateral/switch/:fAssetSymbol/:agentVaultAddress/:tokenAddress")
+    public async switchVaultCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("tokenAddress") tokenAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.switchVaultCollateral(fAssetSymbol, agentVaultAddress, tokenAddress));
     }
 
     @Post("close/:fAssetSymbol/:agentVaultAddress")

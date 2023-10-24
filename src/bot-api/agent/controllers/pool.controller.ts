@@ -65,4 +65,12 @@ export class PoolController {
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.undelegatePoolCollateral(fAssetSymbol, agentVaultAddress));
     }
+
+    @Post("upgradeWNat/:fAssetSymbol/:agentVaultAddress")
+    public async upgradeWNatContract(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.upgradeWNat(fAssetSymbol, agentVaultAddress));
+    }
 }

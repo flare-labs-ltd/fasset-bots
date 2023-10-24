@@ -1,6 +1,6 @@
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
-import { checkedCast, toBNExp } from "../../src/utils/helpers";
+import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import {
     createTestAssetContext,
@@ -17,6 +17,7 @@ import {
     createTestAgentBotAndMakeAvailable,
     createCRAndPerformMinting,
     createTestAgentBot,
+    createTestChallenger,
 } from "../test-utils/helpers";
 import { assert } from "chai";
 import { TrackedState } from "../../src/state/TrackedState";
@@ -26,6 +27,7 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { MockTrackedState } from "../../src/mock/MockTrackedState";
+import { time } from "@openzeppelin/test-helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -38,6 +40,7 @@ describe("Liquidator tests", async () => {
     let ownerAddress: string;
     let minterAddress: string;
     let liquidatorAddress: string;
+    let challengerAddress: string;
     let chain: MockChain;
     let state: TrackedState;
 
@@ -45,6 +48,7 @@ describe("Liquidator tests", async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
+        challengerAddress = accounts[5];
         liquidatorAddress = accounts[6];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
@@ -187,6 +191,44 @@ describe("Liquidator tests", async () => {
         // mock price changes
         await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
         // check collateral ratio after price changes
+        await liquidator.runStep();
+        expect(spyLiquidation).to.have.been.called.once;
+    });
+
+
+    it("Should catch full liquidation", async () => {
+        const challengerState = new TrackedState(trackedStateContext, await web3.eth.getBlockNumber());
+        await challengerState.initialize();
+        const challenger = await createTestChallenger(challengerAddress, challengerState);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const spyLiquidation = spy.on(liquidator, "handleFullLiquidationStarted");
+        const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
+        // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await challenger.runStep();
+        // create collateral reservation and perform minting
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        // perform illegal payment
+        const agentInfo = await agentBot.agent.getAgentInfo();
+        await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.mintedUBA).divn(2));
+        // run challenger's steps until agent's status is FULL_LIQUIDATION
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await sleep(3000);
+            await challenger.runStep();
+            const agentStatus = await getAgentStatus(agentBot);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
+            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+        }
+        // send notification
+        await agentBot.runStep(orm.em);
+        // check status
+        const agentStatus = await getAgentStatus(agentBot);
+        assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
+        expect(spyChlg).to.have.been.called.once;
+        // catch event
         await liquidator.runStep();
         expect(spyLiquidation).to.have.been.called.once;
     });

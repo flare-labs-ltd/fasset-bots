@@ -276,7 +276,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     errorDetails ? errorDetails : ""
                 }`
             );
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
+        } /* istanbul ignore else */ else if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 /* istanbul ignore else */
                 if (tx.transactionType != "EMPTY_BLOCK_INDICATOR") {
@@ -295,7 +295,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
-        const res = data.response.data;
+        const res = data.response;
         switch (this.sourceId) {
             case SourceId.BTC:
             case SourceId.DOGE:
@@ -325,7 +325,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             throw new BlockChainIndexerHelperError(
                 `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
             );
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
+        } /* istanbul ignore else */ else if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);
             });
@@ -343,37 +343,18 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 return [["", toBN(0)]];
             } else {
                 const inputs: TxInputOutput[] = [];
-                for (const item of data.vin) {
-                    /* istanbul ignore else */
-                    if (item.txid && item.vout >= 0) {
-                        // Given a UTXO transaction indexer does additional processing on UTXO inputs.
-                        // The processing is done only if the transaction contains some kind of a payment reference (OP_RETURN).
-                        // https://github.com/flare-foundation/attestation-client/blob/main/lib/indexer/chain-collector-helpers/readTransaction.ts#L6-L10
-                        const resp = await this.client.get(`/api/indexer/transaction/${item.txid}`);
-                        const status = resp.data.status;
-                        const data = resp.data.data;
-                        if (status === "OK" && data) {
-                            const vout = data.response.data.vout;
-                            const elt = vout[item.vout];
-                            /* istanbul ignore next */
-                            const value = elt.value || 0;
-                            inputs.push([
-                                /* istanbul ignore next */
-                                elt.scriptPubKey.address ? elt.scriptPubKey.address : "",
-                                toBN(Math.round(value * BTC_MDU).toFixed(0)),
-                            ]);
-                        }
-                    }
-                }
+                data.vin.map((vin: any) => {
+                    const address = vin.prevout && vin.prevout.scriptPubKey.address ? vin.prevout.scriptPubKey.address : "";
+                    const value = this.toBnValue(vin?.prevout?.value || 0);
+                    inputs.push([address, value]);
+                });
                 if (inputs.length == 0) return [["", toBN(0)]];
                 return inputs;
             }
         } else {
             const outputs: TxInputOutput[] = [];
-            data.vout.map((item: any) => {
-                /* istanbul ignore next */
-                const value = item.value || 0;
-                outputs.push([item.scriptPubKey.address, toBN(Math.round(value * BTC_MDU).toFixed(0))]);
+            data.vout.map((vout: any) => {
+                outputs.push([vout.scriptPubKey.address, this.toBnValue(vout.value)]);
             });
             if (outputs.length == 0) return [["", toBN(0)]];
             return outputs;
@@ -381,7 +362,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private XRPInputsOutputs(data: any, input: boolean): TxInputOutput[] {
-        const response = data.response.data.result;
+        const response = data.response.result;
         if (input) {
             if (data.isNativePayment) {
                 return [[response.Account, toBN(response.Amount as any).add(toBN(response.Fee ? response.Fee : 0))]];
@@ -402,7 +383,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             return TX_SUCCESS;
         }
         // https://xrpl.org/transaction-results.html
-        const response = data.response.data.result;
+        const response = data.response.result;
         /* istanbul ignore next */
         const metaData = response.meta || (response as any).metaData;
         const result = metaData.TransactionResult;
@@ -426,6 +407,12 @@ export class BlockchainIndexerHelper implements IBlockChain {
         return TX_FAILED;
     }
 
+    private toBnValue(value: number | undefined): BN {
+        if (value === undefined) {
+            return toBN(0);
+        }
+        return toBN(Math.round(value * BTC_MDU).toFixed(0));
+    }
     async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         logger.info(`Block chain indexer helper: waiting for underlying transaction ${txHash} finalization for ${maxBlocksToWaitForTx} blocks`);
         const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);

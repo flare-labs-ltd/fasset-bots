@@ -248,6 +248,27 @@ program
         await cli.getFreeUnderlying(agentVault);
     });
 
+program
+    .command("switchVaultCollateral")
+    .description("switch vault collateral")
+    .argument("<agentVaultAddress>")
+    .argument("<token>")
+    .action(async (agentVault: string, token: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.switchVaultCollateral(agentVault, token);
+    });
+
+program
+    .command("upgradeWNat")
+    .description("upgrade WNat contract")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.upgradeWNatContract(agentVault);
+    });
+
 toplevelRun(async () => {
     await program.parseAsync();
 });

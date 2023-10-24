@@ -502,4 +502,23 @@ export class BotCliCommands {
         logger.info(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
         return freeUnderlying;
     }
+
+    /**
+     * Switches vault collateral
+     * @param agentVault agent's vault address
+     * @param token vault collateral token address
+     */
+    async switchVaultCollateral(agentVault: string, token: string): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.agent.switchVaultCollateral(token);
+    }
+
+    /**
+     * Upgrades WNat contract
+     * @param agentVault agent's vault address
+     */
+    async upgradeWNatContract(agentVault: string): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.agent.upgradeWNatContract();
+    }
 }

@@ -70,7 +70,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should run readUnhandledEvents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        const events = await agentBot.readUnhandledEvents(orm.em);
+        const events = await agentBot.readNewEvents(orm.em);
         expect(events.length).to.eq(0);
     });
 
@@ -388,7 +388,8 @@ describe("Agent bot unit tests", async () => {
         expect(agentVaultCollateralBalance).to.eq("0");
     });
 
-    it("Should update agent settings", async () => {
+    it("Should update agent settings and catch it if update expires", async () => {
+        const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
@@ -408,9 +409,12 @@ describe("Agent bot unit tests", async () => {
         await time.increaseTo(validAtFeeBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtFeeBIPS.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS.eqn(0)).to.be.true;
-
-        await time.increaseTo(validAtpoolTopupTokenPriceFactorBIPS);
+        // update again
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
+        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAt2;
+        await orm.em.persist(agentEnt).flush();
+        // cannot update, update expired
+        await time.increaseTo(validAt2.add(invalidUpdateSeconds));
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
@@ -660,5 +664,16 @@ describe("Agent bot unit tests", async () => {
     it("Should increment pool token suffix", async () => {
         const token = "poolTokenSuffix";
         expect(Agent.incrementPoolTokenSuffix(token, 0)).to.eq(token);
+    });
+
+    it("Should catch error in handleEvents", async () => {
+        const spyError = spy.on(console, "error");
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // change vault address to force catching error
+        agentEnt.vaultAddress = ownerAddress;
+        await orm.em.persist(agentEnt).flush();
+        await agentBot.handleEvents(orm.em);
+        expect(spyError).to.have.been.called.once;
     });
 });

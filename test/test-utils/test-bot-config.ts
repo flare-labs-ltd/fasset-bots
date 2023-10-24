@@ -1,5 +1,5 @@
 import { CreateOrmOptions } from "../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentRedemption, UnhandledEvent } from "../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentRedemption, EventEntity } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 
 export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
@@ -15,11 +15,11 @@ export const ATTESTATION_PROVIDER_URLS: string[] = [
     "https://attestation-coston.aflabs.net/attestation-client",
     "https://attestation-coston.aflabs.net/attestation-client",
 ];
-export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x3551096766115b622bD02EF156b151A9D996Fb6E";
+export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x7B6BebAF6D186DE7c69D4B99625f819AF6fB98fE";
 export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, UnhandledEvent],
+    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, EventEntity],
     type: "sqlite",
     dbName: "fasset-bots-test.db",
     debug: false,
