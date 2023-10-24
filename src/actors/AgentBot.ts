@@ -550,9 +550,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolFeeShareBIPS.`);
                         agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolFeeShareBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolFeeShareBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolFeeShareBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolFeeShareBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -574,9 +576,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting mintingVaultCollateralRatioBIPS.`);
                         agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingVaultCollateralRatioBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingVaultCollateralRatioBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingVaultCollateralRatioBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingVaultCollateralRatioBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -598,9 +602,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting mintingPoolCollateralRatioBIPS.`);
                         agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingPoolCollateralRatioBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingPoolCollateralRatioBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingPoolCollateralRatioBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingPoolCollateralRatioBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -622,9 +628,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting buyFAssetByAgentFactorBIPS.`);
                         agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "buyFAssetByAgentFactorBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting buyFAssetByAgentFactorBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "buyFAssetByAgentFactorBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting buyFAssetByAgentFactorBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -646,9 +654,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolExitCollateralRatioBIPS.`);
                         agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolExitCollateralRatioBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolExitCollateralRatioBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolExitCollateralRatioBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolExitCollateralRatioBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -670,9 +680,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolTopupCollateralRatioBIPS.`);
                         agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupCollateralRatioBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupCollateralRatioBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupCollateralRatioBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupCollateralRatioBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
@@ -694,9 +706,11 @@ export class AgentBot {
                         logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolTopupTokenPriceFactorBIPS.`);
                         agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = BN_ZERO;
                     } catch (error) {
-                        this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupTokenPriceFactorBIPS");
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupTokenPriceFactorBIPS: ${error}`);
-                        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = BN_ZERO;
+                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupTokenPriceFactorBIPS");
+                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupTokenPriceFactorBIPS: ${error}`);
+                            agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = BN_ZERO;
+                        }
                     }
                 } else {
                     logger.info(
