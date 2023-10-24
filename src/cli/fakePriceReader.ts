@@ -6,6 +6,7 @@ import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ChainContracts, loadContracts } from "../config/contracts";
 import { loadConfigFile } from "../config/BotConfig";
 import { FakePriceReaderInstance } from "../../typechain-truffle";
+import { defineAppConfig } from "../config/AppConfig";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
@@ -74,7 +75,7 @@ toplevelRun(async () => {
 async function initEnvironment(configFile: string, fakePriceReader: boolean = true) {
     const runConfig = loadConfigFile(configFile);
     const nativePrivateKey = requireConfigVariable("deployer.native_private_key");
-    const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc, [nativePrivateKey], null);
+    const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");
     }
