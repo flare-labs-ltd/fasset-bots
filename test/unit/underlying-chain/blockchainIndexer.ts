@@ -80,30 +80,28 @@ describe("XRP blockchain tests via indexer", async () => {
     it("Should return appropriate status", async () => {
         const data = {
             response: {
-                data: {
-                    result: {
-                        meta: {
-                            AffectedNodes: [{ ModifiedNode: [Object] }, { ModifiedNode: [Object] }],
-                            TransactionIndex: 1,
-                            TransactionResult: "tesSUCCESS",
-                            delivered_amount: "1000000",
-                        },
+                result: {
+                    meta: {
+                        AffectedNodes: [{ ModifiedNode: [Object] }, { ModifiedNode: [Object] }],
+                        TransactionIndex: 1,
+                        TransactionResult: "tesSUCCESS",
+                        delivered_amount: "1000000",
                     },
                 },
             },
         };
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_SUCCESS);
-        data.response.data.result.meta.TransactionResult = "tec";
+        data.response.result.meta.TransactionResult = "tec";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_FAILED);
-        data.response.data.result.meta.TransactionResult = "tem";
+        data.response.result.meta.TransactionResult = "tem";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_FAILED);
-        data.response.data.result.meta.TransactionResult = "tecDST_TAG_NEEDED";
+        data.response.result.meta.TransactionResult = "tecDST_TAG_NEEDED";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
-        data.response.data.result.meta.TransactionResult = "tecNO_DST";
+        data.response.result.meta.TransactionResult = "tecNO_DST";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
-        data.response.data.result.meta.TransactionResult = "tecNO_DST_INSUF_XRP";
+        data.response.result.meta.TransactionResult = "tecNO_DST_INSUF_XRP";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
-        data.response.data.result.meta.TransactionResult = "tecNO_PERMISSION";
+        data.response.result.meta.TransactionResult = "tecNO_PERMISSION";
         expect(rewiredBlockChainIndexerClient.successStatus(data)).to.eq(TX_BLOCKED);
     });
 
@@ -111,7 +109,7 @@ describe("XRP blockchain tests via indexer", async () => {
         const data = {
             isNativePayment: true,
             response: {
-                data: {
+
                     result: {
                         Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
                         Amount: 100,
@@ -121,13 +119,13 @@ describe("XRP blockchain tests via indexer", async () => {
                             TransactionResult: "tesSUCCESS",
                         },
                     },
-                },
+
             },
         };
         const dataWithFee = {
             isNativePayment: true,
             response: {
-                data: {
+
                     result: {
                         Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
                         Amount: 100,
@@ -137,30 +135,30 @@ describe("XRP blockchain tests via indexer", async () => {
                             TransactionResult: "tesSUCCESS",
                         },
                     },
-                },
+
             },
         };
         const inputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, true);
-        expect(inputs[0][0]).to.eq(data.response.data.result.Account);
-        expect(inputs[0][1].eqn(data.response.data.result.Amount)).to.be.true;
+        expect(inputs[0][0]).to.eq(data.response.result.Account);
+        expect(inputs[0][1].eqn(data.response.result.Amount)).to.be.true;
 
         const inputsWithFee = rewiredBlockChainIndexerClient.XRPInputsOutputs(dataWithFee, true);
-        expect(inputsWithFee[0][0]).to.eq(dataWithFee.response.data.result.Account);
-        expect(inputsWithFee[0][1].eqn(dataWithFee.response.data.result.Amount + dataWithFee.response.data.result.Fee)).to.be.true;
+        expect(inputsWithFee[0][0]).to.eq(dataWithFee.response.result.Account);
+        expect(inputsWithFee[0][1].eqn(dataWithFee.response.result.Amount + dataWithFee.response.result.Fee)).to.be.true;
 
         const outputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, false);
-        expect(outputs[0][0]).to.eq(data.response.data.result.Account);
-        expect(outputs[0][1].eq(toBN(data.response.data.result.meta.delivered_amount))).to.be.true;
+        expect(outputs[0][0]).to.eq(data.response.result.Account);
+        expect(outputs[0][1].eq(toBN(data.response.result.meta.delivered_amount))).to.be.true;
 
         data.isNativePayment = false;
         const inputsNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, true);
-        expect(inputsNotNativePayment[0][0]).to.eq(data.response.data.result.Account);
+        expect(inputsNotNativePayment[0][0]).to.eq(data.response.result.Account);
         expect(inputsNotNativePayment[0][1].eqn(0)).to.be.true;
 
         dataWithFee.isNativePayment = false;
         const inputsWithFeeNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(dataWithFee, true);
-        expect(inputsWithFeeNotNativePayment[0][0]).to.eq(data.response.data.result.Account);
-        expect(inputsWithFeeNotNativePayment[0][1].eqn(dataWithFee.response.data.result.Fee)).to.be.true;
+        expect(inputsWithFeeNotNativePayment[0][0]).to.eq(data.response.result.Account);
+        expect(inputsWithFeeNotNativePayment[0][1].eqn(dataWithFee.response.result.Fee)).to.be.true;
 
         const outputsNotNativePayment = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, false);
         expect(outputsNotNativePayment[0][0]).to.eq("");
