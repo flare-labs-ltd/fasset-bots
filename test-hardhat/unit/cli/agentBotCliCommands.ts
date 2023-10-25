@@ -417,4 +417,12 @@ describe("Bot cli commands unit tests", async () => {
         //change context back
         botCliCommands.context = context;
     });
+
+    it("Should not create agent bot via bot cli commands", async () => {
+        const localContext = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
+        const agent = await botCliCommands.createAgentVault();
+        expect(agent).to.be.null;
+        //change context back
+        botCliCommands.context = context;
+    });
 });

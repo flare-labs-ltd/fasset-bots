@@ -20,6 +20,7 @@ import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMo
 import { ContractWithEvents } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, IERC20Instance } from "../../typechain-truffle";
 import { artifacts } from "../../src/utils/web3";
+import { FaultyWallet } from "./FaultyWallet";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -81,7 +82,8 @@ export async function createTestAssetContext(
     customParameters?: any,
     updateExecutor?: string,
     useAlwaysFailsProver?: boolean,
-    assetManagerControllerAddress?: string
+    assetManagerControllerAddress?: string,
+    useFaultyWallet?: boolean
 ): Promise<TestAssetBotContext> {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
@@ -150,7 +152,7 @@ export async function createTestAssetContext(
     );
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
-    const wallet = new MockChainWallet(chain);
+    const wallet = useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
     // create stablecoins
     const stablecoins = {
         usdc: await ERC20Mock.new("USDCoin", "USDC"),

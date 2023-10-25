@@ -51,29 +51,3 @@ describe("AgentBot cli commands unit tests", async () => {
         await expect(BotCliCommands.create("invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
     });
 });
-
-describe("AgentBot cli commands unit tests", async () => {
-    let botCliCommands: BotCliCommands;
-    let accounts: string[];
-    let ownerAddress: string;
-    let envOrig: string;
-
-    before(async () => {
-        accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
-        ownerAddress = accounts[0];
-        envOrig = JSON.stringify(process.env);
-        process.env.OWNER_UNDERLYING_ADDRESS = "OwnerUnderlyingAddress";
-        process.env.OWNER_UNDERLYING_PRIVATE_KEY = "OwnerUnderlyingPrivateKey";
-    });
-
-    after(() => {
-        process.env = JSON.parse(envOrig);
-    });
-
-    it("Should not create agent bot via bot cli commands", async () => {
-        botCliCommands = new BotCliCommands();
-        await botCliCommands.initEnvironment(fAssetSymbol);
-        const agent = await botCliCommands.createAgentVault();
-        expect(agent).to.be.null;
-    });
-});
