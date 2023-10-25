@@ -198,12 +198,13 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     if (typeof config.from !== "string") {
         throw new Error("'from' field is mandatory");
     }
+    ++transactionId;
     if (config.gas == null && settings.gas == "auto") {
+        transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
         const gas = await web3.eth.estimateGas(config);
         config.gas = Math.floor(gas * gasMultiplier);
     }
     const nonce = waitFor.what === "nonceIncrease" ? await web3.eth.getTransactionCount(config.from, "latest") : 0;
-    ++transactionId;
     transactionLogger.info("SEND", { transactionId, waitFor, transaction: config });
     const promiEvent = web3.eth.sendTransaction(config);
     return await waitForFinalization(transactionId, web3, waitFor, nonce, config.from, promiEvent);
@@ -211,6 +212,8 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
 
 async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
+    ++transactionId;
+    transactionLogger.info("CALL", { transactionId, transaction: config });
     return await settings.web3.eth.call(config);
 }
 
@@ -219,6 +222,8 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
  */
 async function executeMethodEstimateGas(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
+    ++transactionId;
+    transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
     return await settings.web3.eth.estimateGas(config);
 }
 
