@@ -1,10 +1,13 @@
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
+import { CommandLineError } from "../utils/helpers";
+
+const SECRETS_FILE = "./secrets.json";
 
 export type Secrets = {
     wallet?: {
         encryption_password: string;
     };
-    apiKey?: {
+    apiKey: {
         [key: string]: string
     };
     owner?: UnifiedAccount;
@@ -37,15 +40,30 @@ export function getSecrets(): Secrets {
 let loadedSecrets: Secrets | undefined;
 
 function loadSecrets(): Secrets {
-    const secretsFile = "./secrets.json";
-    const config = JSON.parse(readFileSync(secretsFile).toString());
+    checkFilePermissions(SECRETS_FILE);
+    const config = JSON.parse(readFileSync(SECRETS_FILE).toString());
     return config;
+}
+
+/* istanbul ignore next */
+function checkFilePermissions(fpath: string) {
+    if (process.platform === 'win32') {
+        if (process.env.ALLOW_SECRETS_ON_WINDOWS === 'true') return;
+        throw new CommandLineError("Cannot reliably check secrets.json permissions on Windows.\n" +
+            "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true.");
+    }
+    // file must only be accessible by the process user
+    const stat = statSync(fpath);
+    const processUid = process.getuid!();
+    if (!(stat.uid === processUid && (stat.mode & 0o077) === 0)) {
+        throw new CommandLineError("File secrets.json must only be readable by the process user. Set permission bits to 600.");
+    }
 }
 
 export function requireSecret(name: string): string {
     const value = valueForKeyPath(getSecrets(), name);
     if (typeof value === 'string') return value;
-    throw new Error(`Config variable ${name} not defined or not typeof string`);
+    throw new Error(`Secret variable ${name} not defined or not typeof string`);
 }
 
 function valueForKeyPath(obj: any, path: string) {
