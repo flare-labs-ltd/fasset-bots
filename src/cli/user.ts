@@ -9,7 +9,7 @@ import { logger } from "../utils/logger";
 const program = new Command();
 
 program
-    .addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)").makeOptionMandatory(true))
+    .addOption(program.createOption("-c, --config <configFile>", "Config file path (if not provided, environment variable USER_CONFIG_PATH is required)").env('USER_CONFIG_PATH').makeOptionMandatory(true))
     .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
 
 program
