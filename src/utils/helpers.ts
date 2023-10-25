@@ -5,7 +5,6 @@ import fs from "fs";
 import Web3 from "web3";
 import { logger } from "./logger";
 import crypto from "crypto";
-import { AppConfig, defineAppConfig } from "../config/AppConfig";
 
 export type BNish = BN | number | string;
 
@@ -226,18 +225,6 @@ export function requireEnv(name: string) {
     const value = process.env[name];
     if (value != null) return value;
     throw new Error(`Environment value ${name} not defined`);
-}
-
-export function requireConfigVariable(name: string): string {
-    const value = valueForKeyPath(defineAppConfig(), name);// parts.length == 2 ? defineAppConfig()[parts[0] as keyof AppConfig][parts[1] as keyof AppConfig] : defineAppConfig()[name as keyof AppConfig];
-    if (typeof value === 'string') return value;
-    throw new Error(`Config variable ${name} not defined or not typeof string`);
-}
-
-function valueForKeyPath(obj: any , path: string){
-    const keys = path.split('.');
-    keys.forEach((key) => obj = obj[key]);
-    return obj;
 }
 
 // return text, converting "${ENV_VAR}" argument to `process.env[ENV_VAR]`

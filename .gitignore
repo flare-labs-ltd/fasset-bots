@@ -42,5 +42,5 @@ test/e2e/actors/tmp.ts
 
 *.Identifier
 
-# app config
-app-config.json
+# config file with various keys and addresses
+secrets.json

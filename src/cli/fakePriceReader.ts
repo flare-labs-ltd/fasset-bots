@@ -2,17 +2,18 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { requireConfigVariable, toplevelRun } from "../utils/helpers";
+import { toplevelRun } from "../utils/helpers";
+import { requireSecret } from "../config/secrets";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ChainContracts, loadContracts } from "../config/contracts";
 import { loadConfigFile } from "../config/BotConfig";
 import { FakePriceReaderInstance } from "../../typechain-truffle";
-import { defineAppConfig } from "../config/AppConfig";
+import { getSecrets } from "../config/secrets";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 const contracts: ChainContracts = loadContracts("./fasset-deployment/coston.json");
-const deployerAddress = requireConfigVariable("deployer.native_address");
+const deployerAddress = requireSecret("deployer.native_address");
 
 const program = new Command();
 
@@ -75,8 +76,8 @@ toplevelRun(async () => {
 
 async function initEnvironment(configFile: string, fakePriceReader: boolean = true) {
     const runConfig = loadConfigFile(configFile);
-    const nativePrivateKey = requireConfigVariable("deployer.native_private_key");
-    const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [nativePrivateKey], null);
+    const nativePrivateKey = requireSecret("deployer.native_private_key");
+    const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");
     }

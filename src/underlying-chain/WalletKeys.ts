@@ -1,7 +1,7 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { WalletAddress } from "../entities/wallet";
 import { decryptText, encryptText } from "../utils/encryption";
-import { requireConfigVariable } from "../utils/helpers";
+import { requireSecret } from "../config/secrets";
 
 export interface IWalletKeys {
     getKey(address: string): Promise<string | undefined>;
@@ -9,7 +9,7 @@ export interface IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = requireConfigVariable("wallet_encryption_password");
+    private password = requireSecret("wallet_encryption_password");
 
     private privateKeyCache = new Map<string, string>();
 

@@ -1,4 +1,5 @@
-import { requireConfigVariable, sleep, toBN } from "../../../src/utils/helpers";
+import { sleep, toBN } from "../../../src/utils/helpers";
+import { requireSecret } from "../../../src/config/secrets";
 import { initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
@@ -22,7 +23,7 @@ import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 use(chaiAsPromised);
 
-const accountPrivateKey = requireConfigVariable("owner.native_private_key");
+const accountPrivateKey = requireSecret("owner.native_private_key");
 const sourceId = SourceId.XRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";

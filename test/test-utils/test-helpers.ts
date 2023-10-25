@@ -11,18 +11,19 @@ import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces
 import { Notifier } from "../../src/utils/Notifier";
 import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
-import { BN_ZERO, requireConfigVariable, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { requireSecret } from "../../src/config/secrets";
 import { artifacts } from "../../src/utils/web3";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { SourceId } from "../../src/underlying-chain/SourceId";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
-const ownerAccountPrivateKey = requireConfigVariable("owner.native_private_key");
-const account1PrivateKey = requireConfigVariable("challenger.native_private_key");
-const userPrivateKey = requireConfigVariable("user.native_private_key");
-const account3PrivateKey = requireConfigVariable("timeKeeper.native_private_key");
-const account4PrivateKey = requireConfigVariable("systemKeeper.native_private_key");
+const ownerAccountPrivateKey = requireSecret("owner.native_private_key");
+const account1PrivateKey = requireSecret("challenger.native_private_key");
+const userPrivateKey = requireSecret("user.native_private_key");
+const account3PrivateKey = requireSecret("timeKeeper.native_private_key");
+const account4PrivateKey = requireSecret("systemKeeper.native_private_key");
 
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {

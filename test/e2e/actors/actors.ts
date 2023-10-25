@@ -14,7 +14,8 @@ import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
-import { requireConfigVariable, toBN, toBNExp } from "../../../src/utils/helpers";
+import { toBN, toBNExp } from "../../../src/utils/helpers";
+import { requireSecret } from "../../../src/config/secrets";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
@@ -22,7 +23,7 @@ import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../
 import chaiAsPromised from "chai-as-promised";
 import { Agent } from "../../../src/fasset/Agent";
 import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
-import { defineAppConfig } from "../../../src/config/AppConfig";
+import { getSecrets } from "../../../src/config/secrets";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
@@ -52,8 +53,8 @@ describe("Actor tests - coston", async () => {
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
-        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
-        ownerAddress = requireConfigVariable("owner.native_address");
+        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
+        ownerAddress = requireSecret("owner.native_address");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];

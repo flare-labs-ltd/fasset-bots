@@ -25,9 +25,9 @@ import {
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
     STABLE_COIN_LOW_BALANCE,
     XRP_ACTIVATE_BALANCE,
-    requireConfigVariable,
     toBN,
 } from "../utils/helpers";
+import { requireSecret } from "../config/secrets";
 import { logger } from "../utils/logger";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
@@ -140,12 +140,12 @@ export class AgentBot {
      * @param agentUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
-        const ownerAddress = requireConfigVariable("owner.native_address");
+        const ownerAddress = requireSecret("owner.native_address");
         try {
             if (context.chainInfo.chainId != SourceId.XRP) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
-            const ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
-            const reference = requireConfigVariable("owner.native_address");
+            const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
+            const reference = requireSecret("owner.native_address");
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
@@ -1339,7 +1339,7 @@ export class AgentBot {
      * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireConfigVariable("owner.underlying_address");
+        const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
         try {
             logger.info(
                 `Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`

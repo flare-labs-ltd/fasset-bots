@@ -5,14 +5,15 @@ import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BNish, CommandLineError, requireConfigVariable, toBN } from "../utils/helpers";
+import { BNish, CommandLineError, toBN } from "../utils/helpers";
+import { requireSecret } from "../config/secrets";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { formatArgs } from "../utils/formatting";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { defineAppConfig } from "../config/AppConfig";
+import { getSecrets } from "../config/secrets";
 
 export class UserBot {
     context!: IAssetAgentBotContext;
@@ -38,42 +39,42 @@ export class UserBot {
      * @param fAssetSymbol symbol for the fasset
      */
     async initialize(configFile: string, fAssetSymbol: string): Promise<void> {
-        logger.info(`User ${requireConfigVariable("user.native_address")} started to initialize cli environment.`);
+        logger.info(`User ${requireSecret("user.native_address")} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        const runConfig = loadConfigFile(configFile, `User ${requireConfigVariable("user.native_address")}`);
+        const runConfig = loadConfigFile(configFile, `User ${requireSecret("user.native_address")}`);
         // init web3 and accounts
-        this.nativeAddress = requireConfigVariable("user.native_address");
-        const nativePrivateKey = requireConfigVariable("user.native_private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, defineAppConfig().apiKey.native_rpc), [nativePrivateKey], null);
+        this.nativeAddress = requireSecret("user.native_address");
+        const nativePrivateKey = requireSecret("user.native_private_key");
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.nativeAddress !== accounts[0]) {
-            logger.error(`User ${requireConfigVariable("user.native_address")} has invalid address/private key pair.`);
+            logger.error(`User ${requireSecret("user.native_address")} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
         this.botConfig = await createBotConfig(runConfig, this.nativeAddress);
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`User ${requireConfigVariable("user.native_address")} has invalid FAsset symbol.`);
+            logger.error(`User ${requireSecret("user.native_address")} has invalid FAsset symbol.`);
             throw new CommandLineError("Invalid FAsset symbol");
         }
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // create underlying wallet key
-        this.underlyingAddress = requireConfigVariable("user.underlying_address");
-        const underlyingPrivateKey = requireConfigVariable("user.underlying_private_key");
+        this.underlyingAddress = requireSecret("user.underlying_address");
+        const underlyingPrivateKey = requireSecret("user.underlying_private_key");
         await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
         console.error(chalk.cyan("Environment successfully initialized."));
-        logger.info(`User ${requireConfigVariable("user.native_address")} successfully finished initializing cli environment.`);
+        logger.info(`User ${requireSecret("user.native_address")} successfully finished initializing cli environment.`);
     }
 
     /**
      * Updates underlying block and timestamp on fasset contracts.
      */
     async updateUnderlyingTime() {
-        logger.info(`User ${requireConfigVariable("user.native_address")} started updating underlying block time.`);
+        logger.info(`User ${requireSecret("user.native_address")} started updating underlying block time.`);
         console.log("Updating underlying block time....");
         await proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.nativeAddress);
-        logger.info(`User ${requireConfigVariable("user.native_address")} finished updating underlying block time.`);
+        logger.info(`User ${requireSecret("user.native_address")} finished updating underlying block time.`);
     }
 
     /**
@@ -100,26 +101,26 @@ export class UserBot {
      * @param lots number of lots to mint
      */
     async mint(agentVault: string, lots: BNish): Promise<void> {
-        logger.info(`User ${requireConfigVariable("user.native_address")} started minting with agent ${agentVault}.`);
+        logger.info(`User ${requireSecret("user.native_address")} started minting with agent ${agentVault}.`);
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Reserving collateral...");
-        logger.info(`User ${requireConfigVariable("user.native_address")} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
+        logger.info(`User ${requireSecret("user.native_address")} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
         const crt = await minter.reserveCollateral(agentVault, lots);
-        logger.info(`User ${requireConfigVariable("user.native_address")} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
+        logger.info(`User ${requireSecret("user.native_address")} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${
+            `User ${requireSecret("user.native_address")} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${
                 crt.paymentAddress
             }.`
         );
         const txHash = await minter.performMintingPayment(crt);
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} paid on underlying chain for reservation ${
+            `User ${requireSecret("user.native_address")} paid on underlying chain for reservation ${
                 crt.collateralReservationId
             } to agent's ${agentVault} with transaction ${txHash}.`
         );
         await this.proveAndExecuteMinting(crt.collateralReservationId, txHash, crt.paymentAddress);
-        logger.info(`User ${requireConfigVariable("user.native_address")} finished minting with agent ${agentVault}.`);
+        logger.info(`User ${requireSecret("user.native_address")} finished minting with agent ${agentVault}.`);
     }
 
     /**
@@ -132,24 +133,24 @@ export class UserBot {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`
+            `User ${requireSecret("user.native_address")} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`
         );
         await minter.waitForTransactionFinalization(transactionHash);
         console.log(`Waiting for proof of underlying payment transaction ${transactionHash}...`);
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} is waiting for proof of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
+            `User ${requireSecret("user.native_address")} is waiting for proof of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
         const proof = await minter.proveMintingPayment(paymentAddress, transactionHash);
         console.log(`Executing payment...`);
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} is executing minting with proof ${JSON.stringify(
+            `User ${requireSecret("user.native_address")} is executing minting with proof ${JSON.stringify(
                 web3DeepNormalize(proof)
             )} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
         await minter.executeProvedMinting(collateralReservationId, proof);
         console.log("Done");
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} executed minting with proof ${JSON.stringify(
+            `User ${requireSecret("user.native_address")} executed minting with proof ${JSON.stringify(
                 web3DeepNormalize(proof)
             )} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
@@ -162,16 +163,16 @@ export class UserBot {
     async redeem(lots: BNish) {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
-        logger.info(`User ${requireConfigVariable("user.native_address")} is asking for redemption of ${lots} lots.`);
+        logger.info(`User ${requireSecret("user.native_address")} is asking for redemption of ${lots} lots.`);
         const [requests, remainingLots] = await redeemer.requestRedemption(lots);
         if (!toBN(remainingLots).isZero()) {
             console.log(
                 `Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`
             );
-            logger.info(`User ${requireConfigVariable("user.native_address")} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`);
+            logger.info(`User ${requireSecret("user.native_address")} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`);
         }
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
-        logger.info(`User ${requireConfigVariable("user.native_address")} triggered ${requests.length} payment requests.`);
+        logger.info(`User ${requireSecret("user.native_address")} triggered ${requests.length} payment requests.`);
         let loggedRequests = ``;
         for (const req of requests) {
             const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
@@ -180,7 +181,7 @@ export class UserBot {
             );
             loggedRequests =
                 loggedRequests +
-                `User ${requireConfigVariable("user.native_address")} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${
+                `User ${requireSecret("user.native_address")} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${
                     req.agentVault
                 }  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${
                     req.lastUnderlyingTimestamp
@@ -206,13 +207,13 @@ export class UserBot {
     ) {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         const requestId = PaymentReference.decodeId(paymentReference);
-        logger.info(`User ${requireConfigVariable("user.native_address")} is defaulting redemption ${requestId}.`);
+        logger.info(`User ${requireSecret("user.native_address")} is defaulting redemption ${requestId}.`);
         if (paymentReference !== PaymentReference.redemption(requestId)) {
-            logger.error(`User ${requireConfigVariable("user.native_address")} provided invalid payment reference ${paymentReference} for redemption ${requestId}.`);
+            logger.error(`User ${requireSecret("user.native_address")} provided invalid payment reference ${paymentReference} for redemption ${requestId}.`);
             throw new CommandLineError("Invalid payment reference");
         }
         console.log("Waiting for payment default proof...");
-        logger.info(`User ${requireConfigVariable("user.native_address")} is waiting for proof of underlying non payment for redemption ${requestId}.`);
+        logger.info(`User ${requireSecret("user.native_address")} is waiting for proof of underlying non payment for redemption ${requestId}.`);
         const proof = await redeemer.obtainNonPaymentProof(
             this.underlyingAddress,
             paymentReference,
@@ -223,12 +224,12 @@ export class UserBot {
         );
         console.log("Executing payment default...");
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
+            `User ${requireSecret("user.native_address")} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
         );
         await redeemer.executePaymentDefault(requestId, proof);
         console.log("Done");
         logger.info(
-            `User ${requireConfigVariable("user.native_address")} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
+            `User ${requireSecret("user.native_address")} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
         );
     }
 }
