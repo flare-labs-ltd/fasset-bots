@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "source-map-support/register";
 
 import { TimeKeeper } from "../actors/TimeKeeper";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";

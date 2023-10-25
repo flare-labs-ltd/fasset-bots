@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "source-map-support/register";
 
 import { AgentBotRunner } from "../actors/AgentBotRunner";
 import { createBotConfig, loadAgentConfigFile } from "../config/BotConfig";

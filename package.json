@@ -120,6 +120,7 @@
         "reflect-metadata": "0.1.13",
         "rxjs": "7.8.1",
         "simple-wallet": "link:../simple-wallet",
+        "source-map-support": "0.5.21",
         "state-connector-protocol": "git+ssh://git@gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b",
         "web3": "1.10.2",
         "web3-core": "1.10.2",
