@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
 import { sleep, toBN } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
@@ -26,10 +26,12 @@ import { expect, spy, use } from "chai";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
+import { createTestLiquidator } from "../test-utils/helpers";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
 
+const IERC20 = artifacts.require("IERC20");
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
 
 describe("Challenger tests", async () => {
@@ -38,8 +40,10 @@ describe("Challenger tests", async () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
+    let minter2Address: string;
     let redeemerAddress: string;
     let challengerAddress: string;
+    let liquidatorAddress: string;
     let chain: MockChain;
     let state: TrackedState;
 
@@ -49,6 +53,8 @@ describe("Challenger tests", async () => {
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
         challengerAddress = accounts[6];
+        liquidatorAddress = accounts[7];
+        minter2Address = accounts[8];
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
@@ -440,5 +446,72 @@ describe("Challenger tests", async () => {
         // check status
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.NORMAL);
+    });
+
+    it("Should liquidate agent if in full liquidation", async () => {
+        const challenger = await createTestChallenger(challengerAddress, state);
+        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const spyChlg = spy.on(challenger, "doublePaymentChallenge"); // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const poolCollateralToken = await IERC20.at((await agentBot.agent.getPoolCollateral()).token);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const minter2 = await createTestMinter(context, minter2Address, chain);
+        const redeemer = await createTestRedeemer(context, redeemerAddress);
+        await challenger.runStep();
+
+        // create collateral reservation and perform minting
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
+        // Generate balance in funder minter
+        await createCRAndPerformMintingAndRunSteps(minter2, agentBot, 3, orm, chain);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // create redemption requests and perform redemption
+        const [reqs] = await redeemer.requestRedemption(3);
+        const rdReq = reqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em); // check if redemption is done orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+        }
+
+        // repeat the same payment (already confirmed)
+        await performRedemptionPayment(agentBot.agent, rdReq);
+        // run challenger's and agent's steps until agent's status is FULL_LIQUIDATION
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await sleep(3000);
+            await challenger.runStep();
+            await agentBot.runStep(orm.em);
+            const agentStatus = await getAgentStatus(agentBot);
+            console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
+            if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+        }
+        const agentStatus = await getAgentStatus(agentBot);
+        assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
+        expect(spyChlg).to.have.been.called.once;
+        // Try to liquidate agent in full liquidation
+        // liquidator "buys" f-assets
+        console.log("Transferring Fassets to liquidator...");
+        const funderBalance = await context.fAsset.balanceOf(minter2.address);
+        await context.fAsset.transfer(liquidator.address, funderBalance, { from: minter2.address });
+        // FAsset and pool collateral balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const pBalanceBefore = await poolCollateralToken.balanceOf(liquidatorAddress);
+        console.log("Liquidating...");
+        await liquidator.runStep();
+        while(liquidator.runner.runningThreads > 0) {
+            await sleep(2000);
+        }
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const pBalanceAfter = await poolCollateralToken.balanceOf(liquidatorAddress);
+        // The balance is changed, meaning that the agent is liquidated
+        expect(pBalanceAfter.gt(pBalanceBefore)).to.be.true;
+        expect(fBalanceAfter.lt(fBalanceBefore)).to.be.true;
     });
 });
