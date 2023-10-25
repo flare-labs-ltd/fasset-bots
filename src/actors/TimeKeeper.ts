@@ -39,6 +39,7 @@ export class TimeKeeper {
     run() {
         try {
             void this.updateUnderlyingBlock(); // do not wait whole interval for start
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.interval = setInterval(async () => {
                 await this.updateUnderlyingBlock();
             }, this.intervalInMs);

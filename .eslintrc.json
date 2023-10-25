@@ -10,6 +10,11 @@
         "plugin:@typescript-eslint/eslint-recommended"
     ],
     "rules": {
+        "@typescript-eslint/await-thenable": "warn",
+        "@typescript-eslint/no-floating-promises": "error",
+        "@typescript-eslint/no-misused-promises": "error",
+        "@typescript-eslint/no-for-in-array": "error",
+        "guard-for-in": "warn",
         "linebreak-style": [
             "error",
             "unix"
@@ -17,15 +22,8 @@
         "@typescript-eslint/prefer-namespace-keyword": "off",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-inferrable-types": "off",
-        "guard-for-in": "warn",
-        "@typescript-eslint/await-thenable": "warn",
-        "@typescript-eslint/no-floating-promises": [
-            "error",
-            {
-                "ignoreVoid": true
-            }
-        ],
         "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^_" }],
         "no-console": 0
     },
     "parserOptions": {
