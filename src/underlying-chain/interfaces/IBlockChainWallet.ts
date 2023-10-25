@@ -1,5 +1,14 @@
 type NumberLike = BN | number | string;
 
+export type UTXO = {
+    value: NumberLike;
+    // ... Add any other properties you want, like txid, vout, etc.
+};
+
+export type SpentReceivedObject = {
+    [address: string]: UTXO[];
+};
+
 export interface TransactionOptionsWithFee {
     // depending on chain, set either maxFee or (gasPrice, gasLimit), but not both
     // if not used, fee/gas limits will be calculated and added automatically by the wallet
@@ -26,7 +35,7 @@ export interface IBlockChainWallet {
     // Total source amount may be bigger (but not smaller!) than total target amount, the rest (or part of it) can be used as gas/fee (not all need to be used).
     // This variant is typically used on utxo chains.
     // Returns new transaction hash.
-    addMultiTransaction(spend: { [address: string]: NumberLike }, receive: { [address: string]: NumberLike }, reference: string | null): Promise<string>;
+    addMultiTransaction(spend: SpentReceivedObject, received: SpentReceivedObject, reference: string | null): Promise<string>;
 
     // Creates a new account and returns the address.
     // Private key is kept in the wallet.

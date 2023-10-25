@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { BNish, BN_ZERO, fail, systemTimestamp, toBN } from "../utils/helpers";
+import type { IBlockChainWallet, TransactionOptionsWithFee, SpentReceivedObject } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 export type MockTransactionOptions = { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -193,35 +193,29 @@ export class MockChain implements IBlockChain {
     }
 }
 
+// UTXO implementation
 export class MockChainWallet implements IBlockChainWallet {
-    constructor(
-        public chain: MockChain,
-    ) { }
+    constructor(public chain: MockChain) { }
 
     async getBalance(address: string): Promise<BN> {
         return this.chain.balances[address] ?? BN_ZERO;
     }
-
     async getTransactionFee(): Promise<BN> {
         return this.chain.requiredFee;
     }
-
     addExistingAccount(): Promise<string> {
         throw new Error("Method not implemented.");
     }
-
     async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);
         return transaction.hash;
     }
-
-    async addMultiTransaction(spent: { [address: string]: BNish }, received: { [address: string]: BNish }, reference: string | null, options?: MockTransactionOptions): Promise<string> {
+    async addMultiTransaction(spent: SpentReceivedObject, received: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): Promise<string> {
         const transaction = this.createMultiTransaction(spent, received, reference, options);
         this.chain.addTransaction(transaction);
         return transaction.hash;
     }
-
     createTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): MockChainTransaction {
         options ??= {};
         value = toBN(value);
@@ -232,13 +226,19 @@ export class MockChainWallet implements IBlockChainWallet {
         }
         const success = options.status == null || options.status === TX_SUCCESS;
         const spent = success ? value.add(maxFee) : maxFee;
-        const received = success ? value : BN_ZERO;
-        return this.createMultiTransaction({ [from]: spent }, { [to]: received }, reference, options);
+        const received = success ? value : BN_ZERO
+        const spentObj: SpentReceivedObject = { [from]: [{ value: spent }] };
+        const receivedObj: SpentReceivedObject = { [to]: [{ value: received }] };
+        return this.createMultiTransaction(spentObj, receivedObj, reference, options);
     }
 
-    createMultiTransaction(spent_: { [address: string]: BNish }, received_: { [address: string]: BNish }, reference: string | null, options?: MockTransactionOptions): MockChainTransaction {
-        const inputs: TxInputOutput[] = Object.entries(spent_).map(([address, amount]) => [address, toBN(amount)]);
-        const outputs: TxInputOutput[] = Object.entries(received_).map(([address, amount]) => [address, toBN(amount)]);
+    createMultiTransaction(spent_: SpentReceivedObject, received_: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): MockChainTransaction {
+        const inputs: TxInputOutput[] = Object.entries(spent_).flatMap(([address, utxos]): TxInputOutput[] => {
+            return utxos.map(utxo => [address, toBN(utxo.value)]);
+        });
+        const outputs: TxInputOutput[] = Object.entries(received_).flatMap(([address, utxos]): TxInputOutput[] => {
+            return utxos.map(utxo => [address, toBN(utxo.value)]);
+        });
         const totalSpent = inputs.reduce((a, [_, x]) => a.add(x), BN_ZERO);
         const totalReceived = outputs.reduce((a, [_, x]) => a.add(x), BN_ZERO);
         const status = options?.status ?? TX_SUCCESS;
@@ -248,12 +248,10 @@ export class MockChainWallet implements IBlockChainWallet {
         // hash is set set when transaction is added to a block
         return { hash, inputs, outputs, reference, status };
     }
-
     async createAccount(): Promise<string> {
         const accountId = Math.floor(Math.random() * 100000) + 1;
         return `UNDERLYING_ACCOUNT_${accountId}`;
     }
-
     private calculateMaxFee(options: TransactionOptionsWithFee) {
         if (options.maxFee != null) {
             return toBN(options.maxFee);
