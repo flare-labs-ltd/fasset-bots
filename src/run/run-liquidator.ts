@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "source-map-support/register";
 
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { createBotConfig, loadConfigFile } from "../config/BotConfig";

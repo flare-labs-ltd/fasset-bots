@@ -1,3 +1,6 @@
+import "dotenv/config";
+import "source-map-support/register";
+
 import { Command } from "commander";
 import { createSha256Hash, generateRandomHexString, toplevelRun } from "../utils/helpers";
 

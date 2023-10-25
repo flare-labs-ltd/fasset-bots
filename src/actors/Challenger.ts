@@ -249,9 +249,17 @@ export class Challenger extends ActorBase {
         for (const transaction of agentTransactions.values()) {
             if (!PaymentReference.isValid(transaction.reference)) continue; // should be caught by illegal payment challenge
             /* istanbul ignore next */
-            const spentAmount = transaction.inputs.find((input) => input[0] === agent.underlyingAddress)?.[1];
+            const spentAmount: BN = toBN(0);
+            for (const input of transaction.inputs) {
+                if (input[0] === agent.underlyingAddress)
+                    spentAmount.iadd(input[1]);
+            }
+            for (const output of transaction.outputs) {
+                if (output[0] === agent.underlyingAddress)
+                    spentAmount.isub(output[1]);
+            }
             /* istanbul ignore next */
-            if (spentAmount == null) continue;
+            if (spentAmount.lten(0)) continue;
             if (this.isValidRedemptionReference(agent, transaction.reference)) {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const { amount } = this.activeRedemptions.get(transaction.reference)!;
