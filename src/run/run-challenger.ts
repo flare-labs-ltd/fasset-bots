@@ -5,6 +5,7 @@ import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { requireConfigVariable, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { defineAppConfig } from "../config/AppConfig";
 
 const CHALLENGER_ADDRESS: string = requireConfigVariable("challenger.native_address");
 const CHALLENGER_PRIVATE_KEY: string = requireConfigVariable("challenger.native_private_key");

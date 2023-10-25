@@ -16,6 +16,7 @@ import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { decodeAttestationName } from "state-connector-protocol";
+import { defineAppConfig } from "../config/AppConfig";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");

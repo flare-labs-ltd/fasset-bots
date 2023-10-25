@@ -5,6 +5,7 @@ import { createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { requireConfigVariable, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { defineAppConfig } from "../config/AppConfig";
 
 const LIQUIDATOR_ADDRESS: string = requireConfigVariable("user.native_address");
 const LIQUIDATOR_PRIVATE_KEY: string = requireConfigVariable("user.native_private_key");

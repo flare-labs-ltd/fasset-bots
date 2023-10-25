@@ -4,6 +4,7 @@ import { AgentBotRunner } from "../actors/AgentBotRunner";
 import { createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { requireConfigVariable, requireEnv, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { defineAppConfig } from "../config/AppConfig";
 
 const OWNER_ADDRESS: string = requireConfigVariable("owner.native_address");
 const OWNER_PRIVATE_KEY: string = requireConfigVariable("owner.native_private_key");

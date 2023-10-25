@@ -12,6 +12,7 @@ import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { formatArgs } from "../utils/formatting";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { defineAppConfig } from "../config/AppConfig";
 
 export class UserBot {
     context!: IAssetAgentBotContext;

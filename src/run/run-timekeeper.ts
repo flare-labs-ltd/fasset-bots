@@ -6,6 +6,7 @@ import { createActorAssetContext } from "../config/create-asset-context";
 import { requireConfigVariable, sleep, toplevelRun } from "../utils/helpers";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
+import { defineAppConfig } from "../config/AppConfig";
 
 const TIMEKEEPER_ADDRESS: string = requireConfigVariable("timeKeeper.native_address");
 const TIMEKEEPER_PRIVATE_KEY: string = requireConfigVariable("timeKeeper.native_private_key");

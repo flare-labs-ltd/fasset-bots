@@ -6,6 +6,7 @@ import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
+import { defineAppConfig } from "../config/AppConfig";
 
 const SYSTEM_KEEPER_ADDRESS: string = requireConfigVariable("systemKeeper.native_address");
 const SYSTEM_KEEPER_PRIVATE_KEY: string = requireConfigVariable("systemKeeper.native_private_key");

@@ -5,6 +5,7 @@ import { loadConfigFile } from "../config/BotConfig";
 import { loadContracts } from "../config/contracts";
 import { BNish, requireConfigVariable, requireNotNull, toplevelRun } from "../utils/helpers";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { defineAppConfig } from "../config/AppConfig";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const Whitelist = artifacts.require("Whitelist");

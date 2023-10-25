@@ -22,6 +22,7 @@ import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../
 import chaiAsPromised from "chai-as-promised";
 import { Agent } from "../../../src/fasset/Agent";
 import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
+import { defineAppConfig } from "../../../src/config/AppConfig";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
