@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "source-map-support/register";
 
 import { readFileSync } from "fs";
 import { requireConfigVariable, toplevelRun } from "../utils/helpers";

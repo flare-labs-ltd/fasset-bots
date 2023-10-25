@@ -249,7 +249,7 @@ describe("mini truffle and artifacts tests", async () => {
             const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find((it) => it.name === "setPrice")), ["XRP", "5"]);
             const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
             const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
-            return waitForFinalization(contractSettings.web3, waitFor, nonce, accounts[0], promiEvent);
+            return waitForFinalization(111, contractSettings.web3, waitFor, nonce, accounts[0], promiEvent);
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
