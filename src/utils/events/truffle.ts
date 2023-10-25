@@ -7,10 +7,10 @@ export type TruffleExtractEvent<E extends EventSelector, N extends E["name"]> = 
 export type ContractWithEventsBase = Truffle.ContractInstance & { "~eventMarker"?: any };
 export type ContractWithEvents<C extends Truffle.ContractInstance, E extends EventSelector> = C & { "~eventMarker"?: E };
 
-export type ContractTypeFor<T> = T extends ContractWithEvents<infer C, infer E> ? C : never;
-export type EventNamesFor<T> = T extends ContractWithEvents<infer C, infer E> ? E["name"] : never;
-export type EventForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer C, infer E> ? ExtractEvent<E, N> : never;
-export type EventArgsForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer C, infer E> ? ExtractedEventArgs<E, N> : never;
+export type ContractTypeFor<T> = T extends ContractWithEvents<infer C, infer _E> ? C : never;
+export type EventNamesFor<T> = T extends ContractWithEvents<infer _C, infer E> ? E["name"] : never;
+export type EventForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer _C, infer E> ? ExtractEvent<E, N> : never;
+export type EventArgsForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer _C, infer E> ? ExtractedEventArgs<E, N> : never;
 
 export type EventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> = C[M] extends (
     ...args: any

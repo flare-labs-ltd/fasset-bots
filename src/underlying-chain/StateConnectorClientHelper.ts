@@ -191,7 +191,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             data: data.response,
             merkleProof: data.merkleProof
         };
-        const verified = this.verifyProof(proof);
+        const verified = await this.verifyProof(proof);
         /* istanbul ignore next */
         if (!verified) {
             logger.error(`State connector error: proof does not verify!!`);

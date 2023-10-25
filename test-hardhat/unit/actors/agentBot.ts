@@ -393,30 +393,72 @@ describe("Agent bot unit tests", async () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const settingName = "feeBIPS";
-        const settingValue = "1100";
-        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        agentEnt.agentSettingUpdateValidAtTimestamp = validAt;
-        agentEnt.agentSettingUpdateValidAtName = settingName;
+        //Announce updates
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
+        const validAtPoolFeeShareBIPS = await agentBot.agent.announceAgentSettingUpdate("poolFeeShareBIPS", 4100);
+        const validAtbuyFAssetByAgentFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("buyFAssetByAgentFactorBIPS", 8000);
+        agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAtbuyFAssetByAgentFactorBIPS;
+        agentEnt.agentSettingUpdateValidAtFeeBIPS = validAtFeeBIPS;
+        agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAtPoolFeeShareBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtTimestamp).eq(validAt)).to.be.true;
-        // allowed
-        await time.increaseTo(validAt);
+        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eq(validAtFeeBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).eq(validAtPoolFeeShareBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).eq(validAtbuyFAssetByAgentFactorBIPS)).to.be.true;
+        //allowed
+        await time.increaseTo(validAtbuyFAssetByAgentFactorBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");
-        // update again
-        const validAt2 = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        agentEnt.agentSettingUpdateValidAtTimestamp = validAt2;
-        agentEnt.agentSettingUpdateValidAtName = settingName;
+
+        //Announce update of other settings
+        const validAtpoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 9000);
+        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAtpoolTopupTokenPriceFactorBIPS;
+        const validAtpoolTopupCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupCollateralRatioBIPS", 23000);
+        agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = validAtpoolTopupCollateralRatioBIPS;
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS).eq(validAtpoolTopupTokenPriceFactorBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS).eq(validAtpoolTopupCollateralRatioBIPS)).to.be.true;
+        // allowed
+        await time.increaseTo(validAtpoolTopupCollateralRatioBIPS);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS.eqn(0)).to.be.true;
+        //Announce more updates
+        const validAtmintingVaultCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingVaultCollateralRatioBIPS", 17800);
+        agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = validAtmintingVaultCollateralRatioBIPS;
+        const validAtmintingPoolCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingPoolCollateralRatioBIPS", 25000);
+        agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = validAtmintingPoolCollateralRatioBIPS;
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS).eq(validAtmintingVaultCollateralRatioBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS).eq(validAtmintingPoolCollateralRatioBIPS)).to.be.true;
+
+        await time.increaseTo(validAtmintingPoolCollateralRatioBIPS);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS.eqn(0)).to.be.true;
+        //Announce another update
+        const validAtpoolExitCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", 25000);
+        agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = validAtpoolExitCollateralRatioBIPS;
+        //Not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS).eq(validAtpoolExitCollateralRatioBIPS)).to.be.true;
+        //Allowed
+        await time.increaseTo(validAtpoolExitCollateralRatioBIPS);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS.eqn(0)).to.be.true;
+
+        // Announce and try to update an expired update
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
+        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAt2;
         await orm.em.persist(agentEnt).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtTimestamp.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtName).to.eq("");
+        expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
 
     it("Should exit available", async () => {

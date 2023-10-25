@@ -16,6 +16,6 @@ export class ActorBase {
     ) {}
 
     async runStep(): Promise<void> {
-        throw new Error("Each actor needs to provide it's own implementation.");
+        throw new Error("Each actor needs to provide its own implementation.");
     }
 }
