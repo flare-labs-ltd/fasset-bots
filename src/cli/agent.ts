@@ -1,3 +1,6 @@
+import "dotenv/config";
+import "source-map-support/register";
+
 import { Command } from "commander";
 import { toplevelRun } from "../utils/helpers";
 import { BotCliCommands } from "../actors/AgentBotCliCommands";
