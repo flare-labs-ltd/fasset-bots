@@ -1,9 +1,13 @@
 import { readFileSync } from "fs";
 
 export type Secrets = {
-    wallet_encryption_password: string;
-    apiKey: { [key: string]: string };
-    owner: UnifiedAccount;
+    wallet?: {
+        encryption_password: string;
+    };
+    apiKey?: {
+        [key: string]: string
+    };
+    owner?: UnifiedAccount;
     user?: UnifiedAccount;
     challenger?: NativeAccount;
     timeKeeper?: NativeAccount;

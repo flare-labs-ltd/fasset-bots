@@ -9,7 +9,7 @@ export interface IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = requireSecret("wallet_encryption_password");
+    private password = requireSecret("wallet.encryption_password");
 
     private privateKeyCache = new Map<string, string>();
 
