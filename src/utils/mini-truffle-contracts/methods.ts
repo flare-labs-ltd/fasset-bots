@@ -1,7 +1,7 @@
 import { TransactionConfig } from "web3-core";
 import coder from "web3-eth-abi";
 import { AbiItem, AbiOutput } from "web3-utils";
-import { getOrCreate, toBN } from "../helpers";
+import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { transactionLogger, waitForFinalization } from "./finalization";
 import { ContractSettings } from "./types";
@@ -186,7 +186,8 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
     return await executeMethodSend(settings, { ...config, data: data });
 }
 
-let transactionId = 0;
+// make sure id-s in different processes don't overlap (as long as they are started at least 1 second apart)
+let transactionId = systemTimestamp() * 1000;
 
 /**
  * Send a transaction for a contract method. Estimate gas before if needed.
