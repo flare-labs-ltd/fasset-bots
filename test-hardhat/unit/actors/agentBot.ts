@@ -393,7 +393,7 @@ describe("Agent bot unit tests", async () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        //Announce updates
+        // announce updates
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
         const validAtPoolFeeShareBIPS = await agentBot.agent.announceAgentSettingUpdate("poolFeeShareBIPS", 4100);
         const validAtBuyFAssetByAgentFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("buyFAssetByAgentFactorBIPS", 8000);
@@ -406,11 +406,10 @@ describe("Agent bot unit tests", async () => {
         expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eq(validAtFeeBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).eq(validAtPoolFeeShareBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).eq(validAtBuyFAssetByAgentFactorBIPS)).to.be.true;
-        //allowed
-        await time.increaseTo(validAtBuyFAssetByAgentFactorBIPS);
+        // allowed
+        await time.increaseTo(validAtPoolFeeShareBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-
-        //Announce update of other settings
+        //announce update of other settings
         const validAtPoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 9000);
         agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAtPoolTopupTokenPriceFactorBIPS;
         const validAtPoolTopupCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupCollateralRatioBIPS", 23000);
@@ -421,11 +420,11 @@ describe("Agent bot unit tests", async () => {
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eq(validAtPoolTopupTokenPriceFactorBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eq(validAtPoolTopupCollateralRatioBIPS)).to.be.true;
         // allowed
-        await time.increaseTo(validAtPoolTopupTokenPriceFactorBIPS);
+        await time.increaseTo(validAtPoolTopupCollateralRatioBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS.eqn(0)).to.be.true;
-        //Announce more updates
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eqn(0)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eqn(0)).to.be.true;
+        // announce more updates
         const validAtMintingVaultCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingVaultCollateralRatioBIPS", 17800);
         agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAtMintingVaultCollateralRatioBIPS;
         const validAtMintingPoolCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingPoolCollateralRatioBIPS", 25000);
@@ -435,23 +434,22 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).eq(validAtMintingVaultCollateralRatioBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).eq(validAtMintingPoolCollateralRatioBIPS)).to.be.true;
-
+        // allowed
         await time.increaseTo(validAtMintingPoolCollateralRatioBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS.eqn(0)).to.be.true;
         expect(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS.eqn(0)).to.be.true;
-        //Announce another update
+        // announce another update
         const validAtPoolExitCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", 25000);
         agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAtPoolExitCollateralRatioBIPS;
-        //Not yet allowed
+        // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).eq(validAtPoolExitCollateralRatioBIPS)).to.be.true;
-        //Allowed
+        // allowed
         await time.increaseTo(validAtPoolExitCollateralRatioBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS.eqn(0)).to.be.true;
-
-        // Announce and try to update an expired update
+        // announce and try to update an expired update
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
         agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt2;
         await orm.em.persist(agentEnt).flush();
@@ -461,7 +459,7 @@ describe("Agent bot unit tests", async () => {
         expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
 
-    it("Should update agent settings and catch it if update expires", async () => {
+    it("Should update agent settings and catch it if error thrown", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
