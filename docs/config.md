@@ -41,8 +41,6 @@ Example:
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
-    "stateConnectorAddress": "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3",
-    "stateConnectorProofVerifierAddress": "0x7B6BebAF6D186DE7c69D4B99625f819AF6fB98fE",
     "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
 }
 ```
