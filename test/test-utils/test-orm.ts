@@ -29,7 +29,6 @@ describe("AgentBot", () => {
     it("should test agent's event handling", async () => {
         const _event = { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent;
         const agent = createAgent(orm.em);
-        orm.em.persist(agent);
         await orm.em.transactional(async (em) => {
             expect(agent.lastEventRead()).to.be.undefined;
             _event.blockNumber = 0
@@ -48,5 +47,6 @@ describe("AgentBot", () => {
         expect(agent.events.length).to.equal(3) // handled were deleted by agent.addEvent
         const lastEventRead = agent.lastEventRead();
         expect(lastEventRead!.blockNumber).to.equal(4)
+        await orm.em.persist(agent).flush();
     });
 });
