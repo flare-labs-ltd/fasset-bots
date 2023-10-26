@@ -15,7 +15,7 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
-import { MINUS_CHAR, toBN } from "../utils/helpers";
+import { MINUS_CHAR, requireNotNull, toBN } from "../utils/helpers";
 import { requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
@@ -24,6 +24,7 @@ import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
 import { encodeAttestationName } from "state-connector-protocol";
 import { getSecrets } from "./secrets";
+import { loadContracts } from "./contracts";
 
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -139,8 +140,8 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
                 chainInfo,
                 orm ? orm.em : undefined,
                 runConfig.attestationProviderUrls,
-                runConfig.stateConnectorProofVerifierAddress,
-                runConfig.stateConnectorAddress,
+                getContractAddress(runConfig, runConfig.stateConnectorProofVerifierAddress ?? "SCProofVerifier"),
+                getContractAddress(runConfig, runConfig.stateConnectorAddress ?? "StateConnector"),
                 ownerAddress
             )
         );
@@ -155,6 +156,18 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
     };
+}
+
+export function getContractAddress(config: BotConfigFile, nameOrAddress: string) {
+    if (/^0x[0-9a-f]{40}$/i.test(nameOrAddress)) {
+        return nameOrAddress;
+    }
+    if (config.contractsJsonFile) {
+        const contracts = loadContracts(config.contractsJsonFile);
+        return requireNotNull(contracts[nameOrAddress]?.address, `Cannot find address for ${nameOrAddress}`);
+    } else {
+        throw new Error("Can only retrieve contract from json.")
+    }
 }
 
 /**
