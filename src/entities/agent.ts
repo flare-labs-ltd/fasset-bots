@@ -46,7 +46,7 @@ export class AgentEntity {
         const ordered = this.events.getItems().sort(eventOrder)
         return ordered[ordered.length - 1]
     }
-
+    /* istanbul ignore next */ //until handling is not implemented
     unhandledEvents(): EventEntity[] {
         return this.events.getItems().filter(event => !event.handled)
     }
@@ -85,19 +85,19 @@ export class AgentEntity {
     agentSettingUpdateValidAtPoolFeeShareBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingVaultCRBIPS: BN = BN_ZERO;
+    agentSettingUpdateValidAtMintingVaultCrBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingPoolCRBIPS: BN = BN_ZERO;
+    agentSettingUpdateValidAtMintingPoolCrBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
     agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolExitCRBIPS: BN = BN_ZERO;
+    agentSettingUpdateValidAtPoolExitCrBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolTopupCRBIPS: BN = BN_ZERO;
+    agentSettingUpdateValidAtPoolTopupCrBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
     agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;

@@ -232,11 +232,11 @@ export class BotCliCommands {
                break;
             }
             case "mintingVaultCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = validAt;
+                agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAt;
                 break;
             }
             case "mintingPoolCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = validAt;
+                agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAt;
                 break;
             }
             case "buyFAssetByAgentFactorBIPS": {
@@ -244,11 +244,11 @@ export class BotCliCommands {
                 break;
             }
             case "poolExitCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = validAt;
+                agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAt;
                 break;
             }
             case "poolTopupCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = validAt;
+                agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAt;
                 break;
             }
             case "poolTopupTokenPriceFactorBIPS": {

@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import rewire from "rewire";
-import { toBN } from "../../../src/utils/helpers";
+import { BN_ZERO, toBN } from "../../../src/utils/helpers";
 import { requireSecret } from "../../../src/config/secrets";
 import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
 const rewiredBlockchainIndexerHelper = rewire("../../../src/underlying-chain/BlockchainIndexerHelper");
@@ -200,6 +200,11 @@ describe("XRP blockchain tests via indexer", async () => {
         const offset = 10;
         const retrievedTransaction1 = await blockchainIndexerClient.getTransactionsWithinBlockRange(blockId - offset, blockId);
         expect(retrievedTransaction1.length).to.be.gte(1);
+    });
+
+    it("Should return BN_ZERO if input is undefined", async () => {
+        const output = rewiredBlockChainIndexerClient.toBnValue(undefined);
+        expect(output.eq(BN_ZERO)).to.be.true;
     });
 });
 
