@@ -47,53 +47,50 @@ Example:
 
 ### Agent bot environment file
 
-In order to set environment for Agent bot following must be provided (see [`env.template`](../.env.template)).
+In order to set environment for Agent bot following must be provided (see [`.env.template`](../.env.template)).
 
 Example:
 
 ```env
-# DB ENCRYPTION
-WALLET_ENCRYPTION_PASSWORD=
-# RUN CONFIG PATH
+## Path to config file for the agent bot
 RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
-# API KEYS
-NATIVE_RPC_API_KEY=
-INDEXER_API_KEY=
-# UNDERLYING CHAIN
-# Agent bot owner
-OWNER_UNDERLYING_ADDRESS=
-OWNER_UNDERLYING_PRIVATE_KEY=
-# Minters and redeemers
-USER_UNDERLYING_ADDRESS=
-USER_UNDERLYING_PRIVATE_KEY=
-# NATIVE CHAIN
-# Agent owner
-OWNER_ADDRESS=
-OWNER_PRIVATE_KEY=
-# Minters and redeemers
-USER_ADDRESS=
-USER_PRIVATE_KEY=
-# Challenger
-NATIVE_ACCOUNT1=
-NATIVE_ACCOUNT1_PRIVATE_KEY=
-# Liquidator
-NATIVE_ACCOUNT2=
-NATIVE_ACCOUNT2_PRIVATE_KEY=
-# Time keeper
-NATIVE_ACCOUNT3=
-NATIVE_ACCOUNT3_PRIVATE_KEY=
-# System keeper
-NATIVE_ACCOUNT4=
-NATIVE_ACCOUNT4_PRIVATE_KEY=
 
-# AGENT BOT API KEYS - needed only to run agent commands via apis
-# expected to be on different servers in 'real-life usage'
-AGENT_BOT_API_KEY=
-AGENT_BOT_API_KEY_HASH=
+## (Optional) Path to config file for users, instead you can use `-c` parameter
+# USER_CONFIG_PATH="./run-config/run-config-coston-testxrp.json"
+
+## Enable the following line on Windows to allow reading secrets, since secrets file permission check does not work
+# ALLOW_SECRETS_ON_WINDOWS=true
 ```
+
+### Agent bot secrets file
+
+In order to run Agent bot API keys, addresses, private keys and any other neccessary credentials, should be store in a `secrets.json` file, which follows format (see [`secrets.template.json`](../secrets.template.json)):
+
+```
+type Secrets = {
+    wallet?: {
+        encryption_password: string;
+    };
+    apiKey: {
+        [key: string]: string
+    };
+    owner?: UnifiedAccount;
+    user?: UnifiedAccount;
+    challenger?: NativeAccount;
+    timeKeeper?: NativeAccount;
+    systemKeeper?: NativeAccount;
+    deployer?: NativeAccount;
+  }
+```
+
+`secrets.json` needs to have restricted read and write rights. This can be set by `chmod 600 secrets.json`
 
 ## Other bots (challenger, liquidator, system keeper, time keeper)
 
 ### Other bots configuration file
 
 In order to run other actor bots same instance of configuration must be provided, but not all atributes are required for those bots (check interface `BotConfigFile` in [config-files.ts](../src/config/config-files.ts)) and [examples](../run-config/).
+
+Environment and needed secrets should also be set. See above sections [_Agent bot environment file_](#agent-bot-environment-file) and [_Agent bot secrets file_](#agent-bot-secrets-file).
+
+
