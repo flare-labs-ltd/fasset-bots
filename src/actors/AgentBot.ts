@@ -526,14 +526,14 @@ export class AgentBot {
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
             }
             //Agent update mintingVaultCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
+            if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
             }
             //Agent update mintingPoolCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
+            if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
              }
             //Agent update buyFAssetByAgentFactorBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
@@ -541,14 +541,14 @@ export class AgentBot {
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
             }
             //Agent update poolExitCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
+            if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
             }
             //Agent update poolTopupCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
+            if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
             }
             //Agent update poolTopupTokenPriceFactorBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
@@ -726,12 +726,10 @@ export class AgentBot {
                 await this.agent.executeAgentSettingUpdate(settingsName);
                 this.notifier.sendAgentSettingsUpdate(this.agent.vaultAddress, settingsName);
                 logger.info(`Agent ${this.agent.vaultAddress} updated agent setting ${settingsName}.`);
-                // agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
                 return true;
             } catch (error) {
                 if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
                     this.notifier.sendAgentCannotUpdateSettingExpired(this.agent.vaultAddress, settingsName);
-                    // agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
                     return true;
                 }
                 logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}: ${error}`);
