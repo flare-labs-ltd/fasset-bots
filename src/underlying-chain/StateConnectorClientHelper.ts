@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "state-connector-protocol";
-import { IStateConnectorInstance, SCProofVerifierInstance } from "../../typechain-truffle";
+import { ISCProofVerifierInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toNumber } from "../utils/helpers";
@@ -45,7 +45,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     verifier: AxiosInstance;
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
-    scProofVerifier!: SCProofVerifierInstance;
+    scProofVerifier!: ISCProofVerifierInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
     definitionStore = new AttestationDefinitionStore();
@@ -68,8 +68,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     async initStateConnector(): Promise<void> {
         const IStateConnector = artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
-        const SCProofVerifier = artifacts.require("SCProofVerifier");
-        this.scProofVerifier = await SCProofVerifier.at(this.scProofVerifierAddress);
+        const ISCProofVerifier = artifacts.require("ISCProofVerifier");
+        this.scProofVerifier = await ISCProofVerifier.at(this.scProofVerifierAddress);
         this.firstEpochStartTime = toNumber(await this.stateConnector.BUFFER_TIMESTAMP_OFFSET());
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }

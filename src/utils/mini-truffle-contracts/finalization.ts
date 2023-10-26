@@ -1,9 +1,7 @@
 import Web3 from "web3";
 import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancelable-promises";
+import { transactionLogger, wrapTransactionError } from "./transaction-logging";
 import { TransactionWaitFor } from "./types";
-import { createCustomizedLogger } from "../logger";
-
-export const transactionLogger = createCustomizedLogger("log/transactions/transactions-%DATE%.log");
 
 /**
  * Wait for finalization of a method, depending on the provided `waitFor` parameter.
@@ -23,19 +21,23 @@ export async function waitForFinalization(
     promiEvent: PromiEvent<TransactionReceipt>
 ): Promise<TransactionReceipt> {
     async function waitForFinalizationInner(): Promise<TransactionReceipt> {
-        if (waitFor.what === "receipt") {
-            const receipt = await waitForReceipt(promiEvent, cancelToken);
-            transactionLogger.info("SUCCESS (receipt)", { transactionId, receipt });
-            return receipt;
-        } else if (waitFor.what === "confirmations") {
-            const receipt = await waitForConfirmations(promiEvent, waitFor.confirmations, cancelToken);
-            transactionLogger.info("SUCCESS (confirmations)", { transactionId, receipt });
-            return receipt;
-        } /* waitFor.what === 'nonceIncrease' */ else {
-            const receipt = await waitForReceipt(promiEvent, cancelToken);
-            await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
-            transactionLogger.info("SUCCESS (nonce increase)", { transactionId, receipt });
-            return receipt;
+        try {
+            if (waitFor.what === "receipt") {
+                const receipt = await waitForReceipt(promiEvent, cancelToken);
+                transactionLogger.info("SUCCESS (receipt)", { transactionId, receipt });
+                return receipt;
+            } else if (waitFor.what === "confirmations") {
+                const receipt = await waitForConfirmations(promiEvent, waitFor.confirmations, cancelToken);
+                transactionLogger.info("SUCCESS (confirmations)", { transactionId, receipt });
+                return receipt;
+            } /* waitFor.what === 'nonceIncrease' */ else {
+                const receipt = await waitForReceipt(promiEvent, cancelToken);
+                await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
+                transactionLogger.info("SUCCESS (nonce increase)", { transactionId, receipt });
+                return receipt;
+            }
+        } catch (e) {
+            wrapTransactionError(transactionId, e);
         }
     }
 

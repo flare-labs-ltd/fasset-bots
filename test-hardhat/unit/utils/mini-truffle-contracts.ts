@@ -5,7 +5,7 @@ import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-tr
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle-contracts/contracts";
 import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
-import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
+import { artifacts, contractSettings, initWeb3, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -57,6 +57,8 @@ describe("mini truffle and artifacts tests", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             await expectRevert(fpr.getPrice("BTC"), "price not initialized");
+            await expectRevert(fpr.setPrice("BTC", 1000, { from: accounts[0] }), "price not initialized");
+            await expectRevert(fpr.setPrice.estimateGas("BTC", 1000, { from: accounts[0] }), "price not initialized");
         });
 
         it("methods .call, .sendTransaction and .estimateGas should work", async () => {
@@ -160,11 +162,12 @@ describe("mini truffle and artifacts tests", async () => {
             await expectRevert((fpr as any).setDecimals("XRP"), "Not enough arguments");
         });
 
-        it("calls should work with explicit gas and fail with too little gas", async () => {
+        it("calls should work with auto or explicit gas and fail with too little gas", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             const gas = await fpr.setDecimals.estimateGas("XRP", 5);
             await fpr.setDecimals("XRP", 5, { gas: gas });
+            await withSettings(fpr, { gas: 'auto' }).setDecimals("DOGE", 5);
             await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
         });
     });
@@ -221,26 +224,21 @@ describe("mini truffle and artifacts tests", async () => {
         it("should create, deploy and call a contract - wait for 2 confirmations (with parallel mining), settings on instance, don't cleanup", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            try {
-                // MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = false;
-                const timer = setInterval(
-                    preventReentrancy(() => time.advanceBlock()),
-                    200
-                );
-                const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 2, timeoutMS: 5000 } };
-                await withSettings(fpr, settings).setDecimals("XRP", 5);
-                await withSettings(fpr, settings).setPrice("XRP", 800);
-                clearInterval(timer);
-                await fpr.setPriceFromTrustedProviders("XRP", 1000);
-                const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
-                expect(Number(price)).to.equal(800);
-                expect(Number(decimals)).to.equal(5);
-                const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
-                expect(Number(price1)).to.equal(1000);
-                expect(Number(decimals1)).to.equal(5);
-            } finally {
-                // MiniTruffleContractsFunctions.waitForFinalization.cleanupHandlers = true;
-            }
+            const timer = setInterval(
+                preventReentrancy(() => time.advanceBlock()),
+                200
+            );
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 2, timeoutMS: 5000 } };
+            await withSettings(fpr, settings).setDecimals("XRP", 5);
+            await withSettings(fpr, settings).setPrice("XRP", 800);
+            clearInterval(timer);
+            await fpr.setPriceFromTrustedProviders("XRP", 1000);
+            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+            expect(Number(price)).to.equal(800);
+            expect(Number(decimals)).to.equal(5);
+            const { 0: price1, 2: decimals1 } = await fpr.getPriceFromTrustedProviders("XRP");
+            expect(Number(price1)).to.equal(1000);
+            expect(Number(decimals1)).to.equal(5);
         });
 
         async function lowLevelExecuteMethodWithError(waitFor: TransactionWaitFor) {
@@ -408,5 +406,14 @@ describe("mini truffle and artifacts tests", async () => {
             registration1!.unregister(); // should succeed
             expect(() => cancelToken.check()).to.throw("Promise cancelled");
         });
+
+        it("clean stack trace - hardhat", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            await fpr.getPrice("BTC").catch(e => { console.error("CALL ERR", e); });
+            await withSettings(fpr, { gas: 'auto' }).setPrice("BTC", 1000, { gas: null as any }).catch(e => { console.error("SEND ERR", e); });
+            await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch(e => { console.error("SEND ERR NG", e); });
+        });
+
     });
 });
