@@ -180,6 +180,7 @@ export class AgentBot {
     async handleEvents(rootEm: EM): Promise<void> {
         try {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            if (!agentEnt.events.isInitialized()) await agentEnt.events.init() // init if not yet initialized
             const lastEventRead = agentEnt.lastEventRead();
             let events = await this.readNewEvents(rootEm);
             if (lastEventRead !== undefined) {
@@ -189,13 +190,13 @@ export class AgentBot {
                 await rootEm
                     .transactional(async (em) => {
                         // log event is handled here! Transaction committing should be done at the last possible step!
-                        agentEnt.addEvent(new EventEntity(agentEnt, event, true));
+                        agentEnt.addNewEvent(new EventEntity(agentEnt, event, true));
                         agentEnt.currentEventBlock = event.blockNumber;
                         // handle the event
                         await this.handleEvent(em, event);
                     })
-                    .catch((error) => {
-                        agentEnt.addEvent(new EventEntity(agentEnt, event, false));
+                    .catch(async (error) => {
+                        agentEnt.addNewEvent(new EventEntity(agentEnt, event, false));
                         console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
                     });

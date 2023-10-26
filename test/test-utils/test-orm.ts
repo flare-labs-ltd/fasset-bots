@@ -27,25 +27,26 @@ describe("AgentBot", () => {
     });
 
     it("should test agent's event handling", async () => {
+        const _event = { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent;
+        const agent = createAgent(orm.em);
+        orm.em.persist(agent);
         await orm.em.transactional(async (em) => {
-            const agent = createAgent(em);
             expect(agent.lastEventRead()).to.be.undefined;
-            em.persist(agent);
-            const _event = { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent;
-            agent.events.add(new EventEntity(agent, _event, false));
+            _event.blockNumber = 0
+            agent.addNewEvent(new EventEntity(agent, _event, false));
             _event.blockNumber = 1
-            agent.events.add(new EventEntity(agent, _event, true));
+            agent.addNewEvent(new EventEntity(agent, _event, true));
             _event.blockNumber = 2;
-            agent.events.add(new EventEntity(agent, _event, true));
+            agent.addNewEvent(new EventEntity(agent, _event, true));
             _event.blockNumber = 3;
-            agent.events.add(new EventEntity(agent, _event, false));
+            agent.addNewEvent(new EventEntity(agent, _event, false));
             _event.blockNumber = 4;
-            const lastEventRead = new EventEntity(agent, _event, true)
-            agent.addEvent(lastEventRead);
+            agent.addNewEvent(new EventEntity(agent, _event, true));
         });
-        const agent = await orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: "0x" });
-        expect(agent.unhandledEvents().length).to.equal(2)
+        const unhandledEvents = agent.unhandledEvents();
+        expect(unhandledEvents.length).to.equal(2)
         expect(agent.events.length).to.equal(3) // handled were deleted by agent.addEvent
-        expect(agent.lastEventRead()!.blockNumber).to.equal(4)
+        const lastEventRead = agent.lastEventRead();
+        expect(lastEventRead!.blockNumber).to.equal(4)
     });
 });

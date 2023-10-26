@@ -35,26 +35,20 @@ export class AgentEntity {
     @OneToMany(() => EventEntity, event => event.agent, { orphanRemoval: true })
     events = new Collection<EventEntity>(this);
 
-    addEvent(event: EventEntity): void {
-        if (this.events.isInitialized()) {
-            // remove previously handled events before adding this one
-            // we track the last read event along with all the unhandled ones!
-            this.events.remove(this.events.filter(event => event.handled))
-        }
+    addNewEvent(event: EventEntity): void {
+        // remove previously handled events before adding this one
+        // we track the last read event along with all the unhandled ones!
+        this.events.remove(this.events.filter(_event => _event.handled))
         this.events.add(event)
     }
 
     lastEventRead(): EventEntity | undefined {
-        if (this.events.isInitialized()) {
-            const ordered = this.events.getItems().sort(eventOrder)
-            return ordered[ordered.length - 1]
-        }
+        const ordered = this.events.getItems().sort(eventOrder)
+        return ordered[ordered.length - 1]
     }
 
     unhandledEvents(): EventEntity[] {
-        return this.events.isInitialized()
-            ? this.events.getItems().filter(event => !event.handled)
-            : []
+        return this.events.getItems().filter(event => !event.handled)
     }
 
     // agent destroy
