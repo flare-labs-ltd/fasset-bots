@@ -412,18 +412,18 @@ describe("Agent bot unit tests", async () => {
 
         //Announce update of other settings
         const validAtpoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 9000);
-        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAtpoolTopupTokenPriceFactorBIPS;
+        agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAtpoolTopupTokenPriceFactorBIPS;
         const validAtpoolTopupCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupCollateralRatioBIPS", 23000);
         agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = validAtpoolTopupCollateralRatioBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS).eq(validAtpoolTopupTokenPriceFactorBIPS)).to.be.true;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eq(validAtpoolTopupTokenPriceFactorBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS).eq(validAtpoolTopupCollateralRatioBIPS)).to.be.true;
         // allowed
         await time.increaseTo(validAtpoolTopupCollateralRatioBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
         expect(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS.eqn(0)).to.be.true;
         //Announce more updates
         const validAtmintingVaultCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingVaultCollateralRatioBIPS", 17800);
@@ -453,12 +453,12 @@ describe("Agent bot unit tests", async () => {
 
         // Announce and try to update an expired update
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
-        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAt2;
+        agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt2;
         await orm.em.persist(agentEnt).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
+        expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
 
     it("Should exit available", async () => {

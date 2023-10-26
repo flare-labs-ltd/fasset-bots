@@ -222,40 +222,40 @@ export class BotCliCommands {
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        switch(settingName) { 
-            case "feeBIPS": { 
-                agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt; 
-               break; 
-            } 
-            case "poolFeeShareBIPS": { 
-                agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt; 
-               break; 
+        switch(settingName) {
+            case "feeBIPS": {
+                agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt;
+               break;
             }
-            case "mintingVaultCollateralRatioBIPS": { 
-                agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = validAt; 
-                break; 
+            case "poolFeeShareBIPS": {
+                agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt;
+               break;
             }
-            case "mintingPoolCollateralRatioBIPS": { 
-                agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = validAt; 
-                break; 
+            case "mintingVaultCollateralRatioBIPS": {
+                agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = validAt;
+                break;
             }
-            case "buyFAssetByAgentFactorBIPS": { 
-                agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAt; 
-                break; 
+            case "mintingPoolCollateralRatioBIPS": {
+                agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = validAt;
+                break;
             }
-            case "poolExitCollateralRatioBIPS": { 
-                agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = validAt; 
-                break; 
+            case "buyFAssetByAgentFactorBIPS": {
+                agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAt;
+                break;
             }
-            case "poolTopupCollateralRatioBIPS": { 
-                agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = validAt; 
-                break; 
+            case "poolExitCollateralRatioBIPS": {
+                agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = validAt;
+                break;
             }
-            case "poolTopupTokenPriceFactorBIPS": { 
-                agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = validAt; 
-                break; 
+            case "poolTopupCollateralRatioBIPS": {
+                agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = validAt;
+                break;
             }
-        } 
+            case "poolTopupTokenPriceFactorBIPS": {
+                agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt;
+                break;
+            }
+        }
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);

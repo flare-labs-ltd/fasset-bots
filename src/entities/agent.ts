@@ -106,7 +106,7 @@ export class AgentEntity {
     agentSettingUpdateValidAtPoolTopupCRBIPS: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
+    agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
 
     // agent withdraw vault collateral
 

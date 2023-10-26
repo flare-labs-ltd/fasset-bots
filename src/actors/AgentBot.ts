@@ -183,20 +183,22 @@ export class AgentBot {
             const lastEventRead = agentEnt.lastEventRead();
             let events = await this.readNewEvents(rootEm);
             if (lastEventRead !== undefined) {
-                events = events.filter(event => eventOrder(event, lastEventRead) > 0);
+                events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
             }
             for (const event of events) {
-                await rootEm.transactional(async (em) => {
-                    // log event is handled here! Transaction committing should be done at the last possible step!
-                    agentEnt.addEvent(new EventEntity(agentEnt, event, true));
-                    agentEnt.currentEventBlock = event.blockNumber;
-                    // handle the event
-                    await this.handleEvent(em, event)
-                }).catch(error => {
-                    agentEnt.addEvent(new EventEntity(agentEnt, event, false))
-                    console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                    logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
-                });
+                await rootEm
+                    .transactional(async (em) => {
+                        // log event is handled here! Transaction committing should be done at the last possible step!
+                        agentEnt.addEvent(new EventEntity(agentEnt, event, true));
+                        agentEnt.currentEventBlock = event.blockNumber;
+                        // handle the event
+                        await this.handleEvent(em, event);
+                    })
+                    .catch((error) => {
+                        agentEnt.addEvent(new EventEntity(agentEnt, event, false));
+                        console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                    });
             }
         } catch (error) {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
@@ -472,7 +474,6 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
-        const desiredSettingsUpdateErrorIncludes = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -511,214 +512,46 @@ export class AgentBot {
                     );
                 }
             }
-            //Agent settings update     
+            //Agent settings update
             //Agent update feeBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for feeBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("feeBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "feeBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting feeBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "feeBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting feeBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting feeBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtFeeBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
             }
             //Agent update poolFeeShareBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for poolFeeShareBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("poolFeeShareBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "poolFeeShareBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolFeeShareBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolFeeShareBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolFeeShareBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting poolFeeShareBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
             }
             //Agent update mintingVaultCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for mintingVaultCollateralRatioBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("mintingVaultCollateralRatioBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "mintingVaultCollateralRatioBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting mintingVaultCollateralRatioBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingVaultCollateralRatioBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingVaultCollateralRatioBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting mintingVaultCollateralRatioBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCRBIPS = BN_ZERO;
             }
             //Agent update mintingPoolCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for mintingPoolCollateralRatioBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("mintingPoolCollateralRatioBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "mintingPoolCollateralRatioBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting mintingPoolCollateralRatioBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "mintingPoolCollateralRatioBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting mintingPoolCollateralRatioBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting mintingPoolCollateralRatioBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
-            }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCRBIPS = BN_ZERO;
+             }
             //Agent update buyFAssetByAgentFactorBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for buyFAssetByAgentFactorBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("buyFAssetByAgentFactorBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "buyFAssetByAgentFactorBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting buyFAssetByAgentFactorBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "buyFAssetByAgentFactorBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting buyFAssetByAgentFactorBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting buyFAssetByAgentFactorBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
             }
             //Agent update poolExitCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for poolExitCollateralRatioBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("poolExitCollateralRatioBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "poolExitCollateralRatioBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolExitCollateralRatioBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolExitCollateralRatioBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolExitCollateralRatioBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting poolExitCollateralRatioBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCRBIPS = BN_ZERO;
             }
             //Agent update poolTopupCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for poolTopupCollateralRatioBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("poolTopupCollateralRatioBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "poolTopupCollateralRatioBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolTopupCollateralRatioBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupCollateralRatioBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupCollateralRatioBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting poolTopupCollateralRatioBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
             }
             //Agent update poolTopupTokenPriceFactorBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for poolTopupTokenPriceFactorBIPS agent setting update.`);
-                // agent waiting for setting update
-                if (toBN(agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS).lte(latestTimestamp)) {
-                    // agent can update setting
-                    try {
-                        await this.agent.executeAgentSettingUpdate("poolTopupTokenPriceFactorBIPS");
-                        this.notifier.sendAgentSettingsUpdate(agentEnt.vaultAddress, "poolTopupTokenPriceFactorBIPS");
-                        logger.info(`Agent ${this.agent.vaultAddress} updated agent setting poolTopupTokenPriceFactorBIPS.`);
-                        agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = BN_ZERO;
-                    } catch (error) {
-                        if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
-                            this.notifier.sendAgentCannotUpdateSettingExpired(agentEnt.vaultAddress, "poolTopupTokenPriceFactorBIPS");
-                            logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting poolTopupTokenPriceFactorBIPS: ${error}`);
-                            agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS = BN_ZERO;
-                        }
-                    }
-                } else {
-                    logger.info(
-                        `Agent ${
-                            this.agent.vaultAddress
-                        } cannot update agent setting poolTopupTokenPriceFactorBIPS. Allowed at ${agentEnt.agentSettingUpdateValidAtpoolTopupTokenPriceFactorBIPS.toString()}. Current ${latestTimestamp.toString()}.`
-                    );
-                }
+            if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
+                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
             }
             if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {
                 // agent can exit available and is agent waiting for clean up before destruction
@@ -872,6 +705,43 @@ export class AgentBot {
             em.persist(agentEnt);
         });
         logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
+    }
+
+    /**
+     * AgentBot tries to update agent setting
+     * @param settingValidAt agent entity
+     * @param settingsName
+     * @param latestTimestamp
+     * @returns true is settings was updated or valid time expired
+     */
+    async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
+        const desiredSettingsUpdateErrorIncludes = "update not valid anymore";
+        logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
+        // agent waiting for setting update
+        if (toBN(settingValidAt).lte(latestTimestamp)) {
+            // agent can update setting
+            try {
+                await this.agent.executeAgentSettingUpdate(settingsName);
+                this.notifier.sendAgentSettingsUpdate(this.agent.vaultAddress, settingsName);
+                logger.info(`Agent ${this.agent.vaultAddress} updated agent setting ${settingsName}.`);
+                // agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
+                return true;
+            } catch (error) {
+                if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                    this.notifier.sendAgentCannotUpdateSettingExpired(this.agent.vaultAddress, settingsName);
+                    // agentEnt.agentSettingUpdateValidAtPoolTopupCRBIPS = BN_ZERO;
+                    return true;
+                }
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}: ${error}`);
+            }
+        } else {
+            logger.info(
+                `Agent ${
+                    this.agent.vaultAddress
+                } cannot update agent setting ${settingsName}. Allowed at ${settingValidAt.toString()}. Current ${latestTimestamp.toString()}.`
+            );
+        }
+        return false;
     }
 
     /**

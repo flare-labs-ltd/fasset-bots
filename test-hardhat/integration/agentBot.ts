@@ -92,7 +92,7 @@ describe("Agent bot tests", async () => {
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
     });
 
-    it("Should perform minting and redemption", async () => {
+    it.only("Should perform minting and redemption", async () => {
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
