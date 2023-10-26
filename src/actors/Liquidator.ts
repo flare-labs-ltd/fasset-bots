@@ -1,9 +1,7 @@
-import { MintingExecuted } from "../../typechain-truffle/AssetManager";
 import { ActorBase } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
@@ -42,10 +40,10 @@ export class Liquidator extends ActorBase {
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
                     logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
-                    await this.handleMintingExecuted(event.args);
+                    await this.handleMintingExecuted(event.args.agentVault);
                 } else if (eventIs(event, this.state.context.assetManager, "FullLiquidationStarted")) {
                     logger.info(`Liquidator ${this.address} received event 'FullLiquidationStarted' with data ${formatArgs(event.args)}.`);
-                    await this.handleFullLiquidationStarted(event.args);
+                    await this.handleFullLiquidationStarted(event.args.agentVault);
                 }
             }
         } catch (error) {
@@ -57,8 +55,8 @@ export class Liquidator extends ActorBase {
     /**
      * @param args event's MintingExecuted arguments
      */
-    async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
-        const agent = await this.state.getAgentTriggerAdd(args.agentVault);
+    async handleMintingExecuted(agentVault: string): Promise<void> {
+        const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
             await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
         });
@@ -67,8 +65,8 @@ export class Liquidator extends ActorBase {
     /**
      * @param args event's FullLiquidationStarted arguments
      */
-    async handleFullLiquidationStarted(args: EventArgs<MintingExecuted>): Promise<void> {
-        const agent = await this.state.getAgentTriggerAdd(args.agentVault);
+    async handleFullLiquidationStarted(agentVault: string): Promise<void> {
+        const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
             await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, []));
         });
