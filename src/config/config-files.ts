@@ -36,7 +36,7 @@ export interface BotConfigFile {
 export interface BotFAssetInfo extends ChainInfo {
     walletUrl?: string; // only for agent bot
     inTestnet?: boolean; // only for agent bot, optional also for agent bot
-    indexerUrl: string;
+    indexerUrl?: string; // only for agent bot, challenger and timeKeeper
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;

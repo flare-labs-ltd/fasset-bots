@@ -25,8 +25,11 @@ import { SourceId } from "../underlying-chain/SourceId";
 import { encodeAttestationName } from "state-connector-protocol";
 import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
-
+import { artifacts } from "../utils/web3";
+/* istanbul ignore next */
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
+
+const AddressUpdater = artifacts.require("AddressUpdater");
 
 export interface BotConfig {
     orm?: ORM; // only for agent bot
@@ -142,8 +145,12 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
                 chainInfo,
                 orm ? orm.em : undefined,
                 runConfig.attestationProviderUrls,
-                getContractAddress(runConfig, runConfig.stateConnectorProofVerifierAddress ?? "SCProofVerifier"),
-                getContractAddress(runConfig, runConfig.stateConnectorAddress ?? "StateConnector"),
+                runConfig.stateConnectorProofVerifierAddress
+                    ? runConfig.stateConnectorProofVerifierAddress
+                    : (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).pfAddress,
+                runConfig.stateConnectorAddress
+                    ? runConfig.stateConnectorAddress
+                    : (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).scAddress,
                 ownerAddress
             )
         );
@@ -158,18 +165,6 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
     };
-}
-
-export function getContractAddress(config: BotConfigFile, nameOrAddress: string) {
-    if (/^0x[0-9a-f]{40}$/i.test(nameOrAddress)) {
-        return nameOrAddress;
-    }
-    if (config.contractsJsonFile) {
-        const contracts = loadContracts(config.contractsJsonFile);
-        return requireNotNull(contracts[nameOrAddress]?.address, `Cannot find address for ${nameOrAddress}`);
-    } else {
-        throw new Error("Can only retrieve contract from json.");
-    }
 }
 
 /**
@@ -218,7 +213,7 @@ export async function createChainConfig(
         ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl, chainInfo.finalizationBlocks)
         : undefined;
     const stateConnector =
-        stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls
+        stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls && chainInfo.indexerUrl
             ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
             : undefined;
     return {
@@ -389,4 +384,29 @@ function supportedSourceId(sourceId: SourceId) {
         return true;
     }
     return false;
+}
+
+async function getStateConnectorAndProofVerifierAddress(
+    contractsJsonFile?: string,
+    addressUpdaterAddress?: string
+): Promise<{ pfAddress: string; scAddress: string }> {
+    /* istanbul ignore else */ // until 'SCProofVerifier' is defined in explorer
+    if (contractsJsonFile) {
+        const contracts = loadContracts(contractsJsonFile);
+        const pfAddress = requireNotNull(contracts["SCProofVerifier"]?.address, `Cannot find address for SCProofVerifier`);
+        const scAddress = requireNotNull(contracts["StateConnector"]?.address, `Cannot find address for StateConnector`);
+        return {
+            pfAddress,
+            scAddress,
+        };
+    } else if (addressUpdaterAddress) {
+        const addressUpdater = await AddressUpdater.at(addressUpdaterAddress);
+        const pfAddress = await addressUpdater.getContractAddress("SCProofVerifier");
+        const scAddress = await addressUpdater.getContractAddress("StateConnector");
+        return {
+            pfAddress,
+            scAddress,
+        };
+    }
+    throw new Error("Either contractsJsonFile or addressUpdater must be defined");
 }
