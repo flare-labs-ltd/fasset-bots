@@ -9,7 +9,10 @@ This repo contains an implementation of an f-asset liquidator on the [Flare netw
 > This repo uses the private gitlab f-asset repo as a node dependancy, so until it is published, build without appropriate ssh key will fail.
 
 > **Warning**
-> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent.
+> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. That's why the repo features a challenger contract, that runs a challenge and liquidation in the same transaction.
+
+> **Warning**
+> To avoid your challenge/liquidation transactions being front-ran, you should deploy your own contracts and allow their methods being called by you and only you.
 
 ## Why it's necessary
 
@@ -65,7 +68,7 @@ yarn ts-node scripts/deploy.ts
 > Neither unit nor integration tests will run yet, as unit tests require access to the private `fasset` repository on gitlab, and integration tests require an authorized account's private key, which can change the mocked FTOS's prices on coston.
 
 > **Important**
-> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `yarn fix-blazeswap-hash`.
+> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `./scripts/replace-blazeswap-hash.sh`.
 
 Unit tests are written for Blaze Swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
 - *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which makes full agent liquidation the most profitable arbitrage option,
@@ -74,7 +77,7 @@ Unit tests are written for Blaze Swap (to describe what is expected from the use
 
 Run those tests with
 ```sh
-yarn test-unit
+yarn test:unit
 ```
 
 The above tests mock the f-asset's asset manager contract. For non-mocked contracts, there is an integration test, using forked coston network. It requires a private key corresponding to address `0x88278079a62db08fEb125f270102651BbE8F9984` to be logged into `.env` file under the key `DEPLOYER_PRIVATE_KEY`. With this, first fork the network in one terminal
@@ -83,9 +86,10 @@ yarn fork
 ```
 then run the test in another terminal
 ```sh
-yarn test-integration
+yarn test:integration
 ```
 
 ## TODO
 - [ ] add UBA and Wei to Liquidator contract variables,
-- [ ] CLI for deployment (parameter is the used network).
+- [ ] CLI for deployment (parameter is the used network),
+- [ ] make challenger/liquidator ownable, with method calls restricted to owner.

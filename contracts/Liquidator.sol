@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
-import "./lib/LiquidatorMath.sol";
+import "./lib/SymbolicOptimum.sol";
+import "./lib/Ecosystem.sol";
 
 
 enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
@@ -17,7 +17,7 @@ contract Liquidator is ILiquidator, Ownable {
     // those are initialized once and cannot be changed
     IWNat public immutable wNat;
     IERC3156FlashLender public immutable flashLender;
-    IBlazeSwapRouter public immutable blazeswap;
+    IBlazeSwapRouter public immutable blazeSwap;
 
     // takes care of flash loan getting executed exactly once
     // when ran from runArbitrageWithCustomParams
@@ -30,7 +30,7 @@ contract Liquidator is ILiquidator, Ownable {
     ) Ownable() {
         wNat = _wNat;
         flashLender = _flashLender;
-        blazeswap = _blazeSwap;
+        blazeSwap = _blazeSwap;
     }
 
     modifier flashLoanInitiatorLock() {
@@ -53,49 +53,48 @@ contract Liquidator is ILiquidator, Ownable {
     function runArbitrage(
         IIAgentVault _agentVault
     ) external {
-        runArbitrageWithCustomParams(_agentVault, flashLender, blazeswap);
+        runArbitrageWithCustomParams(_agentVault, flashLender, blazeSwap);
     }
 
-    // non-reentrant
     function runArbitrageWithCustomParams(
         IIAgentVault _agentVault,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwap
-    ) public flashLoanInitiatorLock {
-        // extrapolate data
-        IAssetManager assetManager = _agentVault.assetManager();
-        AssetManagerSettings.Data memory assetManagerSettings = assetManager.getSettings();
-        AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));
-        require(agentInfo.maxLiquidationAmountUBA > 0, "Liquidator: Agent not in liquidation");
+    ) public {
+        _runArbitrageWithData(
+            Ecosystem.getData(
+                address(_agentVault),
+                address(_blazeSwap),
+                address(_flashLender)
+            )
+        );
+    }
+
+    // non-reentrant
+    function _runArbitrageWithData(Ecosystem.Data memory _data) internal flashLoanInitiatorLock {
         // send vault collateral to owner, to avoid them being stolen by a malicious flash
         // loan contract, and also to ensure that arbitrage fails in case of decreased funds
-        IERC20 vaultToken = agentInfo.vaultCollateralToken;
-        vaultToken.transfer(owner(), vaultToken.balanceOf(address(this)));
+        // (owner should not be agentVault or any of the dexes)
+        IERC20(_data.vault).transfer(owner(), IERC20(_data.vault).balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
-        uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(address(vaultToken));
+        uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vault);
         require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
-        uint256 optimalVaultAmount = LiquidatorMath.getFlashLoanedVaultCollateral(
-            address(wNat),
-            assetManager,
-            _blazeSwap,
-            agentInfo,
-            assetManagerSettings
-        );
+        uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
         // run flash loan
-        _flashLender.flashLoan(
+        IERC3156FlashLender(_data.flashLender).flashLoan(
             this,
-            address(vaultToken),
+            _data.vault,
             Math.min(maxVaultFlashLoan, optimalVaultAmount),
             abi.encode(
-                assetManagerSettings.fAsset,
-                assetManager,
-                _agentVault,
-                _blazeSwap
+                _data.fAsset,
+                _data.assetManager,
+                _data.agentVault,
+                _data.blazeSwap
             )
         );
         // send earnings to sender
-        vaultToken.transfer(msg.sender, vaultToken.balanceOf(address(this)));
+        IERC20(_data.vault).transfer(msg.sender, IERC20(_data.vault).balanceOf(address(this)));
     }
 
     // dangerous!
