@@ -250,7 +250,7 @@ export class Challenger extends ActorBase {
             if (!PaymentReference.isValid(transaction.reference)) continue; // should be caught by illegal payment challenge
             const spentAmount: BN = toBN(0);
             for (const input of transaction.inputs) {
-                 /* istanbul ignore else */
+                /* istanbul ignore else */
                 if (input[0] === agent.underlyingAddress) spentAmount.iadd(input[1]);
             }
             for (const output of transaction.outputs) {

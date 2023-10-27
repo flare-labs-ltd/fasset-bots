@@ -46,7 +46,7 @@ describe("AgentBot", () => {
         expect(unhandledEvents.length).to.equal(2);
         expect(agent.events.length).to.equal(3); // handled were deleted by agent.addEvent
         const lastEventRead = agent.lastEventRead();
-        expect(lastEventRead!.blockNumber).to.equal(4)
+        expect(lastEventRead!.blockNumber).to.equal(4);
         await orm.em.persist(agent).flush();
     });
 });
