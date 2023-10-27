@@ -45,7 +45,7 @@
                     "type": "string"
                 }
             },
-            "required": ["amgDecimals", "chainId", "decimals", "finalizationBlocks", "indexerUrl", "name", "requireEOAProof", "symbol"],
+            "required": ["amgDecimals", "chainId", "decimals", "finalizationBlocks", "name", "requireEOAProof", "symbol"],
             "type": "object"
         },
         "DatabaseType": {
