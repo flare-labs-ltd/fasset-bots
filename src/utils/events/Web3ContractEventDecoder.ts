@@ -1,7 +1,5 @@
-import { Web3EventDecoder } from "./Web3EventDecoder";
+import { RawEvent, Web3EventDecoder } from "./Web3EventDecoder";
 import { EvmEvent } from "./common";
-
-export declare type RawEvent = import("web3-core").Log;
 
 interface Web3EventDecoderOptions {
     filter?: Array<string | undefined>;

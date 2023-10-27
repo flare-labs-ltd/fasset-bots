@@ -1,4 +1,4 @@
-import { Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
@@ -32,7 +32,10 @@ export class AgentEntity {
     @Property({ nullable: true })
     currentEventBlock!: number;
 
-    @OneToMany(() => EventEntity, (event) => event.agent, { orphanRemoval: true })
+    @OneToMany(() => EventEntity, event => event.agent, {
+        orphanRemoval: true,
+        cascade: [Cascade.PERSIST, Cascade.REMOVE]
+    })
     events = new Collection<EventEntity>(this);
 
     addNewEvent(event: EventEntity): void {

@@ -180,7 +180,7 @@ export class AgentBot {
     async handleEvents(rootEm: EM): Promise<void> {
         try {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            if (!agentEnt.events.isInitialized()) await agentEnt.events.init(); // init if not yet initialized
+            await agentEnt.events.init();
             const lastEventRead = agentEnt.lastEventRead();
             let events = await this.readNewEvents(rootEm);
             if (lastEventRead !== undefined) {
@@ -197,6 +197,7 @@ export class AgentBot {
                     })
                     .catch(async (error) => {
                         agentEnt.addNewEvent(new EventEntity(agentEnt, event, false));
+                        await rootEm.persist(agentEnt).flush();
                         console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
                     });
