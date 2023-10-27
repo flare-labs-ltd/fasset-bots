@@ -9,6 +9,8 @@ export const COSTON_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/run-config-t
 export const COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS = "./test/test-utils/run-config-test/run-simplified-config-coston-with-contracts.json";
 export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/run-config-test/run-simplified-config-coston-with-address-updater.json";
 export const AGENT_DEFAULT_CONFIG_PATH = "./run-config/agent-settings-config.json";
+export const COSTON_CONTRACTS_MISSING_SC = "./test/test-utils/run-config-test/contracts-missing-sc.json";
+export const COSTON_CONTRACTS_MISSING_VERIFIER = "./test/test-utils/run-config-test/contracts-missing-verifier.json";
 
 export const INDEXER_URL_XRP: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 export const ATTESTATION_PROVIDER_URLS: string[] = [

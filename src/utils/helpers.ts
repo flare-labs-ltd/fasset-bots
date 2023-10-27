@@ -380,6 +380,7 @@ export function findPackageRoot(moduleDir: string) {
         if (hasPackageJson && hasNodeModules) {
             return dir;
         }
+        /* istanbul ignore next */
         if (path.dirname(dir) === dir) {
             // arrived at filesystem root without finding package root
             throw new Error("Cannot find package root");

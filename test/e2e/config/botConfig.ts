@@ -13,6 +13,8 @@ import {
 import { initWeb3 } from "../../../src/utils/web3";
 import {
     ATTESTATION_PROVIDER_URLS,
+    COSTON_CONTRACTS_MISSING_SC,
+    COSTON_CONTRACTS_MISSING_VERIFIER,
     COSTON_RPC,
     COSTON_RUN_CONFIG_CONTRACTS,
     COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS,
@@ -225,5 +227,29 @@ describe("Bot config tests", async () => {
         expect(supportedSourceIdInt(SourceId.XRP)).to.be.true;
         expect(supportedSourceIdInt(SourceId.DOGE)).to.be.true;
         expect(supportedSourceIdInt(SourceId.BTC)).to.be.true;
+    });
+
+    it("Should not create config - assetManager or fAssetSymbol must be defined", async () => {
+        const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-contracts-and-addressUpdater.json";
+        runConfig = JSON.parse(readFileSync(runConfigFile1).toString()) as BotConfigFile;
+        await expect(createBotConfig(runConfig, accounts[0]))
+            .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
+            .and.be.an.instanceOf(Error);
+    });
+
+    it("Should not create config missing StateConnector contract", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
+        await expect(createBotConfig(runConfig, accounts[0]))
+            .to.eventually.be.rejectedWith("Cannot find address for StateConnector")
+            .and.be.an.instanceOf(Error);
+    });
+
+    it("Should not create config missing SCProofVerifier contract", async () => {
+        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_VERIFIER;
+        await expect(createBotConfig(runConfig, accounts[0]))
+            .to.eventually.be.rejectedWith("Cannot find address for SCProofVerifier")
+            .and.be.an.instanceOf(Error);
     });
 });

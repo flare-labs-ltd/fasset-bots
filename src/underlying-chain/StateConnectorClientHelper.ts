@@ -128,6 +128,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
+        /* istanbul ignore next */
         const response = await this.verifier
             .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
             .catch((e: AxiosError) => {
@@ -190,7 +191,9 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         try {
             response = await client.post<ApiWrapper<VotingRoundResult<ARESBase>>>(`/api/proof/get-specific-proof`, request);
         } catch (e: any) {
+            /* istanbul ignore next */
             logger.error(e.response?.data?.errorMessage ?? String(e));
+            /* istanbul ignore next */
             return null; // network error, client probably down - skip it
         }
         const status = response.data.status;
