@@ -450,8 +450,17 @@ describe("BTC blockchain tests via indexer", async () => {
         const resInput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, true);
         expect(resInput[0][0]).to.eq("");
         expect(resInput[0][1].eq(toBN(0))).to.be.true;
+        const resInputCoinbase = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("coinbase", responseData, true);
+        expect(resInputCoinbase[0][0]).to.eq("");
+        expect(resInputCoinbase[0][1].eq(toBN(0))).to.be.true;
+        // delete inputs
+        responseData.vin = [];
+        const resInputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, true);
+        expect(resInputEmpty[0][0]).to.eq("");
+        expect(resInputEmpty[0][1].eq(toBN(0))).to.be.true;
         const resOutput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, false);
         expect(resOutput.length).to.eq(responseData.vout.length);
+        // delete outputs
         responseData.vout = [];
         const resOutputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, false);
         expect(resOutputEmpty[0][0]).to.eq("");

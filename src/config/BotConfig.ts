@@ -69,6 +69,7 @@ export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFil
     } catch (e) {
         /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+         /* istanbul ignore next */
         throw e;
     }
 }
@@ -105,6 +106,7 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
     } catch (e) {
         /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+        /* istanbul ignore next */
         throw e;
     }
 }

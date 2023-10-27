@@ -26,7 +26,6 @@
             "src/**/*.ts"
         ],
         "exclude": [
-            "src/verification/**/*.ts",
             "src/mock/*.ts",
             "src/run/*.ts",
             "src/cli/*.ts",
