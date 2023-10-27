@@ -32,9 +32,9 @@ describe("AgentBot", () => {
         orm.em.persist(agent);
         await orm.em.transactional(async (em) => {
             expect(agent.lastEventRead()).to.be.undefined;
-            _event.blockNumber = 0
+            _event.blockNumber = 0;
             agent.addNewEvent(new EventEntity(agent, _event, false));
-            _event.blockNumber = 1
+            _event.blockNumber = 1;
             agent.addNewEvent(new EventEntity(agent, _event, true));
             _event.blockNumber = 2;
             agent.addNewEvent(new EventEntity(agent, _event, true));
@@ -44,9 +44,9 @@ describe("AgentBot", () => {
             agent.addNewEvent(new EventEntity(agent, _event, true));
         });
         const unhandledEvents = agent.unhandledEvents();
-        expect(unhandledEvents.length).to.equal(2)
-        expect(agent.events.length).to.equal(3) // handled were deleted by agent.addEvent
+        expect(unhandledEvents.length).to.equal(2);
+        expect(agent.events.length).to.equal(3); // handled were deleted by agent.addEvent
         const lastEventRead = agent.lastEventRead();
-        expect(lastEventRead!.blockNumber).to.equal(4)
+        expect(lastEventRead!.blockNumber).to.equal(4);
     });
 });

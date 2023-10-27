@@ -8,7 +8,7 @@ export type Secrets = {
         encryption_password: string;
     };
     apiKey: {
-        [key: string]: string
+        [key: string]: string;
     };
     owner?: UnifiedAccount;
     user?: UnifiedAccount;
@@ -16,7 +16,7 @@ export type Secrets = {
     timeKeeper?: NativeAccount;
     systemKeeper?: NativeAccount;
     deployer?: NativeAccount;
-  }
+};
 
 export interface NativeAccount {
     native_private_key: string;
@@ -47,10 +47,12 @@ function loadSecrets(): Secrets {
 
 /* istanbul ignore next */
 function checkFilePermissions(fpath: string) {
-    if (process.platform === 'win32') {
-        if (process.env.ALLOW_SECRETS_ON_WINDOWS === 'true') return;
-        throw new CommandLineError("Cannot reliably check secrets.json permissions on Windows.\n" +
-            "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true.");
+    if (process.platform === "win32") {
+        if (process.env.ALLOW_SECRETS_ON_WINDOWS === "true") return;
+        throw new CommandLineError(
+            "Cannot reliably check secrets.json permissions on Windows.\n" +
+                "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true."
+        );
     }
     // file must only be accessible by the process user
     const stat = statSync(fpath);
@@ -62,14 +64,14 @@ function checkFilePermissions(fpath: string) {
 
 export function requireSecret(name: string): string {
     const value = valueForKeyPath(getSecrets(), name);
-    if (typeof value === 'string') return value;
+    if (typeof value === "string") return value;
     throw new Error(`Secret variable ${name} not defined or not typeof string`);
 }
 
 function valueForKeyPath(obj: any, path: string) {
-    const keys = path.split('.');
+    const keys = path.split(".");
     keys.forEach((key) => {
-        return obj = obj?.[key];
+        return (obj = obj?.[key]);
     });
     return obj;
 }

@@ -4,7 +4,12 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import {
+    TestAssetBotContext,
+    TestAssetTrackedStateContext,
+    createTestAssetContext,
+    getTestAssetTrackedStateContext,
+} from "../../test-utils/create-test-asset-context";
 import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import spies from "chai-spies";
 import { createTestAgent } from "../../test-utils/helpers";
@@ -61,7 +66,7 @@ describe("Liquidator unit tests", async () => {
         // change address to invoke error later
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.handleFullLiquidationStarted(agent.vaultAddress);
-        while(liquidator.runner.runningThreads > 0) {
+        while (liquidator.runner.runningThreads > 0) {
             await sleep(2000);
         }
         expect(spyConsole).to.be.called.once;

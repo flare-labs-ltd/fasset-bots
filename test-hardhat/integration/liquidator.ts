@@ -195,7 +195,6 @@ describe("Liquidator tests", async () => {
         expect(spyLiquidation).to.have.been.called.once;
     });
 
-
     it("Should catch full liquidation", async () => {
         const challengerState = new TrackedState(trackedStateContext, await web3.eth.getBlockNumber());
         await challengerState.initialize();

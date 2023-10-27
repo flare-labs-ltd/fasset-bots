@@ -5,23 +5,23 @@ describe("Common unit tests", async () => {
     const event1 = {
         blockNumber: 1,
         transactionIndex: 1,
-        logIndex: 1
+        logIndex: 1,
     };
     const event2 = {
         blockNumber: 1,
         transactionIndex: 2,
-        logIndex: 1
-    }
+        logIndex: 1,
+    };
     const event3 = {
         blockNumber: 3,
         transactionIndex: 2,
-        logIndex: 1
-    }
+        logIndex: 1,
+    };
     const event4 = {
         blockNumber: 1,
         transactionIndex: 1,
-        logIndex: 2
-    }
+        logIndex: 2,
+    };
     it("Should order events", async () => {
         const order1 = eventOrder(event2, event1);
         expect(order1).to.eq(1);

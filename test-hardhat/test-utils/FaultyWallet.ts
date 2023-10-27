@@ -2,7 +2,14 @@ import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWal
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {
-    addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee | undefined, awaitForTransaction?: boolean | undefined): Promise<string> {
+    addTransaction(
+        sourceAddress: string,
+        targetAddress: string,
+        amount: string | number | import("bn.js"),
+        reference: string | null,
+        options?: TransactionOptionsWithFee | undefined,
+        awaitForTransaction?: boolean | undefined
+    ): Promise<string> {
         throw new Error("Method not implemented.");
     }
     addMultiTransaction(): Promise<string> {

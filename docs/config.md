@@ -92,5 +92,3 @@ type Secrets = {
 In order to run other actor bots same instance of configuration must be provided, but not all atributes are required for those bots (check interface `BotConfigFile` in [config-files.ts](../src/config/config-files.ts)) and [examples](../run-config/).
 
 Environment and needed secrets should also be set. See above sections [_Agent bot environment file_](#agent-bot-environment-file) and [_Agent bot secrets file_](#agent-bot-secrets-file).
-
-

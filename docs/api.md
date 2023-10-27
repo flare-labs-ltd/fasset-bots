@@ -56,13 +56,13 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | --------- | ------ | ----------------------- |
     | `balance` | string | Collateral free balance |
 
-<<<<<<< HEAD
-    - POST `/api/agentVault/collateral/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
+<<<<<<< HEAD - POST `/api/agentVault/collateral/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
 
     - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
-=======
-    -   POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol`, and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
->>>>>>> 5d694f87f9adf02a95f517a2b2aec89544dc2492
+
+======= - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol`, and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+
+> > > > > > > 5d694f87f9adf02a95f517a2b2aec89544dc2492
 
 -   POOL COLLATERAL:
 
@@ -86,7 +86,7 @@ Agent bot web service routes are documented using the Swagger interface at the `
 
     -   POST `/api/pool/undelegate/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - POST `/api/pool/upgradeWNat/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/pool/upgradeWNat/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
 -   UNDERLYING
 

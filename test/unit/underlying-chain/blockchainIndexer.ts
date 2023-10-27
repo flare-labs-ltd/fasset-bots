@@ -110,33 +110,29 @@ describe("XRP blockchain tests via indexer", async () => {
         const data = {
             isNativePayment: true,
             response: {
-
-                    result: {
-                        Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
-                        Amount: 100,
-                        Destination: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
-                        meta: {
-                            delivered_amount: "100",
-                            TransactionResult: "tesSUCCESS",
-                        },
+                result: {
+                    Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                    Amount: 100,
+                    Destination: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                    meta: {
+                        delivered_amount: "100",
+                        TransactionResult: "tesSUCCESS",
                     },
-
+                },
             },
         };
         const dataWithFee = {
             isNativePayment: true,
             response: {
-
-                    result: {
-                        Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
-                        Amount: 100,
-                        Fee: 15,
-                        meta: {
-                            delivered_amount: "100",
-                            TransactionResult: "tesSUCCESS",
-                        },
+                result: {
+                    Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                    Amount: 100,
+                    Fee: 15,
+                    meta: {
+                        delivered_amount: "100",
+                        TransactionResult: "tesSUCCESS",
                     },
-
+                },
             },
         };
         const inputs = rewiredBlockChainIndexerClient.XRPInputsOutputs(data, true);

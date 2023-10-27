@@ -167,7 +167,7 @@ describe("mini truffle and artifacts tests", async () => {
             const fpr = await FakePriceReader.new(accounts[0]);
             const gas = await fpr.setDecimals.estimateGas("XRP", 5);
             await fpr.setDecimals("XRP", 5, { gas: gas });
-            await withSettings(fpr, { gas: 'auto' }).setDecimals("DOGE", 5);
+            await withSettings(fpr, { gas: "auto" }).setDecimals("DOGE", 5);
             await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
         });
     });
@@ -410,10 +410,17 @@ describe("mini truffle and artifacts tests", async () => {
         it("clean stack trace - hardhat", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            await fpr.getPrice("BTC").catch(e => { console.error("CALL ERR", e); });
-            await withSettings(fpr, { gas: 'auto' }).setPrice("BTC", 1000, { gas: null as any }).catch(e => { console.error("SEND ERR", e); });
-            await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch(e => { console.error("SEND ERR NG", e); });
+            await fpr.getPrice("BTC").catch((e) => {
+                console.error("CALL ERR", e);
+            });
+            await withSettings(fpr, { gas: "auto" })
+                .setPrice("BTC", 1000, { gas: null as any })
+                .catch((e) => {
+                    console.error("SEND ERR", e);
+                });
+            await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
+                console.error("SEND ERR NG", e);
+            });
         });
-
     });
 });

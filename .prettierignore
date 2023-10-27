@@ -1,5 +1,4 @@
-src/verification/generated/
-src/verification/attestation-types/
+src/underlying-chain/BlockchainIndexerHelper.ts
 test/types/@openzeppelin/test-helpers.d.ts
 src/mock/*
 node_modules/*

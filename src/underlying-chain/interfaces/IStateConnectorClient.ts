@@ -11,8 +11,8 @@ export interface AttestationProof<RESPONSE extends ARESBase = ARESBase> {
 }
 
 export enum AttestationNotProved {
-    NOT_FINALIZED = 'NOT_FINALIZED',
-    DISPROVED = 'DISPROVED',
+    NOT_FINALIZED = "NOT_FINALIZED",
+    DISPROVED = "DISPROVED",
 }
 
 export type OptionalAttestationProof = AttestationProof<ARESBase> | AttestationNotProved;
