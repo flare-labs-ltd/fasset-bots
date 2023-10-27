@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import { ORM } from "../../src/config/orm";
 import { EvmEvent } from "../../src/utils/events/common";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, EventEntity } from "../../src/entities/agent";
+import { AgentEntity, DailyProofState, EventEntity } from "../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "./test-bot-config";
 
 describe("AgentBot", () => {
     let orm: ORM;
 
-    function createAgent(em: any): AgentEntity {
+    function createAgent(): AgentEntity {
         const agent = new AgentEntity();
         agent.chainId = "0x";
         agent.chainSymbol = "symbol";
@@ -28,8 +28,8 @@ describe("AgentBot", () => {
 
     it("should test agent's event handling", async () => {
         const _event = { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent;
-        const agent = createAgent(orm.em);
-        await orm.em.transactional(async (em) => {
+        const agent = createAgent();
+        await orm.em.transactional(async () => {
             expect(agent.lastEventRead()).to.be.undefined;
             _event.blockNumber = 0;
             agent.addNewEvent(new EventEntity(agent, _event, false));
