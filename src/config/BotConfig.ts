@@ -69,6 +69,7 @@ export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFil
     } catch (e) {
         /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+        /* istanbul ignore next */
         throw e;
     }
 }
@@ -105,6 +106,7 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
     } catch (e) {
         /* istanbul ignore next */
         logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
+        /* istanbul ignore next */
         throw e;
     }
 }
@@ -166,7 +168,7 @@ export function getContractAddress(config: BotConfigFile, nameOrAddress: string)
         const contracts = loadContracts(config.contractsJsonFile);
         return requireNotNull(contracts[nameOrAddress]?.address, `Cannot find address for ${nameOrAddress}`);
     } else {
-        throw new Error("Can only retrieve contract from json.")
+        throw new Error("Can only retrieve contract from json.");
     }
 }
 

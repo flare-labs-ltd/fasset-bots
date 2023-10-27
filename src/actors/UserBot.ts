@@ -109,9 +109,9 @@ export class UserBot {
         logger.info(`User ${requireSecret("user.native_address")} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(
-            `User ${requireSecret("user.native_address")} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${
-                crt.paymentAddress
-            }.`
+            `User ${requireSecret("user.native_address")} is paying on underlying chain for reservation ${
+                crt.collateralReservationId
+            } to agent's ${agentVault} address ${crt.paymentAddress}.`
         );
         const txHash = await minter.performMintingPayment(crt);
         logger.info(
@@ -133,12 +133,16 @@ export class UserBot {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
         logger.info(
-            `User ${requireSecret("user.native_address")} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`
+            `User ${requireSecret(
+                "user.native_address"
+            )} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`
         );
         await minter.waitForTransactionFinalization(transactionHash);
         console.log(`Waiting for proof of underlying payment transaction ${transactionHash}...`);
         logger.info(
-            `User ${requireSecret("user.native_address")} is waiting for proof of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
+            `User ${requireSecret(
+                "user.native_address"
+            )} is waiting for proof of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
         const proof = await minter.proveMintingPayment(paymentAddress, transactionHash);
         console.log(`Executing payment...`);
@@ -169,7 +173,9 @@ export class UserBot {
             console.log(
                 `Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`
             );
-            logger.info(`User ${requireSecret("user.native_address")} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`);
+            logger.info(
+                `User ${requireSecret("user.native_address")} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`
+            );
         }
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
         logger.info(`User ${requireSecret("user.native_address")} triggered ${requests.length} payment requests.`);
@@ -181,11 +187,11 @@ export class UserBot {
             );
             loggedRequests =
                 loggedRequests +
-                `User ${requireSecret("user.native_address")} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${
-                    req.agentVault
-                }  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${
-                    req.lastUnderlyingTimestamp
-                }\n`;
+                `User ${requireSecret("user.native_address")} triggered request:    id=${req.requestId}  to=${
+                    req.paymentAddress
+                }  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${
+                    req.lastUnderlyingBlock
+                }  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
         }
         logger.info(loggedRequests);
     }
@@ -224,12 +230,16 @@ export class UserBot {
         );
         console.log("Executing payment default...");
         logger.info(
-            `User ${requireSecret("user.native_address")} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
+            `User ${requireSecret("user.native_address")} is executing payment default with proof ${JSON.stringify(
+                web3DeepNormalize(proof)
+            )} redemption ${requestId}.`
         );
         await redeemer.executePaymentDefault(requestId, proof);
         console.log("Done");
         logger.info(
-            `User ${requireSecret("user.native_address")} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`
+            `User ${requireSecret("user.native_address")} executed payment default with proof ${JSON.stringify(
+                web3DeepNormalize(proof)
+            )} redemption ${requestId}.`
         );
     }
 }

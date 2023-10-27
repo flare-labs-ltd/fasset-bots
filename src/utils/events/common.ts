@@ -40,7 +40,6 @@ export type ExtractEvent<E extends EventSelector, N extends E["name"]> = Selecte
 
 export type ExtractedEventArgs<E extends EventSelector, N extends E["name"]> = NamedFields<ExtractEvent<E, N>["args"]>;
 
-
 interface EventId {
     blockNumber: number;
     transactionIndex: number;

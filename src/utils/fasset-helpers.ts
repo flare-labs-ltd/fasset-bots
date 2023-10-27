@@ -33,7 +33,7 @@ export async function proveAndUpdateUnderlyingBlock(
     attestationProvider: AttestationHelper,
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>,
     caller: string,
-    queryWindow: number = 7200  // don't need 1 day long query to prove last block
+    queryWindow: number = 7200 // don't need 1 day long query to prove last block
 ): Promise<number> {
     const proof = await attestationProvider.proveConfirmedBlockHeightExists(queryWindow);
     await assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: caller });

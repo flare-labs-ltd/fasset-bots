@@ -222,14 +222,14 @@ export class BotCliCommands {
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        switch(settingName) {
+        switch (settingName) {
             case "feeBIPS": {
                 agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt;
-               break;
+                break;
             }
             case "poolFeeShareBIPS": {
                 agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt;
-               break;
+                break;
             }
             case "mintingVaultCollateralRatioBIPS": {
                 agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAt;

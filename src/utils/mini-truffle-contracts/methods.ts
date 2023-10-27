@@ -3,9 +3,10 @@ import coder from "web3-eth-abi";
 import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
-import { transactionLogger, waitForFinalization } from "./finalization";
-import { ContractSettings } from "./types";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
+import { waitForFinalization } from "./finalization";
+import { transactionLogger, wrapTransactionError } from "./transaction-logging";
+import { ContractSettings } from "./types";
 
 /**
  * Constructor for instances of given contract.
@@ -201,7 +202,7 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     ++transactionId;
     if (config.gas == null && settings.gas == "auto") {
         transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
-        const gas = await web3.eth.estimateGas(config);
+        const gas = await web3.eth.estimateGas(config).catch((e) => wrapTransactionError(transactionId, e));
         config.gas = Math.floor(gas * gasMultiplier);
     }
     const nonce = waitFor.what === "nonceIncrease" ? await web3.eth.getTransactionCount(config.from, "latest") : 0;
@@ -214,7 +215,7 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
     const config = mergeConfig(settings, transactionConfig);
     ++transactionId;
     transactionLogger.info("CALL", { transactionId, transaction: config });
-    return await settings.web3.eth.call(config);
+    return await settings.web3.eth.call(config).catch((e) => wrapTransactionError(transactionId, e));
 }
 
 /**
@@ -224,7 +225,7 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     const config = mergeConfig(settings, transactionConfig);
     ++transactionId;
     transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
-    return await settings.web3.eth.estimateGas(config);
+    return await settings.web3.eth.estimateGas(config).catch((e) => wrapTransactionError(transactionId, e));
 }
 
 /**

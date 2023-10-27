@@ -1,6 +1,15 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "state-connector-protocol";
-import { IStateConnectorInstance, SCProofVerifierInstance } from "../../typechain-truffle";
+import {
+    ARBase,
+    ARESBase,
+    AttestationDefinitionStore,
+    BalanceDecreasingTransaction,
+    ConfirmedBlockHeightExists,
+    Payment,
+    ReferencedPaymentNonexistence,
+    decodeAttestationName,
+} from "state-connector-protocol";
+import { ISCProofVerifierInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toNumber } from "../utils/helpers";
@@ -8,7 +17,13 @@ import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { attestationProved } from "./AttestationHelper";
-import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
+import {
+    AttestationNotProved,
+    AttestationProof,
+    AttestationRequestId,
+    IStateConnectorClient,
+    OptionalAttestationProof,
+} from "./interfaces/IStateConnectorClient";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
@@ -45,7 +60,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     verifier: AxiosInstance;
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
-    scProofVerifier!: SCProofVerifierInstance;
+    scProofVerifier!: ISCProofVerifierInstance;
     firstEpochStartTime!: number;
     roundDurationSec!: number;
     definitionStore = new AttestationDefinitionStore();
@@ -68,8 +83,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     async initStateConnector(): Promise<void> {
         const IStateConnector = artifacts.require("IStateConnector");
         this.stateConnector = await IStateConnector.at(this.stateConnectorAddress);
-        const SCProofVerifier = artifacts.require("SCProofVerifier");
-        this.scProofVerifier = await SCProofVerifier.at(this.scProofVerifierAddress);
+        const ISCProofVerifier = artifacts.require("ISCProofVerifier");
+        this.scProofVerifier = await ISCProofVerifier.at(this.scProofVerifierAddress);
         this.firstEpochStartTime = toNumber(await this.stateConnector.BUFFER_TIMESTAMP_OFFSET());
         this.roundDurationSec = toNumber(await this.stateConnector.BUFFER_WINDOW());
     }
@@ -113,10 +128,13 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
 
     async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
-        const response = await this.verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
+        const response = await this.verifier
+            .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
             .catch((e: AxiosError) => {
                 logger.error(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
-                throw new StateConnectorError(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+                throw new StateConnectorError(
+                    `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`
+                );
             });
         const data = response.data.abiEncodedRequest;
         const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
@@ -145,7 +163,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             for (const client of this.clients) {
                 const proof = await this.obtainProofFromStateConnectorForClient(client, roundId, requestBytes);
                 if (proof == null) {
-                    continue;    // client failure
+                    continue; // client failure
                 }
                 if (proof === AttestationNotProved.NOT_FINALIZED) {
                     return AttestationNotProved.NOT_FINALIZED;
@@ -162,7 +180,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         } catch (e) {
             logger.error(`State connector error: ${e}`);
             /* istanbul ignore next */
-            throw (e instanceof StateConnectorError) ? e : new StateConnectorError(String(e));
+            throw e instanceof StateConnectorError ? e : new StateConnectorError(String(e));
         }
     }
 
@@ -173,7 +191,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             response = await client.post<ApiWrapper<VotingRoundResult<ARESBase>>>(`/api/proof/get-specific-proof`, request);
         } catch (e: any) {
             logger.error(e.response?.data?.errorMessage ?? String(e));
-            return null;    // network error, client probably down - skip it
+            return null; // network error, client probably down - skip it
         }
         const status = response.data.status;
         // is the round finalized?
@@ -189,13 +207,13 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         const data = response.data.data!;
         const proof: AttestationProof = {
             data: data.response,
-            merkleProof: data.merkleProof
+            merkleProof: data.merkleProof,
         };
         const verified = await this.verifyProof(proof);
         /* istanbul ignore next */
         if (!verified) {
             logger.error(`State connector error: proof does not verify!!`);
-            return null;    // client has invalid proofs, skip it
+            return null; // client has invalid proofs, skip it
         }
         return proof;
     }

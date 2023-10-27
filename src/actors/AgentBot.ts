@@ -522,37 +522,65 @@ export class AgentBot {
             }
             //Agent update poolFeeShareBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS),
+                    "poolFeeShareBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
             }
             //Agent update mintingVaultCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS),
+                    "mintingVaultCollateralRatioBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
             }
             //Agent update mintingPoolCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS),
+                    "mintingPoolCollateralRatioBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
-             }
+            }
             //Agent update buyFAssetByAgentFactorBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS),
+                    "buyFAssetByAgentFactorBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
             }
             //Agent update poolExitCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS),
+                    "poolExitCollateralRatioBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
             }
             //Agent update poolTopupCollateralRatioBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS),
+                    "poolTopupCollateralRatioBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
             }
             //Agent update poolTopupTokenPriceFactorBIPS
             if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
+                const updatedOrExpired = await this.updateAgentSettings(
+                    toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS),
+                    "poolTopupTokenPriceFactorBIPS",
+                    latestTimestamp
+                );
                 if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
             }
             if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp) {

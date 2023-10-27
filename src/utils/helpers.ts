@@ -354,7 +354,7 @@ export function replaceStringRange(str: string, start: number, length: number, r
  * Unprefixes a string with 0x if it is prefixed.
  */
 export function unPrefix0x(str: string) {
-    return str.replace(/^0x/i, '');
+    return str.replace(/^0x/i, "");
 }
 
 /**

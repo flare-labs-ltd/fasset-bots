@@ -251,12 +251,10 @@ export class Challenger extends ActorBase {
             /* istanbul ignore next */
             const spentAmount: BN = toBN(0);
             for (const input of transaction.inputs) {
-                if (input[0] === agent.underlyingAddress)
-                    spentAmount.iadd(input[1]);
+                if (input[0] === agent.underlyingAddress) spentAmount.iadd(input[1]);
             }
             for (const output of transaction.outputs) {
-                if (output[0] === agent.underlyingAddress)
-                    spentAmount.isub(output[1]);
+                if (output[0] === agent.underlyingAddress) spentAmount.isub(output[1]);
             }
             /* istanbul ignore next */
             if (spentAmount.lten(0)) continue;

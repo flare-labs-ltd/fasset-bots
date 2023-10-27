@@ -10,10 +10,7 @@
     "poolTokenSuffix": "LTC",
     "assetMintingDecimals": 8,
     "userWhitelist": null,
-    "underlyingAddressValidator": [
-        "TrivialAddressValidatorMock",
-        []
-    ],
+    "underlyingAddressValidator": ["TrivialAddressValidatorMock", []],
     "liquidationStrategy": "LiquidationStrategyImpl",
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",

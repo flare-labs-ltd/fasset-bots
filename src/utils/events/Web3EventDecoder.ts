@@ -1,8 +1,9 @@
 import coder from "web3-eth-abi";
 import { AbiItem } from "web3-utils";
 import { isNotNull, toBN } from "../helpers";
-import { RawEvent } from "./Web3ContractEventDecoder";
 import { EvmEvent } from "./common";
+
+export declare type RawEvent = import("web3-core").Log;
 
 export class Web3EventDecoder {
     public eventTypes = new Map<string, AbiItem>(); // signature (topic[0]) => type

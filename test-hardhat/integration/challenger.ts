@@ -377,7 +377,7 @@ describe("Challenger tests", async () => {
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
         const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, {
             status: TX_BLOCKED,
-        } as  TransactionOptionsWithFee & { status?: number });
+        } as TransactionOptionsWithFee & { status?: number });
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         redemption.txHash = txHash;
@@ -452,7 +452,7 @@ describe("Challenger tests", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        const minter = await createTestMinter(context, minterAddress,chain);
+        const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         await challenger.runStep();
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
@@ -466,11 +466,11 @@ describe("Challenger tests", async () => {
             { value: toBN(underlyingBalanceUBA).sub(fistUTXOAmt) }, // UTXO 2
         ];
         // Using This UTXO would trigger the negative underlying free balance challenge
-        const spent: SpentReceivedObject = { [spenderAddr]: spentUTXOs};
+        const spent: SpentReceivedObject = { [spenderAddr]: spentUTXOs };
         const received1: SpentReceivedObject = { [agentUnderlyingAddr]: [{ value: underlyingBalanceUBA }] };
         // Perform payment with multiple UTXOs
         console.log("\nPAYING....");
-        await (agentBot.agent.wallet as IBlockChainWallet).addMultiTransaction(spent, received1,underlyingWithdrawal.paymentReference);
+        await (agentBot.agent.wallet as IBlockChainWallet).addMultiTransaction(spent, received1, underlyingWithdrawal.paymentReference);
         chain.mine(chain.finalizationBlocks + 1);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
@@ -512,7 +512,7 @@ describe("Challenger tests", async () => {
         ];
         const spenderAddr = agentBot.agent.underlyingAddress;
         const spent: SpentReceivedObject = { [spenderAddr]: spentUTXOs };
-        const received1: SpentReceivedObject = {[reqs[0].paymentAddress]: [{ value: toBN(paymentAmount).mul(toBN(2)).add(toBN(1)) }]};
+        const received1: SpentReceivedObject = { [reqs[0].paymentAddress]: [{ value: toBN(paymentAmount).mul(toBN(2)).add(toBN(1)) }] };
         // Perform payment with multiple UTXOs
         console.log("\nPAYING....");
         await agentBot.agent.wallet.addMultiTransaction(spent, received1, reqs[0].paymentReference);
@@ -534,7 +534,7 @@ describe("Challenger tests", async () => {
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
         expect(spyChlg).to.have.been.called.twice; // gets called once for each transaction
-    })
+    });
 
     it("Should liquidate agent if in full liquidation", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
@@ -593,7 +593,7 @@ describe("Challenger tests", async () => {
         const pBalanceBefore = await poolCollateralToken.balanceOf(liquidatorAddress);
         console.log("Liquidating...");
         await liquidator.runStep();
-        while(liquidator.runner.runningThreads > 0) {
+        while (liquidator.runner.runningThreads > 0) {
             await sleep(2000);
         }
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);

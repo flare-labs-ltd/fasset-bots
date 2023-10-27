@@ -5,7 +5,13 @@ import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
 import { SourceId } from "./SourceId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
-import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
+import {
+    AttestationNotProved,
+    AttestationProof,
+    AttestationRequestId,
+    IStateConnectorClient,
+    OptionalAttestationProof,
+} from "./interfaces/IStateConnectorClient";
 
 export class AttestationHelperError extends Error {
     constructor(message: string) {
@@ -14,7 +20,7 @@ export class AttestationHelperError extends Error {
 }
 
 export function attestationProved(result: OptionalAttestationProof): result is AttestationProof {
-    return typeof result === 'object' && result != null;
+    return typeof result === "object" && result != null;
 }
 
 function findAddressIndex(ios: TxInputOutput[], address: string | null, defaultValue: number) {
@@ -88,7 +94,14 @@ export class AttestationHelper {
         return await this.stateConnector.submitRequest(request);
     }
 
-    async requestReferencedPaymentNonexistenceProof(destinationAddress: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): Promise<AttestationRequestId | null> {
+    async requestReferencedPaymentNonexistenceProof(
+        destinationAddress: string,
+        paymentReference: string,
+        amount: BN,
+        startBlock: number,
+        endBlock: number,
+        endTimestamp: number
+    ): Promise<AttestationRequestId | null> {
         logger.info(
             `Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`
         );
@@ -201,7 +214,14 @@ export class AttestationHelper {
         return result;
     }
 
-    async proveReferencedPaymentNonexistence(destinationAddress: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): Promise<ReferencedPaymentNonexistence.Proof> {
+    async proveReferencedPaymentNonexistence(
+        destinationAddress: string,
+        paymentReference: string,
+        amount: BN,
+        startBlock: number,
+        endBlock: number,
+        endTimestamp: number
+    ): Promise<ReferencedPaymentNonexistence.Proof> {
         logger.info(
             `Attestation helper: proving referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`
         );

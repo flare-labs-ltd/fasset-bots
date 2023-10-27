@@ -162,4 +162,12 @@ describe("Helpers unit tests", async () => {
         expect(rc1.maxParallel).equals(3);
         expect(rc2.maxParallel).equals(1);
     });
+
+    it("Should create random and its hash", async () => {
+        const rand = helperMethods.generateRandomHexString(4);
+        expect(rand.length).eq(8);
+        const hash = helperMethods.createSha256Hash(rand);
+        expect(hash.length).eq(64);
+        expect(rand).to.not.eq(hash);
+    });
 });

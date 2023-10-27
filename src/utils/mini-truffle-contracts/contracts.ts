@@ -39,8 +39,8 @@ export class MiniTruffleContractInstance implements Truffle.ContractInstance {
      * Create a copy of this instance wrapper with different settings.
      * Allows for e.g. changing finalization method for a certain call.
      */
-    _withSettings(newSettings: ContractSettings) {
-        return new this._contractFactory._instanceConstructor(this._contractFactory, newSettings, this.address);
+    _withSettings(newSettings: Partial<ContractSettings>) {
+        return new this._contractFactory._instanceConstructor(this._contractFactory, { ...this._settings, ...newSettings }, this.address);
     }
 }
 
@@ -118,13 +118,13 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
      * Create a copy of this contract wrapper with different settings.
      * Allows for e.g. changing finalization method for a certain instance.
      */
-    _withSettings(newSettings: ContractSettings) {
-        return new MiniTruffleContract(newSettings, this.contractName, this.abi, this._bytecode, this._contractJson);
+    _withSettings(newSettings: Partial<ContractSettings>) {
+        return new MiniTruffleContract({ ...this._settings, ...newSettings }, this.contractName, this.abi, this._bytecode, this._contractJson);
     }
 }
 
-export function withSettings<T>(contract: Truffle.Contract<T>, newSettings: ContractSettings): Truffle.Contract<T>;
-export function withSettings<T extends Truffle.ContractInstance>(instance: T, newSettings: ContractSettings): T;
-export function withSettings(ci: any, newSettings: ContractSettings): any {
+export function withSettings<T>(contract: Truffle.Contract<T>, newSettings: Partial<ContractSettings>): Truffle.Contract<T>;
+export function withSettings<T extends Truffle.ContractInstance>(instance: T, newSettings: Partial<ContractSettings>): T;
+export function withSettings(ci: any, newSettings: Partial<ContractSettings>): any {
     return ci._withSettings(newSettings);
 }

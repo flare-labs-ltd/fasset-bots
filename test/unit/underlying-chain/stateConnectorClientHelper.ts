@@ -16,7 +16,13 @@ import {
     STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
 } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, encodeAttestationName } from "state-connector-protocol";
+import {
+    BalanceDecreasingTransaction,
+    ConfirmedBlockHeightExists,
+    Payment,
+    ReferencedPaymentNonexistence,
+    encodeAttestationName,
+} from "state-connector-protocol";
 import { AttestationProof } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
@@ -68,7 +74,7 @@ describe("XRP attestation/state connector tests", async () => {
             requestBody: {
                 blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
                 queryWindow: String(queryWindow),
-            }
+            },
         };
         const resp = await stateConnectorClient.submitRequest(request);
         expect(resp!.round).to.be.greaterThan(0);
@@ -177,7 +183,7 @@ describe("State connector tests - decoding", async () => {
                 "0x06132641cdcc7358d02ee84b09c6c005d03b046f5da3cc3f0d02bcbd04fbcbc4",
                 "0xcae4c715a94dae234c49acc329915a28ba853435d6f4fb858a5a0a120beac520",
             ],
-        }
+        };
         await expect(rewiredStateConnectorHelper.verifyProof(proofData))
             .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
             .and.be.an.instanceOf(Error);
