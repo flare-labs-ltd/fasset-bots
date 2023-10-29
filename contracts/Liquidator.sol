@@ -15,22 +15,19 @@ enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 contract Liquidator is ILiquidator, Ownable {
 
     // those are initialized once and cannot be changed
-    IWNat public immutable wNat;
     IERC3156FlashLender public immutable flashLender;
-    IBlazeSwapRouter public immutable blazeSwap;
+    IBlazeSwapRouter public immutable blazeSwapRouter;
 
     // takes care of flash loan getting executed exactly once
     // when ran from runArbitrageWithCustomParams
     FlashLoanLock private _status;
 
     constructor(
-        IWNat _wNat,
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwap
+        IBlazeSwapRouter _blazeSwapRouter
     ) Ownable() {
-        wNat = _wNat;
         flashLender = _flashLender;
-        blazeSwap = _blazeSwap;
+        blazeSwapRouter = _blazeSwapRouter;
     }
 
     modifier flashLoanInitiatorLock() {
@@ -53,18 +50,18 @@ contract Liquidator is ILiquidator, Ownable {
     function runArbitrage(
         IIAgentVault _agentVault
     ) external {
-        runArbitrageWithCustomParams(_agentVault, flashLender, blazeSwap);
+        runArbitrageWithCustomParams(_agentVault, flashLender, blazeSwapRouter);
     }
 
     function runArbitrageWithCustomParams(
         IIAgentVault _agentVault,
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwap
+        IBlazeSwapRouter _blazeSwapRouter
     ) public {
         _runArbitrageWithData(
             Ecosystem.getData(
                 address(_agentVault),
-                address(_blazeSwap),
+                address(_blazeSwapRouter),
                 address(_flashLender)
             )
         );
@@ -75,26 +72,26 @@ contract Liquidator is ILiquidator, Ownable {
         // send vault collateral to owner, to avoid them being stolen by a malicious flash
         // loan contract, and also to ensure that arbitrage fails in case of decreased funds
         // (owner should not be agentVault or any of the dexes)
-        IERC20(_data.vault).transfer(owner(), IERC20(_data.vault).balanceOf(address(this)));
+        IERC20(_data.vaultToken).transfer(owner(), IERC20(_data.vaultToken).balanceOf(address(this)));
         // get max and optimal vault collateral to flash loan
-        uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vault);
+        uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vaultToken);
         require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
         // run flash loan
         IERC3156FlashLender(_data.flashLender).flashLoan(
-            this,
-            _data.vault,
+            this, _data.vaultToken,
             Math.min(maxVaultFlashLoan, optimalVaultAmount),
             abi.encode(
-                _data.fAsset,
+                _data.fAssetToken,
+                _data.poolToken,
                 _data.assetManager,
                 _data.agentVault,
-                _data.blazeSwap
+                _data.blazeSwapRouter
             )
         );
         // send earnings to sender
-        IERC20(_data.vault).transfer(msg.sender, IERC20(_data.vault).balanceOf(address(this)));
+        IERC20(_data.vaultToken).transfer(msg.sender, IERC20(_data.vaultToken).balanceOf(address(this)));
     }
 
     // dangerous!
@@ -111,27 +108,30 @@ contract Liquidator is ILiquidator, Ownable {
     ) external flashLoanReceiverLock returns (bytes32) {
         // check that starting contract vault collateral balance
         // is correct (note that anyone can call onFlashLoan)
-        uint256 balance = IERC20(_token).balanceOf(address(this));
-        require(balance == _amount, "Liquidator: Incorrect flash loan amount");
+        require(IERC20(_token).balanceOf(address(this)) == _amount,
+            "Liquidator: Incorrect flash loan amount");
         // execute arbitrage
         (
-            IFAsset _fAsset,
+            IFAsset _fAssetToken,
+            IERC20 _poolToken,
             IAssetManager _assetManager,
             IIAgentVault _agentVault,
-            IBlazeSwapRouter _blazeSwap
+            IBlazeSwapRouter _blazeSwapRouter
         ) = abi.decode(_data, (
             IFAsset,
+            IERC20,
             IAssetManager,
             IIAgentVault,
             IBlazeSwapRouter
         ));
         _executeArbitrage(
+            _amount,
+            _fAssetToken,
             IERC20(_token),
-            _fAsset,
+            _poolToken,
             _assetManager,
             _agentVault,
-            _blazeSwap,
-            _amount
+            _blazeSwapRouter
         );
         // approve flash loan spending to flash lender
         IERC20(_token).approve(address(msg.sender), _amount + _fee);
@@ -139,24 +139,25 @@ contract Liquidator is ILiquidator, Ownable {
     }
 
     function _executeArbitrage(
-        IERC20 _vaultToken,
+        uint256 _vaultAmount,
         IFAsset _fAsset,
+        IERC20 _vaultToken,
+        IERC20 _poolToken,
         IAssetManager _assetManager,
         IAgentVault _agentVault,
-        IBlazeSwapRouter _blazeSwap,
-        uint256 _vaultAmount
+        IBlazeSwapRouter _blazeSwapRouter
     ) internal {
         uint256[] memory amountsRecv;
         // swap vault collateral for f-asset
-        _vaultToken.approve(address(_blazeSwap), _vaultAmount);
-        (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
+        _vaultToken.approve(address(_blazeSwapRouter), _vaultAmount);
+        (, amountsRecv) = _blazeSwapRouter.swapExactTokensForTokens(
             _vaultAmount,
             0,
             toDynamicArray(address(_vaultToken), address(_fAsset)),
             address(this),
             block.timestamp
         );
-        _vaultToken.approve(address(_blazeSwap), 0);
+        _vaultToken.approve(address(_blazeSwapRouter), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -164,16 +165,15 @@ contract Liquidator is ILiquidator, Ownable {
         );
         // swap pool for vault collateral
         if (obtainedPool > 0) {
-            IERC20 _poolToken = wNat; // gas savings
-            _poolToken.approve(address(_blazeSwap), obtainedPool);
-            (, amountsRecv) = _blazeSwap.swapExactTokensForTokens(
+            _poolToken.approve(address(_blazeSwapRouter), obtainedPool);
+            (, amountsRecv) = _blazeSwapRouter.swapExactTokensForTokens(
                 obtainedPool,
                 0,
                 toDynamicArray(address(_poolToken), address(_vaultToken)),
                 address(this),
                 block.timestamp
             );
-            _poolToken.approve(address(_blazeSwap), 0);
+            _poolToken.approve(address(_blazeSwapRouter), 0);
         }
     }
 

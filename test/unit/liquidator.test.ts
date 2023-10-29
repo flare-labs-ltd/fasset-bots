@@ -177,7 +177,7 @@ describe("Tests for Liquidator contract", () => {
     flashLender = await factories.flashLender.deploy(vault)
     await vault.mint(flashLender, ethers.MaxUint256 / BigInt(10))
     // set liquidator
-    liquidator = await factories.liquidator.connect(liquidatorContractOwner).deploy(pool, flashLender, blazeSwap)
+    liquidator = await factories.liquidator.connect(liquidatorContractOwner).deploy(flashLender, blazeSwap)
   })
 
   describe("scenarios with random ecosystems", () => {

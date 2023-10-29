@@ -24,12 +24,12 @@ library Ecosystem {
         // addresses
         address assetManager;
         address agentVault;
-        address blazeSwap;
+        address blazeSwapRouter;
         address flashLender;
         // tokens
-        address fAsset;
-        address vault;
-        address pool;
+        address fAssetToken;
+        address vaultToken;
+        address poolToken;
         // agent vars
         uint256 agentVaultCollateralWei;
         uint256 agentPoolCollateralWei;
@@ -51,7 +51,7 @@ library Ecosystem {
 
     function getData(
         address _agentVault,
-        address _blazeSwap,
+        address _blazeSwapRouter,
         address _flashLender
     ) internal view returns (Data memory _data) {
         // extrapolate data
@@ -62,12 +62,12 @@ library Ecosystem {
         // addresses
         _data.assetManager = address(assetManager);
         _data.agentVault = _agentVault;
-        _data.blazeSwap = _blazeSwap;
+        _data.blazeSwapRouter = _blazeSwapRouter;
         _data.flashLender = _flashLender;
         // tokens
-        _data.fAsset = settings.fAsset;
-        _data.vault = address(agentInfo.vaultCollateralToken);
-        _data.pool = address(assetManager.getWNat());
+        _data.fAssetToken = settings.fAsset;
+        _data.vaultToken = address(agentInfo.vaultCollateralToken);
+        _data.poolToken = address(assetManager.getWNat());
         // agent
         _data.agentVaultCollateralWei = agentInfo.totalVaultCollateralWei;
         _data.agentPoolCollateralWei = agentInfo.totalPoolCollateralNATWei;
@@ -77,9 +77,9 @@ library Ecosystem {
         _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
         // dexes
         (_data.reserveVaultWeiDex1, _data.reserveFAssetUBADex1) =
-            IBlazeSwapRouter(_blazeSwap).getReserves(_data.vault, _data.fAsset);
+            IBlazeSwapRouter(_blazeSwapRouter).getReserves(_data.vaultToken, _data.fAssetToken);
         (_data.reservePoolWeiDex2, _data.reserveVaultWeiDex2) =
-            IBlazeSwapRouter(_blazeSwap).getReserves(_data.pool, _data.vault);
+            IBlazeSwapRouter(_blazeSwapRouter).getReserves(_data.poolToken, _data.vaultToken);
         // prices
         (
             _data.priceFAssetVaultMul,
@@ -89,9 +89,9 @@ library Ecosystem {
         ) = getPrices(
             IAssetManager(_data.assetManager),
             IPriceReader(settings.priceReader),
-            _data.fAsset,
-            _data.vault,
-            _data.pool
+            _data.fAssetToken,
+            _data.vaultToken,
+            _data.poolToken
         );
     }
 

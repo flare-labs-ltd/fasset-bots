@@ -7,15 +7,14 @@ import "./Liquidator.sol";
 contract Challenger is Liquidator {
 
     constructor(
-        IWNat _wNat,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwap
-    ) Liquidator(_wNat, _flashLender, _blazeSwap) {}
+    ) Liquidator(_flashLender, _blazeSwap) {}
 
     function illegalPaymentChallenge(
         ISCProofVerifier.BalanceDecreasingTransaction calldata _transaction,
         address _agentVault
-    ) external {
+    ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
         IAssetManager(data.assetManager).illegalPaymentChallenge(_transaction, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -26,7 +25,7 @@ contract Challenger is Liquidator {
         ISCProofVerifier.BalanceDecreasingTransaction calldata _payment1,
         ISCProofVerifier.BalanceDecreasingTransaction calldata _payment2,
         address _agentVault
-    ) external {
+    ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
         IAssetManager(data.assetManager).doublePaymentChallenge( _payment1, _payment2, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -36,7 +35,7 @@ contract Challenger is Liquidator {
     function freeBalanceNegativeChallenge(
         ISCProofVerifier.BalanceDecreasingTransaction[] calldata _payments,
         address _agentVault
-    ) external {
+    ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
         IAssetManager(data.assetManager).freeBalanceNegativeChallenge(_payments, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -45,10 +44,11 @@ contract Challenger is Liquidator {
 
     // make it external (may be a slight security concern)
     function runArbitrageWithData(Ecosystem.Data memory _data) external {
+        require(msg.sender == address(this), "practically internal");
         _runArbitrageWithData(_data);
     }
 
     function getData(address _agentVault) internal view returns (Ecosystem.Data memory) {
-        return Ecosystem.getData(_agentVault, address(blazeSwap), address(flashLender));
+        return Ecosystem.getData(_agentVault, address(blazeSwapRouter), address(flashLender));
     }
 }

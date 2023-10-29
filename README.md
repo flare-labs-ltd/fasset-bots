@@ -9,10 +9,10 @@ This repo contains an implementation of an f-asset liquidator on the [Flare netw
 > This repo uses the private gitlab f-asset repo as a node dependancy, so until it is published, build without appropriate ssh key will fail.
 
 > **Warning**
-> It may not make sense to use this contract without also running a challenger, as liquidation requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in liquidation may actually be rare or non-existent. That's why the repo features a challenger contract, that runs a challenge and liquidation in the same transaction.
+> It may not make sense to use liquidator contract without also running a challenger, as full-liquidations requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in full-liquidation may actually be rare or non-existent. That's why the repo includes a challenger contract, that runs a challenge and liquidation in the same transaction.
 
 > **Warning**
-> To avoid your challenge/liquidation transactions being front-ran, you should deploy your own contracts and allow their methods being called by you and only you.
+> To avoid your challenge/liquidation transactions being front-ran, the challenger contract restricts all the functions called to owner-only. This means each challenger bot has to deploy their own challenger contract.
 
 ## Why it's necessary
 
