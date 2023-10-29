@@ -34,7 +34,7 @@ export class AgentEntity {
 
     @OneToMany(() => EventEntity, (event) => event.agent, {
         orphanRemoval: true,
-        cascade: [Cascade.PERSIST, Cascade.REMOVE],
+        cascade: [Cascade.ALL],
     })
     events = new Collection<EventEntity>(this);
 
