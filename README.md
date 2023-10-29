@@ -55,6 +55,9 @@ then run
 yarn && yarn compile
 ```
 
+> **Note**
+> To flatten contracts use foundry and `forge flatten` as liquidator includes circular imports, so it can't be flattened by hardhat.
+
 ### Deployment
 
 To deploy the liquidator contract, log the network name inside `.env` file under the key `NETWORK`, then run

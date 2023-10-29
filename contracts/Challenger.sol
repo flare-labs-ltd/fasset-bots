@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "fasset/contracts/generated/interface/ISCProofVerifier.sol";
+import "./interface/IChallenger.sol";
 import "./Liquidator.sol";
 
-contract Challenger is Liquidator {
+contract Challenger is IChallenger, Liquidator {
 
     constructor(
         IERC3156FlashLender _flashLender,
@@ -12,7 +12,7 @@ contract Challenger is Liquidator {
     ) Liquidator(_flashLender, _blazeSwap) {}
 
     function illegalPaymentChallenge(
-        ISCProofVerifier.BalanceDecreasingTransaction calldata _transaction,
+        BalanceDecreasingTransaction.Proof calldata _transaction,
         address _agentVault
     ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
@@ -22,8 +22,8 @@ contract Challenger is Liquidator {
     }
 
     function doublePaymentChallenge(
-        ISCProofVerifier.BalanceDecreasingTransaction calldata _payment1,
-        ISCProofVerifier.BalanceDecreasingTransaction calldata _payment2,
+        BalanceDecreasingTransaction.Proof calldata _payment1,
+        BalanceDecreasingTransaction.Proof calldata _payment2,
         address _agentVault
     ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
@@ -33,7 +33,7 @@ contract Challenger is Liquidator {
     }
 
     function freeBalanceNegativeChallenge(
-        ISCProofVerifier.BalanceDecreasingTransaction[] calldata _payments,
+        BalanceDecreasingTransaction.Proof[] calldata _payments,
         address _agentVault
     ) external virtual onlyOwner {
         Ecosystem.Data memory data = getData(_agentVault);
