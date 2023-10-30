@@ -120,17 +120,13 @@ describe("Tests for Liquidator contract", () => {
     await agent.depositVaultCollateral(config.vaultCollateral)
     await agent.depositPoolCollateral(config.poolCollateral)
     await agent.mint(minterAccount, config.mintedUBA)
-    // check that agent cr is as expected
-    const {
-      vaultCollateralRatioBIPS: vaultCrBeforeLiquidation,
-      poolCollateralRatioBIPS: poolCrBeforeLiquidation
-    } = await assetManager.getAgentInfo(agent)
-    expect(vaultCrBeforeLiquidation).to.be.closeTo(config.expectedVaultCrBips, 1)
-    expect(poolCrBeforeLiquidation).to.be.closeTo(config.expectedPoolCrBips, 1)
     // put agent in full liquidation if configured so (this implies agent did an illegal operation)
     if (config.fullLiquidation) await assetManager.putAgentInFullLiquidation(agent)
-    const { status: agentStatus } = await assetManager.getAgentInfo(agent)
-    expect(agentStatus).to.equal(config.fullLiquidation ? 3 : 0)
+    const { status, vaultCollateralRatioBIPS, poolCollateralRatioBIPS } = await assetManager.getAgentInfo(agent)
+    expect(status).to.equal(config.fullLiquidation ? 3 : 0)
+    // check that agent cr is as expected
+    expect(vaultCollateralRatioBIPS).to.be.closeTo(config.expectedVaultCrBips, 1)
+    expect(poolCollateralRatioBIPS).to.be.closeTo(config.expectedPoolCrBips, 1)
   }
 
   beforeEach(async function () {

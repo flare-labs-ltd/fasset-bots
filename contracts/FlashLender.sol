@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-contract FlashLender is IERC3156FlashLender {
+contract FlashLender is IERC3156FlashLender, Ownable {
     bytes32 private constant RETURN_VALUE = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     IERC20 immutable private token;
@@ -13,8 +14,12 @@ contract FlashLender is IERC3156FlashLender {
     error ERC3156ExceededMaxLoan(uint256 maxLoan);
     error ERC3156InvalidReceiver(address receiver);
 
-    constructor(IERC20 _token) {
+    constructor(IERC20 _token) Ownable() {
         token = _token;
+    }
+
+    function withdraw() public onlyOwner {
+        token.transfer(msg.sender, token.balanceOf(address(this)));
     }
 
     function maxFlashLoan(address _token) public view returns (uint256) {
