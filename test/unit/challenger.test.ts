@@ -65,10 +65,6 @@ describe("Tests for Liquidator contract", () => {
     } = await assetManager.getAgentInfo(agent)
     expect(vaultCrBeforeLiquidation).to.be.closeTo(config.expectedVaultCrBips, 1)
     expect(poolCrBeforeLiquidation).to.be.closeTo(config.expectedPoolCrBips, 1)
-    // put agent in full liquidation if configured so (this implies agent did an illegal operation)
-    if (config.fullLiquidation) await assetManager.putAgentInFullLiquidation(agent)
-    const { status: agentStatus } = await assetManager.getAgentInfo(agent)
-    expect(agentStatus).to.equal(config.fullLiquidation ? 3 : 0)
   }
 
   beforeEach(async function () {
@@ -121,6 +117,12 @@ describe("Tests for Liquidator contract", () => {
       const { status, maxLiquidationAmountUBA } = await assetManager.getAgentInfo(agent)
       expect(status).to.equal(3)
       expect(maxLiquidationAmountUBA).to.equal(0)
+      // transfer earnings to challenger calller
+      const earnings = await vault.balanceOf(challenger)
+      expect(earnings).to.be.greaterThan(0)
+      await challenger.connect(challengerAccount).withdrawToken(vault)
+      const balance = await vault.balanceOf(challengerAccount)
+      expect(balance).to.equal(earnings)
     })
 
     it("should do a double payment challenge, then liquidate agent", async () => {
@@ -130,6 +132,12 @@ describe("Tests for Liquidator contract", () => {
       const { status, maxLiquidationAmountUBA } = await assetManager.getAgentInfo(agent)
       expect(status).to.equal(3)
       expect(maxLiquidationAmountUBA).to.equal(0)
+      // transfer earnings to challenger caller
+      const earnings = await vault.balanceOf(challenger)
+      expect(earnings).to.be.greaterThan(0)
+      await challenger.connect(challengerAccount).withdrawToken(vault)
+      const balance = await vault.balanceOf(challengerAccount)
+      expect(balance).to.equal(earnings)
     })
 
     it("should do a free balance negative challenge, then liquidate agent", async () => {
@@ -138,6 +146,12 @@ describe("Tests for Liquidator contract", () => {
       const { status, maxLiquidationAmountUBA } = await assetManager.getAgentInfo(agent)
       expect(status).to.equal(3)
       expect(maxLiquidationAmountUBA).to.equal(0)
+      // transfer earnings to challenger caller
+      const earnings = await vault.balanceOf(challenger)
+      expect(earnings).to.be.greaterThan(0)
+      await challenger.connect(challengerAccount).withdrawToken(vault)
+      const balance = await vault.balanceOf(challengerAccount)
+      expect(balance).to.equal(earnings)
     })
   })
 

@@ -12,7 +12,7 @@ This repo contains an implementation of an f-asset liquidator on the [Flare netw
 > It may not make sense to use liquidator contract without also running a challenger, as full-liquidations requires an agent to be challenged. If successful, the challenger has no reason not to also profit from liquidation of the challenged agent (in the same transaction). So, an agent in full-liquidation may actually be rare or non-existent. That's why the repo includes a challenger contract, that runs a challenge and liquidation in the same transaction.
 
 > **Warning**
-> To avoid your challenge/liquidation transactions being front-ran, the challenger contract restricts all the functions called to owner-only. This means each challenger bot has to deploy their own challenger contract.
+> To avoid your challenge/liquidation transactions being front-ran, the challenger contract restricts all the functions called to owner-only. This means each challenger bot has to deploy their own challenger contract. The earnings are gathered in that contract, and can be collected by the owner via `withdrawToken` method.
 
 ## Why it's necessary
 

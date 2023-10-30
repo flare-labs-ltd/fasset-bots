@@ -156,3 +156,4 @@ typechain-types/
 typechain-truffle/
 typechain-ethers/
 types/
+Challenger.sol

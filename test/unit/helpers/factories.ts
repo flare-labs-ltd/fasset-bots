@@ -3,7 +3,7 @@ import type {
   BlazeSwapRouter__factory, BlazeSwapManager__factory, BlazeSwapFactory__factory,
   FlashLender__factory, ERC20Mock__factory,
   AssetManagerMock__factory, AgentMock__factory, FakePriceReader__factory,
-  Liquidator__factory, Challenger__factory, ChallengerOwned__factory
+  Liquidator__factory, Challenger__factory
 } from '../../../types'
 
 
@@ -25,7 +25,6 @@ interface ContractFactories {
   // liquidator
   liquidator: Liquidator__factory
   challenger: Challenger__factory
-  challengerOwned: ChallengerOwned__factory
 }
 
 export async function getFactories(): Promise<ContractFactories> {
@@ -42,6 +41,5 @@ export async function getFactories(): Promise<ContractFactories> {
     pool: await ethers.getContractFactory("ERC20Mock"),
     liquidator: await ethers.getContractFactory("Liquidator"),
     challenger: await ethers.getContractFactory("Challenger"),
-    challengerOwned: await ethers.getContractFactory("ChallengerOwned")
   }
 }
