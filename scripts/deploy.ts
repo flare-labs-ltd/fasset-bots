@@ -1,6 +1,7 @@
 require('dotenv').config()
 import { ContractFactory, Wallet, JsonRpcProvider } from 'ethers'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../artifacts/contracts/Liquidator.sol/Liquidator.json'
+import { abi as challengerAbi, bytecode as challengerBytecode } from '../artifacts/contracts/Challenger.sol/Challenger.json'
 import { abi as flashLenderAbi, bytecode as flashLenderBytecode } from '../artifacts/contracts/FlashLender.sol/FlashLender.json'
 
 
@@ -9,15 +10,21 @@ const addresses = require("../addresses.json")[process.env.NETWORK!]
 const provider = new JsonRpcProvider(process.env.RPC_URL!)
 const signer = new Wallet(privateKey, provider)
 
-async function deployLiquidator() {
-  const factory = new ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
+async function _deployLiquidatorInterface(abi: any, bytecode: any) {
+  const factory = new ContractFactory(abi, bytecode, signer)
   const contract = await factory.deploy(
-    addresses.wNat,
     addresses.flashLender,
     addresses.blazeSwapRouter
   )
   const address = await contract.getAddress()
-  console.log(`liquidator deployed at ${address}`)
+  console.log(`contract deployed at ${address}`)
+}
+
+async function deployLiquidator() {
+  await _deployLiquidatorInterface(liquidatorAbi, liquidatorBytecode)
+}
+async function deployChallenger() {
+  await _deployLiquidatorInterface(challengerAbi, challengerBytecode)
 }
 
 async function deployFlashLender() {

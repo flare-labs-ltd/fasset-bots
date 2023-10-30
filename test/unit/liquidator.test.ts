@@ -56,19 +56,15 @@ describe("Tests for Liquidator contract", () => {
   }
 
   async function liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
-    const agentInfo = await assetManager.getAgentInfo(agent)
+    const { liquidationPaymentFactorVaultBIPS, liquidationPaymentFactorPoolBIPS } = await assetManager.getAgentInfo(agent)
     const amountFAssetAmg = ubaToAmg(assetConfig.asset, amountFAssetUba)
     // for vault
     const amgPriceVault = await calcAmgToTokenWeiPrice(assetConfig.vault)
-    const amgWithVaultFactor = amountFAssetAmg
-      * agentInfo.liquidationPaymentFactorVaultBIPS
-      / BigInt(10_000)
+    const amgWithVaultFactor = amountFAssetAmg * liquidationPaymentFactorVaultBIPS / BigInt(10_000)
     const amountVault = amgToTokenWei(amgWithVaultFactor, amgPriceVault)
     // for pool
     const amgPricePool = await calcAmgToTokenWeiPrice(assetConfig.pool)
-    const amgWithPoolFactor = amountFAssetAmg
-      * agentInfo.liquidationPaymentFactorPoolBIPS
-      / BigInt(10_000)
+    const amgWithPoolFactor = amountFAssetAmg * liquidationPaymentFactorPoolBIPS / BigInt(10_000)
     const amountPool = amgToTokenWei(amgWithPoolFactor, amgPricePool)
     return [amountVault, amountPool]
   }

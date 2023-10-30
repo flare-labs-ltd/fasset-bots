@@ -57,7 +57,6 @@ library Ecosystem {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));
-        require(agentInfo.maxLiquidationAmountUBA > 0, "Liquidator: Agent not in liquidation");
         AssetManagerSettings.Data memory settings = assetManager.getSettings();
         // addresses
         _data.assetManager = address(assetManager);

@@ -9,7 +9,7 @@
     "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413",
     "------------ tests ---------------": "----------------- tests -----------------",
     "test": "yarn hardhat test",
-    "test:unit": "yarn hardhat test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts",
+    "test:unit": "yarn hardhat test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
     "test:integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000"
   },
   "license": "MIT",

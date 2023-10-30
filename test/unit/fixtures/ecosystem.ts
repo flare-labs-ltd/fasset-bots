@@ -9,7 +9,7 @@ export class EcosystemFactory {
   protected defaultDex2VaultReserve: bigint
   protected defaultMintedUBA: bigint
   // fixed example ecosystem configs
-  protected baseEcosystem: EcosystemConfig
+  public baseEcosystem: EcosystemConfig
   public healthyEcosystemWithVaultUnderwater: EcosystemConfig
   public healthyEcosystemWithPoolUnderwater: EcosystemConfig
   public healthyEcosystemWithZeroVaultCollateral: EcosystemConfig

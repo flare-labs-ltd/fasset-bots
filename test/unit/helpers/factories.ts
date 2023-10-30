@@ -1,8 +1,9 @@
 import { ethers } from 'hardhat'
 import type {
   BlazeSwapRouter__factory, BlazeSwapManager__factory, BlazeSwapFactory__factory,
-  ERC20Mock__factory, FakePriceReader__factory, FlashLender__factory,
-  AssetManagerMock__factory, AgentMock__factory, Liquidator__factory
+  FlashLender__factory, ERC20Mock__factory,
+  AssetManagerMock__factory, AgentMock__factory, FakePriceReader__factory,
+  Liquidator__factory, Challenger__factory, ChallengerOwned__factory
 } from '../../../types'
 
 
@@ -23,6 +24,8 @@ interface ContractFactories {
   pool: ERC20Mock__factory
   // liquidator
   liquidator: Liquidator__factory
+  challenger: Challenger__factory
+  challengerOwned: ChallengerOwned__factory
 }
 
 export async function getFactories(): Promise<ContractFactories> {
@@ -37,6 +40,8 @@ export async function getFactories(): Promise<ContractFactories> {
     fAsset: await ethers.getContractFactory("ERC20Mock"),
     vault: await ethers.getContractFactory("ERC20Mock"),
     pool: await ethers.getContractFactory("ERC20Mock"),
-    liquidator: await ethers.getContractFactory("Liquidator")
+    liquidator: await ethers.getContractFactory("Liquidator"),
+    challenger: await ethers.getContractFactory("Challenger"),
+    challengerOwned: await ethers.getContractFactory("ChallengerOwned")
   }
 }

@@ -14,41 +14,61 @@ contract Challenger is IChallenger, Liquidator {
     function illegalPaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _transaction,
         address _agentVault
-    ) external virtual onlyOwner {
-        Ecosystem.Data memory data = getData(_agentVault);
-        IAssetManager(data.assetManager).illegalPaymentChallenge(_transaction, _agentVault);
+    ) public virtual {
+        IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
+        assetManager.illegalPaymentChallenge(_transaction, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrageWithData(data) {} catch {}
+        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
     }
 
     function doublePaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _payment1,
         BalanceDecreasingTransaction.Proof calldata _payment2,
         address _agentVault
-    ) external virtual onlyOwner {
-        Ecosystem.Data memory data = getData(_agentVault);
-        IAssetManager(data.assetManager).doublePaymentChallenge( _payment1, _payment2, _agentVault);
+    ) public virtual {
+        IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
+        assetManager.doublePaymentChallenge( _payment1, _payment2, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrageWithData(data) {} catch {}
+        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
     }
 
     function freeBalanceNegativeChallenge(
         BalanceDecreasingTransaction.Proof[] calldata _payments,
         address _agentVault
-    ) external virtual onlyOwner {
-        Ecosystem.Data memory data = getData(_agentVault);
-        IAssetManager(data.assetManager).freeBalanceNegativeChallenge(_payments, _agentVault);
+    ) public virtual {
+        IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
+        assetManager.freeBalanceNegativeChallenge(_payments, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrageWithData(data) {} catch {}
+        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
+    }
+}
+
+contract ChallengerOwned is Challenger {
+
+    constructor(
+        IERC3156FlashLender _flashLender,
+        IBlazeSwapRouter _blazeSwap
+    ) Challenger(_flashLender, _blazeSwap) {}
+
+    function illegalPaymentChallenge(
+        BalanceDecreasingTransaction.Proof calldata _transaction,
+        address _agentVault
+    ) public override onlyOwner {
+        super.illegalPaymentChallenge(_transaction, _agentVault);
     }
 
-    // make it external (may be a slight security concern)
-    function runArbitrageWithData(Ecosystem.Data memory _data) external {
-        require(msg.sender == address(this), "practically internal");
-        _runArbitrageWithData(_data);
+    function doublePaymentChallenge(
+        BalanceDecreasingTransaction.Proof calldata _payment1,
+        BalanceDecreasingTransaction.Proof calldata _payment2,
+        address _agentVault
+    ) public override onlyOwner {
+        super.doublePaymentChallenge(_payment1, _payment2, _agentVault);
     }
 
-    function getData(address _agentVault) internal view returns (Ecosystem.Data memory) {
-        return Ecosystem.getData(_agentVault, address(blazeSwapRouter), address(flashLender));
+    function freeBalanceNegativeChallenge(
+        BalanceDecreasingTransaction.Proof[] calldata _payments,
+        address _agentVault
+    ) public override onlyOwner {
+        super.freeBalanceNegativeChallenge(_payments, _agentVault);
     }
 }

@@ -310,12 +310,33 @@ contract AssetManagerMock {
         liquidationFactorVaultCollateralBIPS = _liquidationFactorVaultCollateralBIPS;
     }
 
+    ////////////////////////////////////////////////////////////////
+    // challenges
+
+    function illegalPaymentChallenge(
+        BalanceDecreasingTransaction.Proof calldata /* _transaction */,
+        address _agentVault
+    ) external {
+        putAgentInFullLiquidation(_agentVault);
+    }
+
+    function doublePaymentChallenge(
+        BalanceDecreasingTransaction.Proof calldata /* _payment1 */,
+        BalanceDecreasingTransaction.Proof calldata /* _payment2 */,
+        address _agentVault
+    ) external {
+        putAgentInFullLiquidation(_agentVault);
+    }
+
+    function freeBalanceNegativeChallenge(
+        BalanceDecreasingTransaction.Proof[] calldata /* _payments */,
+        address _agentVault
+    ) external {
+        putAgentInFullLiquidation(_agentVault);
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // mocks
-
-    function putAgentInFullLiquidation(address _agentVault) external {
-        AgentMock(_agentVault).putInFullLiquidation();
-    }
 
     function getAgentInfo(
         address _agentVault
@@ -327,10 +348,8 @@ contract AssetManagerMock {
         CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
         agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
         agentInfo.poolCollateralRatioBIPS = cr.poolCR;
-        (
-            agentInfo.liquidationPaymentFactorVaultBIPS,
-            agentInfo.liquidationPaymentFactorPoolBIPS
-        ) = _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
+        (agentInfo.liquidationPaymentFactorVaultBIPS, agentInfo.liquidationPaymentFactorPoolBIPS) =
+            _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
         agentInfo.maxLiquidationAmountUBA = convertAmgToUBA(Math.max(
             _maxLiquidationAmountAMG(
                 agentInfo,
@@ -353,5 +372,9 @@ contract AssetManagerMock {
         returns (AssetManagerSettings.Data memory)
     {
         return settings;
+    }
+
+    function putAgentInFullLiquidation(address _agentVault) public {
+        AgentMock(_agentVault).putInFullLiquidation();
     }
 }

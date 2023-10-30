@@ -11,7 +11,6 @@ import "./lib/Ecosystem.sol";
 
 enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
-// always assume pool = wrapped native
 contract Liquidator is ILiquidator, Ownable {
 
     // those are initialized once and cannot be changed
@@ -69,15 +68,17 @@ contract Liquidator is ILiquidator, Ownable {
 
     // non-reentrant
     function _runArbitrageWithData(Ecosystem.Data memory _data) internal flashLoanInitiatorLock {
-        // send vault collateral to owner, to avoid them being stolen by a malicious flash
-        // loan contract, and also to ensure that arbitrage fails in case of decreased funds
-        // (owner should not be agentVault or any of the dexes)
-        IERC20(_data.vaultToken).transfer(owner(), IERC20(_data.vaultToken).balanceOf(address(this)));
+        // check if any f-assets can be liquidated
+        require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vaultToken);
         require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
+        // send vault collateral to owner, to avoid them being stolen by a malicious flash
+        // loan contract, and also to ensure that arbitrage fails in case of decreased funds
+        // (owner should not be agentVault or any of the dexes)
+        IERC20(_data.vaultToken).transfer(owner(), IERC20(_data.vaultToken).balanceOf(address(this)));
         // run flash loan
         IERC3156FlashLender(_data.flashLender).flashLoan(
             this, _data.vaultToken,
