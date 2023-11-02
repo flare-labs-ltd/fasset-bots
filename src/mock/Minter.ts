@@ -1,4 +1,4 @@
-import { Payment } from "state-connector-protocol";
+import { Payment } from "@flarenetwork/state-connector-protocol";
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";

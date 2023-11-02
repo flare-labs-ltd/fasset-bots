@@ -1,5 +1,5 @@
 import { constants } from "@openzeppelin/test-helpers";
-import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "state-connector-protocol";
+import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import Web3 from "web3";
 import { TX_FAILED, TxInputOutput } from "../underlying-chain/interfaces/IBlockChain";
 import { BN_ZERO } from "../utils/helpers";

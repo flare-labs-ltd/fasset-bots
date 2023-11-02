@@ -960,6 +960,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.1":
+  version: 1.0.0-beta.1
+  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.1"
+  dependencies:
+    "@openzeppelin/contracts": ^4.9.3
+    ethers: ^6.7.1
+  checksum: 2c7f79b8bd6e5509c16f32aec529cf94b9d83e10f782d141ee5796bff488ad5f549f9a51f162760005a6e02b27ace5429e85e9d5c894832d645fd03576087ce6
+  languageName: node
+  linkType: hard
+
 "@gar/promisify@npm:^1.0.1":
   version: 1.1.3
   resolution: "@gar/promisify@npm:1.1.3"
@@ -5777,6 +5787,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fasset-bots@workspace:."
   dependencies:
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.1
     "@istanbuljs/nyc-config-typescript": 1.0.2
     "@mikro-orm/cli": 5.8.4
     "@mikro-orm/core": 5.8.4
@@ -5834,7 +5845,6 @@ __metadata:
     rxjs: 7.8.1
     simple-wallet: "link:../simple-wallet"
     source-map-support: 0.5.21
-    state-connector-protocol: "git+ssh://git@gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b"
     ts-node: 10.9.1
     typescript: 5.2.2
     typescript-json-schema: 0.61.0
@@ -10881,16 +10891,6 @@ __metadata:
   dependencies:
     type-fest: ^0.7.1
   checksum: f4fbddfc09121d91e587b60de4beb4941108e967d71ad3a171812dc839b010ca374d064ad0a296295fed13acd103609d99a4224a25b4e67de13cae131f1901ee
-  languageName: node
-  linkType: hard
-
-"state-connector-protocol@git+ssh://git@gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b":
-  version: 1.0.0
-  resolution: "state-connector-protocol@git+ssh://git@gitlab.com/flarenetwork/state-connector-protocol.git#commit=7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b"
-  dependencies:
-    "@openzeppelin/contracts": ^4.9.3
-    ethers: ^6.7.1
-  checksum: bb8644cc0ce565b68fb9fb5f1f096cc4ec2f1ac314e18d1c35a9678545f1e0c3f1cca6d0abe92f7186544c9f879d695f15ffeaacbb6bdaed1a2be8f192d5b262
   languageName: node
   linkType: hard
 

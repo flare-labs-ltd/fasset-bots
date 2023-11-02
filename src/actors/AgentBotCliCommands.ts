@@ -16,7 +16,7 @@ import { Agent } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { decodeAttestationName } from "state-connector-protocol";
+import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");

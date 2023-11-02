@@ -8,7 +8,7 @@ import {
     Payment,
     ReferencedPaymentNonexistence,
     decodeAttestationName,
-} from "state-connector-protocol";
+} from "@flarenetwork/state-connector-protocol";
 import { ISCProofVerifierInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";

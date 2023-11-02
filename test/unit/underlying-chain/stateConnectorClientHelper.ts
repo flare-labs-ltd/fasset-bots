@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
-import { ZERO_BYTES32, toBN } from "../../../src/utils/helpers";
+import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { requireSecret } from "../../../src/config/secrets";
 import { initWeb3 } from "../../../src/utils/web3";
 import rewire from "rewire";
@@ -16,14 +16,7 @@ import {
     STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
 } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import {
-    BalanceDecreasingTransaction,
-    ConfirmedBlockHeightExists,
-    Payment,
-    ReferencedPaymentNonexistence,
-    encodeAttestationName,
-} from "state-connector-protocol";
-import { AttestationProof } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
+import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 

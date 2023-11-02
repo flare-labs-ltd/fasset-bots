@@ -22,7 +22,7 @@ import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-file
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
-import { encodeAttestationName } from "state-connector-protocol";
+import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
