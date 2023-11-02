@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { abi as liquidatorAbi } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
+import { waitFinalize } from './utils'
 import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
 import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
 import { abi as flashLenderAbi } from '../../../artifacts/contracts/FlashLender.sol/FlashLender.json'
@@ -8,7 +8,9 @@ import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/inte
 import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
 import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
-import type { NetworkAddressesJson, AddressesJson, BaseContracts, AgentContracts } from './interface'
+import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
+import type { NetworkAddressesJson, AddressesJson, BaseContracts, FAssetContracts, Contracts } from './interface'
+import type { IAssetManager, IBlazeSwapRouter, IERC3156FlashLender, IIAgentVault, Liquidator } from '../../../types'
 
 
 export function getAddresses(network: string): NetworkAddressesJson {
@@ -16,10 +18,7 @@ export function getAddresses(network: string): NetworkAddressesJson {
   return addresses[network]
 }
 
-export function getContracts(
-  network: string,
-  provider: ethers.JsonRpcProvider
-): BaseContracts {
+export function getEcosystemContracts(network: string, provider: ethers.JsonRpcProvider): BaseContracts {
   const address = getAddresses(network)
   return {
     wNat: new ethers.Contract(address.wNat, wNatAbi, provider) as any,
@@ -30,15 +29,42 @@ export function getContracts(
   }
 }
 
-export async function getAgentContracts(
-  agentAddress: string,
+export async function getFAssetContracts(
+  assetManagerAddress: string,
   provider: ethers.JsonRpcProvider
-): Promise<AgentContracts> {
-  const agent = new ethers.Contract(agentAddress, agentAbi, provider) as any
-  const assetManagerAddress = await agent.assetManager()
+): Promise<FAssetContracts> {
   const assetManager = new ethers.Contract(assetManagerAddress, assetManagerAbi, provider) as any
   const settings = await assetManager.getSettings()
   const fAsset = new ethers.Contract(settings.fAsset, fAssetAbi, provider) as any
   const priceReader = new ethers.Contract(settings.priceReader, fakePriceReaderAbi, provider) as any
-  return { agent, assetManager, fAsset, priceReader }
+  return { assetManager, fAsset, priceReader }
+}
+
+export async function getContracts(
+  assetManagerAddress: string,
+  network: string,
+  provider: ethers.JsonRpcProvider
+): Promise<Contracts> {
+  const ecosystemContracts = getEcosystemContracts(network, provider)
+  const fAssetContracts = await getFAssetContracts(assetManagerAddress, provider)
+  return { ...ecosystemContracts, ...fAssetContracts }
+}
+
+export async function getAgentsAssetManager(
+  agentAddress: string,
+  provider: ethers.JsonRpcProvider
+): Promise<string> {
+  const agent: IIAgentVault = new ethers.Contract(agentAddress, agentAbi, provider) as any
+  return agent.assetManager()
+}
+
+export async function deployLiquidator(
+  flashLender: IERC3156FlashLender,
+  blazeSwapRouter: IBlazeSwapRouter,
+  signer: ethers.Signer,
+  provider: ethers.JsonRpcProvider
+): Promise<Liquidator> {
+  const factory = new ethers.ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
+  // @ts-ignore deploy not returning a transaction response
+  return waitFinalize(provider, signer, factory.connect(signer).deploy(flashLender, blazeSwapRouter)) as any
 }

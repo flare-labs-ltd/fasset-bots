@@ -40,8 +40,27 @@ export function priceBasedDexReserve(
     / priceB
 }
 
+// similar to priceBasedDexReserve, except it
+// caps the output reserveB to maxReserveB
+// and applies it also to the output reserveA
+export function cappedPriceBasedDexReserves(
+  priceA: bigint,
+  priceB: bigint,
+  decimalsA: bigint,
+  decimalsB: bigint,
+  reserveA: bigint,
+  maxReserveB: bigint
+): [bigint, bigint] {
+  const reserveB = priceBasedDexReserve(priceA, priceB, decimalsA, decimalsB, reserveA)
+  if (reserveB > maxReserveB) {
+    const factor = reserveB / maxReserveB
+    return [reserveA / factor, reserveB / factor]
+  }
+  return [reserveA, reserveB]
+}
+
 // prices are in some same currency
-export function collateralForCr(
+export function collateralForAgentCr(
   crBips: bigint,
   totalMintedUBA: bigint,
   priceFAsset: bigint,

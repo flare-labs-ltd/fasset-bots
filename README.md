@@ -29,6 +29,8 @@ The two assumptions are:
 - A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent's vault collateral for f-asset, while keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [Blaze Swap](https://blazeswap.xyz/).
 - Vault collateral's flash loan accessibility. This is meant to be solved soon by making agent's vault collateral flash-loanable.
 
+For more info on how to configure and maintain such ecosystem state, check [this](#ecosystem-configuration-and-manipulation) section.
+
 ## How it works
 
 Every agent in the f-asset system holds two types of collateral - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
@@ -91,6 +93,9 @@ then run the test in another terminal
 ```sh
 yarn test:integration
 ```
+
+### Ecosystem configuration and maintanance
+The repo features some scripts that aid in establishing and dealing with the ecosystem, particularly dex price alignment and flash lender 
 
 ## TODO
 - [ ] add UBA and Wei to Liquidator contract variables,

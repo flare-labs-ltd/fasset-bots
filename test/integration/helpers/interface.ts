@@ -24,14 +24,12 @@ export interface BaseContracts {
   blazeSwapRouter: BlazeSwapRouter
   flashLender: FlashLender
   liquidator: Liquidator
-  assetManagerController?: any
 }
 
-export interface AgentContracts {
-  agent: IIAgentVault
+export interface FAssetContracts {
   assetManager: IIAssetManager
   fAsset: IFAssetMetadata
   priceReader: FakePriceReader
 }
 
-export interface EcosystemContracts extends BaseContracts, AgentContracts {}
+export interface Contracts extends BaseContracts, FAssetContracts {}

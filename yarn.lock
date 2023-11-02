@@ -8388,7 +8388,6 @@ stacktrace-parser@^0.1.10:
 
 "state-connector-protocol@git+https://gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b":
   version "1.0.0"
-  uid "7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b"
   resolved "git+https://gitlab.com/flarenetwork/state-connector-protocol.git#7fe0dce2cb2edee66ded4e32463e7bbb0a7e016b"
   dependencies:
     "@openzeppelin/contracts" "^4.9.3"

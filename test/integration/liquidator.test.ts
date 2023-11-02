@@ -1,12 +1,10 @@
 require('dotenv').config()
 import { ethers } from 'ethers'
 import { assert } from 'chai'
-import { assetPriceForAgentCr, priceBasedDexReserve } from '../calculations'
-import { waitFinalize } from '../utils'
-import { getContracts, getAgentContracts } from './helpers/contracts'
-import { addLiquidity } from './helpers/utils'
-import type { IERC20Metadata } from '../../types'
-import type { EcosystemContracts } from './helpers/interface'
+import { assetPriceForAgentCr } from '../calculations'
+import { waitFinalize, initFtsoSyncedDexReserves } from './helpers/utils'
+import { getAgentsAssetManager, deployLiquidator, getContracts } from './helpers/contracts'
+import type { Contracts } from './helpers/interface'
 
 // usdc balance of deployer (should basically be infinite)
 const USDC_BALANCE = BigInt(100_000_000) * ethers.WeiPerEther
@@ -18,14 +16,13 @@ const DEPLOYER_PVK = process.env.DEPLOYER_PRIVATE_KEY!
 const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/")
 
 describe("Liquidator", () => {
-  let contracts: EcosystemContracts
+  let contracts: Contracts
   let deployer: ethers.Wallet
   let liquidator: ethers.JsonRpcSigner
 
-  // obtains the f-assets's price that results
-  // in agent having collateral ratio of crBips
+  // obtains the f-assets's price that results in agent having collateral ratio of crBips
   async function getCollateralForCr(collateralKind: "vault" | "pool", crBips: number): Promise<bigint> {
-    const agentInfo = await contracts.assetManager.getAgentInfo(contracts.agent)
+    const agentInfo = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     const totalMintedUBA = agentInfo.mintedUBA + agentInfo.redeemingUBA + agentInfo.reservedUBA
     let collateralWei
     let collateralToken
@@ -53,44 +50,13 @@ describe("Liquidator", () => {
     )
   }
 
-  // set dex price of tokenA in tokenB
-  // both prices in the same currency,
-  // e.g. FLR/$, XRP/$
-  async function setDexPairPrice(
-    tokenA: IERC20Metadata,
-    tokenB: IERC20Metadata,
-    priceA: bigint,
-    priceB: bigint,
-    reserveA: bigint,
-    liquidityProvider: ethers.Signer
-  ): Promise<void> {
-    const decimalsA = await tokenA.decimals()
-    const decimalsB = await tokenB.decimals()
-    const reserveB = priceBasedDexReserve(
-      priceA,
-      priceB,
-      decimalsA,
-      decimalsB,
-      reserveA
-    )
-    await addLiquidity(
-      contracts.blazeSwapRouter,
-      tokenA,
-      tokenB,
-      reserveA,
-      reserveB,
-      liquidityProvider,
-      provider
-    )
-  }
-
   beforeEach(async () => {
-    const baseContracts = getContracts("coston", provider)
-    const agentContracts = await getAgentContracts(AGENT_ADDRESS, provider)
-    contracts = { ...baseContracts, ...agentContracts }
     // get relevant signers
     deployer = new ethers.Wallet(DEPLOYER_PVK, provider)
     liquidator = await provider.getSigner(1)
+    // get contracts
+    contracts = await getContracts(await getAgentsAssetManager(AGENT_ADDRESS, provider), "coston", provider)
+    contracts.liquidator = await deployLiquidator(contracts.flashLender, contracts.blazeSwapRouter, liquidator, provider)
     // mint USDC to deployer and wrap their CFLR (they will provide liquidity to dexes)
     await waitFinalize(provider, deployer, contracts.usdc.connect(deployer).mintAmount(deployer, USDC_BALANCE))
     const availableWNat = await provider.getBalance(deployer) - ethers.WeiPerEther
@@ -98,26 +64,21 @@ describe("Liquidator", () => {
   })
 
   it("should liquidate an agent", async () => {
-    // we have only those F-Assets and CFLR available
-    const availableFAsset = await contracts.fAsset.balanceOf(deployer)
-    const availableWNat = await contracts.wNat.balanceOf(deployer)
     // put agent in liquidation by raising xrp price and set cr slightly below ccb
     const assetPrice = await getCollateralForCr("pool", 18_900) // ccb = 19_000, minCr = 20_000, safetyCr = 21_000
     await waitFinalize(provider, deployer, contracts.priceReader.connect(deployer).setPrice("testXRP", assetPrice))
-    const agentInfo0 = await contracts.assetManager.getAgentInfo(contracts.agent)
-    assert.equal(agentInfo0.poolCollateralRatioBIPS, BigInt(18_900))
-    // align dex reserve ratios with the ftso prices
-    const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
-    const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
-    await setDexPairPrice(contracts.fAsset, contracts.usdc, assetPrice, usdcPrice, availableFAsset, deployer)
-    await setDexPairPrice(contracts.wNat, contracts.usdc, wNatPrice, usdcPrice, availableWNat, deployer)
+    // according to the conditions constructed above, sync up dexes as stably as possible with deployer's limited funds
+    await initFtsoSyncedDexReserves(contracts, deployer, provider)
+    // check that collateral ratio is still as specified above
+    const { poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
+    assert.equal(poolCollateralRatioBIPS, BigInt(18_900))
     // liquidate agent
-    await waitFinalize(provider, liquidator, contracts.assetManager.connect(liquidator).startLiquidation(contracts.agent))
-    const agentInfo1 = await contracts.assetManager.getAgentInfo(contracts.agent)
+    await waitFinalize(provider, liquidator, contracts.assetManager.connect(liquidator).startLiquidation(AGENT_ADDRESS))
+    const agentInfo1 = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(agentInfo1.status, BigInt(2))
-    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(contracts.agent))
+    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(AGENT_ADDRESS))
     // check that agent was fully liquidated and put out of liquidation
-    const agentInfo2 = await contracts.assetManager.getAgentInfo(contracts.agent)
+    const agentInfo2 = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(agentInfo2.status, BigInt(0))
     // check that liquidator made a profit
     const liquidatorUsdcBalance = await contracts.usdc.balanceOf(liquidator)
