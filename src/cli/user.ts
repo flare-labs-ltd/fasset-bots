@@ -15,7 +15,11 @@ program
             .env("USER_CONFIG_PATH")
             .makeOptionMandatory(true)
     )
-    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
+    .addOption(
+        program
+            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+            .makeOptionMandatory(true)
+    );
 
 program
     .command("agents")
@@ -45,10 +49,10 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amountLots>")
     .option("-u, --updateBlock")
-    .action(async (agentVault: string, amountLots: string) => {
-        const options: { config: string; fasset: string; updateBlock: boolean | undefined } = program.opts();
+    .action(async (agentVault: string, amountLots: string, cmdOptions: { updateBlock?: boolean }) => {
+        const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
-        if (options.updateBlock) {
+        if (cmdOptions.updateBlock) {
             await minterBot.updateUnderlyingTime();
         }
         await minterBot.mint(agentVault, amountLots);
@@ -88,6 +92,22 @@ program
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset);
         await redeemerBot.redemptionDefault(amountUBA, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
+    });
+
+
+program
+    .command("info")
+    .description("info about the system or an agent")
+    .option("-a, --agents")
+    .addArgument(program.createArgument("<agentVaultAddress>").argOptional())
+    .action(async (agentVault: string | undefined, cmdOptions: { agents?: boolean }) => {
+        const options: { config: string; fasset: string } = program.opts();
+        const bot = await UserBot.create(options.config, options.fasset);
+        if (agentVault) {
+            await bot.printAgentInfo(agentVault);
+        } else {
+            await bot.printSystemInfo(cmdOptions.agents ?? false);
+        }
     });
 
 toplevelRun(async () => {

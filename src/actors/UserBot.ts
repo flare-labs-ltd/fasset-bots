@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import { BotConfig, createBotConfig, loadConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
-import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { AgentStatus, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BNish, CommandLineError, toBN } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -88,6 +88,24 @@ export class UserBot {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             const { 0: list } = await this.context.assetManager.getAvailableAgentsDetailedList(start, start + chunkSize);
+            result.splice(result.length, 0, ...list);
+            if (list.length < chunkSize) break;
+            start += list.length;
+        }
+        return result;
+    }
+
+    /**
+     * Gets available agents.
+     * @returns list of objects AvailableAgentInfo
+     */
+    async getAllAgents(): Promise<string[]> {
+        const result: string[] = [];
+        const chunkSize = 10;
+        let start = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const { 0: list } = await this.context.assetManager.getAllAgents(start, start + chunkSize);
             result.splice(result.length, 0, ...list);
             if (list.length < chunkSize) break;
             start += list.length;
@@ -241,5 +259,75 @@ export class UserBot {
                 web3DeepNormalize(proof)
             )} redemption ${requestId}.`
         );
+    }
+
+    async printSystemInfo(agents: boolean) {
+        const fAsset = this.context.fAsset;
+        const assetManager = this.context.assetManager;
+        const settings = await assetManager.getSettings();
+        const symbol = await fAsset.symbol();
+        console.log(`FAsset: ${await fAsset.name()} (${symbol}) at ${fAsset.address}`);
+        console.log(`Asset manager: ${assetManager.address}`);
+        const mintedWei = await fAsset.totalSupply();
+        const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
+        const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+        const mintedLots = Number(mintedWei) / lotSizeUBA;
+        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`)
+        if (agents) {
+            await this.printAgentList(lotSizeUBA);
+        }
+    }
+
+    private async printAgentList(lotSizeUBA: number) {
+        console.log("-------------- Agents --------------");
+        console.log(`${"Vault address".padEnd(42)}  ${"Owner address".padEnd(42)}  ${"Minted lots".padStart(12)}  ${"Free lots".padStart(12)}  ${"Public"}`);
+        const allAgents = await this.getAllAgents();
+        for (const vaultAddr of allAgents) {
+            const info = await this.context.assetManager.getAgentInfo(vaultAddr);
+            const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
+            const freeLots = Number(info.freeCollateralLots);
+            const available = info.publiclyAvailable ? "YES" : "no";
+            console.log(`${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`);
+        }
+    }
+
+    async printAgentInfo(vaultAddress: string) {
+        const IERC20 = artifacts.require("IERC20Metadata");
+        const fAsset = this.context.fAsset;
+        const assetManager = this.context.assetManager;
+        const settings = await assetManager.getSettings();
+        const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+        const symbol = await fAsset.symbol();
+        const info = await assetManager.getAgentInfo(vaultAddress);
+        const vaultCollateral = await IERC20.at(info.vaultCollateralToken);
+        const [vcSymbol, vcDec] = [await vaultCollateral.symbol(), await vaultCollateral.decimals()];
+        for (const [key, value] of Object.entries(info)) {
+            if (typeof key === 'number' || /^\d+$/.test(key)) continue;
+            if (key === 'status') {
+                console.log(`${key}: ${AgentStatus[Number(value)] ?? value}`);
+            } else if (/UBA$/i.test(key)) {
+                const amount = Number(value) / Number(settings.assetUnitUBA);
+                const lots = Number(value) / lotSizeUBA;
+                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}  (${lots.toFixed(2)} lots)`);
+            } else if (/RatioBIPS$/i.test(key)) {
+                const amount = Number(value) / 10000;
+                console.log(`${key.slice(0, key.length - 4)}: ${amount.toFixed(3)}`);
+            } else if (/BIPS$/i.test(key)) {
+                const percent = Number(value) / 100;
+                console.log(`${key.slice(0, key.length - 4)}: ${percent.toFixed(2)}%`);
+            } else if (/NATWei$/i.test(key)) {
+                const amount = Number(value) / 1e18;
+                console.log(`${key.slice(0, key.length - 6)}: ${amount.toFixed(2)} NAT`);
+            } else if (/Wei$/i.test(key)) {
+                const [symbol, decimals] =
+                    /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)] :
+                    /PoolTokens/i.test(key) ? ['POOLTOK', 18] :
+                    ['???', 18];
+                const amount = Number(value) / (10 ** decimals);
+                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
     }
 }
