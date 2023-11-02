@@ -1,8 +1,7 @@
-import { expect } from "chai";
 import { createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { sleep, toBN, toBNExp } from "../../../src/utils/helpers";
+import { sleep, toBNExp } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
 import { AGENT_DEFAULT_CONFIG_PATH, COSTON_RPC } from "../../test-utils/test-bot-config";
@@ -15,8 +14,7 @@ import { Notifier } from "../../../src/utils/Notifier";
 import { proveAndUpdateUnderlyingBlock } from "../../../src/utils/fasset-helpers";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { Minter } from "../../../src/mock/Minter";
-import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { web3DeepNormalize } from "../../../src/utils/web3normalize";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 
 const depositVaultCollateralAmount = toBNExp(300_000, 18);
 const buyPoolTokens = toBNExp(700, 18);
@@ -56,7 +54,7 @@ describe.skip("Agent bot simulation - coston", async () => {
         if (agentEnt) {
             agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         } else {
-            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH);
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, AGENT_DEFAULT_CONFIG_PATH, DEFAULT_POOL_TOKEN_SUFFIX());
             vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
             agentBot = await createTestAgentBotAndDepositCollaterals(
                 context,

@@ -40,7 +40,7 @@ describe("AgentBot cli commands unit tests", async () => {
     it("Should create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fAssetSymbol);
-        const agent = await botCliCommands.createAgentVault();
+        const agent = await botCliCommands.createAgentVault("TEST-USDC");
         expect(agent!.underlyingAddress).is.not.null;
         expect(agent!.ownerAddress).to.eq(ownerAddress);
         // sort of clean up

@@ -4,9 +4,9 @@ import { AgentCreateResponse, AgentBalance, AgentUnderlying } from "../../common
 
 @Injectable()
 export class AgentService {
-    async createAgent(fAssetSymbol: string): Promise<AgentCreateResponse | null> {
+    async createAgent(fAssetSymbol: string, poolTokenSuffix: string): Promise<AgentCreateResponse | null> {
         const cli = await BotCliCommands.create(fAssetSymbol);
-        const agent = await cli.createAgentVault();
+        const agent = await cli.createAgentVault(poolTokenSuffix);
         if (agent) {
             return {
                 vaultAddress: agent.vaultAddress,

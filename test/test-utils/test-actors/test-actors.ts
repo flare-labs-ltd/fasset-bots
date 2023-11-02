@@ -13,6 +13,7 @@ import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { cleanUp } from "../test-helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
@@ -32,7 +33,7 @@ export async function createTestAgentBot(
     defaultAgentConfigPath: string,
     notifier: Notifier = new Notifier()
 ): Promise<AgentBot> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 

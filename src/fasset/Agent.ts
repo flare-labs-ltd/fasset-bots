@@ -93,31 +93,20 @@ export class Agent {
      * @returns instance of Agent
      */
 
-    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings, index: number = 0): Promise<Agent> {
-        const desiredErrorIncludes = "suffix already reserved";
-        try {
-            // create agent
-            const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
-            // extract agent vault address from AgentVaultCreated event
-            const event = findRequiredEvent(response, "AgentVaultCreated");
-            // get vault contract at agent's vault address address
-            const agentVault = await AgentVault.at(event.args.agentVault);
-            // get collateral pool
-            const collateralPool = await CollateralPool.at(event.args.collateralPool);
-            // get pool token
-            const poolTokenAddress = await collateralPool.poolToken();
-            const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
-            // create object
-            return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
-        } catch (error: any) {
-            if (error instanceof Error && error.message.includes(desiredErrorIncludes)) {
-                index++;
-                agentSettings.poolTokenSuffix = this.incrementPoolTokenSuffix(agentSettings.poolTokenSuffix, index);
-                return Agent.create(ctx, ownerAddress, agentSettings, index);
-            } else {
-                throw new Error(error);
-            }
-        }
+    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
+        // create agent
+        const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
+        // extract agent vault address from AgentVaultCreated event
+        const event = findRequiredEvent(response, "AgentVaultCreated");
+        // get vault contract at agent's vault address address
+        const agentVault = await AgentVault.at(event.args.agentVault);
+        // get collateral pool
+        const collateralPool = await CollateralPool.at(event.args.collateralPool);
+        // get pool token
+        const poolTokenAddress = await collateralPool.poolToken();
+        const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
+        // create object
+        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
     }
 
     /**
@@ -351,23 +340,6 @@ export class Agent {
      */
     async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
         return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
-    }
-
-    /**
-     * Increments pool token suffix in case suffix already taken
-     * @param poolTokenSuffix
-     * @param index
-     * @returns
-     */
-    static incrementPoolTokenSuffix(poolTokenSuffix: string, index: number): string {
-        if (index == 1) {
-            return poolTokenSuffix + MINUS_CHAR + index;
-        } else if (index > 1) {
-            const last = poolTokenSuffix.lastIndexOf(MINUS_CHAR);
-            return poolTokenSuffix.substring(0, last) + MINUS_CHAR + index;
-        } else {
-            return poolTokenSuffix;
-        }
     }
 
     /**
