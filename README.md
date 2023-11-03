@@ -73,7 +73,7 @@ yarn ts-node scripts/deploy.ts
 > Neither unit nor integration tests will run yet, as unit tests require access to the private `fasset` repository on gitlab, and integration tests require an authorized account's private key, which can change the mocked FTOS's prices on coston.
 
 > **Important**
-> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `./scripts/replace-blazeswap-hash.sh`.
+> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `./scripts/fix-blazeswap-hash.sh`.
 
 Unit tests are written for Blaze Swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
 - *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which makes full agent liquidation the most profitable arbitrage option,
@@ -95,7 +95,7 @@ yarn test:integration
 ```
 
 ### Ecosystem configuration and maintanance
-The repo features some scripts that aid in establishing and dealing with the ecosystem, particularly dex price alignment and flash lender 
+The repo features some scripts that aid in establishing and dealing with the ecosystem, particularly dex price alignment and flash lender
 
 ## TODO
 - [ ] add UBA and Wei to Liquidator contract variables,

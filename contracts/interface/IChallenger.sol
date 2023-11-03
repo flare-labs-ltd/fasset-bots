@@ -3,11 +3,7 @@ pragma solidity ^0.8.20;
 
 import "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
 
-/**
- * @title ILiquidator
- * @notice An arbitrage does not need any sent funds,
- * send funds only if you wish to donate to the contract owner.
- */
+
 interface IChallenger {
 
     function illegalPaymentChallenge(

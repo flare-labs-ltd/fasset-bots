@@ -1,3 +1,17 @@
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
+import type {
+  BlazeSwapRouter__factory, BlazeSwapManager__factory, BlazeSwapFactory__factory,
+  FlashLender__factory, ERC20Mock__factory,
+  AssetManagerMock__factory, AgentMock__factory, FakePriceReader__factory,
+  Liquidator__factory, Challenger__factory,
+  BlazeSwapRouter, FlashLender, FakePriceReader, ERC20Mock, AssetManagerMock,
+  AgentMock, Liquidator, Challenger
+} from '../../../types'
+
+
+////////////////////////////////////////////////////////////////////////
+// unit testing config interfaces
+
 interface BaseAsset {
   name: string
   symbol: string
@@ -46,4 +60,48 @@ export interface EcosystemConfig {
   // expected implicit data
   expectedVaultCrBips: bigint
   expectedPoolCrBips: bigint
+}
+
+////////////////////////////////////////////////////////////////////////
+// unit testing context interfaces
+
+export interface ContractFactories {
+  // flash loan
+  flashLender: FlashLender__factory
+  // blaze-swap
+  blazeSwapManager: BlazeSwapManager__factory
+  blazeSwapRouter: BlazeSwapRouter__factory
+  blazeSwapFactory: BlazeSwapFactory__factory
+  // f-asset system
+  assetManager: AssetManagerMock__factory
+  priceReader: FakePriceReader__factory
+  agent: AgentMock__factory
+  // tokens
+  fAsset: ERC20Mock__factory
+  vault: ERC20Mock__factory
+  pool: ERC20Mock__factory
+  // liquidator / challenger
+  liquidator: Liquidator__factory
+  challenger: Challenger__factory
+}
+
+export interface Contracts {
+  priceReader: FakePriceReader
+  assetManager: AssetManagerMock
+  fAsset: ERC20Mock
+  vault: ERC20Mock
+  pool: ERC20Mock
+  agent: AgentMock
+  blazeSwapRouter: BlazeSwapRouter
+  flashLender: FlashLender
+  liquidator: Liquidator
+  challenger: Challenger
+}
+
+export interface ContractContext {
+  deployer: HardhatEthersSigner
+  challenger: HardhatEthersSigner
+  liquidator: HardhatEthersSigner
+  fAssetMinter: HardhatEthersSigner
+  contracts: Contracts
 }

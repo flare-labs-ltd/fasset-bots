@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { XRP, USDT, WFLR } from './fixtures/assets'
 import { swapOutput } from './helpers/utils'
-import { getFactories } from './helpers/factories'
+import { getFactories } from './fixtures/context'
 import type { BlazeSwapRouter, ERC20Mock } from '../../types'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 

@@ -1,10 +1,51 @@
 
 import { ethers } from 'hardhat'
+import { expect } from 'chai'
 import * as crypto from 'crypto'
 import * as calc from '../../calculations'
-import type { ERC20, BlazeSwapRouter, ERC20Mock } from '../../../types'
-import type { UnderlyingAsset } from '../fixtures/interface'
+import type { ERC20, BlazeSwapRouter, ERC20Mock, FakePriceReader } from '../../../types'
+import type { UnderlyingAsset, EcosystemConfig, AssetConfig, ContractContext } from '../fixtures/interface'
 
+
+////////////////////////////////////////////////////////////////////////////
+// test helpers
+
+// prices expressed in e.g. usd
+export async function setFtsoPrices(
+  assetConfig: AssetConfig,
+  priceReader: FakePriceReader,
+  priceAsset: bigint,
+  priceVault: bigint,
+  pricePool: bigint
+): Promise<void> {
+  await priceReader.setPrice(assetConfig.asset.ftsoSymbol, priceAsset)
+  await priceReader.setPrice(assetConfig.vault.ftsoSymbol, priceVault)
+  await priceReader.setPrice(assetConfig.pool.ftsoSymbol, pricePool)
+}
+
+export async function setupEcosystem(
+  config: EcosystemConfig,
+  assetConfig: AssetConfig,
+  context: ContractContext
+): Promise<void> {
+  const { assetManager, blazeSwapRouter, fAsset, vault, pool, agent, priceReader } = context.contracts
+  // set ftso prices and dex reserves
+  await assetManager.setLiquidationFactors(config.liquidationFactorBips, config.liquidationFactorVaultBips)
+  await setFtsoPrices(assetConfig, priceReader, config.assetFtsoPrice, config.vaultFtsoPrice, config.poolFtsoPrice)
+  await addLiquidity(blazeSwapRouter, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, context.deployer.address)
+  await addLiquidity(blazeSwapRouter, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, context.deployer.address)
+  // deposit collaterals and mint
+  await agent.depositVaultCollateral(config.vaultCollateral)
+  await agent.depositPoolCollateral(config.poolCollateral)
+  await agent.mint(context.fAssetMinter, config.mintedUBA)
+  // put agent in full liquidation if configured so (this implies agent did an illegal operation)
+  if (config.fullLiquidation) await assetManager.putAgentInFullLiquidation(agent)
+  const { status, vaultCollateralRatioBIPS, poolCollateralRatioBIPS } = await assetManager.getAgentInfo(agent)
+  expect(status).to.equal(config.fullLiquidation ? 3 : 0)
+  // check that agent cr is as expected
+  expect(vaultCollateralRatioBIPS).to.be.closeTo(config.expectedVaultCrBips, 1)
+  expect(poolCollateralRatioBIPS).to.be.closeTo(config.expectedPoolCrBips, 1)
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // blaze swap

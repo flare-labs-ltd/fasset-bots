@@ -1,18 +1,10 @@
-import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { lotSizeAmg, ubaToAmg, addLiquidity, swapOutput, swapInput } from './helpers/utils'
-import { getFactories } from './helpers/factories'
+import { ubaToAmg, swapOutput, swapInput, setupEcosystem, setFtsoPrices } from './helpers/utils'
+import { getContractContext } from './fixtures/context'
 import { XRP, WFLR, ETH } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
-import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
-import type {
-  FakePriceReader, ERC20Mock, AssetManagerMock,
-  AgentMock, BlazeSwapRouter, FlashLender, Liquidator
-} from '../../types'
-import type {
-  AssetConfig, CollateralAsset,
-  UnderlyingAsset, EcosystemConfig
-} from './fixtures/interface'
+import type { AssetConfig, CollateralAsset, UnderlyingAsset, EcosystemConfig } from './fixtures/interface'
+import type { ContractContext } from './fixtures/interface'
 
 
 // config for used assets
@@ -28,35 +20,12 @@ const AMG_TOKEN_WEI_PRICE_SCALE_EXP = BigInt(9)
 const AMG_TOKEN_WEI_PRICE_SCALE = BigInt(10) ** AMG_TOKEN_WEI_PRICE_SCALE_EXP
 
 describe("Tests for Liquidator contract", () => {
-  // accounts
-  let accounts: HardhatEthersSigner[]
-  let liquidatorContractOwner: HardhatEthersSigner
-  let liquidatorAccount: HardhatEthersSigner
-  let minterAccount: HardhatEthersSigner
-  // contracts
-  let priceReader: FakePriceReader
-  let assetManager: AssetManagerMock
-  let fAsset: ERC20Mock
-  let vault: ERC20Mock
-  let pool: ERC20Mock
-  let agent: AgentMock
-  let blazeSwap: BlazeSwapRouter
-  let flashLender: FlashLender
-  let liquidator: Liquidator
-
-  // prices expressed in e.g. usd
-  async function setFtsoPrices(
-    priceAsset: bigint,
-    priceVault: bigint,
-    pricePool: bigint
-  ): Promise<void> {
-    await priceReader.setPrice(assetConfig.asset.ftsoSymbol, priceAsset)
-    await priceReader.setPrice(assetConfig.vault.ftsoSymbol, priceVault)
-    await priceReader.setPrice(assetConfig.pool.ftsoSymbol, pricePool)
-  }
+  let context: ContractContext
 
   async function liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
-    const { liquidationPaymentFactorVaultBIPS, liquidationPaymentFactorPoolBIPS } = await assetManager.getAgentInfo(agent)
+    const { agent, assetManager } = context.contracts
+    const { liquidationPaymentFactorVaultBIPS, liquidationPaymentFactorPoolBIPS }
+      = await assetManager.getAgentInfo(agent)
     const amountFAssetAmg = ubaToAmg(assetConfig.asset, amountFAssetUba)
     // for vault
     const amgPriceVault = await calcAmgToTokenWeiPrice(assetConfig.vault)
@@ -71,32 +40,29 @@ describe("Tests for Liquidator contract", () => {
 
   // this is how prices are calculated in the asset manager contract
   async function calcAmgToTokenWeiPrice(collateral: CollateralAsset): Promise<bigint> {
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await priceReader.getPrice(collateral.ftsoSymbol)
-    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals } = await priceReader.getPrice(assetConfig.asset.ftsoSymbol)
+    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals }
+      = await context.contracts.priceReader.getPrice(collateral.ftsoSymbol)
+    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals }
+      = await context.contracts.priceReader.getPrice(assetConfig.asset.ftsoSymbol)
     const expPlus = collateralFtsoDecimals + collateral.decimals + AMG_TOKEN_WEI_PRICE_SCALE_EXP
     const expMinus = fAssetFtsoDecimals + assetConfig.asset.amgDecimals
     const scale = BigInt(10) ** (expPlus - expMinus)
     return fAssetFtsoPrice * scale / collateralFtsoPrice
   }
 
-  function amgToTokenWei(
-    amgAmount: bigint,
-    amgPriceTokenWei: bigint,
-  ): bigint {
+  function amgToTokenWei(amgAmount: bigint, amgPriceTokenWei: bigint): bigint {
     return amgAmount * amgPriceTokenWei / AMG_TOKEN_WEI_PRICE_SCALE
   }
 
   // this is how prices are calculated in the liquidator contract
-  async function calcUbaTokenPriceMulDiv(collateral: CollateralAsset): Promise<[bigint, bigint]> {
-    return calcTokenATokenBPriceMulDiv(assetConfig.asset, collateral)
-  }
-
   async function calcTokenATokenBPriceMulDiv(
     assetA: CollateralAsset | UnderlyingAsset,
     assetB: CollateralAsset | UnderlyingAsset
   ): Promise<[bigint, bigint]> {
-    const { 0: assetAPrice, 2: assetAFtsoDecimals } = await priceReader.getPrice(assetA.ftsoSymbol)
-    const { 0: assetBPrice, 2: assetBFtsoDecimals } = await priceReader.getPrice(assetB.ftsoSymbol)
+    const { 0: assetAPrice, 2: assetAFtsoDecimals }
+      = await context.contracts.priceReader.getPrice(assetA.ftsoSymbol)
+    const { 0: assetBPrice, 2: assetBFtsoDecimals }
+      = await context.contracts.priceReader.getPrice(assetB.ftsoSymbol)
     return [
       assetAPrice * BigInt(10) ** (assetBFtsoDecimals + assetB.decimals),
       assetBPrice * BigInt(10) ** (assetAFtsoDecimals + assetA.decimals)
@@ -104,90 +70,34 @@ describe("Tests for Liquidator contract", () => {
   }
 
   async function arbitrageProfit(liquidatedVault: bigint): Promise<bigint> {
-    const fAssets = await swapOutput(blazeSwap, vault, fAsset, liquidatedVault)
+    const { blazeSwapRouter, fAsset, vault, pool } = context.contracts
+    const fAssets = await swapOutput(blazeSwapRouter, vault, fAsset, liquidatedVault)
     const [vaultProfit, poolProfit] = await liquidationOutput(fAssets)
-    const poolProfitSwapped = await swapOutput(blazeSwap, pool, vault, poolProfit)
+    const poolProfitSwapped = await swapOutput(blazeSwapRouter, pool, vault, poolProfit)
     return vaultProfit + poolProfitSwapped - liquidatedVault
   }
 
-  async function setupEcosystem(config: EcosystemConfig): Promise<void> {
-    // set ftso prices and dex reserves
-    await assetManager.setLiquidationFactors(config.liquidationFactorBips, config.liquidationFactorVaultBips)
-    await setFtsoPrices(config.assetFtsoPrice, config.vaultFtsoPrice, config.poolFtsoPrice)
-    await addLiquidity(blazeSwap, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, accounts[0].address)
-    await addLiquidity(blazeSwap, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, accounts[0].address)
-    // deposit collaterals and mint
-    await agent.depositVaultCollateral(config.vaultCollateral)
-    await agent.depositPoolCollateral(config.poolCollateral)
-    await agent.mint(minterAccount, config.mintedUBA)
-    // put agent in full liquidation if configured so (this implies agent did an illegal operation)
-    if (config.fullLiquidation) await assetManager.putAgentInFullLiquidation(agent)
-    const { status, vaultCollateralRatioBIPS, poolCollateralRatioBIPS } = await assetManager.getAgentInfo(agent)
-    expect(status).to.equal(config.fullLiquidation ? 3 : 0)
-    // check that agent cr is as expected
-    expect(vaultCollateralRatioBIPS).to.be.closeTo(config.expectedVaultCrBips, 1)
-    expect(poolCollateralRatioBIPS).to.be.closeTo(config.expectedPoolCrBips, 1)
-  }
-
   beforeEach(async function () {
-    const factories = await getFactories()
-    // set accounts
-    accounts = await ethers.getSigners()
-    liquidatorContractOwner = accounts[9]
-    liquidatorAccount = accounts[10]
-    minterAccount = accounts[11]
-    // set mock tokens
-    fAsset = await factories.fAsset.deploy(assetConfig.asset.symbol, assetConfig.asset.symbol, assetConfig.asset.decimals)
-    vault = await factories.vault.deploy(assetConfig.vault.name, assetConfig.vault.symbol, assetConfig.vault.decimals)
-    pool = await factories.pool.deploy(assetConfig.pool.name, assetConfig.pool.symbol, assetConfig.pool.decimals)
-    // set up price reader
-    priceReader = await factories.priceReader.deploy(accounts[0])
-    await priceReader.setDecimals(assetConfig.asset.ftsoSymbol, assetConfig.asset.ftsoDecimals)
-    await priceReader.setDecimals(assetConfig.vault.ftsoSymbol, assetConfig.vault.ftsoDecimals)
-    await priceReader.setDecimals(assetConfig.pool.ftsoSymbol, assetConfig.pool.ftsoDecimals)
-    // set asset manager
-    assetManager = await factories.assetManager.deploy(
-      pool,
-      fAsset,
-      priceReader,
-      lotSizeAmg(assetConfig.asset),
-      assetConfig.asset.amgDecimals,
-      assetConfig.vault.minCollateralRatioBips,
-      assetConfig.pool.minCollateralRatioBips,
-      assetConfig.asset.ftsoSymbol,
-      assetConfig.vault.ftsoSymbol,
-      assetConfig.pool.ftsoSymbol
-    )
-    // set agent
-    agent = await factories.agent.deploy(assetManager, vault)
-    // set up blazeswap
-    const blazeSwapManager = await factories.blazeSwapManager.deploy(accounts[0])
-    const blazeSwapFactory = await factories.blazeSwapFactory.deploy(blazeSwapManager)
-    await blazeSwapManager.setFactory(blazeSwapFactory)
-    blazeSwap = await factories.blazeSwapRouter.deploy(blazeSwapFactory, pool, false)
-    // set up flash loans
-    flashLender = await factories.flashLender.deploy(vault)
-    await vault.mint(flashLender, ethers.MaxUint256 / BigInt(10))
-    // set liquidator
-    liquidator = await factories.liquidator.connect(liquidatorContractOwner).deploy(flashLender, blazeSwap)
+    context = await getContractContext(assetConfig)
   })
 
   describe("scenarios with random ecosystems", () => {
 
     ecosystemFactory.getHealthyEcosystems(20).forEach((config: EcosystemConfig) => {
       it(`should fully liquidate an agent in a healthy ecosystem config: ${config.name}`, async () => {
+        const { assetManager, agent, blazeSwapRouter, fAsset, vault, pool, liquidator } = context.contracts
         // setup ecosystem
-        await setupEcosystem(config)
+        await setupEcosystem(config, assetConfig, context)
         // perform arbitrage by liquidation
         const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await assetManager.getAgentInfo(agent)
         expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
-        const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
+        const maxLiquidatedVault = await swapInput(blazeSwapRouter, vault, fAsset, maxLiquidatedFAsset)
         const [expectedLiqVault, expectedLiqPool] = await liquidationOutput(maxLiquidatedFAsset)
-        const expectedSwappedPool = await swapOutput(blazeSwap, pool, vault, expectedLiqPool)
+        const expectedSwappedPool = await swapOutput(blazeSwapRouter, pool, vault, expectedLiqPool)
         const { mintedUBA: mintedFAssetBefore } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceBefore = await vault.balanceOf(agent)
         const agentPoolBalanceBefore = await pool.balanceOf(agent)
-        await liquidator.connect(liquidatorAccount).runArbitrage(agent)
+        await liquidator.connect(context.liquidator).runArbitrage(agent)
         const { mintedUBA: mintedFAssetAfter } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceAfter = await vault.balanceOf(agent)
         const agentPoolBalanceAfter = await pool.balanceOf(agent)
@@ -195,10 +105,8 @@ describe("Tests for Liquidator contract", () => {
         const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
         expect(liquidatedFAsset).to.equal(maxLiquidatedFAsset)
         // check that both collateral ratios are again above their minimums
-        const {
-          vaultCollateralRatioBIPS: crVaultAfterLiq,
-          poolCollateralRatioBIPS: crPoolAfterLiq
-        } = await assetManager.getAgentInfo(agent)
+        const { vaultCollateralRatioBIPS: crVaultAfterLiq, poolCollateralRatioBIPS: crPoolAfterLiq }
+          = await assetManager.getAgentInfo(agent)
         expect(crVaultAfterLiq).to.be.greaterThanOrEqual(assetConfig.vault.minCollateralRatioBips)
         expect(crPoolAfterLiq).to.be.greaterThanOrEqual(assetConfig.pool.minCollateralRatioBips)
         // check that agent lost appropriate amounts of both collaterals
@@ -208,7 +116,7 @@ describe("Tests for Liquidator contract", () => {
         expect(agentPoolLoss).to.equal(expectedLiqPool)
         // check that redeemer was compensated by agent's lost vault collateral
         const expectedVaultEarnings = expectedLiqVault + expectedSwappedPool - maxLiquidatedVault
-        const earnings = await vault.balanceOf(liquidatorAccount)
+        const earnings = await vault.balanceOf(context.liquidator)
         expect(earnings).to.equal(expectedVaultEarnings)
         // check that liquidator contract has no leftover funds
         const fAssetBalanceLiquidatorContract = await fAsset.balanceOf(liquidator)
@@ -222,25 +130,26 @@ describe("Tests for Liquidator contract", () => {
 
     ecosystemFactory.getSemiHealthyEcosystems(20).forEach((config: EcosystemConfig) => {
       it(`should optimally liquidate less than max f-assets due to semi-healthy ecosystem config: ${config.name}`, async () => {
+        const { assetManager, agent, blazeSwapRouter, fAsset, vault, pool, liquidator } = context.contracts
         // setup ecosystem
-        await setupEcosystem(config)
+        await setupEcosystem(config, assetConfig, context)
         // calculate full liquidation profit
         const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await assetManager.getAgentInfo(agent)
-        const maxLiquidatedVault = await swapInput(blazeSwap, vault, fAsset, maxLiquidatedFAsset)
+        const maxLiquidatedVault = await swapInput(blazeSwapRouter, vault, fAsset, maxLiquidatedFAsset)
         const fullLiquidationProfit = await arbitrageProfit(maxLiquidatedVault)
         // perform arbitrage by liquidation and check that whole arbitrage would fail
         const { mintedUBA: mintedFAssetBefore } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceBefore = await vault.balanceOf(agent)
         const agentPoolBalanceBefore = await pool.balanceOf(agent)
-        await liquidator.connect(liquidatorAccount).runArbitrage(agent)
+        await liquidator.connect(context.liquidator).runArbitrage(agent)
         const { mintedUBA: mintedFAssetAfter } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceAfter = await vault.balanceOf(agent)
         const agentPoolBalanceAfter = await pool.balanceOf(agent)
-        // check that liquidation was not full and that this liquidation was more profitable than the full one
+        // check that executed liquidation was more profitable than the full one would have been
         const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
         const usedVault = agentVaultBalanceBefore - agentVaultBalanceAfter
         const usedPool = agentPoolBalanceBefore - agentPoolBalanceAfter
-        const swappedVault = await swapOutput(blazeSwap, vault, fAsset, liquidatedFAsset)
+        const swappedVault = await swapOutput(blazeSwapRouter, vault, fAsset, liquidatedFAsset)
         const profit = swappedVault + usedPool - usedVault
         expect(profit).to.be.greaterThanOrEqual(fullLiquidationProfit)
       })
@@ -248,8 +157,8 @@ describe("Tests for Liquidator contract", () => {
 
     ecosystemFactory.getUnhealthyEcosystems(1).forEach((config: EcosystemConfig) => {
       it(`should fail at arbitrage liquidation due to unhealthy ecosystem config: ${config.name}`, async () => {
-        await setupEcosystem(config)
-        await expect(liquidator.runArbitrage(agent)).to.be.revertedWith(
+        await setupEcosystem(config, assetConfig, context)
+        await expect(context.contracts.liquidator.runArbitrage(context.contracts.agent)).to.be.revertedWith(
           "Liquidator: No profitable arbitrage opportunity")
       })
     })
@@ -257,7 +166,8 @@ describe("Tests for Liquidator contract", () => {
 
   describe("general liquidation failures", async () => {
     it("should fail liquidation if flash loan can offer 0 fees", async () => {
-      await setupEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater)
+      const { vault, flashLender, liquidator, agent } = context.contracts
+      await setupEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater, assetConfig, context)
       await vault.burn(flashLender, await vault.balanceOf(flashLender))
       await expect(liquidator.runArbitrage(agent)).to.be.revertedWith(
         "Liquidator: No flash loan available")
@@ -267,13 +177,15 @@ describe("Tests for Liquidator contract", () => {
   describe("calculation", () => {
     it("should test calculating asset price in pool token in two ways", async () => {
       await setFtsoPrices(
+        assetConfig,
+        context.contracts.priceReader,
         assetConfig.asset.defaultPriceUsd5,
         assetConfig.vault.defaultPriceUsd5,
         assetConfig.pool.defaultPriceUsd5
       )
-      for (let asset of [assetConfig.pool, assetConfig.vault]) {
-        const price1 = await calcAmgToTokenWeiPrice(asset)
-        const [price2Mul, price2Div] = await calcUbaTokenPriceMulDiv(asset)
+      for (let collateral of [assetConfig.pool, assetConfig.vault]) {
+        const price1 = await calcAmgToTokenWeiPrice(collateral)
+        const [price2Mul, price2Div] = await calcTokenATokenBPriceMulDiv(assetConfig.asset, collateral)
         const amountUBA = BigInt(1_000_000_000)
         const amountWei1 = amgToTokenWei(ubaToAmg(assetConfig.asset, amountUBA), price1)
         const amountWei2 = amountUBA * price2Mul / price2Div
@@ -285,12 +197,13 @@ describe("Tests for Liquidator contract", () => {
   describe("security", () => {
 
     it("should let only owner collect contract token funds", async () => {
+      const { vault, liquidator } = context.contracts
       const amount = BigInt(10) ** (assetConfig.vault.decimals + BigInt(3))
       await vault.mint(liquidator, amount)
-      await expect(liquidator.connect(accounts[0]).withdrawToken(vault)).to.be.revertedWith(
+      await expect(liquidator.connect(context.deployer).withdrawToken(vault)).to.be.revertedWith(
         "Ownable: caller is not the owner")
-      await liquidator.connect(liquidatorContractOwner).withdrawToken(vault)
-      const balance = await vault.balanceOf(liquidatorContractOwner)
+      await liquidator.connect(context.liquidator).withdrawToken(vault)
+      const balance = await vault.balanceOf(context.liquidator)
       expect(balance).to.equal(amount)
     })
 
