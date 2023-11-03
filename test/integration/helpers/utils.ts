@@ -25,7 +25,12 @@ export async function waitFinalize(
   const signerAddress = await signer.getAddress()
   const nonce = await provider.getTransactionCount(signer)
   let response
-  try { response = ((await prms).wait()) } catch { response = await prms; await sleep(5_000) }
+  try {
+    response = ((await prms).wait())
+  } catch {
+    response = await prms
+    await sleep(5_000)
+  }
   while ((await provider.getTransactionCount(signerAddress)) === nonce) {
     await sleep(100)
   }

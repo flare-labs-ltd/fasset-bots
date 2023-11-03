@@ -2,22 +2,17 @@
     "[typescript]": {
         "editor.defaultFormatter": "vscode.typescript-language-features",
         "editor.tabSize": 2,
-        "editor.insertSpaces": true,
-        "editor.detectIndentation": false
     },
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.tabSize": 4,
-        "editor.insertSpaces": true,
-        "editor.detectIndentation": false
     },
     "[solidity]": {
         "editor.defaultFormatter": "NomicFoundation.hardhat-solidity",
         "editor.tabSize": 4,
-        "editor.insertSpaces": true,
-        "editor.detectIndentation": false
     },
-    "solidity.compileUsingRemoteVersion": "v0.8.20+commit.a1b79de6",
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
     "slither.solcPath": "",
