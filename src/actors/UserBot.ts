@@ -96,8 +96,8 @@ export class UserBot {
     }
 
     /**
-     * Gets available agents.
-     * @returns list of objects AvailableAgentInfo
+     * Gets all agents.
+     * @returns list of vault addresses
      */
     async getAllAgents(): Promise<string[]> {
         const result: string[] = [];

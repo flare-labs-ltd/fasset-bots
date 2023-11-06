@@ -76,3 +76,4 @@ Available commands:
 -   `mintExecute <collateralReservationId> <transactionHash> <paymentAddress>` - try to execute the minting that was paid but the execution failed
 -   `redeem <amountLots>` - trigger redemption
 -   `redemptionDefault <amount> <reference> <firstBlock> <lastBlock> <lastTs>` - get paid in collateral if the agent failed to pay redemption underlying
+-   `info [agentVaultAddress] [--agents]` - info about the system (with option `[--agents]` also info about agents is included) or an agent (when `[agentVaultAddress]` is provided)
