@@ -697,6 +697,19 @@ describe("Agent bot unit tests", async () => {
         const getMonth1 = web3.eth.abi.encodeFunctionCall({ type: "function", name: "getClaimableMonths", inputs: [] }, []);
         const month = web3.eth.abi.encodeParameters(["uint256", "uint256"], [0, 1]);
         await mockContractDistribution.givenMethodReturn(getMonth1, month);
+        const getAmountToClaim1 = web3.eth.abi.encodeFunctionCall(
+            {
+                type: "function",
+                name: "getClaimableAmountOf",
+                inputs: [
+                    { name: "_account", type: "address" },
+                    { name: "_month", type: "uint256" },
+                ],
+            },
+            [agentBot.agent.collateralPool.address, month]
+        );
+        const amountToClaim1 = web3.eth.abi.encodeParameter("uint256", 15000);
+        await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim1);
         // check
         await agentBot.checkForClaims();
         // mock functions - there is nothing to claim
@@ -704,8 +717,10 @@ describe("Agent bot unit tests", async () => {
             { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
             [agentBot.agent.collateralPool.address]
         );
-        const epochs2 = web3.eth.abi.encodeParameter("uint256[]", []);
-        await mockContractFtsoManager.givenMethodReturn(getEpochs2, epochs2);
+        const empty = web3.eth.abi.encodeParameter("uint256[]", []);
+        await mockContractFtsoManager.givenMethodReturn(getEpochs2, empty);
+        const amountToClaim0 = web3.eth.abi.encodeParameter("uint256", 0);
+        await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim0);
         // check
         await agentBot.checkForClaims();
         expect(spyError).to.be.called.exactly(0);

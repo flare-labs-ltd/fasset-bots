@@ -13,7 +13,7 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentAndMakeAvailable, createTestRedeemer } from "../../test-utils/helpers";
+import { createTestAgent, createTestAgentAndMakeAvailable, createTestRedeemer } from "../../test-utils/helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { UserBot } from "../../../src/actors/UserBot";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
@@ -96,6 +96,15 @@ describe("Bot cli commands unit tests", async () => {
         expect(availableAgents[0].agentVault).to.eq(agent.vaultAddress);
     });
 
+    it("Should get all agents", async () => {
+        // create agents
+        for (let i = 0; i <= 10; i++) {
+            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i);
+        }
+        const agents = await userBot.getAllAgents();
+        expect(agents[0]).to.eq(agent.vaultAddress);
+    });
+
     it("Should update underlying block", async () => {
         const blockBefore = await context.assetManager.currentUnderlyingBlock();
         chain.mine(10);
@@ -172,5 +181,24 @@ describe("Bot cli commands unit tests", async () => {
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
         expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
+    });
+
+    it("Should print system info", async () => {
+        const spyLog = spy.on(console, "log");
+        // create agents
+        for (let i = 0; i <= 5; i++) {
+            await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
+            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i+1);
+        }
+        await userBot.printSystemInfo(false);
+        await userBot.printSystemInfo(true);
+        expect(spyLog).to.be.called.gt(0);
+    });
+
+    it("Should print agent info", async () => {
+        const spyLog = spy.on(console, "log");
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
+        await userBot.printAgentInfo(agent.vaultAddress);
+        expect(spyLog).to.be.called.gt(0);
     });
 });
