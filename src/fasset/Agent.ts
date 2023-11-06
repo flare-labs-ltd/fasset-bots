@@ -11,7 +11,7 @@ import {
     UnderlyingWithdrawalConfirmed,
 } from "../../typechain-truffle/AssetManager";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, MINUS_CHAR, toBN } from "../utils/helpers";
+import { BNish, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";

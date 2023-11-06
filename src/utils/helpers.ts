@@ -41,8 +41,6 @@ export const DEFAULT_RETRIES = 3;
 
 export const XRP_ACTIVATE_BALANCE = toBNExp(10, 6);
 
-export const MINUS_CHAR = "-";
-
 /**
  * Asynchronously wait `ms` milliseconds.
  */

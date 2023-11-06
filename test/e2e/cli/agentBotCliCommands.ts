@@ -6,6 +6,7 @@ import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -40,7 +41,7 @@ describe("AgentBot cli commands unit tests", async () => {
     it("Should create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fAssetSymbol);
-        const agent = await botCliCommands.createAgentVault("TEST-USDC");
+        const agent = await botCliCommands.createAgentVault(DEFAULT_POOL_TOKEN_SUFFIX());
         expect(agent!.underlyingAddress).is.not.null;
         expect(agent!.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
