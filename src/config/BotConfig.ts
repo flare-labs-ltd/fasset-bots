@@ -230,6 +230,7 @@ export async function createChainConfig(
  * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
  * @param context fasset agent bot context
  * @param agentSettingsConfigPath path to default agent configuration file
+ * @param poolTokenSuffix
  * @returns instance of AgentBotDefaultSettings
  */
 export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string, poolTokenSuffix: string): Promise<AgentBotDefaultSettings> {

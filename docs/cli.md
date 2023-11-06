@@ -10,7 +10,7 @@ Usage: `yarn agent-bot [command] <arg> -f [fAssetSymbol]`
 
 Available commands:
 
--   `create` - create new agent vault
+-   `create <poolTokenSuffix>` - create new agent vault
 -   `depositVaultCollateral <agentVault> <amount>` - deposit vault collateral to agent vault from owner's address");
 -   `buyPoolCollateral <agentVault> <amount>` - add pool collateral and agent pool tokens
 -   `enter <agentVault>` - enter available agent's list

@@ -81,6 +81,7 @@ export class BotCliCommands {
 
     /**
      * Creates instance of Agent.
+     * @param poolTokenSuffix
      */
     async createAgentVault(poolTokenSuffix: string): Promise<Agent | null> {
         try {

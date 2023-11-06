@@ -24,7 +24,7 @@ Agent bot web service routes are documented using the Swagger interface at the `
 
 -   AGENT:
 
-    -   GET `/api/agent/create/{fAssetSymbol}`: Given parameter `fAssetSymbol`, returns JSON response containing essential agent data:
+    -   GET `/api/agent/create/{fAssetSymbol}/{poolTokenSuffix}`: Given parameters `fAssetSymbol` and `poolTokenSuffix`, returns JSON response containing essential agent data:
 
     | Field                        | Type   | Description                   |
     | ---------------------------- | ------ | ----------------------------- |
@@ -56,13 +56,9 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | --------- | ------ | ----------------------- |
     | `balance` | string | Collateral free balance |
 
-<<<<<<< HEAD - POST `/api/agentVault/collateral/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
+    - POST `/api/agentVault/collateral/switch/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
 
     - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
-
-======= - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol`, and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
-
-> > > > > > > 5d694f87f9adf02a95f517a2b2aec89544dc2492
 
 -   POOL COLLATERAL:
 

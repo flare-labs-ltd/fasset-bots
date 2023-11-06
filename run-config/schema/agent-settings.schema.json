@@ -23,9 +23,6 @@
         "poolFeeShareBIPS": {
             "type": ["string", "number"]
         },
-        "poolTokenSuffix": {
-            "type": "string"
-        },
         "poolTopupCollateralRatioConstant": {
             "type": "number"
         },
@@ -43,7 +40,6 @@
         "mintingVaultCollateralRatioConstant",
         "poolExitCollateralRatioConstant",
         "poolFeeShareBIPS",
-        "poolTokenSuffix",
         "poolTopupCollateralRatioConstant",
         "poolTopupTokenPriceFactorBIPS",
         "vaultCollateralFtsoSymbol"
