@@ -35,6 +35,7 @@ const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
 const deposit = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(100_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
+export const DEFAULT_POOL_TOKEN_SUFFIX: () => string = () => "POOL-TOKEN-" + Math.floor(Math.random() * 10_000);
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
@@ -49,7 +50,9 @@ export async function createTestAgentBot(
 ): Promise<AgentBot> {
     const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
-    const agentBotSettings: AgentBotDefaultSettings = options ? options : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+    const agentBotSettings: AgentBotDefaultSettings = options
+        ? options
+        : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
 }
 
@@ -71,13 +74,13 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
 }
 
 export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
 export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX())
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }

@@ -14,10 +14,11 @@ program.name("agent-bot").description("Command line commands for AgentBot");
 program
     .command("create")
     .description("create new agent vault")
-    .action(async () => {
+    .argument("<poolTokenSuffix>")
+    .action(async (poolTokenSuffix: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.createAgentVault();
+        await cli.createAgentVault(poolTokenSuffix);
     });
 
 program

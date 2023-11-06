@@ -24,6 +24,7 @@ import chaiAsPromised from "chai-as-promised";
 import { Agent } from "../../../src/fasset/Agent";
 import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
 import { getSecrets } from "../../../src/config/secrets";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 use(chaiAsPromised);
 const vaultCollateralAmount = toBNExp(500, 18);
 const buyPoolTokens = toBNExp(500, 18);
@@ -68,7 +69,7 @@ describe("Actor tests - coston", async () => {
         const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         actorContext = await createActorAssetContext(actorConfig, chainConfig2!, ActorBaseKind.CHALLENGER);
         // agent default settings
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!, DEFAULT_POOL_TOKEN_SUFFIX());
         vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
@@ -168,7 +169,7 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should not create agent - unknown address", async () => {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!);
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!, DEFAULT_POOL_TOKEN_SUFFIX());
         const underlyingAddress = "underlying";
         const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
         await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);

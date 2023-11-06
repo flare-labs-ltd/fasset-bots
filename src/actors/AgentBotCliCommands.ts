@@ -82,9 +82,9 @@ export class BotCliCommands {
     /**
      * Creates instance of Agent.
      */
-    async createAgentVault(): Promise<Agent | null> {
+    async createAgentVault(poolTokenSuffix: string): Promise<Agent | null> {
         try {
-            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath);
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath, poolTokenSuffix);
             const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
             this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
             return agentBot.agent;

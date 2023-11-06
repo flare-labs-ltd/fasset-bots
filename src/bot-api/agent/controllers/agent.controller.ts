@@ -12,9 +12,12 @@ import { AgentCreateResponse } from "../../common/AgentResponse";
 export class AgentController {
     constructor(private readonly agentService: AgentService) {}
 
-    @Get("create/:fAssetSymbol")
-    public async create(@Param("fAssetSymbol") fAssetSymbol: string): Promise<ApiResponseWrapper<AgentCreateResponse | null>> {
-        return handleApiResponse(this.agentService.createAgent(fAssetSymbol));
+    @Get("create/:fAssetSymbol/:poolTokenSuffix")
+    public async create(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("poolTokenSuffix") poolTokenSuffix: string
+    ): Promise<ApiResponseWrapper<AgentCreateResponse | null>> {
+        return handleApiResponse(this.agentService.createAgent(fAssetSymbol, poolTokenSuffix));
     }
 
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")

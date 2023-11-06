@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX } from "../../test-utils/helpers";
 import { AgentSettingsConfig, createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
 import { web3 } from "../../../src/utils/web3";
 import { readFileSync } from "fs";
@@ -22,7 +22,7 @@ describe("Config unit tests", async () => {
     });
 
     it("Should create tracked state config", async () => {
-        const defaultAgentSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+        const defaultAgentSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
         const agentSettingsConfig = JSON.parse(readFileSync(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT).toString()) as AgentSettingsConfig;
         expect(defaultAgentSettings.feeBIPS.toString()).to.eq(agentSettingsConfig.feeBIPS.toString());
         expect(defaultAgentSettings.poolFeeShareBIPS.toString()).to.eq(agentSettingsConfig.poolFeeShareBIPS.toString());
@@ -31,7 +31,7 @@ describe("Config unit tests", async () => {
     it("Should not create tracked state config - invalid vault collateral", async () => {
         const initialAgentPath = "./test-hardhat/test-utils/run-config-tests/invalid-agent-settings-config-hardhat.json";
         const initialAgentSettings = JSON.parse(readFileSync(initialAgentPath).toString()) as AgentSettingsConfig;
-        await expect(createAgentBotDefaultSettings(context, initialAgentPath))
+        await expect(createAgentBotDefaultSettings(context, initialAgentPath, DEFAULT_POOL_TOKEN_SUFFIX()))
             .to.eventually.be.rejectedWith(`Invalid vault collateral token ${initialAgentSettings.vaultCollateralFtsoSymbol}`)
             .and.be.an.instanceOf(Error);
     });

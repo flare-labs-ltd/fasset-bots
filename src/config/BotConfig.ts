@@ -232,7 +232,7 @@ export async function createChainConfig(
  * @param agentSettingsConfigPath path to default agent configuration file
  * @returns instance of AgentBotDefaultSettings
  */
-export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string): Promise<AgentBotDefaultSettings> {
+export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string, poolTokenSuffix: string): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
     const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find((token) => {
         return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol;
@@ -243,7 +243,7 @@ export async function createAgentBotDefaultSettings(context: IAssetAgentBotConte
     const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         vaultCollateralToken: vaultCollateralToken.token,
-        poolTokenSuffix: (agentSettingsConfig.poolTokenSuffix + MINUS_CHAR + vaultCollateralToken.tokenFtsoSymbol).toUpperCase(),
+        poolTokenSuffix: poolTokenSuffix,
         feeBIPS: toBN(agentSettingsConfig.feeBIPS),
         poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
         mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),
