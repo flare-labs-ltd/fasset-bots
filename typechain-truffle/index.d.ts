@@ -123,6 +123,12 @@ import { PercentageDelegationContract } from "./PercentageDelegation";
 import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
 import { WNatContract } from "./WNat";
+import { ChallengerContract } from "./Challenger";
+import { FlashLenderContract } from "./FlashLender";
+import { IChallengerContract } from "./IChallenger";
+import { IFAssetMetadataContract } from "./IFAssetMetadata";
+import { ILiquidatorContract } from "./ILiquidator";
+import { LiquidatorContract } from "./Liquidator";
 
 declare global {
   namespace Truffle {
@@ -264,6 +270,12 @@ declare global {
       require(name: "VPContract"): VPContractContract;
       require(name: "VPToken"): VPTokenContract;
       require(name: "WNat"): WNatContract;
+      require(name: "Challenger"): ChallengerContract;
+      require(name: "FlashLender"): FlashLenderContract;
+      require(name: "IChallenger"): IChallengerContract;
+      require(name: "IFAssetMetadata"): IFAssetMetadataContract;
+      require(name: "ILiquidator"): ILiquidatorContract;
+      require(name: "Liquidator"): LiquidatorContract;
     }
   }
 }
@@ -605,3 +617,12 @@ export {
 export { VPContractContract, VPContractInstance } from "./VPContract";
 export { VPTokenContract, VPTokenInstance } from "./VPToken";
 export { WNatContract, WNatInstance } from "./WNat";
+export { ChallengerContract, ChallengerInstance } from "./Challenger";
+export { FlashLenderContract, FlashLenderInstance } from "./FlashLender";
+export { IChallengerContract, IChallengerInstance } from "./IChallenger";
+export {
+  IFAssetMetadataContract,
+  IFAssetMetadataInstance,
+} from "./IFAssetMetadata";
+export { ILiquidatorContract, ILiquidatorInstance } from "./ILiquidator";
+export { LiquidatorContract, LiquidatorInstance } from "./Liquidator";
