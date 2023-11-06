@@ -114,6 +114,10 @@ describe("Tracked state tests", async () => {
         chain.secondsPerBlock = 1;
     });
 
+    afterEach(async () => {
+        spy.restore(console);
+    });
+
     it("Should create agent", async () => {
         trackedState.createAgent(agentCreatedArgs);
         expect(trackedState.agents.size).to.eq(1);
