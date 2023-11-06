@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IMerkleRootStorage",
-  "sourceName": "state-connector-protocol/contracts/interface/external/IMerkleRootStorage.sol",
+  "sourceName": "@flarenetwork/state-connector-protocol/contracts/interface/external/IMerkleRootStorage.sol",
   "abi": [
     {
       "inputs": [

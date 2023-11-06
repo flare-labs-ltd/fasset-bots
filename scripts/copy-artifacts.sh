@@ -21,16 +21,13 @@ yarn compile
 cd ${fassetsdir}/artifacts
 find -name '*.json' -not -name '*.dbg.json' -not -path './build-info/*' -not -path './cache/*' -not -path './flattened/*' | xargs cp -t ${projdir}/artifacts --parents
 
-# copy typechain
-cd ${fassetsdir}
-cp -R typechain-truffle ${projdir}
-cp ${projdir}/scripts/types.d.ts ${projdir}/typechain-truffle
-
 # fix some paths so that sourceName always matches the actual dir
 cd ${projdir}
 mkdir -p artifacts/flattened
 mv artifacts/flare-sc artifacts/flattened/FlareSmartContracts.sol
 
+# # generate typechain
+yarn typechain --target=truffle-v5 --out-dir typechain-truffle "artifacts/**/+([a-zA-Z0-9_]).json"
 
 # copy contract addresses
 cd ${fassetsdir}/deployment/deploys

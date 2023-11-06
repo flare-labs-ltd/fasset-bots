@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "ConfirmedBlockHeightExists",
-  "sourceName": "state-connector-protocol/contracts/interface/types/ConfirmedBlockHeightExists.sol",
+  "sourceName": "@flarenetwork/state-connector-protocol/contracts/interface/types/ConfirmedBlockHeightExists.sol",
   "abi": [],
   "bytecode": "0x",
   "deployedBytecode": "0x",
