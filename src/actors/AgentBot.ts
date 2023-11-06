@@ -440,15 +440,18 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);
             const IDistributionToDelegators = artifacts.require("IDistributionToDelegators");
             const distributionToDelegators = await IDistributionToDelegators.at(await addressUpdater.getContractAddress("DistributionToDelegators"));
-
             const { 1: endMonthVault } = await distributionToDelegators.getClaimableMonths({ from: this.agent.vaultAddress });
             const { 1: endMonthPool } = await distributionToDelegators.getClaimableMonths({ from: this.agent.collateralPool.address });
-            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for vault ${this.agent.vaultAddress} for month ${endMonthVault}.`);
-            await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress, {
-                from: this.agent.ownerAddress,
-            });
-            logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for pool ${this.agent.collateralPool.address} for ${endMonthPool}.`);
-            await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool, { from: this.agent.ownerAddress });
+            const claimableVault = await distributionToDelegators.getClaimableAmountOf(this.agent.vaultAddress, endMonthVault);
+            if (toBN(claimableVault).gtn(0)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for vault ${this.agent.vaultAddress} for month ${endMonthVault}.`);
+                await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress, { from: this.agent.ownerAddress });
+            }
+            const claimablePool = await distributionToDelegators.getClaimableAmountOf(this.agent.collateralPool.address, endMonthPool);
+            if (toBN(claimablePool).gtn(0)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for pool ${this.agent.collateralPool.address} for ${endMonthPool}.`);
+                await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool, { from: this.agent.ownerAddress });
+            }
         } catch (error) {
             console.error(`Error handling airdrop distribution for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution: ${error}`);
