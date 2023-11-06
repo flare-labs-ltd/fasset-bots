@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "Payment",
-  "sourceName": "state-connector-protocol/contracts/interface/types/Payment.sol",
+  "sourceName": "@flarenetwork/state-connector-protocol/contracts/interface/types/Payment.sol",
   "abi": [],
   "bytecode": "0x",
   "deployedBytecode": "0x",

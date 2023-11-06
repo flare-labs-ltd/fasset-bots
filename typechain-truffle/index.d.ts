@@ -2,6 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import { IMerkleRootStorageContract } from "./IMerkleRootStorage";
+import { IStateConnectorContract } from "./IStateConnector";
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { ERC20Contract } from "./ERC20";
@@ -88,18 +90,6 @@ import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
-import { AddressUpdaterContract } from "./AddressUpdater";
-import { CheckPointableContract } from "./CheckPointable";
-import { DelegatableContract } from "./Delegatable";
-import { DelegationHistoryContract } from "./DelegationHistory";
-import { GovernanceSettingsContract } from "./GovernanceSettings";
-import { IFlareDaemonizeContract } from "./IFlareDaemonize";
-import { IIFtsoManagerContract } from "./IIFtsoManager";
-import { IIFtsoRegistryContract } from "./IIFtsoRegistry";
-import { PercentageDelegationContract } from "./PercentageDelegation";
-import { VPContractContract } from "./VPContract";
-import { VPTokenContract } from "./VPToken";
-import { WNatContract } from "./WNat";
 import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
 import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoContract } from "./IIFtso";
@@ -121,12 +111,30 @@ import { IGovernanceSettingsContract } from "./IGovernanceSettings";
 import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
 import { IVPContractEventsContract } from "./IVPContractEvents";
 import { IVPTokenContract } from "./IVPToken";
-import { IMerkleRootStorageContract } from "./IMerkleRootStorage";
-import { IStateConnectorContract } from "./IStateConnector";
+import { AddressUpdaterContract } from "./AddressUpdater";
+import { CheckPointableContract } from "./CheckPointable";
+import { DelegatableContract } from "./Delegatable";
+import { DelegationHistoryContract } from "./DelegationHistory";
+import { GovernanceSettingsContract } from "./GovernanceSettings";
+import { IFlareDaemonizeContract } from "./IFlareDaemonize";
+import { IIFtsoManagerContract } from "./IIFtsoManager";
+import { IIFtsoRegistryContract } from "./IIFtsoRegistry";
+import { PercentageDelegationContract } from "./PercentageDelegation";
+import { VPContractContract } from "./VPContract";
+import { VPTokenContract } from "./VPToken";
+import { WNatContract } from "./WNat";
+import { ChallengerContract } from "./Challenger";
+import { FlashLenderContract } from "./FlashLender";
+import { IChallengerContract } from "./IChallenger";
+import { IFAssetMetadataContract } from "./IFAssetMetadata";
+import { ILiquidatorContract } from "./ILiquidator";
+import { LiquidatorContract } from "./Liquidator";
 
 declare global {
   namespace Truffle {
     interface Artifacts {
+      require(name: "IMerkleRootStorage"): IMerkleRootStorageContract;
+      require(name: "IStateConnector"): IStateConnectorContract;
       require(name: "MockContract"): MockContractContract;
       require(name: "MockInterface"): MockInterfaceContract;
       require(name: "ERC20"): ERC20Contract;
@@ -227,18 +235,6 @@ declare global {
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
-      require(name: "AddressUpdater"): AddressUpdaterContract;
-      require(name: "CheckPointable"): CheckPointableContract;
-      require(name: "Delegatable"): DelegatableContract;
-      require(name: "DelegationHistory"): DelegationHistoryContract;
-      require(name: "GovernanceSettings"): GovernanceSettingsContract;
-      require(name: "IFlareDaemonize"): IFlareDaemonizeContract;
-      require(name: "IIFtsoManager"): IIFtsoManagerContract;
-      require(name: "IIFtsoRegistry"): IIFtsoRegistryContract;
-      require(name: "PercentageDelegation"): PercentageDelegationContract;
-      require(name: "VPContract"): VPContractContract;
-      require(name: "VPToken"): VPTokenContract;
-      require(name: "WNat"): WNatContract;
       require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
       require(name: "IIAddressUpdater"): IIAddressUpdaterContract;
       require(name: "IIFtso"): IIFtsoContract;
@@ -262,12 +258,36 @@ declare global {
       require(name: "IGovernanceVotePower"): IGovernanceVotePowerContract;
       require(name: "IVPContractEvents"): IVPContractEventsContract;
       require(name: "IVPToken"): IVPTokenContract;
-      require(name: "IMerkleRootStorage"): IMerkleRootStorageContract;
-      require(name: "IStateConnector"): IStateConnectorContract;
+      require(name: "AddressUpdater"): AddressUpdaterContract;
+      require(name: "CheckPointable"): CheckPointableContract;
+      require(name: "Delegatable"): DelegatableContract;
+      require(name: "DelegationHistory"): DelegationHistoryContract;
+      require(name: "GovernanceSettings"): GovernanceSettingsContract;
+      require(name: "IFlareDaemonize"): IFlareDaemonizeContract;
+      require(name: "IIFtsoManager"): IIFtsoManagerContract;
+      require(name: "IIFtsoRegistry"): IIFtsoRegistryContract;
+      require(name: "PercentageDelegation"): PercentageDelegationContract;
+      require(name: "VPContract"): VPContractContract;
+      require(name: "VPToken"): VPTokenContract;
+      require(name: "WNat"): WNatContract;
+      require(name: "Challenger"): ChallengerContract;
+      require(name: "FlashLender"): FlashLenderContract;
+      require(name: "IChallenger"): IChallengerContract;
+      require(name: "IFAssetMetadata"): IFAssetMetadataContract;
+      require(name: "ILiquidator"): ILiquidatorContract;
+      require(name: "Liquidator"): LiquidatorContract;
     }
   }
 }
 
+export {
+  IMerkleRootStorageContract,
+  IMerkleRootStorageInstance,
+} from "./IMerkleRootStorage";
+export {
+  IStateConnectorContract,
+  IStateConnectorInstance,
+} from "./IStateConnector";
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
@@ -508,39 +528,6 @@ export {
 export { SafePctMockContract, SafePctMockInstance } from "./SafePctMock";
 export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
 export {
-  AddressUpdaterContract,
-  AddressUpdaterInstance,
-} from "./AddressUpdater";
-export {
-  CheckPointableContract,
-  CheckPointableInstance,
-} from "./CheckPointable";
-export { DelegatableContract, DelegatableInstance } from "./Delegatable";
-export {
-  DelegationHistoryContract,
-  DelegationHistoryInstance,
-} from "./DelegationHistory";
-export {
-  GovernanceSettingsContract,
-  GovernanceSettingsInstance,
-} from "./GovernanceSettings";
-export {
-  IFlareDaemonizeContract,
-  IFlareDaemonizeInstance,
-} from "./IFlareDaemonize";
-export { IIFtsoManagerContract, IIFtsoManagerInstance } from "./IIFtsoManager";
-export {
-  IIFtsoRegistryContract,
-  IIFtsoRegistryInstance,
-} from "./IIFtsoRegistry";
-export {
-  PercentageDelegationContract,
-  PercentageDelegationInstance,
-} from "./PercentageDelegation";
-export { VPContractContract, VPContractInstance } from "./VPContract";
-export { VPTokenContract, VPTokenInstance } from "./VPToken";
-export { WNatContract, WNatInstance } from "./WNat";
-export {
   IIAddressUpdatableContract,
   IIAddressUpdatableInstance,
 } from "./IIAddressUpdatable";
@@ -598,10 +585,44 @@ export {
 } from "./IVPContractEvents";
 export { IVPTokenContract, IVPTokenInstance } from "./IVPToken";
 export {
-  IMerkleRootStorageContract,
-  IMerkleRootStorageInstance,
-} from "./IMerkleRootStorage";
+  AddressUpdaterContract,
+  AddressUpdaterInstance,
+} from "./AddressUpdater";
 export {
-  IStateConnectorContract,
-  IStateConnectorInstance,
-} from "./IStateConnector";
+  CheckPointableContract,
+  CheckPointableInstance,
+} from "./CheckPointable";
+export { DelegatableContract, DelegatableInstance } from "./Delegatable";
+export {
+  DelegationHistoryContract,
+  DelegationHistoryInstance,
+} from "./DelegationHistory";
+export {
+  GovernanceSettingsContract,
+  GovernanceSettingsInstance,
+} from "./GovernanceSettings";
+export {
+  IFlareDaemonizeContract,
+  IFlareDaemonizeInstance,
+} from "./IFlareDaemonize";
+export { IIFtsoManagerContract, IIFtsoManagerInstance } from "./IIFtsoManager";
+export {
+  IIFtsoRegistryContract,
+  IIFtsoRegistryInstance,
+} from "./IIFtsoRegistry";
+export {
+  PercentageDelegationContract,
+  PercentageDelegationInstance,
+} from "./PercentageDelegation";
+export { VPContractContract, VPContractInstance } from "./VPContract";
+export { VPTokenContract, VPTokenInstance } from "./VPToken";
+export { WNatContract, WNatInstance } from "./WNat";
+export { ChallengerContract, ChallengerInstance } from "./Challenger";
+export { FlashLenderContract, FlashLenderInstance } from "./FlashLender";
+export { IChallengerContract, IChallengerInstance } from "./IChallenger";
+export {
+  IFAssetMetadataContract,
+  IFAssetMetadataInstance,
+} from "./IFAssetMetadata";
+export { ILiquidatorContract, ILiquidatorInstance } from "./ILiquidator";
+export { LiquidatorContract, LiquidatorInstance } from "./Liquidator";

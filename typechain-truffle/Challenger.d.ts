@@ -8,7 +8,6 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 export interface ChallengerContract
   extends Truffle.Contract<ChallengerInstance> {
   "new"(
-    _wNat: string,
     _flashLender: string,
     _blazeSwap: string,
     meta?: Truffle.TransactionDetails
@@ -28,115 +27,183 @@ export interface OwnershipTransferred {
 type AllEvents = OwnershipTransferred;
 
 export interface ChallengerInstance extends Truffle.ContractInstance {
-  blazeswap(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   doublePaymentChallenge: {
     (
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _payment1: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _payment2: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -147,65 +214,97 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
     (
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _payments: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       }[],
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -214,65 +313,97 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
     (
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _transaction: {
         merkleProof: string[];
-        stateConnectorRound: number | BN | string;
-        blockNumber: number | BN | string;
-        blockTimestamp: number | BN | string;
-        transactionHash: string;
-        sourceAddressIndicator: string;
-        sourceAddressHash: string;
-        spentAmount: number | BN | string;
-        paymentReference: string;
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: {
+            transactionId: string;
+            sourceAddressIndicator: string;
+          };
+          responseBody: {
+            blockNumber: number | BN | string;
+            blockTimestamp: number | BN | string;
+            sourceAddressHash: string;
+            spentAmount: number | BN | string;
+            standardPaymentReference: string;
+          };
+        };
       },
       _agentVault: string,
-      _assetManager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -345,25 +476,25 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
     (
       _agentVault: string,
       _flashLender: string,
-      _blazeSwap: string,
+      _blazeSwapRouter: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _flashLender: string,
-      _blazeSwap: string,
+      _blazeSwapRouter: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _flashLender: string,
-      _blazeSwap: string,
+      _blazeSwapRouter: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _flashLender: string,
-      _blazeSwap: string,
+      _blazeSwapRouter: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -385,8 +516,6 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   withderawNat: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -413,115 +542,183 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
   };
 
   methods: {
-    blazeswap(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     doublePaymentChallenge: {
       (
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _payment1: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _payment2: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -532,65 +729,97 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       (
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _payments: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         }[],
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -599,65 +828,97 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       (
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _transaction: {
           merkleProof: string[];
-          stateConnectorRound: number | BN | string;
-          blockNumber: number | BN | string;
-          blockTimestamp: number | BN | string;
-          transactionHash: string;
-          sourceAddressIndicator: string;
-          sourceAddressHash: string;
-          spentAmount: number | BN | string;
-          paymentReference: string;
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: {
+              transactionId: string;
+              sourceAddressIndicator: string;
+            };
+            responseBody: {
+              blockNumber: number | BN | string;
+              blockTimestamp: number | BN | string;
+              sourceAddressHash: string;
+              spentAmount: number | BN | string;
+              standardPaymentReference: string;
+            };
+          };
         },
         _agentVault: string,
-        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -730,25 +991,25 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       (
         _agentVault: string,
         _flashLender: string,
-        _blazeSwap: string,
+        _blazeSwapRouter: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _flashLender: string,
-        _blazeSwap: string,
+        _blazeSwapRouter: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _flashLender: string,
-        _blazeSwap: string,
+        _blazeSwapRouter: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _flashLender: string,
-        _blazeSwap: string,
+        _blazeSwapRouter: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -770,8 +1031,6 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     withderawNat: {
       (txDetails?: Truffle.TransactionDetails): Promise<
