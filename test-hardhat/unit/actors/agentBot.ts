@@ -519,13 +519,13 @@ describe("Agent bot unit tests", async () => {
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
-        // try to close vault - announce class 1 withdrawal
+        // try to close vault - announce pool token redemption
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
-        // try to close vault - withdraw class 1
-        await time.increaseTo(maxBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp, agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp));
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
+        // try to close vault - redeem pool tokens
+        await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         // try to close vault - close
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         // check agent status
