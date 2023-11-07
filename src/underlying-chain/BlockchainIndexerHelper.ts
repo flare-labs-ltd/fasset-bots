@@ -345,7 +345,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 const inputs: TxInputOutput[] = [];
                 data.vin.map((vin: any) => {
                     const address = vin.prevout && vin.prevout.scriptPubKey.address ? vin.prevout.scriptPubKey.address : "";
-                    const value = this.toBnValue(vin?.prevout?.value || 0);
+                    const value = this.toBnValue(vin.prevout?.value || 0);
                     inputs.push([address, value]);
                 });
                 if (inputs.length == 0) return [["", toBN(0)]];
