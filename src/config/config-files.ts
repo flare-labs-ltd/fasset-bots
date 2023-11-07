@@ -5,7 +5,7 @@ export interface OrmConfigOptions {
     type: DatabaseType;
     schemaUpdate?: SchemaUpdate;
     debug?: boolean;
-    // conection building - either clientUrl or some combination of others
+    // connection building - either clientUrl or some combination of others
     clientUrl?: string;
     dbName?: string;
     host?: string;
@@ -46,7 +46,6 @@ export interface BotFAssetInfo extends ChainInfo {
 
 export interface AgentSettingsConfig {
     vaultCollateralFtsoSymbol: string;
-    poolTokenSuffix: string;
     feeBIPS: string | number;
     poolFeeShareBIPS: string | number;
     mintingVaultCollateralRatioConstant: number;
