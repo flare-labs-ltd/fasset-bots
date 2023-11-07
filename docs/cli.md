@@ -49,15 +49,16 @@ For more about agent's settings check [AgentSettings.sol](https://gitlab.com/fla
 -   poolTopupCollateralRatioBIPS
 -   poolTopupTokenPriceFactorBIPS
 
-# CLI `api-key`
+# CLI `key`
 
 ## How to use
 
-Usage: `yarn api-key [command]`
+Usage: `yarn key [command]`
 
 Available commands:
 
--   `create` - create api key and its hash
+-   `createApiKeyAndHash` - create api key and its hash
+-   `createWalletEncryptionPassword` - create wallet encryption password
 
 # CLI `user-bot`
 

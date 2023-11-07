@@ -64,7 +64,7 @@ RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
 
 ### Agent bot secrets file
 
-In order to run Agent bot API keys, addresses, private keys and any other neccessary credentials, should be store in a `secrets.json` file, which follows format (see [`secrets.template.json`](../secrets.template.json)):
+In order to run Agent bot API keys, addresses, private keys and any other necessary credentials, should be store in a `secrets.json` file, which follows format (see [`secrets.template.json`](../secrets.template.json)):
 
 ```
 type Secrets = {
@@ -82,6 +82,8 @@ type Secrets = {
     deployer?: NativeAccount;
   }
 ```
+
+Variable `wallet.encryption_password` should be at least 16 characters long. It can be generated via command `yarn key createWalletEncryptionPassword`. See more [here](./cli.md#cli-key).
 
 `secrets.json` needs to have restricted read and write rights. This can be set by `chmod 600 secrets.json`
 

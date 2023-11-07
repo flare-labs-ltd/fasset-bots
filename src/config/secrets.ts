@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "fs";
-import { CommandLineError } from "../utils/helpers";
+import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH } from "../utils/helpers";
 
 const SECRETS_FILE = "./secrets.json";
 
@@ -42,9 +42,18 @@ let loadedSecrets: Secrets | undefined;
 function loadSecrets(): Secrets {
     checkFilePermissions(SECRETS_FILE);
     const config = JSON.parse(readFileSync(SECRETS_FILE).toString());
+    checkEncryptionPasswordLength(config);
     return config;
 }
 
+function checkEncryptionPasswordLength(secrets: Secrets): void {
+    if (
+        secrets.wallet?.encryption_password?.length == 0 ||
+        (secrets.wallet?.encryption_password && secrets.wallet?.encryption_password.length < ENCRYPTION_PASSWORD_MIN_LENGTH)
+    ) {
+        throw new Error(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+    }
+}
 /* istanbul ignore next */
 function checkFilePermissions(fpath: string) {
     if (process.platform === "win32") {

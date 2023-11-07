@@ -13,7 +13,7 @@
     "license": "MIT",
     "bin": {
         "agent-bot": "dist/src/cli/agent.js",
-        "api-key": "dist/src/cli/apiKey.js",
+        "key": "dist/src/cli/key.js",
         "fake-price-reader": "dist/src/cli/fakePriceReader.js",
         "user-bot": "dist/src/cli/user.js"
     },

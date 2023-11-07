@@ -4,7 +4,7 @@
 
 Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
 
-Api key and its hash can be generated via command `yarn api-key create`. See more [here](./cli.md);
+Api key and its hash can be generated via command `yarn key createApiKeyAndHash`. See more [here](./cli.md#cli-key);
 
 To run service use `yarn agent_api_start`.
 
