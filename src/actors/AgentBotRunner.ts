@@ -1,4 +1,4 @@
-import { FilterQuery, UseRequestContext } from "@mikro-orm/core";
+import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
@@ -37,7 +37,7 @@ export class AgentBotRunner {
      * In every step it firstly collects all active agent entities. For every entity it construct AgentBot and runs its runsStep method,
      * which handles required events and other.
      */
-    @UseRequestContext()
+    @CreateRequestContext()
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
