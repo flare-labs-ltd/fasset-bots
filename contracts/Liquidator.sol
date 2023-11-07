@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "./interface/ILiquidator.sol";
@@ -9,9 +8,19 @@ import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
 
 
-enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
+/**
+ * Do not send any tokens to this contract, they can be stolen!
+ * Security is not put in place because of gas cost savings.
+ * Ideally, we would store the hash of the data passed into
+ * flash loan, and validate it in onFlashLoan, then also check
+ * that no funds were stolen for the three relevant tokens.
+ * Also _approve(token, 0) would need to be called after each swap.
+ */
 
-contract Liquidator is ILiquidator, Ownable {
+// Arbitrage is run without any funds sent to the contract.
+contract Liquidator is ILiquidator {
+
+    enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
     // those are initialized once and cannot be changed
     IERC3156FlashLender public immutable flashLender;
@@ -19,30 +28,30 @@ contract Liquidator is ILiquidator, Ownable {
 
     // takes care of flash loan getting executed exactly once
     // when ran from runArbitrageWithCustomParams
-    FlashLoanLock private _status;
+    FlashLoanLock private status;
 
     constructor(
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwapRouter
-    ) Ownable() {
+    ) {
         flashLender = _flashLender;
         blazeSwapRouter = _blazeSwapRouter;
     }
 
     modifier flashLoanInitiatorLock() {
-        require(_status == FlashLoanLock.INACTIVE,
+        require(status == FlashLoanLock.INACTIVE,
             "Liquidator: Reentrancy blocked");
-        _status = FlashLoanLock.INITIATOR_ENTER;
+        status = FlashLoanLock.INITIATOR_ENTER;
         _;
-        require(_status == FlashLoanLock.RECEIVER_ENTER,
+        require(status == FlashLoanLock.RECEIVER_ENTER,
             "Liquidator: Reentrancy blocked or flash loan receiver not called");
-        _status = FlashLoanLock.INACTIVE;
+        status = FlashLoanLock.INACTIVE;
     }
 
     modifier flashLoanReceiverLock() {
-        require(_status == FlashLoanLock.INITIATOR_ENTER,
+        require(status == FlashLoanLock.INITIATOR_ENTER,
             "Liquidator: Flash loan with invalid initiator");
-        _status = FlashLoanLock.RECEIVER_ENTER;
+        status = FlashLoanLock.RECEIVER_ENTER;
         _;
     }
 
@@ -75,10 +84,6 @@ contract Liquidator is ILiquidator, Ownable {
         require(maxVaultFlashLoan > 0, "Liquidator: Flash loan unavailable");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profit available");
-        // send vault collateral to owner, to avoid them being stolen by a malicious flash
-        // loan contract, and also to ensure that arbitrage fails in case of decreased funds
-        // (owner should not be agentVault or any of the dexes)
-        IERC20(_data.vaultToken).transfer(owner(), IERC20(_data.vaultToken).balanceOf(address(this)));
         // run flash loan
         IERC3156FlashLender(_data.flashLender).flashLoan(
             this, _data.vaultToken,
@@ -91,26 +96,26 @@ contract Liquidator is ILiquidator, Ownable {
                 _data.blazeSwapRouter
             )
         );
-        // send earnings to sender
-        IERC20(_data.vaultToken).transfer(msg.sender, IERC20(_data.vaultToken).balanceOf(address(this)));
+        // send earnings to sender (along with any tokens sent to this contract)
+        uint256 earnings = IERC20(_data.vaultToken).balanceOf(address(this));
+        IERC20(_data.vaultToken).transfer(msg.sender, earnings);
     }
 
     // dangerous!
     // - cannot reenter due to flashLoanReceiverLock
     // - can only be run once from runArbitrageWithCustomParams call
-    // - runArbitrageWithCustomParams: _token is always vault collateral
-    // - runArbitrageWithCustomParams: contract vault balance at each call is 0
+    // - function arguments can be faked by a malicious flash lender!
     function onFlashLoan(
         address /* _initiator */,
         address _token,
         uint256 _amount,
         uint256 _fee,
         bytes calldata _data
-    ) external flashLoanReceiverLock returns (bytes32) {
-        // check that starting contract vault collateral balance
-        // is correct (note that anyone can call onFlashLoan)
-        require(IERC20(_token).balanceOf(address(this)) == _amount,
-            "Liquidator: Incorrect flash loan amount");
+    )
+        external
+        flashLoanReceiverLock
+        returns (bytes32)
+    {
         // execute arbitrage
         (
             IFAsset _fAssetToken,
@@ -135,7 +140,7 @@ contract Liquidator is ILiquidator, Ownable {
             _blazeSwapRouter
         );
         // approve flash loan spending to flash lender
-        IERC20(_token).approve(address(msg.sender), _amount + _fee);
+        IERC20(_token).approve(msg.sender, _amount + _fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
@@ -158,7 +163,6 @@ contract Liquidator is ILiquidator, Ownable {
             address(this),
             block.timestamp
         );
-        _vaultToken.approve(address(_blazeSwapRouter), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -174,16 +178,7 @@ contract Liquidator is ILiquidator, Ownable {
                 address(this),
                 block.timestamp
             );
-            _poolToken.approve(address(_blazeSwapRouter), 0);
         }
-    }
-
-    function withdrawToken(IERC20 token) external onlyOwner {
-        token.transfer(owner(), token.balanceOf(address(this)));
-    }
-
-    function withderawNat() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
     }
 
     function toDynamicArray(

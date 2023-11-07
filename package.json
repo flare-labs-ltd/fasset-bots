@@ -9,8 +9,8 @@
     "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413",
     "------------ tests ---------------": "----------------- tests -----------------",
     "pretest:unit": "sh ./scripts/fix-blazeswap-hash.sh",
-    "test": "yarn hardhat test",
-    "test:unit": "yarn test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
+    "precoverage": "sh ./scripts/fix-blazeswap-hash.sh",
+    "test:unit": "yarn hardhat test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
     "test:integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000",
     "coverage": "yarn hardhat coverage --testfiles \"test/unit/**/*.test.ts\""
   },

@@ -203,19 +203,11 @@ describe("Tests for Liquidator contract", () => {
 
   describe("security", () => {
 
-    it("should let only owner collect contract token funds", async () => {
-      const { vault, liquidator } = context.contracts
-      const amount = BigInt(10) ** (assetConfig.vault.decimals + BigInt(3))
-      await vault.mint(liquidator, amount)
-      await expect(liquidator.connect(context.signers.deployer).withdrawToken(vault)).to.be.revertedWith(
-        "Ownable: caller is not the owner")
-      await liquidator.connect(context.signers.liquidator).withdrawToken(vault)
-      const balance = await vault.balanceOf(context.signers.liquidator)
-      expect(balance).to.equal(amount)
-    })
-
-    it("should let only owner collect contract native funds", async () => {
-      // don't know how to send money to contract with truffle
+    it("should prevent direct external call to onFlashLoan", async () => {
+      const { liquidator } = context.contracts
+      await expect(liquidator.onFlashLoan(
+        context.signers.challenger.address, context.contracts.vault, 1000, 100, "0x"
+      )).to.be.revertedWith("Liquidator: Flash loan with invalid initiator")
     })
   })
 
