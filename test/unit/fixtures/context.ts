@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import { AssetConfig } from './interface'
 import { lotSizeAmg } from '../helpers/utils'
-import type { ContractFactories, Contracts, ContractContext } from './interface'
+import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
 
 
 export async function getFactories(): Promise<ContractFactories> {
@@ -24,18 +24,16 @@ export async function getFactories(): Promise<ContractFactories> {
 
 export async function getContracts(
   assetConfig: AssetConfig,
-  deployer: HardhatEthersSigner,
-  challenger: HardhatEthersSigner,
-  liquidator: HardhatEthersSigner
-): Promise<Contracts> {
-  const contracts = {} as Contracts
+  signers: TestSigners
+): Promise<TestContracts> {
+  const contracts = {} as TestContracts
   const factories = await getFactories()
   // set mock tokens
   contracts.fAsset = await factories.fAsset.deploy(assetConfig.asset.symbol, assetConfig.asset.symbol, assetConfig.asset.decimals)
   contracts.vault = await factories.vault.deploy(assetConfig.vault.name, assetConfig.vault.symbol, assetConfig.vault.decimals)
   contracts.pool = await factories.pool.deploy(assetConfig.pool.name, assetConfig.pool.symbol, assetConfig.pool.decimals)
   // set up price reader
-  contracts.priceReader = await factories.priceReader.deploy(deployer)
+  contracts.priceReader = await factories.priceReader.deploy(signers.deployer)
   await contracts.priceReader.setDecimals(assetConfig.asset.ftsoSymbol, assetConfig.asset.ftsoDecimals)
   await contracts.priceReader.setDecimals(assetConfig.vault.ftsoSymbol, assetConfig.vault.ftsoDecimals)
   await contracts.priceReader.setDecimals(assetConfig.pool.ftsoSymbol, assetConfig.pool.ftsoDecimals)
@@ -55,7 +53,7 @@ export async function getContracts(
   // set agent
   contracts.agent = await factories.agent.deploy(contracts.assetManager, contracts.vault)
   // set up blazeswap
-  const blazeSwapManager = await factories.blazeSwapManager.deploy(deployer)
+  const blazeSwapManager = await factories.blazeSwapManager.deploy(signers.deployer)
   const blazeSwapFactory = await factories.blazeSwapFactory.deploy(blazeSwapManager)
   await blazeSwapManager.setFactory(blazeSwapFactory)
   contracts.blazeSwapRouter = await factories.blazeSwapRouter.deploy(blazeSwapFactory, contracts.pool, false)
@@ -63,20 +61,21 @@ export async function getContracts(
   contracts.flashLender = await factories.flashLender.deploy(contracts.vault)
   await contracts.vault.mint(contracts.flashLender, ethers.MaxUint256 / BigInt(10))
   // set liquidator and challenger
-  contracts.liquidator = await factories.liquidator.connect(liquidator).deploy(contracts.flashLender, contracts.blazeSwapRouter)
-  contracts.challenger = await factories.challenger.connect(challenger).deploy(contracts.flashLender, contracts.blazeSwapRouter)
+  contracts.liquidator = await factories.liquidator.connect(signers.liquidator).deploy(contracts.flashLender, contracts.blazeSwapRouter)
+  contracts.challenger = await factories.challenger.connect(signers.challenger).deploy(contracts.flashLender, contracts.blazeSwapRouter)
   return contracts
 }
 
-export async function getContractContext(assetConfig: AssetConfig): Promise<ContractContext> {
-  const context = {} as ContractContext
+export async function getTestContext(assetConfig: AssetConfig): Promise<TestContext> {
   // define signers
-  const signers = await ethers.getSigners()
-  context.deployer = signers[0]
-  context.challenger = signers[10]
-  context.liquidator = signers[11]
-  context.fAssetMinter = signers[12]
-  // define asset config
-  context.contracts = await getContracts(assetConfig, context.deployer, context.challenger, context.liquidator)
-  return context
+  const _signers = await ethers.getSigners()
+  const deployer = _signers[0]
+  const challenger = _signers[10]
+  const liquidator = _signers[11]
+  const fAssetMinter = _signers[12]
+  // define signers and contracts
+  const signers = { deployer, challenger, liquidator, fAssetMinter }
+  const contracts = await getContracts(assetConfig, signers)
+  // return asset config
+  return { signers, contracts }
 }

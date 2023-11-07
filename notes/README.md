@@ -23,4 +23,4 @@ From those vaules we can derive:
 - `liquidate_w(f) = f PW RW`: obtained pool collateral when liquidating `f` f-assets,
 - `profit(v) = liquidate_v(min(swap_v_for_f(v), fm)) + swap_w_for_v(liquidate_w(min(swap_v_for_f(v), fm))) - v`: vault collateral profit of our arbitrage strategy.
 
-Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `notes/liquidation_arbitrage_calculation.nb` file. Also, there is `notes/simulation.py` file that visualizes how blockchain conditions affect the profit in regards to initially invested vault collateral.
+Then we determine the vault collateral value `vo` that optimizes `profit` and execute the strategy. The exact calculations for this are inside the `notes/calculations.nb` file. Also, there is `notes/simulation.py` file that visualizes how blockchain conditions affect the profit in regards to initially invested vault collateral.

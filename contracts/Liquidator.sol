@@ -72,9 +72,9 @@ contract Liquidator is ILiquidator, Ownable {
         require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
         // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vaultToken);
-        require(maxVaultFlashLoan > 0, "Liquidator: No flash loan available");
+        require(maxVaultFlashLoan > 0, "Liquidator: Flash loan unavailable");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
-        require(optimalVaultAmount > 0, "Liquidator: No profitable arbitrage opportunity");
+        require(optimalVaultAmount > 0, "Liquidator: No profit available");
         // send vault collateral to owner, to avoid them being stolen by a malicious flash
         // loan contract, and also to ensure that arbitrage fails in case of decreased funds
         // (owner should not be agentVault or any of the dexes)

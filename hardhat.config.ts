@@ -1,4 +1,5 @@
 import "@nomicfoundation/hardhat-toolbox"
+import "solidity-coverage"
 import type { HardhatUserConfig } from "hardhat/config"
 
 const config: HardhatUserConfig = {

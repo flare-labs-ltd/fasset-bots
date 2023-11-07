@@ -10,7 +10,7 @@ import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsse
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
 import type { NetworkAddressesJson, AddressesJson, BaseContracts, FAssetContracts, Contracts } from './interface'
-import type { IAssetManager, IBlazeSwapRouter, IERC3156FlashLender, IIAgentVault, Liquidator } from '../../../types'
+import type { IBlazeSwapRouter, IERC3156FlashLender, IIAgentVault, Liquidator } from '../../../types'
 
 
 export function getAddresses(network: string): NetworkAddressesJson {
@@ -18,7 +18,7 @@ export function getAddresses(network: string): NetworkAddressesJson {
   return addresses[network]
 }
 
-export function getEcosystemContracts(network: string, provider: ethers.JsonRpcProvider): BaseContracts {
+export function getBaseContracts(network: string, provider: ethers.JsonRpcProvider): BaseContracts {
   const address = getAddresses(network)
   return {
     wNat: new ethers.Contract(address.wNat, wNatAbi, provider) as any,
@@ -45,7 +45,7 @@ export async function getContracts(
   network: string,
   provider: ethers.JsonRpcProvider
 ): Promise<Contracts> {
-  const ecosystemContracts = getEcosystemContracts(network, provider)
+  const ecosystemContracts = getBaseContracts(network, provider)
   const fAssetContracts = await getFAssetContracts(assetManagerAddress, provider)
   return { ...ecosystemContracts, ...fAssetContracts }
 }

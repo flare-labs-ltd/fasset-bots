@@ -8,9 +8,11 @@
     "compile": "yarn clean && cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
     "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413",
     "------------ tests ---------------": "----------------- tests -----------------",
+    "pretest:unit": "sh ./scripts/fix-blazeswap-hash.sh",
     "test": "yarn hardhat test",
-    "test:unit": "yarn hardhat test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
-    "test:integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000"
+    "test:unit": "yarn test test/unit/blazeswap.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
+    "test:integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000",
+    "coverage": "yarn hardhat coverage --testfiles \"test/unit/**/*.test.ts\""
   },
   "license": "MIT",
   "devDependencies": {
@@ -31,6 +33,7 @@
     "hardhat": "^2.12.2",
     "hardhat-gas-reporter": "^1.0.9",
     "rimraf": "^5.0.1",
+    "solidity-coverage": "^0.8.5",
     "ts-node": "^10.9.1",
     "typechain": "^8.2.0",
     "typescript": "^4.6.3"

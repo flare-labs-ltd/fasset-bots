@@ -157,3 +157,4 @@ typechain-truffle/
 typechain-ethers/
 types/
 Challenger.sol
+coverage.json

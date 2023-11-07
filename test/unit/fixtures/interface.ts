@@ -85,7 +85,7 @@ export interface ContractFactories {
   challenger: Challenger__factory
 }
 
-export interface Contracts {
+export interface TestContracts {
   priceReader: FakePriceReader
   assetManager: AssetManagerMock
   fAsset: ERC20Mock
@@ -98,10 +98,14 @@ export interface Contracts {
   challenger: Challenger
 }
 
-export interface ContractContext {
+export interface TestSigners {
   deployer: HardhatEthersSigner
   challenger: HardhatEthersSigner
   liquidator: HardhatEthersSigner
   fAssetMinter: HardhatEthersSigner
-  contracts: Contracts
+}
+
+export interface TestContext {
+  signers: TestSigners
+  contracts: TestContracts
 }

@@ -1,16 +1,16 @@
 import { expect } from 'chai'
 import { ubaToAmg, swapOutput, swapInput, setupEcosystem, setFtsoPrices } from './helpers/utils'
-import { getContractContext } from './fixtures/context'
-import { XRP, WFLR, ETH } from './fixtures/assets'
+import { getTestContext } from './fixtures/context'
+import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import type { AssetConfig, CollateralAsset, UnderlyingAsset, EcosystemConfig } from './fixtures/interface'
-import type { ContractContext } from './fixtures/interface'
+import type { TestContext } from './fixtures/interface'
 
 
 // config for used assets
 const assetConfig: AssetConfig = {
   asset: XRP,
-  vault: ETH,
+  vault: USDT,
   pool: WFLR
 }
 // factory for creating various ecosystems
@@ -20,7 +20,7 @@ const AMG_TOKEN_WEI_PRICE_SCALE_EXP = BigInt(9)
 const AMG_TOKEN_WEI_PRICE_SCALE = BigInt(10) ** AMG_TOKEN_WEI_PRICE_SCALE_EXP
 
 describe("Tests for Liquidator contract", () => {
-  let context: ContractContext
+  let context: TestContext
 
   async function liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
     const { agent, assetManager } = context.contracts
@@ -78,7 +78,7 @@ describe("Tests for Liquidator contract", () => {
   }
 
   beforeEach(async function () {
-    context = await getContractContext(assetConfig)
+    context = await getTestContext(assetConfig)
   })
 
   describe("scenarios with random ecosystems", () => {
@@ -97,7 +97,7 @@ describe("Tests for Liquidator contract", () => {
         const { mintedUBA: mintedFAssetBefore } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceBefore = await vault.balanceOf(agent)
         const agentPoolBalanceBefore = await pool.balanceOf(agent)
-        await liquidator.connect(context.liquidator).runArbitrage(agent)
+        await liquidator.connect(context.signers.liquidator).runArbitrage(agent)
         const { mintedUBA: mintedFAssetAfter } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceAfter = await vault.balanceOf(agent)
         const agentPoolBalanceAfter = await pool.balanceOf(agent)
@@ -116,7 +116,7 @@ describe("Tests for Liquidator contract", () => {
         expect(agentPoolLoss).to.equal(expectedLiqPool)
         // check that redeemer was compensated by agent's lost vault collateral
         const expectedVaultEarnings = expectedLiqVault + expectedSwappedPool - maxLiquidatedVault
-        const earnings = await vault.balanceOf(context.liquidator)
+        const earnings = await vault.balanceOf(context.signers.liquidator)
         expect(earnings).to.equal(expectedVaultEarnings)
         // check that liquidator contract has no leftover funds
         const fAssetBalanceLiquidatorContract = await fAsset.balanceOf(liquidator)
@@ -137,11 +137,11 @@ describe("Tests for Liquidator contract", () => {
         const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await assetManager.getAgentInfo(agent)
         const maxLiquidatedVault = await swapInput(blazeSwapRouter, vault, fAsset, maxLiquidatedFAsset)
         const fullLiquidationProfit = await arbitrageProfit(maxLiquidatedVault)
-        // perform arbitrage by liquidation and check that whole arbitrage would fail
+        // perform arbitrage by liquidation
         const { mintedUBA: mintedFAssetBefore } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceBefore = await vault.balanceOf(agent)
         const agentPoolBalanceBefore = await pool.balanceOf(agent)
-        await liquidator.connect(context.liquidator).runArbitrage(agent)
+        await liquidator.connect(context.signers.liquidator).runArbitrage(agent)
         const { mintedUBA: mintedFAssetAfter } = await assetManager.getAgentInfo(agent)
         const agentVaultBalanceAfter = await vault.balanceOf(agent)
         const agentPoolBalanceAfter = await pool.balanceOf(agent)
@@ -159,19 +159,26 @@ describe("Tests for Liquidator contract", () => {
       it(`should fail at arbitrage liquidation due to unhealthy ecosystem config: ${config.name}`, async () => {
         await setupEcosystem(config, assetConfig, context)
         await expect(context.contracts.liquidator.runArbitrage(context.contracts.agent)).to.be.revertedWith(
-          "Liquidator: No profitable arbitrage opportunity")
+          "Liquidator: No profit available")
       })
     })
   })
 
   describe("general liquidation failures", async () => {
+
     it("should fail liquidation if flash loan can offer 0 fees", async () => {
       const { vault, flashLender, liquidator, agent } = context.contracts
       await setupEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater, assetConfig, context)
       await vault.burn(flashLender, await vault.balanceOf(flashLender))
-      await expect(liquidator.runArbitrage(agent)).to.be.revertedWith(
-        "Liquidator: No flash loan available")
+      await expect(liquidator.runArbitrage(agent)).to.be.revertedWith("Liquidator: Flash loan unavailable")
     })
+
+    it("should fail if agent is not in liquidation", async () => {
+      const { liquidator, agent } = context.contracts
+      await setupEcosystem(ecosystemFactory.baseEcosystem, assetConfig, context)
+      await expect(liquidator.runArbitrage(agent)).to.be.revertedWith("Liquidator: No f-asset to liquidate")
+    })
+
   })
 
   describe("calculation", () => {
@@ -200,10 +207,10 @@ describe("Tests for Liquidator contract", () => {
       const { vault, liquidator } = context.contracts
       const amount = BigInt(10) ** (assetConfig.vault.decimals + BigInt(3))
       await vault.mint(liquidator, amount)
-      await expect(liquidator.connect(context.deployer).withdrawToken(vault)).to.be.revertedWith(
+      await expect(liquidator.connect(context.signers.deployer).withdrawToken(vault)).to.be.revertedWith(
         "Ownable: caller is not the owner")
-      await liquidator.connect(context.liquidator).withdrawToken(vault)
-      const balance = await vault.balanceOf(context.liquidator)
+      await liquidator.connect(context.signers.liquidator).withdrawToken(vault)
+      const balance = await vault.balanceOf(context.signers.liquidator)
       expect(balance).to.equal(amount)
     })
 

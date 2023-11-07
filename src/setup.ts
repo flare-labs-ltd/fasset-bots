@@ -1,7 +1,7 @@
 // set up the live ecosystem
 require('dotenv').config()
 import { ethers } from "ethers"
-import { getContracts, getEcosystemContracts } from "../test/integration/helpers/contracts"
+import { getContracts, getBaseContracts } from "../test/integration/helpers/contracts"
 import { initFtsoSyncedDexReserves } from "../test/integration/helpers/utils"
 
 
@@ -20,7 +20,7 @@ async function setUpFlashLender(
   provider: ethers.JsonRpcProvider,
   supplier: ethers.Wallet
 ): Promise<void> {
-  const contracts = getEcosystemContracts(network, provider)
+  const contracts = getBaseContracts(network, provider)
   const balance = await contracts.usdc.balanceOf(supplier.address)
   await contracts.usdc.connect(supplier).transfer(contracts.flashLender, balance)
 }
