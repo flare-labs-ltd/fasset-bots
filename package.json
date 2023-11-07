@@ -30,7 +30,8 @@
             "src/run/*.ts",
             "src/cli/*.ts",
             "src/utils/printlog.ts",
-            "src/bot-api/agent/*.ts"
+            "src/bot-api/agent/*.ts",
+            "src/entities/*.ts"
         ],
         "reporter": [
             "html",

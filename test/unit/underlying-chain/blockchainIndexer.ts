@@ -244,7 +244,8 @@ describe("DOGE blockchain tests via indexer", async () => {
         }
     });
 
-    it("Should retrieve transaction", async () => {
+    // skip until indexer is fixed
+    it.skip("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
         expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());
     });
