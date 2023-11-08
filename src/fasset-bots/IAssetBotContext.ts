@@ -48,4 +48,13 @@ export interface IAssetActorContext {
     priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
+    // liquidation / challenger strategies
+    liquidationStrategy?: { // only for liquidator
+        className: string;
+        config?: any;
+    };
+    challengeStrategy?: { // only for challenger
+        className: string;
+        config?: any;
+    }
 }

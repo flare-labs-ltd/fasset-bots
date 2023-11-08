@@ -104,6 +104,8 @@ export async function createActorAssetContext(
         assetManager: assetManager,
         priceChangeEmitter: priceChangeEmitter,
         fAsset: await FAsset.at(await assetManager.fAsset()),
+        liquidationStrategy: trackedStateConfig.liquidationStrategy,
+        challengeStrategy: trackedStateConfig.challengeStrategy
     };
 }
 

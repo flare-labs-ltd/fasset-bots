@@ -31,6 +31,15 @@ export interface BotConfigFile {
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
+    // liquidation / challenger strategies
+    liquidationStrategy?: { // only for liquidator
+        className: string;
+        config?: any;
+    };
+    challengeStrategy?: { // only for challenger
+        className: string;
+        config?: any;
+    };
 }
 
 export interface BotFAssetInfo extends ChainInfo {
