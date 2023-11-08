@@ -38,7 +38,7 @@ describe("Tests for BlazeSwapRouter contract", () => {
       tokenA, tokenB,
       tokenALiq, tokenBLiq,
       0, 0, 0, 0,
-      ethers.ZeroAddress,
+      accounts[0],
       ethers.MaxUint256
     )
     const { 0: reserveA, 1: reserveB } = await blazeSwapRouter.getReserves(tokenA, tokenB)

@@ -173,17 +173,17 @@ class SymbolicOptimum(ArbitrageStrategy):
 
 class NumericStrategy(ArbitrageStrategy):
     def _optLiquidatedVault(ec):
-        return None
+        raise NotImplementedError()
 
 
 ######################################################################
 ## define initial ecosystem
 
-ETH = 1_000_000
+ETH = 100 # can't set to 1e18 as we're limited by numpy's int64
 
 ecosystem = Ecosystem(
-    dex1_vault_reserve=30_000 * ETH,
-    dex1_fAsset_reserve=60_001 * ETH,
+    dex1_vault_reserve=10_000 * ETH,
+    dex1_fAsset_reserve=20_000 * ETH,
     dex2_pool_reserve=10_000 * ETH,
     dex2_vault_reserve=133 * ETH,
     fAsset_vault_price_bips=5_000,
@@ -194,7 +194,7 @@ ecosystem = Ecosystem(
     collateral_ratio_pool_bips=12_000,
     target_ratio_vault_bips=15_000,
     target_ratio_pool_bips=20_000,
-    mintedUBA=50_000 * ETH,
+    mintedUBA=1000 * ETH,
 )
 
 strategy = SymbolicOptimum(ecosystem)
@@ -206,11 +206,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-MAX_RESERVES = 100_000 * ETH
+MAX_RESERVES = 40_000 * ETH
 MAX_COLLATERAL_RATIO = 40_000
 MAX_TARGET_RATIO = 40_000
 MAX_LIQUIDATION_FACTOR = 20_000
-LINSPACE_STEP = 100
+LINSPACE_STEPS = 100
 
 
 # The parametrized function to be plotted
@@ -229,9 +229,9 @@ main_ax.spines["left"].set_alpha(0.5)
 main_ax.spines["bottom"].set_alpha(0.5)
 main_ax.grid(color="grey", linestyle="-", linewidth=0.25, alpha=0.5)
 
-# calculate vault and profit values
+# calculate vault and profit data
 v_max = strategy.maxLiquidatedVault()
-v = np.linspace(0, v_max, LINSPACE_STEP)
+v = np.linspace(0, v_max, LINSPACE_STEPS)
 p = np.array(arbitrageProfit(v, strategy))
 p_argmax = p.argmax()
 v_opt_real = v[p_argmax]
@@ -240,12 +240,17 @@ v_opt_apx = strategy.optLiquidatedVault()
 p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
 
 # set domains
-main_ax.set_xlim(0, v_max)
-main_ax.set_ylim(0, p.max())
+main_ax.set_xlim(0, 1.1 * v_max)
+main_ax.set_ylim(0, 1.1 * p.max())
 
-# plot curve and two points
+# get domain lines
+v_lim_line = np.repeat(v_max, LINSPACE_STEPS)
+p_lim_line = np.linspace(0, p.max(), LINSPACE_STEPS)
+
+# plot curve, line, and two points
 (profit_curve,) = main_ax.plot(v, p)
-opt_apx_point = main_ax.scatter(v_opt_apx, p_opt_apx, color="red")
+(limit_line,) = main_ax.plot(v_lim_line, p_lim_line, color="red")
+opt_apx_point = main_ax.scatter(v_opt_apx, p_opt_apx, color="blue")
 opt_real_point = main_ax.scatter(v_opt_real, p_opt_real, color="green")
 
 # adjust the main plot to make room for the sliders
@@ -356,7 +361,7 @@ def update_graph(on_changed):
         on_changed(int(val))
         # recalculate main plot data
         v_max = strategy.maxLiquidatedVault()
-        v = np.linspace(ETH, v_max, LINSPACE_STEP)
+        v = np.linspace(ETH, v_max, LINSPACE_STEPS)
         p = np.array(arbitrageProfit(v, strategy))
         # recalculate optimums
         p_argmax = p.argmax()
@@ -364,12 +369,17 @@ def update_graph(on_changed):
         p_opt_real = p[p_argmax]
         v_opt_apx = strategy.optLiquidatedVault()
         p_opt_apx = strategy.arbitrageProfit(v_opt_apx)
-        # reset domains
-        main_ax.set_xlim(0, v_max)
-        main_ax.set_ylim(0, p.max())
-        # reset/redraw everything
+        # recalculate domain lines
+        v_lim_line = np.repeat(v_max, LINSPACE_STEPS)
+        p_lim_line = np.linspace(0, p.max(), LINSPACE_STEPS)
+        # reset domain and lines
+        main_ax.set_xlim(0, 1.1 * v_max)
+        main_ax.set_ylim(0, 1.1 * p.max())
+        # reset and redraw everything
         profit_curve.set_xdata(v)
         profit_curve.set_ydata(arbitrageProfit(v, strategy))
+        limit_line.set_xdata(v_lim_line)
+        limit_line.set_ydata(p_lim_line)
         opt_apx_point.set_offsets(np.c_[v_opt_apx, p_opt_apx])
         opt_real_point.set_offsets(np.c_[v_opt_real, p_opt_real])
         fig.canvas.draw_idle()
