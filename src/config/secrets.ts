@@ -42,15 +42,13 @@ let loadedSecrets: Secrets | undefined;
 function loadSecrets(): Secrets {
     checkFilePermissions(SECRETS_FILE);
     const config = JSON.parse(readFileSync(SECRETS_FILE).toString());
-    checkEncryptionPasswordLength(config);
     return config;
 }
 
-function checkEncryptionPasswordLength(secrets: Secrets): void {
-    if (
-        secrets.wallet?.encryption_password?.length == 0 ||
-        (secrets.wallet?.encryption_password && secrets.wallet?.encryption_password.length < ENCRYPTION_PASSWORD_MIN_LENGTH)
-    ) {
+export function requireEncryptionPasswordAndLength(secrets: Secrets): void {
+    if (!secrets.wallet || !secrets.wallet.encryption_password) {
+        throw new Error(`'wallet.encryption_password' must be defined`);
+    } else if (secrets.wallet.encryption_password.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
         throw new Error(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
 }

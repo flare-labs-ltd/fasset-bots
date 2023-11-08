@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { BotConfig, createBotConfig, loadConfigFile } from "../config/BotConfig";
+import { BotConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { AgentStatus, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { Minter } from "../mock/Minter";
@@ -41,7 +41,7 @@ export class UserBot {
     async initialize(configFile: string, fAssetSymbol: string): Promise<void> {
         logger.info(`User ${requireSecret("user.native_address")} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        const runConfig = loadConfigFile(configFile, `User ${requireSecret("user.native_address")}`);
+        const runConfig = loadAgentConfigFile(configFile, `User ${requireSecret("user.native_address")}`);
         // init web3 and accounts
         this.nativeAddress = requireSecret("user.native_address");
         const nativePrivateKey = requireSecret("user.native_private_key");
@@ -304,6 +304,7 @@ export class UserBot {
         for (const [key, value] of Object.entries(info)) {
             if (typeof key === 'number' || /^\d+$/.test(key)) continue;
             if (key === 'status') {
+                /* istanbul ignore next */
                 console.log(`${key}: ${AgentStatus[Number(value)] ?? value}`);
             } else if (/UBA$/i.test(key)) {
                 const amount = Number(value) / Number(settings.assetUnitUBA);
@@ -322,6 +323,7 @@ export class UserBot {
                 const [symbol, decimals] =
                     /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)] :
                     /PoolTokens/i.test(key) ? ['POOLTOK', 18] :
+                    /* istanbul ignore next */
                     ['???', 18];
                 const amount = Number(value) / (10 ** decimals);
                 console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);

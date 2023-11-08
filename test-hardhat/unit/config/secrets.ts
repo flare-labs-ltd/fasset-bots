@@ -1,9 +1,6 @@
 import { expect } from "chai";
-import { Secrets, requireSecret } from "../../../src/config/secrets";
-import rewire from "rewire";
+import { Secrets, requireEncryptionPasswordAndLength, requireSecret } from "../../../src/config/secrets";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH } from "../../../src/utils/helpers";
-const rewiredSecrets = rewire("../../../src/config/secrets");
-const checkEncryptionPasswordLength = rewiredSecrets.__get__("checkEncryptionPasswordLength");
 
 describe("Secrets unit tests", async () => {
     it("Should not return secret", async () => {
@@ -26,19 +23,34 @@ describe("Secrets unit tests", async () => {
     it("Should throw error if encryption password too short", async () => {
         const secrets: Secrets = {
             apiKey: {
-                apiKey: ""
-            }
-        }
-        const fn1 = () => {
-            return checkEncryptionPasswordLength(secrets);
+                apiKey: "",
+            },
         };
-        expect(fn1).to.not.throw;
+        const fn1 = () => {
+            return requireEncryptionPasswordAndLength(secrets);
+        };
+        expect(fn1).to.throw("'wallet.encryption_password' must be defined");
+
+        secrets.wallet = undefined;
+        const fn2 = () => {
+            return requireEncryptionPasswordAndLength(secrets);
+        };
+        expect(fn2).to.throw("'wallet.encryption_password' must be defined");
+
         secrets.wallet = {
             encryption_password: ""
         };
-        const fn2 = () => {
-            return checkEncryptionPasswordLength(secrets);
+        const fn3 = () => {
+            return requireEncryptionPasswordAndLength(secrets);
         };
-        expect(fn2).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+        expect(fn3).to.throw("'wallet.encryption_password' must be defined");
+
+        secrets.wallet = {
+            encryption_password: "123456789012345"
+        };
+        const fn4 = () => {
+            return requireEncryptionPasswordAndLength(secrets);
+        };
+        expect(fn4).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     });
 });

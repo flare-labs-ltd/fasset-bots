@@ -163,6 +163,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             let disproved = 0;
             for (const client of this.clients) {
                 const proof = await this.obtainProofFromStateConnectorForClient(client, roundId, requestBytes);
+                /* istanbul ignore next */
                 if (proof == null) {
                     continue; // client failure
                 }
@@ -174,6 +175,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 }
                 return proof;
             }
+            /* istanbul ignore next */
             if (disproved > 0) {
                 return AttestationNotProved.DISPROVED;
             }

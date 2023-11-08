@@ -16,7 +16,7 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
 import { requireNotNull, toBN } from "../utils/helpers";
-import { requireSecret } from "./secrets";
+import { requireEncryptionPasswordAndLength, requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
 import { JsonLoader } from "./json-loader";
@@ -68,6 +68,8 @@ export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFil
     try {
         const config = botConfigLoader.load(fPath);
         validateConfigFile(config);
+        // check secrets.json file permission
+        getSecrets();
         return config;
     } catch (e) {
         /* istanbul ignore next */
@@ -105,6 +107,9 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
     try {
         const config = botConfigLoader.load(fPath);
         validateAgentConfigFile(config);
+        // check if encryption password is defined and also check secrets.json file permission
+        const secrets = getSecrets();
+        requireEncryptionPasswordAndLength(secrets);
         return config as AgentBotConfigFile;
     } catch (e) {
         /* istanbul ignore next */
