@@ -3,8 +3,7 @@ import { ubaToAmg, swapOutput, swapInput, setupEcosystem, setFtsoPrices } from '
 import { getTestContext } from './fixtures/context'
 import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
-import type { AssetConfig, CollateralAsset, UnderlyingAsset, EcosystemConfig } from './fixtures/interface'
-import type { TestContext } from './fixtures/interface'
+import type { AssetConfig, CollateralAsset, UnderlyingAsset, EcosystemConfig, TestContext } from './fixtures/interface'
 
 
 // config for used assets

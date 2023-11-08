@@ -79,7 +79,7 @@ describe("Tests for Liquidator contract", () => {
       const { challenger, vault } = context.contracts
       await vault.mint(challenger, 100)
       await challenger.connect(context.signers.challenger).withdrawToken(vault)
-      expect(await vault.balanceOf(challenger)).to.equal(100)
+      expect(await vault.balanceOf(context.signers.challenger)).to.equal(100)
     })
 
     it.skip("should withdraw native tokens from contract", async () => {
