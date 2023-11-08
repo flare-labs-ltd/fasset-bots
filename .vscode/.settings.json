@@ -1,6 +1,7 @@
 {
     "editor.trimAutoWhitespace": true,
     "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
     "yaml.customTags": [
         "!reference sequence"
     ]

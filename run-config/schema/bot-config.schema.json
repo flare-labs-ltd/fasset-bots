@@ -45,11 +45,23 @@
                     "type": "string"
                 }
             },
-            "required": ["amgDecimals", "chainId", "decimals", "finalizationBlocks", "name", "requireEOAProof", "symbol"],
+            "required": [
+                "amgDecimals",
+                "chainId",
+                "decimals",
+                "finalizationBlocks",
+                "name",
+                "requireEOAProof",
+                "symbol"
+            ],
             "type": "object"
         },
         "DatabaseType": {
-            "enum": ["mysql", "postgresql", "sqlite"],
+            "enum": [
+                "mysql",
+                "postgresql",
+                "sqlite"
+            ],
             "type": "string"
         },
         "NativeChainInfo": {
@@ -62,7 +74,10 @@
                     "type": "number"
                 }
             },
-            "required": ["finalizationBlocks", "readLogsChunkSize"],
+            "required": [
+                "finalizationBlocks",
+                "readLogsChunkSize"
+            ],
             "type": "object"
         },
         "OrmConfigOptions": {
@@ -90,7 +105,11 @@
                     "type": "number"
                 },
                 "schemaUpdate": {
-                    "enum": ["full", "recreate", "safe"],
+                    "enum": [
+                        "full",
+                        "recreate",
+                        "safe"
+                    ],
                     "type": "string"
                 },
                 "type": {
@@ -100,7 +119,9 @@
                     "type": "string"
                 }
             },
-            "required": ["type"],
+            "required": [
+                "type"
+            ],
             "type": "object"
         }
     },
@@ -117,6 +138,19 @@
             },
             "type": "array"
         },
+        "challengeStrategy": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {}
+            },
+            "required": [
+                "className"
+            ],
+            "type": "object"
+        },
         "contractsJsonFile": {
             "type": "string"
         },
@@ -128,6 +162,19 @@
                 "$ref": "#/definitions/BotFAssetInfo"
             },
             "type": "array"
+        },
+        "liquidationStrategy": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {}
+            },
+            "required": [
+                "className"
+            ],
+            "type": "object"
         },
         "loopDelay": {
             "type": "number"
@@ -148,6 +195,12 @@
             "type": "string"
         }
     },
-    "required": ["fAssetInfos", "loopDelay", "nativeChainInfo", "rpcUrl"],
+    "required": [
+        "fAssetInfos",
+        "loopDelay",
+        "nativeChainInfo",
+        "rpcUrl"
+    ],
     "type": "object"
 }
+

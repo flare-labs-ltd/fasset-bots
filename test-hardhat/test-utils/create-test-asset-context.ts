@@ -213,7 +213,7 @@ export async function createTestAssetContext(
     };
 }
 
-export function getTestAssetTrackedStateContext(context: TestAssetBotContext): TestAssetTrackedStateContext {
+export function getTestAssetTrackedStateContext(context: TestAssetBotContext, useCustomStrategy: boolean = false): TestAssetTrackedStateContext {
     return {
         nativeChainInfo: context.nativeChainInfo,
         blockchainIndexer: context.blockchainIndexer,
@@ -225,6 +225,12 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext): T
         priceChangeEmitter: context.priceChangeEmitter,
         collaterals: context.collaterals,
         stablecoins: context.stablecoins,
+        liquidationStrategy: (useCustomStrategy) ? {
+            className: "DefaultLiquidationStrategy"
+        } : undefined,
+        challengeStrategy: (useCustomStrategy) ? {
+            className: "DefaultChallengeStrategy"
+        } : undefined
     };
 }
 

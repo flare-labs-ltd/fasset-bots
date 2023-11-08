@@ -41,6 +41,15 @@ export interface BotConfig {
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
+    // liquidator / challenger
+    liquidationStrategy?: { // only for liquidator
+        className: string;
+        config?: any;
+    };
+    challengeStrategy?: { // only for challenger
+        className: string;
+        config?: any;
+    }
 }
 
 export interface BotFAssetConfig {
@@ -169,6 +178,8 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         notifier: new Notifier(),
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
+        liquidationStrategy: runConfig.liquidationStrategy,
+        challengeStrategy: runConfig.challengeStrategy
     };
 }
 

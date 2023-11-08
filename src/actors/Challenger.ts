@@ -14,6 +14,7 @@ import { formatArgs } from "../utils/formatting";
 import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { ChallengeStrategy, DefaultChallengeStrategy } from "./plugins/ChallengeStrategy";
 
 const MAX_NEGATIVE_BALANCE_REPORT = 50; // maximum number of transactions to report in freeBalanceNegativeChallenge to avoid breaking block gas limit
 interface ActiveRedemption {
@@ -25,6 +26,8 @@ interface ActiveRedemption {
 }
 
 export class Challenger extends ActorBase {
+    challengeStrategy: ChallengeStrategy;
+
     constructor(
         public runner: ScopedRunner,
         public address: string,
@@ -32,6 +35,12 @@ export class Challenger extends ActorBase {
         public lastEventUnderlyingBlockHandled: number
     ) {
         super(runner, address, state);
+        if (state.context.challengeStrategy === undefined) {
+            this.challengeStrategy = new DefaultChallengeStrategy(state, address);
+        } else {
+            const strategies = require("./plugins/ChallengeStrategy");
+            this.challengeStrategy = new strategies[state.context.challengeStrategy.className](state, address);
+        }
     }
 
     activeRedemptions = new Map<string, ActiveRedemption>(); // paymentReference => { agent vault address, requested redemption amount }
@@ -179,18 +188,7 @@ export class Challenger extends ActorBase {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
-            // due to async nature of challenging (and the fact that challenger might start tracking agent later), there may be some false challenges which will be rejected
-            // this is perfectly safe for the system, but the errors must be caught
-            await this.state.context.assetManager
-                .illegalPaymentChallenge(web3DeepNormalize(proof), agent.vaultAddress, { from: this.address })
-                .catch((e) =>
-                    scope.exitOnExpectedError(e, [
-                        "chlg: already liquidating",
-                        "chlg: transaction confirmed",
-                        "matching redemption active",
-                        "matching ongoing announced pmt",
-                    ])
-                );
+            await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof))
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
             console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         });
@@ -226,10 +224,7 @@ export class Challenger extends ActorBase {
                 this.waitForDecreasingBalanceProof(scope, tx1hash, agent.underlyingAddress),
                 this.waitForDecreasingBalanceProof(scope, tx2hash, agent.underlyingAddress),
             ]);
-            // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager
-                .doublePaymentChallenge(web3DeepNormalize(proof1), web3DeepNormalize(proof2), agent.vaultAddress, { from: this.address })
-                .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"]));
+            await this.challengeStrategy.doublePaymentChallenge(scope, agent, web3DeepNormalize(proof1), web3DeepNormalize(proof2));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
             console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
         });
@@ -288,10 +283,7 @@ export class Challenger extends ActorBase {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for free negative balance.`);
         await this.singleChallengePerAgent(agent, async () => {
             const proofs = await Promise.all(transactionHashes.map((txHash) => this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
-            // due to async nature of challenging there may be some false challenges which will be rejected
-            await this.state.context.assetManager
-                .freeBalanceNegativeChallenge(web3DeepNormalize(proofs), agent.vaultAddress, { from: this.address })
-                .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"]));
+            await this.challengeStrategy.freeBalanceNegativeChallenge(scope, agent, web3DeepNormalize(proofs));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
             console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
         });

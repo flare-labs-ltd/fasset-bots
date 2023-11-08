@@ -7,14 +7,23 @@ import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { LiquidationStrategy, DefaultLiquidationStrategy } from "./plugins/LiquidationStrategy";
 
 export class Liquidator extends ActorBase {
+    liquidationStrategy: LiquidationStrategy;
+
     constructor(
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState
     ) {
         super(runner, address, state);
+        if (state.context.liquidationStrategy === undefined) {
+            this.liquidationStrategy = new DefaultLiquidationStrategy(state, address);
+        } else {
+            const strategies = require("./plugins/LiquidationStrategy");
+            this.liquidationStrategy = new strategies[state.context.liquidationStrategy.className](state, address);
+        }
     }
 
     /**
@@ -99,8 +108,7 @@ export class Liquidator extends ActorBase {
     }
 
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
-        const fBalance = await this.state.context.fAsset.balanceOf(this.address);
-        await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
+        await this.liquidationStrategy.liquidate(agent);
         logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
     }
 }

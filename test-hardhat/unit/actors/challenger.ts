@@ -103,4 +103,13 @@ describe("Challenger unit tests", async () => {
         await challenger.runStep();
         expect(spyConsole).to.be.called.once;
     });
+
+    it("Should create challenger with explicitly stated default strategy", async () => {
+        trackedStateContext = getTestAssetTrackedStateContext(context, true);
+        const lastBlock = await web3.eth.getBlockNumber();
+        state = new TrackedState(trackedStateContext, lastBlock);
+        await state.initialize();
+        const challenger = await createTestChallenger(challengerAddress, state);
+        expect(challenger).to.not.be.undefined
+    });
 });
