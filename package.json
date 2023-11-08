@@ -13,8 +13,8 @@
     "license": "MIT",
     "bin": {
         "agent-bot": "dist/src/cli/agent.js",
-        "key": "dist/src/cli/key.js",
         "fake-price-reader": "dist/src/cli/fakePriceReader.js",
+        "key": "dist/src/cli/key.js",
         "user-bot": "dist/src/cli/user.js"
     },
     "nyc": {
