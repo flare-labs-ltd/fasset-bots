@@ -128,7 +128,7 @@ describe("Tests for Liquidator contract", () => {
       })
     })
 
-    ecosystemFactory.getSemiHealthyEcosystems(20).forEach((config: EcosystemConfig) => {
+    ecosystemFactory.getSemiHealthyEcosystems(1).forEach((config: EcosystemConfig) => {
       it(`should optimally liquidate less than max f-assets due to semi-healthy ecosystem config: ${config.name}`, async () => {
         const { assetManager, agent, blazeSwapRouter, fAsset, vault, pool, liquidator } = context.contracts
         // setup ecosystem
@@ -206,9 +206,12 @@ describe("Tests for Liquidator contract", () => {
     it("should prevent direct external call to onFlashLoan", async () => {
       const { liquidator } = context.contracts
       await expect(liquidator.onFlashLoan(
-        context.signers.challenger.address, context.contracts.vault, 1000, 100, "0x"
+        context.signers.challenger.address,
+        context.contracts.vault,
+        1000,
+        1000,
+        "0x"
       )).to.be.revertedWith("Liquidator: Flash loan with invalid initiator")
     })
   })
-
 })

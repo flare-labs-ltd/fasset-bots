@@ -43,7 +43,6 @@
     "blazeswap": "git+https://github.com/blazeswap/contracts.git#main",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
-    "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#fasset-tests",
-    "fasset-bots": "git+ssh://git@gitlab.com/flarenetwork/fasset-bots.git#master"
+    "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#fasset-tests"
   }
 }

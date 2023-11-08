@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "blazeswap/contracts/periphery/interfaces/IBlazeSwapRouter.sol";
-import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 
 
@@ -19,7 +18,7 @@ interface ILiquidator is IERC3156FlashBorrower {
      * @param _agentVault The agent vault to liquidate from
      */
     function runArbitrage(
-        IIAgentVault _agentVault
+        address _agentVault
     ) external;
 
     /**
@@ -30,7 +29,7 @@ interface ILiquidator is IERC3156FlashBorrower {
      *
      */
     function runArbitrageWithCustomParams(
-        IIAgentVault _agentVault,
+        address _agentVault,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeswap
     ) external;

@@ -22,7 +22,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.illegalPaymentChallenge(_transaction, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault) {} catch (bytes memory) {}
     }
 
     function doublePaymentChallenge(
@@ -33,7 +33,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.doublePaymentChallenge( _payment1, _payment2, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault) {} catch (bytes memory) {}
     }
 
     function freeBalanceNegativeChallenge(
@@ -43,7 +43,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.freeBalanceNegativeChallenge(_payments, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(IIAgentVault(_agentVault)) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault) {} catch (bytes memory) {}
     }
 
     function withdrawToken(IERC20 token) external onlyOwner {

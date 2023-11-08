@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
+import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "./interface/ILiquidator.sol";
 import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
@@ -11,8 +12,8 @@ import "./lib/Ecosystem.sol";
 /**
  * Do not send any tokens to this contract, they can be stolen!
  * Security is not put in place because of gas cost savings.
- * Ideally, we would store the hash of the data passed into
- * flash loan, and validate it in onFlashLoan, then also check
+ * Ideally, we would save the hash of the data passed into
+ * flash loan to storage, and validate it in onFlashLoan, then also check
  * that no funds were stolen for the three relevant tokens.
  * Also _approve(token, 0) would need to be called after each swap.
  */
@@ -56,19 +57,23 @@ contract Liquidator is ILiquidator {
     }
 
     function runArbitrage(
-        IIAgentVault _agentVault
+        address _agentVault
     ) external {
-        runArbitrageWithCustomParams(_agentVault, flashLender, blazeSwapRouter);
+        runArbitrageWithCustomParams(
+            _agentVault,
+            flashLender,
+            blazeSwapRouter
+        );
     }
 
     function runArbitrageWithCustomParams(
-        IIAgentVault _agentVault,
+        address _agentVault,
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwapRouter
     ) public {
         _runArbitrageWithData(
             Ecosystem.getData(
-                address(_agentVault),
+                _agentVault,
                 address(_blazeSwapRouter),
                 address(_flashLender)
             )
