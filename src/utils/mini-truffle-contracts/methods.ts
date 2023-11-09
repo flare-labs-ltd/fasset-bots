@@ -4,7 +4,7 @@ import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
-import { waitForFinalization } from "./finalization";
+import { submitTransaction } from "./finalization";
 import { transactionLogger, wrapTransactionError } from "./transaction-logging";
 import { ContractSettings } from "./types";
 
@@ -202,20 +202,19 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     ++transactionId;
     if (config.gas == null && settings.gas == "auto") {
         transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
-        const gas = await web3.eth.estimateGas(config).catch((e) => wrapTransactionError(transactionId, e));
+        const gas = await web3.eth.estimateGas(config).catch((e) => { throw wrapTransactionError(transactionId, e); });
         config.gas = Math.floor(gas * gasMultiplier);
     }
-    const nonce = waitFor.what === "nonceIncrease" ? await web3.eth.getTransactionCount(config.from, "latest") : 0;
-    transactionLogger.info("SEND", { transactionId, waitFor, transaction: config });
-    const promiEvent = web3.eth.sendTransaction(config);
-    return await waitForFinalization(transactionId, web3, waitFor, nonce, config.from, promiEvent);
+    return await submitTransaction(transactionId, settings, config)
+        .catch((e) => { throw wrapTransactionError(transactionId, e); });
 }
 
 async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
     ++transactionId;
     transactionLogger.info("CALL", { transactionId, transaction: config });
-    return await settings.web3.eth.call(config).catch((e) => wrapTransactionError(transactionId, e));
+    return await settings.web3.eth.call(config)
+        .catch((e) => { throw wrapTransactionError(transactionId, e); });
 }
 
 /**
@@ -225,7 +224,8 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     const config = mergeConfig(settings, transactionConfig);
     ++transactionId;
     transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
-    return await settings.web3.eth.estimateGas(config).catch((e) => wrapTransactionError(transactionId, e));
+    return await settings.web3.eth.estimateGas(config)
+        .catch((e) => { throw wrapTransactionError(transactionId, e); });
 }
 
 /**

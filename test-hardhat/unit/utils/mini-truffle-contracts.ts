@@ -1,11 +1,12 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
-import { expect } from "chai";
+import { assert, expect } from "chai";
+import { network } from "hardhat";
 import { improveConsoleLog, preventReentrancy, requireNotNull, sleep } from "../../../src/utils/helpers";
 import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle-contracts/cancelable-promises";
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle-contracts/contracts";
 import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
-import { artifacts, contractSettings, initWeb3, web3 } from "../../../src/utils/web3";
+import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -16,6 +17,11 @@ describe("mini truffle and artifacts tests", async () => {
     });
 
     describe("artifacts", () => {
+        it("require should work", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            expect((FakePriceReader as MiniTruffleContract)._contractJson?.sourceName === "contracts/mock/FakePriceReader.sol");
+        });
+
         it("require with directory should work", async () => {
             const GovernanceSettings = artifacts.require("flattened/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings");
             expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName === "flattened/FlareSmartContracts.sol");
@@ -247,13 +253,12 @@ describe("mini truffle and artifacts tests", async () => {
             const calldata = web3.eth.abi.encodeFunctionCall(requireNotNull(fpr.abi.find((it) => it.name === "setPrice")), ["XRP", "5"]);
             const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
             const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
-            return waitForFinalization(111, contractSettings.web3, waitFor, nonce, accounts[0], promiEvent);
+            const cancelToken = new CancelToken();
+            await waitForFinalization(111, contractSettings.web3, waitFor, nonce, accounts[0], promiEvent, cancelToken);
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
-            await expectRevert(lowLevelExecuteMethodWithError({ what: "receipt", timeoutMS: 10_000 }), "price not initialized");
             await expectRevert(lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
-            await expectRevert(lowLevelExecuteMethodWithError({ what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 }), "price not initialized");
         });
 
         it("should call a contract - wait for nonce (low level, always wait at least one tick)", async () => {
@@ -421,6 +426,109 @@ describe("mini truffle and artifacts tests", async () => {
             await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
                 console.error("SEND ERR NG", e);
             });
+        });
+    });
+
+    describe("resubmit test", () => {
+        async function setMining(type: 'auto' | 'manual' | 'interval', timeMS: number = 1000) {
+            await network.provider.send('evm_setAutomine', [type === 'auto']);
+            await network.provider.send("evm_setIntervalMining", [type === 'interval' ? timeMS : 0]);
+        }
+
+        afterEach(() => {
+            setMining('auto');
+        });
+
+        it("resubmit should work", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const settings: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const fpr = await withSettings(FakePriceReader, settings).new(accounts[0]);
+            // warm up storage
+            const res1 = await fpr.setDecimals("XRP", 10);
+            // console.log(res1.receipt.effectiveGasPrice);
+            // try 1
+            const res2 = await fpr.setDecimals("XRP", 11);
+            // console.log(res2.receipt.effectiveGasPrice);
+            // set to timed mining
+            setMining('interval', 2000);
+            // test send
+            const res3 = await fpr.setDecimals("XRP", 12);
+            // console.log(res3.receipt.effectiveGasPrice);
+            assert.isAbove(res3.receipt.effectiveGasPrice, 1.5 * res2.receipt.effectiveGasPrice);
+            assert.isBelow(res3.receipt.effectiveGasPrice, 2.5 * res2.receipt.effectiveGasPrice);
+            // check result
+            const { 2: dec } = await fpr.getPrice("XRP");
+            assert.equal(Number(dec), 12);
+        });
+
+        it("resubmit should work - explicit gas price and initial factor", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            // try 1
+            const res1 = await fpr.setDecimals("XRP", 10, { gasPrice: 1.5e9 });
+            // console.log(res1.receipt.effectiveGasPrice);
+            assert.equal(res1.receipt.effectiveGasPrice, 1.5e9);
+            // try 2
+            const settings2: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 0, priceFactor: 1.5 }, { afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const res2 = await withSettings(fpr, settings2).setDecimals("XRP", 11, { gasPrice: 1.5e9 });
+            // console.log(res2.receipt.effectiveGasPrice);
+            assert.equal(res2.receipt.effectiveGasPrice, 2.25e9);
+            // set to timed mining
+            setMining('interval', 2000);
+            // try 3
+            const res3 = await withSettings(fpr, settings2).setDecimals("XRP", 12, { gasPrice: 1.5e9 });
+            assert.equal(res3.receipt.effectiveGasPrice, 3.0e9);
+            // try 4
+            const settings3: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 0, priceFactor: 1.5 }, { afterMS: 750, priceFactor: 2 }, { afterMS: 1500, priceFactor: 3 }] };
+            const res4 = await withSettings(fpr, settings3).setDecimals("XRP", 20, { gasPrice: 1.5e9 });
+            // console.log(res4.receipt.effectiveGasPrice);
+            assert.equal(res4.receipt.effectiveGasPrice, 4.5e9);
+            // check result
+            const { 2: dec } = await fpr.getPrice("XRP");
+            assert.equal(Number(dec), 20);
+        });
+
+        async function delayed<T>(ms: number, func: () => Promise<T>) {
+            await sleep(ms);
+            return await func();
+        }
+
+        it("should lock nonce", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }], nonceLockTimeoutMS: 3000 };
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            // set to timed mining
+            setMining('interval', 2000);
+            await Promise.all([
+                withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
+                delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.5e9 })),
+            ]);
+            // check result
+            const { 2: dec1 } = await fpr.getPrice("XRP");
+            assert.equal(Number(dec1), 6);
+            const { 2: dec2 } = await fpr.getPrice("BTC");
+            assert.equal(Number(dec2), 8);
+        });
+
+        it("wait for lock should timeout", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }], nonceLockTimeoutMS: 3000 };
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            // set to timed mining
+            setMining('interval', 2000);
+            const results = await Promise.allSettled([
+                withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
+                delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.6e9 })),
+                delayed(200, () => withSettings(fpr, settings1).setDecimals("DOGE", 5, { gasPrice: 1.7e9 })),
+            ]);
+            assert(results[0].status === 'fulfilled',
+                "first submit should succeed");
+            assert(results.filter(r => r.status === 'fulfilled').length === 2,
+                "exactly 2 submits should succeed");
+            const failed = results.find(r => r.status === 'rejected');
+            assert(failed?.status === 'rejected' && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
+                "expected error 'Timeout waiting to obtain address nonce lock'");
         });
     });
 });

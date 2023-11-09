@@ -10,6 +10,8 @@ export type TransactionWaitFor =
     | { what: "nonceIncrease"; pollMS: number; timeoutMS?: number }
     | { what: "confirmations"; confirmations: number; timeoutMS?: number };
 
+export type ResubmitTransaction = { afterMS: number; priceFactor: number; };
+
 /**
  * Settings that affect the calls of contract methods through mini truffle.
  */
@@ -43,6 +45,21 @@ export interface ContractSettings {
      * Default transaction finalization settings.
      */
     waitFor: TransactionWaitFor;
+
+    /**
+     * The list of `{ afterMS, priceFactor }` pairs. After each `afterMS`, the transaction will be re-submitted
+     * (all `afterMS` are measured from the initial sub,it, not from the previous).
+     * The gas price at each re-submit will be the autodetected gas price multiplied by `priceFactor`.
+     * Item with `afterMS=0` is optional - if it doesn't exist, it is automatically added with `priceFactor=1`
+     * (you might want to add it explicitly, to set priceFactor for initial submit different from 1).
+     */
+    resubmitTransaction: ResubmitTransaction[];
+
+    /**
+     * Maximum number of millisecinds to wait for locking an address nonce before giving up.
+     * Locking the nonce makes sure that there are no errors because two transaction from the same address try to execute.
+     */
+    nonceLockTimeoutMS: number;
 }
 
 /**

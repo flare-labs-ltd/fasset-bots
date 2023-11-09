@@ -27,6 +27,11 @@ export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaul
     defaultAccount: web3.eth.defaultAccount,
     waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 },
     // waitFor: { what: 'receipt', timeoutMS: 10_000 },
+    nonceLockTimeoutMS: 60_000,
+    resubmitTransaction: [
+        { afterMS: 10_000, priceFactor: 1.2 },
+        { afterMS: 20_000, priceFactor: 2.0 },
+    ]
 });
 
 export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);
@@ -121,5 +126,7 @@ function updateWithHardhatNetworkDefaults(settings: ContractSettings): ContractS
         gasMultiplier: settings.gasMultiplier, // ignore networkConfig - it has value 1 even if not set explicitly
         defaultAccount: settings.defaultAccount ?? networkConfig.from ?? firstAccountAddress(),
         waitFor: settings.waitFor,
+        nonceLockTimeoutMS: settings.nonceLockTimeoutMS,
+        resubmitTransaction: settings.resubmitTransaction,
     };
 }

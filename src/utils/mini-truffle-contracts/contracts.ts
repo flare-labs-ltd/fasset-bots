@@ -123,7 +123,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
     }
 }
 
-export function withSettings<T>(contract: Truffle.Contract<T>, newSettings: Partial<ContractSettings>): Truffle.Contract<T>;
+export function withSettings<T extends Truffle.Contract<any>>(contract: T, newSettings: Partial<ContractSettings>): T;
 export function withSettings<T extends Truffle.ContractInstance>(instance: T, newSettings: Partial<ContractSettings>): T;
 export function withSettings(ci: any, newSettings: Partial<ContractSettings>): any {
     return ci._withSettings(newSettings);
