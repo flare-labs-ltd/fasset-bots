@@ -10,45 +10,112 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 -   [_Challenger_](./docs/actors/challenger.md): essential player for maintaining the FAsset system healthy.
 -   [_Liquidator_](./docs/actors/liquidator.md): player who liquidates bad agents.
 -   [_SystemKeeper_](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
--   [_TimeKeeper_](./docs/actors/timeKeeper.md): underlying block maintenance (prove it and update it).
+-   [_TimeKeeper_](./docs/actors/timeKeeper.md): underlying block maintenance (proves and updates it). Should be running to prevent current block being too outdated, which gives too short time for minting or redemption payment.
 
 ## Install
 
-Clone project. Clone and install `simple-wallet` repository in the same directory as `fasset-bots`.
-
-Run `yarn` and `yarn build`.
+- Clone this project `fasset-bots`
+- Clone project `simple-wallet` in the same directory as `fasset-bots`
+- Install `simple-wallet`:
+    - `cd simple-wallet`
+    - `yarn`
+    - `yarn build`
+- Install  `fasset-bots`
+    - `cd ..`
+    - `yarn`
+    - `yarn build`
 
 (Alternatively also clone and install `fasset` repository in the same directory as `fasset-bots`. Run script `./scripts/copy-artifacts.sh` to update deployment and config `fasset` settings.)
 
 ## Configurations
 
-For needed prerequirements, environment variables and other configurations see [here](./docs/config.md).
+### Agent bot
 
-## How to run Agent bot
+- Generate default agents settings file, which will be used to generate new agent. See [configuration and example](./docs/config.md#agent-default-settings).
 
-In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `node dist/src/run/run-agent.js`. (Make sure you ran `yarn build` before).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
+
+- Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+
+- Generate `secrets.json` file in root folder. `secrets.json`. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#agent-bot-secrets-file)
+
+### Challenger
+
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#challenger-run-config).
+
+- Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+
+### Liquidator
+
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
+
+- Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+
+### System keeper
+
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
+
+- Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+
+### Time keeper
+
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config.
+
+- Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+
+## How to run
+
+### Agent bot
+
+In terminal script [`run-agent.ts`](./src/run/run-agent.ts) with command `node dist/src/run/run-agent.js`.
 
 The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The runner will initiate needed context and connect to native network (Flare/Songbird). Then it will constantly check if any active agent stored in persistent state should handle any incoming events (see [Agent](./docs/actors/agent.md)).
 
-In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot`.
+In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot [command]`.
 
-## Command line interface for Agent bot `agent-bot`
-
-Command line interface can be access by running command `yarn agent-bot`. For more see [here](./docs/cli.md).
-
-## REST APIs for Agent bot
-
-Same commands as in cli `agent-bot` can be run via REST APIs. For more see [here](./docs/api.md).
-
-## How to run other bots (Challenger, Liquidator and SystemKeeper)
+### Challenger, Liquidator and SystemKeeper
 
 Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 
-Example for such script using actor base runner for Challenger can be found in [`run-challenger.ts`](./src/run/run-challenger.ts) and run by command `node dist/src/run/run-challenger.js`. (Make sure you ran `yarn build` before).
+Example for such scripts:
+- Challenger [`run-challenger.ts`](./src/run/run-challenger.ts) run by command `node dist/src/run/run-challenger.js`.
 
-## Command line interface for user bot `user-bot` and api key `api-key`
+- Liquidator [`run-liquidator.ts`](./src/run/run-liquidator.ts) run by command `node dist/src/run/run-liquidator.js`.
 
-For more see [here](./docs/cli.md).
+- System keeper [`run-systemKeeper.ts`](./src/run/run-systemKeeper.ts) run by command `node dist/src/run/run-systemKeeper.js`.
+
+### Time keeper
+
+Example scripts [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by command `node dist/src/run/run-timeKeeper.js`.
+
+## Command line interface
+
+Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
+
+### Examples
+- [How to create agent bot and make it available?](./docs/examples.md#how-to-create-agent-bot-and-make-it-available-only-available-agents-can-be-minted-against-to)
+- [How to list and change agent settings?](./docs/examples.md#how-to-list-and-change-agent-settings)
+- [How to withdraw underlying?](./docs/examples.md#how-to-withdraw-underlying)
+- [How to create underlying account?](./docs/examples.md#how-to-create-underlying-account)
+- [How to create wallet encryption password?](./docs/examples.md#how-to-create-wallet-encryption-password)
+- [How to list available agents?](./docs/examples.md#how-to-list-available-agents)
+- [How to mint fassets?](./docs/examples.md#how-to-mint-fassets)
+- [How to redeem fassets?](./docs/examples.md#how-to-redeem-fassets)
+- [How to list system info?](./docs/examples.md#how-to-list-system-info)
+- [How to list agent info?](./docs/examples.md#how-to-list-agent-info)
+
+## REST APIs for Agent bot
+
+Same commands as in [cli `agent-bot`](./docs/cli.md#cli-agent-bot) can be run via REST APIs. For more see [here](./docs/api.md).
+
 
 ## Helpers
 
@@ -76,11 +143,11 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
     -   https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
 
 -   Coston
-    -   https://coston1-faucet.towolabs.com/ - 100 CFLR per day
+    -   https://coston1-faucet.towolabs.com/ - 100 CFLR per account per day
 
 ### Other usefull webclients
 
--   [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#) (ApiKey to access it can found in .env file - ask Urška or Iztok).
+-   [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#).
 -   [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
 -   [Testnet XRP Explorer](https://testnet.xrpl.org/)
 

@@ -4,16 +4,6 @@ System keeper works is in a way similar as Liquidator. It tracks the same events
 
 File [SystemKeeper.ts](../src/actors/SystemKeeper.ts) contains framework for such actor in FAsset system.
 
-## Prerequirements
-
-User needs:
-
--   **native address**.
--   To create [**running configuration**](../../src/config/BotConfig.ts)
-    For more see [configuration part](../config.md).
--   To set environment **.env** in root directory.
-    For more see [configuration part](../config.md).
-
 ### Initialization
 
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) as inputs:

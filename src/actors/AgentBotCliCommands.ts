@@ -18,9 +18,12 @@ import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
+import { getAgentSettings, printAgentInfo } from "../utils/fasset-helpers";
+import { AgentSettings } from "../fasset/AssetManagerTypes";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 const CollateralPool = artifacts.require("CollateralPool");
+const IERC20 = artifacts.require("IERC20Metadata");
 
 export class BotCliCommands {
     context!: IAssetAgentBotContext;
@@ -410,9 +413,40 @@ export class BotCliCommands {
             console.log(
                 `Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(
                     agent.chainId
-                )}`
+                )}, ChainSymbol: ${agent.chainSymbol}, Current event block: ${agent.currentEventBlock} `
             );
         }
+    }
+
+    /**
+     * Get agent info
+     * @param agentVault agent's vault address
+     */
+    async printAgentInfo(agentVault: string): Promise<void> {
+        await printAgentInfo(agentVault, this.context);
+    }
+
+    /**
+     * Get agent settings
+     * @param agentVault agent's vault address
+     * @returns object containing instances of AgentSettings
+     */
+    async printAgentSettings(agentVault: string): Promise<AgentSettings> {
+        const info = await this.context.assetManager.getAgentInfo(agentVault);
+        const settings = getAgentSettings(info);
+        const vaultCollateral = await IERC20.at(settings.vaultCollateralToken);
+        const vcSymbol = await vaultCollateral.symbol();
+        console.log(`vaultCollateralToken: ${settings.vaultCollateralToken}`);
+        console.log(`vaultCollateralSymbol: ${vcSymbol}`);
+        console.log(`feeBIPS: ${settings.feeBIPS.toString()}`);
+        console.log(`poolFeeShareBIPS: ${settings.poolFeeShareBIPS.toString()}`);
+        console.log(`mintingVaultCollateralRatioBIPS: ${settings.mintingVaultCollateralRatioBIPS.toString()}`);
+        console.log(`mintingPoolCollateralRatioBIPS: ${settings.mintingPoolCollateralRatioBIPS.toString()}`);
+        console.log(`poolExitCollateralRatioBIPS: ${settings.poolExitCollateralRatioBIPS.toString()}`);
+        console.log(`buyFAssetByAgentFactorBIPS: ${settings.buyFAssetByAgentFactorBIPS.toString()}`);
+        console.log(`poolTopupCollateralRatioBIPS: ${settings.poolTopupCollateralRatioBIPS.toString()}`);
+        console.log(`poolTopupTokenPriceFactorBIPS: ${settings.poolTopupTokenPriceFactorBIPS.toString()}`);
+        return settings;
     }
 
     /**

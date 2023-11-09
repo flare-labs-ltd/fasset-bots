@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { BotCliCommands } from "../../../actors/AgentBotCliCommands";
-import { AgentCreateResponse, AgentBalance, AgentUnderlying } from "../../common/AgentResponse";
+import { AgentCreateResponse, AgentBalance, AgentUnderlying, AgentSettings } from "../../common/AgentResponse";
+import { artifacts } from "../../../utils/web3";
+
+const IERC20 = artifacts.require("IERC20Metadata");
 
 @Injectable()
 export class AgentService {
@@ -130,6 +133,25 @@ export class AgentService {
         return {
             balance,
         };
+    }
+
+    async listAgentSetting(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentSettings> {
+        const cli = await BotCliCommands.create(fAssetSymbol);
+        const settings = await cli.printAgentSettings(agentVaultAddress);
+        const result = {} as AgentSettings;
+        const vaultCollateral = await IERC20.at(settings.vaultCollateralToken);
+        const vcSymbol = await vaultCollateral.symbol();
+        result.vaultCollateralToken = settings.vaultCollateralToken;
+        result.vaultCollateralSymbol = vcSymbol;
+        result.feeBIPS = settings.feeBIPS.toString();
+        result.poolFeeShareBIPS = settings.poolFeeShareBIPS.toString();
+        result.mintingVaultCollateralRatioBIPS = settings.mintingVaultCollateralRatioBIPS.toString();
+        result.mintingPoolCollateralRatioBIPS = settings.mintingPoolCollateralRatioBIPS.toString();
+        result.poolExitCollateralRatioBIPS = settings.poolExitCollateralRatioBIPS.toString();
+        result.buyFAssetByAgentFactorBIPS = settings.buyFAssetByAgentFactorBIPS.toString();
+        result.poolTopupCollateralRatioBIPS = settings.poolTopupCollateralRatioBIPS.toString();
+        result.poolTopupTokenPriceFactorBIPS = settings.poolTopupTokenPriceFactorBIPS.toString();
+        return result;
     }
 
     async updateAgentSetting(fAssetSymbol: string, agentVaultAddress: string, settingName: string, settingValue: string): Promise<void> {

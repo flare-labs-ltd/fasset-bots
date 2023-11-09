@@ -2,11 +2,11 @@
 
 ## Setup and run
 
-Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
+Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#env) for more.
 
 Api key and its hash can be generated via command `yarn key createApiKeyAndHash`. See more [here](./cli.md#cli-key);
 
-To run service use `yarn agent_api_start`.
+To run service use `yarn agent_api_start`. Swagger is locally running at http://localhost:3306/api-doc.
 
 ## Response fields
 
@@ -42,6 +42,21 @@ Agent bot web service routes are documented using the Swagger interface at the `
 
     -   POST `/api/agent/selfClose/{fAssetSymbol}/{agentVaultAddress}/{amountUBA}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amountUBA`, returns one of the possible`status` responses, depending on the success of operation.
 
+    - GET `/api/agent/settings/list/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing essential agent settings data:
+
+    | Field                             | Type   | Description                                                                                                                  |
+    | --------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
+    | `vaultCollateralToken`            | string | Vault collateral address                                                                                                     |
+    | `vaultCollateralSymbol`           | string | Vault collateral symbol                                                                                                      |
+    | `feeBIPS`                         | string | Minting fee in BIPS                                                                                                          |
+    | `poolFeeShareBIPS`                | string | Share of the minting fee that goes to the pool as percentage of the minting fee.                                             |
+    | `mintingVaultCollateralRatioBIPS` | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                              |
+    | `mintingPoolCollateralRatioBIPS`  | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                              |
+    | `poolExitCollateralRatioBIPS`     | string | The minimum collateral ratio above which a staker can exit the pool. This is collateral ratio that must be left after exit.  |
+    | `buyFAssetByAgentFactorBIPS`      | string | The factor set by the agent to multiply the price at which agent buys fassets from pool token holders on self-close exit.    |
+    | `poolTopupCollateralRatioBIPS`    | string | The collateral ratio below which it is possible to enter the pool at discounted rate (to prevent liquidation).               |
+    | `poolTopupTokenPriceFactorBIPS`   | string | The discount to pool token price when entering and pool collateral ratio is below pool topup collateral ratio.               |
+
     -   POST `/api/agent/settings/update/{fAssetSymbol}/{agentVaultAddress}/{settingName}/{settingValue}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `settingName` and `settingValue`, returns one of the possible`status` responses, depending on the success of operation.
 
 -   AGENT VAULT:
@@ -50,7 +65,7 @@ Agent bot web service routes are documented using the Swagger interface at the `
 
     -   POST `/api/agentVault/collateral/withdraw/{fAssetSymbol}/{agentVaultAddress}/{amount}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amount`, returns one of the possible`status` responses, depending on the success of operation.
 
-    -   GET `/api/agentVault/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: : Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing vault collateral free balance:
+    -   GET `/api/agentVault/collateral/freeBalance{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing vault collateral free balance:
 
     | Field     | Type   | Description             |
     | --------- | ------ | ----------------------- |

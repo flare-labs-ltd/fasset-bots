@@ -3,7 +3,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentCreateResponse } from "../../common/AgentResponse";
+import { AgentCreateResponse, AgentSettings } from "../../common/AgentResponse";
 
 @ApiTags("Agent")
 @Controller("api/agent")
@@ -49,6 +49,15 @@ export class AgentController {
         @Param("amountUBA") amountUBA: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.selfClose(fAssetSymbol, agentVaultAddress, amountUBA));
+    }
+
+    @Get("settings/list/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
+    public async getAgentSetting(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentSettings>> {
+        return handleApiResponse(this.agentService.listAgentSetting(fAssetSymbol, agentVaultAddress));
     }
 
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")

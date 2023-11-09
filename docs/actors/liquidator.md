@@ -2,16 +2,6 @@
 
 File [Liquidator.ts](../../src/actors/Liquidator.ts) contains framework for such actor in FAsset system.
 
-## Prerequirements
-
-User needs:
-
--   **native address**.
--   **fAssets**
--   To create [**running configuration**](../../src/config/BotConfig.ts)
-    For more see [configuration part](../config.md).
--   To set environment **.env** in root directory.
-    For more see [configuration part](../config.md).
 
 ### Initialization
 

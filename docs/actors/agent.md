@@ -5,57 +5,6 @@ A redeemer does the opposite. It sends FAssets to the system, system burns those
 
 File [AgentBot.ts](../../src/actors/AgentBot.ts) contains framework for such bot AgentBot in FAsset system.
 
-## Prerequirements
-
-User aka **Owner** needs:
-
--   **native address** with funds.
--   **underlying address** with funds.
--   To create [**initial agent’s settings**](../../src/config/BotConfig.ts).
-
-```javascript
-export interface AgentSettingsConfig {
-    vaultCollateralFtsoSymbol: string,
-    feeBIPS: string,
-    poolFeeShareBIPS: string,
-    mintingVaultCollateralRatioConstant: number,
-    mintingPoolCollateralRatioConstant: number,
-    poolExitCollateralRatioConstant: number,
-    buyFAssetByAgentFactorBIPS: string,
-    poolTopupCollateralRatioConstant: number,
-    poolTopupTokenPriceFactorBIPS: string
-}
-```
-
--   To create [**running configuration**](../../src/config/BotConfig.ts)
-    For more see [configuration part](../config.md).
--   To set environment **.env** in root directory.
-    For more see [configuration part](../config.md).
--   To run script [**./run-agents.ts**](../../src/run/run-agent.ts) -> creates [**AgentBotRunner**](../../src/actors/AgentBotRunner.ts), which handles all Owner's bots that are stored in persistent state.
-
-## Owner's methods
-
-Via command line interface Owner can operate with following commands:
-
--   Create agent vault
--   Deposit vault collateral to agent vault
--   Buy pool collateral for agent vault
--   Add agent vault to available list
--   Announce removal of agent from available list
--   Announce withdrawal vault collateral funds from agent vault
--   Withdraw pool fees
--   Check pool fee balance
--   Self close agent vault
--   Announce update of agent's settings
--   Close agent vault
--   Announce underlying withdrawal
--   Perform underlying withdrawal
--   Confirm underlying withdrawal
--   Cancel underlying withdrawal announcement
--   List active agents
-
-See [BotCliCommands.ts](../../src/cli/BotCliCommands.ts) for more.
-
 ## AgentBot Automation
 
 The **runStep** method is responsible for managing all relevant Agent events and comprises:

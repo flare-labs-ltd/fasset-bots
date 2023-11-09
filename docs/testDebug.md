@@ -17,7 +17,7 @@ Tests are divided into two following folders:
 
 ## Coverage:
 
--   Run `yarn cover` for coverage in `test-hardhat/` and `test/`. `html` coverage report is found in `/fasset-bots/coverage/lcov-report/index.html`
+-   Run `yarn cover` for coverage in `test-hardhat/` and `test/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
 
 # Debugging:
 

@@ -4,16 +4,6 @@ Challenger is essential for maintaining the FAsset system healthy. Challenger's 
 
 File [Challenger.ts](../../src/actors/Challenger.ts) contains framework for such actor in FAsset system.
 
-## Prerequirements
-
-User needs:
-
--   _native address_.
--   To create [**running configuration**](../../src/config/BotConfig.ts)
-    For more see [configuration part](../config.md).
--   To set environment **.env** in root directory.
-    For more see [configuration part](../config.md).
--   To run script [**./run-challenger.ts**](../../src/run/run-challenger.ts) -> creates [**ActorBotRunner**](../../src/actors/ActorBotRunner.ts).
 
 ### Initialization
 

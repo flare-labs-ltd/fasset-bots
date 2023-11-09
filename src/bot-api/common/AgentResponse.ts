@@ -16,3 +16,16 @@ export interface AgentUnderlying {
     address?: string;
     privateKey?: string;
 }
+
+export interface AgentSettings {
+    vaultCollateralToken: string;
+    vaultCollateralSymbol: string;
+    feeBIPS: string;
+    poolFeeShareBIPS: string;
+    mintingVaultCollateralRatioBIPS: string;
+    mintingPoolCollateralRatioBIPS: string;
+    poolExitCollateralRatioBIPS: string;
+    buyFAssetByAgentFactorBIPS: string;
+    poolTopupCollateralRatioBIPS: string;
+    poolTopupTokenPriceFactorBIPS: string;
+}

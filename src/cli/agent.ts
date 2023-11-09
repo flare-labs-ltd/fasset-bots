@@ -74,6 +74,26 @@ program
     });
 
 program
+    .command("info")
+    .description("print agent info")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.printAgentInfo(agentVault);
+    });
+
+program
+    .command("getAgentSettings")
+    .description("print agent settings")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.printAgentSettings(agentVault);
+    });
+
+program
     .command("updateAgentSetting")
     .description("set agent's settings")
     .argument("<agentVaultAddress>")

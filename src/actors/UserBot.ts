@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import { BotConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
-import { AgentStatus, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
-import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { printAgentInfo, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BNish, CommandLineError, toBN } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -292,44 +292,6 @@ export class UserBot {
     }
 
     async printAgentInfo(vaultAddress: string) {
-        const IERC20 = artifacts.require("IERC20Metadata");
-        const fAsset = this.context.fAsset;
-        const assetManager = this.context.assetManager;
-        const settings = await assetManager.getSettings();
-        const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
-        const symbol = await fAsset.symbol();
-        const info = await assetManager.getAgentInfo(vaultAddress);
-        const vaultCollateral = await IERC20.at(info.vaultCollateralToken);
-        const [vcSymbol, vcDec] = [await vaultCollateral.symbol(), await vaultCollateral.decimals()];
-        for (const [key, value] of Object.entries(info)) {
-            if (typeof key === 'number' || /^\d+$/.test(key)) continue;
-            if (key === 'status') {
-                /* istanbul ignore next */
-                console.log(`${key}: ${AgentStatus[Number(value)] ?? value}`);
-            } else if (/UBA$/i.test(key)) {
-                const amount = Number(value) / Number(settings.assetUnitUBA);
-                const lots = Number(value) / lotSizeUBA;
-                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}  (${lots.toFixed(2)} lots)`);
-            } else if (/RatioBIPS$/i.test(key)) {
-                const amount = Number(value) / 10000;
-                console.log(`${key.slice(0, key.length - 4)}: ${amount.toFixed(3)}`);
-            } else if (/BIPS$/i.test(key)) {
-                const percent = Number(value) / 100;
-                console.log(`${key.slice(0, key.length - 4)}: ${percent.toFixed(2)}%`);
-            } else if (/NATWei$/i.test(key)) {
-                const amount = Number(value) / 1e18;
-                console.log(`${key.slice(0, key.length - 6)}: ${amount.toFixed(2)} NAT`);
-            } else if (/Wei$/i.test(key)) {
-                const [symbol, decimals] =
-                    /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)] :
-                    /PoolTokens/i.test(key) ? ['POOLTOK', 18] :
-                    /* istanbul ignore next */
-                    ['???', 18];
-                const amount = Number(value) / (10 ** decimals);
-                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
-            } else {
-                console.log(`${key}: ${value}`);
-            }
-        }
+        await printAgentInfo(vaultAddress, this.context);
     }
 }
