@@ -199,6 +199,20 @@ describe("Bot cli commands unit tests", async () => {
         expect(toBN(agentEnt2.exitAvailableAllowedAtTimestamp).gtn(0)).to.be.true;
     });
 
+    it("Should run command 'printAgentInfo'", async () => {
+        const agent = await createAgent();
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.printAgentInfo(agent.vaultAddress);
+        expect(spyConsole).to.be.called();
+    });
+
+    it("Should run command 'printAgentSettings'", async () => {
+        const agent = await createAgent();
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.printAgentSettings(agent.vaultAddress);
+        expect(spyConsole).to.be.called();
+    });
+
     it("Should run command 'updateAgentSetting'", async () => {
         const agent = await createAgent();
         // update feeBIPS
