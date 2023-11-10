@@ -188,7 +188,7 @@ export async function executeConstructor(settings: ContractSettings, abi: AbiIte
 }
 
 // make sure id-s in different processes don't overlap (as long as they are started at least 1 second apart)
-let transactionId = systemTimestamp() * 1000;
+let lastTransactionId = systemTimestamp() * 1000;
 
 /**
  * Send a transaction for a contract method. Estimate gas before if needed.
@@ -199,22 +199,27 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     if (typeof config.from !== "string") {
         throw new Error("'from' field is mandatory");
     }
-    ++transactionId;
+    const transactionId = ++lastTransactionId;
     if (config.gas == null && settings.gas == "auto") {
         transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
-        const gas = await web3.eth.estimateGas(config).catch((e) => { throw wrapTransactionError(transactionId, e); });
+        const gas = await web3.eth.estimateGas(config)
+            .catch((e) => throwWrappedError(transactionId, e));
         config.gas = Math.floor(gas * gasMultiplier);
     }
-    return await submitTransaction(transactionId, settings, config)
-        .catch((e) => { throw wrapTransactionError(transactionId, e); });
+    try {
+        return await submitTransaction(transactionId, settings, config);
+    } catch (e: any) {
+        transactionLogger.info("ERROR", { transactionId, stack: e.stack });
+        throw e;    // should be wrapped already
+    }
 }
 
 async function executeMethodCall(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
-    ++transactionId;
+    const transactionId = ++lastTransactionId;
     transactionLogger.info("CALL", { transactionId, transaction: config });
     return await settings.web3.eth.call(config)
-        .catch((e) => { throw wrapTransactionError(transactionId, e); });
+        .catch((e) => throwWrappedError(transactionId, e));
 }
 
 /**
@@ -222,10 +227,10 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
  */
 async function executeMethodEstimateGas(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const config = mergeConfig(settings, transactionConfig);
-    ++transactionId;
+    const transactionId = ++lastTransactionId;
     transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
     return await settings.web3.eth.estimateGas(config)
-        .catch((e) => { throw wrapTransactionError(transactionId, e); });
+        .catch((e) => throwWrappedError(transactionId, e));
 }
 
 /**
@@ -240,4 +245,10 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
         config.gas = settings.gas;
     }
     return config;
+}
+
+function throwWrappedError(transactionId: number, e: any): never {
+    const wrapped = wrapTransactionError(e, null, 3);
+    transactionLogger.info("ERROR", { transactionId, stack: wrapped.stack });
+    throw wrapped;
 }

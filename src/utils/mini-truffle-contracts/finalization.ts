@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
 import { CancelToken, CancelTokenRegistration, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
-import { transactionLogger } from "./transaction-logging";
+import { transactionLogger, wrapTransactionError } from "./transaction-logging";
 import { ContractSettings, TransactionWaitFor } from "./types";
 
 export class FinalizationTimeoutError extends Error { }
@@ -134,7 +134,8 @@ export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cance
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
         promiEvent.on("receipt", (receipt) => resolve(receipt)).catch(ignore);
-        promiEvent.on("error", (error) => reject(error)).catch(ignore);
+        const baseError = new Error("just for stack");
+        promiEvent.on("error", (error) => reject(wrapTransactionError(error, baseError, 3))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
@@ -161,7 +162,8 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
                 }
             })
             .catch(ignore);
-        promiEvent.on("error", (error) => reject(error)).catch(ignore);
+        const baseError = new Error("just for stack");
+        promiEvent.on("error", (error) => reject(wrapTransactionError(error, baseError, 3))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();

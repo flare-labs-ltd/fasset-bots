@@ -7,6 +7,7 @@ import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "
 import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
+import { wrapTransactionError } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -411,21 +412,63 @@ describe("mini truffle and artifacts tests", async () => {
             registration1!.unregister(); // should succeed
             expect(() => cancelToken.check()).to.throw("Promise cancelled");
         });
+    });
 
+    describe("Error stack wrapping", () => {
         it("clean stack trace - hardhat", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            await fpr.getPrice("BTC").catch((e) => {
-                console.error("CALL ERR", e);
-            });
+            await fpr.getPrice("BTC")
+                .catch((e) => {
+                    assert.include(e.stack, __filename);
+                    console.error("CALL ERR", e);
+                });
             await withSettings(fpr, { gas: "auto" })
                 .setPrice("BTC", 1000, { gas: null as any })
                 .catch((e) => {
+                    assert.include(e.stack, __filename);
                     console.error("SEND ERR", e);
                 });
-            await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
-                console.error("SEND ERR NG", e);
-            });
+            await fpr.setPrice("BTC", 1000, { gas: 1e6 })
+                .catch((e) => {
+                    assert.include(e.stack, __filename);
+                    console.error("SEND ERR NG", e);
+                });
+        });
+
+        function rejectTimer() {
+            return new Promise((resolve, reject) => {
+                const baseError = new Error("for stack");
+                setTimeout(() => {
+                    reject(wrapTransactionError(new Error("Time passed"), baseError));
+                }, 300);
+            })
+        }
+
+        function rejectTimerSimp() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(new Error("Time passed"));
+                }, 300);
+            })
+        }
+
+        it("test reject", async () => {
+            await rejectTimer()
+                .catch((e) => {
+                    assert.include(e.stack, __filename);
+                    console.error("TIMER ERR", e);
+                });
+        });
+
+        it("test reject simp", async () => {
+            try {
+                await rejectTimerSimp()
+                    .catch(e => { throw wrapTransactionError(e, null, 2); });
+            } catch (e: any) {
+                assert.include(e.stack, __filename);
+                console.error("TIMER ERR", e);
+            }
         });
     });
 
