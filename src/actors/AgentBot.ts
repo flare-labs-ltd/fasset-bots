@@ -613,7 +613,7 @@ export class AgentBot {
                     logger.info(
                         `Agent ${
                             this.agent.vaultAddress
-                        } cannot withdraw vault collateral. Allowed at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount.toString()}. Current ${latestTimestamp.toString()}.`
+                        } cannot withdraw vault collateral. Allowed at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
                     );
                 }
                 // agent waiting to redeem pool tokens
@@ -663,18 +663,13 @@ export class AgentBot {
                     toBN(agentInfo.reservedUBA).eq(BN_ZERO) &&
                     toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
                     // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-                    try{
-                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
-                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
-                        logger.info(
-                            `Agent ${this.agent.vaultAddress} announced pool token redemption ${poolTokenBalance.toString()} at ${
-                                agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp
-                            }.`
-                        );
-                    } catch (error) {
-                        console.log(`Agent ${this.agent.vaultAddress} ran into an error while announcing pool token redemption: ${error}.`);
-                        logger.info(`Agent ${this.agent.vaultAddress} ran into an error while announcing pool token redemption: ${error}.`);
-                    }
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
+                    logger.info(
+                        `Agent ${this.agent.vaultAddress} announced pool token redemption ${poolTokenBalance.toString()} at ${
+                            agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp
+                        }.`
+                    );
                 }
                 const agentInfoForDestroy = await this.agent.getAgentInfo();
                 const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());

@@ -5,7 +5,7 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -563,9 +563,12 @@ describe("Agent bot tests", async () => {
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
         // clear dust
-        await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
+        const info = await agentBot.agent.getAgentInfo();
+        if (!toBN(info.dustUBA).eqn(0)){
+            await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
+        }
         // withdraw vault collateral and pool tokens
-        await time.increaseTo(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+        await time.increaseTo(maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp)));
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -683,5 +686,54 @@ describe("Agent bot tests", async () => {
         await agent.redeemCollateralPoolTokens(forDeposit);
         const ownerBalanceAfter = toBN(await web3.eth.getBalance(ownerAddress));
         expect(ownerBalanceAfter.gte(forDeposit)).to.be.true;
+    });
+
+    it("Should not destroy agent if some collateral is reserved", async () => {
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // check agent status
+        const status = Number((await agentBot.agent.getAgentInfo()).status);
+        assert.equal(status, AgentStatus.NORMAL);
+        // exit available
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        //exit available
+        await agentBot.agent.exitAvailable();
+        agentBotEnt.waitingForDestructionCleanUp = true;
+        await agentBot.runStep(orm.em);
+        //Expect agent destruction announcement not to be active
+        expect(agentBotEnt.waitingForDestructionCleanUp).to.be.true;
+        expect(toBN(agentBotEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
+    });
+
+    it("Should not destroy agent if the agent is redeeming", async () => {
+        const agentBotEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // check agent status
+        const status = Number((await agentBot.agent.getAgentInfo()).status);
+        assert.equal(status, AgentStatus.NORMAL);
+        // exit available
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        await agentBot.runStep(orm.em);
+        //exit available
+        await agentBot.agent.exitAvailable();
+        agentBotEnt.waitingForDestructionCleanUp = true;
+        await agentBot.runStep(orm.em);
+        //Expect agent destruction announcement not to be active
+        expect(agentBotEnt.waitingForDestructionCleanUp).to.be.true;
+        expect(toBN(agentBotEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
     });
 });

@@ -74,7 +74,6 @@ export class AgentEntity {
     @Property()
     destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
 
-
     // agent exit available list
 
     @Property({ type: BNType })
