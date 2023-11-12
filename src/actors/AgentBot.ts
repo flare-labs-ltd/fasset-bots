@@ -167,10 +167,57 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async runStep(rootEm: EM): Promise<void> {
+        await this.troubleshootEvents(rootEm);
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
         await this.handleDailyTasks(rootEm);
+    }
+
+    async troubleshootEvents(rootEm: EM): Promise<void> {
+        try {
+            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            await agentEnt.events.init();
+            for (const event of agentEnt.unhandledEvents().sort(eventOrder)) {
+                await rootEm
+                    .transactional(async (em) => {
+                        const fullEvent = await this.getEventFromEntity(event)!;
+                        await this.handleEvent(em, fullEvent!);
+                        agentEnt.events.remove(event);
+                    })
+                    .catch(async (error) => {
+                        console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agent.vaultAddress}: ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                    });
+            }
+        } catch (error) {
+            console.error(`Error troubleshooting events for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while troubleshooting events: ${error}`);
+        }
+    }
+
+    async getEventFromEntity(event: EventEntity): Promise<EvmEvent | undefined> {
+        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
+        const events = [];
+        const logsAssetManager = await web3.eth.getPastLogs({
+            address: this.agent.assetManager.address,
+            fromBlock: event.blockNumber,
+            toBlock: event.blockNumber,
+            topics: [null, encodedVaultAddress],
+        });
+        const logsFtsoManager = await web3.eth.getPastLogs({
+            address: this.context.priceChangeEmitter.address,
+            fromBlock: event.blockNumber,
+            toBlock: event.blockNumber,
+            topics: [null],
+        });
+        events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+        events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
+        for (let _event of events) {
+            if (_event.transactionIndex === event.transactionIndex && _event.logIndex === event.logIndex) {
+                return _event;
+            }
+        }
     }
 
     /**
