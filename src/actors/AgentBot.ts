@@ -596,8 +596,9 @@ export class AgentBot {
                 agentEnt.waitingForDestructionCleanUp &&
                 (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) ||
                     toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))
+
             ) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction and for vault collateral withdrawal.`);
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction.`);
                 // agent waiting to withdraw vault collateral or to redeem pool tokens
                 if (
                     toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) &&
@@ -615,7 +616,7 @@ export class AgentBot {
                     logger.info(
                         `Agent ${
                             this.agent.vaultAddress
-                        } cannot withdraw vault collateral. Allowed at ${agentEnt.withdrawalAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
+                        } cannot withdraw vault collateral. Allowed at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`
                     );
                 }
                 // agent waiting to redeem pool tokens
@@ -634,16 +635,16 @@ export class AgentBot {
             } else if (agentEnt.waitingForDestructionCleanUp) {
                 logger.info(`Agent ${this.agent.vaultAddress} is checking if clean up before destruction is complete.`);
                 // agent checks if clean up is complete
-                // withdraw pool fees
+                // withdraw and self close pool fees
                 const poolFeeBalance = await this.agent.poolFeeBalance();
                 if (poolFeeBalance.gt(BN_ZERO)) {
                     await this.agent.withdrawPoolFees(poolFeeBalance);
-                    logger.info(`Agent ${this.agent.vaultAddress} withdrew pool fees ${poolFeeBalance.toString()}.`);
+                    await this.agent.selfClose(poolFeeBalance); 
+                    logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance.toString()}.`);
                 }
                 // check poolTokens and vaultCollateralBalance
                 const agentInfoForAnnounce = await this.agent.getAgentInfo();
                 const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
-                const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);
                 if (freeVaultCollateralBalance.gt(BN_ZERO)) {
                     // announce withdraw class 1
                     agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp =
@@ -655,21 +656,29 @@ export class AgentBot {
                         }.`
                     );
                 }
-                if (freePoolTokenBalance.gt(BN_ZERO)) {
+
+                // check poolTokens
+                const poolTokenBalance = toBN(await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress));
+                const agentInfo = await this.agent.getAgentInfo();
+                if (poolTokenBalance.gt(BN_ZERO) && 
+                    toBN(agentInfo.mintedUBA).eq(BN_ZERO) && 
+                    toBN(agentInfo.redeemingUBA).eq(BN_ZERO) &&
+                    toBN(agentInfo.reservedUBA).eq(BN_ZERO) &&
+                    toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
                     // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(freePoolTokenBalance);
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = freePoolTokenBalance.toString();
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
                     logger.info(
-                        `Agent ${this.agent.vaultAddress} announced pool token redemption ${freePoolTokenBalance.toString()} at ${
+                        `Agent ${this.agent.vaultAddress} announced pool token redemption ${poolTokenBalance.toString()} at ${
                             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp
                         }.`
                     );
                 }
                 const agentInfoForDestroy = await this.agent.getAgentInfo();
+                const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
                 //and wait for others to redeem
                 if (
-                    freePoolTokenBalance.eq(BN_ZERO) &&
-                    freeVaultCollateralBalance.eq(BN_ZERO) &&
+                    totalPoolTokens.eq(BN_ZERO) &&
                     toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) &&
                     toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) &&
                     toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) &&
@@ -681,6 +690,20 @@ export class AgentBot {
                     agentEnt.waitingForDestructionCleanUp = false;
                     this.notifier.sendAgentAnnounceDestroy(agentEnt.vaultAddress);
                     logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
+                }
+                else {
+                    if(toBN(agentInfoForDestroy.mintedUBA).gt(BN_ZERO)){
+                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing FAssets.`)
+                    }
+                    if(toBN(agentInfoForDestroy.redeemingUBA).gt(BN_ZERO) || toBN(agentInfoForDestroy.poolRedeemingUBA).gt(BN_ZERO)){
+                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still redeeming FAssets.`)
+                    }
+                    if(toBN(agentInfoForDestroy.reservedUBA).gt(BN_ZERO)){
+                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent has some locked collateral by collateral reservation.`)
+                    }
+                    if(toBN(totalPoolTokens).gt(BN_ZERO)){
+                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Total supply of collateral pool tokens is not 0.`)
+                    }
                 }
             }
             // confirm underlying withdrawal
