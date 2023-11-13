@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
-import { TrackedState } from "../../../src/state/TrackedState";
+import { TrackedState, MAX_EVENT_HANDLE_RETRY } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
 import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
@@ -571,7 +571,7 @@ describe("Tracked state tests", async () => {
         };
         await trackedState.registerStateEvents([settingChangedEventFail]);
         await trackedState.registerStateEvents([settingArrayChangedEventFail]);
-        expect(spyError).to.have.been.called.twice;
+        expect(spyError).to.have.been.called.exactly(2 * (MAX_EVENT_HANDLE_RETRY + 1));
     });
 
     it("Should handle event 'AgentSettingChanged'", async () => {
@@ -690,6 +690,32 @@ describe("Tracked state tests", async () => {
         expect(getCollateral.minCollateralRatioBIPS.toString()).to.eq(newMinCollateralRatioBIPS);
         expect(getCollateral.ccbMinCollateralRatioBIPS.toString()).to.eq(newCcbMinCollateralRatioBIPS);
         expect(getCollateral.safetyMinCollateralRatioBIPS.toString()).to.eq(newSafetyMinCollateralRatioBIPS);
+    });
+
+    it("Should fail at handling an event and revert to reinitializing the state", async () => {
+        const spyError = spy.on(console, "error");
+        const spyInit = spy.on(trackedState, "initialize");
+        const settingChangedEventFail = {
+            address: trackedState.context.assetManager.address,
+            type: "event",
+            signature: "0xac1fb27759c1e6f9e4a24d4f8c320be6091becb03cea5a95398fa220fca4ac0e",
+            event: "SettingChanged",
+            args: {
+                "0": "lotSizeAMGFail",
+                "1": toBN(0),
+                __length__: 2,
+                name: "lotSizeAMGFail",
+                value: toBN(0),
+            },
+            blockHash: "0xdc0640480d61a307ad0e7b67b8b7e3586bbd20aefa52620fb5b54f4a943a299d",
+            blockNumber: 39,
+            logIndex: 0,
+            transactionHash: "0xf5081736c212077a16a512864ed480c60dfaf8f8d4d30bd452eec74125485cd5",
+            transactionIndex: 0,
+        };
+        await trackedState.registerStateEvents([settingChangedEventFail]);
+        expect(spyError).to.have.been.called.exactly(MAX_EVENT_HANDLE_RETRY + 1);
+        expect(spyInit).to.have.been.called.once;
     });
 
     it("Should return getTrackedStateAgentSettings", async () => {
