@@ -71,6 +71,10 @@ contract Liquidator is ILiquidator {
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwapRouter
     ) public {
+        // we have to start liquidation so that we get correct max f-assets
+        // this should probably be fixed in the latter f-asset version
+        IIAgentVault(_agentVault).assetManager().startLiquidation(address(_agentVault));
+        // run liquidation arbitrage
         _runArbitrageWithData(
             Ecosystem.getData(
                 _agentVault,

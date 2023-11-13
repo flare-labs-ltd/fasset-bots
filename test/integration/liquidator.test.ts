@@ -70,20 +70,17 @@ describe("Liquidator", () => {
     // according to the conditions constructed above, sync up dexes as stably as possible with deployer's limited funds
     await initFtsoSyncedDexReserves(contracts, deployer, provider)
     // check that collateral ratio is still as specified above
-    const { poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
+    const { mintedUBA: mintedUbaBefore,  poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(poolCollateralRatioBIPS, BigInt(18_900))
     // liquidate agent
-    await waitFinalize(provider, liquidator, contracts.assetManager.connect(liquidator).startLiquidation(AGENT_ADDRESS))
-    const agentInfo1 = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
-    assert.equal(agentInfo1.status, BigInt(2))
     await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(AGENT_ADDRESS))
     // check that agent was fully liquidated and put out of liquidation
-    const agentInfo2 = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
-    assert.equal(agentInfo2.status, BigInt(0))
+    const { status: statusAfter, mintedUBA: mintedUbaAfter } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
+    assert.equal(statusAfter, BigInt(0))
     // check that liquidator made a profit
     const liquidatorUsdcBalance = await contracts.usdc.balanceOf(liquidator)
     assert.notEqual(liquidatorUsdcBalance, BigInt(0))
     console.log("liquidator USDC profit:", liquidatorUsdcBalance.toString(), "wei")
-    console.log("liquidated:", (agentInfo1.mintedUBA - agentInfo2.mintedUBA).toString(), "UBA")
+    console.log("liquidated:", (mintedUbaBefore - mintedUbaAfter).toString(), "UBA")
   })
 })
