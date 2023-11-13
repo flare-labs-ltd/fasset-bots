@@ -538,7 +538,10 @@ describe("Challenger tests", async () => {
 
     it("Should liquidate agent if in full liquidation", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const lastBlock = await web3.eth.getBlockNumber();
+        const liqState = new TrackedState(context, lastBlock);
+        await liqState.initialize();
+        const liquidator = await createTestLiquidator(liquidatorAddress, liqState);
         const spyChlg = spy.on(challenger, "doublePaymentChallenge"); // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const poolCollateralToken = await IERC20.at((await agentBot.agent.getPoolCollateral()).token);
