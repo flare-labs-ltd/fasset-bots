@@ -7,7 +7,8 @@ import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "
 import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
-import { wrapTransactionError } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
+import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
+import path from "path";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -40,7 +41,7 @@ describe("mini truffle and artifacts tests", async () => {
             const GovernanceSettings = artifacts.require("GovernanceSettings");
             const governanceSettings = await GovernanceSettings.new();
             const IFtsoRegistry = artifacts.require("IFtsoRegistry");
-            await expectRevert(IFtsoRegistry.new(), "Contract IFtsoRegistry is abstract; cannot deploy");
+            await expectRevertWithCorrectStack(IFtsoRegistry.new(), "Contract IFtsoRegistry is abstract; cannot deploy");
         });
 
         it("should create, deploy and call a contract", async () => {
@@ -63,9 +64,9 @@ describe("mini truffle and artifacts tests", async () => {
         it("reverts should work", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            await expectRevert(fpr.getPrice("BTC"), "price not initialized");
-            await expectRevert(fpr.setPrice("BTC", 1000, { from: accounts[0] }), "price not initialized");
-            await expectRevert(fpr.setPrice.estimateGas("BTC", 1000, { from: accounts[0] }), "price not initialized");
+            await expectRevertWithCorrectStack(fpr.getPrice("BTC"), "price not initialized");
+            await expectRevertWithCorrectStack(fpr.setPrice("BTC", 1000, { from: accounts[0] }), "price not initialized");
+            await expectRevertWithCorrectStack(fpr.setPrice.estimateGas("BTC", 1000, { from: accounts[0] }), "price not initialized");
         });
 
         it("methods .call, .sendTransaction and .estimateGas should work", async () => {
@@ -139,7 +140,7 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("at should fail for wrong address", async () => {
             const WNat = artifacts.require("WNat");
-            await expectRevert(
+            await expectRevertWithCorrectStack(
                 WNat.at(constants.ZERO_ADDRESS),
                 "Cannot create instance of WNat; no code at address 0x0000000000000000000000000000000000000000"
             );
@@ -149,7 +150,7 @@ describe("mini truffle and artifacts tests", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             const fprNoDefaultAcc = withSettings(fpr, { ...contractSettings, defaultAccount: null });
-            await expectRevert(fprNoDefaultAcc.setDecimals("XRP", 5), "'from' field is mandatory");
+            await expectRevertWithCorrectStack(fprNoDefaultAcc.setDecimals("XRP", 5), "'from' field is mandatory");
         });
 
         it("should not overwrite predefined instance fields with methods", async () => {
@@ -165,8 +166,8 @@ describe("mini truffle and artifacts tests", async () => {
         it("invalid number of parameters should fail", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            await expectRevert((fpr as any).setDecimals("XRP", 5, 1, { from: accounts[0] }), "Too many arguments");
-            await expectRevert((fpr as any).setDecimals("XRP"), "Not enough arguments");
+            await expectRevertWithCorrectStack((fpr as any).setDecimals("XRP", 5, 1, { from: accounts[0] }), "Too many arguments");
+            await expectRevertWithCorrectStack((fpr as any).setDecimals("XRP"), "Not enough arguments");
         });
 
         it("calls should work with auto or explicit gas and fail with too little gas", async () => {
@@ -175,7 +176,7 @@ describe("mini truffle and artifacts tests", async () => {
             const gas = await fpr.setDecimals.estimateGas("XRP", 5);
             await fpr.setDecimals("XRP", 5, { gas: gas });
             await withSettings(fpr, { gas: "auto" }).setDecimals("DOGE", 5);
-            await expectRevert(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
+            await expectRevertWithCorrectStack(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
         });
     });
 
@@ -206,7 +207,7 @@ describe("mini truffle and artifacts tests", async () => {
         });
 
         it("should create, deploy and call a contract - wait for 3 confirmations (failure without parallel mining)", async () => {
-            await expectRevert(
+            await expectRevertWithCorrectStack(
                 createDeployAndCall({ ...contractSettings, waitFor: { what: "confirmations", confirmations: 3, timeoutMS: 1000 } }),
                 "Timeout waiting for finalization"
             );
@@ -259,7 +260,7 @@ describe("mini truffle and artifacts tests", async () => {
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
-            await expectRevert(lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
+            await expectRevertWithCorrectStack(lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
         });
 
         it("should call a contract - wait for nonce (low level, always wait at least one tick)", async () => {
@@ -317,7 +318,7 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("unlinked contracts shouldn't deploy", async () => {
             const SettingsUpdater = artifacts.require("SettingsUpdater");
-            await expectRevert(SettingsUpdater.new(), "Contract SettingsUpdater must be linked before deploy");
+            await expectRevertWithCorrectStack(SettingsUpdater.new(), "Contract SettingsUpdater must be linked before deploy");
         });
     });
 
@@ -341,7 +342,7 @@ describe("mini truffle and artifacts tests", async () => {
         it("compatibility methods should work on factory", async () => {
             const WNat = artifacts.require("WNat");
             // deployed should not work before deploy
-            await expectRevert(WNat.deployed(), "Contract WNat has not been deployed");
+            await expectRevertWithCorrectStack(WNat.deployed(), "Contract WNat has not been deployed");
             // deploy
             const wnat = await WNat.new(accounts[0], "Native", "NAT");
             // allEvents
@@ -387,7 +388,7 @@ describe("mini truffle and artifacts tests", async () => {
                 const snapshotTestCounter = testCounter;
                 expect(Math.abs(counter - testCounter)).to.be.lessThanOrEqual(1);
                 // token should be cancelled now
-                await expectRevert(testCancelable, "Promise cancelled");
+                await expectRevertWithCorrectStack(testCancelable, "Promise cancelled");
                 expect(() => cancelToken.check()).to.throw("Promise cancelled");
                 // wait another sec
                 await sleep(1000);
@@ -408,7 +409,7 @@ describe("mini truffle and artifacts tests", async () => {
             const promise1 = new Promise((resolve, reject) => {
                 registration1 = cancelToken.register((err) => reject(err));
             });
-            await expectRevert(promise1, "Promise cancelled");
+            await expectRevertWithCorrectStack(promise1, "Promise cancelled");
             registration1!.unregister(); // should succeed
             expect(() => cancelToken.check()).to.throw("Promise cancelled");
         });
@@ -438,9 +439,9 @@ describe("mini truffle and artifacts tests", async () => {
 
         function rejectTimer() {
             return new Promise((resolve, reject) => {
-                const baseError = new Error("for stack");
+                const parentStack = captureStackTrace();
                 setTimeout(() => {
-                    reject(wrapTransactionError(new Error("Time passed"), baseError));
+                    reject(fixErrorStack(new Error("Time passed"), parentStack));
                 }, 300);
             })
         }
@@ -464,7 +465,7 @@ describe("mini truffle and artifacts tests", async () => {
         it("test reject simp", async () => {
             try {
                 await rejectTimerSimp()
-                    .catch(e => { throw wrapTransactionError(e, null, 2); });
+                    .catch(e => { throw fixErrorStack(e, 1); });
             } catch (e: any) {
                 assert.include(e.stack, __filename);
                 console.error("TIMER ERR", e);
@@ -574,4 +575,16 @@ describe("mini truffle and artifacts tests", async () => {
                 "expected error 'Timeout waiting to obtain address nonce lock'");
         });
     });
+
+    async function expectRevertWithCorrectStack(promise: Promise<any>, message: string) {
+        const filename = path.basename(__filename);
+        await promise.catch(e => {
+            const lines = (e.stack as string ?? "").split('\n');
+            if (!lines.some(s => s.includes(filename) && !s.includes('expectRevertWithCorrectStack'))) {
+                console.error("INVALID STACK", e);
+                assert(false, "Invalid stack");
+            }
+        });
+        await expectRevert(promise, message);
+    }
 });

@@ -5,7 +5,7 @@ import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
 import { submitTransaction } from "./finalization";
-import { transactionLogger, wrapTransactionError } from "./transaction-logging";
+import { transactionLogger, fixErrorStack } from "./transaction-logging";
 import { ContractSettings } from "./types";
 
 /**
@@ -248,7 +248,7 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
 }
 
 function throwWrappedError(transactionId: number, e: any): never {
-    const wrapped = wrapTransactionError(e, null, 3);
+    const wrapped = fixErrorStack(e, 2);
     transactionLogger.info("ERROR", { transactionId, stack: wrapped.stack });
     throw wrapped;
 }

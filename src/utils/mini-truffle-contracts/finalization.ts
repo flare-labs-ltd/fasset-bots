@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
 import { CancelToken, CancelTokenRegistration, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
-import { transactionLogger, wrapTransactionError } from "./transaction-logging";
+import { transactionLogger, fixErrorStack, captureStackTrace } from "./transaction-logging";
 import { ContractSettings, TransactionWaitFor } from "./types";
 
 export class FinalizationTimeoutError extends Error { }
@@ -115,10 +115,16 @@ export async function waitForFinalization(
             transactionLogger.info("SUCCESS (nonce increase)", { transactionId });
         }
     }
+    async function waitForTimeout(timeoutMS: number) {
+        // on Node, we must create error here to get the correct stack trace
+        const error = new FinalizationTimeoutError("Timeout waiting for finalization");
+        await cancelableSleep(timeoutMS, cancelToken);
+        throw error;
+    }
     if (waitFor.timeoutMS) {
         await Promise.race([
             waitForFinalizationInner(),
-            cancelableSleep(waitFor.timeoutMS, cancelToken).then(() => Promise.reject(new FinalizationTimeoutError("Timeout waiting for finalization"))),
+            waitForTimeout(waitFor.timeoutMS),
         ]);
     } else {
         await waitForFinalizationInner();
@@ -134,8 +140,8 @@ export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cance
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
         promiEvent.on("receipt", (receipt) => resolve(receipt)).catch(ignore);
-        const baseError = new Error("just for stack");
-        promiEvent.on("error", (error) => reject(wrapTransactionError(error, baseError, 3))).catch(ignore);
+        const parentStack = captureStackTrace(2);
+        promiEvent.on("error", (error) => reject(fixErrorStack(error, parentStack))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
@@ -162,8 +168,8 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
                 }
             })
             .catch(ignore);
-        const baseError = new Error("just for stack");
-        promiEvent.on("error", (error) => reject(wrapTransactionError(error, baseError, 3))).catch(ignore);
+        const parentStack = captureStackTrace(2);
+        promiEvent.on("error", (error) => reject(fixErrorStack(error, parentStack))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
