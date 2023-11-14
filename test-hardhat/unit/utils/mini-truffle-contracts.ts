@@ -572,7 +572,7 @@ describe("mini truffle and artifacts tests", async () => {
                 "exactly 2 submits should succeed");
             const failed = results.find(r => r.status === 'rejected');
             assert(failed?.status === 'rejected' && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
-                "expected error 'Timeout waiting to obtain address nonce lock'");
+                `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message|| "No exception"}'`);
         });
     });
 

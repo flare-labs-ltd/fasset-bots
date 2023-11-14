@@ -4,8 +4,8 @@ import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
-import { submitTransaction } from "./finalization";
-import { transactionLogger, fixErrorStack } from "./transaction-logging";
+import { submitTransaction } from "./submit-transaction";
+import { fixErrorStack, transactionLogger } from "./transaction-logging";
 import { ContractSettings } from "./types";
 
 /**
