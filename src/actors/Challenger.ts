@@ -38,6 +38,7 @@ export class Challenger extends ActorBase {
         if (state.context.challengeStrategy === undefined) {
             this.challengeStrategy = new DefaultChallengeStrategy(state, address);
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const strategies = require("./plugins/ChallengeStrategy");
             this.challengeStrategy = new strategies[state.context.challengeStrategy.className](state, address);
         }
