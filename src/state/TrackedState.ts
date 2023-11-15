@@ -85,7 +85,7 @@ export class TrackedState {
         let retries = 0;
         for (let i = 0; i < events.length; i++) {
             try {
-                await this.registerStateEvent(events[i])
+                await this.registerStateEvent(events[i]);
                 retries = 0;
             } catch (error) {
                 if (retries > MAX_EVENT_HANDLE_RETRY) {
@@ -97,7 +97,7 @@ export class TrackedState {
                     retries += 1;
                     console.error(`Error handling events for Tracked State: ${error}`);
                     logger.error(`Tracked State run into error while handling events: ${error}`);
-                    await sleep(SLEEP_MS_BEFORE_RETRY)
+                    await sleep(SLEEP_MS_BEFORE_RETRY);
                 }
             }
         }

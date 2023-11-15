@@ -74,13 +74,21 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
 }
 
 export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
+        context,
+        DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
+        DEFAULT_POOL_TOKEN_SUFFIX()
+    );
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
 export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX())
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
+        context,
+        DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
+        DEFAULT_POOL_TOKEN_SUFFIX()
+    );
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
 }

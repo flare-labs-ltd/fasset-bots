@@ -188,7 +188,7 @@ describe("Bot cli commands unit tests", async () => {
         // create agents
         for (let i = 0; i <= 5; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
-            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i+1);
+            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i + 1);
         }
         await userBot.printSystemInfo(false);
         await userBot.printSystemInfo(true);

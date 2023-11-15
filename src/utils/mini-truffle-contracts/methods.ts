@@ -202,15 +202,14 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     const transactionId = ++lastTransactionId;
     if (config.gas == null && settings.gas == "auto") {
         transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
-        const gas = await web3.eth.estimateGas(config)
-            .catch((e) => throwWrappedError(transactionId, e));
+        const gas = await web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e));
         config.gas = Math.floor(gas * gasMultiplier);
     }
     try {
         return await submitTransaction(transactionId, settings, config);
     } catch (e: any) {
         transactionLogger.info("ERROR", { transactionId, stack: e.stack });
-        throw e;    // should be wrapped already
+        throw e; // should be wrapped already
     }
 }
 
@@ -218,8 +217,7 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
     const config = mergeConfig(settings, transactionConfig);
     const transactionId = ++lastTransactionId;
     transactionLogger.info("CALL", { transactionId, transaction: config });
-    return await settings.web3.eth.call(config)
-        .catch((e) => throwWrappedError(transactionId, e));
+    return await settings.web3.eth.call(config).catch((e) => throwWrappedError(transactionId, e));
 }
 
 /**
@@ -229,8 +227,7 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     const config = mergeConfig(settings, transactionConfig);
     const transactionId = ++lastTransactionId;
     transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
-    return await settings.web3.eth.estimateGas(config)
-        .catch((e) => throwWrappedError(transactionId, e));
+    return await settings.web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e));
 }
 
 /**

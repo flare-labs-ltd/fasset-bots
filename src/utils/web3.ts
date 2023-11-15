@@ -31,7 +31,7 @@ export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaul
     resubmitTransaction: [
         { afterMS: 10_000, priceFactor: 1.2 },
         { afterMS: 20_000, priceFactor: 2.0 },
-    ]
+    ],
 });
 
 export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);

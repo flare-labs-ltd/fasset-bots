@@ -15,11 +15,7 @@ program
             .env("USER_CONFIG_PATH")
             .makeOptionMandatory(true)
     )
-    .addOption(
-        program
-            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-            .makeOptionMandatory(true)
-    );
+    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
 
 program
     .command("agents")
@@ -93,7 +89,6 @@ program
         const redeemerBot = await UserBot.create(options.config, options.fasset);
         await redeemerBot.redemptionDefault(amountUBA, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
     });
-
 
 program
     .command("info")

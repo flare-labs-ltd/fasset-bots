@@ -32,11 +32,13 @@ export interface BotConfigFile {
     addressUpdater?: string;
     contractsJsonFile?: string;
     // liquidation / challenger strategies
-    liquidationStrategy?: { // only for liquidator
+    liquidationStrategy?: {
+        // only for liquidator
         className: string;
         config?: any;
     };
-    challengeStrategy?: { // only for challenger
+    challengeStrategy?: {
+        // only for challenger
         className: string;
         config?: any;
     };

@@ -272,7 +272,7 @@ export class UserBot {
         const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
         const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
         const mintedLots = Number(mintedWei) / lotSizeUBA;
-        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`)
+        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`);
         if (agents) {
             await this.printAgentList(lotSizeUBA);
         }
@@ -287,7 +287,9 @@ export class UserBot {
             const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
-            console.log(`${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`);
+            console.log(
+                `${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`
+            );
         }
     }
 

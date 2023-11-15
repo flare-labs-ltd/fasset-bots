@@ -4,7 +4,6 @@ Challenger is essential for maintaining the FAsset system healthy. Challenger's 
 
 File [Challenger.ts](../../src/actors/Challenger.ts) contains framework for such actor in FAsset system.
 
-
 ### Initialization
 
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) and **lastEventUnderlyingBlockHandled** as inputs:

@@ -38,7 +38,7 @@ describe("Secrets unit tests", async () => {
         expect(fn2).to.throw("'wallet.encryption_password' must be defined");
 
         secrets.wallet = {
-            encryption_password: ""
+            encryption_password: "",
         };
         const fn3 = () => {
             return requireEncryptionPasswordAndLength(secrets);
@@ -46,7 +46,7 @@ describe("Secrets unit tests", async () => {
         expect(fn3).to.throw("'wallet.encryption_password' must be defined");
 
         secrets.wallet = {
-            encryption_password: "123456789012345"
+            encryption_password: "123456789012345",
         };
         const fn4 = () => {
             return requireEncryptionPasswordAndLength(secrets);

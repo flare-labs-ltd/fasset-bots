@@ -42,20 +42,20 @@ Agent bot web service routes are documented using the Swagger interface at the `
 
     -   POST `/api/agent/selfClose/{fAssetSymbol}/{agentVaultAddress}/{amountUBA}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `amountUBA`, returns one of the possible`status` responses, depending on the success of operation.
 
-    - GET `/api/agent/settings/list/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing essential agent settings data:
+    -   GET `/api/agent/settings/list/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns JSON response containing essential agent settings data:
 
-    | Field                             | Type   | Description                                                                                                                  |
-    | --------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
-    | `vaultCollateralToken`            | string | Vault collateral address                                                                                                     |
-    | `vaultCollateralSymbol`           | string | Vault collateral symbol                                                                                                      |
-    | `feeBIPS`                         | string | Minting fee in BIPS                                                                                                          |
-    | `poolFeeShareBIPS`                | string | Share of the minting fee that goes to the pool as percentage of the minting fee.                                             |
-    | `mintingVaultCollateralRatioBIPS` | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                              |
-    | `mintingPoolCollateralRatioBIPS`  | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                              |
-    | `poolExitCollateralRatioBIPS`     | string | The minimum collateral ratio above which a staker can exit the pool. This is collateral ratio that must be left after exit.  |
-    | `buyFAssetByAgentFactorBIPS`      | string | The factor set by the agent to multiply the price at which agent buys fassets from pool token holders on self-close exit.    |
-    | `poolTopupCollateralRatioBIPS`    | string | The collateral ratio below which it is possible to enter the pool at discounted rate (to prevent liquidation).               |
-    | `poolTopupTokenPriceFactorBIPS`   | string | The discount to pool token price when entering and pool collateral ratio is below pool topup collateral ratio.               |
+    | Field                             | Type   | Description                                                                                                                 |
+    | --------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+    | `vaultCollateralToken`            | string | Vault collateral address                                                                                                    |
+    | `vaultCollateralSymbol`           | string | Vault collateral symbol                                                                                                     |
+    | `feeBIPS`                         | string | Minting fee in BIPS                                                                                                         |
+    | `poolFeeShareBIPS`                | string | Share of the minting fee that goes to the pool as percentage of the minting fee.                                            |
+    | `mintingVaultCollateralRatioBIPS` | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                             |
+    | `mintingPoolCollateralRatioBIPS`  | string | Collateral ratio at which locked collateral and collateral available for minting is calculated.                             |
+    | `poolExitCollateralRatioBIPS`     | string | The minimum collateral ratio above which a staker can exit the pool. This is collateral ratio that must be left after exit. |
+    | `buyFAssetByAgentFactorBIPS`      | string | The factor set by the agent to multiply the price at which agent buys fassets from pool token holders on self-close exit.   |
+    | `poolTopupCollateralRatioBIPS`    | string | The collateral ratio below which it is possible to enter the pool at discounted rate (to prevent liquidation).              |
+    | `poolTopupTokenPriceFactorBIPS`   | string | The discount to pool token price when entering and pool collateral ratio is below pool topup collateral ratio.              |
 
     -   POST `/api/agent/settings/update/{fAssetSymbol}/{agentVaultAddress}/{settingName}/{settingValue}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `settingName` and `settingValue`, returns one of the possible`status` responses, depending on the success of operation.
 
@@ -71,9 +71,9 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | --------- | ------ | ----------------------- |
     | `balance` | string | Collateral free balance |
 
-    - POST `/api/agentVault/collateral/switch/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
+    -   POST `/api/agentVault/collateral/switch/{fAssetSymbol}/{agentVaultAddress}/{tokenAddress}`: Given parameters `fAssetSymbol`, `agentVaultAddress` and `tokenAddress`, returns one of the possible` status` responses, depending on the success of operation.
 
-    - POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
+    -   POST `/api/agentVault/close/{fAssetSymbol}/{agentVaultAddress}`: Given parameters `fAssetSymbol` and `agentVaultAddress`, returns one of the possible`status` responses, depending on the success of operation.
 
 -   POOL COLLATERAL:
 

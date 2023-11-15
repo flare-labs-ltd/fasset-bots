@@ -27,7 +27,6 @@ describe("AgentBot", () => {
     });
 
     describe("event handling", () => {
-
         it("should store events, where the last one is handled", async () => {
             const _event = { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent;
             const agent = createAgent();
@@ -45,8 +44,8 @@ describe("AgentBot", () => {
                 agent.addNewEvent(new EventEntity(agent, _event, true));
                 em.persist(agent);
             });
-            expect(agent.events.map(e => e.blockNumber)).to.deep.equal([0, 3, 4]);
-            expect(agent.unhandledEvents().map(e => e.blockNumber)).to.deep.equal([0, 3]);
+            expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0, 3, 4]);
+            expect(agent.unhandledEvents().map((e) => e.blockNumber)).to.deep.equal([0, 3]);
             expect(agent.lastEventRead()!.blockNumber).to.equal(4);
         });
 
@@ -67,8 +66,8 @@ describe("AgentBot", () => {
                 agent.addNewEvent(new EventEntity(agent, _event, false));
                 em.persist(agent);
             });
-            expect(agent.events.map(e => e.blockNumber)).to.deep.equal([0, 3, 4]);
-            expect(agent.unhandledEvents().map(e => e.blockNumber)).to.deep.equal([0, 3, 4]);
+            expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0, 3, 4]);
+            expect(agent.unhandledEvents().map((e) => e.blockNumber)).to.deep.equal([0, 3, 4]);
             expect(agent.lastEventRead()!.blockNumber).to.equal(4);
         });
 
@@ -76,16 +75,24 @@ describe("AgentBot", () => {
             let agent = createAgent();
             await orm.em.transactional(async (em) => {
                 expect(agent.lastEventRead()).to.be.undefined;
-                agent.addNewEvent(new EventEntity(agent, {
-                    blockNumber: 0, logIndex: 1, transactionIndex: 2
-                } as EvmEvent, true));
+                agent.addNewEvent(
+                    new EventEntity(
+                        agent,
+                        {
+                            blockNumber: 0,
+                            logIndex: 1,
+                            transactionIndex: 2,
+                        } as EvmEvent,
+                        true
+                    )
+                );
                 em.persist(agent);
             });
             await orm.close();
             await orm.connect();
             agent = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress });
-            expect(agent.lastEventRead()?.blockNumber).to.equal(0)
-            expect(agent.events.map(e => e.blockNumber)).to.deep.equal([0]);
+            expect(agent.lastEventRead()?.blockNumber).to.equal(0);
+            expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0]);
             expect(agent.unhandledEvents()).to.deep.equal([]);
         });
     });

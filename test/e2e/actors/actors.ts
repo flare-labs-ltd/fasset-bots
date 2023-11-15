@@ -150,7 +150,11 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should not create agent - unknown address", async () => {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!, DEFAULT_POOL_TOKEN_SUFFIX());
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
+            context,
+            runConfig.defaultAgentSettingsPath!,
+            DEFAULT_POOL_TOKEN_SUFFIX()
+        );
         const underlyingAddress = "underlying";
         const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
         await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
