@@ -53,12 +53,12 @@ function loadSecrets(secretsPath: string): Secrets {
     return secrets;
 }
 
-export function requireEncryptionPasswordAndLength(secrets: Secrets): void {
-    if (!secrets.wallet || !secrets.wallet.encryption_password) {
-        throw new Error(`'wallet.encryption_password' must be defined`);
-    } else if (secrets.wallet.encryption_password.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
-        throw new Error(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+export function requireEncryptionPassword(name: string, secrets?: Secrets): string {
+    const value = requireSecret(name, secrets);
+    if (value.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
+        throw new Error(`'${name}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
+    return value;
 }
 
 /* istanbul ignore next */
@@ -78,8 +78,8 @@ function checkFilePermissions(fpath: string) {
     }
 }
 
-export function requireSecret(name: string): string {
-    const value = valueForKeyPath(getSecrets(), name);
+export function requireSecret(name: string, secrets?: Secrets): string {
+    const value = valueForKeyPath(secrets ?? getSecrets(), name);
     if (typeof value === "string") return value;
     throw new Error(`Secret variable ${name} not defined or not typeof string`);
 }
