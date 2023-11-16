@@ -1,5 +1,5 @@
 import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../helpers/utils"
-import { priceBasedDexReserve, collateralForAgentCr, convertUsd5ToTokens, roundUpWithPrecision } from "../../calculations"
+import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToTokens, roundUpWithPrecision } from "../../calculations"
 import type { AssetConfig, EcosystemConfig } from "./interface"
 
 
@@ -67,7 +67,7 @@ export class EcosystemFactory {
       // dexes are sufficiently liquidated and
       // reserves are aligned with ftso prices
       dex1FAssetReserve: this.defaultDex1FAssetReserve,
-      dex1VaultReserve: priceBasedDexReserve(
+      dex1VaultReserve: priceBasedInitialDexReserve(
         this.config.asset.defaultPriceUsd5,
         this.config.vault.defaultPriceUsd5,
         this.config.asset.decimals,
@@ -75,7 +75,7 @@ export class EcosystemFactory {
         this.defaultDex1FAssetReserve
       ),
       dex2VaultReserve: this.defaultDex2VaultReserve,
-      dex2PoolReserve: priceBasedDexReserve(
+      dex2PoolReserve: priceBasedInitialDexReserve(
         this.config.vault.defaultPriceUsd5,
         this.config.pool.defaultPriceUsd5,
         this.config.vault.decimals,
@@ -169,7 +169,7 @@ export class EcosystemFactory {
       name: 'arbitrage not possible, dex1 has too high slippage due to low liquidity',
       // make dex1 f-assets have same price but low liquidity
       dex1FAssetReserve: this.defaultMintedUBA * BigInt(10) / BigInt(9),
-      dex1VaultReserve: priceBasedDexReserve(
+      dex1VaultReserve: priceBasedInitialDexReserve(
         this.config.asset.defaultPriceUsd5,
         this.config.vault.defaultPriceUsd5,
         this.config.asset.decimals,

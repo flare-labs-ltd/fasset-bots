@@ -1,8 +1,12 @@
+/**
+ * yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413
+ */
+
 require('dotenv').config()
 import { ethers } from 'ethers'
 import { assert } from 'chai'
 import { assetPriceForAgentCr } from '../calculations'
-import { waitFinalize, initFtsoSyncedDexReserves } from './helpers/utils'
+import { waitFinalize, syncDexReservesWithFtsoPrices } from './helpers/utils'
 import { getAgentsAssetManager, deployLiquidator, getContracts } from './helpers/contracts'
 import type { Contracts } from './helpers/interface'
 
@@ -68,7 +72,7 @@ describe("Liquidator", () => {
     const assetPrice = await getCollateralForCr("pool", 18_900) // ccb = 19_000, minCr = 20_000, safetyCr = 21_000
     await waitFinalize(provider, deployer, contracts.priceReader.connect(deployer).setPrice("testXRP", assetPrice))
     // according to the conditions constructed above, sync up dexes as stably as possible with deployer's limited funds
-    await initFtsoSyncedDexReserves(contracts, deployer, provider)
+    await syncDexReservesWithFtsoPrices(contracts, deployer, provider)
     // check that collateral ratio is still as specified above
     const { mintedUBA: mintedUbaBefore,  poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(poolCollateralRatioBIPS, BigInt(18_900))

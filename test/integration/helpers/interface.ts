@@ -1,7 +1,6 @@
 import type {
   IWNat, FakeERC20, FlashLender, BlazeSwapRouter,
-  Liquidator, IIAgentVault, IIAssetManager,
-  IFAssetMetadata, FakePriceReader
+  Liquidator, IIAssetManager, IFAssetMetadata, FakePriceReader
 } from '../../../types'
 
 

@@ -20,12 +20,32 @@ export function roundUpWithPrecision(
 ////////////////////////////////////////////////////////////////////////////
 // implicit ecosystem setters
 
+// returns the maximal reserves that can be added to a dex,
+// with initial reserves, that produce the given price on
+// that dex (see priceBasedDexReserve)
+export function priceBasedAddedDexReserves(
+  initialReserveA: bigint,
+  initialReserveB: bigint,
+  priceA: bigint,
+  priceB: bigint,
+  decimalsA: bigint,
+  decimalsB: bigint,
+  maxAddedA: bigint,
+  maxAddedB: bigint
+): [bigint, bigint] {
+  const ratioA = priceB * BigInt(10) ** decimalsA
+  const ratioB = priceA * BigInt(10) ** decimalsB
+  return adjustPriceBasedDexReserves(
+    initialReserveA, initialReserveB,
+    ratioA, ratioB, maxAddedA, maxAddedB)
+}
+
 // get tokenA/tokenB reserve, based on
 // the prices that they should have and
 // tokenB/tokenA reserve
 // prices should be in the same currency,
 // e.g. FLR/$, XRP/$
-export function priceBasedDexReserve(
+export function priceBasedInitialDexReserve(
   priceA: bigint,
   priceB: bigint,
   decimalsA: bigint,
@@ -40,23 +60,23 @@ export function priceBasedDexReserve(
     / priceB
 }
 
-// similar to priceBasedDexReserve, except it
-// caps the output reserveB to maxReserveB
-// and applies it also to the output reserveA
-export function cappedPriceBasedDexReserves(
-  priceA: bigint,
-  priceB: bigint,
-  decimalsA: bigint,
-  decimalsB: bigint,
-  reserveA: bigint,
-  maxReserveB: bigint
+// maximizes the reserves that can be added to a dex with
+// reserves reserveA and reserveB, and that preserve
+// the ratioA / ratioB ratio while not exceeding maxAddedA and maxAddedB
+export function adjustPriceBasedDexReserves(
+  initialReserveA: bigint,
+  initialReserveB: bigint,
+  ratioA: bigint,
+  ratioB: bigint,
+  maxAddedA: bigint,
+  maxAddedB: bigint
 ): [bigint, bigint] {
-  const reserveB = priceBasedDexReserve(priceA, priceB, decimalsA, decimalsB, reserveA)
-  if (reserveB > maxReserveB) {
-    const factor = reserveB / maxReserveB
-    return [reserveA / factor, reserveB / factor]
-  }
-  return [reserveA, reserveB]
+  const factorA = BigInt(10_000) * (maxAddedA + initialReserveA) / ratioA
+  const factorB = BigInt(10_000) * (maxAddedB + initialReserveB) / ratioB
+  const factor = (factorA < factorB) ? factorA : factorB
+  const addedA = factor * ratioA / BigInt(10_000) - initialReserveA
+  const addedB = factor * ratioB / BigInt(10_000) - initialReserveB
+  return [addedA, addedB]
 }
 
 // prices are in some same currency

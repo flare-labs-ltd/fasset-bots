@@ -1,5 +1,5 @@
-import { BaseContract, ethers } from "ethers"
-import { cappedPriceBasedDexReserves } from "../../calculations"
+import { ethers } from "ethers"
+import { priceBasedAddedDexReserves } from "../../calculations"
 import type { IBlazeSwapRouter, IERC20Metadata } from "../../../types"
 import type { Contracts } from "./interface"
 
@@ -40,11 +40,43 @@ export async function waitFinalize(
 /////////////////////////////////////////////////////////////////////////
 // ecosystem setup and manipulation
 
-export async function initFtsoSyncedDexReserves(
+export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
+  'dex1': [bigint, bigint],
+  'dex2': [bigint, bigint],
+}> {
+  // get ftso prices of all relevant symbols
+  const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
+  const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
+  const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
+  const ftsoPrice1 = BigInt(10_000) * usdcPrice / assetPrice
+  const ftsoPrice2 = BigInt(10_000) * wNatPrice / usdcPrice
+  // get dex reserves
+  const [dex1FAsset, dex1Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
+  const [dex2WNat, dex2Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.wNat, contracts.usdc)
+  const dexPrice1 = BigInt(10_000) * dex1FAsset * BigInt(1e12) / dex1Usdc
+  const dexPrice2 = BigInt(10_000) * dex2Usdc / dex2WNat
+  return {
+    'dex1': [dexPrice1, ftsoPrice1],
+    'dex2': [dexPrice2, ftsoPrice2],
+  }
+}
+
+export async function syncDexReservesWithFtsoPrices(
   contracts: Contracts,
   liquidityProvider: ethers.Wallet,
-  provider: ethers.JsonRpcProvider
+  provider: ethers.JsonRpcProvider,
+  wrapNat = false
 ): Promise<void> {
+  if (wrapNat) {
+    // wrap user nat
+    const leftoverNat = BigInt(100) * ethers.WeiPerEther
+    const availableNat = await provider.getBalance(liquidityProvider)
+    if (availableNat > leftoverNat) {
+      const wrapNat = availableNat - leftoverNat
+      const ccall = contracts.wNat.connect(liquidityProvider).deposit({ value: wrapNat })
+      await waitFinalize(provider, liquidityProvider, ccall)
+    }
+  }
   // we have only those F-Assets and CFLR available
   const availableFAsset = await contracts.fAsset.balanceOf(liquidityProvider)
   const availableUsdc = await contracts.usdc.balanceOf(liquidityProvider)
@@ -54,7 +86,7 @@ export async function initFtsoSyncedDexReserves(
   const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
   const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
   // align dex prices with the ftso prices while not exceeding available balances
-  // (TODO: do not assume that ftso decimals are 5 or that dex reserves are empty)
+  // (TODO: do not assume that ftso decimals are 5)
   await setDexPairPrice(
     contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc,
     assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
@@ -65,25 +97,35 @@ export async function initFtsoSyncedDexReserves(
     liquidityProvider, provider)
 }
 
-// set initial dex price of tokenA in tokenB
-// both prices in the same currency,
-// e.g. FLR/$, XRP/$
+// set dex price of tokenA in tokenB by adding liquidity.
+// both prices in the same currency, e.g. FLR/$, XRP/$
 async function setDexPairPrice(
   blazeSwapRouter: IBlazeSwapRouter,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   priceA: bigint,
   priceB: bigint,
-  reserveA: bigint,
-  maxReserveB: bigint,
+  maxAddedA: bigint,
+  maxAddedB: bigint,
   liquidityProvider: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
   const decimalsA = await tokenA.decimals()
   const decimalsB = await tokenB.decimals()
-  let reserveB
-  [reserveA, reserveB] = cappedPriceBasedDexReserves(priceA, priceB, decimalsA, decimalsB, reserveA, maxReserveB)
-  await addLiquidity(blazeSwapRouter, tokenA, tokenB, reserveA, reserveB, liquidityProvider, provider)
+  let reserveA = BigInt(0)
+  let reserveB = BigInt(0)
+  try {
+    [reserveA, reserveB] = await blazeSwapRouter.getReserves(tokenA, tokenB)
+  } catch {
+    // means there's no reserves for the dex pair
+  }
+  const [addedA, addedB] = priceBasedAddedDexReserves(
+    reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxAddedA, maxAddedB)
+  if (addedA < 0 || addedB < 0 || (addedA == BigInt(0) && addedB == BigInt(0))) {
+    console.error('negative added reserves')
+  } else {
+    await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, liquidityProvider, provider)
+  }
 }
 
 // blazeswap add liquidity with wait finalize
@@ -103,7 +145,7 @@ async function addLiquidity(
     tokenB,
     amountA, amountB,
     0, 0, 0, 0,
-    ethers.ZeroAddress,
+    liquidityProvider,
     ethers.MaxUint256
   ))
 }
