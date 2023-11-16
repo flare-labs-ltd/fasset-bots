@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "fs";
 import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH } from "../utils/helpers";
 
-const SECRETS_FILE = "./secrets.json";
+const DEFAULT_SECRETS_JSON_PATH = "./secrets.json";
 
 export type Secrets = {
     wallet?: {
@@ -32,17 +32,25 @@ export interface UnifiedAccount extends NativeAccount, UnderlyingAccount {}
 
 export function getSecrets(): Secrets {
     if (loadedSecrets == undefined) {
-        loadedSecrets = loadSecrets();
+        loadedSecrets = loadSecrets(DEFAULT_SECRETS_JSON_PATH);
     }
     return loadedSecrets;
 }
 
+export function resetSecrets(secretsPath: string | null) {
+    if (secretsPath != null) {
+        loadedSecrets = loadSecrets(secretsPath);
+    } else {
+        loadedSecrets = { apiKey: {} };
+    }
+}
+
 let loadedSecrets: Secrets | undefined;
 
-function loadSecrets(): Secrets {
-    checkFilePermissions(SECRETS_FILE);
-    const config = JSON.parse(readFileSync(SECRETS_FILE).toString());
-    return config;
+function loadSecrets(secretsPath: string): Secrets {
+    checkFilePermissions(secretsPath);
+    const secrets = JSON.parse(readFileSync(secretsPath).toString());
+    return secrets;
 }
 
 export function requireEncryptionPasswordAndLength(secrets: Secrets): void {
@@ -52,20 +60,21 @@ export function requireEncryptionPasswordAndLength(secrets: Secrets): void {
         throw new Error(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
 }
+
 /* istanbul ignore next */
 function checkFilePermissions(fpath: string) {
     if (process.platform === "win32") {
         if (process.env.ALLOW_SECRETS_ON_WINDOWS === "true") return;
         throw new CommandLineError(
-            "Cannot reliably check secrets.json permissions on Windows.\n" +
-                "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true."
+            "Cannot reliably check secrets file permissions on Windows.\n" +
+            "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true."
         );
     }
     // file must only be accessible by the process user
     const stat = statSync(fpath);
     const processUid = process.getuid!();
     if (!(stat.uid === processUid && (stat.mode & 0o077) === 0)) {
-        throw new CommandLineError("File secrets.json must only be readable by the process user. Set permission bits to 600.");
+        throw new CommandLineError(`File ${fpath} must only be readable by the process user. Set permission bits to 600.`);
     }
 }
 

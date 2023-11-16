@@ -221,6 +221,8 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext, us
         assetManager: context.assetManager,
         ftsoManager: context.ftsoManager,
         fAsset: context.fAsset,
+        wNat: context.wNat,
+        addressUpdater: context.addressUpdater,
         assetFtso: context.assetFtso,
         priceChangeEmitter: context.priceChangeEmitter,
         collaterals: context.collaterals,

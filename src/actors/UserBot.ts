@@ -1,19 +1,17 @@
 import chalk from "chalk";
 import { BotConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
-import { AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { getSecrets, requireSecret } from "../config/secrets";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
-import { printAgentInfo, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BNish, CommandLineError, toBN } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { PaymentReference } from "../fasset/PaymentReference";
-import { logger } from "../utils/logger";
-import { web3DeepNormalize } from "../utils/web3normalize";
+import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { getSecrets } from "../config/secrets";
+import { BNish, CommandLineError, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { web3DeepNormalize } from "../utils/web3normalize";
 
 export class UserBot {
     context!: IAssetAgentBotContext;
@@ -75,42 +73,6 @@ export class UserBot {
         console.log("Updating underlying block time....");
         await proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.nativeAddress);
         logger.info(`User ${requireSecret("user.native_address")} finished updating underlying block time.`);
-    }
-
-    /**
-     * Gets available agents.
-     * @returns list of objects AvailableAgentInfo
-     */
-    async getAvailableAgents(): Promise<AvailableAgentInfo[]> {
-        const result: AvailableAgentInfo[] = [];
-        const chunkSize = 10;
-        let start = 0;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            const { 0: list } = await this.context.assetManager.getAvailableAgentsDetailedList(start, start + chunkSize);
-            result.splice(result.length, 0, ...list);
-            if (list.length < chunkSize) break;
-            start += list.length;
-        }
-        return result;
-    }
-
-    /**
-     * Gets all agents.
-     * @returns list of vault addresses
-     */
-    async getAllAgents(): Promise<string[]> {
-        const result: string[] = [];
-        const chunkSize = 10;
-        let start = 0;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            const { 0: list } = await this.context.assetManager.getAllAgents(start, start + chunkSize);
-            result.splice(result.length, 0, ...list);
-            if (list.length < chunkSize) break;
-            start += list.length;
-        }
-        return result;
     }
 
     /**
@@ -259,39 +221,5 @@ export class UserBot {
                 web3DeepNormalize(proof)
             )} redemption ${requestId}.`
         );
-    }
-
-    async printSystemInfo(agents: boolean) {
-        const fAsset = this.context.fAsset;
-        const assetManager = this.context.assetManager;
-        const settings = await assetManager.getSettings();
-        const symbol = await fAsset.symbol();
-        console.log(`FAsset: ${await fAsset.name()} (${symbol}) at ${fAsset.address}`);
-        console.log(`Asset manager: ${assetManager.address}`);
-        const mintedWei = await fAsset.totalSupply();
-        const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
-        const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
-        const mintedLots = Number(mintedWei) / lotSizeUBA;
-        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`)
-        if (agents) {
-            await this.printAgentList(lotSizeUBA);
-        }
-    }
-
-    private async printAgentList(lotSizeUBA: number) {
-        console.log("-------------- Agents --------------");
-        console.log(`${"Vault address".padEnd(42)}  ${"Owner address".padEnd(42)}  ${"Minted lots".padStart(12)}  ${"Free lots".padStart(12)}  ${"Public"}`);
-        const allAgents = await this.getAllAgents();
-        for (const vaultAddr of allAgents) {
-            const info = await this.context.assetManager.getAgentInfo(vaultAddr);
-            const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
-            const freeLots = Number(info.freeCollateralLots);
-            const available = info.publiclyAvailable ? "YES" : "no";
-            console.log(`${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`);
-        }
-    }
-
-    async printAgentInfo(vaultAddress: string) {
-        await printAgentInfo(vaultAddress, this.context);
     }
 }

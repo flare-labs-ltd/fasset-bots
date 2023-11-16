@@ -12,18 +12,20 @@ export type FAssetEvents = import("../../typechain-truffle/FAsset").AllEvents;
 export type IERC20Events = import("../../typechain-truffle/IERC20").AllEvents;
 export type IPriceChangeEmitterEvents = import("../../typechain-truffle/IPriceChangeEmitter").AllEvents;
 
-export interface IAssetAgentBotContext {
+export interface IAssetNativeChainContext {
     nativeChainInfo: NativeChainInfo;
-    chainInfo: ChainInfo;
-    blockchainIndexer: BlockchainIndexerHelper;
-    wallet: IBlockChainWallet;
-    attestationProvider: AttestationHelper;
-    // contracts
     priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;
     wNat: ContractWithEvents<WNatInstance, WNatEvents>;
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
+}
+
+export interface IAssetAgentBotContext extends IAssetNativeChainContext {
+    chainInfo: ChainInfo;
+    blockchainIndexer: BlockchainIndexerHelper;
+    wallet: IBlockChainWallet;
+    attestationProvider: AttestationHelper;
 }
 
 export interface AgentBotDefaultSettings {
@@ -40,14 +42,9 @@ export interface AgentBotDefaultSettings {
 }
 
 // lightweight context
-export interface IAssetActorContext {
-    nativeChainInfo: NativeChainInfo;
+export interface IAssetActorContext extends IAssetNativeChainContext {
     blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
     attestationProvider?: AttestationHelper; // only for challenger
-    // contracts
-    priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;
-    fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
-    assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     // liquidation / challenger strategies
     liquidationStrategy?: { // only for liquidator
         className: string;
