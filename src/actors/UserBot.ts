@@ -16,6 +16,8 @@ import { logger } from "../utils/logger";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
+const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), 'fasset');
+
 interface MintData {
     type: 'mint';
     requestId: string;
@@ -44,7 +46,7 @@ export class UserBot {
     nativeAddress!: string;
     underlyingAddress!: string;
 
-    static userDataDir: string = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), 'fasset');
+    static userDataDir: string = USER_DATA_DIR;
 
     /**
      * Creates instance of UserBot.

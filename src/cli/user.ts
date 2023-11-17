@@ -2,13 +2,14 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
+import fs from "fs";
 import os from "os";
 import path from "path";
-import { InfoBot } from "../actors/InfoBot";
+import chalk from "chalk";
+import { InfoBot, SecretsUser } from "../actors/InfoBot";
 import { UserBot } from "../actors/UserBot";
 import { resetSecrets } from "../config/secrets";
-import { CommandLineError, findPackageRoot, requireNotNull, toplevelRun } from "../utils/helpers";
-import { existsSync } from "fs";
+import { CommandLineError, findPackageRoot, toplevelRun } from "../utils/helpers";
 
 const program = new Command();
 
@@ -28,7 +29,13 @@ program
         program
             .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
     )
-    .hook('preAction', () => {
+    .hook('preAction', (_, command) => {
+        // make --fasset option mandatory always except for 'generateSecrets' command
+        if (command.name() !== 'generateSecrets') {
+            if (!program.getOptionValue('fasset')) {
+                throw new CommandLineError("required option '-f, --fasset <fAssetSymbol>' not specified");
+            }
+        }
         resetSecrets(getSecretsPath());
     });
 
@@ -37,11 +44,41 @@ function getSecretsPath() {
     const defaultSecretsPath = path.resolve(os.homedir(), 'fasset/secrets.json');
     if (options.secrets != null) {
         return options.secrets;
-    } else if (existsSync(defaultSecretsPath)) {
+    } else if (fs.existsSync(defaultSecretsPath)) {
         return defaultSecretsPath;
     }
     return null;
 }
+
+program
+    .command("generateSecrets")
+    .description("generate new secrets file")
+    .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
+    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
+    .option("--agent", "also generate secrets for agent")
+    .option("--other", "also generate secrets for other bots (challenger, etc.)")
+    .action(async (opts: { output?: string, overwrite?: boolean, agent?: boolean, other?: boolean }) => {
+        const options: { config: string, fasset?: string } = program.opts();
+        const bot = await InfoBot.create(options.config, options.fasset);
+        const users: SecretsUser[] = ['user'];
+        if (opts.agent) users.push('agent');
+        if (opts.other) users.push('other');
+        const secrets = bot.generateSecrets(users);
+        const json = JSON.stringify(secrets, null, 4);
+        if (opts.output) {
+            if (fs.existsSync(opts.output) && !opts.overwrite) {
+                program.error(`error: file ${opts.output} already exists`);
+            }
+            fs.writeFileSync(opts.output, json);
+        } else {
+            console.log(json);
+        }
+        const emptyFields = Object.keys(secrets.apiKey).filter(k => !secrets.apiKey[k]);
+        if (emptyFields.length !== 0) {
+            console.error(chalk.yellow("NOTE:"),
+                `Replace empty fields in apiKey (${emptyFields.join(', ')}) with api keys from your provider or delete them if not needed.`);
+        }
+    });
 
 program
     .command("info")
@@ -57,9 +94,8 @@ program
     .description("Lists the available agents")
     .option("-a, --all", "print all agents, including non-public")
     .action(async (opts: { all: boolean }) => {
-        const options: { config: string; fasset?: string } = program.opts();
-        const fassetSymbol = requireNotNull(options.fasset, "Option fAssetSymbol is required");
-        const bot = await InfoBot.create(options.config, fassetSymbol);
+        const options: { config: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.config, options.fasset);
         if (opts.all) {
             await bot.printAllAgents();
         } else {
@@ -85,9 +121,8 @@ program
     .option("-u, --updateBlock")
     .action(async (agentVault: string, amountLots: string, cmdOptions: { updateBlock?: boolean }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
-        const options: { config: string; fasset?: string } = program.opts();
-        const fassetSymbol = requireNotNull(options.fasset, "Option fAssetSymbol is required");
-        const minterBot = await UserBot.create(options.config, fassetSymbol);
+        const options: { config: string; fasset: string } = program.opts();
+        const minterBot = await UserBot.create(options.config, options.fasset);
         if (cmdOptions.updateBlock) {
             await minterBot.updateUnderlyingTime();
         }

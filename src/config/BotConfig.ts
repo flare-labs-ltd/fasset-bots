@@ -149,9 +149,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
-        if (!chainInfo.chainId.startsWith("0x")) {
-            chainInfo.chainId = encodeAttestationName(chainInfo.chainId);
-        }
+        chainInfo.chainId = encodedChainId(chainInfo.chainId);
         fAssets.push(
             await createBotFAssetConfig(
                 chainInfo,
@@ -179,6 +177,10 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         liquidationStrategy: runConfig.liquidationStrategy,
         challengeStrategy: runConfig.challengeStrategy
     };
+}
+
+export function encodedChainId(chainId: string) {
+    return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
 }
 
 /**

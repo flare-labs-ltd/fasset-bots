@@ -1,20 +1,24 @@
 import chalk from "chalk";
-import { BotConfigFile, loadConfigFile } from "../config/BotConfig";
-import { getSecrets } from "../config/secrets";
+import crypto from "node:crypto";
+import { BotConfigFile, BotFAssetInfo, createWalletClient, encodedChainId, loadConfigFile } from "../config/BotConfig";
+import { createNativeContext } from "../config/create-asset-context";
+import { NativeAccount, Secrets, UnifiedAccount, getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { printAgentInfo } from "../utils/fasset-helpers";
-import { CommandLineError } from "../utils/helpers";
+import { CommandLineError, requireNotNull } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { createNativeContext } from "../config/create-asset-context";
+import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = '0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33';
 
+export type SecretsUser = 'user' | 'agent' | 'other';
+
 export class InfoBot {
     context!: IAssetNativeChainContext;
     config!: BotConfigFile;
+    fassetInfo!: BotFAssetInfo;
     nativeAddress!: string;
     underlyingAddress!: string;
 
@@ -48,9 +52,56 @@ export class InfoBot {
             throw new CommandLineError("FAsset does not exist");
         }
         this.context = await createNativeContext(this.config, chainConfig);
+        this.fassetInfo = chainConfig;
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
         console.error(chalk.cyan("Environment successfully initialized."));
+    }
+
+    generateSecrets(users: SecretsUser[]) {
+        // will only generate underlying accounts for the first fasset chain (enough for beta, where only one chain is supported)
+        const walletUrl = requireNotNull(this.fassetInfo.walletUrl, "walletUrl config parameter is required");
+        const sourceId = encodedChainId(this.fassetInfo.chainId);
+        const walletClient = createWalletClient(sourceId, walletUrl, this.fassetInfo.inTestnet);
+        function generateAccount(): UnifiedAccount {
+            const account = web3.eth.accounts.create();
+            const underlyingAccount = walletClient.createWallet();
+            return {
+                native_address: account.address,
+                native_private_key: account.privateKey,
+                underlying_address: underlyingAccount.address,
+                underlying_private_key: underlyingAccount.privateKey,
+            }
+        }
+        function generateNativeAccount(): NativeAccount {
+            const account = web3.eth.accounts.create();
+            return {
+                native_address: account.address,
+                native_private_key: account.privateKey,
+            }
+        }
+        const secrets: Secrets = { apiKey: {} };
+        secrets.apiKey.native_rpc = '';
+        if (users.includes('agent') || users.includes('user')) {
+            secrets.apiKey.xrp_rpc = '';
+            secrets.apiKey.indexer = '';
+        }
+        if (users.includes('agent')) {
+            secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");
+            secrets.wallet = {
+                encryption_password: crypto.randomBytes(15).toString("base64")
+            };
+            secrets.owner = generateAccount();
+        }
+        if (users.includes('user')) {
+            secrets.user = generateAccount();
+        }
+        if (users.includes('other')) {
+            secrets.challenger = generateNativeAccount();
+            secrets.systemKeeper = generateNativeAccount();
+            secrets.timeKeeper = generateNativeAccount();
+        }
+        return secrets;
     }
 
     /**
