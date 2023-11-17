@@ -36,6 +36,7 @@ describe("Bot cli commands unit tests", async () => {
     let agent: Agent;
 
     before(async () => {
+        UserBot.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
@@ -55,26 +56,25 @@ describe("Bot cli commands unit tests", async () => {
         userBot.nativeAddress = ownerAddress;
         userBot.underlyingAddress = userUnderlyingAddress;
         const chainId = SourceId.XRP;
+        userBot.fassetConfig = {
+            chainInfo: {
+                chainId: chainId,
+                name: "Ripple",
+                symbol: "XRP",
+                decimals: 6,
+                amgDecimals: 0,
+                requireEOAProof: false,
+                finalizationBlocks: 6,
+            },
+            wallet: new MockChainWallet(chain),
+            blockchainIndexerClient: new MockIndexer("", chainId, chain),
+            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
+            assetManager: "",
+        };
         userBot.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            fAssets: [
-                {
-                    chainInfo: {
-                        chainId: chainId,
-                        name: "Ripple",
-                        symbol: "XRP",
-                        decimals: 6,
-                        amgDecimals: 0,
-                        requireEOAProof: false,
-                        finalizationBlocks: 6,
-                    },
-                    wallet: new MockChainWallet(chain),
-                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-                    assetManager: "",
-                },
-            ],
+            fAssets: [userBot.fassetConfig],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifier: new Notifier(),

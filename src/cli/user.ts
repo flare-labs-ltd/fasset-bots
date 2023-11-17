@@ -34,7 +34,7 @@ program
 
 function getSecretsPath() {
     const options: { secrets?: string } = program.opts();
-    const defaultSecretsPath = path.resolve(os.homedir(), '.fasset-secrets.json');
+    const defaultSecretsPath = path.resolve(os.homedir(), 'fasset/secrets.json');
     if (options.secrets != null) {
         return options.secrets;
     } else if (existsSync(defaultSecretsPath)) {
@@ -97,14 +97,12 @@ program
 program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
-    .argument("<collateralReservationId>")
-    .argument("<transactionHash>")
-    .argument("<paymentAddress>")
-    .action(async (collateralReservationId: string, transactionHash: string, paymentAddress: string) => {
+    .argument("<requestId>")
+    .action(async (requestId: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
-        await minterBot.proveAndExecuteMinting(collateralReservationId, transactionHash, paymentAddress);
+        await minterBot.proveAndExecuteSavedMinting(requestId);
     });
 
 program
@@ -121,16 +119,12 @@ program
 program
     .command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
-    .argument("<amount>")
-    .argument("<reference>")
-    .argument("<firstBlock>")
-    .argument("<lastBlock>")
-    .argument("<lastTs>")
-    .action(async (amountUBA: string, paymentReference: string, firstUnderlyingBlock: string, lastUnderlyingBlock: string, lastUnderlyingTimestamp: string) => {
+    .argument("<requestId>")
+    .action(async (requestId: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset);
-        await redeemerBot.redemptionDefault(amountUBA, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
+        await redeemerBot.savedRedemptionDefault(requestId);
     });
 
 toplevelRun(async () => {

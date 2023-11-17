@@ -14,6 +14,7 @@ describe("UserBot cli commands unit tests", async () => {
     let userAddress: string;
 
     before(async () => {
+        UserBot.userDataDir = "./test-data";
         accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
         userAddress = accounts[2];
     });
