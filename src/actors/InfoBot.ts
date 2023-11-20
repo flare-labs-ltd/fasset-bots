@@ -6,21 +6,24 @@ import { NativeAccount, Secrets, UnifiedAccount, getSecrets } from "../config/se
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { printAgentInfo } from "../utils/fasset-helpers";
-import { CommandLineError, requireNotNull } from "../utils/helpers";
+import { CommandLineError, MAX_BIPS, requireNotNull } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
 
 export type SecretsUser = "user" | "agent" | "other";
 
+const CollateralPool = artifacts.require("CollateralPool");
+const IERC20Metadata = artifacts.require("IERC20Metadata");
+
 export class InfoBot {
-    context!: IAssetNativeChainContext;
-    config!: BotConfigFile;
-    fassetInfo!: BotFAssetInfo;
-    nativeAddress!: string;
-    underlyingAddress!: string;
+    constructor(
+        public context: IAssetNativeChainContext,
+        public config: BotConfigFile,
+        public fassetInfo: BotFAssetInfo,
+    ) { }
 
     /**
      * Creates instance of InfoBot.
@@ -29,33 +32,22 @@ export class InfoBot {
      * @returns instance of InfoBot
      */
     static async create(configFile: string, fAssetSymbol?: string): Promise<InfoBot> {
-        const bot = new InfoBot();
-        await bot.initialize(configFile, fAssetSymbol);
-        return bot;
-    }
-
-    /**
-     * Initializes asset context from AgentBotRunConfig.
-     * @param configFile path to configuration file
-     * @param fAssetSymbol symbol for the fasset
-     */
-    async initialize(configFile: string, fAssetSymbol?: string): Promise<void> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        this.config = loadConfigFile(configFile, `InfoBot`);
+        const config = loadConfigFile(configFile, `InfoBot`);
         // init web3 and accounts
-        await initWeb3(authenticatedHttpProvider(this.config.rpcUrl, getSecrets().apiKey.native_rpc), [INFO_ACCOUNT_KEY], null);
+        await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [INFO_ACCOUNT_KEY], null);
         // create config
-        const chainConfig = fAssetSymbol ? this.config.fAssetInfos.find((cc) => cc.fAssetSymbol === fAssetSymbol) : this.config.fAssetInfos[0];
+        const chainConfig = fAssetSymbol ? config.fAssetInfos.find((cc) => cc.fAssetSymbol === fAssetSymbol) : config.fAssetInfos[0];
         if (chainConfig == null) {
             logger.error(`InfoBot: FAsset does not exist.`);
             throw new CommandLineError("FAsset does not exist");
         }
-        this.context = await createNativeContext(this.config, chainConfig);
-        this.fassetInfo = chainConfig;
+        const context = await createNativeContext(config, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
         console.error(chalk.cyan("Environment successfully initialized."));
+        return new InfoBot(context, config, chainConfig);
     }
 
     generateSecrets(users: SecretsUser[]) {
@@ -155,21 +147,55 @@ export class InfoBot {
     async printAvailableAgents() {
         logger.info(`InfoBot started fetching available agents.`);
         const agents = await this.getAvailableAgents();
-        console.log(`${"ADDRESS".padEnd(42)}  ${"MAX_LOTS".padEnd(8)}  ${"FEE".padEnd(6)}`);
+        const printer = new ColumnPrinter([["ADDRESS", 42, 'l'], ["MAX_LOTS", 8, 'r'], ["FEE", 6, 'r']]);
+        printer.printHeader();
         let loggedAgents = ``;
         for (const agent of agents) {
             const lots = String(agent.freeCollateralLots);
             const fee = Number(agent.feeBIPS) / 100;
-            console.log(`${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%`);
-            loggedAgents += `InfoBot fetched agent: ${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%\n`;
+            const line = printer.line(agent.agentVault, lots, fee.toFixed(2));
+            console.log(line);
+            loggedAgents += `InfoBot fetched agent: ${line}\n`;
         }
         logger.info(loggedAgents);
         logger.info(`InfoBot finished fetching available agents.`);
     }
 
+    async printPools() {
+        logger.info(`InfoBot started fetching pools.`);
+        const settings = await this.context.assetManager.getSettings();
+        const fassetSymbol = await this.context.fAsset.symbol();
+        const agents = await this.getAvailableAgents();
+        const printer = new ColumnPrinter([["Pool address", 42, 'l'], ["Token symbol", 30, 'l'], ["Token price (CFLR)", 12, 'r'], ["Collateral (CFLR)", 12, 'r'],
+            [`Fees (${fassetSymbol})`, 12, 'r'], ["CR", 8, 'r']]);
+        printer.printHeader();
+        let loggedAgents = ``;
+        for (const agent of agents) {
+            const info = await this.context.assetManager.getAgentInfo(agent.agentVault);
+            const pool = await CollateralPool.at(info.collateralPool);
+            const poolToken = await IERC20Metadata.at(await pool.poolToken());
+            const tokenSymbol = await poolToken.symbol();
+            const collateral = Number(info.totalPoolCollateralNATWei) / 10 ** 18;
+            const poolTokenSupply = Number(await poolToken.totalSupply()) / 10 ** 18;
+            const tokenPrice =  poolTokenSupply === 0 ? 1 : collateral / poolTokenSupply;
+            const fees = Number(await pool.totalFAssetFees()) / Number(settings.assetUnitUBA);
+            const cr = Number(info.poolCollateralRatioBIPS) / MAX_BIPS;
+            const priceDisp = `${tokenPrice.toPrecision(5)}`;
+            const collateralDisp = `${collateral.toFixed(2)}`;
+            const feesDisp = `${fees.toFixed(2) }`;
+            const crDisp = cr < 1000 ? cr.toPrecision(5) : "-";
+            const line = printer.line(pool.address, tokenSymbol, priceDisp, collateralDisp, feesDisp, crDisp);
+            console.log(line);
+            loggedAgents += `InfoBot fetched pool: ${line}\n`;
+        }
+        logger.info(loggedAgents);
+        logger.info(`InfoBot finished fetching pools.`);
+    }
+
     async printAllAgents() {
-        console.log("-------------- Agents --------------");
-        console.log(`${"Vault address".padEnd(42)}  ${"Owner address".padEnd(42)}  ${"Minted lots".padStart(12)}  ${"Free lots".padStart(12)}  ${"Public"}`);
+        const printer = new ColumnPrinter([["Vault address", 42, 'l'], ["Owner address", 42, 'l'], ["Minted lots", 12, 'r'],
+            ["Free lots", 12, 'r'], ["Public", 6, 'r']]);
+        printer.printHeader();
         const allAgents = await this.getAllAgents();
         const lotSizeUBA = await this.getLotSize();
         for (const vaultAddr of allAgents) {
@@ -177,10 +203,44 @@ export class InfoBot {
             const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
-            console.log(
-                `${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`
-            );
+            printer.printLine(vaultAddr, info.ownerManagementAddress, mintedLots.toFixed(2), freeLots.toFixed(0), available);
         }
+    }
+
+    async findPoolBySymbol(symbol: string) {
+        const agents = await this.getAvailableAgents();
+        for (const agent of agents) {
+            const info = await this.context.assetManager.getAgentInfo(agent.agentVault);
+            const pool = await CollateralPool.at(info.collateralPool);
+            const poolToken = await IERC20Metadata.at(await pool.poolToken());
+            const tokenSymbol = await poolToken.symbol();
+            if (tokenSymbol === symbol) {
+                return pool.address;
+            }
+        }
+        throw new CommandLineError(`Pool with token symbol ${symbol} does not exist.`);
+    }
+
+    async printPoolTokenBalance(address: string) {
+        const agents = await this.getAvailableAgents();
+        const printer = new ColumnPrinter([["Pool address", 42, 'l'], ["Token symbol", 30, 'l'], ["Pool tokens", 12, 'r']]);
+        printer.printHeader();
+        for (const agent of agents) {
+            const info = await this.context.assetManager.getAgentInfo(agent.agentVault);
+            const pool = await CollateralPool.at(info.collateralPool);
+            const poolToken = await IERC20Metadata.at(await pool.poolToken());
+            const balance = await poolToken.balanceOf(address);
+            const balanceNum = Number(balance) / 1e18;
+            if (!balance.isZero()) {
+                printer.printLine(pool.address, await poolToken.symbol(), balanceNum.toFixed(2));
+            }
+        }
+    }
+
+    async getPoolTokenBalance(poolAddress: string, address: string) {
+        const pool = await CollateralPool.at(poolAddress);
+        const poolToken = await IERC20Metadata.at(await pool.poolToken());
+        return await poolToken.balanceOf(address);
     }
 
     private async getLotSize(settings?: AssetManagerSettings) {
@@ -190,5 +250,31 @@ export class InfoBot {
 
     async printAgentInfo(vaultAddress: string) {
         await printAgentInfo(vaultAddress, this.context);
+    }
+}
+
+type ColumnType = [title: string, width: number, align: 'l' | 'r'];
+
+export class ColumnPrinter {
+    constructor(
+        public columns: ColumnType[],
+        public separator: string = '  ',
+    ) {
+        for (const ct of this.columns) {
+            ct[1] = Math.max(ct[1], ct[0].length);
+        }
+    }
+
+    line(...items: string[]) {
+        const chunks = this.columns.map(([_, width, align], ind) => align === 'l' ? items[ind].padEnd(width) : items[ind].padStart(width));
+        return chunks.join(this.separator);
+    }
+
+    printHeader() {
+        this.printLine(...this.columns.map(it => it[0]));
+    }
+
+    printLine(...items: string[]) {
+        console.log(this.line(...items));
     }
 }

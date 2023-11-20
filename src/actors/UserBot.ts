@@ -2,21 +2,26 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { BotConfig, BotFAssetConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, BotConfigFile, BotFAssetConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
+import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { BNish, CommandLineError, toBN } from "../utils/helpers";
+import { BNish, CommandLineError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { InfoBot } from "./InfoBot";
+import { TokenExitType } from "../fasset/AssetManagerTypes";
 
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
+
+const CollateralPool = artifacts.require("CollateralPool");
 
 interface MintData {
     type: "mint";
@@ -41,6 +46,7 @@ type StateData = MintData | RedeemData;
 
 export class UserBot {
     context!: IAssetAgentBotContext;
+    configFile!: BotConfigFile;
     botConfig!: BotConfig;
     fassetConfig!: BotFAssetConfig;
     nativeAddress!: string;
@@ -54,9 +60,9 @@ export class UserBot {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(configFile: string, fAssetSymbol: string): Promise<UserBot> {
+    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean): Promise<UserBot> {
         const bot = new UserBot();
-        await bot.initialize(configFile, fAssetSymbol);
+        await bot.initialize(configFile, fAssetSymbol, requireWallet);
         return bot;
     }
 
@@ -65,21 +71,21 @@ export class UserBot {
      * @param configFile path to configuration file
      * @param fAssetSymbol symbol for the fasset
      */
-    async initialize(configFile: string, fAssetSymbol: string): Promise<void> {
+    async initialize(configFile: string, fAssetSymbol: string, requireWallet: boolean): Promise<void> {
         this.nativeAddress = requireSecret("user.native_address");
         logger.info(`User ${this.nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        const runConfig = loadAgentConfigFile(configFile, `User ${this.nativeAddress}`);
+        this.configFile = loadAgentConfigFile(configFile, `User ${this.nativeAddress}`);
         // init web3 and accounts
         const nativePrivateKey = requireSecret("user.native_private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+        const accounts = await initWeb3(authenticatedHttpProvider(this.configFile.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (!accounts.includes(this.nativeAddress)) {
             logger.error(`User ${this.nativeAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        this.botConfig = await createBotConfig(runConfig, this.nativeAddress);
+        this.botConfig = await createBotConfig(this.configFile, this.nativeAddress);
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
             logger.error(`User ${this.nativeAddress} has invalid FAsset symbol.`);
@@ -88,11 +94,18 @@ export class UserBot {
         this.context = await createAssetContext(this.botConfig, chainConfig);
         this.fassetConfig = chainConfig;
         // create underlying wallet key
-        this.underlyingAddress = requireSecret("user.underlying_address");
-        const underlyingPrivateKey = requireSecret("user.underlying_private_key");
-        await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
+        if (requireWallet) {
+            this.underlyingAddress = requireSecret("user.underlying_address");
+            const underlyingPrivateKey = requireSecret("user.underlying_private_key");
+            await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
+        }
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
+    }
+
+    infoBot() {
+        const fassetInfo = requireNotNull(this.configFile.fAssetInfos.find((cc) => cc.fAssetSymbol === this.fassetConfig.fAssetSymbol));
+        return new InfoBot(this.context, this.configFile, fassetInfo);
     }
 
     /**
@@ -264,6 +277,18 @@ export class UserBot {
         await redeemer.executePaymentDefault(requestId, proof);
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
+    }
+
+    async enterPool(poolAddress: string, collateralAmountWei: BNish) {
+        const pool = await CollateralPool.at(poolAddress);
+        const res = await pool.enter(0, false, { from: this.nativeAddress, value: collateralAmountWei.toString() });
+        return requiredEventArgs(res, 'Entered');
+    }
+
+    async exitPool(poolAddress: string, tokenAmountWei: BNish) {
+        const pool = await CollateralPool.at(poolAddress);
+        const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
+        return requiredEventArgs(res, 'Exited');
     }
 
     writeState(data: StateData) {

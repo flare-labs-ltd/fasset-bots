@@ -14,6 +14,7 @@ import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/Tes
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgent, createTestAgentAndMakeAvailable } from "../../test-utils/helpers";
+import { BotConfigFile } from "../../../src/config/config-files";
 use(chaiAsPromised);
 use(spies);
 
@@ -44,12 +45,8 @@ describe("Bot cli commands unit tests", async () => {
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
         // user bot
-        infoBot = new InfoBot();
-        infoBot.context = context;
-        infoBot.nativeAddress = ownerAddress;
-        infoBot.underlyingAddress = userUnderlyingAddress;
         const chainId = SourceId.XRP;
-        infoBot.config = {
+        const config: BotConfigFile = {
             rpcUrl: "",
             loopDelay: 0,
             fAssetInfos: [
@@ -66,6 +63,7 @@ describe("Bot cli commands unit tests", async () => {
             nativeChainInfo: testNativeChainInfo,
             addressUpdater: "",
         };
+        infoBot = new InfoBot(context, config, config.fAssetInfos[0]);
         agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
     });
 
