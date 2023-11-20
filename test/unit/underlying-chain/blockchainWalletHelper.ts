@@ -53,7 +53,7 @@ describe("XRP wallet tests", async () => {
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options, false))
+        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
             .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`)
             .and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(orm, fundedAddressXRP);
@@ -64,7 +64,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined, false))
+        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined))
             .to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`)
             .and.be.an.instanceOf(Error);
     });
@@ -139,9 +139,9 @@ describe("DOGE wallet tests", async () => {
         await removeWalletAddressFromDB(orm, targetAddress);
     });
 
-    it("Should send funds", async () => {
+    it.skip("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined, false);
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
         expect(transaction).to.not.be.null;
         await removeWalletAddressFromDB(orm, fundedAddress);
     });

@@ -35,7 +35,7 @@ describe("XRP transaction integration tests", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const balanceBefore = await walletHelper.getBalance(targetAddressXRP);
         const options = { maxFee: 12 }; // maxFee in Drops
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, null, options, true);
+        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, null, options);
         const balanceAfter = await walletHelper.getBalance(targetAddressXRP);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
         // wait for transaction
@@ -47,7 +47,7 @@ describe("XRP transaction integration tests", async () => {
     it("Should send funds and retrieve transaction by reference", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, undefined, false);
+        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, undefined);
         // wait for transaction
         const waitBlocks = 20;
         const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction, waitBlocks);

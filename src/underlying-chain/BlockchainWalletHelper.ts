@@ -15,21 +15,19 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         targetAddress: string,
         amount: string | number | BN,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        awaitForTransaction?: boolean
+        options?: TransactionOptionsWithFee
     ): Promise<string> {
         const walletKeys = new DBWalletKeys(this.em);
-        const value = amount as number;
+        const value = toBN(amount);
         const fee = undefined;
-        const maxFee = options?.maxFee ? Number(options.maxFee) : undefined;
+        const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
         const note = reference ? unPrefix0x(reference) : undefined;
-        const tr = await this.walletClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee);
         const privateKey = await walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const txSigned = await this.walletClient.signTransaction(tr, privateKey);
-            const submit = awaitForTransaction
-                ? await this.walletClient.submitTransactionAndWait(txSigned)
-                : await this.walletClient.submitTransaction(txSigned);
+            // const tr = await this.walletClient.preparePaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee);
+            // const txSigned = await this.walletClient.signTransaction(tr, privateKey);
+            // const submit = await this.walletClient.submitTransactionAndWait(txSigned)
+            const submit = await this.walletClient.executeLockedSignedTransactionAndWait(sourceAddress, privateKey, targetAddress, value, fee, note, maxFee);
             return submit.txId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
