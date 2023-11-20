@@ -41,7 +41,7 @@ describe("XRP transaction integration tests", async () => {
         // wait for transaction
         const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction);
         expect(transaction).to.equal(retrievedTransaction?.hash);
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
+        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
 
     it("Should send funds and retrieve transaction by reference", async () => {
@@ -54,6 +54,6 @@ describe("XRP transaction integration tests", async () => {
         expect(transaction).to.equal(retrievedTransaction?.hash);
         const retrievedTransactionsByRef = await blockChainIndexerHelper.getTransactionsByReference(prefix0x(note));
         expect(retrievedTransactionsByRef.length).to.be.gt(0);
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
+        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
 });

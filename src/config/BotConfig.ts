@@ -1,8 +1,6 @@
 import "dotenv/config";
 
 import { EntityManager } from "@mikro-orm/core/EntityManager";
-import { Connection } from "@mikro-orm/core/connections/Connection";
-import { IDatabaseDriver } from "@mikro-orm/core/drivers/IDatabaseDriver";
 import { WALLET } from "simple-wallet";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
@@ -16,7 +14,7 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
 import { requireNotNull, toBN } from "../utils/helpers";
-import { requireEncryptionPasswordAndLength, requireSecret } from "./secrets";
+import { requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
 import { JsonLoader } from "./json-loader";
@@ -26,6 +24,7 @@ import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
+import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 /* istanbul ignore next */
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -118,9 +117,8 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
     try {
         const config = botConfigLoader.load(fPath);
         validateAgentConfigFile(config);
-        // check if encryption password is defined and also check secrets.json file permission
-        const secrets = getSecrets();
-        requireEncryptionPasswordAndLength(secrets);
+        // check secrets.json file permission
+        getSecrets();
         return config as AgentBotConfigFile;
     } catch (e) {
         /* istanbul ignore next */
@@ -153,9 +151,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
-        if (!chainInfo.chainId.startsWith("0x")) {
-            chainInfo.chainId = encodeAttestationName(chainInfo.chainId);
-        }
+        chainInfo.chainId = encodedChainId(chainInfo.chainId);
         fAssets.push(
             await createBotFAssetConfig(
                 chainInfo,
@@ -185,6 +181,10 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     };
 }
 
+export function encodedChainId(chainId: string) {
+    return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
+}
+
 /**
  * Creates BotFAssetConfig configuration from chain info.
  * @param chainInfo instance of BotFAssetInfo
@@ -203,7 +203,7 @@ export async function createBotFAssetConfig(
     stateConnectorAddress: string | undefined,
     ownerAddress: string
 ): Promise<BotFAssetConfig> {
-    const wallet = chainInfo.walletUrl && em ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
+    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
@@ -336,25 +336,23 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
 /**
  * Creates blockchain wallet helper using wallet client.
  * @param sourceId chain source
- * @param em entity manager
+ * @param em entity manager (optional)
  * @param walletUrl chain's url
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of BlockchainWalletHelper
  */
 export function createBlockchainWalletHelper(
     sourceId: SourceId,
-    em: EntityManager<IDatabaseDriver<Connection>>,
+    em: EntityManager | null | undefined,
     walletUrl: string,
     inTestnet?: boolean
 ): BlockchainWalletHelper {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
-    if (sourceId === SourceId.BTC || sourceId === SourceId.DOGE) {
-        return new BlockchainWalletHelper(createWalletClient(sourceId, walletUrl, inTestnet), em);
-    } else {
-        return new BlockchainWalletHelper(createWalletClient(sourceId, walletUrl), em);
-    }
+    const walletClient = createWalletClient(sourceId, walletUrl, inTestnet);
+    const walletKeys = em ? new DBWalletKeys(em) : new MemoryWalletKeys();
+    return new BlockchainWalletHelper(walletClient, walletKeys);
 }
 
 /**

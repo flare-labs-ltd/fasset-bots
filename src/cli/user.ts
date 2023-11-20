@@ -2,41 +2,120 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { toplevelRun } from "../utils/helpers";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import chalk from "chalk";
+import { InfoBot, SecretsUser } from "../actors/InfoBot";
 import { UserBot } from "../actors/UserBot";
-import { logger } from "../utils/logger";
+import { resetSecrets } from "../config/secrets";
+import { CommandLineError, findPackageRoot, toplevelRun } from "../utils/helpers";
 
 const program = new Command();
 
 program
     .addOption(
         program
-            .createOption("-c, --config <configFile>", "Config file path (if not provided, environment variable USER_CONFIG_PATH is required)")
-            .env("USER_CONFIG_PATH")
-            .makeOptionMandatory(true)
+            .createOption(
+                "-c, --config <configFile>",
+                "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works."
+            )
+            .env("FASSET_USER_CONFIG")
+            .default(path.resolve(findPackageRoot(__dirname), "run-config/run-config-user-coston-testxrp.json"))
     )
-    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
+    .addOption(
+        program
+            .createOption(
+                "-s, --secrets <secretsFile>",
+                "File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable FASSET_USER_SECRETS is used as path, if set. Default file is <USER_HOME>/.fasset/secrets.json."
+            )
+            .env("FASSET_USER_SECRETS")
+    )
+    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query"))
+    .hook("preAction", (_, command) => {
+        // make --fasset option mandatory always except for 'generateSecrets' command
+        if (command.name() !== "generateSecrets") {
+            if (!program.getOptionValue("fasset")) {
+                throw new CommandLineError("required option '-f, --fasset <fAssetSymbol>' not specified");
+            }
+        }
+        resetSecrets(getSecretsPath());
+    });
+
+function getSecretsPath() {
+    const options: { secrets?: string } = program.opts();
+    const defaultSecretsPath = path.resolve(os.homedir(), "fasset/secrets.json");
+    if (options.secrets != null) {
+        return options.secrets;
+    } else if (fs.existsSync(defaultSecretsPath)) {
+        return defaultSecretsPath;
+    }
+    return null;
+}
+
+program
+    .command("generateSecrets")
+    .description("generate new secrets file")
+    .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
+    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
+    .option("--agent", "also generate secrets for agent")
+    .option("--other", "also generate secrets for other bots (challenger, etc.)")
+    .action(async (opts: { output?: string; overwrite?: boolean; agent?: boolean; other?: boolean }) => {
+        const options: { config: string; fasset?: string } = program.opts();
+        const bot = await InfoBot.create(options.config, options.fasset);
+        const users: SecretsUser[] = ["user"];
+        if (opts.agent) users.push("agent");
+        if (opts.other) users.push("other");
+        const secrets = bot.generateSecrets(users);
+        const json = JSON.stringify(secrets, null, 4);
+        if (opts.output) {
+            if (fs.existsSync(opts.output) && !opts.overwrite) {
+                program.error(`error: file ${opts.output} already exists`);
+            }
+            fs.writeFileSync(opts.output, json);
+        } else {
+            console.log(json);
+        }
+        const emptyFields = Object.keys(secrets.apiKey).filter((k) => !secrets.apiKey[k]);
+        if (emptyFields.length !== 0) {
+            console.error(
+                chalk.yellow("NOTE:"),
+                `Replace empty fields in apiKey (${emptyFields.join(", ")}) with api keys from your provider or delete them if not needed.`
+            );
+        }
+    });
+
+program
+    .command("info")
+    .description("info about the system")
+    .action(async () => {
+        const options: { config: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.config, options.fasset);
+        await bot.printSystemInfo();
+    });
 
 program
     .command("agents")
     .description("Lists the available agents")
-    .action(async () => {
+    .option("-a, --all", "print all agents, including non-public")
+    .action(async (opts: { all: boolean }) => {
         const options: { config: string; fasset: string } = program.opts();
-        const bot = new UserBot();
-        await bot.initialize(options.config, options.fasset);
-        logger.info(`User ${bot.nativeAddress} started fetching available agents.`);
-        const agents = await bot.getAvailableAgents();
-        console.log(`${"ADDRESS".padEnd(42)}  ${"MAX_LOTS".padEnd(8)}  ${"FEE".padEnd(6)}`);
-        let loggedAgents = ``;
-        for (const agent of agents) {
-            const lots = String(agent.freeCollateralLots);
-            const fee = Number(agent.feeBIPS) / 100;
-            console.log(`${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%`);
-            loggedAgents =
-                loggedAgents + `User ${bot.nativeAddress} fetched agent: ${agent.agentVault.padEnd(42)}  ${lots.padStart(8)}  ${fee.toFixed(2).padStart(5)}%\n`;
+        const bot = await InfoBot.create(options.config, options.fasset);
+        if (opts.all) {
+            await bot.printAllAgents();
+        } else {
+            await bot.printAvailableAgents();
         }
-        logger.info(loggedAgents);
-        logger.info(`User ${bot.nativeAddress} finished fetching available agents.`);
+    });
+
+program
+    .command("agentInfo")
+    .description("info about an agent")
+    .argument("<agentVaultAddress>", "the address of the agent vault")
+    .action(async (agentVaultAddress: string) => {
+        const options: { config: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.config, options.fasset);
+        await bot.printAgentInfo(agentVaultAddress);
     });
 
 program
@@ -46,6 +125,7 @@ program
     .argument("<amountLots>")
     .option("-u, --updateBlock")
     .action(async (agentVault: string, amountLots: string, cmdOptions: { updateBlock?: boolean }) => {
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
         if (cmdOptions.updateBlock) {
@@ -57,13 +137,12 @@ program
 program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
-    .argument("<collateralReservationId>")
-    .argument("<transactionHash>")
-    .argument("<paymentAddress>")
-    .action(async (collateralReservationId: string, transactionHash: string, paymentAddress: string) => {
+    .argument("<requestId>")
+    .action(async (requestId: string) => {
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset);
-        await minterBot.proveAndExecuteMinting(collateralReservationId, transactionHash, paymentAddress);
+        await minterBot.proveAndExecuteSavedMinting(requestId);
     });
 
 program
@@ -71,6 +150,7 @@ program
     .description("Triggers redemption")
     .argument("<amountLots>")
     .action(async (amountLots: string) => {
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset);
         await redeemerBot.redeem(amountLots);
@@ -79,30 +159,12 @@ program
 program
     .command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
-    .argument("<amount>")
-    .argument("<reference>")
-    .argument("<firstBlock>")
-    .argument("<lastBlock>")
-    .argument("<lastTs>")
-    .action(async (amountUBA: string, paymentReference: string, firstUnderlyingBlock: string, lastUnderlyingBlock: string, lastUnderlyingTimestamp: string) => {
+    .argument("<requestId>")
+    .action(async (requestId: string) => {
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset);
-        await redeemerBot.redemptionDefault(amountUBA, paymentReference, firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
-    });
-
-program
-    .command("info")
-    .description("info about the system or an agent")
-    .option("-a, --agents")
-    .addArgument(program.createArgument("<agentVaultAddress>").argOptional())
-    .action(async (agentVault: string | undefined, cmdOptions: { agents?: boolean }) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await UserBot.create(options.config, options.fasset);
-        if (agentVault) {
-            await bot.printAgentInfo(agentVault);
-        } else {
-            await bot.printSystemInfo(cmdOptions.agents ?? false);
-        }
+        await redeemerBot.savedRedemptionDefault(requestId);
     });
 
 toplevelRun(async () => {

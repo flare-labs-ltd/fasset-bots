@@ -1,21 +1,23 @@
-import { FilterQuery } from "@mikro-orm/core";
+import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
+import { requireSecret } from "../../src/config/secrets";
 import { AgentEntity } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
+import { SourceId } from "../../src/underlying-chain/SourceId";
+import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { Notifier } from "../../src/utils/Notifier";
 import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
-import { requireSecret } from "../../src/config/secrets";
 import { artifacts } from "../../src/utils/web3";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
@@ -32,9 +34,18 @@ export function getNativeAccountsFromEnv() {
     return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey];
 }
 
-export async function removeWalletAddressFromDB(orm: ORM, address: string) {
-    const wa0 = await orm.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
-    if (wa0) await orm.em.removeAndFlush(wa0);
+export async function removeWalletAddressFromDB(walletKeys: IWalletKeys | BlockchainWalletHelper, address: string) {
+    if (walletKeys instanceof BlockchainWalletHelper) {
+        walletKeys = (walletKeys as any).walletKeys;
+    }
+    if (!(walletKeys instanceof DBWalletKeys)) {
+        throw new Error("Expected DBWalletKeys");
+    }
+    const em = (walletKeys as any).em as EntityManager;
+    const wa0 = await em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
+    if (wa0) await em.removeAndFlush(wa0);
+    const cache = (walletKeys as any).privateKeyCache as Map<string, string>;
+    cache.delete(address);
 }
 
 export async function performRedemptionPayment(agent: Agent, request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee): Promise<string> {

@@ -43,8 +43,8 @@ describe("XRP wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddressXRP, targetPrivateKeyXRP);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKeyXRP);
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
-        await removeWalletAddressFromDB(orm, targetAddressXRP);
+        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
+        await removeWalletAddressFromDB(walletHelper, targetAddressXRP);
     });
 
     it("Should not send funds: fee > maxFee", async () => {
@@ -56,7 +56,7 @@ describe("XRP wallet tests", async () => {
         await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
             .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`)
             .and.be.an.instanceOf(Error);
-        await removeWalletAddressFromDB(orm, fundedAddressXRP);
+        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
 
     it("Should not add multi transaction - method not implemented", async () => {
@@ -102,8 +102,8 @@ describe("BTC wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKey);
-        await removeWalletAddressFromDB(orm, fundedAddress);
-        await removeWalletAddressFromDB(orm, targetAddress);
+        await removeWalletAddressFromDB(walletHelper, fundedAddress);
+        await removeWalletAddressFromDB(walletHelper, targetAddress);
     });
 });
 
@@ -135,14 +135,14 @@ describe("DOGE wallet tests", async () => {
         const account1 = await walletHelper.addExistingAccount(targetAddress, targetPrivateKey);
         const privateKey1 = await dbWallet.getKey(account1);
         expect(privateKey1).to.eq(targetPrivateKey);
-        await removeWalletAddressFromDB(orm, fundedAddress);
-        await removeWalletAddressFromDB(orm, targetAddress);
+        await removeWalletAddressFromDB(walletHelper, fundedAddress);
+        await removeWalletAddressFromDB(walletHelper, targetAddress);
     });
 
     it.skip("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
         const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
         expect(transaction).to.not.be.null;
-        await removeWalletAddressFromDB(orm, fundedAddress);
+        await removeWalletAddressFromDB(walletHelper, fundedAddress);
     });
 });

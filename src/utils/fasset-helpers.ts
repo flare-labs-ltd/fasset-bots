@@ -1,5 +1,5 @@
 import { AssetManagerInstance } from "../../typechain-truffle/AssetManager";
-import { AssetManagerEvents, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerEvents, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings, AgentStatus } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
@@ -52,7 +52,7 @@ export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexer
     return latestBlock;
 }
 
-export async function printAgentInfo(vaultAddress: string, context: IAssetAgentBotContext) {
+export async function printAgentInfo(vaultAddress: string, context: IAssetNativeChainContext) {
     const IERC20 = artifacts.require("IERC20Metadata");
     const fAsset = context.fAsset;
     const assetManager = context.assetManager;
