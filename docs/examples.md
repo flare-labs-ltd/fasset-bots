@@ -3,6 +3,7 @@
 ## How to create agent bot and make it available? (Only available agents can be minted against to.)
 
 1. Create agent. The output is native address of created agent.
+
 ```console
 $ yarn agent-bot create POOLT-1 -f FtestXRP
 Initializing environment...
@@ -11,6 +12,7 @@ AGENT CREATED: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was created.
 ```
 
 2. Deposit enough vault collateral to agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. In this example _25000 testUSDC_.
+
 ```console
 $ yarn agent-bot depositVaultCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 25000000000000000000000 -f FtestXRP
 Initializing environment...
@@ -19,6 +21,7 @@ VAULT COLLATERAL DEPOSIT: Deposit of 2500000000000000000000 to agent 0x5bc0886D3
 ```
 
 2. Buy enough pool collateral for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. In this example _4500 CFLR_.
+
 ```console
 $ yarn agent-bot buyPoolCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 4500000000000000000000 -f FtestXRP
 Initializing environment...
@@ -27,6 +30,7 @@ BUY POOL TOKENS: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 bought 4500000
 ```
 
 3. Enter agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_ in agent's available list.
+
 ```console
 $ yarn agent-bot enter 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 Initializing environment...
@@ -37,6 +41,7 @@ AGENT ENTERED AVAILABLE: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 entere
 ## How to list and change agent settings?
 
 1. List agent settings for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_.
+
 ```console
 $ yarn agent-bot getAgentSettings 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 Initializing environment...
@@ -54,13 +59,16 @@ poolTopupTokenPriceFactorBIPS: 8000
 ```
 
 2. Update settings **poolFeeShareBIPS** to _4100 BIPS_ for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. This action will announce setting update.
+
 ```console
 $ yarn agent-bot updateAgentSetting 0x5bc0886D3117507C779BD8c6240eb1C396385223 poolFeeShareBIPS 4100 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 announced agent settings update at 1699518678 for poolFeeShareBIPS.
 ```
+
 Update execution will be automatically done via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified.
+
 ```console
 AGENT SETTING UPDATE: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 setting poolFeeShareBIPS was updated.
 ```
@@ -68,6 +76,7 @@ AGENT SETTING UPDATE: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 setting p
 ## How to withdraw underlying?
 
 1. Check free underlying assets for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_.
+
 ```console
 $ yarn agent-bot freeUnderlying 0x97204bd339e5e33acc7675dea5593f254BD8476C -f FtestXRP
 Initializing environment...
@@ -76,6 +85,7 @@ Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C has 5499950 free underlying.
 ```
 
 2. Announce underlying withdrawal for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_. The result is payment reference that is needed to perform withdrawal.
+
 ```console
 $ yarn agent-bot announceUnderlyingWithdrawal 0x97204bd339e5e33acc7675dea5593f254BD8476C -f FtestXRP
 Initializing environment...
@@ -84,6 +94,7 @@ ANNOUNCE UNDERLYING WITHDRAWAL: Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C
 ```
 
 3. Perform underlying withdrawal for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_ to underlying address _rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW_ with amount _1.499950 testXRP_ and payment reference _0x4642505266410003000000000000000000000000000000000000000000000030_.
+
 ```console
 $ yarn agent-bot performUnderlyingWithdrawal 0x97204bd339e5e33acc7675dea5593f254BD8476C 1499950 rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW 0x4642505266410003000000000000000000000000000000000000000000000030 -f FtestXRP
 Initializing environment...
@@ -92,7 +103,8 @@ UNDERLYING WITHDRAWAL: Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C withdrew
 ```
 
 4. Confirm underlying withdrawal
-Underlying withdrawal will be automatically confirmed via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified.
+   Underlying withdrawal will be automatically confirmed via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified.
+
 ```console
 CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT: Agent's 0x97204bd339e5e33acc7675dea5593f254BD8476C underlying withdrawal was successfully confirmed.
 ```
@@ -100,15 +112,18 @@ CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT: Agent's 0x97204bd339e5e33acc7675dea5
 ## How to create underlying account?
 
 1. Create underlying account that can be used for owner or user in `secrets.json` file. The outputs are underlying address and underlying private key, respectfully.
+
 ```console
 $ yarn agent-bot createUnderlyingAccount -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 rBxp3z87UbwaUgP2U88pT4pjEaeNP3FVWm 00F903ED76E80E5EDBA58B4C5F4DA4FB2EE02E99F87529FD1349EF1C2DE35AFC93
 ```
+
 ## How to create wallet encryption password?
 
 1. Create wallet encryption password that can be used in `secrets.json` file.
+
 ```console
 $ yarn key createWalletEncryptionPassword
 9cbefd0062028c1437bcb37a51d8546d872dbf3f081eab4d246d87548e1e5448
@@ -117,6 +132,7 @@ $ yarn key createWalletEncryptionPassword
 ## How to list available agents?
 
 1. List available agents that user can mint against.
+
 ```console
 $ yarn user-bot agents -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
 Initializing environment...
@@ -132,6 +148,7 @@ ADDRESS                                     MAX_LOTS  FEE
 ## How to mint fassets?
 
 ### User perspective
+
 1. Mint _1 FtestXR_P_ fasset against agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_.
 
 ```console
@@ -145,6 +162,7 @@ Waiting for proof of underlying payment transaction 377DA47EABCBA2C23CDC13433074
 Executing payment...
 Done
 ```
+
 ### Agent perspective
 
 Minting will be automatically recognized via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified about it.
@@ -157,7 +175,9 @@ MINTING EXECUTED: Minting 18455 executed for 0x97204bd339e5e33acc7675dea5593f254
 ## How to redeem fassets?
 
 ### User perspective
+
 1. Redeem _1 FtestXRP_ fasset.
+
 ```console
 $ yarn user-bot redeem 1 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
 Initializing environment...
@@ -168,6 +188,7 @@ Triggered 1 payment requests (addresses, block numbers and timestamps are on und
 ```
 
 ### Agent perspective
+
 Redemption will be automatically recognized and executed via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified about it.
 
 ```console
@@ -179,6 +200,7 @@ REDEMPTION PAYMENT PROOF REQUESTED: Payment proof for redemption 17644 was reque
 ## How to list system info?
 
 1. List system info.
+
 ```console
 $ yarn user-bot info -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
 Initializing environment...
@@ -189,6 +211,7 @@ Minted: 13.60 FtestXRP  (1.36 lots)
 ```
 
 2. List system info with basic agent's info.
+
 ```console
 $ yarn user-bot info --agents -f FtestXRP -c ./run-config/run-config-user-coston-
 testxrp.json
@@ -214,15 +237,21 @@ Vault address                               Owner address                       
 ## How to list agent info?
 
 1. List detail agent info for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_.
+
 ### User command
+
 ```console
 $ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
 ```
+
 ### Agent command
+
 ```console
 $ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP -c ./run-config/run-config-agent-coston-testxrp.json
 ```
+
 ### Result
+
 ```console
 Initializing environment...
 Environment successfully initialized.

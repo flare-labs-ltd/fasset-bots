@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import os from "os";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { BotConfig, BotFAssetConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
@@ -119,8 +119,7 @@ export class UserBot {
         logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(
-            `User ${this.nativeAddress} is paying on underlying chain for reservation ${
-                crt.collateralReservationId
+            `User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId
             } to agent's ${agentVault} address ${crt.paymentAddress}.`
         );
         const txHash = await minter.performMintingPayment(crt);
@@ -205,10 +204,8 @@ export class UserBot {
             );
             loggedRequests =
                 loggedRequests +
-                `User ${this.nativeAddress} triggered request:    id=${req.requestId}  to=${
-                    req.paymentAddress
-                }  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${
-                    req.lastUnderlyingBlock
+                `User ${this.nativeAddress} triggered request:    id=${req.requestId}  to=${req.paymentAddress
+                }  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock
                 }  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
             this.writeState({
                 type: 'redeem',

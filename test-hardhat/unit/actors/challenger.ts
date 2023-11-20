@@ -110,6 +110,6 @@ describe("Challenger unit tests", async () => {
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
         const challenger = await createTestChallenger(challengerAddress, state);
-        expect(challenger).to.not.be.undefined
+        expect(challenger).to.not.be.undefined;
     });
 });

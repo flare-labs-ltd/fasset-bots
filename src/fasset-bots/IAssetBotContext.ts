@@ -46,12 +46,14 @@ export interface IAssetActorContext extends IAssetNativeChainContext {
     blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
     attestationProvider?: AttestationHelper; // only for challenger
     // liquidation / challenger strategies
-    liquidationStrategy?: { // only for liquidator
+    liquidationStrategy?: {
+        // only for liquidator
         className: string;
         config?: any;
     };
-    challengeStrategy?: { // only for challenger
+    challengeStrategy?: {
+        // only for challenger
         className: string;
         config?: any;
-    }
+    };
 }

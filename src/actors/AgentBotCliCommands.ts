@@ -56,7 +56,7 @@ export class BotCliCommands {
         const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireSecret("owner.native_address")}`);
         // init web3 and accounts
         this.ownerAddress = requireSecret("owner.native_address");
-        const nativePrivateKey = requireSecret("owner.native.private_key");
+        const nativePrivateKey = requireSecret("owner.native_private_key");
         const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (this.ownerAddress !== accounts[0]) {

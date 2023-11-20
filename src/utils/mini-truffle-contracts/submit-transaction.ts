@@ -49,7 +49,7 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
     transactionLogger.info("SUBMIT", { transactionId, waitFor: settings.waitFor, nonce });
     // resubmit transaction item with afterMS=0 is optional in settings - it can be added if you want the initial price factor to be different from 1
     let resubmitTransaction = settings.resubmitTransaction;
-    if (resubmitTransaction.find(it => it.afterMS === 0) == null) {
+    if (resubmitTransaction.find((it) => it.afterMS === 0) == null) {
         resubmitTransaction = [{ afterMS: 0, priceFactor: 1 }, ...resubmitTransaction];
     }
     const cancelToken = new CancelToken();
@@ -59,22 +59,29 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
             await cancelableSleep(resubmit.afterMS, cancelToken);
         }
         // maxBN is here because currentGasPrice should increase with time so that each next submission has at least 10% higher price (of course, price factors must grow sufficiently)
-        currentGasPrice = maxBN(currentGasPrice, toBN(config.gasPrice ?? await settings.web3.eth.getGasPrice()));
+        currentGasPrice = maxBN(currentGasPrice, toBN(config.gasPrice ?? (await settings.web3.eth.getGasPrice())));
         const gasPrice = currentGasPrice.muln(resubmit.priceFactor);
         const cfg: TransactionConfig = { ...config, gasPrice: gasPrice.toString(), nonce: nonce };
-        cancelToken.check();    // don't send transaction if already canceled
+        cancelToken.check(); // don't send transaction if already canceled
         transactionLogger.info("SEND", { transactionId, resubmit: index, transaction: cfg });
         const promiEvent = settings.web3.eth.sendTransaction(cfg);
         promiEvent.catch(ignore);
         const finalizationCancelToken = new CancelToken();
-        const finalizationPromise = waitForFinalization(transactionId, settings.web3, settings.waitFor, nonce, fromAddress, promiEvent, finalizationCancelToken);
+        const finalizationPromise = waitForFinalization(
+            transactionId,
+            settings.web3,
+            settings.waitFor,
+            nonce,
+            fromAddress,
+            promiEvent,
+            finalizationCancelToken
+        );
         finalizationPromise.catch(ignore);
         try {
-            const receipt = await waitForReceipt(promiEvent, cancelToken)
-                .finally(() => {
-                    // delay cancel to make sure we don't cancel a success because the replaced transaction failure triggers first
-                    setTimeout(() => cancelToken.cancel(), 100);
-                });
+            const receipt = await waitForReceipt(promiEvent, cancelToken).finally(() => {
+                // delay cancel to make sure we don't cancel a success because the replaced transaction failure triggers first
+                setTimeout(() => cancelToken.cancel(), 100);
+            });
             transactionLogger.info("RECEIPT", { transactionId, resubmit: index, receipt });
             await finalizationPromise;
             return receipt;
@@ -88,7 +95,7 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
 
 function extractActualResult(results: PromiseSettledResult<TransactionReceipt>[]) {
     for (const result of results) {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
             return result.value;
         } else if (!(result.reason instanceof PromiseCancelled)) {
             throw result.reason;
@@ -97,7 +104,6 @@ function extractActualResult(results: PromiseSettledResult<TransactionReceipt>[]
     /* istanbul ignore next - this should never happen */
     throw new Error("All resubmits canceled");
 }
-
 
 /* istanbul ignore next */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

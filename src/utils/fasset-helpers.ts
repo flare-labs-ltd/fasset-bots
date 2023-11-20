@@ -63,8 +63,8 @@ export async function printAgentInfo(vaultAddress: string, context: IAssetNative
     const vaultCollateral = await IERC20.at(info.vaultCollateralToken);
     const [vcSymbol, vcDec] = [await vaultCollateral.symbol(), await vaultCollateral.decimals()];
     for (const [key, value] of Object.entries(info)) {
-        if (typeof key === 'number' || /^\d+$/.test(key)) continue;
-        if (key === 'status') {
+        if (typeof key === "number" || /^\d+$/.test(key)) continue;
+        if (key === "status") {
             /* istanbul ignore next */
             console.log(`${key}: ${AgentStatus[Number(value)] ?? value}`);
         } else if (/UBA$/i.test(key)) {
@@ -81,12 +81,13 @@ export async function printAgentInfo(vaultAddress: string, context: IAssetNative
             const amount = Number(value) / 1e18;
             console.log(`${key.slice(0, key.length - 6)}: ${amount.toFixed(2)} NAT`);
         } else if (/Wei$/i.test(key)) {
-            const [symbol, decimals] =
-                /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)] :
-                /PoolTokens/i.test(key) ? ['POOLTOK', 18] :
-                /* istanbul ignore next */
-                ['???', 18];
-            const amount = Number(value) / (10 ** decimals);
+            const [symbol, decimals] = /VaultCollateral/i.test(key)
+                ? [vcSymbol, Number(vcDec)]
+                : /PoolTokens/i.test(key)
+                ? ["POOLTOK", 18]
+                : /* istanbul ignore next */
+                  ["???", 18];
+            const amount = Number(value) / 10 ** decimals;
             console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
         } else {
             console.log(`${key}: ${value}`);

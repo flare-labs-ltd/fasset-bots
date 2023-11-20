@@ -10,7 +10,7 @@ export type TransactionWaitFor =
     | { what: "nonceIncrease"; pollMS: number; timeoutMS?: number }
     | { what: "confirmations"; confirmations: number; timeoutMS?: number };
 
-export type ResubmitTransaction = { afterMS: number; priceFactor: number; };
+export type ResubmitTransaction = { afterMS: number; priceFactor: number };
 
 /**
  * Settings that affect the calls of contract methods through mini truffle.

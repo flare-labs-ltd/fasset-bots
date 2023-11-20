@@ -3,7 +3,7 @@ import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancela
 import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
 import { TransactionWaitFor } from "./types";
 
-export class FinalizationTimeoutError extends Error { }
+export class FinalizationTimeoutError extends Error {}
 
 /**
  * Wait for finalization of a method, depending on the provided `waitFor` parameter.
@@ -41,10 +41,7 @@ export async function waitForFinalization(
         throw error;
     }
     if (waitFor.timeoutMS) {
-        await Promise.race([
-            waitForFinalizationInner(),
-            waitForTimeout(waitFor.timeoutMS),
-        ]);
+        await Promise.race([waitForFinalizationInner(), waitForTimeout(waitFor.timeoutMS)]);
     } else {
         await waitForFinalizationInner();
     }

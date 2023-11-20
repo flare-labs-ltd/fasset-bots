@@ -2,7 +2,6 @@
 
 File [Liquidator.ts](../../src/actors/Liquidator.ts) contains framework for such actor in FAsset system.
 
-
 ### Initialization
 
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) as inputs:

@@ -38,7 +38,7 @@ describe("Secrets unit tests", async () => {
         expect(fn2).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
 
         secrets.wallet = {
-            encryption_password: ""
+            encryption_password: "",
         };
         const fn3 = () => {
             return requireEncryptionPassword('wallet.encryption_password', secrets);
@@ -46,7 +46,7 @@ describe("Secrets unit tests", async () => {
         expect(fn3).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
 
         secrets.wallet = {
-            encryption_password: "123456789012345"
+            encryption_password: "123456789012345",
         };
         const fn4 = () => {
             return requireEncryptionPassword('wallet.encryption_password', secrets);

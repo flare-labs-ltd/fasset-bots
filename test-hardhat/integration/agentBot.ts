@@ -564,11 +564,13 @@ describe("Agent bot tests", async () => {
         }
         // clear dust
         const info = await agentBot.agent.getAgentInfo();
-        if (!toBN(info.dustUBA).eqn(0)){
+        if (!toBN(info.dustUBA).eqn(0)) {
             await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
         }
         // withdraw vault collateral and pool tokens
-        await time.increaseTo(maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp)));
+        await time.increaseTo(
+            maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp))
+        );
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
             await time.advanceBlock();

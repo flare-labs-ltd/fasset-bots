@@ -62,7 +62,7 @@ export async function createActorAssetContext(
                 ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId)
                 : undefined,
         liquidationStrategy: trackedStateConfig.liquidationStrategy,
-        challengeStrategy: trackedStateConfig.challengeStrategy
+        challengeStrategy: trackedStateConfig.challengeStrategy,
     };
 }
 

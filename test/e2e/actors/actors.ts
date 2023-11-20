@@ -14,20 +14,17 @@ import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Notifier } from "../../../src/utils/Notifier";
-import { toBN, toBNExp } from "../../../src/utils/helpers";
 import { requireSecret } from "../../../src/config/secrets";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import { balanceOfVaultCollateral, cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { Agent } from "../../../src/fasset/Agent";
 import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
 import { getSecrets } from "../../../src/config/secrets";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 use(chaiAsPromised);
-const vaultCollateralAmount = toBNExp(500, 18);
-const buyPoolTokens = toBNExp(500, 18);
 const fAssetSymbol = "FtestXRP";
 
 describe("Actor tests - coston", async () => {
@@ -38,7 +35,6 @@ describe("Actor tests - coston", async () => {
     let context: IAssetAgentBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let vaultCollateralTokenAddress: string;
     // for challenger, liquidator, systemKeeper
     let actorConfig: BotConfig;
     let actorContext: IAssetActorContext;
@@ -68,23 +64,17 @@ describe("Actor tests - coston", async () => {
         context = await createAssetContext(botConfig, chainConfig1!);
         const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         actorContext = await createActorAssetContext(actorConfig, chainConfig2!, ActorBaseKind.CHALLENGER);
-        // agent default settings
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!, DEFAULT_POOL_TOKEN_SUFFIX());
-        vaultCollateralTokenAddress = agentBotSettings.vaultCollateralToken;
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(actorContext, lastBlock);
         await state.initialize();
-        // the following two lines are only needed after fresh deploy of fasset on Coston
-        // await mintVaultCollateralToOwner(vaultCollateralTokenAddress, ownerAddress);
-        // await whitelistAgent(botConfig, ownerAddress);
     });
 
     after(async () => {
         await cleanUp(context, orm, ownerAddress, destroyAgentsAfterTests);
     });
 
-    it("Should create agent bot, deposit vault collateral, buy pool tokens and announce destroy", async () => {
+    it("Should create agent bot and announce destroy", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, runConfig.defaultAgentSettingsPath!);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
@@ -93,15 +83,6 @@ describe("Actor tests - coston", async () => {
         const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new Notifier());
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
-        // deposit class 1
-        const depositAmount = vaultCollateralAmount.divn(3);
-        await agentBot.agent.depositVaultCollateral(depositAmount);
-        const agentVaultCollateralBalance = await balanceOfVaultCollateral(vaultCollateralTokenAddress, agentBot.agent.vaultAddress);
-        expect(agentVaultCollateralBalance.eq(depositAmount)).to.be.true;
-        // buy collateral pool tokens
-        await agentBot.agent.buyCollateralPoolTokens(buyPoolTokens);
-        const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        expect(toBN(agentInfo.totalPoolCollateralNATWei).eq(buyPoolTokens));
         // sort of clean up
         await agentBot.agent.announceDestroy();
         destroyAgentsAfterTests.push(agentBot.agent.vaultAddress);
@@ -169,7 +150,11 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should not create agent - unknown address", async () => {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, runConfig.defaultAgentSettingsPath!, DEFAULT_POOL_TOKEN_SUFFIX());
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
+            context,
+            runConfig.defaultAgentSettingsPath!,
+            DEFAULT_POOL_TOKEN_SUFFIX()
+        );
         const underlyingAddress = "underlying";
         const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
         await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);

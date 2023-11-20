@@ -260,7 +260,10 @@ describe("mini truffle and artifacts tests", async () => {
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
-            await expectRevertWithCorrectStack(lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }), "price not initialized");
+            await expectRevertWithCorrectStack(
+                lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }),
+                "price not initialized"
+            );
         });
 
         it("should call a contract - wait for nonce (low level, always wait at least one tick)", async () => {
@@ -419,22 +422,20 @@ describe("mini truffle and artifacts tests", async () => {
         it("clean stack trace - hardhat", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            await fpr.getPrice("BTC")
-                .catch((e) => {
-                    assert.include(e.stack, __filename);
-                    console.error("CALL ERR", e);
-                });
+            await fpr.getPrice("BTC").catch((e) => {
+                assert.include(e.stack, __filename);
+                console.error("CALL ERR", e);
+            });
             await withSettings(fpr, { gas: "auto" })
                 .setPrice("BTC", 1000, { gas: null as any })
                 .catch((e) => {
                     assert.include(e.stack, __filename);
                     console.error("SEND ERR", e);
                 });
-            await fpr.setPrice("BTC", 1000, { gas: 1e6 })
-                .catch((e) => {
-                    assert.include(e.stack, __filename);
-                    console.error("SEND ERR NG", e);
-                });
+            await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
+                assert.include(e.stack, __filename);
+                console.error("SEND ERR NG", e);
+            });
         });
 
         function rejectTimer() {
@@ -443,7 +444,7 @@ describe("mini truffle and artifacts tests", async () => {
                 setTimeout(() => {
                     reject(fixErrorStack(new Error("Time passed"), parentStack));
                 }, 300);
-            })
+            });
         }
 
         function rejectTimerSimp() {
@@ -451,21 +452,21 @@ describe("mini truffle and artifacts tests", async () => {
                 setTimeout(() => {
                     reject(new Error("Time passed"));
                 }, 300);
-            })
+            });
         }
 
         it("test reject", async () => {
-            await rejectTimer()
-                .catch((e) => {
-                    assert.include(e.stack, __filename);
-                    console.error("TIMER ERR", e);
-                });
+            await rejectTimer().catch((e) => {
+                assert.include(e.stack, __filename);
+                console.error("TIMER ERR", e);
+            });
         });
 
         it("test reject simp", async () => {
             try {
-                await rejectTimerSimp()
-                    .catch(e => { throw fixErrorStack(e, 1); });
+                await rejectTimerSimp().catch((e) => {
+                    throw fixErrorStack(e, 1);
+                });
             } catch (e: any) {
                 assert.include(e.stack, __filename);
                 console.error("TIMER ERR", e);
@@ -474,18 +475,23 @@ describe("mini truffle and artifacts tests", async () => {
     });
 
     describe("resubmit test", () => {
-        async function setMining(type: 'auto' | 'manual' | 'interval', timeMS: number = 1000) {
-            await network.provider.send('evm_setAutomine', [type === 'auto']);
-            await network.provider.send("evm_setIntervalMining", [type === 'interval' ? timeMS : 0]);
+        async function setMining(type: "auto" | "manual" | "interval", timeMS: number = 1000) {
+            await network.provider.send("evm_setAutomine", [type === "auto"]);
+            await network.provider.send("evm_setIntervalMining", [type === "interval" ? timeMS : 0]);
         }
 
         afterEach(() => {
-            setMining('auto');
+            setMining("auto");
         });
 
         it("resubmit should work", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
-            const settings: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const settings: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+            };
             const fpr = await withSettings(FakePriceReader, settings).new(accounts[0]);
             // warm up storage
             const res1 = await fpr.setDecimals("XRP", 10);
@@ -494,7 +500,7 @@ describe("mini truffle and artifacts tests", async () => {
             const res2 = await fpr.setDecimals("XRP", 11);
             // console.log(res2.receipt.effectiveGasPrice);
             // set to timed mining
-            setMining('interval', 2000);
+            setMining("interval", 2000);
             // test send
             const res3 = await fpr.setDecimals("XRP", 12);
             // console.log(res3.receipt.effectiveGasPrice);
@@ -507,24 +513,41 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("resubmit should work - explicit gas price and initial factor", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
-            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const settings1: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+            };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // try 1
             const res1 = await fpr.setDecimals("XRP", 10, { gasPrice: 1.5e9 });
             // console.log(res1.receipt.effectiveGasPrice);
             assert.equal(res1.receipt.effectiveGasPrice, 1.5e9);
             // try 2
-            const settings2: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 0, priceFactor: 1.5 }, { afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }] };
+            const settings2: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 0, priceFactor: 1.5 },
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+            };
             const res2 = await withSettings(fpr, settings2).setDecimals("XRP", 11, { gasPrice: 1.5e9 });
             // console.log(res2.receipt.effectiveGasPrice);
             assert.equal(res2.receipt.effectiveGasPrice, 2.25e9);
             // set to timed mining
-            setMining('interval', 2000);
+            setMining("interval", 2000);
             // try 3
             const res3 = await withSettings(fpr, settings2).setDecimals("XRP", 12, { gasPrice: 1.5e9 });
             assert.equal(res3.receipt.effectiveGasPrice, 3.0e9);
             // try 4
-            const settings3: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 0, priceFactor: 1.5 }, { afterMS: 750, priceFactor: 2 }, { afterMS: 1500, priceFactor: 3 }] };
+            const settings3: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 0, priceFactor: 1.5 },
+                    { afterMS: 750, priceFactor: 2 },
+                    { afterMS: 1500, priceFactor: 3 },
+                ],
+            };
             const res4 = await withSettings(fpr, settings3).setDecimals("XRP", 20, { gasPrice: 1.5e9 });
             // console.log(res4.receipt.effectiveGasPrice);
             assert.equal(res4.receipt.effectiveGasPrice, 4.5e9);
@@ -540,10 +563,16 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("should lock nonce", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
-            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }], nonceLockTimeoutMS: 3000 };
+            const settings1: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+                nonceLockTimeoutMS: 3000,
+            };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
-            setMining('interval', 2000);
+            setMining("interval", 2000);
             await Promise.all([
                 withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
                 delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.5e9 })),
@@ -557,30 +586,36 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("wait for lock should timeout", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
-            const settings1: Partial<ContractSettings> = { resubmitTransaction: [{ afterMS: 1000, priceFactor: 2 }, { afterMS: 3000, priceFactor: 3 }], nonceLockTimeoutMS: 3000 };
+            const settings1: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+                nonceLockTimeoutMS: 3000,
+            };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
-            setMining('interval', 2000);
+            setMining("interval", 2000);
             const results = await Promise.allSettled([
                 withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
                 delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.6e9 })),
                 delayed(200, () => withSettings(fpr, settings1).setDecimals("DOGE", 5, { gasPrice: 1.7e9 })),
             ]);
-            assert(results[0].status === 'fulfilled',
-                "first submit should succeed");
-            assert(results.filter(r => r.status === 'fulfilled').length === 2,
-                "exactly 2 submits should succeed");
-            const failed = results.find(r => r.status === 'rejected');
-            assert(failed?.status === 'rejected' && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
-                `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message|| "No exception"}'`);
+            assert(results[0].status === "fulfilled", "first submit should succeed");
+            assert(results.filter((r) => r.status === "fulfilled").length === 2, "exactly 2 submits should succeed");
+            const failed = results.find((r) => r.status === "rejected");
+            assert(
+                failed?.status === "rejected" && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
+                `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message || "No exception"}'`
+            );
         });
     });
 
     async function expectRevertWithCorrectStack(promise: Promise<any>, message: string) {
         const filename = path.basename(__filename);
-        await promise.catch(e => {
-            const lines = (e.stack as string ?? "").split('\n');
-            if (!lines.some(s => s.includes(filename) && !s.includes('expectRevertWithCorrectStack'))) {
+        await promise.catch((e) => {
+            const lines = ((e.stack as string) ?? "").split("\n");
+            if (!lines.some((s) => s.includes(filename) && !s.includes("expectRevertWithCorrectStack"))) {
                 console.error("INVALID STACK", e);
                 assert(false, "Invalid stack");
             }

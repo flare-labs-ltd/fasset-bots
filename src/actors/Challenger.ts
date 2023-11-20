@@ -38,6 +38,7 @@ export class Challenger extends ActorBase {
         if (state.context.challengeStrategy === undefined) {
             this.challengeStrategy = new DefaultChallengeStrategy(state, address);
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const strategies = require("./plugins/ChallengeStrategy");
             this.challengeStrategy = new strategies[state.context.challengeStrategy.className](state, address);
         }
@@ -188,7 +189,7 @@ export class Challenger extends ActorBase {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
-            await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof))
+            await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
             console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         });

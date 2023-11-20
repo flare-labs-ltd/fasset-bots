@@ -41,14 +41,16 @@ export interface BotConfig {
     addressUpdater?: string;
     contractsJsonFile?: string;
     // liquidator / challenger
-    liquidationStrategy?: { // only for liquidator
+    liquidationStrategy?: {
+        // only for liquidator
         className: string;
         config?: any;
     };
-    challengeStrategy?: { // only for challenger
+    challengeStrategy?: {
+        // only for challenger
         className: string;
         config?: any;
-    }
+    };
 }
 
 export interface BotFAssetConfig {
@@ -175,7 +177,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
         liquidationStrategy: runConfig.liquidationStrategy,
-        challengeStrategy: runConfig.challengeStrategy
+        challengeStrategy: runConfig.challengeStrategy,
     };
 }
 
@@ -249,7 +251,11 @@ export async function createChainConfig(
  * @param poolTokenSuffix
  * @returns instance of AgentBotDefaultSettings
  */
-export async function createAgentBotDefaultSettings(context: IAssetAgentBotContext, agentSettingsConfigPath: string, poolTokenSuffix: string): Promise<AgentBotDefaultSettings> {
+export async function createAgentBotDefaultSettings(
+    context: IAssetAgentBotContext,
+    agentSettingsConfigPath: string,
+    poolTokenSuffix: string
+): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
     const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find((token) => {
         return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol;

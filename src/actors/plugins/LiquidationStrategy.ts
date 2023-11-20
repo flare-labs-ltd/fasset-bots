@@ -5,7 +5,10 @@ import { artifacts } from "../../utils/web3";
 const Liquidator = artifacts.require("Liquidator");
 
 export abstract class LiquidationStrategy {
-    constructor(public state: TrackedState, public address: string) { }
+    constructor(
+        public state: TrackedState,
+        public address: string
+    ) {}
     abstract liquidate(agent: TrackedAgentState): Promise<any>;
 }
 

@@ -159,7 +159,7 @@ export interface NativeChainInfo {
             "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
@@ -213,7 +213,7 @@ export interface NativeChainInfo {
             "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
@@ -243,7 +243,7 @@ RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
 In order to run Agent bot API keys, addresses, private keys and any other necessary credentials, should be store in a `secrets.json` file, which follows format (see [`secrets.template.json`](../secrets.template.json)).
 
 `secrets.json` file needs to have restricted read and write rights. This can be set by
-    ```chmod 600 secrets.json```.
+`chmod 600 secrets.json`.
 
 ```typescript
 type Secrets = {
@@ -282,7 +282,7 @@ export interface UnderlyingAccount {
     },
     "apiKey": {
         "indexer": "",
-        "native_rpc": "",
+        "native_rpc": ""
     },
     "owner": {
         "native_private_key": "",
@@ -299,15 +299,14 @@ export interface UnderlyingAccount {
 
 Variables `owner.underlying_private_key` and `owner.underlying_address` can be generated via command
 
-```yarn agent-bot createUnderlyingAccount -f <fassetSymbol>```
+`yarn agent-bot createUnderlyingAccount -f <fassetSymbol>`
 
 Example:
-```yarn agent-bot createUnderlyingAccount -f FtestXRP```
-
+`yarn agent-bot createUnderlyingAccount -f FtestXRP`
 
 Variable `wallet.encryption_password` should be at least 16 characters long. It can be generated via command
 
-```yarn key createWalletEncryptionPassword```
+`yarn key createWalletEncryptionPassword`
 
 ### Challenger bot secrets file
 
@@ -315,7 +314,7 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
 {
     "apiKey": {
         "indexer": "",
-        "native_rpc": "",
+        "native_rpc": ""
     },
     "challenger": {
         "native_private_key": "",
@@ -330,7 +329,7 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
 {
     "apiKey": {
         "indexer": "",
-        "native_rpc": "",
+        "native_rpc": ""
     },
     "user": {
         "native_private_key": "",
@@ -345,7 +344,7 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
 {
     "apiKey": {
         "indexer": "",
-        "native_rpc": "",
+        "native_rpc": ""
     },
     "systemKeeper": {
         "native_private_key": "",
@@ -360,7 +359,7 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
 {
     "apiKey": {
         "indexer": "",
-        "native_rpc": "",
+        "native_rpc": ""
     },
     "timeKeeper": {
         "native_private_key": "",
