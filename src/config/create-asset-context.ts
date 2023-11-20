@@ -86,14 +86,18 @@ export async function createNativeContext(config: BotConfig | BotConfigFile, cha
         const [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
         const priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
         const wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
-        const fAsset = await FAsset.at(await assetManager.fAsset())
+        const fAsset = await FAsset.at(await assetManager.fAsset());
         return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter };
     }
 }
 
 // utils
 
-async function getAssetManagerAndController(chainConfig: BotFAssetConfig | BotFAssetInfo, addressUpdater: AddressUpdaterInstance | null, contracts: ChainContracts | null) {
+async function getAssetManagerAndController(
+    chainConfig: BotFAssetConfig | BotFAssetInfo,
+    addressUpdater: AddressUpdaterInstance | null,
+    contracts: ChainContracts | null
+) {
     if (chainConfig.assetManager) {
         const assetManager = await AssetManager.at(chainConfig.assetManager);
         const assetManagerController = await AssetManagerController.at(await assetManager.assetManagerController());

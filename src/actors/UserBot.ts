@@ -16,10 +16,10 @@ import { logger } from "../utils/logger";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 
-const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), 'fasset');
+const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
 
 interface MintData {
-    type: 'mint';
+    type: "mint";
     requestId: string;
     transactionHash: string;
     paymentAddress: string;
@@ -27,7 +27,7 @@ interface MintData {
 }
 
 interface RedeemData {
-    type: 'redeem';
+    type: "redeem";
     requestId: string;
     amountUBA: string;
     paymentReference: string;
@@ -119,27 +119,27 @@ export class UserBot {
         logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(
-            `User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId
-            } to agent's ${agentVault} address ${crt.paymentAddress}.`
+            `User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`
         );
         const txHash = await minter.performMintingPayment(crt);
         const state: MintData = {
-            type: 'mint',
+            type: "mint",
             requestId: String(crt.collateralReservationId),
             paymentAddress: crt.paymentAddress,
             transactionHash: txHash,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
         };
         this.writeState(state);
         logger.info(
-            `User ${this.nativeAddress} paid on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} with transaction ${txHash}.`);
+            `User ${this.nativeAddress} paid on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} with transaction ${txHash}.`
+        );
         await this.proveAndExecuteMinting(crt.collateralReservationId, txHash, crt.paymentAddress);
         logger.info(`User ${this.nativeAddress} finished minting with agent ${agentVault}.`);
         this.deleteState(state);
     }
 
     async proveAndExecuteSavedMinting(requestId: BNish) {
-        const state = this.readState('mint', requestId);
+        const state = this.readState("mint", requestId);
         await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
         this.deleteState(state);
     }
@@ -153,9 +153,7 @@ export class UserBot {
     async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
-        logger.info(
-            `User ${this.nativeAddress} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`
-        );
+        logger.info(`User ${this.nativeAddress} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`);
         await minter.waitForTransactionFinalization(transactionHash);
         console.log(`Waiting for proof of underlying payment transaction ${transactionHash}...`);
         logger.info(
@@ -190,9 +188,7 @@ export class UserBot {
             console.log(
                 `Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`
             );
-            logger.info(
-                `User ${this.nativeAddress} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`
-            );
+            logger.info(`User ${this.nativeAddress} exceeded maximum number of redeemed tickets. ${remainingLots} lots have remained unredeemed.`);
         }
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
         logger.info(`User ${this.nativeAddress} triggered ${requests.length} payment requests.`);
@@ -204,11 +200,9 @@ export class UserBot {
             );
             loggedRequests =
                 loggedRequests +
-                `User ${this.nativeAddress} triggered request:    id=${req.requestId}  to=${req.paymentAddress
-                }  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock
-                }  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
+                `User ${this.nativeAddress} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
             this.writeState({
-                type: 'redeem',
+                type: "redeem",
                 requestId: String(req.requestId),
                 amountUBA: String(amount),
                 paymentReference: req.paymentReference,
@@ -222,8 +216,14 @@ export class UserBot {
     }
 
     async savedRedemptionDefault(requestId: BNish) {
-        const state = this.readState('redeem', requestId);
-        await this.redemptionDefault(state.amountUBA, state.paymentReference, state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
+        const state = this.readState("redeem", requestId);
+        await this.redemptionDefault(
+            state.amountUBA,
+            state.paymentReference,
+            state.firstUnderlyingBlock,
+            state.lastUnderlyingBlock,
+            state.lastUnderlyingTimestamp
+        );
         this.deleteState(state);
     }
 
@@ -260,18 +260,10 @@ export class UserBot {
             lastUnderlyingTimestamp
         );
         console.log("Executing payment default...");
-        logger.info(
-            `User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(
-                web3DeepNormalize(proof)
-            )} redemption ${requestId}.`
-        );
+        logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
         await redeemer.executePaymentDefault(requestId, proof);
         console.log("Done");
-        logger.info(
-            `User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(
-                web3DeepNormalize(proof)
-            )} redemption ${requestId}.`
-        );
+        logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }
 
     writeState(data: StateData) {
@@ -281,7 +273,7 @@ export class UserBot {
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
     }
 
-    readState<T extends StateData['type']>(type: T, requestId: BNish): Extract<StateData, { type: T }> {
+    readState<T extends StateData["type"]>(type: T, requestId: BNish): Extract<StateData, { type: T }> {
         const fname = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}/${requestId}.json`);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);

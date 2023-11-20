@@ -11,9 +11,9 @@ import { logger } from "../utils/logger";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
-const INFO_ACCOUNT_KEY = '0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33';
+const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
 
-export type SecretsUser = 'user' | 'agent' | 'other';
+export type SecretsUser = "user" | "agent" | "other";
 
 export class InfoBot {
     context!: IAssetNativeChainContext;
@@ -71,32 +71,32 @@ export class InfoBot {
                 native_private_key: account.privateKey,
                 underlying_address: underlyingAccount.address,
                 underlying_private_key: underlyingAccount.privateKey,
-            }
+            };
         }
         function generateNativeAccount(): NativeAccount {
             const account = web3.eth.accounts.create();
             return {
                 native_address: account.address,
                 native_private_key: account.privateKey,
-            }
+            };
         }
         const secrets: Secrets = { apiKey: {} };
-        secrets.apiKey.native_rpc = '';
-        if (users.includes('agent') || users.includes('user')) {
-            secrets.apiKey.xrp_rpc = '';
-            secrets.apiKey.indexer = '';
+        secrets.apiKey.native_rpc = "";
+        if (users.includes("agent") || users.includes("user")) {
+            secrets.apiKey.xrp_rpc = "";
+            secrets.apiKey.indexer = "";
         }
-        if (users.includes('agent')) {
+        if (users.includes("agent")) {
             secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");
             secrets.wallet = {
-                encryption_password: crypto.randomBytes(15).toString("base64")
+                encryption_password: crypto.randomBytes(15).toString("base64"),
             };
             secrets.owner = generateAccount();
         }
-        if (users.includes('user')) {
+        if (users.includes("user")) {
             secrets.user = generateAccount();
         }
-        if (users.includes('other')) {
+        if (users.includes("other")) {
             secrets.challenger = generateNativeAccount();
             secrets.systemKeeper = generateNativeAccount();
             secrets.timeKeeper = generateNativeAccount();
@@ -149,7 +149,7 @@ export class InfoBot {
         const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
         const lotSizeUBA = await this.getLotSize(settings);
         const mintedLots = Number(mintedWei) / lotSizeUBA;
-        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`)
+        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`);
     }
 
     async printAvailableAgents() {
@@ -177,7 +177,9 @@ export class InfoBot {
             const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
-            console.log(`${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`);
+            console.log(
+                `${vaultAddr}  ${info.ownerManagementAddress}  ${mintedLots.toFixed(2).padStart(12)}  ${freeLots.toFixed(0).padStart(12)}  ${available}`
+            );
         }
     }
 

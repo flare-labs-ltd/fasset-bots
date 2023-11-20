@@ -16,23 +16,26 @@ const program = new Command();
 program
     .addOption(
         program
-            .createOption("-c, --config <configFile>", "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works.")
+            .createOption(
+                "-c, --config <configFile>",
+                "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works."
+            )
             .env("FASSET_USER_CONFIG")
             .default(path.resolve(findPackageRoot(__dirname), "run-config/run-config-user-coston-testxrp.json"))
     )
     .addOption(
         program
-            .createOption("-s, --secrets <secretsFile>", "File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable FASSET_USER_SECRETS is used as path, if set. Default file is <USER_HOME>/.fasset/secrets.json.")
+            .createOption(
+                "-s, --secrets <secretsFile>",
+                "File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable FASSET_USER_SECRETS is used as path, if set. Default file is <USER_HOME>/.fasset/secrets.json."
+            )
             .env("FASSET_USER_SECRETS")
     )
-    .addOption(
-        program
-            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-    )
-    .hook('preAction', (_, command) => {
+    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query"))
+    .hook("preAction", (_, command) => {
         // make --fasset option mandatory always except for 'generateSecrets' command
-        if (command.name() !== 'generateSecrets') {
-            if (!program.getOptionValue('fasset')) {
+        if (command.name() !== "generateSecrets") {
+            if (!program.getOptionValue("fasset")) {
                 throw new CommandLineError("required option '-f, --fasset <fAssetSymbol>' not specified");
             }
         }
@@ -41,7 +44,7 @@ program
 
 function getSecretsPath() {
     const options: { secrets?: string } = program.opts();
-    const defaultSecretsPath = path.resolve(os.homedir(), 'fasset/secrets.json');
+    const defaultSecretsPath = path.resolve(os.homedir(), "fasset/secrets.json");
     if (options.secrets != null) {
         return options.secrets;
     } else if (fs.existsSync(defaultSecretsPath)) {
@@ -57,12 +60,12 @@ program
     .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
     .option("--agent", "also generate secrets for agent")
     .option("--other", "also generate secrets for other bots (challenger, etc.)")
-    .action(async (opts: { output?: string, overwrite?: boolean, agent?: boolean, other?: boolean }) => {
-        const options: { config: string, fasset?: string } = program.opts();
+    .action(async (opts: { output?: string; overwrite?: boolean; agent?: boolean; other?: boolean }) => {
+        const options: { config: string; fasset?: string } = program.opts();
         const bot = await InfoBot.create(options.config, options.fasset);
-        const users: SecretsUser[] = ['user'];
-        if (opts.agent) users.push('agent');
-        if (opts.other) users.push('other');
+        const users: SecretsUser[] = ["user"];
+        if (opts.agent) users.push("agent");
+        if (opts.other) users.push("other");
         const secrets = bot.generateSecrets(users);
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
@@ -73,10 +76,12 @@ program
         } else {
             console.log(json);
         }
-        const emptyFields = Object.keys(secrets.apiKey).filter(k => !secrets.apiKey[k]);
+        const emptyFields = Object.keys(secrets.apiKey).filter((k) => !secrets.apiKey[k]);
         if (emptyFields.length !== 0) {
-            console.error(chalk.yellow("NOTE:"),
-                `Replace empty fields in apiKey (${emptyFields.join(', ')}) with api keys from your provider or delete them if not needed.`);
+            console.error(
+                chalk.yellow("NOTE:"),
+                `Replace empty fields in apiKey (${emptyFields.join(", ")}) with api keys from your provider or delete them if not needed.`
+            );
         }
     });
 

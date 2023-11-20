@@ -27,13 +27,13 @@ describe("Secrets unit tests", async () => {
             },
         };
         const fn1 = () => {
-            return requireEncryptionPassword('wallet.encryption_password', secrets);
+            return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
         expect(fn1).to.throw("Secret variable wallet.encryption_password not defined or not typeof string");
 
         secrets.wallet = undefined;
         const fn2 = () => {
-            return requireEncryptionPassword('wallet.encryption_password', secrets);
+            return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
         expect(fn2).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
 
@@ -41,7 +41,7 @@ describe("Secrets unit tests", async () => {
             encryption_password: "",
         };
         const fn3 = () => {
-            return requireEncryptionPassword('wallet.encryption_password', secrets);
+            return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
         expect(fn3).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
 
@@ -49,7 +49,7 @@ describe("Secrets unit tests", async () => {
             encryption_password: "123456789012345",
         };
         const fn4 = () => {
-            return requireEncryptionPassword('wallet.encryption_password', secrets);
+            return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
         expect(fn4).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     });
