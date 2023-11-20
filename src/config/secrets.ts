@@ -16,6 +16,7 @@ export type Secrets = {
     timeKeeper?: NativeAccount;
     systemKeeper?: NativeAccount;
     deployer?: NativeAccount;
+    database?: DatabaseAccount;
 };
 
 export interface NativeAccount {
@@ -26,6 +27,11 @@ export interface NativeAccount {
 export interface UnderlyingAccount {
     underlying_private_key: string;
     underlying_address: string;
+}
+
+export interface DatabaseAccount {
+    user: string;
+    password: string;
 }
 
 export interface UnifiedAccount extends NativeAccount, UnderlyingAccount {}

@@ -131,7 +131,7 @@ export class AgentEntity {
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
 
-    @Enum({ type: EnumType, defaultRaw: "obtainedProof" })
+    @Enum({ type: 'DailyProofState', columnType: 'varchar(20)', default: "obtainedProof" })
     dailyProofState!: DailyProofState;
 
     @Property({ nullable: true })
