@@ -34,10 +34,9 @@
         }
     ],
     "ormOptions": {
-        "dbName": "fasset-bots-coston.db",
-        "debug": false,
         "allowGlobalContext": true,
-        "type": "sqlite"
+        "type": "sqlite",
+        "dbName": "fasset_bots"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
