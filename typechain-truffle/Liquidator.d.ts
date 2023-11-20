@@ -14,17 +14,7 @@ export interface LiquidatorContract
   ): Promise<LiquidatorInstance>;
 }
 
-export interface OwnershipTransferred {
-  name: "OwnershipTransferred";
-  args: {
-    previousOwner: string;
-    newOwner: string;
-    0: string;
-    1: string;
-  };
-}
-
-type AllEvents = OwnershipTransferred;
+type AllEvents = never;
 
 export interface LiquidatorInstance extends Truffle.ContractInstance {
   blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -64,17 +54,6 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
       _data: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
-  };
-
-  owner(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  renounceOwnership: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
   runArbitrage: {
@@ -122,48 +101,6 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  transferOwnership: {
-    (newOwner: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      newOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      newOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      newOwner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  withderawNat: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  withdrawToken: {
-    (token: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(
-      token: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      token: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   methods: {
     blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -202,17 +139,6 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
         _data: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
-    };
-
-    owner(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    renounceOwnership: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
     runArbitrage: {
@@ -256,51 +182,6 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _flashLender: string,
         _blazeSwapRouter: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    transferOwnership: {
-      (newOwner: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        newOwner: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        newOwner: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        newOwner: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    withderawNat: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    withdrawToken: {
-      (token: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        token: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        token: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
