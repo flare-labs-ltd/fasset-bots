@@ -6,7 +6,7 @@ import { NativeAccount, Secrets, UnifiedAccount, getSecrets } from "../config/se
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { printAgentInfo } from "../utils/fasset-helpers";
-import { CommandLineError, MAX_BIPS, requireNotNull } from "../utils/helpers";
+import { CommandLineError, MAX_BIPS, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 
@@ -111,6 +111,13 @@ export class InfoBot {
             start += list.length;
         }
         return result;
+    }
+
+    async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
+        const agents = await this.getAvailableAgents();
+        const eligible = agents.filter(a => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
+        return eligible[0]?.agentVault;
     }
 
     /**

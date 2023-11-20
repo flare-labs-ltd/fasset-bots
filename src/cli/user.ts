@@ -123,13 +123,17 @@ program
 program
     .command("mint")
     .description("Mints the amount of FAssets in lots")
-    .argument("<agentVaultAddress>")
+    .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
     .argument("<amountLots>")
     .option("-u, --updateBlock")
-    .action(async (agentVault: string, amountLots: string, cmdOptions: { updateBlock?: boolean }) => {
+    .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
+        const agentVault = cmdOptions.agent ?? await minterBot.infoBot().findBestAgent(toBN(amountLots));
+        if (agentVault == null) {
+            throw new CommandLineError("No agent with enough free lots available");
+        }
         if (cmdOptions.updateBlock) {
             await minterBot.updateUnderlyingTime();
         }
@@ -209,7 +213,7 @@ program
     .command("exitPool")
     .description("Exit a collateral pool for specified amount or all pool tokens")
     .argument("<poolAddressOrTokenSymbol>")
-    .argument("<amount|'all'>")
+    .argument("<amount>", "the amount of tokens to burn, can be a number or \"all\"")
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
