@@ -63,7 +63,7 @@ describe("Bot cli commands unit tests", async () => {
         botCliCommands = new BotCliCommands();
         botCliCommands.context = context;
         botCliCommands.ownerAddress = ownerAddress;
-        const chainId = SourceId.XRP;
+        const chainId = SourceId.testXRP;
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,

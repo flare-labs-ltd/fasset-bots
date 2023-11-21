@@ -142,7 +142,7 @@ export class AgentBot {
     static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
         const ownerAddress = requireSecret("owner.native_address");
         try {
-            if (context.chainInfo.chainId != SourceId.XRP) return;
+            if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
             const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
             const reference = requireSecret("owner.native_address");

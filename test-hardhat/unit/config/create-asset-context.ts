@@ -37,7 +37,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - assetManager or fAssetSymbol required", async () => {
-        const chainId = SourceId.XRP;
+        const chainId = SourceId.testXRP;
         const chainConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,
@@ -57,7 +57,7 @@ describe("Create asset context unit tests", async () => {
     });
 
     it("Should not get asset manager controller - contractsJsonFile or addressUpdater required", async () => {
-        const chainId = SourceId.XRP;
+        const chainId = SourceId.testXRP;
         const fAssetConfig: BotFAssetConfig = {
             chainInfo: {
                 chainId: chainId,

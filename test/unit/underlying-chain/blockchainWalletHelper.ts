@@ -20,7 +20,7 @@ export const targetAddressXRP = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
 describe("XRP wallet tests", async () => {
-    const sourceId: SourceId = SourceId.XRP;
+    const sourceId: SourceId = SourceId.testXRP;
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
 
@@ -76,7 +76,7 @@ describe("XRP wallet tests", async () => {
 });
 
 describe("BTC wallet tests", async () => {
-    const sourceId: SourceId = SourceId.BTC;
+    const sourceId: SourceId = SourceId.testBTC;
     const walletUrl: string = "https://api.bitcore.io/api/BTC/testnet/";
     const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
@@ -108,7 +108,7 @@ describe("BTC wallet tests", async () => {
 });
 
 describe("DOGE wallet tests", async () => {
-    const sourceId: SourceId = SourceId.DOGE;
+    const sourceId: SourceId = SourceId.testDOGE;
     const walletUrl: string = "https://api.bitcore.io/api/DOGE/testnet/";
     const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
     const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";

@@ -16,7 +16,7 @@ import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
-    if (!(ctx.chainInfo.chainId === SourceId.XRP)) fail("only for XRP testnet for now");
+    if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
     const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return Minter.create(ctx, address, underlyingAddress, ctx.wallet);
 }

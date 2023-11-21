@@ -55,7 +55,7 @@ describe("Bot cli commands unit tests", async () => {
         userBot.context = context;
         userBot.nativeAddress = ownerAddress;
         userBot.underlyingAddress = userUnderlyingAddress;
-        const chainId = SourceId.XRP;
+        const chainId = SourceId.testXRP;
         userBot.fassetConfig = {
             chainInfo: {
                 chainId: chainId,

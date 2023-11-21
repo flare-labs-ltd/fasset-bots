@@ -45,7 +45,7 @@ describe("Bot cli commands unit tests", async () => {
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
         // user bot
-        const chainId = SourceId.XRP;
+        const chainId = SourceId.testXRP;
         const config: BotConfigFile = {
             rpcUrl: "",
             loopDelay: 0,
