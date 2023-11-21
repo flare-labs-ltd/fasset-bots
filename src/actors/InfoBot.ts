@@ -22,8 +22,8 @@ export class InfoBot {
     constructor(
         public context: IAssetNativeChainContext,
         public config: BotConfigFile,
-        public fassetInfo: BotFAssetInfo,
-    ) { }
+        public fassetInfo: BotFAssetInfo
+    ) {}
 
     /**
      * Creates instance of InfoBot.
@@ -115,7 +115,7 @@ export class InfoBot {
 
     async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
         const agents = await this.getAvailableAgents();
-        const eligible = agents.filter(a => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        const eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
         eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
         return eligible[0]?.agentVault;
     }
@@ -154,7 +154,11 @@ export class InfoBot {
     async printAvailableAgents() {
         logger.info(`InfoBot started fetching available agents.`);
         const agents = await this.getAvailableAgents();
-        const printer = new ColumnPrinter([["ADDRESS", 42, 'l'], ["MAX_LOTS", 8, 'r'], ["FEE", 6, 'r']]);
+        const printer = new ColumnPrinter([
+            ["ADDRESS", 42, "l"],
+            ["MAX_LOTS", 8, "r"],
+            ["FEE", 6, "r"],
+        ]);
         printer.printHeader();
         let loggedAgents = ``;
         for (const agent of agents) {
@@ -173,8 +177,14 @@ export class InfoBot {
         const settings = await this.context.assetManager.getSettings();
         const fassetSymbol = await this.context.fAsset.symbol();
         const agents = await this.getAvailableAgents();
-        const printer = new ColumnPrinter([["Pool address", 42, 'l'], ["Token symbol", 30, 'l'], ["Token price (CFLR)", 12, 'r'], ["Collateral (CFLR)", 12, 'r'],
-            [`Fees (${fassetSymbol})`, 12, 'r'], ["CR", 8, 'r']]);
+        const printer = new ColumnPrinter([
+            ["Pool address", 42, "l"],
+            ["Token symbol", 30, "l"],
+            ["Token price (CFLR)", 12, "r"],
+            ["Collateral (CFLR)", 12, "r"],
+            [`Fees (${fassetSymbol})`, 12, "r"],
+            ["CR", 8, "r"],
+        ]);
         printer.printHeader();
         let loggedAgents = ``;
         for (const agent of agents) {
@@ -184,12 +194,12 @@ export class InfoBot {
             const tokenSymbol = await poolToken.symbol();
             const collateral = Number(info.totalPoolCollateralNATWei) / 10 ** 18;
             const poolTokenSupply = Number(await poolToken.totalSupply()) / 10 ** 18;
-            const tokenPrice =  poolTokenSupply === 0 ? 1 : collateral / poolTokenSupply;
+            const tokenPrice = poolTokenSupply === 0 ? 1 : collateral / poolTokenSupply;
             const fees = Number(await pool.totalFAssetFees()) / Number(settings.assetUnitUBA);
             const cr = Number(info.poolCollateralRatioBIPS) / MAX_BIPS;
             const priceDisp = `${tokenPrice.toPrecision(5)}`;
             const collateralDisp = `${collateral.toFixed(2)}`;
-            const feesDisp = `${fees.toFixed(2) }`;
+            const feesDisp = `${fees.toFixed(2)}`;
             const crDisp = cr < 1000 ? cr.toPrecision(5) : "-";
             const line = printer.line(pool.address, tokenSymbol, priceDisp, collateralDisp, feesDisp, crDisp);
             console.log(line);
@@ -200,8 +210,13 @@ export class InfoBot {
     }
 
     async printAllAgents() {
-        const printer = new ColumnPrinter([["Vault address", 42, 'l'], ["Owner address", 42, 'l'], ["Minted lots", 12, 'r'],
-            ["Free lots", 12, 'r'], ["Public", 6, 'r']]);
+        const printer = new ColumnPrinter([
+            ["Vault address", 42, "l"],
+            ["Owner address", 42, "l"],
+            ["Minted lots", 12, "r"],
+            ["Free lots", 12, "r"],
+            ["Public", 6, "r"],
+        ]);
         printer.printHeader();
         const allAgents = await this.getAllAgents();
         const lotSizeUBA = await this.getLotSize();
@@ -230,7 +245,11 @@ export class InfoBot {
 
     async printPoolTokenBalance(address: string) {
         const agents = await this.getAvailableAgents();
-        const printer = new ColumnPrinter([["Pool address", 42, 'l'], ["Token symbol", 30, 'l'], ["Pool tokens", 12, 'r']]);
+        const printer = new ColumnPrinter([
+            ["Pool address", 42, "l"],
+            ["Token symbol", 30, "l"],
+            ["Pool tokens", 12, "r"],
+        ]);
         printer.printHeader();
         for (const agent of agents) {
             const info = await this.context.assetManager.getAgentInfo(agent.agentVault);
@@ -260,12 +279,12 @@ export class InfoBot {
     }
 }
 
-type ColumnType = [title: string, width: number, align: 'l' | 'r'];
+type ColumnType = [title: string, width: number, align: "l" | "r"];
 
 export class ColumnPrinter {
     constructor(
         public columns: ColumnType[],
-        public separator: string = '  ',
+        public separator: string = "  "
     ) {
         for (const ct of this.columns) {
             ct[1] = Math.max(ct[1], ct[0].length);
@@ -273,12 +292,12 @@ export class ColumnPrinter {
     }
 
     line(...items: string[]) {
-        const chunks = this.columns.map(([_, width, align], ind) => align === 'l' ? items[ind].padEnd(width) : items[ind].padStart(width));
+        const chunks = this.columns.map(([_, width, align], ind) => (align === "l" ? items[ind].padEnd(width) : items[ind].padStart(width)));
         return chunks.join(this.separator);
     }
 
     printHeader() {
-        this.printLine(...this.columns.map(it => it[0]));
+        this.printLine(...this.columns.map((it) => it[0]));
     }
 
     printLine(...items: string[]) {

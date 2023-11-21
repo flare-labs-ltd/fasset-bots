@@ -126,11 +126,11 @@ program
     .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
     .argument("<amountLots>")
     .option("-u, --updateBlock")
-    .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean }) => {
+    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
-        const agentVault = cmdOptions.agent ?? await minterBot.infoBot().findBestAgent(toBN(amountLots));
+        const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
         if (agentVault == null) {
             throw new CommandLineError("No agent with enough free lots available");
         }
@@ -213,14 +213,14 @@ program
     .command("exitPool")
     .description("Exit a collateral pool for specified amount or all pool tokens")
     .argument("<poolAddressOrTokenSymbol>")
-    .argument("<amount>", "the amount of tokens to burn, can be a number or \"all\"")
+    .argument("<amount>", 'the amount of tokens to burn, can be a number or "all"')
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const balance = await bot.infoBot().getPoolTokenBalance(poolAddress, bot.nativeAddress);
-        const tokenAmountWei = tokenAmountOrAll === 'all' ?  balance : minBN(toBNExp(tokenAmountOrAll, 18), balance);
+        const tokenAmountWei = tokenAmountOrAll === "all" ? balance : minBN(toBNExp(tokenAmountOrAll, 18), balance);
         const exited = await bot.exitPool(poolAddress, tokenAmountWei);
         const burned = Number(exited.burnedTokensWei) / 1e18;
         const collateral = Number(exited.receivedNatWei) / 1e18;
@@ -231,9 +231,7 @@ program
     });
 
 async function getPoolAddress(bot: UserBot, poolAddressOrTokenSymbol: string) {
-    return Web3.utils.isAddress(poolAddressOrTokenSymbol)
-        ? poolAddressOrTokenSymbol
-        : await bot.infoBot().findPoolBySymbol(poolAddressOrTokenSymbol);
+    return Web3.utils.isAddress(poolAddressOrTokenSymbol) ? poolAddressOrTokenSymbol : await bot.infoBot().findPoolBySymbol(poolAddressOrTokenSymbol);
 }
 
 toplevelRun(async () => {

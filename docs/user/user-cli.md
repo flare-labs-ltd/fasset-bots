@@ -11,8 +11,9 @@ The script has a number of subcomands, which can be listed by calling `user-bot 
 The script has one mandatory common argument `-f <fasset_symbol>` (except for subcommand `generateSecrets`). Argument `<fasset_symbol>` can currently have values `FtestXRP` and `FfakeXRP`. It is mandatory for all subcommands except `generateSecrets`.
 
 There are also two optional common arguments:
--  `-c <configFilePath>` - indicates the config file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_CONFIG` and if this is also missing, it uses a file in package with settings for Coston (`run-config/run-config-agent-coston-testxrp.json`).
-- `-s <secretsFilePath>` - indicates the secrets json file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_SECRETS` and if this is also missing, it defaults to `<USERS_HOME>/fasset/secrets.json`.
+
+-   `-c <configFilePath>` - indicates the config file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_CONFIG` and if this is also missing, it uses a file in package with settings for Coston (`run-config/run-config-agent-coston-testxrp.json`).
+-   `-s <secretsFilePath>` - indicates the secrets json file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_SECRETS` and if this is also missing, it defaults to `<USERS_HOME>/fasset/secrets.json`.
 
 ## Secrets
 

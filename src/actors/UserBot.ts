@@ -282,13 +282,13 @@ export class UserBot {
     async enterPool(poolAddress: string, collateralAmountWei: BNish) {
         const pool = await CollateralPool.at(poolAddress);
         const res = await pool.enter(0, false, { from: this.nativeAddress, value: collateralAmountWei.toString() });
-        return requiredEventArgs(res, 'Entered');
+        return requiredEventArgs(res, "Entered");
     }
 
     async exitPool(poolAddress: string, tokenAmountWei: BNish) {
         const pool = await CollateralPool.at(poolAddress);
         const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
-        return requiredEventArgs(res, 'Exited');
+        return requiredEventArgs(res, "Exited");
     }
 
     writeState(data: StateData) {
