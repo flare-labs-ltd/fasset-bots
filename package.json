@@ -95,7 +95,7 @@
         "agent_api_start:debug": "yarn nest start --debug --watch"
     },
     "dependencies": {
-        "@flarenetwork/state-connector-protocol": "1.0.0-beta.1",
+        "@flarenetwork/state-connector-protocol": "1.0.0-beta.2",
         "@mikro-orm/cli": "5.8.4",
         "@mikro-orm/core": "5.8.4",
         "@mikro-orm/mysql": "5.8.4",

@@ -969,13 +969,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.1":
-  version: 1.0.0-beta.1
-  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.1"
+"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2":
+  version: 1.0.0-beta.2
+  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2"
   dependencies:
     "@openzeppelin/contracts": ^4.9.3
     ethers: ^6.7.1
-  checksum: 2c7f79b8bd6e5509c16f32aec529cf94b9d83e10f782d141ee5796bff488ad5f549f9a51f162760005a6e02b27ace5429e85e9d5c894832d645fd03576087ce6
+  checksum: fdacf12cb3382f87a7d2bad7e1cfafef11ad31aa4828f46d33ce9b3a271f42a0f7086e6afb93e51cd2f442e0a1a7a24a7a135ddce9eb6370422174878e72cd75
   languageName: node
   linkType: hard
 
@@ -6163,7 +6163,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fasset-bots@workspace:."
   dependencies:
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.1
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
     "@istanbuljs/nyc-config-typescript": 1.0.2
     "@mikro-orm/cli": 5.8.4
     "@mikro-orm/core": 5.8.4
