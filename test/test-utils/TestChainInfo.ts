@@ -41,7 +41,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: true,
     },
     btc: {
-        chainId: SourceId.BTC,
+        chainId: SourceId.testBTC,
         name: "Bitcoin",
         symbol: "BTC",
         decimals: 8,
@@ -54,7 +54,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: false,
     },
     xrp: {
-        chainId: SourceId.XRP,
+        chainId: SourceId.testXRP,
         name: "Ripple",
         symbol: "XRP",
         decimals: 6,

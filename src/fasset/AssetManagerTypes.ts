@@ -38,3 +38,9 @@ export type AgentSetting =
     | "poolExitCollateralRatioBIPS"
     | "poolTopupCollateralRatioBIPS"
     | "poolTopupTokenPriceFactorBIPS";
+
+export enum TokenExitType {
+    MAXIMIZE_FEE_WITHDRAWAL,
+    MINIMIZE_FEE_DEBT,
+    KEEP_RATIO,
+}

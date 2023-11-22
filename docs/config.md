@@ -115,7 +115,7 @@ export interface NativeChainInfo {
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -151,7 +151,7 @@ export interface NativeChainInfo {
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -179,7 +179,7 @@ export interface NativeChainInfo {
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -205,7 +205,7 @@ export interface NativeChainInfo {
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,

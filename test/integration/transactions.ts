@@ -19,7 +19,7 @@ export const targetAddressXRP = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
 describe("XRP transaction integration tests", async () => {
-    const sourceId: SourceId = SourceId.XRP;
+    const sourceId: SourceId = SourceId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;

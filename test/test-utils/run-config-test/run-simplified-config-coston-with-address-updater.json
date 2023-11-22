@@ -7,7 +7,7 @@
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
