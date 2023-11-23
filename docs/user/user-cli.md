@@ -6,6 +6,18 @@ The script doesn't support Metamask or ledgers; all the private keys must be sto
 
 The script has a number of subcomands, which can be listed by calling `user-bot help`.
 
+## Installing the bot
+
+(For Vika: currently you need access to the private repositories `fasset-bots` and `simple-wallet` to do this. But for pubic release the repos will probably become public, so I won't write about this.)
+
+For now, the bot is obtained by cloning the `fasset-bots` git repository.
+
+    git clone git@gitlab.com:flarenetwork/fasset-bots.git
+
+And then you have to install the packages by simply running `yarn` in the `fasset-bots` checkout directory.
+
+NOTE: The command `user-bot` must also be run with `yarn` prefix i.e. `yarn user-bot`.
+
 ## Common arguments
 
 The script has one mandatory common argument `-f <fasset_symbol>` (except for subcommand `generateSecrets`). Argument `<fasset_symbol>` can currently have values `FtestXRP` and `FfakeXRP`. It is mandatory for all subcommands except `generateSecrets`.
