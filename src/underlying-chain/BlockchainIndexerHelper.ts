@@ -299,8 +299,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
         switch (this.sourceId) {
             case SourceId.BTC:
             case SourceId.DOGE:
+            case SourceId.testBTC:
+            case SourceId.testDOGE:
                 return await this.UTXOInputsOutputs(type, res, input);
             case SourceId.XRP:
+            case SourceId.testXRP:
                 return this.XRPInputsOutputs(data, input);
             default:
                 logger.error(`Block chain indexer helper error: invalid SourceId: ${this.sourceId}`);
@@ -334,7 +337,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private get isUTXOchain(): boolean {
-        return this.sourceId === SourceId.BTC || this.sourceId === SourceId.DOGE || this.sourceId === SourceId.LTC;
+        return this.sourceId === SourceId.testBTC || this.sourceId === SourceId.testDOGE || this.sourceId === SourceId.LTC;
     }
 
     private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {

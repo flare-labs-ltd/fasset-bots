@@ -8,7 +8,7 @@
     },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
@@ -20,7 +20,7 @@
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         },
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Fake XRP",
             "symbol": "fakeXRP",
             "decimals": 6,

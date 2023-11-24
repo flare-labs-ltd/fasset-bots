@@ -4,31 +4,46 @@ The name of the user script is currently `user-bot`. (For Vika: The script name 
 
 The script doesn't support Metamask or ledgers; all the private keys must be stored on disk. Therefore it is only safe to use for test currencies.
 
-It has one common argument `-f <fasset_symbol>` and a number of subcommands. Argument `<fasset_symbol>` can currently have values `FtestXRP` and `FfakeXRP`.
+The script has a number of subcomands, which can be listed by calling `user-bot help`.
 
-## Configuration
+## Installing the bot
 
-The script requires a network configuration file `config.json` and a secrets file `secrets.json` that holds user addresses and private keys. On Posix systems (Linux and MacOS), the secrets file must have restricted permissions to only be available by the executing user (permission 600).
+(For Vika: currently you need access to the private repositories `fasset-bots` and `simple-wallet` to do this. But for pubic release the repos will probably become public, so I won't write about this.)
 
-There is a command to generate `config.json` and `secrets.json` file and seed the secrets file with new keys and passwords:
+For now, the bot is obtained by cloning the `fasset-bots` git repository.
 
-    user-bot generate-config
+    git clone git@gitlab.com:flarenetwork/fasset-bots.git
 
-The files will by defult be put to directory `<USERS_HOME>/.fasset-user`. The directory can be changed with environment variable `FASSET_USER_CONFIG_DIR`, but then this variable needs to be set for all subsequent command invocations.
+And then you have to install the packages by simply running `yarn` in the `fasset-bots` checkout directory.
+
+NOTE: The command `user-bot` must also be run with `yarn` prefix i.e. `yarn user-bot`.
+
+## Common arguments
+
+The script has one mandatory common argument `-f <fasset_symbol>` (except for subcommand `generateSecrets`). Argument `<fasset_symbol>` can currently have values `FtestXRP` and `FfakeXRP`. It is mandatory for all subcommands except `generateSecrets`.
+
+There are also two optional common arguments:
+
+-   `-c <configFilePath>` - indicates the config file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_CONFIG` and if this is also missing, it uses a file in package with settings for Coston (`run-config/run-config-agent-coston-testxrp.json`).
+-   `-s <secretsFilePath>` - indicates the secrets json file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_SECRETS` and if this is also missing, it defaults to `<USERS_HOME>/fasset/secrets.json`.
+
+## Secrets
+
+The script requires a secrets file in json format that holds user addresses and private keys. On Posix systems (Linux and MacOS), the secrets file must have restricted permissions to only be available by the executing user (permission 600).
+
+There is a command to generate secrets json file and seed the secrets file with new keys and passwords:
+
+    user-bot generateSecrets
+
+By default, this prints the secrets to standard output. By adding `-o <filename>` parameter, it saves secrets to a file.
+
+You should move the generated secrets file to its defualt location `<USERS_HOME>/fasset/secrets.json`. If it is anywhere else, you should indicate the path in later invocations with parameter `-s` or environment variable `FASSET_USER_SECRETS`.
 
 Of course, all the accounts in the generated secrets file initially have zero balance. For minting, you have to transfer enough funds to the underlying address. Also, there needs to be some native currency on `user.native_address`, to pay for collateral reservations and for gas.
 
+The secrets file also has a section for keys to external APIs. Those have to be filled by the keys obtained from the respective API providers.
+
 ## Minting
-
-For minting, the user must first obtain the list of publicly available agents:
-
-    user-bot -f <fasset_symbol> agents
-
-e.g.
-
-    user-bot -f FtestXRP agents
-
-This prints the list of agent addresses, and for each agent the maximum number of lots they can mint and the fee.
 
 The minting is executed with command
 
@@ -45,6 +60,16 @@ or by using a specific agent:
 This should perform the complete minting process and transfer the minted FAssets to the user's address.
 
 The version without agent address will automatically choose the agent with lowest fee that has the capacity for minting enough lots. The minting will not be automatically split between agents.
+
+For minting against a specific agent, the user must first obtain the list of publicly available agents:
+
+    user-bot -f <fasset_symbol> agents
+
+e.g.
+
+    user-bot -f FtestXRP agents
+
+This prints the list of agent addresses, and for each agent the maximum number of lots they can mint and the fee.
 
 ### Completing paid minting
 

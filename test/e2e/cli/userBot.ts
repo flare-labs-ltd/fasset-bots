@@ -20,13 +20,17 @@ describe("UserBot cli commands unit tests", async () => {
     });
 
     it("Should create UserBot", async () => {
-        const userBot1 = await UserBot.create(RUN_CONFIG_PATH, "FtestXRP");
+        const userBot1 = await UserBot.create(RUN_CONFIG_PATH, "FtestXRP", false);
         expect(userBot1.nativeAddress).to.eq(userAddress);
-        const userBot2 = await UserBot.create(RUN_CONFIG_PATH, "FfakeXRP");
+        expect(userBot1.underlyingAddress).to.eq(undefined);
+        const userBot2 = await UserBot.create(RUN_CONFIG_PATH, "FfakeXRP", true);
         expect(userBot2.nativeAddress).to.eq(userAddress);
+        expect(userBot2.underlyingAddress).to.not.eq(undefined);
     });
 
     it("Should create UserBot - invalid 'fAssetSymbol'", async () => {
-        await expect(UserBot.create(RUN_CONFIG_PATH, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
+        await expect(UserBot.create(RUN_CONFIG_PATH, "invalidSymbol", true))
+            .to.eventually.be.rejectedWith(`Invalid FAsset symbol`)
+            .and.be.an.instanceOf(Error);
     });
 });

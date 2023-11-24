@@ -294,7 +294,7 @@ export function createWalletClient(
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
-    if (sourceId === SourceId.BTC) {
+    if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
         return new WALLET.BTC({
             url: walletUrl,
             username: "",
@@ -302,7 +302,7 @@ export function createWalletClient(
             inTestnet: inTestnet,
             apiTokenKey: getSecrets().apiKey.btc_rpc,
         }); // UtxoMccCreate
-    } else if (sourceId === SourceId.DOGE) {
+    } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
         return new WALLET.DOGE({
             url: walletUrl,
             username: "",
@@ -400,11 +400,10 @@ export async function createStateConnectorClient(
     return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
 }
 
+const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.testXRP, SourceId.testBTC, SourceId.testDOGE];
+
 function supportedSourceId(sourceId: SourceId) {
-    if (sourceId === SourceId.XRP || sourceId === SourceId.BTC || sourceId === SourceId.DOGE) {
-        return true;
-    }
-    return false;
+    return supportedSourceIds.includes(sourceId);
 }
 
 async function getStateConnectorAndProofVerifierAddress(

@@ -22,7 +22,7 @@ const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper
 
 let stateConnectorClient: StateConnectorClientHelper;
 const accountPrivateKey = requireSecret("user.native_private_key");
-const sourceId = SourceId.XRP;
+const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 
 describe("XRP attestation/state connector tests", async () => {
@@ -158,7 +158,7 @@ describe("State connector tests - decoding", async () => {
         const proofData: ConfirmedBlockHeightExists.Proof = {
             data: {
                 attestationType: invalidAttestationType,
-                sourceId: SourceId.XRP,
+                sourceId: SourceId.testXRP,
                 lowestUsedTimestamp: "1687489872",
                 votingRound: "571512",
                 requestBody: {

@@ -24,7 +24,7 @@ import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/I
 use(chaiAsPromised);
 
 const accountPrivateKey = requireSecret("owner.native_private_key");
-const sourceId = SourceId.XRP;
+const sourceId = SourceId.testXRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";

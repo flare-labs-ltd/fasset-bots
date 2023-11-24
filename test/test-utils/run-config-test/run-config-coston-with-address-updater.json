@@ -4,14 +4,14 @@
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
         {
-            "chainId": "XRP",
+            "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
             "finalizationBlocks": 3,
             "requireEOAProof": false,
-            "assetManager": "0x68F6322BFf80978eB5b7F672404bC3D0ad77eF32",
+            "assetManager": "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }
@@ -25,5 +25,5 @@
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
     "defaultAgentSettingsPath": "./run-config/agent-settings-config.json",
-    "stateConnectorProofVerifierAddress": "0x7B6BebAF6D186DE7c69D4B99625f819AF6fB98fE"
+    "stateConnectorProofVerifierAddress": "0x6356470e9aF457d1900Ad4Ed45D115192506BF51"
 }
