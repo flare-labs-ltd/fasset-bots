@@ -17,7 +17,7 @@ export const ATTESTATION_PROVIDER_URLS: string[] = [
     "https://attestation-coston.aflabs.net/attestation-client",
     "https://attestation-coston.aflabs.net/attestation-client",
 ];
-export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x7B6BebAF6D186DE7c69D4B99625f819AF6fB98fE";
+export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x6356470e9aF457d1900Ad4Ed45D115192506BF51";
 export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 
 const testOptions: CreateOrmOptions = {
