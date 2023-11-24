@@ -1,5 +1,5 @@
 import type {
-  IWNat, FakeERC20, FlashLender, BlazeSwapRouter,
+  IWNat, FakeERC20, FlashLender, BlazeSwapRouter, IBlazeSwapPair,
   Liquidator, IIAssetManager, IFAssetMetadata, FakePriceReader
 } from '../../../types'
 
@@ -31,4 +31,8 @@ export interface FAssetContracts {
   priceReader: FakePriceReader
 }
 
-export interface Contracts extends BaseContracts, FAssetContracts {}
+// all relevant contracts to the system or testing
+export interface Contracts extends BaseContracts, FAssetContracts {
+  dex1Token: IBlazeSwapPair
+  dex2Token: IBlazeSwapPair
+}

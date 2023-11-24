@@ -2,7 +2,7 @@
  * yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413
  */
 
-require('dotenv').config()
+import "dotenv/config"
 import { ethers } from 'ethers'
 import { assert } from 'chai'
 import { assetPriceForAgentCr } from '../calculations'
@@ -54,7 +54,7 @@ describe("Liquidator", () => {
     )
   }
 
-  beforeEach(async () => {
+  before(async () => {
     // get relevant signers
     deployer = new ethers.Wallet(DEPLOYER_PVK, provider)
     liquidator = await provider.getSigner(1)

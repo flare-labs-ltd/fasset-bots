@@ -4,6 +4,7 @@ import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/
 import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
 import { abi as flashLenderAbi } from '../../../artifacts/contracts/FlashLender.sol/FlashLender.json'
 import { abi as blazeSwapRouterAbi } from '../../../artifacts/blazeswap/contracts/periphery/BlazeSwapRouter.sol/BlazeSwapRouter.json'
+import { abi as blazeSwapPairAbi } from '../../../artifacts/blazeswap/contracts/core/interfaces/IBlazeSwapPair.sol/IBlazeSwapPair.json'
 import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAgentVault.sol/IIAgentVault.json'
 import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
 import { abi as fAssetAbi } from '../../../artifacts/contracts/interface/IIFAsset.sol/IFAssetMetadata.json'
@@ -47,7 +48,12 @@ export async function getContracts(
 ): Promise<Contracts> {
   const ecosystemContracts = getBaseContracts(network, provider)
   const fAssetContracts = await getFAssetContracts(assetManagerAddress, provider)
-  return { ...ecosystemContracts, ...fAssetContracts }
+  const contracts = { ...ecosystemContracts, ...fAssetContracts }
+  const pair1 = await contracts.blazeSwapRouter.pairFor(contracts.fAsset, contracts.usdc)
+  const pair2 = await contracts.blazeSwapRouter.pairFor(contracts.wNat, contracts.usdc)
+  const dex1Token = new ethers.Contract(pair1, blazeSwapPairAbi, provider) as any
+  const dex2Token = new ethers.Contract(pair2, blazeSwapPairAbi, provider) as any
+  return { ...contracts, dex1Token, dex2Token }
 }
 
 export async function getAgentsAssetManager(

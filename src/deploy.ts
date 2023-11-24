@@ -1,4 +1,4 @@
-require('dotenv').config()
+import "dotenv/config"
 import { ContractFactory, Wallet, JsonRpcProvider } from 'ethers'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../artifacts/contracts/Liquidator.sol/Liquidator.json'
 import { abi as challengerAbi, bytecode as challengerBytecode } from '../artifacts/contracts/Challenger.sol/Challenger.json'

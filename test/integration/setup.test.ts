@@ -3,17 +3,17 @@
  * yarn hardhat node --fork-block-number 11225480 --fork https://coston-api.flare.network/ext/C/rpc
  */
 
-require('dotenv').config()
+import "dotenv/config"
 import { ethers } from 'ethers'
 import { assert } from 'chai'
-import { waitFinalize, syncDexReservesWithFtsoPrices } from './helpers/utils'
+import { waitFinalize, syncDexReservesWithFtsoPrices, removeLiquidity } from './helpers/utils'
 import { getContracts } from './helpers/contracts'
 import type { Contracts } from './helpers/interface'
 
 const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/")
 
 // asset manager address for FtestXRP
-const ASSET_MANAGER = "0x93CF4820d35Fff1afd44aD54546649D8D2b8e952"
+const ASSET_MANAGER = "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc"
 // two accounts funded with FtestXRP and CFLR
 const FUNDED_PVK_1 = process.env.FUND_SUPPLIER_PRIVATE_KEY_1!
 const FUNDED_PVK_2 = process.env.FUND_SUPPLIER_PRIVATE_KEY_2!
@@ -38,7 +38,7 @@ describe("Ecosystem setup", () => {
     return [fAsset, usdc, wNat]
   }
 
-  beforeEach(async () => {
+  before(async () => {
     // get relevant signers
     funded1 = new ethers.Wallet(FUNDED_PVK_1, provider)
     funded2 = new ethers.Wallet(FUNDED_PVK_2, provider)
@@ -96,5 +96,21 @@ describe("Ecosystem setup", () => {
     console.log('fAsset2 spent:', `${Number(fAsset2SpentPerc)}%`)
     console.log('usdc2 spent:  ', `${Number(usdc2SpentPerc)}%`)
     console.log('wNat2 spent:  ', `${Number(wNat2SpentPerc)}%`)
+    // remove liquidity from dexes from funded account 1
+    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded1, provider)
+    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex2Token, contracts.usdc, contracts.wNat, funded1, provider)
+    // remove liquidity from dexes from funded account 2
+    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded2, provider)
+    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex2Token, contracts.usdc, contracts.wNat, funded2, provider)
+    // check that funded account 1 had funds returned
+    const [fAsset1AfterDrain, usdc1AfterDrain, wNat1AfterDrain] = await getBalances(funded1)
+    assert.equal(fAsset1AfterDrain, fAsset1Before)
+    assert.equal(usdc1AfterDrain, usdc1Before)
+    assert.equal(wNat1AfterDrain, wNat1Before)
+    // check that funded account 2 had funds returned
+    const [fAsset2AfterDrain, usdc2AfterDrain, wNat2AfterDrain] = await getBalances(funded2)
+    assert.equal(fAsset2AfterDrain, fAsset2Before)
+    assert.equal(usdc2AfterDrain, usdc2Before)
+    assert.equal(wNat2AfterDrain, wNat2Before)
   })
 })

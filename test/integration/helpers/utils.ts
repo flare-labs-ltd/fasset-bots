@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { priceBasedAddedDexReserves } from "../../calculations"
-import type { IBlazeSwapRouter, IERC20Metadata } from "../../../types"
+import type { IBlazeSwapPair, IBlazeSwapRouter, IERC20Metadata } from "../../../types"
 import type { Contracts } from "./interface"
 
 /////////////////////////////////////////////////////////////////////////
@@ -63,24 +63,24 @@ export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
 
 export async function syncDexReservesWithFtsoPrices(
   contracts: Contracts,
-  liquidityProvider: ethers.Wallet,
+  signer: ethers.Wallet,
   provider: ethers.JsonRpcProvider,
   wrapNat = false
 ): Promise<void> {
   if (wrapNat) {
     // wrap user nat
     const leftoverNat = BigInt(100) * ethers.WeiPerEther
-    const availableNat = await provider.getBalance(liquidityProvider)
+    const availableNat = await provider.getBalance(signer)
     if (availableNat > leftoverNat) {
       const wrapNat = availableNat - leftoverNat
-      const ccall = contracts.wNat.connect(liquidityProvider).deposit({ value: wrapNat })
-      await waitFinalize(provider, liquidityProvider, ccall)
+      const ccall = contracts.wNat.connect(signer).deposit({ value: wrapNat })
+      await waitFinalize(provider, signer, ccall)
     }
   }
   // we have only those F-Assets and CFLR available
-  const availableFAsset = await contracts.fAsset.balanceOf(liquidityProvider)
-  const availableUsdc = await contracts.usdc.balanceOf(liquidityProvider)
-  const availableWNat = await contracts.wNat.balanceOf(liquidityProvider)
+  const availableFAsset = await contracts.fAsset.balanceOf(signer)
+  const availableUsdc = await contracts.usdc.balanceOf(signer)
+  const availableWNat = await contracts.wNat.balanceOf(signer)
   // get ftso prices of all relevant symbols
   const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
   const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
@@ -90,11 +90,11 @@ export async function syncDexReservesWithFtsoPrices(
   await setDexPairPrice(
     contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc,
     assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
-    liquidityProvider, provider)
+    signer, provider)
   await setDexPairPrice(
     contracts.blazeSwapRouter, contracts.wNat, contracts.usdc,
     wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
-    liquidityProvider, provider)
+    signer, provider)
 }
 
 // set dex price of tokenA in tokenB by adding liquidity.
@@ -107,7 +107,7 @@ async function setDexPairPrice(
   priceB: bigint,
   maxAddedA: bigint,
   maxAddedB: bigint,
-  liquidityProvider: ethers.Signer,
+  signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
   const decimalsA = await tokenA.decimals()
@@ -124,7 +124,7 @@ async function setDexPairPrice(
   if (addedA < 0 || addedB < 0 || (addedA == BigInt(0) && addedB == BigInt(0))) {
     console.error('negative added reserves')
   } else {
-    await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, liquidityProvider, provider)
+    await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, signer, provider)
   }
 }
 
@@ -135,17 +135,40 @@ async function addLiquidity(
   tokenB: IERC20Metadata,
   amountA: bigint,
   amountB: bigint,
-  liquidityProvider: ethers.Signer,
+  signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
-  await waitFinalize(provider, liquidityProvider, tokenA.connect(liquidityProvider).approve(blazeSwapRouter, amountA))
-  await waitFinalize(provider, liquidityProvider, tokenB.connect(liquidityProvider).approve(blazeSwapRouter, amountB))
-  await waitFinalize(provider, liquidityProvider, blazeSwapRouter.connect(liquidityProvider).addLiquidity(
-    tokenA,
-    tokenB,
+  await waitFinalize(provider, signer, tokenA.connect(signer).approve(blazeSwapRouter, amountA))
+  await waitFinalize(provider, signer, tokenB.connect(signer).approve(blazeSwapRouter, amountB))
+  await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).addLiquidity(
+    tokenA, tokenB,
     amountA, amountB,
     0, 0, 0, 0,
-    liquidityProvider,
+    signer,
     ethers.MaxUint256
   ))
+}
+
+// blazeswap remove liquidity with wait finalize
+export async function removeLiquidity(
+  blazeSwapRouter: IBlazeSwapRouter,
+  blazeSwapPair: IBlazeSwapPair,
+  tokenA: IERC20Metadata,
+  tokenB: IERC20Metadata,
+  signer: ethers.Signer,
+  provider: ethers.JsonRpcProvider
+): Promise<void> {
+  const dexTokens = await blazeSwapPair.balanceOf(signer)
+  if (dexTokens > BigInt(0)) {
+    await waitFinalize(provider, signer, blazeSwapPair.connect(signer).approve(blazeSwapRouter, dexTokens))
+    await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).removeLiquidity(
+      tokenA, tokenB,
+      dexTokens,
+      0, 0,
+      signer,
+      ethers.MaxUint256
+    ))
+  } else {
+    console.log('no liquidity to remove')
+  }
 }

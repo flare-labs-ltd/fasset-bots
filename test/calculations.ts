@@ -21,7 +21,7 @@ export function roundUpWithPrecision(
 // implicit ecosystem setters
 
 // returns the maximal reserves that can be added to a dex,
-// with initial reserves, that produce the given price on
+// with some initial reserves, that produce the given price on
 // that dex (see priceBasedDexReserve)
 export function priceBasedAddedDexReserves(
   initialReserveA: bigint,
@@ -35,9 +35,12 @@ export function priceBasedAddedDexReserves(
 ): [bigint, bigint] {
   const ratioA = priceB * BigInt(10) ** decimalsA
   const ratioB = priceA * BigInt(10) ** decimalsB
-  return adjustPriceBasedDexReserves(
-    initialReserveA, initialReserveB,
-    ratioA, ratioB, maxAddedA, maxAddedB)
+  const factorA = BigInt(10_000) * (maxAddedA + initialReserveA) / ratioA
+  const factorB = BigInt(10_000) * (maxAddedB + initialReserveB) / ratioB
+  const factor = (factorA < factorB) ? factorA : factorB
+  const addedA = factor * ratioA / BigInt(10_000) - initialReserveA
+  const addedB = factor * ratioB / BigInt(10_000) - initialReserveB
+  return [addedA, addedB]
 }
 
 // get tokenA/tokenB reserve, based on
@@ -58,25 +61,6 @@ export function priceBasedInitialDexReserve(
     * BigInt(10) ** decimalsB
     / BigInt(10) ** decimalsA
     / priceB
-}
-
-// maximizes the reserves that can be added to a dex with
-// reserves reserveA and reserveB, and that preserve
-// the ratioA / ratioB ratio while not exceeding maxAddedA and maxAddedB
-export function adjustPriceBasedDexReserves(
-  initialReserveA: bigint,
-  initialReserveB: bigint,
-  ratioA: bigint,
-  ratioB: bigint,
-  maxAddedA: bigint,
-  maxAddedB: bigint
-): [bigint, bigint] {
-  const factorA = BigInt(10_000) * (maxAddedA + initialReserveA) / ratioA
-  const factorB = BigInt(10_000) * (maxAddedB + initialReserveB) / ratioB
-  const factor = (factorA < factorB) ? factorA : factorB
-  const addedA = factor * ratioA / BigInt(10_000) - initialReserveA
-  const addedB = factor * ratioB / BigInt(10_000) - initialReserveB
-  return [addedA, addedB]
 }
 
 // prices are in some same currency
