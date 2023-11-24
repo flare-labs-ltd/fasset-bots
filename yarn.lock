@@ -11273,7 +11273,7 @@ __metadata:
     ripple-keypairs: ^1.1.5
     tiny-secp256k1: ^2.2.1
     xrpl: 2.3.1
-  checksum: be4e0f543242ca4c44df3f0935cd1a38f7c0c8318f5d28f51995af9d75c8e7d091d9ff74d229c9d68be09101988a9156fb3d1f478493e60b2ad007407a5ef2d1
+  checksum: e705769072adc7d84bf4ada8dfd08a703f0e6a4a2d4015f859ce7a02e8c89aba206de134c1d8d785c69cc287157e34ac9260a0e803a4774b7916679927183787
   languageName: node
   linkType: hard
 

@@ -11,7 +11,7 @@ Usage: `yarn agent-bot [command] <arg> -f [fAssetSymbol]`
 Available commands:
 
 -   `create <poolTokenSuffix> -f [fAssetSymbol]` - create new agent vault; <poolTokenSuffix> has to be unique for each agent
--   `depositVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - deposit vault collateral to agent vault from owner's address");
+-   `depositVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - deposit vault collateral to agent vault from owner's address";
 -   `buyPoolCollateral <agentVault> <amount> -f [fAssetSymbol]` - add pool collateral and agent pool tokens
 -   `enter <agentVault> -f [fAssetSymbol]` - enter available agent's list
 -   `announceExit <agentVault> -f [fAssetSymbol]` - announce exit available agent's list
