@@ -131,13 +131,13 @@ export class AgentEntity {
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
 
-    @Enum({ type: EnumType, defaultRaw: "obtainedProof" })
+    @Enum({ type: 'DailyProofState', columnType: 'varchar(20)', default: "obtainedProof" })
     dailyProofState!: DailyProofState;
 
     @Property({ nullable: true })
     dailyProofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     dailyProofRequestData?: string;
 }
 
@@ -185,7 +185,7 @@ export class AgentMinting {
     @Property({ nullable: true })
     proofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
 }
 
@@ -236,7 +236,7 @@ export class AgentRedemption {
     @Property({ nullable: true })
     proofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
 }
 

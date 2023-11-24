@@ -10,7 +10,10 @@
     "poolTokenSuffix": "TXRP",
     "assetMintingDecimals": 6,
     "userWhitelist": null,
-    "underlyingAddressValidator": ["RippleAddressValidator", []],
+    "underlyingAddressValidator": [
+        "RippleAddressValidator",
+        []
+    ],
     "liquidationStrategy": "LiquidationStrategyImpl",
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",

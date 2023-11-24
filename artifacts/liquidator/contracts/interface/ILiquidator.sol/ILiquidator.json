@@ -45,7 +45,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IIAgentVault",
+          "internalType": "address",
           "name": "_agentVault",
           "type": "address"
         }
@@ -58,7 +58,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IIAgentVault",
+          "internalType": "address",
           "name": "_agentVault",
           "type": "address"
         },
