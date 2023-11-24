@@ -137,7 +137,7 @@ export class AgentEntity {
     @Property({ nullable: true })
     dailyProofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     dailyProofRequestData?: string;
 }
 
@@ -185,7 +185,7 @@ export class AgentMinting {
     @Property({ nullable: true })
     proofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
 }
 
@@ -236,7 +236,7 @@ export class AgentRedemption {
     @Property({ nullable: true })
     proofRequestRound?: number;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
 }
 
