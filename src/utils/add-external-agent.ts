@@ -12,8 +12,8 @@ export async function addExternalAgentVault(
     agentVaultAddress: string,
     fAssetSymbol: string,
     runConfigFile: string,
-    active = true,
-    fromBlock?: number
+    fromBlock?: number,
+    active = true
 ): Promise<void> {
     const runConfig = loadConfigFile(runConfigFile);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), null, null);
@@ -46,9 +46,3 @@ export async function addExternalAgentVault(
         em.persist(newAgent);
     })
 }
-
-
-addExternalAgentVault(
-    '0x76Ec416eF927e11E06c34221b93d9FA667cFecCb',
-    'FtestXRP',
-    "./run-config/run-config-agent-coston-testxrp.json")
