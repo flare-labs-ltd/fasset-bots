@@ -6,8 +6,16 @@ import { loadConfigFile } from "../config/BotConfig";
 import { AgentEntity, DailyProofState } from "../entities/agent";
 import { getSecrets } from "../config/secrets";
 
-// before running this, you should make sure that agent's
-// owner is in the wallet_address table
+/**
+ * To migrate an agent from another database, you need to copy-paste the agent's
+ * underlying account from `wallet_address` table, and also add the agent to the
+ * `agent` table. For the latter, you can use this function.
+ * @param agentVaultAddress - the agent's vault address
+ * @param fAssetSymbol - the agent's fAsset symbol
+ * @param runConfigFile - the run config file
+ * @param fromBlock - the block number from which the agent should start listening
+ * @param active - whether the agent was not destroyed (defaults to true)
+ */
 export async function addExternalAgentVault(
     agentVaultAddress: string,
     fAssetSymbol: string,
