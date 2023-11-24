@@ -18,8 +18,16 @@
     "liquidationStrategySettings": {
         "$schema": "../LiquidationStrategyImplSettings.schema.json",
         "liquidationStepSeconds": 180,
-        "liquidationCollateralFactorBIPS": [10500, 11000, 11500],
-        "liquidationFactorVaultCollateralBIPS": [10000, 10000, 10000]
+        "liquidationCollateralFactorBIPS": [
+            10500,
+            11000,
+            11500
+        ],
+        "liquidationFactorVaultCollateralBIPS": [
+            10000,
+            10000,
+            10000
+        ]
     },
     "poolCollateral": {
         "token": "WNat",
