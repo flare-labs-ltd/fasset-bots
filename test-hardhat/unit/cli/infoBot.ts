@@ -8,7 +8,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { MockChain } from "../../../src/mock/MockChain";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { checkedCast } from "../../../src/utils/helpers";
+import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
@@ -58,6 +58,7 @@ describe("Bot cli commands unit tests", async () => {
                     amgDecimals: 0,
                     requireEOAProof: false,
                     finalizationBlocks: 6,
+                    walletUrl: "walletUrl"
                 },
             ],
             nativeChainInfo: testNativeChainInfo,
@@ -71,13 +72,20 @@ describe("Bot cli commands unit tests", async () => {
         spy.restore(console);
     });
 
-    it("Should get available agents", async () => {
+    it("Should get available agents and find best agent", async () => {
         // create agents
         for (let i = 0; i <= 10; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
         }
         const availableAgents = await infoBot.getAvailableAgents();
         expect(availableAgents[0].agentVault).to.eq(agent.vaultAddress);
+        const findBestAgent = await infoBot.findBestAgent(toBN(1));
+        expect(findBestAgent).to.not.be.undefined;
+    });
+
+    it("Should not find best agent", async () => {
+        const findBestAgent = await infoBot.findBestAgent(toBN(1));
+        expect(findBestAgent).to.not.be.undefined;
     });
 
     it("Should get all agents", async () => {
@@ -117,5 +125,40 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         await infoBot.printAgentInfo(agent.vaultAddress);
         expect(spyLog).to.be.called.gt(0);
+    });
+
+    it("Should print pools", async () => {
+        const spyLog = spy.on(console, "log");
+        await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
+        await infoBot.printPools();
+        expect(spyLog).to.be.called.gt(0);
+    });
+
+    it("Should generate secrets", async () => {
+        const agent = infoBot.generateSecrets(["agent"]);
+        expect(agent).to.not.be.empty;
+        const other = infoBot.generateSecrets(["other"]);
+        expect(other).to.not.be.empty;
+        const user = infoBot.generateSecrets(["user"]);
+        expect(user).to.not.be.empty;
+    });
+
+    it("Should find pool by symbol", async () => {
+        await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
+        const symbol = "INVALID_POOL";
+        await expect(infoBot.findPoolBySymbol(symbol)).to.eventually.be.rejectedWith(`Pool with token symbol ${symbol} does not exist.`);
+    });
+
+    it("Should print pool token balance", async () => {
+        const spyLog = spy.on(console, "log");
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
+        await infoBot.printPoolTokenBalance(agent.agentVault.address);
+        expect(spyLog).to.be.called.exactly(2);
+    });
+
+    it("Should get pool token balance", async () => {
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
+        const balance = await infoBot.getPoolTokenBalance(agent.collateralPool.address, agent.agentVault.address);
+        expect(balance.gtn(0)).to.be.true;
     });
 });

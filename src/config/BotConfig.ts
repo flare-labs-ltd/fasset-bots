@@ -203,7 +203,7 @@ export async function createBotFAssetConfig(
     stateConnectorAddress: string | undefined,
     ownerAddress: string
 ): Promise<BotFAssetConfig> {
-    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, chainInfo.inTestnet) : undefined;
+    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl) : undefined;
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
@@ -288,8 +288,7 @@ export async function createAgentBotDefaultSettings(
  */
 export function createWalletClient(
     sourceId: SourceId,
-    walletUrl: string,
-    inTestnet?: boolean
+    walletUrl: string
 ): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
@@ -299,7 +298,7 @@ export function createWalletClient(
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: inTestnet,
+            inTestnet: sourceId === SourceId.testBTC ? true : false,
             apiTokenKey: getSecrets().apiKey.btc_rpc,
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
@@ -307,7 +306,7 @@ export function createWalletClient(
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: inTestnet,
+            inTestnet: sourceId === SourceId.testDOGE ? true : false,
             apiTokenKey: getSecrets().apiKey.doge_rpc,
         }); // UtxoMccCreate
     } else {
@@ -316,6 +315,7 @@ export function createWalletClient(
             username: "",
             password: "",
             apiTokenKey: getSecrets().apiKey.xrp_rpc,
+            inTestnet: sourceId === SourceId.testXRP ? true : false,
         }); // XrpMccCreate
     }
 }
@@ -344,13 +344,12 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
 export function createBlockchainWalletHelper(
     sourceId: SourceId,
     em: EntityManager | null | undefined,
-    walletUrl: string,
-    inTestnet?: boolean
+    walletUrl: string
 ): BlockchainWalletHelper {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
-    const walletClient = createWalletClient(sourceId, walletUrl, inTestnet);
+    const walletClient = createWalletClient(sourceId, walletUrl);
     const walletKeys = em ? new DBWalletKeys(em) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }

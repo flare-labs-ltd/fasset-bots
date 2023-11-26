@@ -8,6 +8,7 @@ import { getSecrets } from "./config/secrets";
 
 const secrets = getSecrets()
 
+/* istanbul ignore next */
 const options: Options<AbstractSqlDriver | PostgreSqlDriver> = {
     entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
     dbName: "fasset-bots.db",

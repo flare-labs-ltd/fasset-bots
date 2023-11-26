@@ -54,7 +54,7 @@ describe("XRP wallet tests", async () => {
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
         await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
-            .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`)
+            .to.eventually.be.rejectedWith(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee}`)
             .and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
@@ -86,7 +86,7 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -119,7 +119,7 @@ describe("DOGE wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
