@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Secrets, requireEncryptionPassword, requireSecret } from "../../../src/config/secrets";
+import { Secrets, getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH } from "../../../src/utils/helpers";
 
 describe("Secrets unit tests", async () => {
@@ -35,7 +35,7 @@ describe("Secrets unit tests", async () => {
         const fn2 = () => {
             return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
-        expect(fn2).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
+        expect(fn2).to.throw("Secret variable wallet.encryption_password not defined or not typeof string");
 
         secrets.wallet = {
             encryption_password: "",
@@ -43,7 +43,7 @@ describe("Secrets unit tests", async () => {
         const fn3 = () => {
             return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
-        expect(fn3).to.throw("'Secret variable wallet.encryption_password not defined or not typeof string");
+        expect(fn3).to.throw("'wallet.encryption_password' should be at least 16 chars long");
 
         secrets.wallet = {
             encryption_password: "123456789012345",
@@ -52,5 +52,14 @@ describe("Secrets unit tests", async () => {
             return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
         expect(fn4).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+    });
+
+    it("Should reset secrets", async () => {
+        resetSecrets(null);
+        const secrets = getSecrets();
+        expect(secrets.apiKey).to.be.empty;
+        resetSecrets('./secrets.json');
+        const secrets2 = getSecrets();
+        expect(secrets2.apiKey).to.not.be.empty;
     });
 });

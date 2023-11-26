@@ -19,6 +19,7 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBot } from "./InfoBot";
 import { TokenExitType } from "../fasset/AssetManagerTypes";
 
+/* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
 
 const CollateralPool = artifacts.require("CollateralPool");

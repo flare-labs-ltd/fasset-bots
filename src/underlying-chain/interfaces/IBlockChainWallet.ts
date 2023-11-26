@@ -27,8 +27,7 @@ export interface IBlockChainWallet {
         targetAddress: string,
         amount: NumberLike,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        awaitForTransaction?: boolean
+        options?: TransactionOptionsWithFee
     ): Promise<string>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.

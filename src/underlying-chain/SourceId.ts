@@ -10,5 +10,7 @@ export namespace SourceId {
     export const DOGE = encodeAttestationName("DOGE");
     export const testDOGE = encodeAttestationName("testDOGE");
     export const LTC = encodeAttestationName("LTC");
+    export const testLTC = encodeAttestationName("testLTC");
     export const ALGO = encodeAttestationName("ALGO");
+    export const testALGO = encodeAttestationName("testALGO");
 }

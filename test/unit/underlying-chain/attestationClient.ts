@@ -80,7 +80,7 @@ describe("Attestation client unit tests", async () => {
         expect(res1).to.be.equal(AttestationNotProved.NOT_FINALIZED);
         // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined, true);
+        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
         await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
         let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
         const finalBlock = currentBlockHeight + finalizationBlocks;

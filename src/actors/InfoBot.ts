@@ -54,7 +54,7 @@ export class InfoBot {
         // will only generate underlying accounts for the first fasset chain (enough for beta, where only one chain is supported)
         const walletUrl = requireNotNull(this.fassetInfo.walletUrl, "walletUrl config parameter is required");
         const sourceId = encodedChainId(this.fassetInfo.chainId);
-        const walletClient = createWalletClient(sourceId, walletUrl, this.fassetInfo.inTestnet);
+        const walletClient = createWalletClient(sourceId, walletUrl);
         function generateAccount(): UnifiedAccount {
             const account = web3.eth.accounts.create();
             const underlyingAccount = walletClient.createWallet();

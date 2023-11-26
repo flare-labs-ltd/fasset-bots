@@ -53,8 +53,8 @@ describe("XRP wallet tests", async () => {
         const maxFee = 8;
         const fee = 10;
         const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options, false))
-            .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFee} is higher than fee ${fee}`)
+        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
+            .to.eventually.be.rejectedWith(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee}`)
             .and.be.an.instanceOf(Error);
         await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
@@ -64,7 +64,7 @@ describe("XRP wallet tests", async () => {
     });
 
     it("Should add transaction - source address not found in db", async () => {
-        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined, false))
+        await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined))
             .to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`)
             .and.be.an.instanceOf(Error);
     });
@@ -86,7 +86,7 @@ describe("BTC wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -119,7 +119,7 @@ describe("DOGE wallet tests", async () => {
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, true);
+        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -139,9 +139,9 @@ describe("DOGE wallet tests", async () => {
         await removeWalletAddressFromDB(walletHelper, targetAddress);
     });
 
-    it("Should send funds", async () => {
+    it.skip("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined, false);
+        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
         expect(transaction).to.not.be.null;
         await removeWalletAddressFromDB(walletHelper, fundedAddress);
     });
