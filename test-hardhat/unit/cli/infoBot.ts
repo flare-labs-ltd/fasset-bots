@@ -144,9 +144,12 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should find pool by symbol", async () => {
-        await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
-        const symbol = "INVALID_POOL";
-        await expect(infoBot.findPoolBySymbol(symbol)).to.eventually.be.rejectedWith(`Pool with token symbol ${symbol} does not exist.`);
+        const suffix = "POOL-TKN-TEST"
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress, suffix);
+        const symbol = await agent.collateralPoolToken.symbol();
+        expect(await infoBot.findPoolBySymbol(symbol)).to.eq(agent.collateralPool.address);
+        const invalidSymbol = "INVALID_POOL";
+        await expect(infoBot.findPoolBySymbol(invalidSymbol)).to.eventually.be.rejectedWith(`Pool with token symbol ${invalidSymbol} does not exist.`);
     });
 
     it("Should print pool token balance", async () => {

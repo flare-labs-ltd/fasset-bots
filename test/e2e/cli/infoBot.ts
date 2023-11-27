@@ -14,4 +14,8 @@ describe("InfoBot cli commands unit tests", async () => {
         const infoBot2 = await InfoBot.create(RUN_CONFIG_PATH);
         expect(infoBot2.fassetInfo.symbol).to.eq("testXRP")
     });
+
+    it("Should not create InfoBot", async () => {
+        await expect(InfoBot.create(RUN_CONFIG_PATH, "Invalid")).to.eventually.be.rejectedWith("FAsset does not exist");
+    });
 });

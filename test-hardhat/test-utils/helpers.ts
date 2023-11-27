@@ -83,11 +83,11 @@ export async function createTestAgentB(context: TestAssetBotContext, ownerAddres
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
+export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
         context,
         DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
-        DEFAULT_POOL_TOKEN_SUFFIX()
+        suffix
     );
     const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
     return await Agent.create(context, ownerAddress, agentSettings);
@@ -113,8 +113,8 @@ export async function createTestRedeemer(context: IAssetAgentBotContext, redeeme
     return redeemer;
 }
 
-export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
-    const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
+    const agent = await createTestAgent(context, ownerAddress, underlyingAddress, suffix);
     await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
     await agent.depositVaultCollateral(deposit);
     await agent.buyCollateralPoolTokens(deposit);
