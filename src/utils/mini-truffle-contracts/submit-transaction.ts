@@ -1,7 +1,7 @@
 import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
 import { CancelToken, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
 import { waitForFinalization, waitForReceipt } from "./finalization";
-import { transactionLogger } from "./transaction-logging";
+import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
 import { ContractSettings } from "./types";
 
 /**
@@ -54,6 +54,7 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
     }
     const cancelToken = new CancelToken();
     let currentGasPrice = BN_ZERO;
+    const parentStack = captureStackTrace(2);
     const resubmits = resubmitTransaction.map(async (resubmit, index) => {
         if (resubmit.afterMS > 0) {
             await cancelableSleep(resubmit.afterMS, cancelToken);
@@ -85,6 +86,8 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
             transactionLogger.info("RECEIPT", { transactionId, resubmit: index, receipt });
             await finalizationPromise;
             return receipt;
+        } catch (e) {
+            throw fixErrorStack(e, parentStack);
         } finally {
             finalizationCancelToken.cancel();
         }

@@ -422,19 +422,20 @@ describe("mini truffle and artifacts tests", async () => {
         it("clean stack trace - hardhat", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
+            const filename = path.basename(__filename);
             await fpr.getPrice("BTC").catch((e) => {
-                assert.include(e.stack, __filename);
                 console.error("CALL ERR", e);
+                assert.include(e.stack, filename);
             });
             await withSettings(fpr, { gas: "auto" })
                 .setPrice("BTC", 1000, { gas: null as any })
                 .catch((e) => {
-                    assert.include(e.stack, __filename);
                     console.error("SEND ERR", e);
+                    assert.include(e.stack, filename);
                 });
             await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
-                assert.include(e.stack, __filename);
                 console.error("SEND ERR NG", e);
+                assert.include(e.stack, filename);
             });
         });
 
@@ -457,8 +458,8 @@ describe("mini truffle and artifacts tests", async () => {
 
         it("test reject", async () => {
             await rejectTimer().catch((e) => {
-                assert.include(e.stack, __filename);
                 console.error("TIMER ERR", e);
+                assert.include(e.stack, path.basename(__filename));
             });
         });
 
@@ -468,8 +469,8 @@ describe("mini truffle and artifacts tests", async () => {
                     throw fixErrorStack(e, 1);
                 });
             } catch (e: any) {
-                assert.include(e.stack, __filename);
                 console.error("TIMER ERR", e);
+                assert.include(e.stack, path.basename(__filename));
             }
         });
     });
