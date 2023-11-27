@@ -6220,7 +6220,7 @@ __metadata:
     reflect-metadata: 0.1.13
     rewire: 7.0.0
     rxjs: 7.8.1
-    simple-wallet: "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#3916022ba578f5b9fb1508adc69148c2736e079e"
+    simple-wallet: "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#348074a4cd3e9625f48cbfec415e0605721da3cc"
     source-map-support: 0.5.21
     ts-node: 10.9.1
     typechain: 8.3.0
@@ -11252,9 +11252,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#3916022ba578f5b9fb1508adc69148c2736e079e":
+"simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#348074a4cd3e9625f48cbfec415e0605721da3cc":
   version: 1.0.0
-  resolution: "simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#commit=3916022ba578f5b9fb1508adc69148c2736e079e"
+  resolution: "simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#commit=348074a4cd3e9625f48cbfec415e0605721da3cc"
   dependencies:
     algosdk: ^2.3.0
     axios: ^1.5.1
@@ -11274,7 +11274,7 @@ __metadata:
     tiny-secp256k1: ^2.2.1
     web3-utils: 1.10.2
     xrpl: 2.3.1
-  checksum: 573362e9046c72b32e8d46b9e0e104c506cff9a2be59d777da1676ee43df1d2eec6ff6dd31405fceedaaa4fc6f6f01a750f999a6b0781727a8b79e3f8a5f43f8
+  checksum: 8e87c63463150901962414f2bd6eadf0a2a6b6a4d9f461fadb18a2988dbe44768a29a9c022bfa16c1010e0a06ed9726ba37a69173fd9c47fa8bebbb35673a974
   languageName: node
   linkType: hard
 

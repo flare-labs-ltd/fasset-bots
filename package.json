@@ -123,7 +123,7 @@
         "passport-headerapikey": "1.2.2",
         "reflect-metadata": "0.1.13",
         "rxjs": "7.8.1",
-        "simple-wallet": "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#3916022ba578f5b9fb1508adc69148c2736e079e",
+        "simple-wallet": "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#348074a4cd3e9625f48cbfec415e0605721da3cc",
         "source-map-support": "0.5.21",
         "web3": "1.10.2",
         "web3-core": "1.10.2",
