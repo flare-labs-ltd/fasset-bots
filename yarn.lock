@@ -6220,7 +6220,7 @@ __metadata:
     reflect-metadata: 0.1.13
     rewire: 7.0.0
     rxjs: 7.8.1
-    simple-wallet: "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#537b4670dca9f0517c8492af28c1dec5fdf35a01"
+    simple-wallet: "git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#3916022ba578f5b9fb1508adc69148c2736e079e"
     source-map-support: 0.5.21
     ts-node: 10.9.1
     typechain: 8.3.0
@@ -11252,9 +11252,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#537b4670dca9f0517c8492af28c1dec5fdf35a01":
+"simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#3916022ba578f5b9fb1508adc69148c2736e079e":
   version: 1.0.0
-  resolution: "simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#commit=537b4670dca9f0517c8492af28c1dec5fdf35a01"
+  resolution: "simple-wallet@git+ssh://git@gitlab.com:flarenetwork/simple-wallet.git#commit=3916022ba578f5b9fb1508adc69148c2736e079e"
   dependencies:
     algosdk: ^2.3.0
     axios: ^1.5.1
@@ -11272,8 +11272,9 @@ __metadata:
     ripple-binary-codec: 1.4.2
     ripple-keypairs: ^1.1.5
     tiny-secp256k1: ^2.2.1
+    web3-utils: 1.10.2
     xrpl: 2.3.1
-  checksum: e705769072adc7d84bf4ada8dfd08a703f0e6a4a2d4015f859ce7a02e8c89aba206de134c1d8d785c69cc287157e34ac9260a0e803a4774b7916679927183787
+  checksum: 573362e9046c72b32e8d46b9e0e104c506cff9a2be59d777da1676ee43df1d2eec6ff6dd31405fceedaaa4fc6f6f01a750f999a6b0781727a8b79e3f8a5f43f8
   languageName: node
   linkType: hard
 
