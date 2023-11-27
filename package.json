@@ -32,7 +32,8 @@
             "src/utils/printlog.ts",
             "src/bot-api/agent/*.ts",
             "src/actors/plugins/*.ts",
-            "src/entities/*.ts"
+            "src/entities/*.ts",
+            "src/utils/add-external-agent.ts"
         ],
         "reporter": [
             "html",
