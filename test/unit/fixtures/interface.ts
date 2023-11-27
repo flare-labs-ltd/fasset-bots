@@ -102,6 +102,7 @@ export interface TestSigners {
   deployer: HardhatEthersSigner
   challenger: HardhatEthersSigner
   liquidator: HardhatEthersSigner
+  rewardee: HardhatEthersSigner
   fAssetMinter: HardhatEthersSigner
 }
 

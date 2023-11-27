@@ -16,9 +16,11 @@ interface ILiquidator is IERC3156FlashBorrower {
     /**
      * Runs the arbitrage with default flash lender service and blaze swap router defined at construction
      * @param _agentVault The agent vault to liquidate from
+     * @param _to The address to send the profits to
      */
     function runArbitrage(
-        address _agentVault
+        address _agentVault,
+        address _to
     ) external;
 
     /**
@@ -26,11 +28,12 @@ interface ILiquidator is IERC3156FlashBorrower {
      * @param _agentVault The agent vault to liquidate from
      * @param _flashLender The flash lender to use for the liquidation (if address(0), use default))
      * @param _blazeswap The BlazeSwap router to use for the liquidation (if address(0), use default))
-     *
+     * @param _to The address to send the profits to
      */
     function runArbitrageWithCustomParams(
         address _agentVault,
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeswap
+        IBlazeSwapRouter _blazeswap,
+        address _to
     ) external;
 }

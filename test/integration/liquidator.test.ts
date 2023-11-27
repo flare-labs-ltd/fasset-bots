@@ -77,7 +77,7 @@ describe("Liquidator", () => {
     const { mintedUBA: mintedUbaBefore,  poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(poolCollateralRatioBIPS, BigInt(18_900))
     // liquidate agent
-    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(AGENT_ADDRESS))
+    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(AGENT_ADDRESS, liquidator))
     // check that agent was fully liquidated and put out of liquidation
     const { status: statusAfter, mintedUBA: mintedUbaAfter } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(statusAfter, BigInt(0))

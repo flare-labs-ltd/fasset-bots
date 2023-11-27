@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { priceBasedAddedDexReserves } from "../../calculations"
+import { priceBasedAddedDexReserves, swapToDexPrice } from "../../calculations"
 import type { IBlazeSwapPair, IBlazeSwapRouter, IERC20Metadata } from "../../../types"
 import type { Contracts } from "./interface"
 
@@ -119,13 +119,59 @@ async function setDexPairPrice(
   } catch {
     // means there's no reserves for the dex pair
   }
-  const [addedA, addedB] = priceBasedAddedDexReserves(
+  let [addedA, addedB] = priceBasedAddedDexReserves(
     reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxAddedA, maxAddedB)
-  if (addedA < 0 || addedB < 0 || (addedA == BigInt(0) && addedB == BigInt(0))) {
-    console.error('negative added reserves')
+  if (addedA < 0) addedA = BigInt(0) // ideally we would need to remove liquidity
+  if (addedB < 0) addedB = BigInt(0) // but user may not have any, so we leave it
+  if (addedA == BigInt(0) && addedB == BigInt(0)) {
+    console.error('no reserves can be added')
   } else {
     await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, signer, provider)
   }
+}
+
+// swap on dexes to achieve the given price
+export async function swapToPrice(
+  blazeSwapRouter: IBlazeSwapRouter,
+  tokenA: IERC20Metadata,
+  tokenB: IERC20Metadata,
+  priceA: bigint,
+  priceB: bigint,
+  maxSwapA: bigint,
+  maxSwapB: bigint,
+  signer: ethers.Signer,
+  provider: ethers.JsonRpcProvider
+): Promise<void> {
+  const decimalsA = await tokenA.decimals()
+  const decimalsB = await tokenB.decimals()
+  const [reserveA, reserveB] = await blazeSwapRouter.getReserves(tokenA, tokenB)
+  let swapA = swapToDexPrice(reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxSwapA)
+  let swapB = swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA, maxSwapB)
+  if (swapA > 0) {
+    await swap(blazeSwapRouter, tokenA, tokenB, swapA, signer, provider)
+  } else if (swapB > 0) {
+    await swap(blazeSwapRouter, tokenB, tokenA, swapB, signer, provider)
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+// simpified (unsafe) blazeswap method calls
+
+export async function swap(
+  blazeSwapRouter: IBlazeSwapRouter,
+  tokenA: IERC20Metadata,
+  tokenB: IERC20Metadata,
+  amountA: bigint,
+  signer: ethers.Signer,
+  provider: ethers.JsonRpcProvider
+): Promise<void> {
+  await waitFinalize(provider, signer, tokenA.connect(signer).approve(blazeSwapRouter, amountA))
+  await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).swapExactTokensForTokens(
+    amountA, 0,
+    [tokenA, tokenB],
+    signer,
+    ethers.MaxUint256
+  ))
 }
 
 // blazeswap add liquidity with wait finalize

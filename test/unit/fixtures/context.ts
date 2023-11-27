@@ -72,9 +72,10 @@ export async function getTestContext(assetConfig: AssetConfig): Promise<TestCont
   const deployer = _signers[0]
   const challenger = _signers[10]
   const liquidator = _signers[11]
-  const fAssetMinter = _signers[12]
+  const rewardee = _signers[12]
+  const fAssetMinter = _signers[13]
   // define signers and contracts
-  const signers = { deployer, challenger, liquidator, fAssetMinter }
+  const signers = { deployer, challenger, liquidator, fAssetMinter, rewardee }
   const contracts = await getContracts(assetConfig, signers)
   // return asset config
   return { signers, contracts }

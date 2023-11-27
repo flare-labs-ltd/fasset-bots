@@ -8,6 +8,8 @@ import "./interface/ILiquidator.sol";
 import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
 
+import "hardhat/console.sol";
+
 
 /**
  * Do not send any tokens to this contract, they can be stolen!
@@ -57,31 +59,37 @@ contract Liquidator is ILiquidator {
     }
 
     function runArbitrage(
-        address _agentVault
+        address _agentVault,
+        address _to
     ) external {
         runArbitrageWithCustomParams(
             _agentVault,
             flashLender,
-            blazeSwapRouter
+            blazeSwapRouter,
+            _to
         );
     }
 
     function runArbitrageWithCustomParams(
         address _agentVault,
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwapRouter
+        IBlazeSwapRouter _blazeSwapRouter,
+        address _to
     ) public {
         // we have to start liquidation so that we get correct max f-assets
-        // this should probably be fixed in the latter f-asset version
-        IIAgentVault(_agentVault).assetManager().startLiquidation(address(_agentVault));
+        // this should probably be fixed in the later f-asset version
+        IIAssetManager _assetManager = IIAgentVault(_agentVault).assetManager();
+        _assetManager.startLiquidation(address(_agentVault));
         // run liquidation arbitrage
-        _runArbitrageWithData(
-            Ecosystem.getData(
-                _agentVault,
-                address(_blazeSwapRouter),
-                address(_flashLender)
-            )
+        Ecosystem.Data memory _data = Ecosystem.getData(
+            _agentVault,
+            address(_blazeSwapRouter),
+            address(_flashLender)
         );
+        _runArbitrageWithData(_data);
+        // send earnings to sender (along with any tokens sent to this contract)
+        uint256 earnings = IERC20(_data.vaultToken).balanceOf(address(this));
+        IERC20(_data.vaultToken).transfer(_to, earnings);
     }
 
     // non-reentrant
@@ -105,9 +113,6 @@ contract Liquidator is ILiquidator {
                 _data.blazeSwapRouter
             )
         );
-        // send earnings to sender (along with any tokens sent to this contract)
-        uint256 earnings = IERC20(_data.vaultToken).balanceOf(address(this));
-        IERC20(_data.vaultToken).transfer(msg.sender, earnings);
     }
 
     // dangerous!

@@ -21,6 +21,16 @@ async function setUpDex(
   await syncDexReservesWithFtsoPrices(contracts, supplier, provider, true)
 }
 
+async function fixDex(
+  assetManagerAddress: string,
+  network: string,
+  provider: ethers.JsonRpcProvider,
+  supplier: ethers.Wallet
+): Promise<void> {
+  const contracts = await getContracts(assetManagerAddress, network, provider)
+  await syncDexReservesWithFtsoPrices(contracts, supplier, provider, false)
+}
+
 async function removeDexLiquidity(
   assetManagerAddress: string,
   network: string,

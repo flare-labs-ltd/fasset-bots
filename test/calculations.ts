@@ -17,31 +17,20 @@ export function roundUpWithPrecision(
   return (aux == BigInt(0)) ? amount : amount + precision - aux
 }
 
-////////////////////////////////////////////////////////////////////////////
-// implicit ecosystem setters
-
-// returns the maximal reserves that can be added to a dex,
-// with some initial reserves, that produce the given price on
-// that dex (see priceBasedDexReserve)
-export function priceBasedAddedDexReserves(
-  initialReserveA: bigint,
-  initialReserveB: bigint,
+export function priceAB(
   priceA: bigint,
   priceB: bigint,
   decimalsA: bigint,
-  decimalsB: bigint,
-  maxAddedA: bigint,
-  maxAddedB: bigint
+  decimalsB: bigint
 ): [bigint, bigint] {
-  const ratioA = priceB * BigInt(10) ** decimalsA
-  const ratioB = priceA * BigInt(10) ** decimalsB
-  const factorA = BigInt(10_000) * (maxAddedA + initialReserveA) / ratioA
-  const factorB = BigInt(10_000) * (maxAddedB + initialReserveB) / ratioB
-  const factor = (factorA < factorB) ? factorA : factorB
-  const addedA = factor * ratioA / BigInt(10_000) - initialReserveA
-  const addedB = factor * ratioB / BigInt(10_000) - initialReserveB
-  return [addedA, addedB]
+  return [
+    priceA * BigInt(10) ** decimalsB,
+    priceB * BigInt(10) ** decimalsA
+  ]
 }
+
+////////////////////////////////////////////////////////////////////////////
+// implicit ecosystem setters
 
 // get tokenA/tokenB reserve, based on
 // the prices that they should have and
@@ -138,4 +127,57 @@ export function swapInput(
   const numerator = BigInt(1000) * reserveA * amountB
   const denominator = BigInt(997) * (reserveB - amountB)
   return numerator / denominator + BigInt(1)
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// ecosystem setters used to align dex prices with ftso
+
+// returns the maximal reserves that can be added to a dex,
+// with some initial reserves, that produce the given price on
+// that dex (see priceBasedDexReserve)
+export function priceBasedAddedDexReserves(
+  initialReserveA: bigint,
+  initialReserveB: bigint,
+  priceA: bigint,
+  priceB: bigint,
+  decimalsA: bigint,
+  decimalsB: bigint,
+  maxAddedA: bigint,
+  maxAddedB: bigint
+): [bigint, bigint] {
+  const [ratioB, ratioA] = priceAB(priceA, priceB, decimalsA, decimalsB)
+  const factorA = BigInt(10_000) * (maxAddedA + initialReserveA) / ratioA
+  const factorB = BigInt(10_000) * (maxAddedB + initialReserveB) / ratioB
+  const factor = (factorA < factorB) ? factorA : factorB
+  const addedA = factor * ratioA / BigInt(10_000) - initialReserveA
+  const addedB = factor * ratioB / BigInt(10_000) - initialReserveB
+  return [addedA, addedB]
+}
+
+function sqrt(value: bigint): bigint {
+  if (value < BigInt(0)) throw Error()
+  if (value < BigInt(2)) return value
+  function newtonIteration(n: bigint, x0: bigint) {
+      const x1 = ((n / x0) + x0) >> BigInt(1)
+      if (x0 === x1 || x0 === (x1 - BigInt(1)))
+          return x0
+      return newtonIteration(n, x1)
+  }
+  return newtonIteration(value, BigInt(1))
+}
+
+export function swapToDexPrice(
+  initialReserveA: bigint,
+  initialReserveB: bigint,
+  priceA: bigint,
+  priceB: bigint,
+  decimalsA: bigint,
+  decimalsB: bigint,
+  maxAmountA: bigint
+): bigint {
+  const [ratioA, ratioB] = priceAB(priceA, priceB, decimalsA, decimalsB)
+  const aux = initialReserveB * initialReserveA * ratioB / ratioA
+  const amountA = (sqrt(aux) - initialReserveA)
+  return (amountA < maxAmountA) ? amountA : maxAmountA
 }

@@ -70,10 +70,11 @@ contract AssetManagerMock {
     ////////////////////////////////////////////////////////////////////////
     // asset manager getters
 
-    function startLiquidation(address _agentVault) external {
+    function startLiquidation(address /* _agentVault */) external pure returns (uint8, uint256) {
         // in real version, the agent info regarding his liquidation is not updated
         // until startLiquidation is called, so liquidator contract calls this before
         // the actual liquidation (so it gets the correct max f-asset to liquidate).
+        return (0, 0);
     }
 
     function liquidate(
