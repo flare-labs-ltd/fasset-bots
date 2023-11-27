@@ -17,6 +17,7 @@ import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/Tes
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentAndMakeAvailable, createTestRedeemer } from "../../test-utils/helpers";
+import { time } from "@openzeppelin/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -25,6 +26,24 @@ const IERC20 = artifacts.require("IERC20");
 const StateConnector = artifacts.require("StateConnectorMock");
 const agentUnderlyingAddress = "agentUnderlyingAddress";
 const userUnderlyingAddress = "userUnderlyingAddress";
+
+interface MintData {
+    type: "mint";
+    requestId: string;
+    transactionHash: string;
+    paymentAddress: string;
+    createdAt: string;
+}
+interface RedeemData {
+    type: "redeem";
+    requestId: string;
+    amountUBA: string;
+    paymentReference: string;
+    firstUnderlyingBlock: string;
+    lastUnderlyingBlock: string;
+    lastUnderlyingTimestamp: string;
+    createdAt: string;
+}
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -70,6 +89,7 @@ describe("Bot cli commands unit tests", async () => {
             blockchainIndexerClient: new MockIndexer("", chainId, chain),
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
             assetManager: "",
+            fAssetSymbol: "TESTHHSYM",
         };
         userBot.botConfig = {
             rpcUrl: "",
@@ -163,5 +183,62 @@ describe("Bot cli commands unit tests", async () => {
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
         expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
+    });
+
+    it("Should enter and exit pool", async () => {
+        const poolAddress = agent.collateralPool.address;
+        const amount = toBN(10000000000000000000);
+        const enter = await userBot.enterPool(poolAddress, amount);
+        expect(enter.tokenHolder).to.eq(userBot.nativeAddress);
+        expect(enter.amountNatWei.eq(amount)).to.be.true;
+        await time.increase(time.duration.days(1));
+        const exit = await userBot.exitPool(poolAddress, amount);
+        expect(exit.tokenHolder).to.eq(userBot.nativeAddress);
+        expect(exit.receivedNatWei.eq(amount)).to.be.true;
+    });
+
+    it("Should write and read state data", async () => {
+        const mintData: MintData = {
+            type: "mint",
+            requestId: "2426",
+            paymentAddress: "r3RoZkBrbJqivaXs3qugAQDhHHsXboYANy",
+            transactionHash: "BA2B34AE1025C7BA4288BD18B4D5A79B3E71A412DB208BB6569FC4369784ED01",
+            createdAt: "2023-11-24T10:42:03.811Z",
+        };
+        userBot.writeState(mintData);
+        const read = userBot.readState("mint", mintData.requestId);
+        expect(mintData.type).to.eq(read.type);
+        expect(mintData.requestId).to.eq(read.requestId);
+        expect(mintData.transactionHash).to.eq(read.transactionHash);
+        expect(mintData.paymentAddress).to.eq(read.paymentAddress);
+        expect(mintData.createdAt).to.eq(read.createdAt);
+        userBot.deleteState(mintData);
+    });
+
+    it("Should proof and execute saved minting", async () => {
+        const mintData: MintData = {
+            type: "mint",
+            requestId: "2426",
+            paymentAddress: "r3RoZkBrbJqivaXs3qugAQDhHHsXboYANy",
+            transactionHash: "BA2B34AE1025C7BA4288BD18B4D5A79B3E71A412DB208BB6569FC4369784ED01",
+            createdAt: "2023-11-24T10:42:03.811Z",
+        };
+        userBot.writeState(mintData);
+        await expect(userBot.proveAndExecuteSavedMinting(mintData.requestId)).eventually.be.rejected;
+    });
+
+    it("Should run saved redemption default", async () => {
+        const redeemData: RedeemData = {
+            type: "redeem",
+            requestId: "288",
+            amountUBA: "9900000000",
+            paymentReference: "0x4642505266410002000000000000000000000000000000000000000000000120",
+            firstUnderlyingBlock: "0",
+            lastUnderlyingBlock: "10",
+            lastUnderlyingTimestamp: "1701320966",
+            createdAt: "2023-11-27T07:48:26.225Z",
+        };
+        userBot.writeState(redeemData);
+        await expect(userBot.savedRedemptionDefault(redeemData.requestId)).to.eventually.be.rejected;
     });
 });

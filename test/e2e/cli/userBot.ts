@@ -33,4 +33,10 @@ describe("UserBot cli commands unit tests", async () => {
             .to.eventually.be.rejectedWith(`Invalid FAsset symbol`)
             .and.be.an.instanceOf(Error);
     });
+
+    it("Should should get infoBot", async () => {
+        const userBot = await UserBot.create(RUN_CONFIG_PATH, "FtestXRP", false);
+        const infoBot = userBot.infoBot();
+        expect(infoBot.fassetInfo.symbol).to.eq("testXRP")
+    });
 });
