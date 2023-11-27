@@ -43,7 +43,7 @@ describe("Secrets unit tests", async () => {
         const fn3 = () => {
             return requireEncryptionPassword("wallet.encryption_password", secrets);
         };
-        expect(fn3).to.throw("'wallet.encryption_password' should be at least 16 chars long");
+        expect(fn3).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
 
         secrets.wallet = {
             encryption_password: "123456789012345",
