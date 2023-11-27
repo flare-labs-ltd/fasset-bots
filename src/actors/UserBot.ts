@@ -12,12 +12,13 @@ import { Redeemer } from "../mock/Redeemer";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { BNish, CommandLineError, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, CommandLineError, requireNotNull, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBot } from "./InfoBot";
-import { TokenExitType } from "../fasset/AssetManagerTypes";
+import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
+import { latestBlockTimestamp } from "../utils/web3helpers";
 
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
@@ -136,12 +137,13 @@ export class UserBot {
             `User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`
         );
         const txHash = await minter.performMintingPayment(crt);
+        const timestamp = await latestBlockTimestamp();
         const state: MintData = {
             type: "mint",
             requestId: String(crt.collateralReservationId),
             paymentAddress: crt.paymentAddress,
             transactionHash: txHash,
-            createdAt: new Date().toISOString(),
+            createdAt: this.timestampToDateString(timestamp),
         };
         this.writeState(state);
         logger.info(
@@ -189,6 +191,18 @@ export class UserBot {
         );
     }
 
+    async listMintings() {
+        // const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
+        const stateList = this.readStateList("mint");
+        const timestamp = await latestBlockTimestamp();
+        const settings = await this.context.assetManager.getSettings();
+        for (const state of stateList) {
+            const stateTs = this.dateStringToTimestamp(state.createdAt);
+            const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
+            console.log(`${state.requestId}  ${expired ? 'EXPIRED' : 'PENDING'}`);
+        }
+    }
+
     /**
      * Redeems desired amount of lots.
      * @param lots number of lots to redeem
@@ -215,6 +229,7 @@ export class UserBot {
             loggedRequests =
                 loggedRequests +
                 `User ${this.nativeAddress} triggered request:    id=${req.requestId}  to=${req.paymentAddress}  amount=${amount}  agentVault=${req.agentVault}  reference=${req.paymentReference}  firstBlock=${req.firstUnderlyingBlock}  lastBlock=${req.lastUnderlyingBlock}  lastTimestamp=${req.lastUnderlyingTimestamp}\n`;
+            const timestamp = await latestBlockTimestamp();
             this.writeState({
                 type: "redeem",
                 requestId: String(req.requestId),
@@ -223,7 +238,7 @@ export class UserBot {
                 firstUnderlyingBlock: String(req.firstUnderlyingBlock),
                 lastUnderlyingBlock: String(req.lastUnderlyingBlock),
                 lastUnderlyingTimestamp: String(req.lastUnderlyingTimestamp),
-                createdAt: new Date().toISOString(),
+                createdAt: this.timestampToDateString(timestamp),
             });
         }
         logger.info(loggedRequests);
@@ -280,6 +295,46 @@ export class UserBot {
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }
 
+    async listRedemptions() {
+        // const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
+        const stateList = this.readStateList("redeem");
+        const timestamp = await latestBlockTimestamp();
+        const settings = await this.context.assetManager.getSettings();
+        for (const state of stateList) {
+            const status = await this.redemptionStatus(state, timestamp, settings);
+            console.log(`${state.requestId}  ${status}`);
+        }
+    }
+
+    async redemptionStatus(state: RedeemData, timestamp: number, settings: AssetManagerSettings) {
+        const stateTs = this.dateStringToTimestamp(state.createdAt);
+        if (timestamp - stateTs >= Number(settings.attestationWindowSeconds)) {
+            return 'EXPIRED';
+        } else if (await this.findRedemptionPayment(state)) {
+            return 'SUCCESS';
+        } else if (await this.redemptionTimeElapsed(state)) {
+            return 'DEFAULT';
+        } else {
+            return 'PENDING';
+        }
+    }
+
+    async findRedemptionPayment(state: RedeemData) {
+        const txs = await this.context.blockchainIndexer.getTransactionsByReference(state.paymentReference);
+        for (const tx of txs) {
+            const amount = sumBN(tx.outputs.filter(o => o[0] === this.underlyingAddress), o => o[1]);
+            if (amount.gte(toBN(state.amountUBA))) {
+                return tx;
+            }
+        }
+    }
+
+    async redemptionTimeElapsed(state: RedeemData) {
+        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+        const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
+        return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
+    }
+
     async enterPool(poolAddress: string, collateralAmountWei: BNish) {
         const pool = await CollateralPool.at(poolAddress);
         const res = await pool.enter(0, false, { from: this.nativeAddress, value: collateralAmountWei.toString() });
@@ -305,8 +360,30 @@ export class UserBot {
         return JSON.parse(json);
     }
 
+    readStateList<T extends StateData["type"]>(type: T): Extract<StateData, { type: T }>[] {
+        const dir = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}`);
+        if (!fs.existsSync(dir)) {
+            return [];
+        }
+        return fs.readdirSync(dir)
+            .filter((fn) => /^\d+\.json$/.test(fn))
+            .map((fn) => {
+                const fpath = path.resolve(dir, fn);
+                const json = fs.readFileSync(fpath).toString();
+                return JSON.parse(json);
+            })
+    }
+
     deleteState(data: StateData) {
         const fname = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}/${data.requestId}.json`);
         fs.unlinkSync(fname);
+    }
+
+    timestampToDateString(timestamp: number) {
+        return new Date(timestamp * 1000).toISOString();
+    }
+
+    dateStringToTimestamp(dateString: string) {
+        return Math.floor(new Date(dateString).getTime() / 1000);
     }
 }

@@ -215,7 +215,7 @@ describe("Bot cli commands unit tests", async () => {
         userBot.deleteState(mintData);
     });
 
-    it("Should proof and execute saved minting", async () => {
+    function createSavedMinting() {
         const mintData: MintData = {
             type: "mint",
             requestId: "2426",
@@ -224,10 +224,15 @@ describe("Bot cli commands unit tests", async () => {
             createdAt: "2023-11-24T10:42:03.811Z",
         };
         userBot.writeState(mintData);
+        return mintData;
+    }
+
+    it("Should proof and execute saved minting", async () => {
+        const mintData: MintData = createSavedMinting();
         await expect(userBot.proveAndExecuteSavedMinting(mintData.requestId)).eventually.be.rejected;
     });
 
-    it("Should run saved redemption default", async () => {
+    function createSavedRedemption() {
         const redeemData: RedeemData = {
             type: "redeem",
             requestId: "288",
@@ -236,9 +241,28 @@ describe("Bot cli commands unit tests", async () => {
             firstUnderlyingBlock: "0",
             lastUnderlyingBlock: "10",
             lastUnderlyingTimestamp: "1701320966",
-            createdAt: "2023-11-27T07:48:26.225Z",
+            createdAt: new Date().toISOString(),
         };
         userBot.writeState(redeemData);
+        return redeemData;
+    }
+
+    it("Should run saved redemption default", async () => {
+        const redeemData: RedeemData = createSavedRedemption();
         await expect(userBot.savedRedemptionDefault(redeemData.requestId)).to.eventually.be.rejected;
+    });
+
+    it("should list mintings", async () => {
+        const spyLog = spy.on(console, "log");
+        createSavedMinting();
+        await userBot.listMintings();
+        expect(spyLog).to.be.called.min(1);
+    });
+
+    it("should list redemptions", async () => {
+        const spyLog = spy.on(console, "log");
+        createSavedRedemption();
+        await userBot.listRedemptions();
+        expect(spyLog).to.be.called.min(1);
     });
 });
