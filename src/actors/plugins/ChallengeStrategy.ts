@@ -61,7 +61,7 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
     }
 }
 
-export class LiveChallengeStrategy extends ChallengeStrategy {
+export class DexChallengeStrategy extends ChallengeStrategy {
     public async illegalTransactionChallenge(scope: EventScope, agent: TrackedAgentState, proof: BalanceDecreasingTransaction.Proof): Promise<void> {
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger

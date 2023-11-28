@@ -1,4 +1,5 @@
 {
+    "$schema": "./schema/bot-config.schema.json",
     "loopDelay": 5000,
     "contractsJsonFile": "./fasset-deployment/coston.json",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
@@ -28,5 +29,11 @@
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
+    "challengeStrategy": {
+        "className": "DexChallengeStrategy",
+        "config": {
+            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
+        }
+    }
 }

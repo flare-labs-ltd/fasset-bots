@@ -48,6 +48,11 @@
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
         }
       ],
       "name": "runArbitrage",
@@ -70,6 +75,11 @@
         {
           "internalType": "contract IBlazeSwapRouter",
           "name": "_blazeswap",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
           "type": "address"
         }
       ],

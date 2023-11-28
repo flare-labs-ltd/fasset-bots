@@ -19,9 +19,9 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy {
     }
 }
 
-export class LiveLiquidationStrategy extends LiquidationStrategy {
+export class DexLiquidationStrategy extends LiquidationStrategy {
     public async liquidate(agent: TrackedAgentState): Promise<void> {
         const liquidator = await Liquidator.at(this.state.context.liquidationStrategy!.config.address);
-        await liquidator.runArbitrage(agent.vaultAddress, { from: this.address });
+        await liquidator.runArbitrage(agent.vaultAddress, this.address, { from: this.address });
     }
 }

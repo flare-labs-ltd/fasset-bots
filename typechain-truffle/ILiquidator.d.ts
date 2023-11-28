@@ -49,19 +49,24 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
   };
 
   runArbitrage: {
-    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
+    (
+      _agentVault: string,
+      _to: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -71,24 +76,28 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _flashLender: string,
       _blazeswap: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _flashLender: string,
       _blazeswap: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _flashLender: string,
       _blazeswap: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _flashLender: string,
       _blazeswap: string,
+      _to: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -130,19 +139,24 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
     };
 
     runArbitrage: {
-      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
+      (
+        _agentVault: string,
+        _to: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -152,24 +166,28 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _flashLender: string,
         _blazeswap: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _flashLender: string,
         _blazeswap: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _flashLender: string,
         _blazeswap: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _flashLender: string,
         _blazeswap: string,
+        _to: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

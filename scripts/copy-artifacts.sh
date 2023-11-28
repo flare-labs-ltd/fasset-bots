@@ -53,7 +53,7 @@ yarn typechain --target=truffle-v5 --out-dir typechain-truffle "artifacts/**/+([
 echo "***** Copying config... *****************************************"
 cd ${fassetsdir}/deployment/deploys
 cp -R . ${projdir}/fasset-deployment
-rm ${projdir}/fasset-deployment/hardhat.*
+rm -f ${projdir}/fasset-deployment/hardhat.*
 
 # copy deploy configs
 cd ${fassetsdir}/deployment/config

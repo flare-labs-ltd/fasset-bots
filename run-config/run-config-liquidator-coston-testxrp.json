@@ -1,5 +1,6 @@
 {
     "loopDelay": 5000,
+    "$schema": "./schema/bot-config.schema.json",
     "contractsJsonFile": "./fasset-deployment/coston.json",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
@@ -26,5 +27,11 @@
             "priceChangeEmitter": "FakePriceReader"
         }
     ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc"
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "liquidationStrategy": {
+        "className": "DexLiquidationStrategy",
+        "config": {
+            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
+        }
+    }
 }

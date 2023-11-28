@@ -246,9 +246,9 @@
                       "type": "uint256"
                     },
                     {
-                      "internalType": "uint256",
+                      "internalType": "uint16",
                       "name": "utxo",
-                      "type": "uint256"
+                      "type": "uint16"
                     }
                   ],
                   "internalType": "struct Payment.RequestBody",
