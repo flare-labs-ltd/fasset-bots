@@ -1,4 +1,4 @@
-# Setting up the agent bot
+# Setting up the agent bot for XRP on testnet
 
 ## Clone and setup repository
 
@@ -30,8 +30,14 @@ yarn user-bot generateSecrets --agent -o secrets.json
 
 Now you should have the generated `secrets.json` file in the root folder of the repository.
 The relevant field for the agent is the `owner` field, that contains two accounts.
-- The Flare account that is used for funding agent vaults and paying gas fees for various smart contract calls. This account should be funded with enough CFLR and USDC, so it can fund the created agent vaults.
-- The underlying test-XRP account that is used for paying gas fees on the underlying chain.
+- The Flare account that is used for funding agent vaults and paying gas fees for various smart contract calls. Funded this account with enough CFLR and USDC, so it deposit collateral to agent vaults and pay for transaction gas fees.
+- The underlying test-XRP account that is used for paying gas fees on the underlying chain. Activate this account by sending some test-XRP to it (you can use the faucet [here](https://yusufsahinhamza.github.io/xrp-testnet-faucet/)).
+
+Before proceeding grant read access to `secrets.json` by:
+
+```console
+chmod 600 secrets.json
+```
 
 ## Create an agent vault
 
@@ -41,7 +47,7 @@ Before creating an agent you need to choose your unique collateral pool token su
 It should include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`). Then run
 
 ```console
-yarn agent-bot create <poolTokenSuffix>
+yarn agent-bot create <poolTokenSuffix> -f FtestXRP
 ```
 
 This will create an agent vault and output its address. You will need this address for the next step.
@@ -60,12 +66,12 @@ yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> -f FtestXRP
 
 If you deposited enough collateral, you should see that your agent has at least one lot available, by running
 ```console
-yarn user-bot agent <agentVaultAddress> -f FtestXRP
+yarn user-bot agents -f FtestXRP
 ```
 
 In that case you can register your agent as available to the network, by running
 ```console
-yarn user-bot enter <agentVaultAddress> -f FtestXRP
+yarn agent-bot enter <agentVaultAddress> -f FtestXRP
 ```
 
 Note that your agent owner's Flare account has to be whitelisted, otherwise the above command will fail.
