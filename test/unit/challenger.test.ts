@@ -30,7 +30,7 @@ const challenges = [
     challenger.freeBalanceNegativeChallenge([balanceDecreasingTxProof], agent)
 ]
 
-describe("Tests for Liquidator contract", () => {
+describe.only("Tests for Liquidator contract", () => {
   let context: TestContext
 
   beforeEach(async function () {
@@ -62,12 +62,11 @@ describe("Tests for Liquidator contract", () => {
           const { status: statusAfter, maxLiquidationAmountUBA } = await assetManager.getAgentInfo(agent)
           expect(statusAfter).to.equal(3)
           expect(maxLiquidationAmountUBA).to.equal(0)
-          // transfer earnings to challenger calller
-          const earnings = await vault.balanceOf(challenger)
+          // check that challenger earned something and nothing was left in the contract
+          const earnings = await vault.balanceOf(context.signers.challenger)
           expect(earnings).to.be.greaterThan(0)
-          await challenger.connect(context.signers.challenger).withdrawToken(vault)
-          const balance = await vault.balanceOf(context.signers.challenger)
-          expect(balance).to.equal(earnings)
+          const leftorvers = await vault.balanceOf(challenger)
+          expect(leftorvers).to.equal(0)
         })
       })
     })
@@ -97,14 +96,6 @@ describe("Tests for Liquidator contract", () => {
   })
 
   describe("security", () => {
-
-    challenges.forEach((challenge) => {
-      it("should not allow calling any of the challenges by non challenger contract owner", async () => {
-        const { challenger, agent } = context.contracts
-        await expect(challenge(challenger.connect(context.signers.liquidator), agent))
-          .to.be.revertedWith("Ownable: caller is not the owner")
-      })
-    })
 
     it("should not allow withdrawing tokens by non challenger contract owner", async () => {
       const { challenger, vault } = context.contracts

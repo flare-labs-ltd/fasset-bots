@@ -4,6 +4,7 @@
         "usdc": "0xC06496FA0551bf4996fb5Df876cBcC6F1d836460",
         "blazeSwapRouter": "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4",
         "flashLender": "0x729A282e9d15beD1cd046D80406d35849457AA23",
-        "liquidator": "0xDB58D5e41e973ad108b3B634a506D53b1336dc6D"
+        "liquidator": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb",
+        "challenger": "0xF5559364972C142831c50cB3f4DA5b1AFB27e603"
     }
 }

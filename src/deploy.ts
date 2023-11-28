@@ -34,4 +34,4 @@ async function deployFlashLender() {
   console.log(`flash lender deployed at ${address}`)
 }
 
-deployLiquidator()
+deployChallenger()
