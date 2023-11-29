@@ -1,0 +1,47 @@
+*.log
+.DS_Store/
+node_modules/
+dist/
+cache/
+log/
+
+### VisualStudioCode template
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/cspell.json
+
+### yarn 3
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+## code coverage files
+coverage.json
+.nyc_output/
+coverage/
+
+## env
+.env
+.env.temp
+
+*.tgz
+
+# local db
+*.db
+*.db-journal
+
+# tmp
+test/e2e/actors/tmp.ts
+test-data/
+
+*.Identifier
+
+# config file with various keys and addresses
+secrets.json

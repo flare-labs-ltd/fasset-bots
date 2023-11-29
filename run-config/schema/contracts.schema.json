@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "Contract": {
+            "additionalProperties": false,
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "contractName": {
+                    "type": "string"
+                },
+                "mustSwitchToProduction": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": ["address", "contractName", "name"],
+            "type": "object"
+        }
+    },
+    "items": {
+        "$ref": "#/definitions/Contract"
+    },
+    "type": "array"
+}

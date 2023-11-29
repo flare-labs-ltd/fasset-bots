@@ -1,0 +1,3 @@
+#!/bin/bash
+
+jq --unbuffered -r '"\u001b[0;32m\(.timestamp)\u001b[0m  \u001b[1;\(if .level == "error" then 31 else 33 end)m\(.level|ascii_upcase)\u001b[0m  \(.message)" + if .stack then "\n\u001b[1;30m\(.stack)\u001b[0m" else "" end'

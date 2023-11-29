@@ -1,0 +1,20 @@
+[Unit]
+Description = Challenger bot
+After = network-online.target
+Wants = network-online.target
+
+[Service]
+Type = exec
+ExecStart = /usr/bin/node dist/src/run/run-challenger.ts
+WorkingDirectory = /home/fasset-bots/fasset-bots
+Restart = always
+RestartSec = 10
+StandardOutput = journal
+StandardError = journal
+SyslogIdentifier = challenger-bot
+User = fasset-bots
+Group = fasset-bots
+Environment = LANG=C.UTF-8 SHELL=/bin/bash
+
+[Install]
+WantedBy = multi-user.target

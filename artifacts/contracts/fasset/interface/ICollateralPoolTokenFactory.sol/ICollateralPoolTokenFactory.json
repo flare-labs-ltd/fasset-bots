@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ICollateralPoolTokenFactory",
+  "sourceName": "contracts/fasset/interface/ICollateralPoolTokenFactory.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IICollateralPool",
+          "name": "pool",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_systemSuffix",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_agentSuffix",
+          "type": "string"
+        }
+      ],
+      "name": "create",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

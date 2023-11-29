@@ -1,0 +1,175 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+        "BotFAssetInfo": {
+            "additionalProperties": false,
+            "properties": {
+                "amgDecimals": {
+                    "type": "number"
+                },
+                "assetManager": {
+                    "type": "string"
+                },
+                "chainId": {
+                    "type": "string"
+                },
+                "decimals": {
+                    "type": "number"
+                },
+                "fAssetSymbol": {
+                    "type": "string"
+                },
+                "finalizationBlocks": {
+                    "type": "number"
+                },
+                "inTestnet": {
+                    "type": "boolean"
+                },
+                "indexerUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "priceChangeEmitter": {
+                    "type": "string"
+                },
+                "requireEOAProof": {
+                    "type": "boolean"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "walletUrl": {
+                    "type": "string"
+                }
+            },
+            "required": ["amgDecimals", "chainId", "decimals", "finalizationBlocks", "name", "requireEOAProof", "symbol"],
+            "type": "object"
+        },
+        "DatabaseType": {
+            "enum": ["mysql", "postgresql", "sqlite"],
+            "type": "string"
+        },
+        "NativeChainInfo": {
+            "additionalProperties": false,
+            "properties": {
+                "finalizationBlocks": {
+                    "type": "number"
+                },
+                "readLogsChunkSize": {
+                    "type": "number"
+                }
+            },
+            "required": ["finalizationBlocks", "readLogsChunkSize"],
+            "type": "object"
+        },
+        "OrmConfigOptions": {
+            "additionalProperties": {},
+            "properties": {
+                "charset": {
+                    "type": "string"
+                },
+                "clientUrl": {
+                    "type": "string"
+                },
+                "dbName": {
+                    "type": "string"
+                },
+                "debug": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "number"
+                },
+                "schemaUpdate": {
+                    "enum": ["full", "recreate", "safe"],
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/DatabaseType"
+                },
+                "user": {
+                    "type": "string"
+                }
+            },
+            "required": ["type"],
+            "type": "object"
+        }
+    },
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "addressUpdater": {
+            "type": "string"
+        },
+        "attestationProviderUrls": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "challengeStrategy": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {}
+            },
+            "required": ["className"],
+            "type": "object"
+        },
+        "contractsJsonFile": {
+            "type": "string"
+        },
+        "defaultAgentSettingsPath": {
+            "type": "string"
+        },
+        "fAssetInfos": {
+            "items": {
+                "$ref": "#/definitions/BotFAssetInfo"
+            },
+            "type": "array"
+        },
+        "liquidationStrategy": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {}
+            },
+            "required": ["className"],
+            "type": "object"
+        },
+        "loopDelay": {
+            "type": "number"
+        },
+        "nativeChainInfo": {
+            "$ref": "#/definitions/NativeChainInfo"
+        },
+        "ormOptions": {
+            "$ref": "#/definitions/OrmConfigOptions"
+        },
+        "rpcUrl": {
+            "type": "string"
+        },
+        "stateConnectorAddress": {
+            "type": "string"
+        },
+        "stateConnectorProofVerifierAddress": {
+            "type": "string"
+        }
+    },
+    "required": ["fAssetInfos", "loopDelay", "nativeChainInfo", "rpcUrl"],
+    "type": "object"
+}

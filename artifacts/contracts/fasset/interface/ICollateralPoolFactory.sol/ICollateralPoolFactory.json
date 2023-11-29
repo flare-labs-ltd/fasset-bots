@@ -1,0 +1,97 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ICollateralPoolFactory",
+  "sourceName": "contracts/fasset/interface/ICollateralPoolFactory.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IIAssetManager",
+          "name": "_assetManager",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "underlyingAddressString",
+              "type": "string"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "vaultCollateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "poolTokenSuffix",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolFeeShareBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingVaultCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingPoolCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "buyFAssetByAgentFactorBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolExitCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupTokenPriceFactorBIPS",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct AgentSettings.Data",
+          "name": "_settings",
+          "type": "tuple"
+        }
+      ],
+      "name": "create",
+      "outputs": [
+        {
+          "internalType": "contract IICollateralPool",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

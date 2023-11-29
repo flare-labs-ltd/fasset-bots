@@ -1,0 +1,37 @@
+{
+    "loopDelay": 5000,
+    "$schema": "./schema/bot-config.schema.json",
+    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
+    "fAssetInfos": [
+        {
+            "chainId": "testXRP",
+            "name": "Test XRP",
+            "symbol": "testXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "finalizationBlocks": 3,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FtestXRP"
+        },
+        {
+            "chainId": "testXRP",
+            "name": "Fake XRP",
+            "symbol": "fakeXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "finalizationBlocks": 10,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FfakeXRP",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "priceChangeEmitter": "FakePriceReader"
+        }
+    ],
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "liquidationStrategy": {
+        "className": "DexLiquidationStrategy",
+        "config": {
+            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "loopDelay": 5000,
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
+    "fAssetInfos": [
+        {
+            "chainId": "testXRP",
+            "name": "Test XRP",
+            "symbol": "testXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "finalizationBlocks": 3,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FtestXRP",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "walletUrl": "https://s.altnet.rippletest.net:51234"
+        }
+    ],
+    "ormOptions": {
+        "dbName": "fasset-bots-coston.db",
+        "debug": false,
+        "allowGlobalContext": true,
+        "type": "sqlite"
+    },
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+}

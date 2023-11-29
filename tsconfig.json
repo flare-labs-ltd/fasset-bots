@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2018",
+        "declaration": true,
+        "declarationMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "outDir": "./dist",
+        "sourceMap": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "skipLibCheck": true,
+        "typeRoots": [
+            "test/types",
+            "node_modules/@types"
+        ]
+    },
+    "include": [
+        "src/**/*",
+        "test/**/*",
+        "test-hardhat/**/*",
+        "./typechain-truffle",
+        "./typechain-truffle/types.d.ts",
+        "./hardhat.config.ts"
+    ],
+    "ts-node": {
+        "files": true
+    }
+}
