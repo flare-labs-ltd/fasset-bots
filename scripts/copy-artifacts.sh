@@ -4,7 +4,7 @@ set -e
 
 projdir=$(pwd)
 fassetsdir=$(readlink -f ../fasset)
-liquidatordir=$(readlink -f ../FAsset-Liquidator)
+liquidatordir=$(readlink -f ../fasset-liquidator)
 
 if ! [ -d ${fassetsdir} ]; then echo "Missing dir ${fassetsdir}"; exit 1; fi
 if ! [ -d ${liquidatordir} ]; then echo "Missing dir ${liquidatordir}"; exit 1; fi
