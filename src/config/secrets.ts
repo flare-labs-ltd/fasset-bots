@@ -13,6 +13,7 @@ export type Secrets = {
     owner?: UnifiedAccount;
     user?: UnifiedAccount;
     challenger?: NativeAccount;
+    liquidator?: NativeAccount;
     timeKeeper?: NativeAccount;
     systemKeeper?: NativeAccount;
     deployer?: NativeAccount;
