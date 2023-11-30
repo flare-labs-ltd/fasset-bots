@@ -1,85 +1,90 @@
-# Setting up the agent bot for XRP on testnet
+# Setting up the Agent Bot for XRP on Testnet
 
 ## Clone and setup repository
 
->**Note**
->Make sure you have access to both `fasset-bots` and `simple-wallet` gitlab repositories.
+1. Ensure you can access `fasset-bots` and `simple-wallet` GitLab repositories.
 
-In your terminal run the following command:
+2. Clone the repository:
 
-```console
-git clone git@gitlab.com:flarenetwork/fasset-bots.git
-```
+   ```console
+   git clone git@gitlab.com:flarenetwork/fasset-bots.git
+   ```
 
-Then run the following command:
+3. Compile and build the project:
 
-```console
-yarn && yarn build
-```
+   ```console
+   yarn && yarn build
+   ```
 
 ## Configure your environment
 
-First, rename `.env.template` into `.env` and uncomment the commented lines.
+1. Rename `.env.template` into `.env` and uncomment the commented lines.
 
-Then, you need to generate the private keys bound to agent bot operations.
-This can be done by using the following command:
+   ```console
+   mv .env.template .env
+   ```
 
-```console
-yarn user-bot generateSecrets --agent -o secrets.json
-```
+2. Generate the private keys bound to agent bot operations using the following command:
 
-Now you should have the generated `secrets.json` file in the root folder of the repository.
-The relevant field for the agent is the `owner` field, that contains two accounts.
-- The Flare account that is used for funding agent vaults and paying gas fees for various smart contract calls. Funded this account with enough CFLR and USDC, so it deposit collateral to agent vaults and pay for transaction gas fees.
-- The underlying test-XRP account that is used for paying gas fees on the underlying chain. Activate this account by sending some test-XRP to it (you can use the faucet [here](https://yusufsahinhamza.github.io/xrp-testnet-faucet/)).
+   ```console
+   yarn user-bot generateSecrets --agent --output secrets.json
+   ```
 
-Before proceeding grant read access to `secrets.json` by:
+   You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc`, `xrp_rpc` and `indexer`.
 
-```console
-chmod 600 secrets.json
-```
+   The relevant field for the agent is the `owner` field, which contains two accounts:
 
-## Create an agent vault
+   - The Flare account funds the agent vaults and pays gas fees for various smart contract calls. Fund this account with enough CFLR and USDC to deposit collateral to agent vaults and pay for transaction gas fees.
+   - The underlying test-XRP account pays the underlying chain's gas fees. Activate this account by sending test-XRP to it. You can use the [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/).
 
-To create an agent vault (and output its address), you need to run the following command:
+3. Grant read access to `secrets.json` by:
 
-Before creating an agent you need to choose your unique collateral pool token suffix.
-It should include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`). Then run
+   ```console
+   chmod 600 secrets.json
+   ```
 
-```console
-yarn agent-bot create <poolTokenSuffix> -f FtestXRP
-```
+## Create an Agent Vault
 
-This will create an agent vault and output its address. You will need this address for the next step.
+1. Choose your unique collateral pool token suffix.
+It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 
-To make agent operational you need to fund the agent vault with two types of collateral.
-First one is USDC, which can be deposited using below command
+2. To create an agent vault and output its address, you need to run the following command:
 
-```console
-yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> -f FtestXRP
-```
+   ```console
+   yarn agent-bot create <poolTokenSuffix> -f FtestXRP
+   ```
 
-Then you need to deposit CFLR, which is done by buying collateral pool tokens. Do this by running
-```console
-yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> -f FtestXRP
-```
+   It will create an agent vault and output its address. Please save this address for future reference.
 
-If you deposited enough collateral, you should see that your agent has at least one lot available, by running
-```console
-yarn user-bot agents -f FtestXRP
-```
+3. To make the agent operational, you need to fund the vault with two types of collateral.
 
-In that case you can register your agent as available to the network, by running
-```console
-yarn agent-bot enter <agentVaultAddress> -f FtestXRP
-```
+    3.1 The first one is USDC, which you can deposit using the command:
 
-Note that your agent owner's Flare account has to be whitelisted, otherwise the above command will fail.
+      ```console
+      yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> -f FtestXRP
+      ```
+
+    3.2 Then you need to deposit CFLR, which is done by buying collateral pool tokens using this command:
+
+      ```console
+      yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> -f FtestXRP
+      ```
+
+4. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command:
+
+   ```console
+   yarn user-bot agents --fasset FtestXRP
+   ```
+
+5. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
+
+   ```console
+   yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
+   ```
 
 ## Run the agent bot
 
-The agent bot takes care of responding to all request made to the agent vaults you have created.
-To run the agent bot, you need to run the following command:
+The agent bot responds to all requests made to the agent vaults you have created. To run the agent bot, you need to run the following command:
 
 ```console
 yarn ts-node src/run/run-agent.ts
@@ -87,4 +92,8 @@ yarn ts-node src/run/run-agent.ts
 
 ## Minting
 
-With agent bot running, users can now mint FtestXRP by running
+With the agent bot running, users can now mint FtestXRP by running:
+
+```console
+yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secrets secrets.json
+```
