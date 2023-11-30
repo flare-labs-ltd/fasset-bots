@@ -231,11 +231,17 @@ Example:
 ## Path to config file for the agent bot
 RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
 
-## (Optional) Path to config file for users, instead you can use `-c` parameter
-# USER_CONFIG_PATH="./run-config/run-config-coston-testxrp.json"
-
 ## Enable the following line on Windows to allow reading secrets, since secrets file permission check does not work
 # ALLOW_SECRETS_ON_WINDOWS=true
+
+## (Optional) Path to config file for users, instead you can use `-c` parameter
+FASSET_USER_CONFIG="./run-config/run-config-agent-coston-testxrp.json"
+
+## (Optional) Path to secrets json file for users, instead you can use `-s` parameter
+FASSET_USER_SECRETS=""
+
+## (Optional) Path to directory, used for storing unexecuted minting
+FASSET_USER_DATA_DIR=""
 ```
 
 ## Secrets file
@@ -331,7 +337,7 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
         "indexer": "",
         "native_rpc": ""
     },
-    "user": {
+    "liquidator": {
         "native_private_key": "",
         "native_address": ""
     }
