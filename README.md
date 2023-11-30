@@ -29,8 +29,6 @@ The two assumptions are:
 - A healthy ecosystem of liquidity pool providers that function over the flare network and make it possible to exchange large amounts of agent's vault collateral for f-asset, while keeping the price aligned with the flare price oracle. Note that Flare uses v2-uniswap inspired dex called [Blaze Swap](https://blazeswap.xyz/).
 - Vault collateral's flash loan accessibility. This is meant to be solved soon by making agent's vault collateral flash-loanable.
 
-For more info on how to configure and maintain such ecosystem state, check [this](#ecosystem-configuration-and-manipulation) section.
-
 ## How it works
 
 Every agent in the f-asset system holds two types of collateral - vault and pool. Vault collateral is usually a stablecoin, and pool collateral is always the wrapped native token. The implemented arbitrage strategy using a liquidated agent follows the steps below:
@@ -72,9 +70,6 @@ yarn ts-node scripts/deploy.ts
 > **Warning**
 > Neither unit nor integration tests will run yet, as unit tests require access to the private `fasset` repository on gitlab, and integration tests require an authorized account's private key, which can change the mocked FTOS's prices on coston.
 
-> **Important**
-> Tests use BlazeSwap, which includes a contract that has another contract's bytecode hash hardcoded. If the solidity compiler options differ, BlazeSwap contracts will not compile. In that case use `./scripts/fix-blazeswap-hash.sh`.
-
 Unit tests are written for Blaze Swap (to describe what is expected from the used liquidity pool) and liquidator contracts. The latter ones are randomized across three sets of ecosystem configurations (in connection to FTSO price data, dex reserves and agent collateral ratios):
 - *healthy*: dexes have prices sufficiently aligned with the FTSO and liquidity high enough for low slippage, which makes full agent liquidation the most profitable arbitrage option,
 - *semi-healthy*: dex slippage due to low liquidity makes optimal arbitrage profit occur at partial agent liquidation,
@@ -100,4 +95,5 @@ The repo features some scripts that aid in establishing and dealing with the eco
 ## TODO
 - [ ] add UBA and Wei to Liquidator contract variables,
 - [ ] CLI for deployment (parameter is the used network),
-- [ ] make challenger/liquidator ownable, with method calls restricted to owner.
+- [ ] make challenger/liquidator ownable, with method calls restricted to owner,
+- [ ] document how to artificially setup dexes (on testnet) and how to maintain them.
