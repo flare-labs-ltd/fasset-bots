@@ -1,5 +1,5 @@
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { ActorBase } from "../fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
@@ -341,7 +341,7 @@ export class Challenger extends ActorBase {
         await this.state.context.blockchainIndexer!.waitForUnderlyingTransactionFinalization(txHash);
         return await this.state.context
             .attestationProvider!.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
-            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
+            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
     }
 
     /**

@@ -57,7 +57,7 @@ export class FuzzingCustomer {
         const crt = await this.minter
             .reserveCollateral(agent.agentVault, lots)
             .catch((e) =>
-                scope.exitOnExpectedError(e, ["cannot mint 0 lots", "not enough free collateral", "inappropriate fee amount", "rc: invalid agent status"])
+                scope.exitOnExpectedError(e, ["cannot mint 0 lots", "not enough free collateral", "inappropriate fee amount", "rc: invalid agent status"], "USER", this.minter.address)
             );
         // pay
         let txHash = null;
@@ -66,7 +66,7 @@ export class FuzzingCustomer {
             // wait for finalization
             await this.runner.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO check if ok, there is scope in original
             // execute
-            await this.minter.executeMinting(crt, txHash).catch((e) => scope.exitOnExpectedError(e, ["payment failed"])); // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
+            await this.minter.executeMinting(crt, txHash).catch((e) => scope.exitOnExpectedError(e, ["payment failed"], "USER", this.minter.address)); // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
             mintedLots += lots;
             this.runner.comment(`minting ${crt.collateralReservationId} executed with ${this.agentName(agent.agentVault)}`, `${this.name}`);
         } else {
@@ -85,7 +85,7 @@ export class FuzzingCustomer {
         if (this.runner.avoidErrors && lots === 0) return;
         const [tickets, remaining] = await this.redeemer
             .requestRedemption(lots)
-            .catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"], "USER", this.redeemer.address));
         mintedLots -= lots - Number(remaining);
         this.runner.comment(`redeeming ${tickets.length} tickets, remaining ${remaining} lots`, `${this.name}`);
         // wait for all redemption payments or non-payments
@@ -139,7 +139,7 @@ export class FuzzingCustomer {
         const result = await this.redeemer
             .redemptionPaymentDefault(ticket)
             .catch((e) => expectErrors(e, ["invalid request id"])) // can happen if agent confirms failed payment
-            .catch((e) => scope.exitOnExpectedError(e, []));
+            .catch((e) => scope.exitOnExpectedError(e, [], "USER", this.redeemer.address));
         return result;
     }
 }

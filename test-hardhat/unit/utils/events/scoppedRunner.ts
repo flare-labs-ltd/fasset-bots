@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ScopedRunner } from "../../../../src/utils/events/ScopedRunner";
 import { EventScope } from "../../../../src/utils/events/ScopedEvents";
+import { ActorBaseKind } from "../../../../src/fasset-bots/ActorBase";
 
 describe("Scoped runner unit tests", async () => {
     const errorMessage = "Not implemented.";
@@ -9,7 +10,7 @@ describe("Scoped runner unit tests", async () => {
         try {
             throw Error(errorMessage);
         } catch (e) {
-            scope.exitOnExpectedError(e, []);
+            scope.exitOnExpectedError(e, [], ActorBaseKind.TIME_KEEPER, "");
         }
     }
 

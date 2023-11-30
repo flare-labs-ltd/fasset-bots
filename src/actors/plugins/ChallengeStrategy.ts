@@ -3,6 +3,7 @@ import { TrackedState } from "../../state/TrackedState";
 import { BalanceDecreasingTransaction } from "@flarenetwork/state-connector-protocol";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
+import { ActorBaseKind } from "../../fasset-bots/ActorBase";
 
 const Challenger = artifacts.require("Challenger");
 
@@ -37,7 +38,7 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
                     "chlg: transaction confirmed",
                     "matching redemption active",
                     "matching ongoing announced pmt",
-                ])
+                ], ActorBaseKind.CHALLENGER, this.address)
             );
     }
 
@@ -50,14 +51,14 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
         // due to async nature of challenging there may be some false challenges which will be rejected
         await this.state.context.assetManager
             .doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]): Promise<void> {
         // due to async nature of challenging there may be some false challenges which will be rejected
         await this.state.context.assetManager
             .freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"], ActorBaseKind.CHALLENGER, this.address));
     }
 }
 
@@ -72,7 +73,7 @@ export class DexChallengeStrategy extends ChallengeStrategy {
                     "chlg: transaction confirmed",
                     "matching redemption active",
                     "matching ongoing announced pmt",
-                ])
+                ], ActorBaseKind.CHALLENGER, this.address)
             );
     }
 
@@ -86,7 +87,7 @@ export class DexChallengeStrategy extends ChallengeStrategy {
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger
             .doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]): Promise<void> {
@@ -94,6 +95,6 @@ export class DexChallengeStrategy extends ChallengeStrategy {
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger
             .freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"]));
+            .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"], ActorBaseKind.CHALLENGER, this.address));
     }
 }

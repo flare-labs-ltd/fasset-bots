@@ -1,4 +1,4 @@
-import { ActorBase } from "../fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -21,6 +21,7 @@ export class Liquidator extends ActorBase {
         if (state.context.liquidationStrategy === undefined) {
             this.liquidationStrategy = new DefaultLiquidationStrategy(state, address);
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const strategies = require("./plugins/LiquidationStrategy");
             this.liquidationStrategy = new strategies[state.context.liquidationStrategy.className](state, address);
         }
@@ -67,7 +68,7 @@ export class Liquidator extends ActorBase {
     async handleMintingExecuted(agentVault: string): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
-            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
+            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
         });
     }
 
@@ -77,7 +78,7 @@ export class Liquidator extends ActorBase {
     async handleFullLiquidationStarted(agentVault: string): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
-            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, []));
+            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
         });
     }
 
