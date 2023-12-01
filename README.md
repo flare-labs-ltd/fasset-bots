@@ -15,17 +15,12 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 ## Install
 
 -   Clone this project `fasset-bots`
--   Clone project `simple-wallet` in the same directory as `fasset-bots`
--   Install `simple-wallet`:
-    -   `cd simple-wallet`
-    -   `yarn`
-    -   `yarn build`
+    - `git clone git@gitlab.com:flarenetwork/fasset-bots.git`
 -   Install `fasset-bots`
-    -   `cd ..`
     -   `yarn`
     -   `yarn build`
 
-(Alternatively also clone and install `fasset` repository in the same directory as `fasset-bots`. Run script `./scripts/copy-artifacts.sh` to update deployment and config `fasset` settings.)
+(Alternatively also clone and install `fasset` and `fasset-liquidator` repositories in the same directory as `fasset-bots`. Run script `./scripts/copy-artifacts.sh` to update deployment and config `fasset` settings.)
 
 ## Configurations
 
