@@ -40,6 +40,7 @@ export interface BotConfigFile {
     defaultAgentSettingsPath?: string; // Path to agent settings file. Required only for agent bot.
     ormOptions?: OrmConfigOptions; // ORM configuration options. Required only for agent bot and user.
     fAssetInfos: BotFAssetInfo[]; // Basic information about fassets.
+    walletOptions?: StuckTransaction, // Optional overwrite of default values in simple-wallet in case transaction gets stuck in mempool.
     loopDelay: number; // Delay in ms before running next agent bot's or other actor's step
     nativeChainInfo: NativeChainInfo; // Basic information about native chain.
     rpcUrl: string; // Native chain's url.
@@ -100,6 +101,12 @@ export interface ChainInfo {
 export interface NativeChainInfo {
     finalizationBlocks: number; // Estimated number of blocks to reach finalization.
     readLogsChunkSize: number; // Max number of blocks to read past logs from
+}
+
+export interface StuckTransaction {
+   blockOffset?: number; // How many block to wait for transaction to be validated
+   retries?: number; // How many times should transaction retry to successfully submit
+   feeIncrease?: number; // Factor to increase fee in resubmitting process
 }
 ```
 
