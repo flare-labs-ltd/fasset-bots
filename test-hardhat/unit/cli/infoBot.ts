@@ -19,9 +19,8 @@ use(chaiAsPromised);
 use(spies);
 
 const agentUnderlyingAddress = "agentUnderlyingAddress";
-const userUnderlyingAddress = "userUnderlyingAddress";
 
-describe("Bot cli commands unit tests", async () => {
+describe("InfoBot cli commands unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
@@ -155,7 +154,8 @@ describe("Bot cli commands unit tests", async () => {
         const spyLog = spy.on(console, "log");
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         await infoBot.printPoolTokenBalance(agent.agentVault.address);
-        expect(spyLog).to.be.called.exactly(2);
+        await infoBot.printPoolTokenBalance(accounts[103]);
+        expect(spyLog).to.be.called.exactly(3);
     });
 
     it("Should get pool token balance", async () => {

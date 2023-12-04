@@ -32,7 +32,7 @@ const StateConnector = artifacts.require("StateConnectorMock");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const FakeERC20 = artifacts.require("FakeERC20");
 
-describe("Bot cli commands unit tests", async () => {
+describe("AgentBot cli commands unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

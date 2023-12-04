@@ -103,8 +103,8 @@ export function createTestAgentBotRunner(
     return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
 
-export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, amount: BN = depositUnderlying): Promise<Minter> {
-    const minter = await Minter.createTest(context, minterAddress, minterUnderlying, amount);
+export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlying, amount: BN = depositUnderlying): Promise<Minter> {
+    const minter = await Minter.createTest(context, minterAddress, underlyingAddress, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
 }

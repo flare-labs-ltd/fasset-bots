@@ -311,13 +311,13 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send cancel vault collateral withdrawal announcement", async () => {
-        const spySend = spy.on(notifier, "sendAgentCannotWithdrawCollateral");
+        const spySend = spy.on(notifier, "sendCancelVaultCollateralAnnouncement");
         notifier.sendCancelVaultCollateralAnnouncement("agentVault");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send pool token redemption announcement", async () => {
-        const spySend = spy.on(notifier, "sendAgentCannotWithdrawCollateral");
+        const spySend = spy.on(notifier, "sendCancelRedeemCollateralPoolTokensAnnouncement");
         notifier.sendCancelRedeemCollateralPoolTokensAnnouncement("agentVault");
         expect(spySend).to.have.been.called.once;
     });
