@@ -25,6 +25,7 @@ import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
 import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
+import { StuckTransaction } from "simple-wallet/dist/src/interfaces/WriteWalletRpcInterface";
 /* istanbul ignore next */
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
@@ -163,7 +164,8 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
                 runConfig.stateConnectorAddress
                     ? runConfig.stateConnectorAddress
                     : (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).scAddress,
-                ownerAddress
+                ownerAddress,
+                runConfig.walletOptions
             )
         );
     }
@@ -201,9 +203,10 @@ export async function createBotFAssetConfig(
     attestationProviderUrls: string[] | undefined,
     scProofVerifierAddress: string | undefined,
     stateConnectorAddress: string | undefined,
-    ownerAddress: string
+    ownerAddress: string,
+    walletOptions?: StuckTransaction
 ): Promise<BotFAssetConfig> {
-    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl) : undefined;
+    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, walletOptions) : undefined;
     const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
     return {
         ...config,
@@ -288,11 +291,13 @@ export async function createAgentBotDefaultSettings(
  */
 export function createWalletClient(
     sourceId: SourceId,
-    walletUrl: string
+    walletUrl: string,
+    options?: StuckTransaction
 ): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
+    const sOptions = options ? options : {};
     if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
         return new WALLET.BTC({
             url: walletUrl,
@@ -300,6 +305,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testBTC ? true : false,
             apiTokenKey: getSecrets().apiKey.btc_rpc,
+            stuckTransactionOptions: sOptions
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
         return new WALLET.DOGE({
@@ -308,6 +314,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testDOGE ? true : false,
             apiTokenKey: getSecrets().apiKey.doge_rpc,
+            stuckTransactionOptions: sOptions
         }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
@@ -316,6 +323,7 @@ export function createWalletClient(
             password: "",
             apiTokenKey: getSecrets().apiKey.xrp_rpc,
             inTestnet: sourceId === SourceId.testXRP ? true : false,
+            stuckTransactionOptions: sOptions
         }); // XrpMccCreate
     }
 }
@@ -344,12 +352,13 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
 export function createBlockchainWalletHelper(
     sourceId: SourceId,
     em: EntityManager | null | undefined,
-    walletUrl: string
+    walletUrl: string,
+    options?: StuckTransaction
 ): BlockchainWalletHelper {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
-    const walletClient = createWalletClient(sourceId, walletUrl);
+    const walletClient = createWalletClient(sourceId, walletUrl, options);
     const walletKeys = em ? new DBWalletKeys(em) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }

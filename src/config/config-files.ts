@@ -1,3 +1,4 @@
+import { StuckTransaction } from "simple-wallet/dist/src/interfaces/WriteWalletRpcInterface";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { DatabaseType, SchemaUpdate } from "./orm";
 
@@ -20,6 +21,7 @@ export interface OrmConfigOptions {
 export interface BotConfigFile {
     defaultAgentSettingsPath?: string; // only for agent bot
     ormOptions?: OrmConfigOptions; // only for agent bot
+    walletOptions?: StuckTransaction, // optional wallet options, only for agent
     fAssetInfos: BotFAssetInfo[];
     // notifierFile: string;
     loopDelay: number;
