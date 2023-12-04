@@ -5,7 +5,7 @@ Wants = network-online.target
 
 [Service]
 Type = exec
-ExecStart = /usr/bin/node dist/src/run/run-timekeeper.ts
+ExecStart = /usr/bin/node dist/src/run/run-timekeeper.js
 WorkingDirectory = /home/fasset-bots/fasset-bots
 Restart = always
 RestartSec = 10
