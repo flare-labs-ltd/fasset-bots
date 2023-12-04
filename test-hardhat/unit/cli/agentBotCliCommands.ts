@@ -29,9 +29,8 @@ const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require("StateConnectorMock");
 
 const ERC20Mock = artifacts.require("ERC20Mock");
-const CollateralPool = artifacts.require("CollateralPool");
 
-describe("Bot cli commands unit tests", async () => {
+describe("AgentBot cli commands unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

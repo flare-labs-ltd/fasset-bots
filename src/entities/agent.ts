@@ -1,4 +1,4 @@
-import { Cascade, Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, Enum, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
