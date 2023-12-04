@@ -120,10 +120,14 @@ describe("Helpers unit tests", async () => {
         expect(helperMethods.errorIncluded(error, ["ERROR"])).to.be.true;
         expect(helperMethods.errorIncluded(undefined, ["ERROR"])).to.be.false;
         expect(helperMethods.errorIncluded(smallError, [SmallError])).to.be.true;
-        const fn = () => {
+        const fn1 = () => {
             return helperMethods.expectErrors(error, [Error]);
         };
-        expect(fn).to.throw(error.message);
+        expect(fn1).to.throw(error.message);
+        const fn2 = () => {
+            return helperMethods.expectErrors(smallError, [SmallError]);
+        };
+        expect(fn2).to.not.throw(error.message);
     });
 
     it("Should return maximal BN", () => {

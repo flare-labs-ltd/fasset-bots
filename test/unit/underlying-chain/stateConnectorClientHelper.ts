@@ -25,7 +25,7 @@ const accountPrivateKey = requireSecret("user.native_private_key");
 const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 
-describe("XRP attestation/state connector tests", async () => {
+describe("testXRP attestation/state connector tests", async () => {
     const roundId = 571512;
     let account: string;
 

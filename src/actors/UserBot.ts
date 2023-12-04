@@ -46,6 +46,18 @@ interface RedeemData {
 
 type StateData = MintData | RedeemData;
 
+enum RedemptionStatus {
+    EXPIRED = "EXPIRED",
+    SUCCESS = "SUCCESS",
+    DEFAULT = "DEFAULT",
+    PENDING = "PENDING",
+}
+
+enum MintingStatus {
+    EXPIRED = "EXPIRED",
+    PENDING = "PENDING",
+}
+
 export class UserBot {
     context!: IAssetAgentBotContext;
     configFile!: BotConfigFile;
@@ -105,7 +117,7 @@ export class UserBot {
         logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
     }
 
-    infoBot() {
+    infoBot(): InfoBot {
         const fassetInfo = requireNotNull(this.configFile.fAssetInfos.find((cc) => cc.fAssetSymbol === this.fassetConfig.fAssetSymbol));
         return new InfoBot(this.context, this.configFile, fassetInfo);
     }
@@ -113,7 +125,7 @@ export class UserBot {
     /**
      * Updates underlying block and timestamp on fasset contracts.
      */
-    async updateUnderlyingTime() {
+    async updateUnderlyingTime(): Promise<void> {
         logger.info(`User ${this.nativeAddress} started updating underlying block time.`);
         console.log("Updating underlying block time....");
         await proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.nativeAddress);
@@ -191,15 +203,14 @@ export class UserBot {
         );
     }
 
-    async listMintings() {
-        // const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
+    async listMintings(): Promise<void> {
         const stateList = this.readStateList("mint");
         const timestamp = await latestBlockTimestamp();
         const settings = await this.context.assetManager.getSettings();
         for (const state of stateList) {
             const stateTs = this.dateStringToTimestamp(state.createdAt);
             const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
-            console.log(`${state.requestId}  ${expired ? 'EXPIRED' : 'PENDING'}`);
+            console.log(`${state.requestId}  ${expired ? MintingStatus.EXPIRED : MintingStatus.PENDING}`);
         }
     }
 
@@ -207,7 +218,7 @@ export class UserBot {
      * Redeems desired amount of lots.
      * @param lots number of lots to redeem
      */
-    async redeem(lots: BNish) {
+    async redeem(lots: BNish): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
@@ -244,7 +255,7 @@ export class UserBot {
         logger.info(loggedRequests);
     }
 
-    async savedRedemptionDefault(requestId: BNish) {
+    async savedRedemptionDefault(requestId: BNish): Promise<void> {
         const state = this.readState("redeem", requestId);
         await this.redemptionDefault(
             state.amountUBA,
@@ -270,7 +281,7 @@ export class UserBot {
         firstUnderlyingBlock: BNish,
         lastUnderlyingBlock: BNish,
         lastUnderlyingTimestamp: BNish
-    ) {
+    ): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         const requestId = PaymentReference.decodeId(paymentReference);
         logger.info(`User ${this.nativeAddress} is defaulting redemption ${requestId}.`);
@@ -295,8 +306,7 @@ export class UserBot {
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }
 
-    async listRedemptions() {
-        // const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
+    async listRedemptions(): Promise<void> {
         const stateList = this.readStateList("redeem");
         const timestamp = await latestBlockTimestamp();
         const settings = await this.context.assetManager.getSettings();
@@ -306,16 +316,16 @@ export class UserBot {
         }
     }
 
-    async redemptionStatus(state: RedeemData, timestamp: number, settings: AssetManagerSettings) {
+    async redemptionStatus(state: RedeemData, timestamp: number, settings: AssetManagerSettings): Promise<RedemptionStatus> {
         const stateTs = this.dateStringToTimestamp(state.createdAt);
         if (timestamp - stateTs >= Number(settings.attestationWindowSeconds)) {
-            return 'EXPIRED';
+            return RedemptionStatus.EXPIRED;
         } else if (await this.findRedemptionPayment(state)) {
-            return 'SUCCESS';
+            return RedemptionStatus.SUCCESS;
         } else if (await this.redemptionTimeElapsed(state)) {
-            return 'DEFAULT';
+            return RedemptionStatus.DEFAULT;
         } else {
-            return 'PENDING';
+            return RedemptionStatus.PENDING;
         }
     }
 
@@ -329,7 +339,7 @@ export class UserBot {
         }
     }
 
-    async redemptionTimeElapsed(state: RedeemData) {
+    async redemptionTimeElapsed(state: RedeemData): Promise<boolean> {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
@@ -347,7 +357,7 @@ export class UserBot {
         return requiredEventArgs(res, "Exited");
     }
 
-    writeState(data: StateData) {
+    writeState(data: StateData): void {
         const dir = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}`);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const fname = path.resolve(dir, `${data.requestId}.json`);
@@ -374,16 +384,16 @@ export class UserBot {
             })
     }
 
-    deleteState(data: StateData) {
+    deleteState(data: StateData): void {
         const fname = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}/${data.requestId}.json`);
         fs.unlinkSync(fname);
     }
 
-    timestampToDateString(timestamp: number) {
+    timestampToDateString(timestamp: number): string {
         return new Date(timestamp * 1000).toISOString();
     }
 
-    dateStringToTimestamp(dateString: string) {
+    dateStringToTimestamp(dateString: string): number {
         return Math.floor(new Date(dateString).getTime() / 1000);
     }
 }

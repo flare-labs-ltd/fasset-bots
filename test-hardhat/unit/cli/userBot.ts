@@ -18,6 +18,8 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentAndMakeAvailable, createTestRedeemer } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
+import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
+import { latestUnderlyingBlock } from "../../../src/utils/fasset-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -215,54 +217,67 @@ describe("Bot cli commands unit tests", async () => {
         userBot.deleteState(mintData);
     });
 
-    function createSavedMinting() {
+    function createSavedMinting(requestId: string, date: Date) {
         const mintData: MintData = {
             type: "mint",
-            requestId: "2426",
+            requestId: requestId,
             paymentAddress: "r3RoZkBrbJqivaXs3qugAQDhHHsXboYANy",
             transactionHash: "BA2B34AE1025C7BA4288BD18B4D5A79B3E71A412DB208BB6569FC4369784ED01",
-            createdAt: "2023-11-24T10:42:03.811Z",
+            createdAt: new Date(date).toISOString(),
         };
         userBot.writeState(mintData);
         return mintData;
     }
 
     it("Should proof and execute saved minting", async () => {
-        const mintData: MintData = createSavedMinting();
+        const mintData: MintData = createSavedMinting("001", new Date());
         await expect(userBot.proveAndExecuteSavedMinting(mintData.requestId)).eventually.be.rejected;
+        userBot.deleteState(mintData);
     });
 
-    function createSavedRedemption() {
+    function createSavedRedemption(requestId: string, date: Date, timestamp: string) {
         const redeemData: RedeemData = {
             type: "redeem",
-            requestId: "288",
+            requestId: requestId,
             amountUBA: "9900000000",
             paymentReference: "0x4642505266410002000000000000000000000000000000000000000000000120",
             firstUnderlyingBlock: "0",
             lastUnderlyingBlock: "10",
-            lastUnderlyingTimestamp: "1701320966",
-            createdAt: new Date().toISOString(),
+            lastUnderlyingTimestamp: timestamp,
+            createdAt: new Date(date).toISOString(),
         };
         userBot.writeState(redeemData);
         return redeemData;
     }
 
     it("Should run saved redemption default", async () => {
-        const redeemData: RedeemData = createSavedRedemption();
+        const redeemData: RedeemData = createSavedRedemption("001", new Date(), (await latestBlockTimestamp()).toString());
         await expect(userBot.savedRedemptionDefault(redeemData.requestId)).to.eventually.be.rejected;
+        userBot.deleteState(redeemData);
     });
 
     it("should list mintings", async () => {
         const spyLog = spy.on(console, "log");
-        createSavedMinting();
+        const m1 = createSavedMinting("001", new Date());
+        const m2 = createSavedMinting("002", new Date("1.1.2023"));
         await userBot.listMintings();
         expect(spyLog).to.be.called.min(1);
+        userBot.deleteState(m1);
+        userBot.deleteState(m2);
     });
 
     it("should list redemptions", async () => {
         const spyLog = spy.on(console, "log");
-        createSavedRedemption();
+        context.blockchainIndexer.chain.currentTimestamp()
+        const r1 = createSavedRedemption("001", new Date(), context.blockchainIndexer.chain.currentTimestamp().toString());
+        await userBot.listRedemptions();
+        const r2 = createSavedRedemption("002", new Date("1.1.2023"), "1701320966");
+        const r3 = createSavedRedemption("003", new Date(), context.blockchainIndexer.chain.currentTimestamp().toString());
+        context.blockchainIndexer.chain.mine(15);
         await userBot.listRedemptions();
         expect(spyLog).to.be.called.min(1);
+        userBot.deleteState(r1);
+        userBot.deleteState(r2);
+        userBot.deleteState(r3);
     });
 });
