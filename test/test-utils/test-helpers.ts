@@ -21,11 +21,11 @@ import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWal
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
-const ownerAccountPrivateKey = requireSecret("owner.native_private_key");
-const account1PrivateKey = requireSecret("challenger.native_private_key");
-const userPrivateKey = requireSecret("user.native_private_key");
-const account3PrivateKey = requireSecret("timeKeeper.native_private_key");
-const account4PrivateKey = requireSecret("systemKeeper.native_private_key");
+const ownerAccountPrivateKey = requireSecret("owner.native.private_key");
+const account1PrivateKey = requireSecret("challenger.private_key");
+const userPrivateKey = requireSecret("user.native.private_key");
+const account3PrivateKey = requireSecret("timeKeeper.private_key");
+const account4PrivateKey = requireSecret("systemKeeper.private_key");
 
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
 export function getNativeAccountsFromEnv() {

@@ -9,8 +9,8 @@ import { requireSecret } from "../config/secrets";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { getSecrets } from "../config/secrets";
 
-const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
-const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");
+const CHALLENGER_ADDRESS: string = requireSecret("challenger.address");
+const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
 const fAssetSymbol = "FtestXRP";
 

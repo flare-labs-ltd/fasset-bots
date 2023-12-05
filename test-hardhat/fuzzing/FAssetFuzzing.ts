@@ -108,7 +108,7 @@ describe("Fuzzing tests", async () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, notifier, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
             botCliCommands.ownerAddress = ownerAddress;

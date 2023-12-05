@@ -2,7 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { BotConfig, BotConfigFile, BotFAssetConfig, createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, BotConfigFile, BotFAssetConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
@@ -86,12 +86,12 @@ export class UserBot {
      * @param fAssetSymbol symbol for the fasset
      */
     async initialize(configFile: string, fAssetSymbol: string, requireWallet: boolean): Promise<void> {
-        this.nativeAddress = requireSecret("user.native_address");
+        this.nativeAddress = requireSecret("user.native.address");
         logger.info(`User ${this.nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         this.configFile = loadAgentConfigFile(configFile, `User ${this.nativeAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = requireSecret("user.native_private_key");
+        const nativePrivateKey = requireSecret("user.native.private_key");
         const accounts = await initWeb3(authenticatedHttpProvider(this.configFile.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (!accounts.includes(this.nativeAddress)) {
@@ -109,8 +109,8 @@ export class UserBot {
         this.fassetConfig = chainConfig;
         // create underlying wallet key
         if (requireWallet) {
-            this.underlyingAddress = requireSecret("user.underlying_address");
-            const underlyingPrivateKey = requireSecret("user.underlying_private_key");
+            this.underlyingAddress = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.address`);
+            const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.private_key`);
             await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
         }
         console.error(chalk.cyan("Environment successfully initialized."));

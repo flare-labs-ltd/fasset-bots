@@ -34,6 +34,7 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
+import { decodedChainId } from "../config/BotConfig";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -140,12 +141,12 @@ export class AgentBot {
      * @param agentUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
-        const ownerAddress = requireSecret("owner.native_address");
+        const ownerAddress = requireSecret("owner.native.address");
         try {
             if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
-            const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
-            const reference = requireSecret("owner.native_address");
+            const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
+            const reference = requireSecret("owner.native.address");
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
@@ -1496,7 +1497,7 @@ export class AgentBot {
      * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
+        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(this.context.chainInfo.chainId)}.address`);
         try {
             logger.info(
                 `Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`

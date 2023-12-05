@@ -12,7 +12,7 @@ import { getSecrets } from "../config/secrets";
 const FakeERC20 = artifacts.require("FakeERC20");
 const Whitelist = artifacts.require("Whitelist");
 
-const deployerAddress = requireSecret("deployer.native_address");
+const deployerAddress = requireSecret("deployer.address");
 
 async function whitelistAgent(configFileName: string, ownerAddress: string) {
     const config = await initEnvironment(configFileName);
@@ -31,7 +31,7 @@ async function mintFakeTokens(configFileName: string, tokenSymbol: string, recip
 
 async function initEnvironment(configFile: string) {
     const config = loadConfigFile(configFile);
-    const nativePrivateKey = requireSecret("deployer.native_private_key");
+    const nativePrivateKey = requireSecret("deployer.private_key");
     const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");

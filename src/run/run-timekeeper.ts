@@ -10,8 +10,8 @@ import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { getSecrets } from "../config/secrets";
 
-const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.native_address");
-const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.native_private_key");
+const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.address");
+const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-timeKeeper-coston-testxrp.json";
 const INTERVAL: number = 120_000; // in ms
 

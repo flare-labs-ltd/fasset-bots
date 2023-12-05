@@ -22,9 +22,11 @@ import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { decodedChainId } from "../../../src/config/BotConfig";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
+const chainId = "testXRP";
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
@@ -47,7 +49,7 @@ describe("Agent bot unit tests", async () => {
         chain.secondsPerBlock = 1;
         // accounts
         ownerAddress = accounts[3];
-        ownerUnderlyingAddress = requireSecret("owner.underlying_address");
+        ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(chainId)}.address`);
     });
 
     afterEach(function () {

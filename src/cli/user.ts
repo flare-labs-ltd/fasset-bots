@@ -209,7 +209,7 @@ program
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await InfoBot.create(options.config, options.fasset);
-        const address = requireSecret("user.native_address");
+        const address = requireSecret("user.native.address");
         await bot.printPoolTokenBalance(address);
     });
 

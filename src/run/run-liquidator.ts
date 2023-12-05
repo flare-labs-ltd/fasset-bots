@@ -9,8 +9,8 @@ import { requireSecret } from "../config/secrets";
 import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { getSecrets } from "../config/secrets";
 
-const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.native_address");
-const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.native_private_key");
+const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.address");
+const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-liquidator-coston-testxrp.json";
 const fAssetSymbol = "FfakeXRP";
 

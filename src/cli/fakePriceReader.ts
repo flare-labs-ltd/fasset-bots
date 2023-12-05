@@ -13,7 +13,7 @@ import { getSecrets } from "../config/secrets";
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 const contracts: ChainContracts = loadContracts("./fasset-deployment/coston.json");
-const deployerAddress = requireSecret("deployer.native_address");
+const deployerAddress = requireSecret("deployer.address");
 
 const program = new Command();
 
@@ -76,7 +76,7 @@ toplevelRun(async () => {
 
 async function initEnvironment(configFile: string, fakePriceReader: boolean = true) {
     const runConfig = loadConfigFile(configFile);
-    const nativePrivateKey = requireSecret("deployer.native_private_key");
+    const nativePrivateKey = requireSecret("deployer.private_key");
     const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");

@@ -21,7 +21,7 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const accountPrivateKey = requireSecret("user.native_private_key");
+const accountPrivateKey = requireSecret("user.native.private_key");
 const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 

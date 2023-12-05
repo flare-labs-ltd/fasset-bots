@@ -39,7 +39,7 @@ By default, this prints the secrets to standard output. By adding `-o <filename>
 
 You should move the generated secrets file to its defualt location `<USERS_HOME>/fasset/secrets.json`. If it is anywhere else, you should indicate the path in later invocations with parameter `-s` or environment variable `FASSET_USER_SECRETS`.
 
-Of course, all the accounts in the generated secrets file initially have zero balance. For minting, you have to transfer enough funds to the underlying address. Also, there needs to be some native currency on `user.native_address`, to pay for collateral reservations and for gas.
+Of course, all the accounts in the generated secrets file initially have zero balance. For minting, you have to transfer enough funds to the underlying address. Also, there needs to be some native currency on `user.native.address`, to pay for collateral reservations and for gas.
 
 The secrets file also has a section for keys to external APIs. Those have to be filled by the keys obtained from the respective API providers.
 

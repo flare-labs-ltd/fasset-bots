@@ -10,8 +10,8 @@ import { ActorBaseRunner } from "../actors/ActorBaseRunner";
 import { BotConfigFile, createBotConfig } from "../config/BotConfig";
 import { getSecrets } from "../config/secrets";
 
-const SYSTEM_KEEPER_ADDRESS: string = requireSecret("systemKeeper.native_address");
-const SYSTEM_KEEPER_PRIVATE_KEY: string = requireSecret("systemKeeper.native_private_key");
+const SYSTEM_KEEPER_ADDRESS: string = requireSecret("systemKeeper.address");
+const SYSTEM_KEEPER_PRIVATE_KEY: string = requireSecret("systemKeeper.private_key");
 const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
 const fAssetSymbol = "FfakeXRP";
 

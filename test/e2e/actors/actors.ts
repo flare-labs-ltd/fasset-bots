@@ -51,7 +51,7 @@ describe("Actor tests - coston", async () => {
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
-        ownerAddress = requireSecret("owner.native_address");
+        ownerAddress = requireSecret("owner.native.address");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];

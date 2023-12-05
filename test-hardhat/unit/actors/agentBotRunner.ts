@@ -53,7 +53,7 @@ describe("Agent bot runner tests", async () => {
         // create agents
         await createTestAgentBot(context, orm, ownerAddress);
         const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
-        await createTestAgentBot(otherContext, orm, ownerAddress);
+        await createTestAgentBot(otherContext, orm, ownerAddress, "UNDERLYING");
         await createTestAgentBot(context, orm, ownerAddress);
         // create runner
         const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay, new FaultyNotifier());

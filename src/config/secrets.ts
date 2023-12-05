@@ -10,32 +10,29 @@ export type Secrets = {
     apiKey: {
         [key: string]: string;
     };
-    owner?: UnifiedAccount;
-    user?: UnifiedAccount;
-    challenger?: NativeAccount;
-    liquidator?: NativeAccount;
-    timeKeeper?: NativeAccount;
-    systemKeeper?: NativeAccount;
-    deployer?: NativeAccount;
+    owner?: {
+        [key: string]: ChainAccount;
+    };
+    user?: {
+        [key: string]: ChainAccount;
+    }
+    challenger?: ChainAccount;
+    liquidator?: ChainAccount;
+    timeKeeper?: ChainAccount;
+    systemKeeper?: ChainAccount;
+    deployer?: ChainAccount;
     database?: DatabaseAccount;
 };
 
-export interface NativeAccount {
-    native_private_key: string;
-    native_address: string;
-}
-
-export interface UnderlyingAccount {
-    underlying_private_key: string;
-    underlying_address: string;
+export interface ChainAccount {
+    address: string;
+    private_key: string;
 }
 
 export interface DatabaseAccount {
     user: string;
     password: string;
 }
-
-export interface UnifiedAccount extends NativeAccount, UnderlyingAccount {}
 
 export function getSecrets(): Secrets {
     if (loadedSecrets == undefined) {

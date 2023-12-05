@@ -20,7 +20,7 @@ import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-file
 import { JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
-import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
@@ -185,6 +185,11 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 
 export function encodedChainId(chainId: string) {
     return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
+}
+
+
+export function decodedChainId(chainId: string) {
+    return chainId.startsWith("0x") ? decodeAttestationName(chainId) : chainId;
 }
 
 /**

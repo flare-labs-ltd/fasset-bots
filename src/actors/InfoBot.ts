@@ -2,7 +2,7 @@ import chalk from "chalk";
 import crypto from "node:crypto";
 import { BotConfigFile, BotFAssetInfo, createWalletClient, encodedChainId, loadConfigFile } from "../config/BotConfig";
 import { createNativeContext } from "../config/create-asset-context";
-import { NativeAccount, Secrets, UnifiedAccount, getSecrets } from "../config/secrets";
+import { ChainAccount, Secrets, getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { printAgentInfo } from "../utils/fasset-helpers";
@@ -55,21 +55,25 @@ export class InfoBot {
         const walletUrl = requireNotNull(this.fassetInfo.walletUrl, "walletUrl config parameter is required");
         const sourceId = encodedChainId(this.fassetInfo.chainId);
         const walletClient = createWalletClient(sourceId, walletUrl);
-        function generateAccount(): UnifiedAccount {
+        function generateAccount(chainId: string): { [key: string]: ChainAccount } {
             const account = web3.eth.accounts.create();
             const underlyingAccount = walletClient.createWallet();
             return {
-                native_address: account.address,
-                native_private_key: account.privateKey,
-                underlying_address: underlyingAccount.address,
-                underlying_private_key: underlyingAccount.privateKey,
+                native: {
+                    address: account.address,
+                    private_key: account.privateKey,
+                },
+                [chainId]: {
+                    address: underlyingAccount.address,
+                    private_key: underlyingAccount.privateKey,
+                }
             };
         }
-        function generateNativeAccount(): NativeAccount {
+        function generateNativeAccount(): ChainAccount {
             const account = web3.eth.accounts.create();
             return {
-                native_address: account.address,
-                native_private_key: account.privateKey,
+                address: account.address,
+                private_key: account.privateKey,
             };
         }
         const secrets: Secrets = { apiKey: {} };
@@ -83,10 +87,10 @@ export class InfoBot {
             secrets.wallet = {
                 encryption_password: crypto.randomBytes(15).toString("base64"),
             };
-            secrets.owner = generateAccount();
+            secrets.owner = generateAccount(this.fassetInfo.chainId);
         }
         if (users.includes("user")) {
-            secrets.user = generateAccount();
+            secrets.user = generateAccount(this.fassetInfo.chainId);
         }
         if (users.includes("other")) {
             secrets.challenger = generateNativeAccount();

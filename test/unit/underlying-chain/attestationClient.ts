@@ -23,7 +23,7 @@ import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 use(chaiAsPromised);
 
-const accountPrivateKey = requireSecret("owner.native_private_key");
+const accountPrivateKey = requireSecret("owner.native.private_key");
 const sourceId = SourceId.testXRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
