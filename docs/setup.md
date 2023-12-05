@@ -70,16 +70,16 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
       yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> --fasset FtestXRP
       ```
 
-4. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command:
-
-   ```console
-   yarn user-bot agents --fasset FtestXRP
-   ```
-
-5. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
+4. If you deposited enough collateral, then you can register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
 
    ```console
    yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
+   ```
+
+5. Now you should see that your agent has at least one lot available by running the command:
+
+   ```console
+   yarn user-bot agents --fasset FtestXRP
    ```
 
 ## Run the agent bot
