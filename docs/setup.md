@@ -10,7 +10,7 @@
    git clone git@gitlab.com:flarenetwork/fasset-bots.git
    ```
 
-3. Compile and build the project:
+3. Install dependancies and build the project:
 
    ```console
    yarn && yarn build
@@ -34,8 +34,8 @@
 
    The relevant field for the agent is the `owner` field, which contains two accounts:
 
-   - The Flare account funds the agent vaults and pays gas fees for various smart contract calls. Fund this account with enough CFLR and USDC to deposit collateral to agent vaults and pay for transaction gas fees.
-   - The underlying test-XRP account pays the underlying chain's gas fees. Activate this account by sending test-XRP to it. You can use the [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/).
+   - The Flare account funds the agent vaults and pays gas fees for various smart contract calls. Fund this account with enough CFLR and USDC to deposit collateral to agent vaults and pay for transaction gas fees. You can reach out to us, and we can provide these funds.
+   - The underlying test-XRP account pays the underlying chain's transaction fees. Activate this account by sending test-XRP to it. You can use the [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/).
 
 3. Grant read access to `secrets.json` by:
 
@@ -51,7 +51,7 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 2. To create an agent vault and output its address, you need to run the following command:
 
    ```console
-   yarn agent-bot create <poolTokenSuffix> -f FtestXRP
+   yarn agent-bot create <poolTokenSuffix> --fasset FtestXRP
    ```
 
    It will create an agent vault and output its address. Please save this address for future reference.
@@ -61,13 +61,13 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
     3.1 The first one is USDC, which you can deposit using the command:
 
       ```console
-      yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> -f FtestXRP
+      yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> --fasset FtestXRP
       ```
 
     3.2 Then you need to deposit CFLR, which is done by buying collateral pool tokens using this command:
 
       ```console
-      yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> -f FtestXRP
+      yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> --fasset FtestXRP
       ```
 
 4. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command:
@@ -91,6 +91,8 @@ yarn ts-node src/run/run-agent.ts
 ```
 
 ## Minting
+
+Before proceeding with minting, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
 
 With the agent bot running, users can now mint FtestXRP by running:
 
