@@ -257,6 +257,9 @@ export class EventEntity {
     @Property()
     handled: boolean = false;
 
+    @Property()
+    retries: number = 0;
+
     @ManyToOne(() => AgentEntity)
     agent!: AgentEntity;
 

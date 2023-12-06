@@ -25,7 +25,6 @@ export class BlockchainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrl: string,
         public sourceId: SourceId,
-        public completionBlocks: number,
         private indexerWebServerApiKey: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
@@ -43,7 +42,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         };
         // set client
         this.client = axios.create(createAxiosConfig);
-        this.finalizationBlocks = completionBlocks;
+        this.finalizationBlocks = this.finalizationBlocksByChain();
     }
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
@@ -440,5 +439,22 @@ export class BlockchainIndexerHelper implements IBlockChain {
             currentBlockHeight = await this.getBlockHeight();
         }
         return null;
+    }
+
+    // Values are copied from attestation configs https://gitlab.com/flarenetwork/state-connector-protocol/-/blob/main/specs/attestations/configs.md?ref_type=heads
+    finalizationBlocksByChain(): number {
+        switch(this.sourceId){
+            case SourceId.XRP:
+            case SourceId.testXRP:
+                return 3;
+            case SourceId.BTC:
+            case SourceId.testBTC:
+                return 6;
+            case SourceId.DOGE:
+            case SourceId.testDOGE:
+                return 60;
+            default:
+                throw new Error(`SourceId ${this.sourceId} not supported.`);
+        }
     }
 }

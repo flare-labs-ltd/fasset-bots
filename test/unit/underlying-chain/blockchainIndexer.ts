@@ -142,10 +142,10 @@ describe("testXRP blockchain tests via indexer", async () => {
     let txHash: string;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, finalizationBlocks, "");
-        blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
+        blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockchainIndexerClient, indexerUrl, finalizationBlocks);
+        const info = await receiveBlockAndTransaction(sourceId, blockchainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -325,26 +325,24 @@ describe("testXRP blockchain tests via indexer", async () => {
 
 describe("LTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.LTC;
-    const finalizationBlocks: number = 6;
     it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
         const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "", finalizationBlocks);
+            return createBlockchainIndexerHelper(sourceId, "");
         };
         expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
 
-    it("Should not handle inputs and outputs - not supported chain id", async () => {
-        const rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        await expect(rewiredBlockChainIndexerClient.handleInputsOutputs({ transactionType: "type", response: { data: {} } }))
-            .to.eventually.be.rejectedWith(`Invalid SourceId: ${sourceId}.`)
-            .and.be.an.instanceOf(Error);
+    it("Should not create BlockchainIndexerHelper instance - not supported chain id", async () => {
+        const fn = () => {
+            return new rewiredBlockchainIndexerHelperClass("", sourceId, "");
+        };
+        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
 });
 
 describe("testDOGE blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testDOGE;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
-    const finalizationBlocks: number = 6;
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -352,10 +350,10 @@ describe("testDOGE blockchain tests via indexer", async () => {
     let txHash: string;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, finalizationBlocks, "");
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl, finalizationBlocks);
+        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -398,7 +396,6 @@ describe("testDOGE blockchain tests via indexer", async () => {
 describe("testBTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testBTC;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
-    const finalizationBlocks: number = 6;
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -406,10 +403,10 @@ describe("testBTC blockchain tests via indexer", async () => {
     let txHash: string;
 
     before(async () => {
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, sourceId, finalizationBlocks, requireSecret("apiKey.indexer"));
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, sourceId, requireSecret("apiKey.indexer"));
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
         // TODO could be done better
-        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl, finalizationBlocks);
+        const info = await receiveBlockAndTransaction(sourceId, blockChainIndexerClient, indexerUrl);
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;

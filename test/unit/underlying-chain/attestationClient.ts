@@ -1,4 +1,4 @@
-import { sleep, toBN } from "../../../src/utils/helpers";
+import { toBN } from "../../../src/utils/helpers";
 import { requireSecret } from "../../../src/config/secrets";
 import { initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
@@ -48,12 +48,11 @@ describe("Attestation client unit tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             accounts[0],
-            indexerUrl,
-            finalizationBlocks
+            indexerUrl
         );
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
@@ -63,8 +62,7 @@ describe("Attestation client unit tests", async () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl,
-            finalizationBlocks
+            indexerUrl
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)

@@ -57,9 +57,8 @@ export async function receiveBlockAndTransaction(
     sourceId: SourceId,
     blockChainIndexerClient: BlockchainIndexerHelper,
     indexerUrl: string,
-    finalizationBlocks: number
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;

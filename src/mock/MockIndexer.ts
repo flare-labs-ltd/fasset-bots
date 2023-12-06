@@ -12,7 +12,7 @@ export class MockIndexer extends BlockchainIndexerHelper {
         public sourceId: SourceId,
         public chain: MockChain
     ) {
-        super(indexerWebServerUrl, sourceId, 0, "");
+        super(indexerWebServerUrl, sourceId, "");
         this.client = axios.create({});
     }
 
