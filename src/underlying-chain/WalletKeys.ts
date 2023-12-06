@@ -45,7 +45,7 @@ export class DBWalletKeys implements IWalletKeys {
         // persist
         const wa = new WalletAddress();
         wa.address = address;
-        wa.encryptedPrivateKey = encryptText(this.password, privateKey);
+        wa.encryptedPrivateKey = encryptText(this.password, privateKey, true);
         await this.em.persist(wa).flush();
     }
 }
