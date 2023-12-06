@@ -94,6 +94,7 @@ export class InfoBot {
         }
         if (users.includes("other")) {
             secrets.challenger = generateNativeAccount();
+            secrets.liquidator = generateNativeAccount();
             secrets.systemKeeper = generateNativeAccount();
             secrets.timeKeeper = generateNativeAccount();
         }
