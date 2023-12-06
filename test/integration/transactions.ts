@@ -23,11 +23,10 @@ describe("XRP transaction integration tests", async () => {
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
-    const finalizationBlocks = 6;
 
     before(async () => {
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
-        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, finalizationBlocks);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
 

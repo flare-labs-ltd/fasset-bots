@@ -57,7 +57,7 @@ describe("XRP attestation/state connector tests", async () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, finalizationBlocks);
+        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP);
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
