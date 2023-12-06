@@ -45,6 +45,8 @@ enum ClaimType {
     VAULT = "VAULT"
 }
 
+const MAX_EVENT_RETRY = 5;
+
 export class AgentBot {
     constructor(
         public agent: Agent,
@@ -191,6 +193,11 @@ export class AgentBot {
                         agentEnt.events.remove(event);
                     })
                     .catch(async (error) => {
+                        event.retries += 1;
+                        if (event.retries > MAX_EVENT_RETRY) {
+                            agentEnt.events.remove(event);
+                        }
+                        await rootEm.persist(agentEnt).flush();
                         console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agent.vaultAddress}: ${error}`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
                     });
