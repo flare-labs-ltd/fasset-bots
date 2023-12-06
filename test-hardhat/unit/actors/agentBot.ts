@@ -670,7 +670,7 @@ describe("Agent bot unit tests", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await agentBot.checkForClaims();
-        expect(spyError).to.be.called.twice;
+        expect(spyError).to.be.called.exactly(4);;
     });
 
     it("Should handle claims", async () => {
