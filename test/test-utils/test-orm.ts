@@ -95,5 +95,16 @@ describe("AgentBot", () => {
             expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0]);
             expect(agent.unhandledEvents()).to.deep.equal([]);
         });
+
+        it("should increase retry count", async () => {
+            const agent = createAgent();
+            const event = new EventEntity(agent, { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent, false)
+            agent.addNewEvent(event);
+            expect(event.retries).to.equal(0);
+            event.retries += 1;
+            await orm.em.persist(agent).flush();
+            const event2 = await orm.em.findOneOrFail(EventEntity, { id: event.id });
+            expect(event2.retries).to.equal(1);
+        });
     });
 });
