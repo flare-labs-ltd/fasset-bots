@@ -41,6 +41,11 @@ const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20 = artifacts.require("IERC20");
 
+enum ClaimType {
+    POOL = "POOL",
+    VAULT = "VAULT"
+}
+
 export class AgentBot {
     constructor(
         public agent: Agent,
@@ -454,61 +459,68 @@ export class AgentBot {
     }
 
     /**
-     * Checks there any claims in collateral pool and agent vault.
+     * Checks if there are any claims for agent vault and collateral pool.
      */
     async checkForClaims(): Promise<void> {
-        const addressUpdater = this.context.addressUpdater;
+        // FTSO rewards
+        await this.checkFTSORewards(ClaimType.VAULT);
+        await this.checkFTSORewards(ClaimType.POOL);
+        // airdrop distribution rewards
+        await this.checkAirdropClaims(ClaimType.VAULT);
+        await this.checkAirdropClaims(ClaimType.POOL);
+    }
+
+
+    async checkFTSORewards(type: ClaimType) {
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
-            // FTSO rewards
             const IFtsoRewardManager = artifacts.require("IFtsoRewardManager");
-            const ftsoRewardManager = await IFtsoRewardManager.at(await addressUpdater.getContractAddress("FtsoRewardManager"));
-            const notClaimedRewardsAgentVault: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.vaultAddress);
-            const notClaimedRewardsCollateralPool: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(this.agent.collateralPool.address);
-            if (notClaimedRewardsAgentVault.length > 0) {
-                const unClaimedEpochAgentVault = notClaimedRewardsAgentVault[notClaimedRewardsAgentVault.length - 1];
-                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for vault ${this.agent.vaultAddress} for epochs`);
-                await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochAgentVault, this.agent.vaultAddress, {
-                    from: this.agent.ownerAddress,
-                });
-            }
-            if (notClaimedRewardsCollateralPool.length > 0) {
-                const unClaimedEpochCollateralPool = notClaimedRewardsCollateralPool[notClaimedRewardsCollateralPool.length - 1];
-                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for pool ${this.agent.collateralPool.address}.`);
-                await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpochCollateralPool, { from: this.agent.ownerAddress });
+            const ftsoRewardManager = await IFtsoRewardManager.at(await this.context.addressUpdater.getContractAddress("FtsoRewardManager"));
+            const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
+            const notClaimedRewards: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
+            if (notClaimedRewards.length > 0) {
+                const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch.toString()}`);
+                if (type === ClaimType.VAULT) {
+                    await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, addressToClaim, {
+                        from: this.agent.ownerAddress,
+                    });
+                } else {
+                    await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, { from: this.agent.ownerAddress });
+                }
             }
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
         } catch (error) {
-            console.error(`Error handling FTSO rewards for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards: ${error}`);
+            console.error(`Error handling FTSO rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}: ${error}`);
         }
 
+    }
+
+    async checkAirdropClaims(type: ClaimType) {
         try {
-            // airdrop distribution rewards
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);
             const IDistributionToDelegators = artifacts.require("IDistributionToDelegators");
-            const distributionToDelegators = await IDistributionToDelegators.at(await addressUpdater.getContractAddress("DistributionToDelegators"));
-            const { 1: endMonthVault } = await distributionToDelegators.getClaimableMonths({ from: this.agent.vaultAddress });
-            const { 1: endMonthPool } = await distributionToDelegators.getClaimableMonths({ from: this.agent.collateralPool.address });
-            const claimableVault = await distributionToDelegators.getClaimableAmountOf(this.agent.vaultAddress, endMonthVault);
-            if (toBN(claimableVault).gtn(0)) {
+            const distributionToDelegators = await IDistributionToDelegators.at(await this.context.addressUpdater.getContractAddress("DistributionToDelegators"));
+            const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
+            const { 1: endMonth } = await distributionToDelegators.getClaimableMonths({ from: addressToClaim });
+            const claimable = await distributionToDelegators.getClaimableAmountOf(addressToClaim, endMonth);
+            if (toBN(claimable).gtn(0)) {
                 logger.info(
-                    `Agent ${this.agent.vaultAddress} is claiming airdrop distribution for vault ${this.agent.vaultAddress} for month ${endMonthVault}.`
+                    `Agent ${this.agent.vaultAddress} is claiming airdrop distribution for ${addressToClaim} for month ${endMonth}.`
                 );
-                await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonthVault, this.agent.vaultAddress, {
-                    from: this.agent.ownerAddress,
-                });
+                if (type === ClaimType.VAULT) {
+                    await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, addressToClaim, {
+                        from: this.agent.ownerAddress,
+                    });
+                } else {
+                    await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonth, { from: this.agent.ownerAddress });
+                }
             }
-            const claimablePool = await distributionToDelegators.getClaimableAmountOf(this.agent.collateralPool.address, endMonthPool);
-            if (toBN(claimablePool).gtn(0)) {
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} is claiming airdrop distribution for pool ${this.agent.collateralPool.address} for ${endMonthPool}.`
-                );
-                await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonthPool, { from: this.agent.ownerAddress });
-            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for airdrop distribution.`);
         } catch (error) {
-            console.error(`Error handling airdrop distribution for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution: ${error}`);
+            console.error(`Error handling airdrop distribution for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution for ${type}: ${error}`);
         }
     }
 

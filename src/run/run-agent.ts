@@ -20,8 +20,8 @@ toplevelRun(async () => {
     const runner = await AgentBotRunner.create(botConfig);
     // store owner's underlying address
     for (const ctxMap of runner.contexts) {
-        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(ctxMap[0])}.address`);
-        const ownerUnderlyingPrivateKey = requireSecret(`owner.${decodedChainId(ctxMap[0])}.private_key`);
+        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.address`);
+        const ownerUnderlyingPrivateKey = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.private_key`);
         await ctxMap[1].wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
     }
     // run
