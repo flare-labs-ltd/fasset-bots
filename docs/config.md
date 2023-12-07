@@ -94,7 +94,6 @@ export interface ChainInfo {
     decimals: number;
     amgDecimals: number;
     requireEOAProof: boolean;
-    finalizationBlocks: number; // Estimated number of blocks to reach finalization.
 }
 
 export interface NativeChainInfo {
@@ -120,7 +119,6 @@ export interface NativeChainInfo {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
@@ -156,7 +154,6 @@ export interface NativeChainInfo {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
@@ -184,7 +181,6 @@ export interface NativeChainInfo {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP"
         }
@@ -210,7 +206,6 @@ export interface NativeChainInfo {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
