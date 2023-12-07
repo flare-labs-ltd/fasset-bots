@@ -95,7 +95,6 @@ interface ChainInfo {
     decimals: number;
     amgDecimals: number;
     requireEOAProof: boolean;
-    finalizationBlocks: number; // Estimated number of blocks to reach finalization.
 }
 
 interface NativeChainInfo {
@@ -127,7 +126,6 @@ interface StuckTransaction {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
@@ -163,7 +161,6 @@ interface StuckTransaction {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
@@ -191,7 +188,6 @@ interface StuckTransaction {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP"
         }
@@ -217,7 +213,6 @@ interface StuckTransaction {
             "symbol": "testXRP",
             "decimals": 6,
             "amgDecimals": 0,
-            "finalizationBlocks": 3,
             "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
