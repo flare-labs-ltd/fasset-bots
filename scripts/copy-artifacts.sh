@@ -19,11 +19,13 @@ rm -rf fasset-config; mkdir -p fasset-config
 # build
 echo "***** Building fasset... ****************************************"
 cd ${fassetsdir}
+yarn
 yarn clean
 yarn compile
 
 echo "***** Building liquidator... ****************************************"
 cd ${liquidatordir}
+yarn
 yarn clean
 yarn compile
 
