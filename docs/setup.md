@@ -2,7 +2,7 @@
 
 ## Clone and setup repository
 
-1. Ensure you can access `fasset-bots` and `simple-wallet` GitLab repositories.
+1. Ensure you can access `fasset-bots` and `simple-wallet` repositories.
 
 2. Clone the repository:
 
@@ -10,7 +10,7 @@
    git clone git@gitlab.com:flarenetwork/fasset-bots.git
    ```
 
-3. Install dependancies and build the project:
+3. Install dependencies and build the project:
 
    ```console
    yarn && yarn build
@@ -98,4 +98,20 @@ With the agent bot running, users can now mint FtestXRP by running:
 
 ```console
 yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secrets secrets.json
+```
+
+## Challenger
+
+You must provide the challenger `address` and `private_key` in the `settings.json` file.
+
+```console
+yarn ts-node src/run/run-challenger.ts --secrets secrets.json
+```
+
+## Liquidator
+
+You must provide the liquidator `address` and `private_key` in the `settings.json` file.
+
+```console
+yarn ts-node src/run/run-liquidator.ts --secrets secrets.json
 ```
