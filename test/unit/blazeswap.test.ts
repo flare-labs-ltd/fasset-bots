@@ -88,7 +88,7 @@ describe("Tests for BlazeSwapRouter contract", () => {
     const [wPriceA, wPriceB] = priceAB(priceA, priceB, decimalsA, decimalsB)
     const priceBips = BigInt(10_000) * wPriceA / wPriceB
     expect(BigInt(10_000) * reserveB / reserveA).to.be.approximately(priceBips, priceBips / BigInt(100))
-    // try exchanging some dust, make sure it's close to exchange price
+    // exchange some dust, to make sure it's close to setup price
     const swapper = accounts[11]
     const amountA = BigInt(10) ** BigInt(decimalsA)
     await tokenA.mint(swapper, amountA)

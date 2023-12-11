@@ -158,7 +158,7 @@ export function priceBasedAddedDexReserves(
 function sqrt(value: bigint): bigint {
   if (value < BigInt(0)) throw Error()
   if (value < BigInt(2)) return value
-  function newtonIteration(n: bigint, x0: bigint) {
+  function newtonIteration(n: bigint, x0: bigint): bigint {
       const x1 = ((n / x0) + x0) >> BigInt(1)
       if (x0 === x1 || x0 === (x1 - BigInt(1)))
           return x0

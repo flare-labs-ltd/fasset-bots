@@ -2,7 +2,7 @@
 import "dotenv/config"
 import { ethers } from "ethers"
 import { getContracts, getBaseContracts } from "../test/integration/helpers/contracts"
-import { syncDexReservesWithFtsoPrices, dexVsFtsoPrices, removeLiquidity } from "../test/integration/helpers/utils"
+import { syncDexReservesWithFtsoPrices, dexVsFtsoPrices, removeLiquidity, fixDexPairPrice } from "../test/integration/helpers/utils"
 
 async function getDexVsFtsoPrices(assetManagerAddress: string): Promise<void> {
   const contracts = await getContracts(assetManagerAddress, network, provider)
@@ -28,7 +28,14 @@ async function fixDex(
   supplier: ethers.Wallet
 ): Promise<void> {
   const contracts = await getContracts(assetManagerAddress, network, provider)
-  await syncDexReservesWithFtsoPrices(contracts, supplier, provider, false)
+  await fixDexPairPrice(
+    contracts,
+    contracts.fAsset, contracts.usdc,
+    "testXRP", "testUSDC",
+    ethers.MaxUint256,
+    ethers.MaxUint256,
+    supplier, provider
+  )
 }
 
 async function removeDexLiquidity(
@@ -52,14 +59,14 @@ async function setUpFlashLender(
   await contracts.usdc.connect(supplier).transfer(contracts.flashLender, balance)
 }
 
-const network = "coston"
-const provider = new ethers.JsonRpcProvider("https://coston-api.flare.network/ext/C/rpc")
+const network = process.env.NETWORK!
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL)
 //const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/")
 const SUPPLIER_PVK = process.env.FUND_SUPPLIER_PRIVATE_KEY_1!
 const supplier = new ethers.Wallet(SUPPLIER_PVK, provider)
 const assetManagerAddress = "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc"
 
-getDexVsFtsoPrices(assetManagerAddress)
 //setUpFlashLender(network, provider, supplier)
 //setUpDex(assetManagerAddress, network, provider, supplier)
 //removeDexLiquidity(assetManagerAddress, network, provider, supplier)
+getDexVsFtsoPrices(assetManagerAddress)

@@ -8,8 +8,6 @@ import "./interface/ILiquidator.sol";
 import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
 
-import "hardhat/console.sol";
-
 
 /**
  * Do not send any tokens to this contract, they can be stolen!
@@ -93,7 +91,9 @@ contract Liquidator is ILiquidator {
     }
 
     // non-reentrant
-    function _runArbitrageWithData(Ecosystem.Data memory _data) internal flashLoanInitiatorLock {
+    function _runArbitrageWithData(
+        Ecosystem.Data memory _data
+    ) internal flashLoanInitiatorLock {
         // check if any f-assets can be liquidated
         require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
         // get max and optimal vault collateral to flash loan

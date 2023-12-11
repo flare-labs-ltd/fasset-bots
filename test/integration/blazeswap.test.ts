@@ -6,7 +6,7 @@
 import "dotenv/config"
 import { ethers } from 'ethers'
 import { assert } from 'chai'
-import { waitFinalize, syncDexReservesWithFtsoPrices, removeLiquidity } from './helpers/utils'
+import { waitFinalize, syncDexReservesWithFtsoPrices, removeLiquidity, swap, fixDexPairPrice } from './helpers/utils'
 import { getContracts } from './helpers/contracts'
 import type { Contracts } from './helpers/interface'
 
@@ -17,11 +17,13 @@ const ASSET_MANAGER = "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc"
 // two accounts funded with FtestXRP and CFLR
 const FUNDED_PVK_1 = process.env.FUND_SUPPLIER_PRIVATE_KEY_1!
 const FUNDED_PVK_2 = process.env.FUND_SUPPLIER_PRIVATE_KEY_2!
+const FUNDED_PVK_3 = process.env.FUND_SUPPLIER_PRIVATE_KEY_3!
 
 describe("Ecosystem setup", () => {
   let contracts: Contracts
   let funded1: ethers.Wallet
   let funded2: ethers.Wallet
+  let funded3: ethers.Wallet
 
   async function getDexPrices(): Promise<[bigint, bigint]> {
     const [dex1FAsset, dex1Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
@@ -29,6 +31,17 @@ describe("Ecosystem setup", () => {
     const dex1Price = BigInt(10_000) * dex1FAsset * BigInt(1e12) / dex1Usdc
     const dex2Price = BigInt(10_000) * dex2Usdc / dex2WNat
     return [dex1Price, dex2Price]
+  }
+
+  async function getFtsoPrices(): Promise<[bigint, bigint]> {
+    // get ftso prices of all relevant symbols
+    const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
+    const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
+    const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
+    // we expect such prices after setting up the dex
+    const dex1ExpectedPriceBips = BigInt(10_000) * usdcPrice / assetPrice
+    const dex2ExpectedPriceBips = BigInt(10_000) * wNatPrice / usdcPrice
+    return [dex1ExpectedPriceBips, dex2ExpectedPriceBips]
   }
 
   async function getBalances(account: ethers.Wallet): Promise<[bigint, bigint, bigint]> {
@@ -42,6 +55,7 @@ describe("Ecosystem setup", () => {
     // get relevant signers
     funded1 = new ethers.Wallet(FUNDED_PVK_1, provider)
     funded2 = new ethers.Wallet(FUNDED_PVK_2, provider)
+    funded3 = new ethers.Wallet(FUNDED_PVK_3, provider)
     // get contracts
     contracts = await getContracts(ASSET_MANAGER, "coston", provider)
     // mint USDC to funded accounts and wrap their CFLR (they will provide liquidity to dexes)
@@ -51,6 +65,7 @@ describe("Ecosystem setup", () => {
     await waitFinalize(provider, funded2, contracts.wNat.connect(funded2).deposit({ value: availableWNat2 })) // wrap CFLR
   })
 
+  // for this tests dex should have low (or no) liquidity
   it("should use two accounts' funds to provide liquidity equal to dexes", async () => {
     try {
       const initialReservesDex1 = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
@@ -62,12 +77,7 @@ describe("Ecosystem setup", () => {
     const [fAsset1Before, usdc1Before, wNat1Before] = await getBalances(funded1)
     const [fAsset2Before, usdc2Before, wNat2Before] = await getBalances(funded2)
     // get ftso prices of all relevant symbols
-    const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
-    const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
-    const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
-    // we expect such prices after setting up the dex
-    const dex1ExpectedPriceBips = BigInt(10_000) * usdcPrice / assetPrice
-    const dex2ExpectedPriceBips = BigInt(10_000) * wNatPrice / usdcPrice
+    const [dex1ExpectedPriceBips, dex2ExpectedPriceBips] = await getFtsoPrices()
     // add liquidity from the first source
     await syncDexReservesWithFtsoPrices(contracts, funded1, provider, false)
     // check that dex reserves are aligned with ftso prices
@@ -112,5 +122,28 @@ describe("Ecosystem setup", () => {
     assert.equal(fAsset2AfterDrain, fAsset2Before)
     assert.equal(usdc2AfterDrain, usdc2Before)
     assert.equal(wNat2AfterDrain, wNat2Before)
+  })
+
+  // for this test funded3 should have a lot of USDC and CFLR
+  it("should fix the dex / ftso price discrepancy", async () => {
+    const [dex1Price1,] = await getDexPrices()
+    // someone makes the transaction that raises dex price through slippage
+    const swapAmount = ethers.parseEther("1")
+    await swap(contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc, swapAmount, funded3, provider)
+    // check that price has changed
+    const [dex1Price2,] = await getDexPrices()
+    assert.notEqual(dex1Price1, dex1Price2)
+    // swap to fix the discrepancy
+    await fixDexPairPrice(
+      contracts,
+      contracts.fAsset, contracts.usdc,
+      "testXRP", "testUSDC",
+      ethers.MaxUint256,
+      ethers.MaxUint256,
+      funded3, provider
+    )
+    // check that price has reset
+    const [dex1Price3,] = await getDexPrices()
+    assert.equal(dex1Price3, dex1Price1)
   })
 })

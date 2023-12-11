@@ -1,5 +1,4 @@
 import { ethers } from 'hardhat'
-import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import { AssetConfig } from './interface'
 import { lotSizeAmg } from '../helpers/utils'
 import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
