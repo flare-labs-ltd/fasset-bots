@@ -192,9 +192,10 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
 
 export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
     const priceReader = await TokenPriceReader.create(settings);
-    const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, true);
-    const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals);
-    return toBN(amount).mul(toBNExp(10, expPlus)).div(stablecoinUSD.price);
+    const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, false);
+    // 5 is for 5 decimals of USD5
+    const expPlus = Number(collateralToken.decimals) + Number(stablecoinUSD.decimals) - 5;
+    return toBN(amount).mul(toBNExp(1, expPlus)).div(stablecoinUSD.price);
 }
 
 export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<InitialAgentData> {
