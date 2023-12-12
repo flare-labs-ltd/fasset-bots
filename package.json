@@ -15,7 +15,8 @@
         "agent-bot": "dist/src/cli/agent.js",
         "fake-price-reader": "dist/src/cli/fakePriceReader.js",
         "key": "dist/src/cli/key.js",
-        "user-bot": "dist/src/cli/user.js"
+        "user-bot": "dist/src/cli/user.js",
+        "utils": "dist/src/cli/utils.js"
     },
     "nyc": {
         "extends": "@istanbuljs/nyc-config-typescript",

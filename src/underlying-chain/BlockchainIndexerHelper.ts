@@ -1,6 +1,6 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toBN } from "../utils/helpers";
+import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, prefix0x, retry, sleep, toBN } from "../utils/helpers";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { SourceId } from "./SourceId";
@@ -72,7 +72,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 hash: data.transactionId,
                 inputs: await this.handleInputsOutputs(data, true),
                 outputs: await this.handleInputsOutputs(data, false),
-                reference: data.paymentReference,
+                reference: prefix0x(data.paymentReference),
                 status: this.successStatus(data),
             };
         }
@@ -241,7 +241,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                     hash: tx.transactionId,
                     inputs: await this.handleInputsOutputs(tx, true),
                     outputs: await this.handleInputsOutputs(tx, false),
-                    reference: tx.paymentReference,
+                    reference: prefix0x(tx.paymentReference),
                     status: this.successStatus(tx),
                 });
             }
@@ -283,7 +283,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                         hash: tx.transactionId,
                         inputs: await this.handleInputsOutputs(tx, true),
                         outputs: await this.handleInputsOutputs(tx, false),
-                        reference: tx.paymentReference,
+                        reference: prefix0x(tx.paymentReference),
                         status: this.successStatus(tx),
                     });
                 }

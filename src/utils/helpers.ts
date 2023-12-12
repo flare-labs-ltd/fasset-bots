@@ -388,3 +388,9 @@ export function findPackageRoot(moduleDir: string) {
         dir = path.dirname(dir);
     }
 }
+
+export function compareHexValues(hex1:string, hex2:string) {
+    const upperHex1 = hex1.toUpperCase();
+    const upperHex2 = hex2.toUpperCase();
+    return upperHex1 === upperHex2;
+}
