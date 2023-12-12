@@ -11,7 +11,7 @@ import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
-import { getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
+import { compareHexValues, getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { ChallengeStrategy, DefaultChallengeStrategy } from "./plugins/ChallengeStrategy";
@@ -187,6 +187,7 @@ export class Challenger extends ActorBase {
      */
     async illegalTransactionChallenge(scope: EventScope, transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+        console.log(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof));
@@ -203,6 +204,7 @@ export class Challenger extends ActorBase {
      */
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
+        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
         if (!PaymentReference.isValid(transaction.reference)) return; // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
@@ -220,6 +222,7 @@ export class Challenger extends ActorBase {
      */
     async doublePaymentChallenge(scope: EventScope, tx1hash: string, tx2hash: string, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
+        console.log(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
         await this.singleChallengePerAgent(agent, async () => {
             const [proof1, proof2] = await Promise.all([
                 this.waitForDecreasingBalanceProof(scope, tx1hash, agent.underlyingAddress),
@@ -238,6 +241,7 @@ export class Challenger extends ActorBase {
      */
     checkForNegativeFreeBalance(agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
+        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
         // extract the spent value for each transaction
@@ -282,6 +286,7 @@ export class Challenger extends ActorBase {
      */
     async freeBalanceNegativeChallenge(scope: EventScope, transactionHashes: string[], agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for free negative balance.`);
+        console.log(`Challenger ${this.address} is challenging agent ${agent.vaultAddress} for free negative balance.`);
         await this.singleChallengePerAgent(agent, async () => {
             const proofs = await Promise.all(transactionHashes.map((txHash) => this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             await this.challengeStrategy.freeBalanceNegativeChallenge(scope, agent, web3DeepNormalize(proofs));
@@ -307,7 +312,7 @@ export class Challenger extends ActorBase {
      * @param reference payment reference
      */
     isValidAnnouncedPaymentReference(agent: TrackedAgentState, reference: string) {
-        return !agent.announcedUnderlyingWithdrawalId.isZero() && reference === PaymentReference.announcedWithdrawal(agent.announcedUnderlyingWithdrawalId);
+        return !agent.announcedUnderlyingWithdrawalId.isZero() && compareHexValues(reference, PaymentReference.announcedWithdrawal(agent.announcedUnderlyingWithdrawalId));
     }
 
     /**

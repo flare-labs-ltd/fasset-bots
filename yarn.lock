@@ -6238,6 +6238,7 @@ __metadata:
     fake-price-reader: dist/src/cli/fakePriceReader.js
     key: dist/src/cli/key.js
     user-bot: dist/src/cli/user.js
+    utils: dist/src/cli/utils.js
   languageName: unknown
   linkType: soft
 
