@@ -33,7 +33,7 @@
     ],
     "ormOptions": {
         "type": "mysql",
-        "dbName": "fasset-bots",
+        "dbName": "fasset_bots",
         "host": "localhost",
         "port": 3306,
         "allowGlobalContext": true
