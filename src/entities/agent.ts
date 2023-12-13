@@ -32,25 +32,25 @@ export class AgentEntity {
     @Property({ nullable: true })
     currentEventBlock!: number;
 
-    @OneToMany(() => EventEntity, (event) => event.agent, {
+    @OneToMany(() => Event, (event) => event.agent, {
         orphanRemoval: true,
         cascade: [Cascade.ALL],
     })
-    events = new Collection<EventEntity>(this);
+    events = new Collection<Event>(this);
 
-    addNewEvent(event: EventEntity): void {
+    addNewEvent(event: Event): void {
         // remove previously handled events before adding this one
         // we track the last read event along with all the unhandled ones!
         this.events.remove(this.events.filter((_event) => _event.handled));
         this.events.add(event);
     }
 
-    lastEventRead(): EventEntity | undefined {
+    lastEventRead(): Event | undefined {
         const ordered = this.events.getItems().sort(eventOrder);
         return ordered[ordered.length - 1];
     }
     /* istanbul ignore next */ //until handling is not implemented
-    unhandledEvents(): EventEntity[] {
+    unhandledEvents(): Event[] {
         return this.events.getItems().filter((event) => !event.handled);
     }
 
@@ -241,7 +241,7 @@ export class AgentRedemption {
 }
 
 @Entity()
-export class EventEntity {
+export class Event {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 

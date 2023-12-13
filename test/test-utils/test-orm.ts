@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ORM } from "../../src/config/orm";
 import { EvmEvent } from "../../src/utils/events/common";
-import { AgentEntity, DailyProofState, EventEntity } from "../../src/entities/agent";
+import { AgentEntity, DailyProofState, Event } from "../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "./test-bot-config";
 
@@ -33,15 +33,15 @@ describe("AgentBot", () => {
             await orm.em.transactional(async (em) => {
                 expect(agent.lastEventRead()).to.be.undefined;
                 _event.blockNumber = 0;
-                agent.addNewEvent(new EventEntity(agent, _event, false));
+                agent.addNewEvent(new Event(agent, _event, false));
                 _event.blockNumber = 1;
-                agent.addNewEvent(new EventEntity(agent, _event, true));
+                agent.addNewEvent(new Event(agent, _event, true));
                 _event.blockNumber = 2;
-                agent.addNewEvent(new EventEntity(agent, _event, true));
+                agent.addNewEvent(new Event(agent, _event, true));
                 _event.blockNumber = 3;
-                agent.addNewEvent(new EventEntity(agent, _event, false));
+                agent.addNewEvent(new Event(agent, _event, false));
                 _event.blockNumber = 4;
-                agent.addNewEvent(new EventEntity(agent, _event, true));
+                agent.addNewEvent(new Event(agent, _event, true));
                 em.persist(agent);
             });
             expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0, 3, 4]);
@@ -55,15 +55,15 @@ describe("AgentBot", () => {
             await orm.em.transactional(async (em) => {
                 expect(agent.lastEventRead()).to.be.undefined;
                 _event.blockNumber = 0;
-                agent.addNewEvent(new EventEntity(agent, _event, false));
+                agent.addNewEvent(new Event(agent, _event, false));
                 _event.blockNumber = 1;
-                agent.addNewEvent(new EventEntity(agent, _event, true));
+                agent.addNewEvent(new Event(agent, _event, true));
                 _event.blockNumber = 2;
-                agent.addNewEvent(new EventEntity(agent, _event, true));
+                agent.addNewEvent(new Event(agent, _event, true));
                 _event.blockNumber = 3;
-                agent.addNewEvent(new EventEntity(agent, _event, false));
+                agent.addNewEvent(new Event(agent, _event, false));
                 _event.blockNumber = 4;
-                agent.addNewEvent(new EventEntity(agent, _event, false));
+                agent.addNewEvent(new Event(agent, _event, false));
                 em.persist(agent);
             });
             expect(agent.events.map((e) => e.blockNumber)).to.deep.equal([0, 3, 4]);
@@ -76,7 +76,7 @@ describe("AgentBot", () => {
             await orm.em.transactional(async (em) => {
                 expect(agent.lastEventRead()).to.be.undefined;
                 agent.addNewEvent(
-                    new EventEntity(
+                    new Event(
                         agent,
                         {
                             blockNumber: 0,
@@ -98,12 +98,12 @@ describe("AgentBot", () => {
 
         it("should increase retry count", async () => {
             const agent = createAgent();
-            const event = new EventEntity(agent, { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent, false)
+            const event = new Event(agent, { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent, false)
             agent.addNewEvent(event);
             expect(event.retries).to.equal(0);
             event.retries += 1;
             await orm.em.persist(agent).flush();
-            const event2 = await orm.em.findOneOrFail(EventEntity, { id: event.id });
+            const event2 = await orm.em.findOneOrFail(Event, { id: event.id });
             expect(event2.retries).to.equal(1);
         });
     });

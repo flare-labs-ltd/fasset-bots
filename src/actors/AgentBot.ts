@@ -2,7 +2,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, EventEntity } from "../entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { Agent } from "../fasset/Agent";
 import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -208,7 +208,7 @@ export class AgentBot {
         }
     }
 
-    async getEventFromEntity(event: EventEntity): Promise<EvmEvent | undefined> {
+    async getEventFromEntity(event: Event): Promise<EvmEvent | undefined> {
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
         const events = [];
         const logsAssetManager = await web3.eth.getPastLogs({
@@ -249,13 +249,13 @@ export class AgentBot {
                 await rootEm
                     .transactional(async (em) => {
                         // log event is handled here! Transaction committing should be done at the last possible step!
-                        agentEnt.addNewEvent(new EventEntity(agentEnt, event, true));
+                        agentEnt.addNewEvent(new Event(agentEnt, event, true));
                         agentEnt.currentEventBlock = event.blockNumber;
                         // handle the event
                         await this.handleEvent(em, event);
                     })
                     .catch(async (error) => {
-                        agentEnt.addNewEvent(new EventEntity(agentEnt, event, false));
+                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
                         await rootEm.persist(agentEnt).flush();
                         console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);

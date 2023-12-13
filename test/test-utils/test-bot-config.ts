@@ -1,5 +1,5 @@
 import { CreateOrmOptions } from "../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentRedemption, EventEntity } from "../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentRedemption, Event } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 
 export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
@@ -21,7 +21,7 @@ export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x6356470e9aF457d
 export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, EventEntity],
+    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, Event],
     type: "sqlite",
     dbName: "fasset-bots-test.db",
     debug: false,
