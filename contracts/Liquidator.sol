@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
@@ -59,7 +60,7 @@ contract Liquidator is ILiquidator {
     function runArbitrage(
         address _agentVault,
         address _to
-    ) external {
+    ) virtual public {
         runArbitrageWithCustomParams(
             _agentVault,
             flashLender,
@@ -73,7 +74,7 @@ contract Liquidator is ILiquidator {
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwapRouter,
         address _to
-    ) public {
+    ) virtual public {
         // we have to start liquidation so that we get correct max f-assets
         // this should probably be fixed in the later f-asset version
         IIAssetManager _assetManager = IIAgentVault(_agentVault).assetManager();
@@ -87,7 +88,7 @@ contract Liquidator is ILiquidator {
         _runArbitrageWithData(_data);
         // send earnings to sender (along with any tokens sent to this contract)
         uint256 earnings = IERC20(_data.vaultToken).balanceOf(address(this));
-        IERC20(_data.vaultToken).transfer(_to, earnings);
+        SafeERC20.safeTransfer(IERC20(_data.vaultToken), _to, earnings);
     }
 
     // non-reentrant
@@ -97,7 +98,7 @@ contract Liquidator is ILiquidator {
         // check if any f-assets can be liquidated
         require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
         // get max and optimal vault collateral to flash loan
-        uint256 maxVaultFlashLoan = flashLender.maxFlashLoan(_data.vaultToken);
+        uint256 maxVaultFlashLoan = IERC3156FlashLender(_data.flashLender).maxFlashLoan(_data.vaultToken);
         require(maxVaultFlashLoan > 0, "Liquidator: Flash loan unavailable");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profit available");
@@ -154,6 +155,7 @@ contract Liquidator is ILiquidator {
             _blazeSwapRouter
         );
         // approve flash loan spending to flash lender
+        IERC20(_token).approve(msg.sender, 0);
         IERC20(_token).approve(msg.sender, _amount + _fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
@@ -177,6 +179,7 @@ contract Liquidator is ILiquidator {
             address(this),
             block.timestamp
         );
+        _vaultToken.approve(address(_blazeSwapRouter), 0);
         // liquidate obtained f-asset
         (,, uint256 obtainedPool) = _assetManager.liquidate(
             address(_agentVault),
@@ -192,6 +195,7 @@ contract Liquidator is ILiquidator {
                 address(this),
                 block.timestamp
             );
+            _poolToken.approve(address(_blazeSwapRouter), 0);
         }
     }
 

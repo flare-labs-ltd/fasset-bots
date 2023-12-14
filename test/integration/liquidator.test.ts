@@ -5,8 +5,7 @@
 import "dotenv/config"
 import { ethers } from 'ethers'
 import { assert } from 'chai'
-import { assetPriceForAgentCr } from '../calculations'
-import { waitFinalize, syncDexReservesWithFtsoPrices } from './helpers/utils'
+import { waitFinalize, syncDexReservesWithFtsoPrices, getCollateralPriceForAgentCr } from './helpers/utils'
 import { getAgentsAssetManager, deployLiquidator, getContracts } from './helpers/contracts'
 import type { Contracts } from './helpers/interface'
 
@@ -24,36 +23,6 @@ describe("Liquidator", () => {
   let deployer: ethers.Wallet
   let liquidator: ethers.JsonRpcSigner
 
-  // obtains the f-assets's price that results in agent having collateral ratio of crBips
-  async function getCollateralForCr(collateralKind: "vault" | "pool", crBips: number): Promise<bigint> {
-    const agentInfo = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
-    const totalMintedUBA = agentInfo.mintedUBA + agentInfo.redeemingUBA + agentInfo.reservedUBA
-    let collateralWei
-    let collateralToken
-    let tokenSymbol
-    if (collateralKind === "vault") {
-      collateralWei = agentInfo.totalVaultCollateralWei
-      collateralToken = contracts.usdc
-      tokenSymbol = "testUSDC"
-    } else {
-      collateralWei = agentInfo.totalPoolCollateralNATWei
-      collateralToken = contracts.wNat
-      tokenSymbol = "CFLR"
-    }
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await contracts.priceReader.getPrice(tokenSymbol)
-    const { 2: fAssetFtsoDecimals } = await contracts.priceReader.getPrice("testXRP")
-    return assetPriceForAgentCr(
-      BigInt(crBips),
-      totalMintedUBA,
-      collateralWei,
-      collateralFtsoPrice,
-      collateralFtsoDecimals,
-      await collateralToken.decimals(),
-      fAssetFtsoDecimals,
-      await contracts.fAsset.decimals()
-    )
-  }
-
   before(async () => {
     // get relevant signers
     deployer = new ethers.Wallet(DEPLOYER_PVK, provider)
@@ -69,7 +38,7 @@ describe("Liquidator", () => {
 
   it("should liquidate an agent", async () => {
     // put agent in liquidation by raising xrp price and set cr slightly below ccb
-    const assetPrice = await getCollateralForCr("pool", 18_900) // ccb = 19_000, minCr = 20_000, safetyCr = 21_000
+    const assetPrice = await getCollateralPriceForAgentCr(contracts, AGENT_ADDRESS, 18_900, "pool") // ccb = 19_000, minCr = 20_000, safetyCr = 21_000
     await waitFinalize(provider, deployer, contracts.priceReader.connect(deployer).setPrice("testXRP", assetPrice))
     // according to the conditions constructed above, sync up dexes as stably as possible with deployer's limited funds
     await syncDexReservesWithFtsoPrices(contracts, deployer, provider)

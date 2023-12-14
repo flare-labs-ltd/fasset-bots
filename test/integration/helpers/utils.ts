@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { priceBasedAddedDexReserves, swapToDexPrice } from "../../calculations"
+import { priceBasedAddedDexReserves, swapToDexPrice, assetPriceForAgentCr } from "../../calculations"
 import type { IBlazeSwapPair, IBlazeSwapRouter, IERC20Metadata } from "../../../types"
 import type { Contracts } from "./interface"
 
@@ -38,6 +38,44 @@ export async function waitFinalize(
 }
 
 /////////////////////////////////////////////////////////////////////////
+// F-Asset specific
+
+// obtains the f-assets's price that results in agent having collateral ratio of crBips
+export async function getCollateralPriceForAgentCr(
+  contracts: Contracts,
+  agentAddress: ethers.AddressLike,
+  crBips: number,
+  collateralKind: "vault" | "pool",
+): Promise<bigint> {
+  const agentInfo = await contracts.assetManager.getAgentInfo(agentAddress)
+  const totalMintedUBA = agentInfo.mintedUBA + agentInfo.redeemingUBA + agentInfo.reservedUBA
+  let collateralWei
+  let collateralToken
+  let tokenSymbol
+  if (collateralKind === "vault") {
+    collateralWei = agentInfo.totalVaultCollateralWei
+    collateralToken = contracts.usdc
+    tokenSymbol = "testUSDC"
+  } else {
+    collateralWei = agentInfo.totalPoolCollateralNATWei
+    collateralToken = contracts.wNat
+    tokenSymbol = "CFLR"
+  }
+  const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await contracts.priceReader.getPrice(tokenSymbol)
+  const { 2: fAssetFtsoDecimals } = await contracts.priceReader.getPrice("testXRP")
+  return assetPriceForAgentCr(
+    BigInt(crBips),
+    totalMintedUBA,
+    collateralWei,
+    collateralFtsoPrice,
+    collateralFtsoDecimals,
+    await collateralToken.decimals(),
+    fAssetFtsoDecimals,
+    await contracts.fAsset.decimals()
+  )
+}
+
+/////////////////////////////////////////////////////////////////////////
 // ecosystem setup and manipulation
 
 export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
@@ -61,6 +99,10 @@ export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
   }
 }
 
+/**
+  * A high level function to set up the dex ecosystem
+  * for both USDC/F-Asset and WNAT/USDC pairs.
+  */
 export async function syncDexReservesWithFtsoPrices(
   contracts: Contracts,
   signer: ethers.Wallet,
@@ -85,21 +127,40 @@ export async function syncDexReservesWithFtsoPrices(
   const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
   const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
   const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
-  // align dex prices with the ftso prices while not exceeding available balances
-  // (TODO: do not assume that ftso decimals are 5)
-  await setDexPairPrice(
-    contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc,
-    assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
-    signer, provider)
-  await setDexPairPrice(
-    contracts.blazeSwapRouter, contracts.wNat, contracts.usdc,
-    wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
-    signer, provider)
+  // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances
+  // do this in two ways - with swap and with add liquidity
+  try {
+    await swapDexPairToPrice(
+      contracts, contracts.fAsset, contracts.usdc,
+      assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
+      signer, provider
+    )
+  } catch {}
+  try {
+    await addLiquidityToDexPairPrice(
+      contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc,
+      assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
+      signer, provider)
+  } catch {}
+  try {
+    await swapDexPairToPrice(
+      contracts, contracts.wNat, contracts.usdc,
+      wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
+      signer, provider
+    )
+  } catch {}
+  try {
+    await addLiquidityToDexPairPrice(
+      contracts.blazeSwapRouter, contracts.wNat, contracts.usdc,
+      wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
+      signer, provider)
+  } catch {}
 }
 
+// (TODO: do not assume that ftso decimals are 5)
 // set dex price of tokenA in tokenB by adding liquidity.
 // both prices in the same currency, e.g. FLR/$, XRP/$
-async function setDexPairPrice(
+async function addLiquidityToDexPairPrice(
   blazeSwapRouter: IBlazeSwapRouter,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
@@ -124,27 +185,24 @@ async function setDexPairPrice(
   if (addedA < 0) addedA = BigInt(0) // ideally we would need to remove liquidity
   if (addedB < 0) addedB = BigInt(0) // but user may not have any, so we leave it
   if (addedA == BigInt(0) && addedB == BigInt(0)) {
-    console.error('no reserves can be added')
+    console.error('add liquidity failure: no reserves can be added')
   } else {
     await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, signer, provider)
   }
 }
 
 // swap on dexes to achieve the given price
-export async function fixDexPairPrice(
+export async function swapDexPairToPrice(
   contracts: Contracts,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
-  symbolA: string,
-  symbolB: string,
+  priceA: bigint,
+  priceB: bigint,
   maxSwapA: bigint,
   maxSwapB: bigint,
   signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
-  // get ftso prices of all relevant symbols
-  const { 0: priceA } = await contracts.priceReader.getPrice(symbolA)
-  const { 0: priceB } = await contracts.priceReader.getPrice(symbolB)
   // align dex prices with the ftso prices while not exceeding available balances
   const decimalsA = await tokenA.decimals()
   const decimalsB = await tokenB.decimals()
@@ -152,10 +210,8 @@ export async function fixDexPairPrice(
   let swapA = swapToDexPrice(reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxSwapA)
   let swapB = swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA, maxSwapB)
   if (swapA > 0) {
-    await tokenA.connect(signer).approve(contracts.blazeSwapRouter, swapA)
     await swap(contracts.blazeSwapRouter, tokenA, tokenB, swapA, signer, provider)
   } else if (swapB > 0) {
-    await tokenB.connect(signer).approve(contracts.blazeSwapRouter, swapB)
     await swap(contracts.blazeSwapRouter, tokenB, tokenA, swapB, signer, provider)
   }
 }
@@ -204,7 +260,7 @@ export async function removeLiquidity(
       ethers.MaxUint256
     ))
   } else {
-    console.log('no liquidity to remove')
+    console.log('remove liquidity failure: no liquidity to remove')
   }
 }
 

@@ -17,7 +17,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
     function illegalPaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _transaction,
         address _agentVault
-    ) public {
+    ) public onlyOwner {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.illegalPaymentChallenge(_transaction, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -28,7 +28,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         BalanceDecreasingTransaction.Proof calldata _payment1,
         BalanceDecreasingTransaction.Proof calldata _payment2,
         address _agentVault
-    ) public {
+    ) public onlyOwner {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.doublePaymentChallenge( _payment1, _payment2, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -38,7 +38,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
     function freeBalanceNegativeChallenge(
         BalanceDecreasingTransaction.Proof[] calldata _payments,
         address _agentVault
-    ) public {
+    ) public onlyOwner {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.freeBalanceNegativeChallenge(_payments, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
@@ -46,10 +46,25 @@ contract Challenger is IChallenger, Liquidator, Ownable {
     }
 
     function withdrawToken(IERC20 token) external onlyOwner {
-        token.transfer(owner(), token.balanceOf(address(this)));
+        SafeERC20.safeTransfer(token, owner(), token.balanceOf(address(this)));
     }
 
     function withderawNat() external onlyOwner {
         payable(owner()).transfer(address(this).balance);
+    }
+
+    //////////////////////////// only owner on liquidator methods ////////////////////////////
+
+    function runArbitrage(address _agentVault, address _to) override onlyOwner public {
+        super.runArbitrage(_agentVault, _to);
+    }
+
+    function runArbitrageWithCustomParams(
+        address _agentVault,
+        IERC3156FlashLender _flashLender,
+        IBlazeSwapRouter _blazeSwapRouter,
+        address _to
+    ) override onlyOwner public {
+        super.runArbitrageWithCustomParams(_agentVault, _flashLender, _blazeSwapRouter, _to);
     }
 }

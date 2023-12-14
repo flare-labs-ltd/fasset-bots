@@ -6,7 +6,7 @@
     "------------ contracts -------------": "----------------- contracts -----------------",
     "clean": "rimraf ./artifacts ./cache ./coverage ./types ./coverage.json && yarn typechain",
     "compile": "yarn clean && cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
-    "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 11279528",
+    "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 11484960",
     "------------ tests ---------------": "----------------- tests -----------------",
     "pretest": "sh ./scripts/fix-blazeswap-hash.sh",
     "pretest:unit": "sh ./scripts/fix-blazeswap-hash.sh",

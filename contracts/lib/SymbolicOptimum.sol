@@ -5,6 +5,12 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
 import "./Ecosystem.sol";
 
+// constants for dex fees and bips settings
+uint256 constant MAX_ECO_BIPS = 10000;
+uint256 constant DEX_MAX_BIPS = 1000;
+uint256 constant DEX_FEE_BIPS = 3;
+uint256 constant DEX_FACTOR_BIPS = DEX_MAX_BIPS - DEX_FEE_BIPS;
+
 // embedded library
 library SymbolicOptimum {
     using Babylonian for uint256;
@@ -41,8 +47,8 @@ library SymbolicOptimum {
             // scope to avoid stack too deep error
             _amount
                 = _data.reserveVaultWeiDex1
-                * 997
-                / 1000
+                * DEX_FACTOR_BIPS
+                / DEX_MAX_BIPS
                 * _data.reservePoolWeiDex2;
             _amount = _amount.sqrt();
         }
@@ -51,18 +57,18 @@ library SymbolicOptimum {
             uint256 _aux1
                 = _data.reserveFAssetUBADex1
                 * _data.liquidationFactorVaultBips
-                / 10_000
+                / MAX_ECO_BIPS
                 * _data.priceFAssetVaultMul
                 / _data.priceFAssetVaultDiv
                 * _data.reservePoolWeiDex2;
             uint256 _aux2
                 = _data.reserveFAssetUBADex1
                 * _data.liquidationFactorPoolBips
-                / 10_000
+                / MAX_ECO_BIPS
                 * _data.priceFAssetPoolMul
                 / _data.priceFAssetPoolDiv
-                * 997
-                / 1000
+                * DEX_FACTOR_BIPS
+                / DEX_MAX_BIPS
                 * _data.reserveVaultWeiDex2;
             _amount *= (_aux1 + _aux2).sqrt();
         }
@@ -76,8 +82,8 @@ library SymbolicOptimum {
             }
             _amount -= _aux1;
         }
-        _amount *= 1000;
-        _amount /= 997;
+        _amount *= DEX_MAX_BIPS;
+        _amount /= DEX_FACTOR_BIPS;
         _amount /= _data.reservePoolWeiDex2;
     }
 
@@ -88,8 +94,8 @@ library SymbolicOptimum {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountIn) {
-        uint256 numerator = reserveIn * amountOut * 1000;
-        uint256 denominator = (reserveOut - amountOut) * 997;
+        uint256 numerator = reserveIn * amountOut * DEX_MAX_BIPS;
+        uint256 denominator = (reserveOut - amountOut) * DEX_FACTOR_BIPS;
         amountIn = numerator / denominator + 1;
     }
 
@@ -100,9 +106,9 @@ library SymbolicOptimum {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        uint256 amountInWithFee = amountIn * 997;
+        uint256 amountInWithFee = amountIn * DEX_FACTOR_BIPS;
         uint256 numerator = amountInWithFee * reserveOut;
-        uint256 denominator = reserveIn * 1000 + amountInWithFee;
+        uint256 denominator = reserveIn * DEX_MAX_BIPS + amountInWithFee;
         amountOut = numerator / denominator;
     }
 
