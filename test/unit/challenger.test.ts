@@ -40,6 +40,7 @@ describe.only("Tests for Liquidator contract", () => {
   describe("making challenges", () => {
     challenges.forEach((challenge) => {
       ecosystems.forEach((ecosystem) => {
+
         it("should do a successfull challenge, then fail liquidating an agent", async () => {
           const { challenger, assetManager, vault, agent, flashLender } = context.contracts
           await setupEcosystem(ecosystem, assetConfig, context)
@@ -53,21 +54,26 @@ describe.only("Tests for Liquidator contract", () => {
           expect(statusAfter).to.equal(3)
           expect(maxLiquidationAfter).to.equal(mintedAfter)
         })
+
         it("should successfully challenge otherwise healthy agent, then liquidate", async () => {
           const { challenger, assetManager, vault, agent } = context.contracts
           await setupEcosystem(ecosystem, assetConfig, context)
           const { status: statusBefore } = await assetManager.getAgentInfo(agent)
           expect(statusBefore).to.be.lessThan(3)
           await challenge(challenger.connect(context.signers.challenger), agent)
-          const { status: statusAfter, maxLiquidationAmountUBA } = await assetManager.getAgentInfo(agent)
+          const { status: statusAfter, maxLiquidationAmountUBA, mintedUBA } = await assetManager.getAgentInfo(agent)
           expect(statusAfter).to.equal(3)
           expect(maxLiquidationAmountUBA).to.equal(0)
-          // check that challenger earned something and nothing was left in the contract
-          const earnings = await vault.balanceOf(context.signers.challenger)
+          expect(mintedUBA).to.equal(0)
+          // check that rewards were deposited to the contract
+          const earnings = await vault.balanceOf(challenger)
           expect(earnings).to.be.greaterThan(0)
-          const leftorvers = await vault.balanceOf(challenger)
-          expect(leftorvers).to.equal(0)
+          // withdraw tokens from contract
+          await challenger.connect(context.signers.challenger).withdrawToken(vault)
+          const balance = await vault.balanceOf(context.signers.challenger)
+          expect(balance).to.equal(earnings)
         })
+
       })
     })
   })

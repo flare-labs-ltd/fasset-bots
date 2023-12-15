@@ -21,7 +21,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.illegalPaymentChallenge(_transaction, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(_agentVault, msg.sender) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault, address(this)) {} catch (bytes memory) {}
     }
 
     function doublePaymentChallenge(
@@ -32,7 +32,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.doublePaymentChallenge( _payment1, _payment2, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(_agentVault, msg.sender) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault, address(this)) {} catch (bytes memory) {}
     }
 
     function freeBalanceNegativeChallenge(
@@ -42,7 +42,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.freeBalanceNegativeChallenge(_payments, _agentVault);
         // if liquidation fails, we don't want to revert the made challenge
-        try this.runArbitrage(_agentVault, msg.sender) {} catch (bytes memory) {}
+        try this.runArbitrage(_agentVault, address(this)) {} catch (bytes memory) {}
     }
 
     function withdrawToken(IERC20 token) external onlyOwner {
@@ -55,7 +55,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
 
     //////////////////////////// only owner on liquidator methods ////////////////////////////
 
-    function runArbitrage(address _agentVault, address _to) override onlyOwner public {
+    function runArbitrage(address _agentVault, address _to) override public {
+        require(address(msg.sender) == address(this), "calling an internal method");
         super.runArbitrage(_agentVault, _to);
     }
 
@@ -64,7 +65,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         IERC3156FlashLender _flashLender,
         IBlazeSwapRouter _blazeSwapRouter,
         address _to
-    ) override onlyOwner public {
+    ) override public {
+        require(address(msg.sender) == address(this), "calling an internal method");
         super.runArbitrageWithCustomParams(_agentVault, _flashLender, _blazeSwapRouter, _to);
     }
 }
