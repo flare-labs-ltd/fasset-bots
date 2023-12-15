@@ -77,6 +77,9 @@ export class FuzzingNotifier {
     sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
         this.notifier.sendWithdrawVaultCollateralAnnouncement(this.eventFormatter.formatAddress(agentVault), amount);
     }
+    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+        this.notifier.sendRedeemCollateralPoolTokensAnnouncement(this.eventFormatter.formatAddress(agentVault), amount);
+    }
     sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
         this.notifier.sendAgentSettingsUpdate(this.eventFormatter.formatAddress(agentVault), settingName);
     }
@@ -154,5 +157,11 @@ export class FuzzingNotifier {
     }
     sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
         this.notifier.sendAgentCannotUpdateSettingExpired(this.eventFormatter.formatAddress(agentVault), setting);
+    }
+    sendRedeemCollateralPoolTokens(agentVault: string, amount: string): void {
+        this.notifier.sendRedeemCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
+    }
+    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): void {
+        this.notifier.sendAgentCannotWithdrawCollateral(this.eventFormatter.formatAddress(agentVault), amount, type);
     }
 }

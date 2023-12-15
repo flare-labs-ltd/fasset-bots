@@ -29,7 +29,6 @@ const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require("StateConnectorMock");
 
 const ERC20Mock = artifacts.require("ERC20Mock");
-const CollateralPool = artifacts.require("CollateralPool");
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -158,6 +157,19 @@ describe("Bot cli commands unit tests", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.withdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
+    });
+
+    it("Should announce pool token redemption", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
+        const collateralBefore = toBN(await agent.collateralPoolToken.balanceOf(agent.vaultAddress));
+        expect(collateralBefore.toString()).to.eq(depositAmount);
+        await botCliCommands.redeemCollateralPoolTokens(vaultAddress, withdrawAmount);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
     });
 
     it("Should self close", async () => {

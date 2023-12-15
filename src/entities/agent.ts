@@ -1,4 +1,4 @@
-import { Cascade, Collection, Entity, Enum, EnumType, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, Enum, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import { BNType } from "../config/orm-types";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
@@ -63,10 +63,10 @@ export class AgentEntity {
     waitingForDestructionTimestamp: BN = BN_ZERO;
 
     @Property({ type: BNType })
-    poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
+    destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
 
     @Property()
-    poolTokenRedemptionWithdrawalAllowedAtAmount: string = "";
+    destroyPoolTokenRedemptionWithdrawalAllowedAtAmount: string = "";
 
     @Property({ type: BNType })
     destroyVaultCollateralWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
@@ -104,6 +104,14 @@ export class AgentEntity {
 
     @Property({ type: BNType })
     agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
+
+    // redeem pool tokens
+
+    @Property({ type: BNType })
+    poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN = BN_ZERO;
+
+    @Property()
+    poolTokenRedemptionWithdrawalAllowedAtAmount: string = "";
 
     // agent withdraw vault collateral
 

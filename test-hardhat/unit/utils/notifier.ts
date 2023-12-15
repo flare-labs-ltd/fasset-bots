@@ -297,4 +297,16 @@ describe("Notifier tests", async () => {
         notifier.sendAgentCannotUpdateSettingExpired("agentVault", "setting");
         expect(spySend).to.have.been.called.once;
     });
+
+    it("Should send redemption of collateral pool tokens was announced", async () => {
+        const spySend = spy.on(notifier, "sendRedeemCollateralPoolTokensAnnouncement");
+        notifier.sendRedeemCollateralPoolTokensAnnouncement("agentVault", "amount");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send cannot withdraw collateral", async () => {
+        const spySend = spy.on(notifier, "sendAgentCannotWithdrawCollateral");
+        notifier.sendAgentCannotWithdrawCollateral("agentVault", "amount", "POOL");
+        expect(spySend).to.have.been.called.once;
+    });
 });
