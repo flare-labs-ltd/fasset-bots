@@ -189,7 +189,7 @@ program
     .action(async () => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
         const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, false);
+        const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.listRedemptions();
     });
 
