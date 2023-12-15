@@ -159,6 +159,19 @@ describe("AgentBot cli commands unit tests", async () => {
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
     });
 
+    it("Should announce pool token redemption", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmount), ownerAddress);
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
+        const collateralBefore = toBN(await agent.collateralPoolToken.balanceOf(agent.vaultAddress));
+        expect(collateralBefore.toString()).to.eq(depositAmount);
+        await botCliCommands.redeemCollateralPoolTokens(vaultAddress, withdrawAmount);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
+        expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
+    });
+
     it("Should self close", async () => {
         const agent = await createAgent();
         const vaultAddress = agent.vaultAddress;

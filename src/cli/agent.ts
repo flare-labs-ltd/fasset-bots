@@ -117,6 +117,17 @@ program
     });
 
 program
+    .command("redeemCollateralPoolTokens")
+    .description("redeem collateral pool tokens")
+    .argument("<agentVaultAddress>")
+    .argument("<amount")
+    .action(async (agentVault: string, amount: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.redeemCollateralPoolTokens(agentVault, amount);
+    });
+
+program
     .command("withdrawPoolFees")
     .description("withdraw pool fees from pool to owner's address")
     .argument("<agentVaultAddress>")

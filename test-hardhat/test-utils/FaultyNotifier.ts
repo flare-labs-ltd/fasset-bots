@@ -3,6 +3,12 @@ import { Notifier } from "../../src/utils/Notifier";
 
 // to use in tests
 export class FaultyNotifier implements Notifier {
+    sendRedeemCollateralPoolTokens(agentVault: string, amount: string): void {
+        throw new Error("Method not implemented.");
+    }
+    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): void {
+        throw new Error("Method not implemented.");
+    }
     send(title: string, message?: string | undefined): void {
         throw new Error("Method not implemented.");
     }
@@ -64,6 +70,9 @@ export class FaultyNotifier implements Notifier {
         throw new Error("Method not implemented.");
     }
     sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): void {
+        throw new Error("Method not implemented.");
+    }
+    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
         throw new Error("Method not implemented.");
     }
     sendAgentSettingsUpdate(agentVault: string, settingName: string): void {

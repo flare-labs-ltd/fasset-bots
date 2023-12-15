@@ -38,6 +38,9 @@ const AGENT_COLLATERAL_TOP_UP_FAILED = "AGENT'S COLLATERAL TOP UP FAILED";
 const POOL_COLLATERAL_TOP_UP_FAILED = "POOL'S COLLATERAL TOP UP FAILED";
 const WITHDRAW_VAULT_COLLATERAL = "VAULT COLLATERAL WITHDRAWAL";
 const WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "VAULT COLLATERAL WITHDRAWAL ANNOUNCEMENT";
+const REDEEM_POOL_TOKENS_ANNOUNCEMENT = "REDEEM POOL TOKENS ANNOUNCEMENT";
+const REDEEM_POOL_TOKENS = "POOL TOKENS REDEMPTION";
+const WITHDRAWAL_FAILED = "COLLATERAL WITHDRAWAL FAILED";
 
 // underlying
 const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE";
@@ -207,6 +210,14 @@ export class Notifier {
         this.send(WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`);
     }
 
+    sendRedeemCollateralPoolTokens(agentVault: string, amount: string) {
+        this.send(REDEEM_POOL_TOKENS, `Agent ${agentVault} redeemed of ${amount} pool tokens.`);
+    }
+
+    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+        this.send(REDEEM_POOL_TOKENS_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`);
+    }
+
     sendAgentSettingsUpdate(agentVault: string, settingName: string) {
         this.send(AGENT_SETTING_UPDATE, `Agent ${agentVault} setting ${settingName} was updated.`);
     }
@@ -309,5 +320,9 @@ export class Notifier {
 
     sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
         this.send(AGENT_SETTING_UPDATE_FAILED, `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore.`);
+    }
+
+    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string) {
+        this.send(WITHDRAWAL_FAILED, `Agent ${agentVault} could not withdrew ${type} collateral of ${amount}.`);
     }
 }

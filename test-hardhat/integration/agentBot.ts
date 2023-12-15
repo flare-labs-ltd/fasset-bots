@@ -569,7 +569,7 @@ describe("Agent bot tests", async () => {
         }
         // withdraw vault collateral and pool tokens
         await time.increaseTo(
-            maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp))
+            maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp))
         );
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {

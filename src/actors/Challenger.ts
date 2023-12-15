@@ -103,7 +103,7 @@ export class Challenger extends ActorBase {
             this.handleUnderlyingTransaction(transaction);
         }
         // mark as handled
-        this.lastEventUnderlyingBlockHandled = to;
+        this.lastEventUnderlyingBlockHandled = to + 1;
     }
 
     /**
@@ -170,6 +170,7 @@ export class Challenger extends ActorBase {
      */
     checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState): void {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         const transactionValid =
             PaymentReference.isValid(transaction.reference) &&
             (this.isValidRedemptionReference(agent, transaction.reference) || this.isValidAnnouncedPaymentReference(agent, transaction.reference));
