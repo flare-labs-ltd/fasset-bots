@@ -52,9 +52,6 @@ describe("System keeper tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        // chain tunning
-        chain.finalizationBlocks = 0;
-        chain.secondsPerBlock = 1;
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();

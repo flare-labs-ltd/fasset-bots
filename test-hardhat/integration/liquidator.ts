@@ -58,9 +58,6 @@ describe("Liquidator tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context, true);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
-        // chain tunning
-        chain.finalizationBlocks = 0;
-        chain.secondsPerBlock = 1;
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();

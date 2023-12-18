@@ -63,9 +63,6 @@ describe("Agent bot tests", async () => {
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
-        // chain tunning
-        chain.finalizationBlocks = 0;
-        chain.secondsPerBlock = 1;
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
     });
 
@@ -103,6 +100,8 @@ describe("Agent bot tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
@@ -344,6 +343,8 @@ describe("Agent bot tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
@@ -386,6 +387,8 @@ describe("Agent bot tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
