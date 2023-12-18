@@ -99,6 +99,7 @@ Command line interface is provided for Agent bot, User bot and for key/password 
 
 ### Examples
 
+-   [How to create secrets file for agent?](./docs/examples.md#how-to-create-secrets-file-for-agent)
 -   [How to create agent bot and make it available?](./docs/examples.md#how-to-create-agent-bot-and-make-it-available-only-available-agents-can-be-minted-against-to)
 -   [How to list and change agent settings?](./docs/examples.md#how-to-list-and-change-agent-settings)
 -   [How to withdraw underlying?](./docs/examples.md#how-to-withdraw-underlying)
