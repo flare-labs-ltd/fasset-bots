@@ -97,6 +97,10 @@ Example scripts [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by comman
 
 Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
 
+## User bot
+
+More information about the user bot can be found [here](./docs/user/user-cli.md).
+
 ### Examples
 
 -   [How to create secrets file for agent?](./docs/examples.md#how-to-create-secrets-file-for-agent)
