@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { ORM } from "../../src/config/orm";
 import { MockChain } from "../../src/mock/MockChain";
-import { sleep, toBN } from "../../src/utils/helpers";
+import { fail, sleep, toBN } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -15,6 +15,7 @@ import {
     createTestMinter,
     createTestRedeemer,
     getAgentStatus,
+    createTestAgentBot,
 } from "../test-utils/helpers";
 import { TrackedState } from "../../src/state/TrackedState";
 import { TransactionOptionsWithFee, UTXO, SpentReceivedObject, IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
@@ -27,6 +28,8 @@ import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
 import { createTestLiquidator } from "../test-utils/helpers";
+import { MockIndexer } from "../../src/mock/MockIndexer";
+import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -65,9 +68,6 @@ describe("Challenger tests", async () => {
         state = new TrackedState(context, lastBlock);
         await state.initialize();
         chain = context.blockchainIndexer.chain;
-        // chain tunning
-        chain.finalizationBlocks = context.blockchainIndexer.finalizationBlocks = 0;
-        chain.secondsPerBlock = context.blockchainIndexer.secondsPerBlock = 1;
     });
 
     it("Should challenge illegal payment", async () => {
@@ -75,13 +75,14 @@ describe("Challenger tests", async () => {
         const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        const minter = await createTestMinter(context, minterAddress, chain);
         await challenger.runStep();
-        // create collateral reservation and perform minting
-        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        // faucet underlying
+        if (!(context.blockchainIndexer instanceof MockIndexer)) fail("only for mock chains");
+        const underlyingBalance = toBN(1000000000);
+        context.blockchainIndexer.chain.mint(agentBot.agent.underlyingAddress, underlyingBalance);
         // perform illegal payment
-        const agentInfo = await agentBot.agent.getAgentInfo();
-        await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.mintedUBA).divn(2));
+        const underlyingAddress = "someUnderlyingAddress";
+        await agentBot.agent.performPayment(underlyingAddress, underlyingBalance);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
             await time.advanceBlock();
@@ -140,6 +141,8 @@ describe("Challenger tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(2);
         const rdReq = reqs[0];
@@ -221,6 +224,8 @@ describe("Challenger tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // create redemption requests and perform redemption
         const [reqs] = await redeemer.requestRedemption(3);
         const rdReq = reqs[0];
@@ -304,6 +309,8 @@ describe("Challenger tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(1);
         const rdReq = reqs[0];
@@ -319,18 +326,27 @@ describe("Challenger tests", async () => {
         await agentBot.payForRedemption(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
-        await agentBot.nextRedemptionStep(orm.em, redemption.id);
-        expect(redemption.state).eq(AgentRedemptionState.REQUESTED_PROOF);
+        for (let i = 0; ; i++) {
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if payment proof available
+            orm.em.clear();
+            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+        }
         // check start balance
         const startBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
-        const proof = await context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        const fetchedRedemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const proof = await context.attestationProvider.obtainPaymentProof(fetchedRedemption.proofRequestRound!, fetchedRedemption.proofRequestData!);
         if (!attestationProved(proof)) assert.fail("not proved");
-        const res = await context.assetManager.confirmRedemptionPayment(proof, redemption.requestId, { from: agentBot.agent.ownerAddress });
+        const res = await context.assetManager.confirmRedemptionPayment(proof, fetchedRedemption.requestId, { from: agentBot.agent.ownerAddress });
         // finish redemption
         await agentBot.runStep(orm.em);
-        expect(redemption.state).eq(AgentRedemptionState.DONE);
+        expect(fetchedRedemption.state).eq(AgentRedemptionState.DONE);
         // catch 'RedemptionPaymentFailed' event
         await challenger.runStep();
         let argsFailed: any = null;
@@ -502,6 +518,8 @@ describe("Challenger tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // perform redemption
         const [reqs] = await redeemer.requestRedemption(2);
         // make the redemption payment
@@ -549,7 +567,6 @@ describe("Challenger tests", async () => {
         const minter2 = await createTestMinter(context, minter2Address, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
         await challenger.runStep();
-
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // Generate balance in funder minter
@@ -557,6 +574,8 @@ describe("Challenger tests", async () => {
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // create redemption requests and perform redemption
         const [reqs] = await redeemer.requestRedemption(3);
         const rdReq = reqs[0];

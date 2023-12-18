@@ -43,6 +43,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         // set client
         this.client = axios.create(createAxiosConfig);
         this.finalizationBlocks = this.finalizationBlocksByChain();
+        this.secondsPerBlock = this.secondsPerBlockByChain();
     }
 
     async getTransaction(txHash: string): Promise<ITransaction | null> {
@@ -450,6 +451,23 @@ export class BlockchainIndexerHelper implements IBlockChain {
             case SourceId.BTC:
             case SourceId.testBTC:
                 return 6;
+            case SourceId.DOGE:
+            case SourceId.testDOGE:
+                return 60;
+            default:
+                throw new Error(`SourceId ${this.sourceId} not supported.`);
+        }
+    }
+
+    // From simple-wallet https://gitlab.com/flarenetwork/simple-wallet/-/blob/main/src/utils/constants.ts?ref_type=heads
+    secondsPerBlockByChain(): number {
+        switch(this.sourceId){
+            case SourceId.XRP:
+            case SourceId.testXRP:
+                return 4;
+            case SourceId.BTC:
+            case SourceId.testBTC:
+                return 600;
             case SourceId.DOGE:
             case SourceId.testDOGE:
                 return 60;

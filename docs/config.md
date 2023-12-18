@@ -109,8 +109,8 @@ interface StuckTransaction {
 }
 ```
 
-### Agent bot run config
-
+### Agent bot run config for `testXRP` and `Coston`
+Can be found [here](../run-config/run-config-agent-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
@@ -144,8 +144,8 @@ interface StuckTransaction {
 }
 ```
 
-### Challenger run config
-
+### Challenger run config for `testXRP` and `Coston`
+Can be found [here](../run-config/run-config-challenger-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
@@ -170,9 +170,36 @@ interface StuckTransaction {
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
 }
 ```
+### Liquidator run config  for `fakeXRP` and `Coston`
 
-### Liquidator and system keeper run config
+```json
+{
+    "loopDelay": 5000,
+    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
+    "fAssetInfos": [
+        {
+            "chainId": "testXRP",
+            "name": "Fake XRP",
+            "symbol": "fakeXRP",
+            "decimals": 6,
+            "amgDecimals": 0,
+            "requireEOAProof": false,
+            "fAssetSymbol": "FfakeXRP",
+            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "priceChangeEmitter": "FakePriceReader"
+        }
+    ],
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc"
+}
+```
 
+### Liquidator and system keeper run config  for `testXRP` and `Coston`
+Can be found [here](../run-config/run-config-liquidator-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
@@ -196,8 +223,8 @@ interface StuckTransaction {
 }
 ```
 
-### Time keeper run config
-
+### Time keeper run config for `testXRP` and `Coston`
+Can be found [here](../run-config/run-config-timeKeeper-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
@@ -237,13 +264,13 @@ RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
 # ALLOW_SECRETS_ON_WINDOWS=true
 
 ## (Optional) Path to config file for users, instead you can use `-c` parameter
-FASSET_USER_CONFIG="./run-config/run-config-agent-coston-testxrp.json"
+# FASSET_USER_CONFIG="./run-config/run-config-agent-coston-testxrp.json"
 
-## (Optional) Path to secrets json file for users, instead you can use `-s` parameter
-FASSET_USER_SECRETS=""
+## (Optional) Path to secrets json file for users, instead you can use `-s` parameter.
+# FASSET_USER_SECRETS=""
 
-## (Optional) Path to directory, used for storing unexecuted minting
-FASSET_USER_DATA_DIR=""
+## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset-bots` home directory.
+# FASSET_USER_DATA_DIR=""
 ```
 
 ## Secrets file

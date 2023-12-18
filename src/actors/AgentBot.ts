@@ -9,7 +9,7 @@ import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManage
 import { PaymentReference } from "../fasset/PaymentReference";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { SourceId } from "../underlying-chain/SourceId";
-import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
+import { IBlock, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { Notifier } from "../utils/Notifier";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
@@ -1379,10 +1379,7 @@ export class AgentBot {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         /* istanbul ignore else */
-        if (
-            lastBlock &&
-            (toBN(lastBlock.number).lt(toBN(redemption.lastUnderlyingBlock)) || toBN(lastBlock.timestamp).lt(toBN(redemption.lastUnderlyingTimestamp)))
-        ) {
+        if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
             // pay
             const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
             // !!! TODO: what if there are too little funds on underlying address to pay for fee?
@@ -1406,6 +1403,27 @@ export class AgentBot {
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in payForRedemption for ${redemption.requestId}.`);
         }
+    }
+
+    /**
+     * Checks if redemption payment can be made in time (as specified in redemption event).
+     * @param lastBlock
+     * @param redemption
+     * @returns
+     */
+    stillTimeToPayForRedemption(lastBlock: IBlock, redemption: AgentRedemption): boolean {
+        const lastAcceptedBlockNumber = lastBlock.number + this.context.blockchainIndexer.finalizationBlocks + 1;
+        const lastAcceptedTimestamp =
+            lastBlock.timestamp +
+            this.context.blockchainIndexer.finalizationBlocks * this.context.blockchainIndexer.secondsPerBlock +
+            this.context.blockchainIndexer.secondsPerBlock;
+        if (
+            toBN(lastAcceptedBlockNumber).lt(toBN(redemption.lastUnderlyingBlock)) ||
+            toBN(lastAcceptedTimestamp).lt(toBN(redemption.lastUnderlyingTimestamp))
+        ) {
+            return true;
+        }
+        return false;
     }
 
     /**

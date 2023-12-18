@@ -1,6 +1,23 @@
-# Examples
+# Examples (provided for `testXRP`, `testUDC` and `Coston`)
 
-## How to create agent bot and make it available? (Only available agents can be minted against to.)
+## How to create secrets file for agent?
+
+1. Run following command, which prefill underlying and native account in output file `secrets.json`.
+
+```console
+yarn user-bot generateSecrets --agent -o secrets.json
+```
+
+2. Replace empty fields in apiKey (`native_rpc`, `xrp_rpc`, `indexer`) with api keys from your provider or delete them if not needed.
+
+3. Grant read access to `secrets.json`.
+
+```console
+chmod 600 secrets.json
+```
+Note: Fund `owner.native_address` with selected vault collateral and native collateral. In case of using `testXRP` or `XRP` activate underlying account `owner.underlying_address` by depositing 10 `testXRP` or `XRP`.
+
+## How to create agent and make it available? (Only available agents can be minted against to.)
 
 1. Create agent. The output is native address of created agent.
 
