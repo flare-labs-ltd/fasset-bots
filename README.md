@@ -61,7 +61,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ### Time keeper
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config.
+-   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
 -   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
 
