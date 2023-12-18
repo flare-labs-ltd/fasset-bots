@@ -14,7 +14,8 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ## Install
 
--   Clone this project `fasset-bots`
+-   Clone this project `fasset-bots` and enter `fasset-bots` directory.
+-   If you are beta tester, switch to branch `private_beta_v.1.0`.
 -   Make sure you have appropriate permissions for repository `simple-wallet`. (Later npm package for `simple-wallet` is going to be released and therefore no permissions are going to be needed.)
 -   Install `fasset-bots`
     -   `yarn`
@@ -26,7 +27,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ### Agent bot
 
--   Generate default agents settings file, which will be used to generate new agent. See [configuration and example](./docs/config.md#agent-default-settings).
+-   Generate default agents settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
