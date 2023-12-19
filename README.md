@@ -2,7 +2,7 @@
 
 ## FAsset bots
 
-The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
+The automated system of [FAsset system](https://github.com/flare-labs-ltd/fassets), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
 
 ## Actors in FAsset system
 
@@ -14,24 +14,28 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ## Install
 
--   Clone this project `fasset-bots`
--   Clone project `simple-wallet` in the same directory as `fasset-bots`
--   Install `simple-wallet`:
-    -   `cd simple-wallet`
-    -   `yarn`
-    -   `yarn build`
--   Install `fasset-bots`
-    -   `cd ..`
-    -   `yarn`
-    -   `yarn build`
+Clone this project `fasset-bots` and enter `fasset-bots` directory.
 
-(Alternatively also clone and install `fasset` repository in the same directory as `fasset-bots`. Run script `./scripts/copy-artifacts.sh` to update deployment and config `fasset` settings.)
+    git clone git@gitlab.com:flarenetwork/fasset-bots.git
+    cd fassets-bots
+
+If you are beta tester, switch to branch `private_beta_v.1.0`.
+
+    git checkout private_beta_v.1.0
+    
+-   Make sure you have appropriate permissions for repository `simple-wallet`. (Later npm package for `simple-wallet` is going to be released and therefore no permissions are going to be needed.)
+
+
+Install `fasset-bots`
+
+    yarn
+    yarn build
 
 ## Configurations
 
-### Agent bot
+### [Agent bot]((./docs/actors/agent.md))
 
--   Generate default agents settings file, which will be used to generate new agent. See [configuration and example](./docs/config.md#agent-default-settings).
+-   Generate default agents settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
@@ -65,7 +69,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ### Time keeper
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config.
+-   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
 -   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
 
@@ -101,8 +105,13 @@ Example scripts [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by comman
 
 Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
 
+## User bot
+
+More information about the user bot can be found [here](./docs/user/user-cli.md).
+
 ### Examples
 
+-   [How to create secrets file for agent?](./docs/examples.md#how-to-create-secrets-file-for-agent)
 -   [How to create agent bot and make it available?](./docs/examples.md#how-to-create-agent-bot-and-make-it-available-only-available-agents-can-be-minted-against-to)
 -   [How to list and change agent settings?](./docs/examples.md#how-to-list-and-change-agent-settings)
 -   [How to withdraw underlying?](./docs/examples.md#how-to-withdraw-underlying)
