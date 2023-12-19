@@ -12,10 +12,9 @@ import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 
-describe("XRP blockchain tests via indexer", async () => {
+describe("testXRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
-    const finalizationBlocks: number = 6;
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -204,24 +203,7 @@ describe("XRP blockchain tests via indexer", async () => {
     });
 });
 
-describe("LTC blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.LTC;
-    it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
-        const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
-
-    it("Should not create BlockchainIndexerHelper instance - not supported chain id", async () => {
-        const fn = () => {
-            return new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
-});
-
-describe("DOGE blockchain tests via indexer", async () => {
+describe("testDOGE blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testDOGE;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
@@ -274,7 +256,7 @@ describe("DOGE blockchain tests via indexer", async () => {
     });
 });
 
-describe("BTC blockchain tests via indexer", async () => {
+describe("testBTC blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testBTC;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
@@ -459,5 +441,59 @@ describe("BTC blockchain tests via indexer", async () => {
         const resOutputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, false);
         expect(resOutputEmpty[0][0]).to.eq("");
         expect(resOutputEmpty[0][1].eq(toBN(0))).to.be.true;
+    });
+});
+
+describe("LTC blockchain tests via indexer", async () => {
+    const sourceId: SourceId = SourceId.LTC;
+    it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
+        const fn = () => {
+            return createBlockchainIndexerHelper(sourceId, "");
+        };
+        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
+    });
+
+    it("Should not create BlockchainIndexerHelper instance - not supported chain id", async () => {
+        const fn = () => {
+            return new rewiredBlockchainIndexerHelperClass("", sourceId, "");
+        };
+        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
+    });
+});
+
+describe("BTC blockchain tests via indexer", async () => {
+    const sourceId: SourceId = SourceId.BTC;
+    it("Should create blockChainIndexerHelper", async () => {
+        const indexer = createBlockchainIndexerHelper(sourceId, "");
+        expect(indexer.sourceId).to.eq(`${sourceId}`);
+    });
+});
+
+describe("DOGE blockchain tests via indexer", async () => {
+    const sourceId: SourceId = SourceId.DOGE;
+    it("Should create blockChainIndexerHelper", async () => {
+        const indexer = createBlockchainIndexerHelper(sourceId, "");
+        expect(indexer.sourceId).to.eq(`${sourceId}`);
+    });
+});
+
+describe("XRP blockchain tests via indexer", async () => {
+    const sourceId: SourceId = SourceId.XRP;
+    it("Should create blockChainIndexerHelper", async () => {
+        const indexer = createBlockchainIndexerHelper(sourceId, "");
+        expect(indexer.sourceId).to.eq(`${sourceId}`);
+    });
+});
+
+describe("Other blockchain tests via indexer", async () => {
+    const sourceId: SourceId = SourceId.XRP;
+    const replacedId = SourceId.LTC;
+    it("Should create blockChainIndexerHelper", async () => {
+        const indexer = createBlockchainIndexerHelper(sourceId, "");
+        indexer.sourceId = replacedId;
+        const fn = () => {
+            return indexer.finalizationBlocksByChain();
+        };
+        expect(fn).to.throw(`SourceId ${replacedId} not supported.`);
     });
 });
