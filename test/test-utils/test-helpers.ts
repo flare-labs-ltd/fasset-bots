@@ -27,7 +27,8 @@ const userPrivateKey = requireSecret("user.native_private_key");
 const account3PrivateKey = requireSecret("timeKeeper.native_private_key");
 const account4PrivateKey = requireSecret("systemKeeper.native_private_key");
 
-export const depositVaultCollateralAmount = toBNExp(1_000_000, 18);
+export const depositVaultCollateralAmount = toBNExp(1_000_000, 6);
+
 export function getNativeAccountsFromEnv() {
     // owner is always first in array
     // deployer account / current coston governance in always last in array

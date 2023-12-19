@@ -17,8 +17,9 @@ import {
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
-const deposit = toBNExp(1_000_000, 18);
-const withdraw = toBNExp(1, 18);
+const depositUSDC = toBNExp(1_000_000, 6);
+const depositWei = toBNExp(1_000_000, 18);
+const withdrawUSDC = toBNExp(1, 6);
 
 describe("Agent unit tests", async () => {
     let accounts: string[];
@@ -83,17 +84,17 @@ describe("Agent unit tests", async () => {
 
     it("Should deposit collateral", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositVaultCollateral(deposit);
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
+        await agent.depositVaultCollateral(depositUSDC);
         const val = await vaultCollateralTokenContract.balanceOf(agent.vaultAddress);
-        expect(val.toString()).to.eq(deposit.toString());
+        expect(val.toString()).to.eq(depositUSDC.toString());
     });
 
     it("Should make agent available", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositVaultCollateral(deposit);
-        await agent.buyCollateralPoolTokens(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
+        await agent.depositVaultCollateral(depositUSDC);
+        await agent.buyCollateralPoolTokens(depositWei);
         await agent.makeAvailable();
         const agentInfo = await agent.getAgentInfo();
         expect(agentInfo.publiclyAvailable).to.be.true;
@@ -101,14 +102,14 @@ describe("Agent unit tests", async () => {
 
     it("Should announce collateral withdrawal and withdraw", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
-        await agent.depositVaultCollateral(deposit);
-        await agent.announceVaultCollateralWithdrawal(withdraw);
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
+        await agent.depositVaultCollateral(depositUSDC);
+        await agent.announceVaultCollateralWithdrawal(withdrawUSDC);
         const settings = await context.assetManager.getSettings();
         await time.increase(settings.withdrawalWaitMinSeconds);
-        await agent.withdrawVaultCollateral(withdraw);
+        await agent.withdrawVaultCollateral(withdrawUSDC);
         const val = await vaultCollateralTokenContract.balanceOf(agent.vaultAddress);
-        expect(Number(val)).to.eq(Number(deposit.sub(withdraw)));
+        expect(Number(val)).to.eq(Number(depositUSDC.sub(withdrawUSDC)));
     });
 
     it("Should announce agent destruction and destroy it", async () => {

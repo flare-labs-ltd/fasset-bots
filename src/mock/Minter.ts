@@ -51,6 +51,7 @@ export class Minter {
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string) {
         const proof = await this.proveMintingPayment(crt.paymentAddress, transactionHash);
+        console.log(proof);
         return await this.executeProvedMinting(crt.collateralReservationId, proof);
     }
 

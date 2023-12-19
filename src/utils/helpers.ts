@@ -29,8 +29,8 @@ export const WEEKS = 7 * DAYS;
 
 export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
 export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
-export const STABLE_COIN_LOW_BALANCE = toBNExp(1000, 18);
-export const NATIVE_LOW_BALANCE = toBNExp(1000, 18);
+export const STABLE_COIN_LOW_BALANCE = 1000;    // in USDC/USDT
+export const NATIVE_LOW_BALANCE = 1000;         // in NAT (not Wei)
 
 export const QUERY_WINDOW_SECONDS = 86400;
 

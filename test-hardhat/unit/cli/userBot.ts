@@ -116,7 +116,7 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should mint and redeem", async () => {
-        const deposit = toBNExp(1_000_000, 18);
+        const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
         await userBot.mint(agent.vaultAddress, 1);
@@ -130,7 +130,7 @@ describe("Bot cli commands unit tests", async () => {
     });
 
     it("Should mint and redeem - again", async () => {
-        const deposit = toBNExp(1_000_000, 18);
+        const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
         await userBot.mint(agent.vaultAddress, 1);
@@ -147,7 +147,7 @@ describe("Bot cli commands unit tests", async () => {
         // vaultCollateralToken
         const vaultCollateralToken = await IERC20.at((await agent.getVaultCollateral()).token);
         // mint
-        const deposit = toBNExp(1_000_000, 18);
+        const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agent.vaultAddress);
         await userBot.mint(agent.vaultAddress, 1);
