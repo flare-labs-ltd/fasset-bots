@@ -772,6 +772,7 @@ export class AgentBot {
                     if (toBN(agentInfoForDestroy.reservedUBA).gt(BN_ZERO)) {
                         logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent has some locked collateral by collateral reservation.`);
                     }
+                    /* istanbul ignore else */
                     if (toBN(totalPoolTokens).gt(BN_ZERO)) {
                         logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Total supply of collateral pool tokens is not 0.`);
                     }
