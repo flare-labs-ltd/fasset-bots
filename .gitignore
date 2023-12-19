@@ -40,6 +40,7 @@ coverage/
 # tmp
 test/e2e/actors/tmp.ts
 test-data/
+user-data/
 
 *.Identifier
 
