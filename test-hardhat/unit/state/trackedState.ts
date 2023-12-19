@@ -37,7 +37,7 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 use(chaiAsPromised);
 use(spies);
 
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 
 const agentDestroyedArgs = {
     "0": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
@@ -621,9 +621,9 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
-        newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
+        newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
         newCollateral.tokenFtsoSymbol = "XRP";
-        newCollateral.assetFtsoSymbol = "USDC";
+        newCollateral.assetFtsoSymbol = "testUSDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
         await trackedState.readUnhandledEvents();
         const collateralsAfter = trackedState.collaterals.list.length;
@@ -654,7 +654,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
-        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
+        const newWnat = await FakeERC20.new(accounts[0], "Wrapped NAT", "WNAT", 18);
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         await context.assetManager.updateSettings(

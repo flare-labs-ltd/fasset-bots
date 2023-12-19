@@ -210,6 +210,16 @@
     "address": "0xD256b237dE74d3DaA24A2290efF48BBeF8feAF55"
   },
   {
+    "name": "testUSDC",
+    "contractName": "FakeERC20.sol",
+    "address": "0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d"
+  },
+  {
+    "name": "testUSDT",
+    "contractName": "FakeERC20.sol",
+    "address": "0x179ACDe40EEb06702b7C37F7BbcaB663D7048AEf"
+  },
+  {
     "name": "SCProofVerifier",
     "contractName": "SCProofVerifier.sol",
     "address": "0x6356470e9aF457d1900Ad4Ed45D115192506BF51"

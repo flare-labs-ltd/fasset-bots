@@ -26,7 +26,7 @@ import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { artifacts } from "../../src/utils/web3";
 
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
 
 const agentUnderlying: string = "UNDERLYING_ADDRESS";
@@ -57,7 +57,7 @@ export async function createTestAgentBot(
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
-    const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
+    const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
     await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 

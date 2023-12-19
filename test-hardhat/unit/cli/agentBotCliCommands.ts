@@ -28,7 +28,7 @@ const depositAmount = toStringExp(100_000_000, 18);
 const withdrawAmount = toStringExp(100_000_000, 4);
 const StateConnector = artifacts.require("StateConnectorMock");
 
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 
 describe("Bot cli commands unit tests", async () => {
     let accounts: string[];
@@ -424,9 +424,9 @@ describe("Bot cli commands unit tests", async () => {
         const agent = await createAgent();
         const agentVaultCollateral = await agent.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
-        newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
+        newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
         newCollateral.tokenFtsoSymbol = "XRP";
-        newCollateral.assetFtsoSymbol = "USDC";
+        newCollateral.assetFtsoSymbol = "testUSDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
         // deprecate
         const settings = await context.assetManager.getSettings();
@@ -456,7 +456,7 @@ describe("Bot cli commands unit tests", async () => {
         );
         const agent = await createAgent(localContext);
         botCliCommands.context = localContext;
-        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
+        const newWnat = await FakeERC20.new(accounts[0], "Wrapped NAT", "WNAT", 18);
         await localContext.assetManager.updateSettings(
             web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
             web3.eth.abi.encodeParameters(["address", "address"], [localContext.assetManagerController.address, newWnat.address]),
