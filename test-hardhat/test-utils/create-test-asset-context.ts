@@ -35,7 +35,7 @@ const GovernanceSettings = artifacts.require("GovernanceSettings");
 const VPContract = artifacts.require("VPContract");
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
 const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 const TrivialAddressValidatorMock = artifacts.require("TrivialAddressValidatorMock");
 const WhitelistMock = artifacts.require("WhitelistMock");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
@@ -155,8 +155,8 @@ export async function createTestAssetContext(
     const wallet = useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
     // create stablecoins
     const stablecoins = {
-        usdc: await ERC20Mock.new("USDCoin", "USDC"),
-        usdt: await ERC20Mock.new("Tether", "USDT"),
+        usdc: await FakeERC20.new(governance, "Test USDCoin", "testUSDC", 6),
+        usdt: await FakeERC20.new(governance, "Test Tether", "testUSDT", 6),
     };
     // ftsos
     const ftsos = await createTestFtsos(ftsoRegistry, chainInfo);
@@ -328,11 +328,11 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
     const usdcCollateral: CollateralType = {
         collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdc.address,
-        decimals: 18,
+        decimals: 6,
         validUntil: 0, // not deprecated
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
-        tokenFtsoSymbol: "USDC",
+        tokenFtsoSymbol: "testUSDC",
         minCollateralRatioBIPS: toBIPS(1.4),
         ccbMinCollateralRatioBIPS: toBIPS(1.3),
         safetyMinCollateralRatioBIPS: toBIPS(1.5),
@@ -340,11 +340,11 @@ export function createTestCollaterals(contracts: ChainContracts, chainInfo: Chai
     const usdtCollateral: CollateralType = {
         collateralClass: CollateralClass.VAULT,
         token: stableCoins.usdt.address,
-        decimals: 18,
+        decimals: 6,
         validUntil: 0, // not deprecated
         directPricePair: false,
         assetFtsoSymbol: chainInfo.symbol,
-        tokenFtsoSymbol: "USDT",
+        tokenFtsoSymbol: "testUSDT",
         minCollateralRatioBIPS: toBIPS(1.5),
         ccbMinCollateralRatioBIPS: toBIPS(1.4),
         safetyMinCollateralRatioBIPS: toBIPS(1.6),
@@ -368,8 +368,8 @@ export async function createFtsoMock(
 export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, assetChainInfo: TestChainInfo): Promise<TestFtsos> {
     return {
         nat: await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice),
-        usdc: await createFtsoMock(ftsoRegistry, "USDC", ftsoUsdcInitialPrice),
-        usdt: await createFtsoMock(ftsoRegistry, "USDT", ftsoUsdtInitialPrice),
+        usdc: await createFtsoMock(ftsoRegistry, "testUSDC", ftsoUsdcInitialPrice),
+        usdt: await createFtsoMock(ftsoRegistry, "testUSDT", ftsoUsdtInitialPrice),
         asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
     };
 }

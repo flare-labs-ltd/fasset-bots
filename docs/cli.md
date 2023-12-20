@@ -19,7 +19,10 @@ Available commands:
 -   `info <agentVault> -f [fAssetSymbol]` - print agent info
 -   `getAgentSettings <agentVault> -f [fAssetSymbol]` - print agent's settings
 -   `updateAgentSetting <agentVault> <agentSettingName> <agentSettingValue> -f [fAssetSymbol]` - set agent's settings
--   `withdrawVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - withdraw amount from agent vault to owner's address
+-   `announceVaultCollateralWithdrawal <agentVault> <amount> -f [fAssetSymbol]` - announce vault collateral withdrawal from agent's to owner’s address
+-   `cancelVaultCollateralWithdrawal`- cancel vault collateral withdrawal announcement
+-   `announceCollateralPoolTokenRedemption <agentVault> <amount> -f [fAssetSymbol]` - announce collateral pool tokens redemption from agent's to owner’s address
+-   `cancelCollateralPoolTokenRedemption`- cancel pool tokens redemption announcement
 -   `withdrawPoolFees <agentVault> <amount> -f [fAssetSymbol]` - withdraw pool fees from pool to owner's address
 -   `poolFeesBalance <agentVault> -f [fAssetSymbol]` - pool fees balance of agent
 -   `selfClose <agentVault> <amountUBA> -f [fAssetSymbol]` - self close agent vault with amountUBA of FAssets

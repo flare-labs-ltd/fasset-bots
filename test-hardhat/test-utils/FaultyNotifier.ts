@@ -3,6 +3,12 @@ import { Notifier } from "../../src/utils/Notifier";
 
 // to use in tests
 export class FaultyNotifier implements Notifier {
+    sendCancelVaultCollateralAnnouncement(agentVault: string): void {
+        throw new Error("Method not implemented.");
+    }
+    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): void {
+        throw new Error("Method not implemented.");
+    }
     sendRedeemCollateralPoolTokens(agentVault: string, amount: string): void {
         throw new Error("Method not implemented.");
     }

@@ -265,9 +265,11 @@ export async function createAgentBotDefaultSettings(
     poolTokenSuffix: string
 ): Promise<AgentBotDefaultSettings> {
     const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
-    const vaultCollateralToken = (await context.assetManager.getCollateralTypes()).find((token) => {
-        return Number(token.collateralClass) === CollateralClass.VAULT && token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol;
-    });
+    const collateralTypes = await context.assetManager.getCollateralTypes();
+    const vaultCollateralToken = collateralTypes.find((token) =>
+        Number(token.collateralClass) === CollateralClass.VAULT &&
+        token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol &&
+        toBN(token.validUntil).eqn(0));
     if (!vaultCollateralToken) {
         throw new Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
     }

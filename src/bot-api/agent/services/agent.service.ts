@@ -29,7 +29,7 @@ export class AgentService {
 
     async withdrawVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await BotCliCommands.create(fAssetSymbol);
-        await cli.withdrawFromVault(agentVaultAddress, amount);
+        await cli.announceWithdrawFromVault(agentVaultAddress, amount);
     }
 
     async closeVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {

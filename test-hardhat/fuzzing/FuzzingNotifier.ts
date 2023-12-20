@@ -164,4 +164,10 @@ export class FuzzingNotifier {
     sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): void {
         this.notifier.sendAgentCannotWithdrawCollateral(this.eventFormatter.formatAddress(agentVault), amount, type);
     }
+    sendCancelVaultCollateralAnnouncement(agentVault: string): void {
+        this.notifier.sendCancelVaultCollateralAnnouncement(this.eventFormatter.formatAddress(agentVault));
+    }
+    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): void {
+        this.notifier.sendCancelRedeemCollateralPoolTokensAnnouncement(this.eventFormatter.formatAddress(agentVault));
+    }
 }

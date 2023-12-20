@@ -26,6 +26,7 @@ import {
     STABLE_COIN_LOW_BALANCE,
     XRP_ACTIVATE_BALANCE,
     toBN,
+    toBNExp,
 } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
 import { logger } from "../utils/logger";
@@ -773,6 +774,7 @@ export class AgentBot {
                     if (toBN(agentInfoForDestroy.reservedUBA).gt(BN_ZERO)) {
                         logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent has some locked collateral by collateral reservation.`);
                     }
+                    /* istanbul ignore else */
                     if (toBN(totalPoolTokens).gt(BN_ZERO)) {
                         logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Total supply of collateral pool tokens is not 0.`);
                     }
@@ -1679,7 +1681,8 @@ export class AgentBot {
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
         const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.ownerAddress);
-        if (ownerBalanceVaultCollateral.lte(STABLE_COIN_LOW_BALANCE)) {
+        const stableCoinLowBalance = toBNExp(STABLE_COIN_LOW_BALANCE, Number(vaultCollateralPrice.collateral.decimals));
+        if (ownerBalanceVaultCollateral.lte(stableCoinLowBalance)) {
             this.notifier.sendLowBalanceOnOwnersAddress(
                 this.agent.ownerAddress,
                 ownerBalanceVaultCollateral.toString(),
@@ -1692,7 +1695,8 @@ export class AgentBot {
             );
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
-        if (ownerBalance.lte(NATIVE_LOW_BALANCE)) {
+        const nativeLowBlance = toBNExp(NATIVE_LOW_BALANCE, 18);
+        if (ownerBalance.lte(nativeLowBlance)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.notifier.sendLowBalanceOnOwnersAddress(this.agent.ownerAddress, ownerBalance.toString(), poolCollateralPrice.collateral.tokenFtsoSymbol);
             logger.info(

@@ -27,14 +27,15 @@ import { artifacts } from "../../src/utils/web3";
 import { requireSecret } from "../../src/config/secrets";
 import { SourceId } from "../../src/underlying-chain/SourceId";
 
-const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
 
 const agentUnderlyingAddress: string = "UNDERLYING_ADDRESS";
 const redeemerUnderlyingAddress: string = "REDEEMER_UNDERLYING_ADDRESS";
 const minterUnderlyingAddress: string = "MINTER_UNDERLYING_ADDRESS";
-const deposit = toBNExp(1_000_000, 18);
-const depositUnderlying = toBNExp(100_000, 6);
+const depositUSDC = toBNExp(1_000_000, 6);
+const depositNat = toBNExp(1_000_000, 18);
+const depositUnderlying = toBNExp(1_000_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
 export const DEFAULT_POOL_TOKEN_SUFFIX: () => string = () => "POOL-TOKEN-" + Math.floor(Math.random() * 10_000);
 
@@ -59,7 +60,7 @@ export async function createTestAgentBot(
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
-    const vaultCollateralToken = await ERC20Mock.at(vaultCollateralTokenAddress);
+    const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
     await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 
@@ -104,7 +105,7 @@ export function createTestAgentBotRunner(
     return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
 
-export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = deposit): Promise<Minter> {
+export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
     const minter = await Minter.createTest(context, minterAddress, underlyingAddress, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
@@ -117,9 +118,9 @@ export async function createTestRedeemer(context: IAssetAgentBotContext, redeeme
 
 export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
     const agent = await createTestAgent(context, ownerAddress, underlyingAddress, suffix);
-    await mintAndDepositVaultCollateralToOwner(context, agent, deposit, ownerAddress);
-    await agent.depositVaultCollateral(deposit);
-    await agent.buyCollateralPoolTokens(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
+    await agent.depositVaultCollateral(depositUSDC);
+    await agent.buyCollateralPoolTokens(depositNat);
     await agent.makeAvailable();
     return agent;
 }
@@ -130,9 +131,9 @@ export async function createTestAgentBAndMakeAvailable(
     underlyingAddress: string = agentUnderlyingAddress
 ): Promise<Agent> {
     const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
-    await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
-    await agentB.depositVaultCollateral(deposit);
-    await agentB.buyCollateralPoolTokens(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
+    await agentB.depositVaultCollateral(depositUSDC);
+    await agentB.buyCollateralPoolTokens(depositNat);
     await agentB.makeAvailable();
     return agentB;
 }
@@ -146,9 +147,9 @@ export async function createTestAgentBotAndMakeAvailable(
     options?: AgentBotDefaultSettings
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
-    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, deposit, ownerAddress);
-    await agentBot.agent.depositVaultCollateral(deposit);
-    await agentBot.agent.buyCollateralPoolTokens(deposit);
+    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, ownerAddress);
+    await agentBot.agent.depositVaultCollateral(depositUSDC);
+    await agentBot.agent.buyCollateralPoolTokens(depositNat);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }

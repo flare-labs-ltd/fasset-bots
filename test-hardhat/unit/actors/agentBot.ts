@@ -525,7 +525,9 @@ describe("Agent bot unit tests", async () => {
         expect(toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         // try to close vault - redeem pool tokens and withdraw class 1 collateral
-        await time.increaseTo(maxBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp, agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp));
+        await time.increaseTo(
+            maxBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp, agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp)
+        );
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
         expect(toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
@@ -672,7 +674,7 @@ describe("Agent bot unit tests", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await agentBot.checkForClaims();
-        expect(spyError).to.be.called.exactly(4);;
+        expect(spyError).to.be.called.exactly(4);
     });
 
     it("Should handle claims", async () => {
@@ -742,5 +744,45 @@ describe("Agent bot unit tests", async () => {
         await orm.em.persist(agentEnt).flush();
         await agentBot.handleEvents(orm.em);
         expect(spyError).to.have.been.called.once;
+    });
+
+    it("Should redeem pool tokens", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const amount = toBN(100000000000000000000);
+        await agentBot.agent.buyCollateralPoolTokens(amount);
+        const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.toString();
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
+        // allowed
+        await time.increaseTo(withdrawalAllowedAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
+        const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
+        expect(poolTokensBalance).to.eq("0");
+    });
+
+    it("Should not redeem pool tokens - more than announced", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const amount = toBN(100000000000000000000);
+        await agentBot.agent.buyCollateralPoolTokens(amount);
+        const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.addn(1).toString();
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
+        // allowed
+        await time.increaseTo(withdrawalAllowedAt);
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.false;
+        const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
+        expect(poolTokensBalance).to.eq(amount.toString());
     });
 });

@@ -630,7 +630,7 @@ describe("Agent bot tests", async () => {
         expect(spyTopUpFailed).to.have.been.called.once;
         expect(spyLowOwnerBalance).to.have.been.called.once;
         // top up ownerAddress
-        const deposit = toBNExp(5_000_000, 18).toString();
+        const deposit = toBNExp(5_000_000, 6).toString();
         await mintVaultCollateralToOwner(deposit, (await agentBot.agent.getAgentInfo()).vaultCollateralToken, ownerAddress);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
@@ -643,7 +643,7 @@ describe("Agent bot tests", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgentB(context, ownerAddress);
-        const deposit = ownerBalance.sub(NATIVE_LOW_BALANCE);
+        const deposit = ownerBalance.sub(toBNExp(NATIVE_LOW_BALANCE, 18));
         await agentB.buyCollateralPoolTokens(deposit);
         const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");

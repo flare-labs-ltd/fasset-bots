@@ -38,9 +38,8 @@ const AGENT_COLLATERAL_TOP_UP_FAILED = "AGENT'S COLLATERAL TOP UP FAILED";
 const POOL_COLLATERAL_TOP_UP_FAILED = "POOL'S COLLATERAL TOP UP FAILED";
 const WITHDRAW_VAULT_COLLATERAL = "VAULT COLLATERAL WITHDRAWAL";
 const WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "VAULT COLLATERAL WITHDRAWAL ANNOUNCEMENT";
-const REDEEM_POOL_TOKENS_ANNOUNCEMENT = "REDEEM POOL TOKENS ANNOUNCEMENT";
-const REDEEM_POOL_TOKENS = "POOL TOKENS REDEMPTION";
 const WITHDRAWAL_FAILED = "COLLATERAL WITHDRAWAL FAILED";
+const CANCEL_WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT = "CANCEL VAULT COLLATERAL WITHDRAWAL ANNOUNCEMENT";
 
 // underlying
 const LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE";
@@ -54,13 +53,15 @@ const ANNOUNCE_WITHDRAW_UNDERLYING = "ANNOUNCE UNDERLYING WITHDRAWAL";
 const WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL";
 
 // pool
-const REDEMPTION_POOL_TOKENS = "REDEEM POOL TOKENS";
 const BUY_POOL_TOKENS = "BUY POOL TOKENS";
 const VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT";
 const WITHDRAW_POOL_FEES = "POOL FEES WITHDRAWAL";
 const BALANCE_POOL_FEES = "BALANCE POOL FEES";
 const POOL_DELEGATE = "POOL DELEGATION";
 const POOL_UNDELEGATE = "POOL UNDELEGATION";
+const CANCEL_POOL_TOKEN_ANNOUNCEMENT = "CANCEL POOL TOKEN REDEMPTION ANNOUNCEMENT";
+const REDEEM_POOL_TOKEN_ANNOUNCEMENT = "REDEEM POOL TOKENS ANNOUNCEMENT";
+const REDEEM_POOL_TOKEN = "POOL TOKENS REDEMPTION";
 
 // other
 const DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK";
@@ -210,12 +211,20 @@ export class Notifier {
         this.send(WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`);
     }
 
+    sendCancelVaultCollateralAnnouncement(agentVault: string) {
+        this.send(CANCEL_WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent's ${agentVault} vault collateral withdrawal announcement was successfully cancelled.`);
+    }
+
     sendRedeemCollateralPoolTokens(agentVault: string, amount: string) {
-        this.send(REDEEM_POOL_TOKENS, `Agent ${agentVault} redeemed of ${amount} pool tokens.`);
+        this.send(REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed of ${amount} pool tokens.`);
+    }
+
+    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string) {
+        this.send(CANCEL_POOL_TOKEN_ANNOUNCEMENT, `Agent's ${agentVault} pool token redemption announcement was successfully cancelled.`);
     }
 
     sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
-        this.send(REDEEM_POOL_TOKENS_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`);
+        this.send(REDEEM_POOL_TOKEN_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`);
     }
 
     sendAgentSettingsUpdate(agentVault: string, settingName: string) {
@@ -247,7 +256,7 @@ export class Notifier {
     }
 
     sendCollateralPoolTokensRedemption(agentVault: string) {
-        this.send(REDEMPTION_POOL_TOKENS, `Agent ${agentVault} redeemed pool tokens.`);
+        this.send(REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed pool tokens.`);
     }
 
     sendBuyCollateralPoolTokens(agentVault: string, amount: string) {

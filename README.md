@@ -61,7 +61,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 ### Time keeper
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config.
+-   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
 -   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
 
@@ -96,6 +96,10 @@ Example scripts [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by comman
 ## Command line interface
 
 Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
+
+## User bot
+
+More information about the user bot can be found [here](./docs/user/user-cli.md).
 
 ### Examples
 

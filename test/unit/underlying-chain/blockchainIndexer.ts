@@ -134,7 +134,6 @@ const UTXOResponseData = {
 describe("testXRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
-    const finalizationBlocks: number = 6;
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -320,23 +319,6 @@ describe("testXRP blockchain tests via indexer", async () => {
     it("Should return BN_ZERO if input is undefined", async () => {
         const output = rewiredBlockChainIndexerClient.toBnValue(undefined);
         expect(output.eq(BN_ZERO)).to.be.true;
-    });
-});
-
-describe("LTC blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.LTC;
-    it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
-        const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
-
-    it("Should not create BlockchainIndexerHelper instance - not supported chain id", async () => {
-        const fn = () => {
-            return new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
     });
 });
 

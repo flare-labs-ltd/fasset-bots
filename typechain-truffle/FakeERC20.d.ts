@@ -10,6 +10,7 @@ export interface FakeERC20Contract extends Truffle.Contract<FakeERC20Instance> {
     _minter: string,
     _name: string,
     _symbol: string,
+    _decimals: number | BN | string,
     meta?: Truffle.TransactionDetails
   ): Promise<FakeERC20Instance>;
 }
@@ -77,22 +78,18 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
 
   burnAmount: {
     (
-      _target: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _target: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _target: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _target: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -269,22 +266,18 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
 
     burnAmount: {
       (
-        _target: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _target: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _target: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _target: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
