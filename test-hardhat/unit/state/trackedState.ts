@@ -38,6 +38,7 @@ use(chaiAsPromised);
 use(spies);
 
 const ERC20Mock = artifacts.require("ERC20Mock");
+const FakeERC20 = artifacts.require("FakeERC20");
 
 const agentDestroyedArgs = {
     "0": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
@@ -73,7 +74,9 @@ const agentCreatedArgs = {
     poolTopupCollateralRatioBIPS: toBN(0),
     poolTopupTokenPriceFactorBIPS: toBN(0),
 } as EventArgs<AgentVaultCreated>;
-const deposit = toBNExp(1_000_000, 18);
+
+const depositUSDC = toBNExp(1_000_000, 6);
+const depositWei = toBNExp(1_000_000, 18);
 
 describe("Tracked state tests", async () => {
     let context: TestAssetBotContext;
@@ -178,9 +181,9 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AgentAvailable'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerLocal);
-        await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyCollateralPoolTokens(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
+        await agentBLocal.depositVaultCollateral(depositUSDC);
+        await agentBLocal.buyCollateralPoolTokens(depositWei);
         await agentBLocal.makeAvailable();
         const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
@@ -192,9 +195,9 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AvailableAgentExited'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerLocal);
-        await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyCollateralPoolTokens(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
+        await agentBLocal.depositVaultCollateral(depositUSDC);
+        await agentBLocal.buyCollateralPoolTokens(depositWei);
         await agentBLocal.makeAvailable();
         const agentBefore = trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentBLocal));
         expect(agentBefore.publiclyAvailable).to.be.false;
@@ -212,8 +215,8 @@ describe("Tracked state tests", async () => {
     it("Should handle event 'AgentDestroyed'", async () => {
         const ownerLocal = accounts[0];
         const agentBLocal = await createTestAgentB(context, ownerLocal);
-        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerLocal);
-        await agentBLocal.depositVaultCollateral(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
+        await agentBLocal.depositVaultCollateral(depositUSDC);
         await agentBLocal.announceDestroy();
         await trackedState.readUnhandledEvents();
         const agentBefore = trackedState.getAgent(agentBLocal.vaultAddress);
@@ -228,9 +231,9 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'SelfClose'", async () => {
         const agentBLocal = await createTestAgentB(context, ownerAddress);
-        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, deposit, ownerAddress);
-        await agentBLocal.depositVaultCollateral(deposit);
-        await agentBLocal.buyCollateralPoolTokens(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerAddress);
+        await agentBLocal.depositVaultCollateral(depositUSDC);
+        await agentBLocal.buyCollateralPoolTokens(depositWei);
         await agentBLocal.makeAvailable();
         const lots = 3;
         const supplyBefore = trackedState.fAssetSupply;
@@ -595,25 +598,25 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentB(context, ownerAddress);
         const agentInfo = await agentB.getAgentInfo();
         await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
-        await mintAndDepositVaultCollateralToOwner(context, agentB, deposit, ownerAddress);
-        await agentB.depositVaultCollateral(deposit.divn(2));
-        await agentB.buyCollateralPoolTokens(deposit);
+        await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
+        await agentB.depositVaultCollateral(depositUSDC.divn(2));
+        await agentB.buyCollateralPoolTokens(depositWei);
         // deposit vault collateral one more time
-        await agentB.depositVaultCollateral(deposit.divn(2));
+        await agentB.depositVaultCollateral(depositUSDC.divn(2));
         await trackedState.readUnhandledEvents();
         await agentB.makeAvailable();
         await trackedState.readUnhandledEvents();
-        expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eq(deposit)).to.be.true;
-        expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(deposit)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eq(depositWei)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(depositUSDC)).to.be.true;
         // redeem pool
         const amount = await tokenBalance(context.wNat.address, agentInfo.collateralPool);
         const withdrawAllowedAt = await agentB.announcePoolTokenRedemption(amount);
         await time.increaseTo(withdrawAllowedAt);
         await agentB.redeemCollateralPoolTokens(amount);
         await trackedState.readUnhandledEvents();
-        expect(amount.eq(deposit)).to.be.true;
+        expect(amount.eq(depositWei)).to.be.true;
         expect(trackedState.agents.get(agentB.vaultAddress)?.totalPoolCollateralNATWei.eqn(0)).to.be.true;
-        expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(deposit)).to.be.true;
+        expect(trackedState.agents.get(agentB.vaultAddress)?.totalVaultCollateralWei[agentInfo.vaultCollateralToken].eq(depositUSDC)).to.be.true;
     });
 
     it("Should handle events 'CollateralTypeAdded', 'CollateralTypeDeprecated' and 'AgentCollateralTypeChanged", async () => {
@@ -621,9 +624,9 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
-        newCollateral.token = (await ERC20Mock.new("New Token", "NT")).address;
+        newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
         newCollateral.tokenFtsoSymbol = "XRP";
-        newCollateral.assetFtsoSymbol = "USDC";
+        newCollateral.assetFtsoSymbol = "testUSDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
         await trackedState.readUnhandledEvents();
         const collateralsAfter = trackedState.collaterals.list.length;
@@ -654,7 +657,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
-        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
+        const newWnat = await await ERC20Mock.new("Wrapped NAT", "WNAT");
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
         await trackedState.readUnhandledEvents();
         await context.assetManager.updateSettings(
