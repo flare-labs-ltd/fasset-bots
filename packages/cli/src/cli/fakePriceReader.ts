@@ -1,15 +1,11 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { Command } from "commander";
-import { requireEnv, toplevelRun } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { ChainContracts, loadContracts } from "../config/contracts";
-import { loadConfigFile } from "../config/BotConfig";
-import { FakePriceReaderInstance } from "../../typechain-truffle";
-import { getSecrets } from "../config/secrets";
 import chalk from "chalk";
+import { Command } from "commander";
+import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core-lib/config";
+import { FakePriceReaderInstance } from "fasset-bots-core-lib/types";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");

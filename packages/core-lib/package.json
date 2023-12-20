@@ -17,6 +17,10 @@
             "types": "./dist/src/index.d.ts",
             "default": "./dist/src/index.js"
         },
+        "./types": {
+            "types": "./dist/src/types.d.ts",
+            "default": "./dist/src/types.js"
+        },
         "./utils": {
             "types": "./dist/src/utils/index.d.ts",
             "default": "./dist/src/utils/index.js"
@@ -24,10 +28,6 @@
         "./config": {
             "types": "./dist/src/config/index.d.ts",
             "default": "./dist/src/config/index.js"
-        },
-        "./typechain-truffle": {
-            "types": "./typechain-truffle/index.d.ts",
-            "default": "./typechain-truffle/index.js"
         }
     },
     "mikro-orm": {

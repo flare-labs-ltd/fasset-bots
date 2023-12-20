@@ -1,17 +1,6 @@
 import { AMGSettings, AMG_TOKENWEI_PRICE_SCALE } from "../../../src/fasset/Conversions";
 import { BNish, toBN } from "../../../src/utils/helpers";
 
-/**
- * Return the minimum of two or more BN values.
- */
-export function minBN(first: BN, ...rest: BN[]) {
-    let result = first;
-    for (const x of rest) {
-        if (x.lt(result)) result = x;
-    }
-    return result;
-}
-
 export function convertAmgToUBA(settings: AMGSettings, valueAMG: BNish) {
     return toBN(valueAMG).mul(toBN(settings.assetMintingGranularityUBA));
 }

@@ -4,53 +4,15 @@
 /**
  * Globals
  */
-/// <reference types="chai" />
-/// <reference types="mocha" />
 
 declare type EventEmitter = import("events").EventEmitter;
 
 declare type BN = import("bn.js");
-declare type Web3 = import("web3").default;
 declare type AbiItem = import("web3-utils").AbiItem;
 declare type TransactionConfig = import("web3-core").TransactionConfig;
 declare type PromiEvent<T> = import("web3-core").PromiEvent<T>;
 declare type TransactionReceipt = import("web3-core").TransactionReceipt;
 declare type Web3EventOptions = import("web3-eth-contract").EventOptions;
-
-declare const assert: Chai.AssertStatic;
-declare const expect: Chai.ExpectStatic;
-
-declare const web3: Web3;
-
-declare const artifacts: Truffle.Artifacts;
-
-/**
- * Global contract function
- */
-interface ContractFunction extends Mocha.SuiteFunction {
-  (
-    title: string,
-    fn: (this: Mocha.Suite, accounts: Truffle.Accounts) => void
-  ): Mocha.Suite;
-  only: ExclusiveContractFunction;
-  skip: PendingContractFunction;
-}
-
-interface ExclusiveContractFunction extends Mocha.ExclusiveSuiteFunction {
-  (
-    title: string,
-    fn: (this: Mocha.Suite, accounts: Truffle.Accounts) => void
-  ): Mocha.Suite;
-}
-
-interface PendingContractFunction extends Mocha.PendingSuiteFunction {
-  (
-    title: string,
-    fn: (this: Mocha.Suite, accounts: Truffle.Accounts) => void
-  ): Mocha.Suite | void;
-}
-
-declare const contract: ContractFunction;
 
 /**
  * Namespace
@@ -123,22 +85,4 @@ declare namespace Truffle {
   interface ContractNew<ARGs extends any[]> {
     "new"(...args: ARGs): any;
   }
-
-  interface Deployer {
-    link(
-      library: Truffle.Contract<any>,
-      destination: Truffle.Contract<any>
-    ): Deployer;
-    link(
-      library: Truffle.Contract<any>,
-      destinations: Array<Truffle.Contract<any>>
-    ): Deployer;
-    deploy<T extends any[]>(c: ContractNew<T>, ...args: T): Deployer;
-  }
-
-  type Migration = (
-    deploy: Deployer,
-    network: string,
-    accounts: Accounts
-  ) => void;
 }

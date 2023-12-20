@@ -3,15 +3,13 @@ import "source-map-support/register";
 
 import chalk from "chalk";
 import { Command } from "commander";
+import { InfoBot, SecretsUser, UserBot } from "fasset-bots-core-lib";
+import { requireSecret, resetSecrets } from "fasset-bots-core-lib/config";
+import { CommandLineError, findPackageRoot, minBN, toBN, toBNExp, toplevelRun } from "fasset-bots-core-lib/utils";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import Web3 from "web3";
-import { InfoBot, SecretsUser } from "../actors/InfoBot";
-import { UserBot } from "../actors/UserBot";
-import { requireSecret, resetSecrets } from "../config/secrets";
-import { CommandLineError, findPackageRoot, toBN, toBNExp, toplevelRun } from "../utils/helpers";
-import { minBN } from "../../test/test-utils/collateral-data/helpers";
 
 const program = new Command();
 

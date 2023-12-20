@@ -1,14 +1,10 @@
 import "dotenv/config";
 import "source-map-support/register";
 
+import { ActorBaseKind, ActorBaseRunner } from "fasset-bots-core-lib";
+import { BotConfigFile, createBotConfig, getSecrets, requireSecret } from "fasset-bots-core-lib/config";
+import { authenticatedHttpProvider, initWeb3, toplevelRun } from "fasset-bots-core-lib/utils";
 import { readFileSync } from "fs";
-import { toplevelRun } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { ActorBaseRunner } from "../actors/ActorBaseRunner";
-import { BotConfigFile, createBotConfig } from "../config/BotConfig";
-import { getSecrets } from "../config/secrets";
 
 const SYSTEM_KEEPER_ADDRESS: string = requireSecret("systemKeeper.native_address");
 const SYSTEM_KEEPER_PRIVATE_KEY: string = requireSecret("systemKeeper.native_private_key");

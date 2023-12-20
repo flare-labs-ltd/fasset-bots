@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { BotCliCommands } from "../../../actors/AgentBotCliCommands";
+import { BotCliCommands } from "fasset-bots-core-lib";
 import { AgentCreateResponse, AgentBalance, AgentUnderlying, AgentSettings } from "../../common/AgentResponse";
-import { artifacts } from "../../../utils/web3";
+import { artifacts } from "fasset-bots-core-lib/utils";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 

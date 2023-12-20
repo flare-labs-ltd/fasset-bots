@@ -1,12 +1,11 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { Command } from "commander";
-import { CommandLineError, requireEnv, toplevelRun } from "../utils/helpers";
-import { createBlockchainWalletHelper, loadAgentConfigFile } from "../config/BotConfig";
-import chalk from "chalk";
-import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import chalk from "chalk";
+import { Command } from "commander";
+import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "fasset-bots-core-lib/config";
+import { CommandLineError, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 

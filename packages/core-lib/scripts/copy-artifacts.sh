@@ -50,6 +50,7 @@ find -name '*.json' -path './artifacts/liquidator/*' | xargs sed -i -e 's/"sourc
 # # generate typechain
 echo "***** Building typechain... *************************************"
 yarn typechain --target=truffle-v5 --out-dir typechain-truffle "artifacts/**/+([a-zA-Z0-9_]).json"
+cp scripts/types.d.ts typechain-truffle/
 
 # copy contract addresses
 echo "***** Copying config... *****************************************"

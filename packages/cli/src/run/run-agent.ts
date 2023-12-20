@@ -1,12 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner } from "../actors/AgentBotRunner";
-import { createBotConfig, loadAgentConfigFile } from "../config/BotConfig";
-import { requireEnv, toplevelRun } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { getSecrets } from "../config/secrets";
+import { AgentBotRunner } from "fasset-bots-core-lib";
+import { createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "fasset-bots-core-lib/config";
+import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const OWNER_ADDRESS: string = requireSecret("owner.native_address");
 const OWNER_PRIVATE_KEY: string = requireSecret("owner.native_private_key");

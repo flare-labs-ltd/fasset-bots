@@ -1,13 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { ActorBaseRunner } from "../actors/ActorBaseRunner";
-import { createBotConfig, loadConfigFile } from "../config/BotConfig";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { toplevelRun } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { getSecrets } from "../config/secrets";
+import { ActorBaseKind, ActorBaseRunner } from "fasset-bots-core-lib";
+import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "fasset-bots-core-lib/config";
+import { authenticatedHttpProvider, initWeb3, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.native_address");
 const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.native_private_key");

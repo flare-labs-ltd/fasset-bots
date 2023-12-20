@@ -1,10 +1,9 @@
 import { IERC20Events } from "../../../src/fasset-bots/IAssetBotContext";
 import { AMGSettings, amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
 import { ContractWithEvents } from "../../../src/utils/events/truffle";
-import { BN_ZERO, BNish, exp10, getOrCreateAsync, requireNotNull, toBN } from "../../../src/utils/helpers";
+import { BN_ZERO, BNish, exp10, getOrCreateAsync, minBN, requireNotNull, toBN } from "../../../src/utils/helpers";
 import { artifacts } from "../../../src/utils/web3";
 import { IERC20Instance, IPriceReaderInstance } from "../../../typechain-truffle";
-import { minBN } from "./helpers";
 
 const IPriceReader = artifacts.require("IPriceReader");
 const IERC20 = artifacts.require("IERC20");

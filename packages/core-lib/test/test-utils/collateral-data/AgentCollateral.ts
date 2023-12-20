@@ -1,9 +1,8 @@
 import { AgentInfo, AssetManagerSettings, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
-import { BN_ZERO, MAX_BIPS, exp10, maxBN, toBN } from "../../../src/utils/helpers";
+import { BN_ZERO, MAX_BIPS, exp10, maxBN, minBN, toBN } from "../../../src/utils/helpers";
 import { artifacts } from "../../../src/utils/web3";
 import { AssetManagerInstance } from "../../../typechain-truffle";
 import { CollateralData, CollateralDataFactory, CollateralKind } from "./CollateralData";
-import { minBN } from "./helpers";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");

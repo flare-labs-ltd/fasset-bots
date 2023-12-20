@@ -2,8 +2,8 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { toplevelRun } from "../utils/helpers";
-import { BotCliCommands } from "../actors/AgentBotCliCommands";
+import { toplevelRun } from "fasset-bots-core-lib/utils";
+import { BotCliCommands } from "fasset-bots-core-lib";
 
 const program = new Command();
 

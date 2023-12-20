@@ -1,14 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { TimeKeeper } from "../actors/TimeKeeper";
-import { createBotConfig, loadConfigFile } from "../config/BotConfig";
-import { createActorAssetContext } from "../config/create-asset-context";
-import { sleep, toplevelRun } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { getSecrets } from "../config/secrets";
+import { ActorBaseKind, TimeKeeper } from "fasset-bots-core-lib";
+import { createActorAssetContext, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "fasset-bots-core-lib/config";
+import { authenticatedHttpProvider, initWeb3, sleep, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.native_address");
 const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.native_private_key");
