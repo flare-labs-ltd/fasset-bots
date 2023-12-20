@@ -1,0 +1,83 @@
+{
+   "name": "simple-wallet",
+   "version": "1.0.0",
+   "description": "Simple wallet",
+   "engines": {
+      "node": ">=14.6.0"
+   },
+   "exports": {
+      ".": {
+         "types": "./dist/src/index.d.ts",
+         "default": "./dist/src/index.js"
+      }
+   },
+   "author": "Flare Networks",
+   "homepage": "https://gitlab.com/flarenetwork/simple-wallet",
+   "repository": {
+      "type": "git",
+      "url": "https://gitlab.com/flarenetwork/simple-wallet"
+   },
+   "license": "MIT",
+   "files": [
+      "/dist",
+      "/src"
+   ],
+   "scripts": {
+      "---------PUBLISH---SCRIPTS": "",
+      "publish": "echo npm publish",
+      "pack": "npm pack",
+      "---------BUILD---SCRIPTS": "",
+      "prebuild": "rm -rf dist",
+      "build": "tsc --allowJs",
+      "---------LINT---SCRIPTS": "",
+      "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
+      "---------TEST---SCRIPTS": "",
+      "test": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register -t 0",
+      "test_all": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --recursive -t 500000 test/**/*.ts ",
+      "test:coverage": "yarn nyc yarn test_all"
+   },
+   "dependencies": {
+      "@flarenetwork/mcc": "3.1.0",
+      "algosdk": "^2.3.0",
+      "bip32": "^3.0.1",
+      "bip39": "^3.0.4",
+      "bitcoinjs-lib": "^6.0.2",
+      "bitcore-lib": "^8.25.36",
+      "bitcore-lib-doge": "^8.25.36",
+      "bitcore-lib-ltc": "^8.25.36",
+      "bs58check": "^3.0.1",
+      "elliptic": "^6.5.4",
+      "ripple-address-codec": "4.2.4",
+      "ripple-binary-codec": "1.4.2",
+      "ripple-keypairs": "^1.1.5",
+      "tiny-secp256k1": "^2.2.1",
+      "xrpl": "2.3.1"
+   },
+   "devDependencies": {
+      "@istanbuljs/nyc-config-typescript": "*",
+      "@types/bitcore-lib": "^0.15.3",
+      "@types/bs58check": "^2.1.0",
+      "@types/chai": "*",
+      "@types/chai-as-promised": "*",
+      "@types/elliptic": "^6.4.14",
+      "@types/mocha": "*",
+      "@types/node": "*",
+      "@types/rewire": "^2.5.28",
+      "@types/tiny-secp256k1": "^2.0.1",
+      "@typescript-eslint/eslint-plugin": "*",
+      "@typescript-eslint/parser": "*",
+      "chai": "*",
+      "chai-as-promised": "*",
+      "dotenv": "*",
+      "eslint": "*",
+      "eslint-plugin-prettier": "*",
+      "mocha": "*",
+      "nyc": "*",
+      "rewire": "*",
+      "source-map-support": "*",
+      "ts-node": "*",
+      "typescript": "*",
+      "wallet-address-validator": "^0.2.4"
+   },
+   "packageManager": "yarn@3.6.4"
+}
