@@ -783,4 +783,25 @@ describe("Agent bot unit tests", async () => {
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq(amount.toString());
     });
+
+    it("Should not redeem pool tokens - too late", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const amount = toBN(100000000000000000000);
+        await agentBot.agent.buyCollateralPoolTokens(amount);
+        const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.toString();
+        await orm.em.persist(agentEnt).flush();
+        // not yet allowed
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
+        // allowed
+        const agentTimelockedOperationWindowSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
+        await time.increaseTo(withdrawalAllowedAt.add(agentTimelockedOperationWindowSeconds));
+        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
+        const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
+        expect(poolTokensBalance).to.eq(amount.toString());
+    });
 });

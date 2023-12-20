@@ -328,10 +328,10 @@ export class Notifier {
     }
 
     sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
-        this.send(AGENT_SETTING_UPDATE_FAILED, `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore.`);
+        this.send(AGENT_SETTING_UPDATE_FAILED, `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore. Try announcing setting update again.`);
     }
 
     sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string) {
-        this.send(WITHDRAWAL_FAILED, `Agent ${agentVault} could not withdrew ${type} collateral of ${amount}.`);
+        this.send(WITHDRAWAL_FAILED, `Agent ${agentVault} could not withdrew ${type} collateral of ${amount}. Cancel ${type} collateral withdrawal announcement and try again.`);
     }
 }

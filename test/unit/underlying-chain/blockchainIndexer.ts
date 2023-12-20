@@ -225,7 +225,7 @@ describe("testDOGE blockchain tests via indexer", async () => {
     });
 
     // skip until indexer is fixed
-    it.skip("Should retrieve transaction", async () => {
+    it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockChainIndexerClient.getTransaction(txHash);
         expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());
     });
@@ -487,13 +487,81 @@ describe("XRP blockchain tests via indexer", async () => {
 
 describe("Other blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.XRP;
-    const replacedId = SourceId.LTC;
-    it("Should create blockChainIndexerHelper", async () => {
-        const indexer = createBlockchainIndexerHelper(sourceId, "");
+    let indexer: BlockchainIndexerHelper;
+    let rewiredIndexer: typeof rewiredBlockchainIndexerHelperClass;
+
+    beforeEach(async () => {
+        indexer = createBlockchainIndexerHelper(sourceId, "");
+        rewiredIndexer = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
+    });
+
+    it("Should fail - sourceId not supported", async () => {
+        const replacedId = SourceId.LTC;
         indexer.sourceId = replacedId;
         const fn = () => {
-            return indexer.finalizationBlocksByChain();
+            return indexer.secondsPerBlockByChain();
         };
         expect(fn).to.throw(`SourceId ${replacedId} not supported.`);
+    });
+
+    it("Should handle inputs and outputs for various UTXO sourceIds and throw when unsupported sourceId provided", async () => {
+        const data = {
+            transactionType: "coinbase",
+            response: {
+                txid: "a2ec924deccf70ab65550b3475aefa133c817864600dc0d0203be2db5af6c83b",
+                vout: [
+                    {
+                        value: "10000.00000000",
+                        n: 0,
+                        scriptPubKey: {
+                            address: "njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta",
+                            asm: "OP_DUP OP_HASH160 ad15fe0eef614f0600c78568d4a91ede27b19e51 OP_EQUALVERIFY OP_CHECKSIG",
+                            hex: "76a914ad15fe0eef614f0600c78568d4a91ede27b19e5188ac",
+                        },
+                    },
+                ],
+                vin: [
+                    {
+                        sequence: 4294967295,
+                        coinbase: "039ec659",
+                    },
+                ],
+            },
+        };
+        rewiredIndexer.sourceId = SourceId.BTC;
+        const resBTC = await rewiredIndexer.handleInputsOutputs(data, true);
+        expect(resBTC[0][0]).to.eq("");
+        expect(resBTC[0][1].eqn(0)).to.be.true;
+
+        rewiredIndexer.sourceId = SourceId.DOGE;
+        const resDOGE = await rewiredIndexer.handleInputsOutputs(data, true);
+        expect(resDOGE[0][0]).to.eq("");
+        expect(resDOGE[0][1].eqn(0)).to.be.true;
+
+        rewiredIndexer.sourceId = SourceId.LTC;
+        await expect(rewiredIndexer.handleInputsOutputs(data, true))
+            .to.eventually.be.rejectedWith(`Invalid SourceId: ${rewiredIndexer.sourceId}`)
+            .and.be.an.instanceOf(Error);
+    });
+
+    it("Should handle inputs and outputs for XRP", async () => {
+        const data = {
+            isNativePayment: true,
+            response: {
+                result: {
+                    Account: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                    Amount: 100,
+                    Destination: "rQ3fNyLjbvcDaPNS4EAJY8aT9zR3uGk17c",
+                    meta: {
+                        delivered_amount: "100",
+                        TransactionResult: "tesSUCCESS",
+                    },
+                },
+            },
+        };
+        rewiredIndexer.sourceId = SourceId.XRP;
+        const resXRP = await rewiredIndexer.handleInputsOutputs(data, true);
+        expect(resXRP[0][0]).to.eq(data.response.result.Account);
+        expect(resXRP[0][1].eqn(data.response.result.Amount)).to.be.true;
     });
 });

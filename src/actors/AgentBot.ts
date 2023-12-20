@@ -25,6 +25,7 @@ import {
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
     STABLE_COIN_LOW_BALANCE,
     XRP_ACTIVATE_BALANCE,
+    findOneSubstring,
     toBN,
     toBNExp,
 } from "../utils/helpers";
@@ -845,7 +846,7 @@ export class AgentBot {
      * @returns true if withdraw successful or time expired
      */
     async withdrawCollateral(withdrawValidAt: BN, withdrawAmount: BN, latestTimestamp: BN, type: ClaimType): Promise<boolean> {
-        const desiredErrorIncludes = "withdrawal: too late";
+        const desiredErrorIncludes = ["withdrawal: too late", "withdrawal: CR too low"];
         logger.info(`Agent ${this.agent.vaultAddress} is waiting to withdraw ${type} collateral.`);
         // agent waiting for pool token redemption
         if (toBN(withdrawValidAt).lte(latestTimestamp)) {
@@ -861,7 +862,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} withdrew ${type} collateral ${withdrawAmount.toString()}.`);
                 return true;
             } catch (error) {
-                if (error instanceof Error && error.message.includes(desiredErrorIncludes)) {
+                if (error instanceof Error && findOneSubstring(error.message, desiredErrorIncludes)) {
                     this.notifier.sendAgentCannotWithdrawCollateral(this.agent.vaultAddress, withdrawAmount.toString(), type);
                     return true;
                 }
