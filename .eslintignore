@@ -1,3 +1,5 @@
+src/verification/generated/
+src/verification/attestation-types/
 test/types/@openzeppelin/test-helpers.d.ts
 src/mock/*
 node_modules/*

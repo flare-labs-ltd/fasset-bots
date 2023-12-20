@@ -38,11 +38,11 @@ coverage/
 *.db-journal
 
 # tmp
-test/e2e/actors/tmp.ts
 test-data/
 user-data/
-
 *.Identifier
+test/e2e/actors/tmp.ts
+tsconfig.tsbuildinfo
 
 # config file with various keys and addresses
 secrets.json

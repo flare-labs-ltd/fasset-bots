@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "typeRoots": [
+      "test/types",
+      "node_modules/@types"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "test-hardhat/**/*",
+    "./typechain-truffle",
+    "./typechain-truffle/types.d.ts",
+    "./hardhat.config.ts"
+  ],
+  "references": [
+    {
+      "path": "../simple-wallet"
+    }
+  ]
+}

@@ -30,6 +30,9 @@
     },
     "parserOptions": {
         "ecmaVersion": 2020,
-        "project": "./tsconfig.json"
+        "tsconfigRootDir": ".",
+        "project": [
+            "./packages/*/tsconfig.json"
+        ]
     }
 }

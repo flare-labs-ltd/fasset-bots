@@ -1,0 +1,130 @@
+{
+    "name": "fasset-bots-core-lib",
+    "version": "1.0.0",
+    "description": "FAsset bots library",
+    "author": "Flare Networks",
+    "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.com/flarenetwork/fasset-bots"
+    },
+    "license": "MIT",
+    "exports": {
+        ".": {
+            "types": "./dist/src/index.d.ts",
+            "default": "./dist/src/index.js"
+        },
+        "./utils": {
+            "types": "./dist/src/utils/index.d.ts",
+            "default": "./dist/src/utils/index.js"
+        },
+        "./config": {
+            "types": "./dist/src/config/index.d.ts",
+            "default": "./dist/src/config/index.js"
+        },
+        "./typechain-truffle": {
+            "types": "./typechain-truffle/index.d.ts",
+            "default": "./typechain-truffle/index.js"
+        }
+    },
+    "mikro-orm": {
+        "useTsNode": true,
+        "configPaths": [
+            "./src/mikro-orm.config.ts",
+            "./dist/mikro-orm.config.js"
+        ]
+    },
+    "files": [
+        "/artifacts",
+        "/dist",
+        "/src"
+    ],
+    "scripts": {
+        "---------PUBLISH---SCRIPTS": "",
+        "publish": "echo npm publish",
+        "pack": "npm pack",
+        "---------BUILD---SCRIPTS": "",
+        "build": "rm -rf dist && tsc --allowJs",
+        "watch": "yarn build --watch --incremental",
+        "---------LINT---SCRIPTS": "",
+        "lint": "eslint \"src/**/*ts\"",
+        "---------PRETTIER---SCRIPTS": "",
+        "prettier_check": "prettier --check .",
+        "prettier_fix": "prettier --write .",
+        "---------TEST---SCRIPTS": "",
+        "test": "mocha",
+        "test_all:e2e": "mocha --recursive -t 500000 \"test/e2e/**/*.ts\"",
+        "test_all:unit": "mocha --recursive -t 500000 \"test/unit/***/**/*.ts\"",
+        "test_all:integration": "mocha --recursive -t 500000 \"test/integration/**/*.ts\"",
+        "test_all": "yarn testHH_all && yarn test_all:unit && yarn test_all:integration && yarn test_all:e2e",
+        "test:coverage": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration; yarn cover:report",
+        "testHH": "yarn hardhat test --no-compile",
+        "testHH_all": "env TEST_PATH=\"./test-hardhat/{unit,integration}\" yarn hardhat test --no-compile",
+        "testHH_all:unit": "env TEST_PATH=\"./test-hardhat/unit\" yarn hardhat test --no-compile",
+        "testHH_all:integration": "env TEST_PATH=\"./test-hardhat/integration\" yarn hardhat test --no-compile",
+        "testHH:coverage": "yarn nyc yarn testHH_all",
+        "testHH:fuzzer": "yarn testHH test-hardhat/fuzzing/FAssetFuzzing.ts",
+        "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
+        "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration; nyc merge .nyc_output coverage/merge/test.json",
+        "cover:testHH": "nyc --silent yarn testHH_all; nyc merge .nyc_output coverage/merge/testHH.json",
+        "cover:report": "nyc report -t coverage/merge --reporter html --reporter text",
+        "---------GENERATE---SCRIPTS": "",
+        "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json",
+        "generate-agent-settings-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_AgentSettingsConfig -o run-config/schema/agent-settings.schema.json",
+        "---------INTERACTIVE---SCRIPTS": "",
+        "console": "yarn hardhat console --no-compile",
+        "console:coston": "yarn hardhat console --no-compile --network coston"
+    },
+    "dependencies": {
+        "@flarenetwork/mcc": "3.2.0",
+        "@mikro-orm/cli": "*",
+        "@mikro-orm/core": "*",
+        "@mikro-orm/knex": "*",
+        "@mikro-orm/mysql": "*",
+        "@mikro-orm/postgresql": "*",
+        "@mikro-orm/sqlite": "*",
+        "ajv": "8.12.0",
+        "axios": "*",
+        "bn.js": "*",
+        "glob": "*",
+        "simple-wallet": "*",
+        "source-map-support": "*",
+        "web3": "1.10.2",
+        "web3-core": "1.10.2",
+        "web3-eth": "1.10.2",
+        "web3-eth-abi": "1.10.2",
+        "web3-utils": "1.10.2",
+        "winston": "*",
+        "winston-daily-rotate-file": "*"
+    },
+    "devDependencies": {
+        "@istanbuljs/nyc-config-typescript": "*",
+        "@nomiclabs/hardhat-web3": "2.0.0",
+        "@openzeppelin/test-helpers": "0.5.16",
+        "@typechain/truffle-v5": "7.0.0",
+        "@types/bn.js": "*",
+        "@types/chai": "*",
+        "@types/chai-as-promised": "*",
+        "@types/chai-spies": "*",
+        "@types/glob": "*",
+        "@types/mocha": "*",
+        "@types/node": "*",
+        "@types/rewire": "2.5.28",
+        "@typescript-eslint/eslint-plugin": "*",
+        "@typescript-eslint/parser": "*",
+        "chai": "*",
+        "chai-as-promised": "*",
+        "chai-spies": "*",
+        "dotenv": "*",
+        "eslint": "*",
+        "hardhat": "2.17.3",
+        "mocha": "*",
+        "nyc": "*",
+        "rewire": "7.0.0",
+        "ts-node": "*",
+        "typechain": "8.3.0",
+        "typescript": "*",
+        "typescript-json-schema": "0.61.0"
+    },
+    "packageManager": "yarn@3.6.4"
+}
