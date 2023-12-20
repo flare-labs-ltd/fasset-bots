@@ -153,7 +153,7 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.depositToVault(vaultAddress, depositAmount);
         const collateralBefore = await vaultCollateralTokenContract.balanceOf(vaultAddress);
         expect(collateralBefore.toString()).to.eq(depositAmount);
-        await botCliCommands.withdrawFromVault(vaultAddress, withdrawAmount);
+        await botCliCommands.announceWithdrawFromVault(vaultAddress, withdrawAmount);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.withdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
@@ -166,7 +166,7 @@ describe("Bot cli commands unit tests", async () => {
         await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmount);
         const collateralBefore = toBN(await agent.collateralPoolToken.balanceOf(agent.vaultAddress));
         expect(collateralBefore.toString()).to.eq(depositAmount);
-        await botCliCommands.redeemCollateralPoolTokens(vaultAddress, withdrawAmount);
+        await botCliCommands.announceRedeemCollateralPoolTokens(vaultAddress, withdrawAmount);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount).to.be.eq(withdrawAmount);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
@@ -475,5 +475,19 @@ describe("Bot cli commands unit tests", async () => {
         expect(agent).to.be.null;
         //change context back
         botCliCommands.context = context;
+    });
+
+    it("Should run command 'cancelWithdrawFromVaultAnnouncement'", async () => {
+        const agent = await createAgent();
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.cancelWithdrawFromVaultAnnouncement(agent.vaultAddress);
+        expect(spyConsole).to.be.called.once;
+    });
+
+    it("Should run command 'cancelCollateralPoolTokensAnnouncement'", async () => {
+        const agent = await createAgent();
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.cancelCollateralPoolTokensAnnouncement(agent.vaultAddress);
+        expect(spyConsole).to.be.called.once;
     });
 });

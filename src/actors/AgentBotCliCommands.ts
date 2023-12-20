@@ -170,7 +170,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be withdrawn
      */
-    async withdrawFromVault(agentVault: string, amount: string): Promise<void> {
+    async announceWithdrawFromVault(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
         this.botConfig.notifier!.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
@@ -180,6 +180,19 @@ export class BotCliCommands {
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
+    /**
+     * Cancels agent's vault collateral announcement.
+     * @param agentVault agent's vault address
+     */
+    async cancelWithdrawFromVaultAnnouncement(agentVault: string): Promise<void> {
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        this.botConfig.notifier!.sendCancelVaultCollateralAnnouncement(agentVault);
+        agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+        agentEnt.withdrawalAllowedAtAmount = "";
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        logger.info(`Agent ${agentVault} cancelled vault collateral withdrawal announcement.`);
+    }
 
     /**
      * Announces agent's pool token redemption. It marks in persistent state that redemption of pool tokens
@@ -187,7 +200,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be redeemed
      */
-    async redeemCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
+    async announceRedeemCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         this.botConfig.notifier!.sendRedeemCollateralPoolTokensAnnouncement(agentVault, amount);
@@ -195,6 +208,20 @@ export class BotCliCommands {
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount;
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced pool token redemption of ${amount} at ${withdrawalAllowedAt.toString()}.`);
+    }
+
+    /**
+     * Cancels agent's pool token redemption announcement.
+     * @param agentVault agent's vault address
+     */
+    async cancelCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
+        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        this.botConfig.notifier!.sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault);
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
     /**

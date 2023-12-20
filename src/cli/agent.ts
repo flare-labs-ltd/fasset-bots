@@ -106,25 +106,45 @@ program
     });
 
 program
-    .command("withdrawVaultCollateral")
-    .description("withdraw amount from agent vault to owner’s address")
+    .command("announceVaultCollateralWithdrawal")
+    .description("announce vault collateral withdrawal from agent's to owner’s address")
     .argument("<agentVaultAddress>")
     .argument("<amount")
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.withdrawFromVault(agentVault, amount);
+        await cli.announceWithdrawFromVault(agentVault, amount);
     });
 
 program
-    .command("redeemCollateralPoolTokens")
-    .description("redeem collateral pool tokens")
+    .command("cancelVaultCollateralWithdrawal")
+    .description("cancel vault collateral withdrawal announcement")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string,) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.cancelWithdrawFromVaultAnnouncement(agentVault);
+    });
+
+program
+    .command("announceCollateralPoolTokenRedemption")
+    .description("announce collateral pool tokens redemption from agent's to owner’s address")
     .argument("<agentVaultAddress>")
     .argument("<amount")
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.redeemCollateralPoolTokens(agentVault, amount);
+        await cli.announceRedeemCollateralPoolTokens(agentVault, amount);
+    });
+
+program
+    .command("cancelCollateralPoolTokenRedemption")
+    .description("cancel collateral pool tokens redemption announcement")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { fasset: string } = program.opts();
+        const cli = await BotCliCommands.create(options.fasset);
+        await cli.cancelCollateralPoolTokensAnnouncement(agentVault);
     });
 
 program
