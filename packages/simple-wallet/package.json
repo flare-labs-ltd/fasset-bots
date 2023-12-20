@@ -25,7 +25,7 @@
    "scripts": {
       "---------PUBLISH---SCRIPTS": "",
       "publish": "echo npm publish",
-      "pack": "npm pack",
+      "prepack": "yarn build",
       "---------BUILD---SCRIPTS": "",
       "prebuild": "rm -rf dist",
       "build": "tsc --allowJs",
@@ -37,8 +37,9 @@
       "test:coverage": "yarn nyc yarn test_all"
    },
    "dependencies": {
-      "@flarenetwork/mcc": "3.1.0",
       "algosdk": "^2.3.0",
+      "axios": "*",
+      "axios-retry": "^3.8.0",
       "bip32": "^3.0.1",
       "bip39": "^3.0.4",
       "bitcoinjs-lib": "^6.0.2",
@@ -47,10 +48,12 @@
       "bitcore-lib-ltc": "^8.25.36",
       "bs58check": "^3.0.1",
       "elliptic": "^6.5.4",
+      "fast-safe-stringify": "^2.1.1",
       "ripple-address-codec": "4.2.4",
       "ripple-binary-codec": "1.4.2",
       "ripple-keypairs": "^1.1.5",
       "tiny-secp256k1": "^2.2.1",
+      "web3-utils": "1.10.2",
       "xrpl": "2.3.1"
    },
    "devDependencies": {
@@ -74,6 +77,7 @@
       "mocha": "*",
       "nyc": "*",
       "rewire": "*",
+      "rimraf": "*",
       "source-map-support": "*",
       "ts-node": "*",
       "typescript": "*",

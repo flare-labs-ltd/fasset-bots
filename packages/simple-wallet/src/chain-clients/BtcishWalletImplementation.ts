@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import bs58check from "bs58check";
-import * as ecc from "tiny-secp256k1";
 import * as bitcoin from "bitcoinjs-lib";
 import * as bitcore from "bitcore-lib";
 import * as litecore from "bitcore-lib-ltc";
@@ -17,6 +16,8 @@ import type { BaseRpcConfig } from "../interfaces/WriteWalletRpcInterface";
 import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";

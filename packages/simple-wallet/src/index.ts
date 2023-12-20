@@ -6,6 +6,7 @@ import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation
 import type { AlgoRpcConfig, BaseRpcConfig } from "./interfaces/WriteWalletRpcInterface";
 
 export type { WalletClient, WalletCreate } from "./types";
+export type { StuckTransaction } from "./interfaces/WriteWalletRpcInterface";
 
 export module WALLET {
    export class XRP extends XrpWalletImplementation {

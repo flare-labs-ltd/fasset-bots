@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { EntityManager } from "@mikro-orm/core/EntityManager";
+import { EntityManager } from "@mikro-orm/core";
 import { WALLET } from "simple-wallet";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass } from "../fasset/AssetManagerTypes";

@@ -1,4 +1,4 @@
-import { FilterQuery } from "@mikro-orm/core/typings";
+import { FilterQuery } from "@mikro-orm/core";
 import { expect, use } from "chai";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";

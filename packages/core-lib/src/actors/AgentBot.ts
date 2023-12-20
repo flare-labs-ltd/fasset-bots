@@ -1,4 +1,4 @@
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core/typings";
+import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";

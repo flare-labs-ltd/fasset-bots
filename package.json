@@ -14,6 +14,8 @@
         "build": "tsc --build",
         "watch": "tsc --build --watch --incremental",
         "update-references": "utils-typescript-references",
+        "---------LINT---SCRIPTS": "",
+        "lint": "eslint \"packages/**/src/**/*ts\"",
         "---------PRETTIER---SCRIPTS": "",
         "prettier_check": "prettier --check .",
         "prettier_fix": "prettier --write ."
@@ -35,7 +37,7 @@
     "devDependencies": {
         "@goldstack/utils-typescript-references": "^0.3.9",
         "@istanbuljs/nyc-config-typescript": "1.0.2",
-        "@types/bn.js": "5.1.2",
+        "@types/bn.js": "5.1.5",
         "@types/chai": "4.3.6",
         "@types/chai-as-promised": "7.1.6",
         "@types/chai-spies": "1.0.4",
@@ -54,6 +56,7 @@
         "nyc": "15.1.0",
         "prettier": "3.0.3",
         "rewire": "7.0.0",
+        "rimraf": "5.0.5",
         "ts-node": "10.9.1",
         "typescript": "5.2.2"
     },

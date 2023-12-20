@@ -21,7 +21,7 @@ import {
     getAgentStatus,
     mintVaultCollateralToOwner,
 } from "../test-utils/helpers";
-import { FilterQuery } from "@mikro-orm/core/typings";
+import { FilterQuery } from "@mikro-orm/core";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import spies from "chai-spies";

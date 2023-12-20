@@ -9,6 +9,9 @@
         "url": "https://gitlab.com/flarenetwork/fasset-bots"
     },
     "license": "MIT",
+    "engines": {
+        "node": ">=16.10.0"
+    },
     "exports": {
         ".": {
             "types": "./dist/src/index.d.ts",
@@ -76,7 +79,7 @@
         "console:coston": "yarn hardhat console --no-compile --network coston"
     },
     "dependencies": {
-        "@flarenetwork/mcc": "3.2.0",
+        "@flarenetwork/state-connector-protocol": "1.0.0-beta.2",
         "@mikro-orm/cli": "*",
         "@mikro-orm/core": "*",
         "@mikro-orm/knex": "*",
