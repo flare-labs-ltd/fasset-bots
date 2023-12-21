@@ -9,11 +9,10 @@
     ]
   },
   "include": [
-    "src/**/*",
-    "test/**/*",
-    "test-hardhat/**/*",
-    "./typechain-truffle",
-    "./typechain-truffle/types.d.ts",
+    "./src/**/*",
+    "./typechain-truffle/**/*",
+    "./test/**/*",
+    "./test-hardhat/**/*",
     "./hardhat.config.ts"
   ],
   "references": [
