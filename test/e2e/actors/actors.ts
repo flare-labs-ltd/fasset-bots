@@ -13,7 +13,6 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { Notifier } from "../../../src/utils/Notifier";
 import { requireSecret } from "../../../src/config/secrets";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
@@ -24,6 +23,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
 import { getSecrets } from "../../../src/config/secrets";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 use(chaiAsPromised);
 const fAssetSymbol = "FtestXRP";
 
@@ -80,7 +80,7 @@ describe("Actor tests - coston", async () => {
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new Notifier());
+        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
         // sort of clean up
@@ -91,7 +91,7 @@ describe("Actor tests - coston", async () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(contexts, orm, 5, new Notifier());
+        const agentBotRunner = new AgentBotRunner(contexts, orm, 5, new MockNotifier());
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });

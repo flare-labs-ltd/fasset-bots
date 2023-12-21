@@ -26,6 +26,7 @@
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "alertsUrl": "https://fasset-dashboard-backend.aflabs.org/",
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",
         "config": {

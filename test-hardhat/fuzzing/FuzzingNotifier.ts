@@ -1,35 +1,37 @@
-import { Notifier } from "../../src/utils/Notifier";
+import { MockNotifier } from "../../src/mock/MockNotifier";
 import { EventFormatter } from "../test-utils/EventFormatter";
 
-export class FuzzingNotifier {
+export class FuzzingNotifier extends MockNotifier{
     constructor(
-        public notifier: Notifier,
+        public notifier: MockNotifier,
         public eventFormatter: EventFormatter
-    ) {}
+    ) {
+        super();
+    }
 
     send(title: string, message?: string) {
         this.notifier.send(title, message);
     }
 
-    sendCCBAlert(agentVault: string, timestamp: string): void {
+    async sendCCBAlert(agentVault: string, timestamp: string): Promise<void> {
         this.notifier.sendCCBAlert(this.eventFormatter.formatAddress(agentVault), timestamp);
     }
-    sendLiquidationStartAlert(agentVault: string, timestamp: string): void {
+    async sendLiquidationStartAlert(agentVault: string, timestamp: string): Promise<void> {
         this.notifier.sendLiquidationStartAlert(this.eventFormatter.formatAddress(agentVault), timestamp);
     }
-    sendFullLiquidationAlert(agentVault: string, payment1?: string | undefined, payment2?: string | undefined): void {
+    async sendFullLiquidationAlert(agentVault: string, payment1?: string | undefined, payment2?: string | undefined): Promise<void> {
         this.notifier.sendFullLiquidationAlert(this.eventFormatter.formatAddress(agentVault), payment1, payment2);
     }
-    sendLiquidationWasPerformed(agentVault: string, value: string): void {
+    async sendLiquidationWasPerformed(agentVault: string, value: string): Promise<void> {
         this.notifier.sendLiquidationWasPerformed(this.eventFormatter.formatAddress(agentVault), value);
     }
-    sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean): void {
-        this.notifier.sendMintingCornerCase(requestId, indexerExpired, paymentProof);
+    async sendMintingCornerCase(agentVault: string, requestId: string, indexerExpired: boolean, paymentProof: boolean): Promise<void> {
+        this.notifier.sendMintingCornerCase(this.eventFormatter.formatAddress(agentVault), requestId, indexerExpired, paymentProof);
     }
-    sendRedemptionCornerCase(requestId: string, agentVault: string): void {
-        this.notifier.sendRedemptionCornerCase(requestId, this.eventFormatter.formatAddress(agentVault));
+    async sendRedemptionCornerCase(agentVault: string, requestId: string): Promise<void> {
+        this.notifier.sendRedemptionCornerCase(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): void {
+    async sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): Promise<void> {
         this.notifier.sendRedemptionFailedOrBlocked(
             requestId,
             txHash,
@@ -38,136 +40,136 @@ export class FuzzingNotifier {
             failureReason
         );
     }
-    sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): void {
+    async sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): Promise<void> {
         this.notifier.sendRedemptionDefaulted(requestId, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault));
     }
-    sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string): void {
+    async sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string): Promise<void> {
         this.notifier.sendRedemptionWasPerformed(requestId, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault));
     }
-    sendCollateralTopUpAlert(agentVault: string, value: string, pool?: boolean): void {
+    async sendCollateralTopUpAlert(agentVault: string, value: string, pool?: boolean): Promise<void> {
         this.notifier.sendCollateralTopUpAlert(this.eventFormatter.formatAddress(agentVault), value, pool);
     }
-    sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool?: boolean): void {
+    async sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool?: boolean): Promise<void> {
         this.notifier.sendCollateralTopUpFailedAlert(this.eventFormatter.formatAddress(agentVault), value, pool);
     }
-    sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string): void {
+    async sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string): Promise<void> {
         this.notifier.sendLowUnderlyingAgentBalanceFailed(this.eventFormatter.formatAddress(agentVault), freeUnderlyingBalanceUBA);
     }
-    sendLowUnderlyingAgentBalance(agentVault: string, amount: string): void {
+    async sendLowUnderlyingAgentBalance(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendLowUnderlyingAgentBalance(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: string): void {
-        this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance);
+    async sendLowBalanceOnUnderlyingOwnersAddress(agentVault: string, ownerUnderlyingAddress: string, ownerUnderlyingBalance: string): Promise<void> {
+        this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.eventFormatter.formatAddress(agentVault), ownerUnderlyingAddress, ownerUnderlyingBalance);
     }
-    sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: string, tokenSymbol: string): void {
-        this.notifier.sendLowBalanceOnOwnersAddress(this.eventFormatter.formatAddress(ownerAddress), balance, tokenSymbol);
+    async sendLowBalanceOnOwnersAddress(agentVault: string, ownerAddress: string, balance: string, tokenSymbol: string): Promise<void> {
+        this.notifier.sendLowBalanceOnOwnersAddress(this.eventFormatter.formatAddress(agentVault), this.eventFormatter.formatAddress(ownerAddress), balance, tokenSymbol);
     }
-    sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean | undefined): void {
+    async sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean | undefined): Promise<void> {
         this.notifier.sendNoProofObtained(this.eventFormatter.formatAddress(agentVault), requestId, roundId, requestData, redemption);
     }
-    sendAgentDestroyed(agentVault: string): void {
+    async sendAgentDestroyed(agentVault: string): Promise<void> {
         this.notifier.sendAgentDestroyed(this.eventFormatter.formatAddress(agentVault));
     }
-    sendAgentCreated(agentVault: string) {
+    async sendAgentCreated(agentVault: string): Promise<void> {
         this.notifier.sendAgentCreated(this.eventFormatter.formatAddress(agentVault));
     }
-    sendWithdrawVaultCollateral(agentVault: string, amount: string): void {
+    async sendWithdrawVaultCollateral(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendWithdrawVaultCollateral(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
+    async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendWithdrawVaultCollateralAnnouncement(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendRedeemCollateralPoolTokensAnnouncement(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
+    async sendAgentSettingsUpdate(agentVault: string, settingName: string): Promise<void> {
         this.notifier.sendAgentSettingsUpdate(this.eventFormatter.formatAddress(agentVault), settingName);
     }
-    sendAgentAnnouncedExitAvailable(agentVault: string) {
+    async sendAgentAnnouncedExitAvailable(agentVault: string): Promise<void> {
         this.notifier.sendAgentAnnouncedExitAvailable(this.eventFormatter.formatAddress(agentVault));
     }
-    sendAgentExitedAvailable(agentVault: string): void {
+    async sendAgentExitedAvailable(agentVault: string): Promise<void> {
         this.notifier.sendAgentExitedAvailable(this.eventFormatter.formatAddress(agentVault));
     }
-    sendAgentEnteredAvailable(agentVault: string) {
+    async sendAgentEnteredAvailable(agentVault: string): Promise<void> {
         this.notifier.sendAgentEnteredAvailable(this.eventFormatter.formatAddress(agentVault));
     }
-    sendAgentAnnounceDestroy(agentVault: string): void {
+    async sendAgentAnnounceDestroy(agentVault: string): Promise<void> {
         this.notifier.sendAgentAnnounceDestroy(this.eventFormatter.formatAddress(agentVault));
     }
-    sendConfirmWithdrawUnderlying(agentVault: string): void {
+    async sendConfirmWithdrawUnderlying(agentVault: string): Promise<void> {
         this.notifier.sendConfirmWithdrawUnderlying(this.eventFormatter.formatAddress(agentVault));
     }
-    sendCancelWithdrawUnderlying(agentVault: string): void {
+    async sendCancelWithdrawUnderlying(agentVault: string): Promise<void> {
         this.notifier.sendCancelWithdrawUnderlying(this.eventFormatter.formatAddress(agentVault));
     }
-    sendCollateralPoolTokensRedemption(agentVault: string): void {
+    async sendCollateralPoolTokensRedemption(agentVault: string): Promise<void> {
         this.notifier.sendCollateralPoolTokensRedemption(this.eventFormatter.formatAddress(agentVault));
     }
-    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
+    async sendBuyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendBuyCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendVaultCollateralDeposit(agentVault: string, amount: string) {
+    async sendVaultCollateralDeposit(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendVaultCollateralDeposit(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendWithdrawPoolFees(agentVault: string, amount: string) {
+    async sendWithdrawPoolFees(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendWithdrawPoolFees(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendBalancePoolFees(agentVault: string, amount: string) {
+    async sendBalancePoolFees(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendBalancePoolFees(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendSelfClose(agentVault: string) {
+    async sendSelfClose(agentVault: string): Promise<void> {
         this.notifier.sendSelfClose(this.eventFormatter.formatAddress(agentVault));
     }
-    sendActiveWithdrawal(agentVault: string) {
+    async sendActiveWithdrawal(agentVault: string): Promise<void> {
         this.notifier.sendActiveWithdrawal(this.eventFormatter.formatAddress(agentVault));
     }
-    sendNoActiveWithdrawal(agentVault: string) {
+    async sendNoActiveWithdrawal(agentVault: string): Promise<void> {
         this.notifier.sendNoActiveWithdrawal(this.eventFormatter.formatAddress(agentVault));
     }
-    sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
+    async sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string): Promise<void> {
         this.notifier.sendAnnounceUnderlyingWithdrawal(this.eventFormatter.formatAddress(agentVault), paymentReference);
     }
-    sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
+    async sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string): Promise<void> {
         this.notifier.sendUnderlyingWithdrawalPerformed(this.eventFormatter.formatAddress(agentVault), txHash);
     }
-    sendMintingExecuted(agentVault: string, requestId: string) {
+    async sendMintingExecuted(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendMintingExecuted(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendMintingDeleted(agentVault: string, requestId: string) {
+    async sendMintingDeleted(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendMintingDeleted(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendMintingStared(agentVault: string, requestId: string) {
+    async sendMintingStared(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendMintingStared(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendRedemptionStarted(agentVault: string, requestId: string) {
+    async sendRedemptionStarted(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendRedemptionStarted(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendRedemptionPaid(agentVault: string, requestId: string) {
+    async sendRedemptionPaid(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendRedemptionPaid(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
+    async sendRedemptionRequestPaymentProof(agentVault: string, requestId: string): Promise<void> {
         this.notifier.sendRedemptionRequestPaymentProof(this.eventFormatter.formatAddress(agentVault), requestId);
     }
-    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
+    async sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string): Promise<void> {
         this.notifier.sendDelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral, recipient, bips);
     }
-    sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
+    async sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string): Promise<void> {
         this.sendUndelegatePoolCollateral(this.eventFormatter.formatAddress(agentVault), poolCollateral);
     }
-    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+    async sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string): Promise<void> {
         this.notifier.sendAgentCannotUpdateSettingExpired(this.eventFormatter.formatAddress(agentVault), setting);
     }
-    sendRedeemCollateralPoolTokens(agentVault: string, amount: string): void {
+    async sendRedeemCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         this.notifier.sendRedeemCollateralPoolTokens(this.eventFormatter.formatAddress(agentVault), amount);
     }
-    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): void {
+    async sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): Promise<void> {
         this.notifier.sendAgentCannotWithdrawCollateral(this.eventFormatter.formatAddress(agentVault), amount, type);
     }
-    sendCancelVaultCollateralAnnouncement(agentVault: string): void {
+    async sendCancelVaultCollateralAnnouncement(agentVault: string): Promise<void> {
         this.notifier.sendCancelVaultCollateralAnnouncement(this.eventFormatter.formatAddress(agentVault));
     }
-    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): void {
+    async sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
         this.notifier.sendCancelRedeemCollateralPoolTokensAnnouncement(this.eventFormatter.formatAddress(agentVault));
     }
 }

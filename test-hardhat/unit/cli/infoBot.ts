@@ -60,6 +60,7 @@ describe("InfoBot cli commands unit tests", async () => {
             ],
             nativeChainInfo: testNativeChainInfo,
             addressUpdater: "",
+            alertsUrl: "",
         };
         infoBot = new InfoBot(context, config, config.fAssetInfos[0]);
     });

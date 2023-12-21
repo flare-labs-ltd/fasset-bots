@@ -38,5 +38,6 @@
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
-    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
+    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json",
+    "alertsUrl": "https://fasset-dashboard-backend.aflabs.org/"
 }

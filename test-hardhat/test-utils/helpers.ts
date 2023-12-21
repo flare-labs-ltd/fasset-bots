@@ -10,7 +10,7 @@ import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fas
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { BNish, toBN, toBNExp } from "../../src/utils/helpers";
-import { Notifier } from "../../src/utils/Notifier";
+import { requireSecret } from "../../src/config/secrets";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
@@ -24,8 +24,7 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { artifacts } from "../../src/utils/web3";
-import { requireSecret } from "../../src/config/secrets";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { MockNotifier } from "../../src/mock/MockNotifier";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -48,7 +47,7 @@ export async function createTestAgentBot(
     orm: ORM,
     ownerAddress: string,
     ownerUnderlyingAddress?: string,
-    notifier: Notifier = new Notifier(),
+    notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ): Promise<AgentBot> {
     const underlyingAddress = ownerUnderlyingAddress ? ownerUnderlyingAddress : requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
@@ -65,11 +64,11 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), new MockNotifier());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state);
+    return new Liquidator(new ScopedRunner(), address, state, new MockNotifier());
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
@@ -100,7 +99,7 @@ export function createTestAgentBotRunner(
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
     loopDelay: number,
-    notifier: Notifier = new Notifier()
+    notifier: MockNotifier = new MockNotifier()
 ): AgentBotRunner {
     return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
@@ -143,7 +142,7 @@ export async function createTestAgentBotAndMakeAvailable(
     orm: ORM,
     ownerAddress: string,
     ownerUnderlyingAddress?: string,
-    notifier: Notifier = new Notifier(),
+    notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
