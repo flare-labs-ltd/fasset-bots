@@ -2,8 +2,9 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
+import { CollateralClass, CollateralType } from "fasset-bots-core-lib";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core-lib/config";
-import { AssetManagerControllerInstance, CollateralClass, CollateralType } from "fasset-bots-core-lib/types";
+import { AssetManagerControllerInstance } from "fasset-bots-core-lib/types";
 import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "fasset-bots-core-lib/utils";
 import { readFileSync } from "fs";
 
