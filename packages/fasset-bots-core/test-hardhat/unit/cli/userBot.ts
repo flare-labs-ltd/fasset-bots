@@ -8,7 +8,7 @@ import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
@@ -37,6 +37,7 @@ interface MintData {
     requestId: string;
     transactionHash: string;
     paymentAddress: string;
+    executorAddress: string;
     createdAt: string;
 }
 interface RedeemData {
@@ -47,6 +48,7 @@ interface RedeemData {
     firstUnderlyingBlock: string;
     lastUnderlyingBlock: string;
     lastUnderlyingTimestamp: string;
+    executorAddress: string;
     createdAt: string;
 }
 
@@ -148,11 +150,11 @@ describe("UserBot cli commands unit tests", async () => {
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
-        await userBot.redeem(1);
+        await userBot.redeem(1, ZERO_ADDRESS);
         const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem.freeVaultCollateralWei)));
-        await userBot.redeem(10);
+        await userBot.redeem(10, ZERO_ADDRESS);
         const agentInfoAfterRedeem2 = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem2.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem2.freeVaultCollateralWei)));
@@ -176,6 +178,7 @@ describe("UserBot cli commands unit tests", async () => {
             firstUnderlyingBlock: String(rdReq.firstUnderlyingBlock),
             lastUnderlyingBlock: String(rdReq.lastUnderlyingBlock),
             lastUnderlyingTimestamp: String(rdReq.lastUnderlyingTimestamp),
+            executorAddress: ZERO_ADDRESS,
             createdAt: userBot.timestampToDateString(await latestBlockTimestamp()),
         };
         userBot.writeState(data);
@@ -208,9 +211,8 @@ describe("UserBot cli commands unit tests", async () => {
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
-        // transfer FAssets
-        const redeemer = await createTestRedeemer(context, userBot.nativeAddress, userUnderlyingAddress);
         // request redemption
+        const redeemer = await createTestRedeemer(context, userBot.nativeAddress, userUnderlyingAddress);
         const [rdReqs] = await redeemer.requestRedemption(1);
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
@@ -223,6 +225,7 @@ describe("UserBot cli commands unit tests", async () => {
             firstUnderlyingBlock: String(rdReq.firstUnderlyingBlock),
             lastUnderlyingBlock: String(rdReq.lastUnderlyingBlock),
             lastUnderlyingTimestamp: String(rdReq.lastUnderlyingTimestamp),
+            executorAddress: ZERO_ADDRESS,
             createdAt: userBot.timestampToDateString(await latestBlockTimestamp()),
         };
         userBot.writeState(data);
@@ -238,7 +241,7 @@ describe("UserBot cli commands unit tests", async () => {
         const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
         // redemption default - invalid payment reference
         await expect(
-            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
+            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp, rdReq.executor)
         )
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
@@ -268,6 +271,7 @@ describe("UserBot cli commands unit tests", async () => {
             requestId: "001",
             paymentAddress: "r3RoZkBrbJqivaXs3qugAQDhHHsXboYANy",
             transactionHash: "BA2B34AE1025C7BA4288BD18B4D5A79B3E71A412DB208BB6569FC4369784ED01",
+            executorAddress: ZERO_ADDRESS,
             createdAt: "2023-11-24T10:42:03.811Z",
         };
         const redeemData: RedeemData = {
@@ -278,6 +282,7 @@ describe("UserBot cli commands unit tests", async () => {
             firstUnderlyingBlock: "0",
             lastUnderlyingBlock: "10",
             lastUnderlyingTimestamp: context.blockchainIndexer.chain.currentTimestamp().toString(),
+            executorAddress: ZERO_ADDRESS,
             createdAt: new Date().toISOString(),
         };
         userBot.writeState(mintData);
@@ -312,6 +317,7 @@ describe("UserBot cli commands unit tests", async () => {
             requestId: String(crt.collateralReservationId),
             paymentAddress: crt.paymentAddress,
             transactionHash: txHash,
+            executorAddress: ZERO_ADDRESS,
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
@@ -323,4 +329,95 @@ describe("UserBot cli commands unit tests", async () => {
         const existAfter = existsSync(newFilename);
         expect(existAfter).to.be.false;
     });
+
+    it("Should reserve collateral", async () => {
+        const deposit = toBNExp(1_000_000, 6);
+        chain.mint(userBot.underlyingAddress, deposit);
+        const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        const  resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
+        const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
+        const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfter.freeVaultCollateralWei).lt(toBN(agentInfoBefore.freeVaultCollateralWei)));
+        expect(toBN(userBalanceAfter).lt(toBN(userBalanceBefore)));
+        const state = userBot.readState("mint", resId);
+        expect(state.executorAddress).to.eq(ZERO_ADDRESS);
+        userBot.deleteState(state);
+});
+
+    it("Should reserve collateral with executor", async () => {
+        const executor = accounts[101];
+        const fee = toBNExp(50, 6);
+        const deposit = toBNExp(1_000_000, 6);
+        chain.mint(userBot.underlyingAddress, deposit);
+        const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, executor, fee);
+        const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
+        const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfter.freeVaultCollateralWei).lt(toBN(agentInfoBefore.freeVaultCollateralWei)));
+        expect(toBN(userBalanceAfter).lt(toBN(userBalanceBefore)));
+        const state = userBot.readState("mint", resId);
+        expect(state.executorAddress).to.eq(executor);
+        userBot.deleteState(state);
+    });
+
+    it("Should mint and defaulted redemption with executor", async () => {
+        const executor = accounts[101];
+        const fee = toBNExp(50, 6);
+        // vaultCollateralToken
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
+        const deposit = toBNExp(1_000_000, 6);
+        chain.mint(userBot.underlyingAddress, deposit);
+        const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        await userBot.mint(agentBot.agent.vaultAddress, 1);
+        const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
+        // redeemer and requests
+        const redeemer = await createTestRedeemer(context, userBot.nativeAddress, userUnderlyingAddress);
+        const [rdReqs] = await redeemer.requestRedemption(1, executor, fee);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // list and save redemptions
+        const data: RedeemData = {
+            type: "redeem",
+            requestId: String(rdReq.requestId),
+            amountUBA: String(toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA))),
+            paymentReference: rdReq.paymentReference,
+            firstUnderlyingBlock: String(rdReq.firstUnderlyingBlock),
+            lastUnderlyingBlock: String(rdReq.lastUnderlyingBlock),
+            lastUnderlyingTimestamp: String(rdReq.lastUnderlyingTimestamp),
+            executorAddress: String(rdReq.executor),
+            createdAt: userBot.timestampToDateString(await latestBlockTimestamp()),
+        };
+        userBot.writeState(data);
+        await userBot.listRedemptions();
+        // skip time so the payment will expire on underlying chain
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
+        await userBot.listRedemptions();
+        // redeemer requests non-payment proof
+        // redeemer triggers payment default and gets paid in collateral with extra
+        const startBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
+        const startBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
+        const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
+        const state = userBot.readState("redeem", rdReq.requestId);
+        expect(state.executorAddress).to.eq(executor);
+        // redemption default - invalid payment reference
+        await expect(
+            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp, rdReq.executor)
+        )
+            .to.eventually.be.rejectedWith("Invalid payment reference")
+            .and.be.an.instanceOf(Error);
+        // redemption default
+        await userBot.savedRedemptionDefault(rdReq.requestId);
+        const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
+        const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
+        expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
+        expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
+    });
+
 });

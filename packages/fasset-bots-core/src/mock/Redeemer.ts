@@ -3,7 +3,7 @@ import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typec
 import { Agent } from "../fasset/Agent";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO, BNish, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, ZERO_ADDRESS, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
@@ -29,8 +29,10 @@ export class Redeemer {
         return new Redeemer(ctx, address, underlyingAddress);
     }
 
-    async requestRedemption(lots: BNish): Promise<[requests: EventArgs<RedemptionRequested>[], remainingLots: BN, dustChanges: EventArgs<DustChanged>[]]> {
-        const res = await this.assetManager.redeem(lots, this.underlyingAddress, { from: this.address });
+    async requestRedemption(lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish): Promise<[requests: EventArgs<RedemptionRequested>[], remainingLots: BN, dustChanges: EventArgs<DustChanged>[]]> {
+        const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
+        const executorFee = executor != ZERO_ADDRESS ? toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used")) : undefined;
+        const res = await this.assetManager.redeem(lots, this.underlyingAddress, executor, { from: this.address, value: executorFee });
         const redemptionRequests = filterEvents(res, 'RedemptionRequested').map(e => e.args);
         const redemptionIncomplete = eventArgs(res, 'RedemptionRequestIncomplete');
         const dustChangedEvents = filterEvents(res, 'DustChanged').map(e => e.args);
@@ -53,8 +55,7 @@ export class Redeemer {
             request.firstUnderlyingBlock.toNumber(),
             request.lastUnderlyingBlock.toNumber(),
             request.lastUnderlyingTimestamp.toNumber());
-        const res = await this.assetManager.redemptionPaymentDefault(proof, request.requestId, { from: this.address });
-        return requiredEventArgs(res, 'RedemptionDefault');
+        return this.executePaymentDefault(request.requestId, proof, request.executor);
     }
 
     async obtainNonPaymentProof(paymentAddress: string, paymentReference: string, amountUBA: BNish, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish){
@@ -67,8 +68,9 @@ export class Redeemer {
             Number(lastUnderlyingTimestamp));
     }
 
-    async executePaymentDefault(requestId: BNish, proof: ReferencedPaymentNonexistence.Proof) {
-        const res = await this.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: this.address });
+    async executePaymentDefault(requestId: BNish, proof: ReferencedPaymentNonexistence.Proof, executorAddress: string) {
+        const executor = executorAddress !== ZERO_ADDRESS ? executorAddress : this.address;
+        const res = await this.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: executor });
         return requiredEventArgs(res, 'RedemptionDefault');
     }
 }

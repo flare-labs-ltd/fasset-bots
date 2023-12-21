@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import chalk from "chalk";
 import fs from "fs";
 import os from "os";
@@ -12,7 +13,7 @@ import { Redeemer } from "../mock/Redeemer";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { BNish, CommandLineError, requireNotNull, sumBN, toBN } from "../utils/helpers";
+import { BNish, CommandLineError, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -30,6 +31,7 @@ interface MintData {
     requestId: string;
     transactionHash: string;
     paymentAddress: string;
+    executorAddress: string;
     createdAt: string;
 }
 
@@ -41,6 +43,7 @@ interface RedeemData {
     firstUnderlyingBlock: string;
     lastUnderlyingBlock: string;
     lastUnderlyingTimestamp: string;
+    executorAddress: string;
     createdAt: string;
 }
 
@@ -136,13 +139,15 @@ export class UserBot {
      * Mints desired amount of lots against desired agent.
      * @param agentVault agent's vault address
      * @param lots number of lots to mint
+     * @param executorAddress
+     * @param executorFeeNatWei
      */
-    async mint(agentVault: string, lots: BNish): Promise<void> {
+    async reserveCollateral(agentVault: string, lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<BN> {
         logger.info(`User ${this.nativeAddress} started minting with agent ${agentVault}.`);
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Reserving collateral...");
         logger.info(`User ${this.nativeAddress} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
-        const crt = await minter.reserveCollateral(agentVault, lots);
+        const crt = await minter.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
         logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(
@@ -155,20 +160,31 @@ export class UserBot {
             requestId: String(crt.collateralReservationId),
             paymentAddress: crt.paymentAddress,
             transactionHash: txHash,
+            executorAddress: executorAddress,
             createdAt: this.timestampToDateString(timestamp),
         };
         this.writeState(state);
         logger.info(
             `User ${this.nativeAddress} paid on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} with transaction ${txHash}.`
         );
-        await this.proveAndExecuteMinting(crt.collateralReservationId, txHash, crt.paymentAddress);
+        return crt.collateralReservationId;
+    }
+
+
+    /**
+     * Mints desired amount of lots against desired agent.
+     * @param agentVault agent's vault address
+     * @param lots number of lots to mint
+     */
+    async mint(agentVault: string, lots: BNish): Promise<void> {
+        const requestId = await this.reserveCollateral(agentVault, lots, ZERO_ADDRESS, undefined);
+        await this.proveAndExecuteSavedMinting(requestId);
         logger.info(`User ${this.nativeAddress} finished minting with agent ${agentVault}.`);
-        this.deleteState(state);
     }
 
     async proveAndExecuteSavedMinting(requestId: BNish) {
         const state = this.readState("mint", requestId);
-        await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+        await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress, state.executorAddress);
         this.deleteState(state);
     }
 
@@ -177,8 +193,9 @@ export class UserBot {
      * @param collateralReservationId collateral reservation id
      * @param transactionHash transaction hash of minting payment
      * @param paymentAddress agent's underlying address
+     * @param executorAddress executor's address
      */
-    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string): Promise<void> {
+    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string, executorAddress: string): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
         logger.info(`User ${this.nativeAddress} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`);
@@ -194,7 +211,7 @@ export class UserBot {
                 web3DeepNormalize(proof)
             )} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
-        await minter.executeProvedMinting(collateralReservationId, proof);
+        await minter.executeProvedMinting(collateralReservationId, proof, executorAddress);
         console.log("Done");
         logger.info(
             `User ${this.nativeAddress} executed minting with proof ${JSON.stringify(
@@ -217,12 +234,14 @@ export class UserBot {
     /**
      * Redeems desired amount of lots.
      * @param lots number of lots to redeem
+     * @param executorAddress
+     * @param executorFeeNatWei
      */
-    async redeem(lots: BNish): Promise<void> {
+    async redeem(lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
-        const [requests, remainingLots] = await redeemer.requestRedemption(lots);
+        const [requests, remainingLots] = await redeemer.requestRedemption(lots, executorAddress, executorFeeNatWei);
         if (!toBN(remainingLots).isZero()) {
             console.log(
                 `Maximum number of redeemed tickets exceeded. ${remainingLots} lots have remained unredeemed. You can execute redeem again until all are redeemed.`
@@ -249,6 +268,7 @@ export class UserBot {
                 firstUnderlyingBlock: String(req.firstUnderlyingBlock),
                 lastUnderlyingBlock: String(req.lastUnderlyingBlock),
                 lastUnderlyingTimestamp: String(req.lastUnderlyingTimestamp),
+                executorAddress: String(req.executor),
                 createdAt: this.timestampToDateString(timestamp),
             });
         }
@@ -262,7 +282,8 @@ export class UserBot {
             state.paymentReference,
             state.firstUnderlyingBlock,
             state.lastUnderlyingBlock,
-            state.lastUnderlyingTimestamp
+            state.lastUnderlyingTimestamp,
+            state.executorAddress
         );
         this.deleteState(state);
     }
@@ -280,7 +301,8 @@ export class UserBot {
         paymentReference: string,
         firstUnderlyingBlock: BNish,
         lastUnderlyingBlock: BNish,
-        lastUnderlyingTimestamp: BNish
+        lastUnderlyingTimestamp: BNish,
+        executorAddress: string
     ): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         const requestId = PaymentReference.decodeId(paymentReference);
@@ -301,7 +323,7 @@ export class UserBot {
         );
         console.log("Executing payment default...");
         logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
-        await redeemer.executePaymentDefault(requestId, proof);
+        await redeemer.executePaymentDefault(requestId, proof, executorAddress);
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }

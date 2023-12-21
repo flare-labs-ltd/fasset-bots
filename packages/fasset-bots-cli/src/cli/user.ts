@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { InfoBot, SecretsUser, UserBot } from "@flarelabs/fasset-bots-core";
 import { requireSecret, resetSecrets } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, ZERO_ADDRESS, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -119,6 +119,37 @@ program
     });
 
 program
+    .command("reserveCollateral")
+    .description("reserves collateral to mint Fassets")
+    .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
+    .argument("<amountLots>")
+    .option("-u, --updateBlock")
+    .option("-e, --executorAddress <executorAddress>", "executor's native address")
+    .option("-f, --executorFee <executorFee>", "executor's fee in nat wei")
+    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executorAddress?: string, executorFee?: string }) => {
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        const options: { config: string; fasset: string } = program.opts();
+        const minterBot = await UserBot.create(options.config, options.fasset, true);
+        const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
+        if (agentVault == null) {
+            throw new CommandLineError("No agent with enough free lots available");
+        }
+        if (cmdOptions.updateBlock) {
+            await minterBot.updateUnderlyingTime();
+        }
+        if (cmdOptions.executorAddress && cmdOptions.executorFee) {
+            await minterBot.reserveCollateral(agentVault, amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
+        }
+        if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executorFee");
+        }
+        if (!cmdOptions.executorAddress && cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executorAddress");
+        }
+        await minterBot.reserveCollateral(agentVault, amountLots, ZERO_ADDRESS, undefined);
+    });
+
+program
     .command("mint")
     .description("Mints the amount of FAssets in lots")
     .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
@@ -163,11 +194,22 @@ program
     .command("redeem")
     .description("Triggers redemption")
     .argument("<amountLots>")
-    .action(async (amountLots: string) => {
+    .option("-e, --executorAddress <executorAddress>", "executor's native address")
+    .option("-f, --executorFee <executorFee>", "executor's fee in nat wei")
+    .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
-        await redeemerBot.redeem(amountLots);
+        if (cmdOptions.executorAddress && cmdOptions.executorFee) {
+            await redeemerBot.redeem(amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
+        }
+        if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executorFee");
+        }
+        if (!cmdOptions.executorAddress && cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executorAddress");
+        }
+        await redeemerBot.redeem(amountLots, ZERO_ADDRESS, undefined);
     });
 
 program

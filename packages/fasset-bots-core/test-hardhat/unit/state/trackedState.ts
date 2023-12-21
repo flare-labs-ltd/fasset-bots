@@ -3,7 +3,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState, MAX_EVENT_HANDLE_RETRY } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
-import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp, ZERO_ADDRESS } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
@@ -339,7 +339,7 @@ describe("Tracked state tests", async () => {
         await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
         // self close exit
         const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
-        await agentB.collateralPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, { from: minter.address });
+        await agentB.collateralPool.selfCloseExit(tokensMinter, false, minter.underlyingAddress, ZERO_ADDRESS, { from: minter.address });
         // handle events
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
@@ -367,7 +367,7 @@ describe("Tracked state tests", async () => {
         await context.fAsset.approve(agentB.collateralPool.address, fBalance, { from: minter.address });
         // self close exit
         const tokensMinter = await agentB.collateralPoolToken.balanceOf(minter.address);
-        await agentB.collateralPool.selfCloseExit(tokensMinter, true, minter.underlyingAddress, { from: minter.address });
+        await agentB.collateralPool.selfCloseExit(tokensMinter, true, minter.underlyingAddress, ZERO_ADDRESS, { from: minter.address });
         // handle events
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));

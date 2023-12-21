@@ -4,7 +4,7 @@ import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, fail } from "../utils/helpers";
+import { BN_ZERO, BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
@@ -38,10 +38,12 @@ export class Minter {
         return new Minter(ctx, address, underlyingAddress, wallet);
     }
 
-    async reserveCollateral(agent: string, lots: BNish) {
+    async reserveCollateral(agent: string, lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish) {
         const agentInfo = await this.assetManager.getAgentInfo(agent);
         const crFee = await this.getCollateralReservationFee(lots);
-        const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, { from: this.address, value: crFee });
+        const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
+        const totalNatFee = executor != ZERO_ADDRESS ? crFee.add(toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used"))) : crFee;
+        const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
 
@@ -52,7 +54,7 @@ export class Minter {
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string) {
         const proof = await this.proveMintingPayment(crt.paymentAddress, transactionHash);
-        return await this.executeProvedMinting(crt.collateralReservationId, proof);
+        return await this.executeProvedMinting(crt.collateralReservationId, proof, crt.executor);
     }
 
     async waitForTransactionFinalization(transactionHash: string) {
@@ -64,8 +66,9 @@ export class Minter {
         return await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, paymentAddress);
     }
 
-    async executeProvedMinting(collateralReservationId: BNish, proof: Payment.Proof) {
-        const res = await this.assetManager.executeMinting(web3DeepNormalize(proof), String(collateralReservationId), { from: this.address });
+    async executeProvedMinting(collateralReservationId: BNish, proof: Payment.Proof, executorAddress: string) {
+        const executor = executorAddress != ZERO_ADDRESS ? executorAddress : this.address;
+        const res = await this.assetManager.executeMinting(web3DeepNormalize(proof), String(collateralReservationId), { from: executor });
         return requiredEventArgs(res, 'MintingExecuted');
     }
 
