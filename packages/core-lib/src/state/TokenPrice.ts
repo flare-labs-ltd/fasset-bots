@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { IERC20Instance, IFtsoInstance, IPriceReaderInstance } from "../../typechain-truffle";
 import { IERC20Events } from "../fasset-bots/IAssetBotContext";
 import { ContractWithEvents } from "../utils/events/truffle";

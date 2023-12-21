@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { BNish, exp10, toBN, toBNExp } from "../utils/helpers";
 import { AssetManagerSettings } from "./AssetManagerTypes";
 

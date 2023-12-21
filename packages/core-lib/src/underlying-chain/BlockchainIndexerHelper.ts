@@ -4,6 +4,7 @@ import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, prefix0x, retry, sleep, toBN } from "
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { SourceId } from "./SourceId";
+import BN from "bn.js";
 
 // Satoshi to BTC 100_000_000
 export const BTC_MDU = 1e8;

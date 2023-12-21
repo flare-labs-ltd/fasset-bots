@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { InitialAgentData, TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 

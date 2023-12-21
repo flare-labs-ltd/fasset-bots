@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { AddressUpdaterInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";

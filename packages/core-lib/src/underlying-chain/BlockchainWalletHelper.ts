@@ -2,6 +2,7 @@ import { WalletClient } from "simple-wallet";
 import { toBN, unPrefix0x } from "../utils/helpers";
 import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
+import BN from "bn.js";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(

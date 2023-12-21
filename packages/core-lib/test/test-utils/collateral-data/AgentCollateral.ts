@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { AgentInfo, AssetManagerSettings, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { BN_ZERO, MAX_BIPS, exp10, maxBN, minBN, toBN } from "../../../src/utils/helpers";
 import { artifacts } from "../../../src/utils/web3";

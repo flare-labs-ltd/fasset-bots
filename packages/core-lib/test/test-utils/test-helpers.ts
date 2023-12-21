@@ -18,6 +18,7 @@ import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
+import BN from "bn.js";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 

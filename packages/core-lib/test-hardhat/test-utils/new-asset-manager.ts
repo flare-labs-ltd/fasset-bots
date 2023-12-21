@@ -1,7 +1,7 @@
 import { time } from "@openzeppelin/test-helpers";
 import { AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { findEvent } from "../../src/utils/events/truffle";
-import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, Truffle } from "../../typechain-truffle";
 import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { artifacts } from "../../src/utils/web3";

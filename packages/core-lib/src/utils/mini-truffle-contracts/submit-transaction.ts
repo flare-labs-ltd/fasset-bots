@@ -1,3 +1,4 @@
+import { TransactionConfig, TransactionReceipt } from "web3-core";
 import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
 import { CancelToken, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
 import { waitForFinalization, waitForReceipt } from "./finalization";

@@ -1,3 +1,4 @@
+import { Truffle } from "../../../typechain-truffle";
 import { RawEvent, Web3EventDecoder } from "./Web3EventDecoder";
 import { EvmEvent } from "./common";
 

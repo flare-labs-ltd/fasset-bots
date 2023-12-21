@@ -10,6 +10,7 @@ import { coinFlip, getLotSize, randomChoice, randomInt } from "../test-utils/fuz
 import { EventArgs } from "../../src/utils/events/common";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { expectErrors } from "../../src/utils/helpers";
+import BN from "bn.js";
 
 // debug state
 let mintedLots = 0;

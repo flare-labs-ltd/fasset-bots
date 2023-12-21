@@ -23,6 +23,7 @@ import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts } from "../utils/web3";
+import BN from "bn.js";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");

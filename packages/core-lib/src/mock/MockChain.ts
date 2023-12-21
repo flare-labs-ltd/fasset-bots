@@ -2,6 +2,7 @@ import Web3 from "web3";
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { BNish, BN_ZERO, fail, systemTimestamp, toBN } from "../utils/helpers";
 import type { IBlockChainWallet, TransactionOptionsWithFee, SpentReceivedObject } from "../underlying-chain/interfaces/IBlockChainWallet";
+import BN from "bn.js";
 
 export type MockTransactionOptions = { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };

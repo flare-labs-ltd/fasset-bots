@@ -1,4 +1,5 @@
 import Web3 from "web3";
+import { PromiEvent, TransactionReceipt } from "web3-core";
 import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancelable-promises";
 import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
 import { TransactionWaitFor } from "./types";

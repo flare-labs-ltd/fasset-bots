@@ -9,7 +9,6 @@ import { eventIs } from "../utils/events/truffle";
 import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
 import { web3 } from "../utils/web3";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
-import assert from "node:assert";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
 import { tokenContract } from "./TokenPrice";
@@ -113,14 +112,14 @@ export class TrackedState {
                 (this.liquidationStrategySettings as any)[event.args.name] = web3Normalize(event.args.value);
                 logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.liquidationStrategySettings)}.`);
             } else if (!(event.args.name in this.settings)) {
-                assert.fail(`Invalid setting change ${event.args.name}`);
+                throw new Error(`Invalid setting change ${event.args.name}`);
             } else {
                 (this.settings as any)[event.args.name] = web3Normalize(event.args.value);
                 logger.info(`Tracked State set settings ${formatArgs(this.settings)}.`);
             }
         } else if (eventIs(event, this.context.assetManager, "SettingArrayChanged")) {
             logger.info(`Tracked State received event 'SettingArrayChanged' with data ${formatArgs(event.args)}.`);
-            if (!(event.args.name in this.liquidationStrategySettings)) assert.fail(`Invalid setting array change ${event.args.name}`);
+            if (!(event.args.name in this.liquidationStrategySettings)) throw new Error(`Invalid setting array change ${event.args.name}`);
             (this.liquidationStrategySettings as any)[event.args.name] = web3DeepNormalize(event.args.value);
             logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.liquidationStrategySettings)}.`);
         } else if (eventIs(event, this.context.assetManager, "AgentSettingChanged")) {

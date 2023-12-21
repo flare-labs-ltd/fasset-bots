@@ -9,6 +9,7 @@ import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-tr
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
 import path from "path";
+import { TransactionReceipt } from "web3-core";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];

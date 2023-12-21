@@ -36,6 +36,7 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
+import BN from "bn.js";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");

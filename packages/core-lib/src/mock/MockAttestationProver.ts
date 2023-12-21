@@ -4,6 +4,7 @@ import Web3 from "web3";
 import { TX_FAILED, TxInputOutput } from "../underlying-chain/interfaces/IBlockChain";
 import { BN_ZERO } from "../utils/helpers";
 import { MockChain, MockChainTransaction } from "./MockChain";
+import BN from "bn.js";
 
 export class MockAttestationProverError extends Error {
     constructor(message: string) {

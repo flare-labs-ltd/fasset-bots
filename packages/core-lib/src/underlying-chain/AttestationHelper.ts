@@ -12,6 +12,7 @@ import {
     IStateConnectorClient,
     OptionalAttestationProof,
 } from "./interfaces/IStateConnectorClient";
+import BN from "bn.js";
 
 export class AttestationHelperError extends Error {
     constructor(message: string) {

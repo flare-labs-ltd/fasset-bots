@@ -1,5 +1,6 @@
 import Web3 from "web3";
 import { web3 } from "./web3";
+import BN from "bn.js";
 
 /**
  * Return latest block timestamp as number (seconds since 1.1.1970).

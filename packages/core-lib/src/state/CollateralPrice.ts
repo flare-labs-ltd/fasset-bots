@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { AssetManagerSettings, CollateralType } from "../fasset/AssetManagerTypes";
 import { AMGSettings, amgToTokenWeiPrice, convertUBAToTokenWei } from "../fasset/Conversions";
 import { BNish, toBN } from "../utils/helpers";

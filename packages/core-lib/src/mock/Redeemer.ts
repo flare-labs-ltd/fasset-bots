@@ -7,6 +7,7 @@ import { BN_ZERO, BNish, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import BN from "bn.js";
 
 export class Redeemer {
     constructor(

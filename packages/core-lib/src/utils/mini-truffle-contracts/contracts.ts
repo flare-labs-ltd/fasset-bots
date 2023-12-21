@@ -1,5 +1,7 @@
-import { TransactionConfig } from "web3-core";
+import EventEmitter from "events";
+import { PromiEvent, TransactionConfig, TransactionReceipt } from "web3-core";
 import { AbiItem } from "web3-utils";
+import { Truffle } from "../../../typechain-truffle";
 import { Web3EventDecoder } from "../events/Web3EventDecoder";
 import { replaceStringRange } from "../helpers";
 import { createContractInstanceConstructor, executeConstructor } from "./methods";

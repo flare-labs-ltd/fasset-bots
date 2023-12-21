@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { ActorBase } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";

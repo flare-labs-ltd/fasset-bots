@@ -1,3 +1,4 @@
+export * from "./fasset/AssetManagerTypes";
 export { ActorBaseRunner } from "./actors/ActorBaseRunner";
 export { BotCliCommands } from "./actors/AgentBotCliCommands";
 export { AgentBotRunner } from "./actors/AgentBotRunner";

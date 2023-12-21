@@ -3,6 +3,7 @@ import { globSync } from "glob";
 import path from "path";
 import { MiniTruffleContract } from "./contracts";
 import { ContractJson, ContractSettings } from "./types";
+import { Artifacts, Truffle } from "../../../typechain-truffle";
 
 interface ArtifactData {
     name: string;
@@ -14,7 +15,7 @@ export function createArtifacts(rootPath: string, settings: ContractSettings) {
     return new ArtifactsImpl(rootPath, settings);
 }
 
-class ArtifactsImpl implements Truffle.Artifacts {
+class ArtifactsImpl implements Artifacts {
     private artifactMap?: Map<string, ArtifactData>;
 
     constructor(

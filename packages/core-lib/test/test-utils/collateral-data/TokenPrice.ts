@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { IERC20Events } from "../../../src/fasset-bots/IAssetBotContext";
 import { AMGSettings, amgToTokenWeiPrice } from "../../../src/fasset/Conversions";
 import { ContractWithEvents } from "../../../src/utils/events/truffle";

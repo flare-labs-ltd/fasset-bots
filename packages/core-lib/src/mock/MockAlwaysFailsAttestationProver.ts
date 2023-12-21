@@ -1,6 +1,7 @@
 import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import { MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
+import BN from "bn.js";
 
 export class MockAlwaysFailsAttestationProver {
     constructor(

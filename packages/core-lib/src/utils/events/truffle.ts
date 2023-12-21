@@ -1,3 +1,4 @@
+import { Truffle } from "../../../typechain-truffle";
 import { EventSelector, ExtractEvent, ExtractedEventArgs, BaseEvent } from "./common";
 
 // truffle typed event filtering

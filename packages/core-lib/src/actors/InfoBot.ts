@@ -9,6 +9,7 @@ import { printAgentInfo } from "../utils/fasset-helpers";
 import { CommandLineError, MAX_BIPS, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
+import BN from "bn.js";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";

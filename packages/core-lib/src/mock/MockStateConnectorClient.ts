@@ -1,7 +1,7 @@
 import { constants } from "@openzeppelin/test-helpers";
 import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT,
     MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
-import { StateConnectorMockInstance } from "../../typechain-truffle";
+import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
 import { SourceId } from "../underlying-chain/SourceId";
 import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "../underlying-chain/interfaces/IStateConnectorClient";

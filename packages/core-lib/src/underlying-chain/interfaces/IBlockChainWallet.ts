@@ -1,3 +1,5 @@
+import type BN from "bn.js";
+
 type NumberLike = BN | number | string;
 
 export type UTXO = {

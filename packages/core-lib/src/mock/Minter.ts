@@ -8,6 +8,7 @@ import { BNish, fail } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
+import BN from "bn.js";
 
 export class Minter {
     constructor(

@@ -1,9 +1,10 @@
 import path from "path";
 import Web3 from "web3";
 import { provider } from "web3-core";
+import { Artifacts } from "../../typechain-truffle";
+import { findPackageRoot } from "./helpers";
 import { createArtifacts } from "./mini-truffle-contracts/artifacts";
 import { ContractSettings } from "./mini-truffle-contracts/types";
-import { findPackageRoot } from "./helpers";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
@@ -34,7 +35,7 @@ export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaul
     ],
 });
 
-export const artifacts: Truffle.Artifacts = createArtifacts(artifactsRootPath, contractSettings);
+export const artifacts: Artifacts = createArtifacts(artifactsRootPath, contractSettings);
 
 /**
  * Initialize web3 and truffle contracts.

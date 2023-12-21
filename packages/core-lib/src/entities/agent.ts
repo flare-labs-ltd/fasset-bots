@@ -4,6 +4,7 @@ import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
 import { EvmEvent } from "../utils/events/common";
 import { eventOrder } from "../utils/events/common";
+import BN from "bn.js";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {

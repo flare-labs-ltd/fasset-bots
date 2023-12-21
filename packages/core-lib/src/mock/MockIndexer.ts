@@ -3,6 +3,7 @@ import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHe
 import { IBlock, IBlockId, ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { MockChain } from "./MockChain";
 import { SourceId } from "../underlying-chain/SourceId";
+import BN from "bn.js";
 
 export class MockIndexer extends BlockchainIndexerHelper {
 

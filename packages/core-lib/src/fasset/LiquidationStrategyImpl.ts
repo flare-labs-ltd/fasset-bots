@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { web3 } from "../utils/web3";
 
 type BNish = BN | number | string;
