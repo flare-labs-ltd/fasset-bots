@@ -5,7 +5,6 @@ import { Redeemer } from "../../../src/mock/Redeemer";
 import { ORM } from "../../../src/config/orm";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
-import { Notifier } from "../../../src/utils/Notifier";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Challenger } from "../../../src/actors/Challenger";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
@@ -14,6 +13,7 @@ import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { cleanUp } from "../test-helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
@@ -31,7 +31,7 @@ export async function createTestAgentBot(
     orm: ORM,
     ownerAddress: string,
     defaultAgentConfigPath: string,
-    notifier: Notifier = new Notifier()
+    notifier: MockNotifier = new MockNotifier()
 ): Promise<AgentBot> {
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
     return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
@@ -44,7 +44,7 @@ export async function createTestAgentBotAndDepositCollaterals(
     defaultAgentConfigPath: string,
     depositVaultCollateralAmount: BNish,
     buyPoolTokensAmount: BNish,
-    notifier: Notifier = new Notifier()
+    notifier: MockNotifier = new MockNotifier()
 ): Promise<AgentBot> {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, defaultAgentConfigPath, notifier);
     // deposit class 1
@@ -55,11 +55,11 @@ export async function createTestAgentBotAndDepositCollaterals(
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), new MockNotifier());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state);
+    return new Liquidator(new ScopedRunner(), address, state, new MockNotifier());
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {

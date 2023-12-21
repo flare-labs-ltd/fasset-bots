@@ -175,7 +175,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         fAssets: fAssets,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm ? orm : undefined,
-        notifier: new Notifier(),
+        notifier: new Notifier(runConfig.alertsUrl),
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
         liquidationStrategy: runConfig.liquidationStrategy,

@@ -8,12 +8,12 @@ import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { Notifier } from "../../../src/utils/Notifier";
-import { checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
+import { checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
@@ -105,7 +105,7 @@ describe("UserBot cli commands unit tests", async () => {
             fAssets: [userBot.fassetConfig],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new Notifier(),
+            notifier: new MockNotifier(),
             addressUpdater: "",
         };
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);

@@ -27,6 +27,7 @@ export interface BotConfigFile {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     rpcUrl: string;
+    alertsUrl?: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
     stateConnectorAddress?: string; // only for agent bot, challenger and timeKeeper, default is "StateConnector" in contracts json
     stateConnectorProofVerifierAddress?: string; // only for agent bot, challenger and timeKeeper, default is "SCProofVerifier" in contracts json
