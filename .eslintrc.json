@@ -26,7 +26,7 @@
         "@typescript-eslint/no-unused-vars": ["error",
             { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
         ],
-        "no-console": 0
+        "no-console": "off"
     },
     "parserOptions": {
         "ecmaVersion": 2020,

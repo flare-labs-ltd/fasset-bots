@@ -2,7 +2,7 @@
     "name": "fasset-bots-core-lib",
     "version": "1.0.0",
     "description": "FAsset bots library",
-    "author": "Flare Networks",
+    "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
     "repository": {
         "type": "git",
@@ -90,7 +90,7 @@
         "axios": "*",
         "bn.js": "*",
         "glob": "*",
-        "simple-wallet": "*",
+        "simple-wallet": "workspace:*",
         "source-map-support": "*",
         "web3": "1.10.2",
         "web3-core": "1.10.2",

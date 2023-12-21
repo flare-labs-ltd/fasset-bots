@@ -1,8 +1,8 @@
 {
     "name": "fasset-bots-cli",
     "version": "1.0.0",
-    "description": "FAsset bots library",
-    "author": "Flare Networks",
+    "description": "FAsset bots command line executables",
+    "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
     "repository": {
         "type": "git",
@@ -68,7 +68,7 @@
     },
     "dependencies": {
         "commander": "11.0.0",
-        "fasset-bots-core-lib": "*",
+        "fasset-bots-core-lib": "workspace:*",
         "source-map-support": "*"
     },
     "devDependencies": {

@@ -6851,7 +6851,7 @@ __metadata:
     class-validator: ^0.14.0
     dotenv: "*"
     eslint: "*"
-    fasset-bots-core-lib: "*"
+    fasset-bots-core-lib: "workspace:*"
     helmet: ^7.0.0
     mocha: "*"
     nyc: "*"
@@ -6887,7 +6887,7 @@ __metadata:
     commander: 11.0.0
     dotenv: "*"
     eslint: "*"
-    fasset-bots-core-lib: "*"
+    fasset-bots-core-lib: "workspace:*"
     mocha: "*"
     nyc: "*"
     source-map-support: "*"
@@ -6903,7 +6903,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset-bots-core-lib@*, fasset-bots-core-lib@workspace:packages/core-lib":
+"fasset-bots-core-lib@workspace:*, fasset-bots-core-lib@workspace:packages/core-lib":
   version: 0.0.0-use.local
   resolution: "fasset-bots-core-lib@workspace:packages/core-lib"
   dependencies:
@@ -6941,7 +6941,7 @@ __metadata:
     mocha: "*"
     nyc: "*"
     rewire: 7.0.0
-    simple-wallet: "*"
+    simple-wallet: "workspace:*"
     source-map-support: "*"
     ts-node: "*"
     typechain: 8.3.0
@@ -12209,7 +12209,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-wallet@*, simple-wallet@workspace:packages/simple-wallet":
+"simple-wallet@workspace:*, simple-wallet@workspace:packages/simple-wallet":
   version: 0.0.0-use.local
   resolution: "simple-wallet@workspace:packages/simple-wallet"
   dependencies:

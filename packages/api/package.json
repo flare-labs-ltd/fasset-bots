@@ -2,7 +2,7 @@
     "name": "fasset-bots-api",
     "version": "1.0.0",
     "description": "FAsset bots web API",
-    "author": "Flare Networks",
+    "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
     "repository": {
         "type": "git",
@@ -73,7 +73,7 @@
         "axios": "*",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.0",
-        "fasset-bots-core-lib": "*",
+        "fasset-bots-core-lib": "workspace:*",
         "helmet": "^7.0.0",
         "passport": "^0.6.0",
         "passport-headerapikey": "^1.2.2",
