@@ -32,9 +32,9 @@
         "---------LINT---SCRIPTS": "",
         "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
         "---------TEST---SCRIPTS": "",
-        "test": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register -t 0",
-        "test_all": "mocha -r ts-node/register -r dotenv/config -r source-map-support/register --recursive -t 500000 test/**/*.ts ",
-        "test:coverage": "yarn nyc yarn test_all"
+        "test": "yarn run -T mocha",
+        "test_all": "yarn run -T mocha --recursive test/**/*.ts ",
+        "test:coverage": "yarn run -T nyc yarn test_all"
     },
     "dependencies": {
         "@types/bitcore-lib": "^0.15.3",

@@ -1,0 +1,6 @@
+{
+    "require": ["ts-node/register", "dotenv/config", "source-map-support/register"],
+    "exit": "true",
+    "timeout": 500000,
+    "ignore": "**/*.d.ts"
+}
