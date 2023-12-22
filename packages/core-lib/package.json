@@ -12,6 +12,11 @@
     "engines": {
         "node": ">=16.10.0"
     },
+    "workspaces": {
+        "nohoist": [
+            "**"
+        ]
+    },
     "exports": {
         ".": {
             "types": "./dist/src/index.d.ts",
@@ -55,22 +60,23 @@
         "prettier_check": "prettier --check .",
         "prettier_fix": "prettier --write .",
         "---------TEST---SCRIPTS": "",
-        "test": "mocha",
-        "test_all:e2e": "mocha --recursive -t 500000 \"test/e2e/**/*.ts\"",
-        "test_all:unit": "mocha --recursive -t 500000 \"test/unit/***/**/*.ts\"",
-        "test_all:integration": "mocha --recursive -t 500000 \"test/integration/**/*.ts\"",
+        "test": "yarn run -T mocha",
+        "coverage": "yarn run -T nyc",
+        "test_all:e2e": "yarn test --recursive -t 500000 \"test/e2e/**/*.ts\"",
+        "test_all:unit": "yarn test --recursive -t 500000 \"test/unit/***/**/*.ts\"",
+        "test_all:integration": "yarn test --recursive -t 500000 \"test/integration/**/*.ts\"",
         "test_all": "yarn testHH_all && yarn test_all:unit && yarn test_all:integration && yarn test_all:e2e",
-        "test:coverage": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration; yarn cover:report",
+        "test:coverage": "yarn coverage --silent yarn test_all:unit; yarn coverage --silent --no-clean yarn test_all:e2e; yarn coverage --silent --no-clean yarn test_all:integration; yarn cover:report",
         "testHH": "yarn hardhat test --no-compile",
-        "testHH_all": "env TEST_PATH=\"./test-hardhat/{unit,integration}\" yarn hardhat test --no-compile",
-        "testHH_all:unit": "env TEST_PATH=\"./test-hardhat/unit\" yarn hardhat test --no-compile",
-        "testHH_all:integration": "env TEST_PATH=\"./test-hardhat/integration\" yarn hardhat test --no-compile",
-        "testHH:coverage": "yarn nyc yarn testHH_all",
+        "testHH_all": "env TEST_PATH=\"./test-hardhat/{unit,integration}\" yarn testHH",
+        "testHH_all:unit": "env TEST_PATH=\"./test-hardhat/unit\" yarn testHH",
+        "testHH_all:integration": "env TEST_PATH=\"./test-hardhat/integration\" yarn testHH",
+        "testHH:coverage": "yarn coverage yarn testHH_all",
         "testHH:fuzzer": "yarn testHH test-hardhat/fuzzing/FAssetFuzzing.ts",
         "cover": "yarn cover:test; yarn cover:testHH; yarn cover:report",
-        "cover:test": "nyc --silent yarn test_all:unit; nyc --silent --no-clean yarn test_all:e2e; nyc --silent --no-clean yarn test_all:integration; nyc merge .nyc_output coverage/merge/test.json",
-        "cover:testHH": "nyc --silent yarn testHH_all; nyc merge .nyc_output coverage/merge/testHH.json",
-        "cover:report": "nyc report -t coverage/merge --reporter html --reporter text",
+        "cover:test": "yarn coverage --silent yarn test_all:unit; yarn coverage --silent --no-clean yarn test_all:e2e; yarn coverage --silent --no-clean yarn test_all:integration; yarn coverage merge .nyc_output coverage/merge/test.json",
+        "cover:testHH": "yarn coverage --silent yarn testHH_all; yarn coverage merge .nyc_output coverage/merge/testHH.json",
+        "cover:report": "yarn coverage report -t coverage/merge --reporter html --reporter text",
         "---------GENERATE---SCRIPTS": "",
         "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json",
         "generate-agent-settings-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files.ts Schema_AgentSettingsConfig -o run-config/schema/agent-settings.schema.json",

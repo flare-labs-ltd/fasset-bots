@@ -10,7 +10,7 @@ const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
 };
 
-const artifactsRootPath = path.resolve(findPackageRoot(__dirname), "artifacts");
+const artifactsRootPath = path.resolve(findPackageRoot(__dirname, ["artifacts"]), "artifacts");
 
 // following constants should be used throughout the code
 export const web3: Web3 = createWeb3();

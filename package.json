@@ -3,6 +3,9 @@
     "workspaces": {
         "packages": [
             "packages/*"
+        ],
+        "nohoist": [
+            "**"
         ]
     },
     "engines": {
@@ -11,6 +14,7 @@
     "scripts": {
         "---------BUILD---SCRIPTS": "",
         "clean": "rm -rf dist packages/*/dist",
+        "clean-nm": "rm -rf node_modules && rm -rf packages/*/node_modules",
         "build": "tsc --build",
         "watch": "tsc --build --watch --incremental",
         "update-references": "utils-typescript-references",
@@ -31,6 +35,7 @@
         "chai": "4.3.8",
         "chai-as-promised": "7.1.1",
         "chai-spies": "1.0.0",
+        "dotenv": "16.3.1",
         "eslint": "8.50.0",
         "eslint-plugin-node": "11.1.0",
         "mocha": "10.2.0",
@@ -38,6 +43,7 @@
         "prettier": "3.0.3",
         "rewire": "7.0.0",
         "rimraf": "5.0.5",
+        "source-map-support": "0.5.21",
         "ts-node": "10.9.1",
         "typescript": "5.2.2"
     },

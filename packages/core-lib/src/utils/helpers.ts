@@ -369,15 +369,14 @@ export function prefix0x(str: string) {
  * @param moduleDir the directory of a module, typically use `__dirname`
  * @returns the directory of the modules's package root.
  */
-export function findPackageRoot(moduleDir: string) {
+export function findPackageRoot(moduleDir: string, requireFilesOrDirs: string[] = []) {
     let dir = path.resolve(moduleDir);
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const packageJson = path.resolve(dir, "package.json");
         const hasPackageJson = fs.existsSync(packageJson) && fs.statSync(packageJson).isFile();
-        const nodeModules = path.resolve(dir, "node_modules");
-        const hasNodeModules = fs.existsSync(nodeModules) && fs.statSync(nodeModules).isDirectory();
-        if (hasPackageJson && hasNodeModules) {
+        const hasRequiredItems = requireFilesOrDirs.every(name => fs.existsSync(name));
+        if (hasPackageJson && hasRequiredItems) {
             return dir;
         }
         /* istanbul ignore next */
