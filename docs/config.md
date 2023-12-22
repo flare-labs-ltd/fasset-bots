@@ -44,6 +44,7 @@ interface BotConfigFile {
     loopDelay: number; // Delay in ms before running next agent bot's or other actor's step
     nativeChainInfo: NativeChainInfo; // Basic information about native chain.
     rpcUrl: string; // Native chain's url.
+    alertsUrl?: string; // Url to send notifications to.
     attestationProviderUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
     stateConnectorAddress?: string; // Address of StateConnector contract on native chain. Only for agent bot, user, challenger and timeKeeper.
     stateConnectorProofVerifierAddress?: string; // Address of SCProofVerifier contract on native chain. Only for agent bot, user, challenger and timeKeeper.
