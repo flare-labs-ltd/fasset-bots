@@ -24,6 +24,7 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { artifacts } from "../../src/utils/web3";
+import { assert } from "chai";
 import BN from "bn.js";
 
 const FakeERC20 = artifacts.require("FakeERC20");

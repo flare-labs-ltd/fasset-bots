@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner } from "fasset-bots-core-lib";
-import { createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "fasset-bots-core-lib/config";
+import { createBotConfig, getSecrets, loadAgentConfigFile, requireSecret } from "fasset-bots-core-lib/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const OWNER_ADDRESS: string = requireSecret("owner.native_address");
