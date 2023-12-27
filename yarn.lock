@@ -969,6 +969,151 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@flarelabs/fasset-bots-api@workspace:packages/fasset-bots-api":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/fasset-bots-api@workspace:packages/fasset-bots-api"
+  dependencies:
+    "@flarelabs/fasset-bots-core": "workspace:*"
+    "@nestjs/cli": ^10.1.18
+    "@nestjs/common": ^10.2.6
+    "@nestjs/config": ^3.1.1
+    "@nestjs/core": ^10.2.6
+    "@nestjs/passport": ^10.0.2
+    "@nestjs/platform-express": ^10.2.6
+    "@nestjs/platform-ws": ^10.2.6
+    "@nestjs/schematics": ^10.0.2
+    "@nestjs/swagger": ^7.1.12
+    "@nestjs/testing": ^10.2.6
+    "@nestjs/websockets": ^10.2.6
+    "@types/chai": 4.3.6
+    "@types/chai-as-promised": 7.1.6
+    "@types/chai-spies": 1.0.4
+    "@types/express": ^4.17.18
+    "@types/glob": 8.1.0
+    "@types/mocha": 10.0.1
+    "@types/node": 20.7.0
+    "@types/passport": ^1.0.13
+    "@types/passport-http": ^0.3.9
+    "@types/passport-strategy": ^0.2.36
+    axios: 1.5.1
+    class-transformer: ^0.5.1
+    class-validator: ^0.14.0
+    dotenv: 16.3.1
+    helmet: ^7.0.0
+    passport: ^0.6.0
+    passport-headerapikey: ^1.2.2
+    reflect-metadata: ^0.1.13
+    rxjs: ^7.8.1
+    source-map-support: 0.5.21
+    typescript: 5.2.2
+  bin:
+    api-key: dist/src/cli/apiKey.js
+  languageName: unknown
+  linkType: soft
+
+"@flarelabs/fasset-bots-cli@workspace:packages/fasset-bots-cli":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/fasset-bots-cli@workspace:packages/fasset-bots-cli"
+  dependencies:
+    "@flarelabs/fasset-bots-core": "workspace:*"
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
+    "@types/bn.js": 5.1.5
+    bn.js: 5.2.1
+    chalk: 4.1.2
+    commander: 11.0.0
+    dotenv: 16.3.1
+    source-map-support: 0.5.21
+    typescript: 5.2.2
+    web3: 1.10.2
+  bin:
+    agent-bot: dist/src/cli/agent.js
+    fake-price-reader: dist/src/cli/fakePriceReader.js
+    key: dist/src/cli/key.js
+    test-governance: dist/src/cli/testGovernance
+    user-bot: dist/src/cli/user.js
+    utils: dist/src/cli/utils.js
+  languageName: unknown
+  linkType: soft
+
+"@flarelabs/fasset-bots-core@workspace:*, @flarelabs/fasset-bots-core@workspace:packages/fasset-bots-core":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/fasset-bots-core@workspace:packages/fasset-bots-core"
+  dependencies:
+    "@flarelabs/simple-wallet": "workspace:*"
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
+    "@mikro-orm/cli": 5.8.4
+    "@mikro-orm/core": 5.8.4
+    "@mikro-orm/knex": 5.8.4
+    "@mikro-orm/mysql": 5.8.4
+    "@mikro-orm/postgresql": 5.8.4
+    "@mikro-orm/sqlite": 5.8.4
+    "@nomiclabs/hardhat-web3": 2.0.0
+    "@openzeppelin/test-helpers": 0.5.16
+    "@typechain/truffle-v5": 7.0.0
+    "@types/bn.js": 5.1.5
+    "@types/glob": 8.1.0
+    "@types/mocha": 10.0.1
+    "@types/node": 20.7.0
+    "@types/rewire": 2.5.28
+    ajv: 8.12.0
+    axios: 1.5.1
+    bn.js: 5.2.1
+    chalk: 4.1.2
+    commander: 11.0.0
+    dotenv: 16.3.1
+    glob: 10.3.10
+    hardhat: 2.17.3
+    rewire: 7.0.0
+    source-map-support: 0.5.21
+    typechain: 8.3.0
+    typescript: 5.2.2
+    typescript-json-schema: 0.61.0
+    web3: 1.10.2
+    web3-core: 1.10.2
+    web3-eth: 1.10.2
+    web3-eth-abi: 1.10.2
+    web3-utils: 1.10.2
+    winston: 3.10.0
+    winston-daily-rotate-file: 4.7.1
+  languageName: unknown
+  linkType: soft
+
+"@flarelabs/simple-wallet@workspace:*, @flarelabs/simple-wallet@workspace:packages/simple-wallet":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
+  dependencies:
+    "@types/bitcore-lib": ^0.15.3
+    "@types/bn.js": 5.1.5
+    "@types/bs58check": ^2.1.0
+    "@types/elliptic": ^6.4.14
+    "@types/node": 20.7.0
+    "@types/tiny-secp256k1": ^2.0.1
+    algosdk: ^2.3.0
+    axios: 1.5.1
+    axios-retry: ^3.8.0
+    bip32: ^3.0.1
+    bip39: ^3.0.4
+    bitcoinjs-lib: ^6.0.2
+    bitcore-lib: ^8.25.36
+    bitcore-lib-doge: ^8.25.36
+    bitcore-lib-ltc: ^8.25.36
+    bn.js: 5.2.1
+    bs58check: ^3.0.1
+    dotenv: 16.3.1
+    elliptic: ^6.5.4
+    fast-safe-stringify: ^2.1.1
+    ripple-address-codec: 4.2.4
+    ripple-binary-codec: 1.4.2
+    ripple-keypairs: ^1.1.5
+    source-map-support: 0.5.21
+    tiny-secp256k1: ^2.2.1
+    typescript: 5.2.2
+    wallet-address-validator: ^0.2.4
+    web3-utils: 1.10.2
+    xrpl: 2.3.1
+  languageName: unknown
+  linkType: soft
+
 "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2":
   version: 1.0.0-beta.2
   resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2"
@@ -6249,115 +6394,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fasset-bots-api@workspace:packages/fasset-bots-api":
-  version: 0.0.0-use.local
-  resolution: "fasset-bots-api@workspace:packages/fasset-bots-api"
-  dependencies:
-    "@nestjs/cli": ^10.1.18
-    "@nestjs/common": ^10.2.6
-    "@nestjs/config": ^3.1.1
-    "@nestjs/core": ^10.2.6
-    "@nestjs/passport": ^10.0.2
-    "@nestjs/platform-express": ^10.2.6
-    "@nestjs/platform-ws": ^10.2.6
-    "@nestjs/schematics": ^10.0.2
-    "@nestjs/swagger": ^7.1.12
-    "@nestjs/testing": ^10.2.6
-    "@nestjs/websockets": ^10.2.6
-    "@types/chai": 4.3.6
-    "@types/chai-as-promised": 7.1.6
-    "@types/chai-spies": 1.0.4
-    "@types/express": ^4.17.18
-    "@types/glob": 8.1.0
-    "@types/mocha": 10.0.1
-    "@types/node": 20.7.0
-    "@types/passport": ^1.0.13
-    "@types/passport-http": ^0.3.9
-    "@types/passport-strategy": ^0.2.36
-    axios: 1.5.1
-    class-transformer: ^0.5.1
-    class-validator: ^0.14.0
-    dotenv: 16.3.1
-    fasset-bots-core: "workspace:*"
-    helmet: ^7.0.0
-    passport: ^0.6.0
-    passport-headerapikey: ^1.2.2
-    reflect-metadata: ^0.1.13
-    rxjs: ^7.8.1
-    source-map-support: 0.5.21
-    typescript: 5.2.2
-  bin:
-    api-key: dist/src/cli/apiKey.js
-  languageName: unknown
-  linkType: soft
-
-"fasset-bots-cli@workspace:packages/fasset-bots-cli":
-  version: 0.0.0-use.local
-  resolution: "fasset-bots-cli@workspace:packages/fasset-bots-cli"
-  dependencies:
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
-    "@types/bn.js": 5.1.5
-    bn.js: 5.2.1
-    chalk: 4.1.2
-    commander: 11.0.0
-    dotenv: 16.3.1
-    fasset-bots-core: "workspace:*"
-    source-map-support: 0.5.21
-    typescript: 5.2.2
-    web3: 1.10.2
-  bin:
-    agent-bot: dist/src/cli/agent.js
-    fake-price-reader: dist/src/cli/fakePriceReader.js
-    key: dist/src/cli/key.js
-    test-governance: dist/src/cli/testGovernance
-    user-bot: dist/src/cli/user.js
-    utils: dist/src/cli/utils.js
-  languageName: unknown
-  linkType: soft
-
-"fasset-bots-core@workspace:*, fasset-bots-core@workspace:packages/fasset-bots-core":
-  version: 0.0.0-use.local
-  resolution: "fasset-bots-core@workspace:packages/fasset-bots-core"
-  dependencies:
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
-    "@mikro-orm/cli": 5.8.4
-    "@mikro-orm/core": 5.8.4
-    "@mikro-orm/knex": 5.8.4
-    "@mikro-orm/mysql": 5.8.4
-    "@mikro-orm/postgresql": 5.8.4
-    "@mikro-orm/sqlite": 5.8.4
-    "@nomiclabs/hardhat-web3": 2.0.0
-    "@openzeppelin/test-helpers": 0.5.16
-    "@typechain/truffle-v5": 7.0.0
-    "@types/bn.js": 5.1.5
-    "@types/glob": 8.1.0
-    "@types/mocha": 10.0.1
-    "@types/node": 20.7.0
-    "@types/rewire": 2.5.28
-    ajv: 8.12.0
-    axios: 1.5.1
-    bn.js: 5.2.1
-    chalk: 4.1.2
-    commander: 11.0.0
-    dotenv: 16.3.1
-    glob: 10.3.10
-    hardhat: 2.17.3
-    rewire: 7.0.0
-    simple-wallet: "workspace:*"
-    source-map-support: 0.5.21
-    typechain: 8.3.0
-    typescript: 5.2.2
-    typescript-json-schema: 0.61.0
-    web3: 1.10.2
-    web3-core: 1.10.2
-    web3-eth: 1.10.2
-    web3-eth-abi: 1.10.2
-    web3-utils: 1.10.2
-    winston: 3.10.0
-    winston-daily-rotate-file: 4.7.1
-  languageName: unknown
-  linkType: soft
-
 "fast-check@npm:3.1.1":
   version: 3.1.1
   resolution: "fast-check@npm:3.1.1"
@@ -11461,42 +11497,6 @@ __metadata:
   checksum: a7f3f2ab5c76c4472d5c578df892e857323e452d9f392e1b5cf74b74db66e6294a1e1b8b390b519fa1b96b5b613f2a37db6cffef52c3f1f8f3c5ea64eb2d54c0
   languageName: node
   linkType: hard
-
-"simple-wallet@workspace:*, simple-wallet@workspace:packages/simple-wallet":
-  version: 0.0.0-use.local
-  resolution: "simple-wallet@workspace:packages/simple-wallet"
-  dependencies:
-    "@types/bitcore-lib": ^0.15.3
-    "@types/bn.js": 5.1.5
-    "@types/bs58check": ^2.1.0
-    "@types/elliptic": ^6.4.14
-    "@types/node": 20.7.0
-    "@types/tiny-secp256k1": ^2.0.1
-    algosdk: ^2.3.0
-    axios: 1.5.1
-    axios-retry: ^3.8.0
-    bip32: ^3.0.1
-    bip39: ^3.0.4
-    bitcoinjs-lib: ^6.0.2
-    bitcore-lib: ^8.25.36
-    bitcore-lib-doge: ^8.25.36
-    bitcore-lib-ltc: ^8.25.36
-    bn.js: 5.2.1
-    bs58check: ^3.0.1
-    dotenv: 16.3.1
-    elliptic: ^6.5.4
-    fast-safe-stringify: ^2.1.1
-    ripple-address-codec: 4.2.4
-    ripple-binary-codec: 1.4.2
-    ripple-keypairs: ^1.1.5
-    source-map-support: 0.5.21
-    tiny-secp256k1: ^2.2.1
-    typescript: 5.2.2
-    wallet-address-validator: ^0.2.4
-    web3-utils: 1.10.2
-    xrpl: 2.3.1
-  languageName: unknown
-  linkType: soft
 
 "slash@npm:^3.0.0":
   version: 3.0.0

@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { toplevelRun } from "fasset-bots-core/utils";
+import { toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { BotCliCommands } from "fasset-bots-core";
 
 const program = new Command();

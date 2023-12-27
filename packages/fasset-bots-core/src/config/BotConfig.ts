@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 import { EntityManager } from "@mikro-orm/core";
-import { WALLET } from "simple-wallet";
+import { WALLET } from "@flarelabs/simple-wallet";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";

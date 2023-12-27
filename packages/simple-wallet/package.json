@@ -1,5 +1,5 @@
 {
-    "name": "simple-wallet",
+    "name": "@flarelabs/simple-wallet",
     "version": "1.0.0",
     "description": "Fasset bots simple wallet",
     "engines": {

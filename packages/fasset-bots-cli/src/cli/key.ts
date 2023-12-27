@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { createSha256Hash, generateRandomHexString, toplevelRun } from "fasset-bots-core/utils";
+import { createSha256Hash, generateRandomHexString, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const program = new Command();
 

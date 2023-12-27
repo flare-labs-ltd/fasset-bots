@@ -3,9 +3,9 @@ import "source-map-support/register";
 
 import chalk from "chalk";
 import { Command } from "commander";
-import { getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core/config";
-import { FakePriceReaderInstance } from "fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, requireNotNull, toplevelRun } from "fasset-bots-core/utils";
+import { getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { FakePriceReaderInstance } from "@flarelabs/fasset-bots-core/types";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, requireNotNull, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");

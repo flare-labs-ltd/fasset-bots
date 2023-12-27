@@ -1,9 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { ActorBaseKind, ActorBaseRunner } from "fasset-bots-core";
-import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "fasset-bots-core/utils";
+import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
+import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
 const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");

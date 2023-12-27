@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { BotCliCommands } from "fasset-bots-core";
+import { BotCliCommands } from "@flarelabs/fasset-bots-core";
 import { AgentCreateResponse, AgentBalance, AgentUnderlying, AgentSettings } from "../../common/AgentResponse";
-import { artifacts } from "fasset-bots-core/utils";
+import { artifacts } from "@flarelabs/fasset-bots-core/utils";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 

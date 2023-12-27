@@ -1,9 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner } from "fasset-bots-core";
-import { createBotConfig, getSecrets, loadAgentConfigFile, requireSecret } from "fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "fasset-bots-core/utils";
+import { AgentBotRunner } from "@flarelabs/fasset-bots-core";
+import { createBotConfig, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const OWNER_ADDRESS: string = requireSecret("owner.native_address");
 const OWNER_PRIVATE_KEY: string = requireSecret("owner.native_private_key");
