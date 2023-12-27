@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { CollateralClass, CollateralType } from "fasset-bots-core";
+import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
