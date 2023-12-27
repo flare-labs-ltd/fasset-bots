@@ -22,13 +22,13 @@
   },
   "references": [
     {
-      "path": "packages/api"
+      "path": "packages/fasset-bots-api"
     },
     {
-      "path": "packages/cli"
+      "path": "packages/fasset-bots-cli"
     },
     {
-      "path": "packages/core-lib"
+      "path": "packages/fasset-bots-core"
     },
     {
       "path": "packages/simple-wallet"

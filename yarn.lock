@@ -6249,9 +6249,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fasset-bots-api@workspace:packages/api":
+"fasset-bots-api@workspace:packages/fasset-bots-api":
   version: 0.0.0-use.local
-  resolution: "fasset-bots-api@workspace:packages/api"
+  resolution: "fasset-bots-api@workspace:packages/fasset-bots-api"
   dependencies:
     "@nestjs/cli": ^10.1.18
     "@nestjs/common": ^10.2.6
@@ -6291,9 +6291,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset-bots-cli@workspace:packages/cli":
+"fasset-bots-cli@workspace:packages/fasset-bots-cli":
   version: 0.0.0-use.local
-  resolution: "fasset-bots-cli@workspace:packages/cli"
+  resolution: "fasset-bots-cli@workspace:packages/fasset-bots-cli"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
     "@types/bn.js": 5.1.5
@@ -6315,9 +6315,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset-bots-core@workspace:*, fasset-bots-core@workspace:packages/core-lib":
+"fasset-bots-core@workspace:*, fasset-bots-core@workspace:packages/fasset-bots-core":
   version: 0.0.0-use.local
-  resolution: "fasset-bots-core@workspace:packages/core-lib"
+  resolution: "fasset-bots-core@workspace:packages/fasset-bots-core"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
     "@mikro-orm/cli": 5.8.4

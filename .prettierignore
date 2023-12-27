@@ -16,4 +16,4 @@ hardhat.config.ts
 .gitlab-ci.yml
 .eslintrc.json
 *.d.ts
-packages/core-lib/src/underlying-chain/BlockchainIndexerHelper.ts
+packages/fasset-bots-core/src/underlying-chain/BlockchainIndexerHelper.ts
