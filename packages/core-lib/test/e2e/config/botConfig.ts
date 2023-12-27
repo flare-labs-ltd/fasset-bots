@@ -9,6 +9,7 @@ import {
     createStateConnectorClient,
     createWalletClient,
     loadConfigFile,
+    updateConfigFilePaths,
 } from "../../../src/config/BotConfig";
 import { initWeb3 } from "../../../src/utils/web3";
 import {
@@ -43,6 +44,12 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/mainnet/";
 const walletTestXRPUrl = "https://s.altnet.rippletest.net:51234";
 const walletXRPUrl = "https://s1.ripple.com:51234/";
+
+function simpleLoadConfigFile(fpath: string) {
+    const config = JSON.parse(readFileSync(fpath).toString()) as BotConfigFile;
+    updateConfigFilePaths(fpath, config);
+    return config;
+}
 
 describe("Bot config tests", async () => {
     let runConfig: BotConfigFile;
@@ -197,7 +204,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should not validate config - contractsJsonFile or addressUpdater must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = undefined;
         runConfig.addressUpdater = undefined;
         const fn = () => {
@@ -207,7 +214,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should not validate config - assetManager or fAssetSymbol must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.fAssetInfos[0].assetManager = undefined;
         runConfig.fAssetInfos[0].fAssetSymbol = undefined;
         const fn = () => {
@@ -217,7 +224,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should not validate config - walletUrl must be defined", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.fAssetInfos[0].walletUrl = undefined;
         const fn = () => {
             return validateAgentConfigFile(runConfig);
@@ -245,7 +252,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should not create config missing StateConnector contract", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
         await expect(createBotConfig(runConfig, accounts[0]))
             .to.eventually.be.rejectedWith("Cannot find address for StateConnector")
@@ -253,7 +260,7 @@ describe("Bot config tests", async () => {
     });
 
     it("Should not create config missing SCProofVerifier contract", async () => {
-        runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_CONTRACTS).toString()) as BotConfigFile;
+        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_VERIFIER;
         await expect(createBotConfig(runConfig, accounts[0]))
             .to.eventually.be.rejectedWith("Cannot find address for SCProofVerifier")

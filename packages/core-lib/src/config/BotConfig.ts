@@ -106,7 +106,7 @@ function validateConfigFile(config: BotConfigFile): void {
     }
 }
 
-function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
+export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     const cfDir = path.dirname(cfPath);
     if (config.contractsJsonFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
