@@ -107,7 +107,7 @@ Can be found [here](../run-config/run-config-agent-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -142,7 +142,7 @@ Can be found [here](../run-config/run-config-challenger-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -168,7 +168,7 @@ Can be found [here](../run-config/run-config-challenger-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -196,7 +196,7 @@ Can be found [here](../run-config/run-config-liquidator-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -221,7 +221,7 @@ Can be found [here](../run-config/run-config-timeKeeper-coston-testxrp.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10

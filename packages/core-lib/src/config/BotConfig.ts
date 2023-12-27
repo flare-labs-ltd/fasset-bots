@@ -26,7 +26,7 @@ import { getSecrets } from "./secrets";
 import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
 import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
-/* istanbul ignore next */
+import path from "path";
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
 const AddressUpdater = artifacts.require("AddressUpdater");
@@ -78,6 +78,7 @@ const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>(resolveInFassetB
 export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     try {
         const config = botConfigLoader.load(fPath);
+        updateConfigFilePaths(fPath, config);
         validateConfigFile(config);
         // check secrets.json file permission
         getSecrets();
@@ -105,6 +106,13 @@ function validateConfigFile(config: BotConfigFile): void {
     }
 }
 
+function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
+    const cfDir = path.dirname(cfPath);
+    if (config.contractsJsonFile) {
+        config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
+    }
+}
+
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
 export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string; ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
 
@@ -117,6 +125,7 @@ export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: str
 export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBotConfigFile {
     try {
         const config = botConfigLoader.load(fPath);
+        updateConfigFilePaths(fPath, config);
         validateAgentConfigFile(config);
         // check secrets.json file permission
         getSecrets();

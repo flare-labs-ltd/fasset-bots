@@ -3,13 +3,12 @@ import "source-map-support/register";
 
 import chalk from "chalk";
 import { Command } from "commander";
-import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core-lib/config";
+import { getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core-lib/config";
 import { FakePriceReaderInstance } from "fasset-bots-core-lib/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, requireNotNull, toplevelRun } from "fasset-bots-core-lib/utils";
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
-const contracts: ChainContracts = loadContracts("./fasset-deployment/coston.json");
 const deployerAddress = requireSecret("deployer.native_address");
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 
@@ -76,6 +75,7 @@ async function initEnvironment(fakePriceReader: boolean = true) {
     console.log(chalk.cyan("Initializing environment..."));
     const configFile: string = RUN_CONFIG_PATH;
     const runConfig = loadConfigFile(configFile);
+    const contracts = loadContracts(requireNotNull(runConfig.contractsJsonFile));
     const nativePrivateKey = requireSecret("deployer.native_private_key");
     const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {

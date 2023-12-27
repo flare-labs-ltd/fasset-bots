@@ -1,7 +1,7 @@
 {
     "loopDelay": 5000,
     "$schema": "./schema/bot-config.schema.json",
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
     "fAssetInfos": [
         {
