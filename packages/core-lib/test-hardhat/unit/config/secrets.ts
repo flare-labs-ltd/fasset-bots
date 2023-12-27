@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Secrets, getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
-import { ENCRYPTION_PASSWORD_MIN_LENGTH } from "../../../src/utils/helpers";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/helpers";
 
 describe("Secrets unit tests", async () => {
     it("Should not return secret", async () => {
@@ -58,7 +58,7 @@ describe("Secrets unit tests", async () => {
         resetSecrets(null);
         const secrets = getSecrets();
         expect(secrets.apiKey).to.be.empty;
-        resetSecrets('./secrets.json');
+        resetSecrets(requireEnv("FASSET_SECRETS"));
         const secrets2 = getSecrets();
         expect(secrets2.apiKey).to.not.be.empty;
     });

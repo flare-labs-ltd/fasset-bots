@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "fs";
-import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH } from "../utils/helpers";
+import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
 
-const DEFAULT_SECRETS_JSON_PATH = "./secrets.json";
+const DEFAULT_SECRETS_JSON_PATH = requireEnv("FASSET_SECRETS");
 
 export type Secrets = {
     wallet?: {
