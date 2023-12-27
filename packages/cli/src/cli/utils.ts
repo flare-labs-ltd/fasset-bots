@@ -4,8 +4,8 @@ import "source-map-support/register";
 import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import chalk from "chalk";
 import { Command } from "commander";
-import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "fasset-bots-core-lib/config";
-import { CommandLineError, requireEnv, toplevelRun } from "fasset-bots-core-lib/utils";
+import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "fasset-bots-core/config";
+import { CommandLineError, requireEnv, toplevelRun } from "fasset-bots-core/utils";
 
 const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
 

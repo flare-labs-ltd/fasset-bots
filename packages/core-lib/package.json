@@ -1,5 +1,5 @@
 {
-    "name": "fasset-bots-core-lib",
+    "name": "fasset-bots-core",
     "version": "1.0.0",
     "description": "FAsset bots library",
     "author": "Flare Labs",
@@ -11,11 +11,6 @@
     "license": "MIT",
     "engines": {
         "node": ">=16.10.0"
-    },
-    "workspaces": {
-        "nohoist": [
-            "**"
-        ]
     },
     "exports": {
         ".": {

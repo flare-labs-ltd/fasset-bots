@@ -2,10 +2,10 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { CollateralClass, CollateralType } from "fasset-bots-core-lib";
-import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core-lib/config";
-import { AssetManagerControllerInstance } from "fasset-bots-core-lib/types";
-import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "fasset-bots-core-lib/utils";
+import { CollateralClass, CollateralType } from "fasset-bots-core";
+import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "fasset-bots-core/config";
+import { AssetManagerControllerInstance } from "fasset-bots-core/types";
+import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "fasset-bots-core/utils";
 import { readFileSync } from "fs";
 
 const FakeERC20 = artifacts.require("FakeERC20");

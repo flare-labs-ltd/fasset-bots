@@ -6278,7 +6278,7 @@ __metadata:
     class-transformer: ^0.5.1
     class-validator: ^0.14.0
     dotenv: 16.3.1
-    fasset-bots-core-lib: "workspace:*"
+    fasset-bots-core: "workspace:*"
     helmet: ^7.0.0
     passport: ^0.6.0
     passport-headerapikey: ^1.2.2
@@ -6301,7 +6301,7 @@ __metadata:
     chalk: 4.1.2
     commander: 11.0.0
     dotenv: 16.3.1
-    fasset-bots-core-lib: "workspace:*"
+    fasset-bots-core: "workspace:*"
     source-map-support: 0.5.21
     typescript: 5.2.2
     web3: 1.10.2
@@ -6315,9 +6315,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset-bots-core-lib@workspace:*, fasset-bots-core-lib@workspace:packages/core-lib":
+"fasset-bots-core@workspace:*, fasset-bots-core@workspace:packages/core-lib":
   version: 0.0.0-use.local
-  resolution: "fasset-bots-core-lib@workspace:packages/core-lib"
+  resolution: "fasset-bots-core@workspace:packages/core-lib"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
     "@mikro-orm/cli": 5.8.4

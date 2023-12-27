@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ConfigService } from "@nestjs/config";
 import Strategy from "passport-headerapikey";
-import { createSha256Hash } from "fasset-bots-core-lib/utils";
+import { createSha256Hash } from "fasset-bots-core/utils";
 
 @Injectable()
 export class HeaderApiKeyStrategy extends PassportStrategy(Strategy, "api-key") {

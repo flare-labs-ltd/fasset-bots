@@ -3,9 +3,9 @@ import "source-map-support/register";
 
 import chalk from "chalk";
 import { Command } from "commander";
-import { InfoBot, SecretsUser, UserBot } from "fasset-bots-core-lib";
-import { requireSecret, resetSecrets } from "fasset-bots-core-lib/config";
-import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "fasset-bots-core-lib/utils";
+import { InfoBot, SecretsUser, UserBot } from "fasset-bots-core";
+import { requireSecret, resetSecrets } from "fasset-bots-core/config";
+import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "fasset-bots-core/utils";
 import fs from "fs";
 import os from "os";
 import path from "path";
