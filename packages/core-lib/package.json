@@ -43,9 +43,12 @@
         ]
     },
     "files": [
-        "/artifacts",
         "/dist",
-        "/src"
+        "/src",
+        "/artifacts",
+        "/run-config",
+        "/fasset-config",
+        "/fasset-deployment"
     ],
     "scripts": {
         "---------PUBLISH---SCRIPTS": "",

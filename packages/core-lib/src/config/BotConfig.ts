@@ -14,6 +14,7 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
 import { requireNotNull, toBN } from "../utils/helpers";
+import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
@@ -65,8 +66,8 @@ export interface BotFAssetConfig {
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
-const botConfigLoader = new JsonLoader<BotConfigFile>("run-config/schema/bot-config.schema.json", "bot config JSON");
-const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>("run-config/schema/agent-settings.schema.json", "agent settings JSON");
+const botConfigLoader = new JsonLoader<BotConfigFile>(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
+const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>(resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json"), "agent settings JSON");
 
 /**
  * Loads configuration file and checks it.

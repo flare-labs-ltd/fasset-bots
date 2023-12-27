@@ -1,7 +1,5 @@
 import BN from "bn.js";
 import util from "util";
-import path from "path";
-import fs from "fs";
 import Web3 from "web3";
 import { logger } from "./logger";
 import crypto from "crypto";
@@ -362,30 +360,6 @@ export function unPrefix0x(str: string) {
  */
 export function prefix0x(str: string) {
     return str.match(/^0x/i) ? str : "0x" + str;
-}
-
-/**
- * Find the package root than contains the directory.
- * @param moduleDir the directory of a module, typically use `__dirname`
- * @returns the directory of the modules's package root.
- */
-export function findPackageRoot(moduleDir: string, requireFilesOrDirs: string[] = []) {
-    let dir = path.resolve(moduleDir);
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const packageJson = path.resolve(dir, "package.json");
-        const hasPackageJson = fs.existsSync(packageJson) && fs.statSync(packageJson).isFile();
-        const hasRequiredItems = requireFilesOrDirs.every(name => fs.existsSync(name));
-        if (hasPackageJson && hasRequiredItems) {
-            return dir;
-        }
-        /* istanbul ignore next */
-        if (path.dirname(dir) === dir) {
-            // arrived at filesystem root without finding package root
-            throw new Error("Cannot find package root");
-        }
-        dir = path.dirname(dir);
-    }
 }
 
 export function compareHexValues(hex1: string, hex2: string) {

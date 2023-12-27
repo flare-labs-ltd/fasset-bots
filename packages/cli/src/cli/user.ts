@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { InfoBot, SecretsUser, UserBot } from "fasset-bots-core-lib";
 import { requireSecret, resetSecrets } from "fasset-bots-core-lib/config";
-import { CommandLineError, findPackageRoot, minBN, toBN, toBNExp, toplevelRun } from "fasset-bots-core-lib/utils";
+import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "fasset-bots-core-lib/utils";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -21,7 +21,7 @@ program
                 "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works."
             )
             .env("FASSET_USER_CONFIG")
-            .default(path.resolve(findPackageRoot(__dirname), "run-config/run-config-user-coston-testxrp.json"))
+            .default(resolveInFassetBotsCore("run-config/run-config-user-coston-testxrp.json"))
     )
     .addOption(
         program

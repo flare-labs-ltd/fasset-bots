@@ -1,4 +1,5 @@
 import { writeFileSync } from "fs";
+import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { JsonLoader } from "./json-loader";
 
 export interface Contract {
@@ -35,8 +36,7 @@ export function newContract(name: string, contractName: string, address: string)
     return { name, contractName, address };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const contractsLoader = new JsonLoader<Contract[]>("run-config/schema/contracts.schema.json", "contracts.json");
+const contractsLoader = new JsonLoader<Contract[]>(resolveInFassetBotsCore("run-config/schema/contracts.schema.json"), "contracts.json");
 
 export function loadContracts(filename: string): ChainContracts {
     const result: any = {};
