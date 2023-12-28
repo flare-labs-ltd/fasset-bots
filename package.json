@@ -10,8 +10,8 @@
     },
     "scripts": {
         "---------BUILD---SCRIPTS": "",
-        "clean": "rm -rf dist packages/*/dist",
-        "clean-nm": "rm -rf node_modules && rm -rf packages/*/node_modules",
+        "clean": "rimraf -g dist \"packages/*/dist\"",
+        "clean-nm": "rimraf -g node_modules \"packages/*/node_modules\"",
         "build": "tsc --build",
         "watch": "tsc --build --watch --incremental",
         "update-references": "utils-typescript-references",
