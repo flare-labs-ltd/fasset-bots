@@ -111,6 +111,9 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     if (config.contractsJsonFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
     }
+    if (config.defaultAgentSettingsPath) {
+        config.defaultAgentSettingsPath = path.resolve(cfDir, config.defaultAgentSettingsPath);
+    }
 }
 
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };

@@ -77,7 +77,9 @@ async function initEnvironment(configFile: string) {
 
 const program = new Command();
 
-program.addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)").makeOptionMandatory(true));
+program.addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)")
+    .env("RUN_CONFIG_PATH")
+    .makeOptionMandatory(true));
 
 program
     .command("whitelistAgent")
