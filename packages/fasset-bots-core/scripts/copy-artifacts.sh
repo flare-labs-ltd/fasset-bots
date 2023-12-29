@@ -3,8 +3,8 @@
 set -e
 
 projdir=$(pwd)
-fassetsdir=$(readlink -f ../fasset)
-liquidatordir=$(readlink -f ../FAsset-Liquidator)
+fassetsdir=$(readlink -f ../../../fasset)
+liquidatordir=$(readlink -f ../../../fasset-liquidator)
 
 if ! [ -d ${fassetsdir} ]; then echo "Missing dir ${fassetsdir}"; exit 1; fi
 if ! [ -d ${liquidatordir} ]; then echo "Missing dir ${liquidatordir}"; exit 1; fi
@@ -50,7 +50,7 @@ find -name '*.json' -path './artifacts/liquidator/*' | xargs sed -i -e 's/"sourc
 # # generate typechain
 echo "***** Building typechain... *************************************"
 yarn typechain --target=truffle-v5 --out-dir typechain-truffle "artifacts/**/+([a-zA-Z0-9_]).json"
-bash ./rename-and-update-artifacts.sh
+bash scripts/rename-and-update-artifacts.sh
 
 # copy contract addresses
 echo "***** Copying config... *****************************************"
