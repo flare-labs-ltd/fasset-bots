@@ -21,7 +21,7 @@ program
                 "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works."
             )
             .env("FASSET_USER_CONFIG")
-            .default(resolveInFassetBotsCore("run-config/run-config-user-coston-testxrp.json"))
+            .default(resolveInFassetBotsCore("run-config/coston-user.json"))
     )
     .addOption(
         program

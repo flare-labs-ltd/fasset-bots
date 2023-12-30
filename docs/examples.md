@@ -151,7 +151,7 @@ $ yarn key createWalletEncryptionPassword
 1. List available agents that user can mint against.
 
 ```console
-$ yarn user-bot agents -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot agents -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 ADDRESS                                     MAX_LOTS  FEE
@@ -169,7 +169,7 @@ ADDRESS                                     MAX_LOTS  FEE
 1. Mint _1 FtestXR_P_ fasset against agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_.
 
 ```console
-$ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Reserving collateral...
@@ -196,7 +196,7 @@ MINTING EXECUTED: Minting 18455 executed for 0x97204bd339e5e33acc7675dea5593f254
 1. Redeem _1 FtestXRP_ fasset.
 
 ```console
-$ yarn user-bot redeem 1 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot redeem 1 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Asking for redemption of 1 lots
@@ -219,7 +219,7 @@ REDEMPTION PAYMENT PROOF REQUESTED: Payment proof for redemption 17644 was reque
 1. List system info.
 
 ```console
-$ yarn user-bot info -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot info -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 FAsset: F-TestXRP (FtestXRP) at 0xA86379bC8644Ce1919cc750844E819c0a2cD28dB
@@ -230,8 +230,7 @@ Minted: 13.60 FtestXRP  (1.36 lots)
 2. List system info with basic agent's info.
 
 ```console
-$ yarn user-bot info --agents -f FtestXRP -c ./run-config/run-config-user-coston-
-testxrp.json
+$ yarn user-bot info --agents -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 FAsset: F-TestXRP (FtestXRP) at 0xA86379bC8644Ce1919cc750844E819c0a2cD28dB
@@ -258,13 +257,13 @@ Vault address                               Owner address                       
 ### User command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 ```
 
 ### Agent command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP -c ./run-config/run-config-agent-coston-testxrp.json
+$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP
 ```
 
 ### Result

@@ -31,12 +31,26 @@
             "priceChangeEmitter": "FakePriceReader"
         }
     ],
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ],
     "ormOptions": {
         "type": "sqlite",
         "dbName": "fasset-bots-coston.db",
         "allowGlobalContext": true
     },
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
-    "defaultAgentSettingsPath": "./agent-settings-config.json"
+    "defaultAgentSettingsPath": "./agent-settings-config.json",
+    "liquidationStrategy": {
+        "className": "DexLiquidationStrategy",
+        "config": {
+            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
+        }
+    },
+    "challengeStrategy": {
+        "className": "DexChallengeStrategy",
+        "config": {
+            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
+        }
+    }
 }

@@ -102,8 +102,8 @@ export interface NativeChainInfo {
 }
 ```
 
-### Agent bot run config for `testXRP` and `Coston`
-Can be found [here](../run-config/run-config-agent-coston-testxrp.json).
+### Bot run config for `testXRP` and `Coston`
+Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
 ```json
 {
     "loopDelay": 5000,
@@ -133,113 +133,19 @@ Can be found [here](../run-config/run-config-agent-coston-testxrp.json).
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
-    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
-}
-```
-
-### Challenger run config for `testXRP` and `Coston`
-Can be found [here](../run-config/run-config-challenger-coston-testxrp.json).
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
+    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json",
+    "liquidationStrategy": {
+        "className": "DexLiquidationStrategy",
+        "config": {
+            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
         }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
-}
-```
-### Liquidator run config  for `fakeXRP` and `Coston`
-
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
     },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FfakeXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
-            "priceChangeEmitter": "FakePriceReader"
+    "challengeStrategy": {
+        "className": "DexChallengeStrategy",
+        "config": {
+            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
         }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc"
-}
-```
-
-### Liquidator and system keeper run config  for `testXRP` and `Coston`
-Can be found [here](../run-config/run-config-liquidator-coston-testxrp.json).
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP"
-        }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc"
-}
-```
-
-### Time keeper run config for `testXRP` and `Coston`
-Can be found [here](../run-config/run-config-timeKeeper-coston-testxrp.json).
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
-        }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    }
 }
 ```
 
@@ -251,7 +157,7 @@ Example:
 
 ```env
 ## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="./run-config/run-config-agent-coston-testxrp.json"
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="./secrets.json"
@@ -260,7 +166,7 @@ FASSET_BOT_SECRETS="./secrets.json"
 # ALLOW_SECRETS_ON_WINDOWS=true
 
 ## (Optional) Path to config file for users, instead you can use `-c` parameter
-# FASSET_USER_CONFIG="./run-config/run-config-agent-coston-testxrp.json"
+# FASSET_USER_CONFIG="./packages/fasset-bots-core/run-config/coston-user.json"
 
 ## (Optional) Path to secrets json file for users, instead you can use `-s` parameter.
 # FASSET_USER_SECRETS=""
