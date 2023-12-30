@@ -8,23 +8,22 @@ import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@f
 const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
 const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
-const fAssetSymbol = "FtestXRP";
 
 toplevelRun(async () => {
     const runConfig = loadConfigFile(FASSET_BOT_CONFIG);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [CHALLENGER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, CHALLENGER_ADDRESS);
-    const chainConfig = config.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-    if (chainConfig == null) {
-        console.log(`Invalid FAsset symbol ${fAssetSymbol}`);
-        throw Error(`Invalid FAsset symbol ${fAssetSymbol}`);
-    }
-    const runner = await ActorBaseRunner.create(config, CHALLENGER_ADDRESS, ActorBaseKind.CHALLENGER, chainConfig);
+    const runners = await Promise.all(config.fAssets.map(
+        (chainConfig) => ActorBaseRunner.create(config, CHALLENGER_ADDRESS, ActorBaseKind.CHALLENGER, chainConfig)
+    ));
     // run
     console.log("Challenger bot started, press CTRL+C to end");
     process.on("SIGINT", () => {
-        runner.requestStop();
+        console.log("Challenger bot stopping...");
+        runners.forEach(runner => runner.requestStop());
     });
-    await runner.run(ActorBaseKind.CHALLENGER);
+    await Promise.allSettled(runners.map(
+        runner => runner.run(ActorBaseKind.CHALLENGER))
+    );
     console.log("Challenger bot stopped");
 });
