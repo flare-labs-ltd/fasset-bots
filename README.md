@@ -31,7 +31,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. `secrets.json`. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#agent-bot-secrets-file)
 
@@ -39,7 +39,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#challenger-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -47,7 +47,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -55,7 +55,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -63,7 +63,7 @@ The automated system of [FAsset system](https://gitlab.com/flarenetwork/fasset),
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 

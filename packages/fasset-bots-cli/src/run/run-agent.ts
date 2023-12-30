@@ -9,10 +9,10 @@ const OWNER_ADDRESS: string = requireSecret("owner.native_address");
 const OWNER_PRIVATE_KEY: string = requireSecret("owner.native_private_key");
 const OWNER_UNDERLYING_ADDRESS: string = requireSecret("owner.underlying_address");
 const OWNER_UNDERLYING_PRIVATE_KEY: string = requireSecret("owner.underlying_private_key");
-const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
+const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 toplevelRun(async () => {
-    const runConfig = loadAgentConfigFile(RUN_CONFIG_PATH);
+    const runConfig = loadAgentConfigFile(FASSET_BOT_CONFIG);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [OWNER_PRIVATE_KEY], null);
     const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
     // create runner and agents

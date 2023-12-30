@@ -7,11 +7,11 @@ import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fas
 
 const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
 const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");
-const RUN_CONFIG_PATH: string = "./run-config/run-config-challenger-coston-testxrp.json";
+const FASSET_BOT_CONFIG: string = "./run-config/run-config-challenger-coston-testxrp.json";
 const fAssetSymbol = "FtestXRP";
 
 toplevelRun(async () => {
-    const runConfig = loadConfigFile(RUN_CONFIG_PATH);
+    const runConfig = loadConfigFile(FASSET_BOT_CONFIG);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [CHALLENGER_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, CHALLENGER_ADDRESS);
     const chainConfig = config.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);

@@ -7,7 +7,7 @@ import { Command } from "commander";
 import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
+const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 const program = new Command();
 
@@ -35,7 +35,7 @@ toplevelRun(async () => {
 
 async function setupContext(fAssetSymbol: string) {
     console.log(chalk.cyan("Initializing wallet..."));
-    const runConfig = loadAgentConfigFile(RUN_CONFIG_PATH);
+    const runConfig = loadAgentConfigFile(FASSET_BOT_CONFIG);
     if (!runConfig.ormOptions) {
         throw new CommandLineError("Missing ormOptions in runConfig");
     }

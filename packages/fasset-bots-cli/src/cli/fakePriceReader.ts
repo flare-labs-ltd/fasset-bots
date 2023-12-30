@@ -10,7 +10,7 @@ import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, requireNotN
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 const deployerAddress = requireSecret("deployer.native_address");
-const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
+const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 const program = new Command();
 
@@ -73,7 +73,7 @@ toplevelRun(async () => {
 
 async function initEnvironment(fakePriceReader: boolean = true) {
     console.log(chalk.cyan("Initializing environment..."));
-    const configFile: string = RUN_CONFIG_PATH;
+    const configFile: string = FASSET_BOT_CONFIG;
     const runConfig = loadConfigFile(configFile);
     const contracts = loadContracts(requireNotNull(runConfig.contractsJsonFile));
     const nativePrivateKey = requireSecret("deployer.native_private_key");

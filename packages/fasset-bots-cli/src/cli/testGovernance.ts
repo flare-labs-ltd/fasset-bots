@@ -78,7 +78,7 @@ async function initEnvironment(configFile: string) {
 const program = new Command();
 
 program.addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)")
-    .env("RUN_CONFIG_PATH")
+    .env("FASSET_BOT_CONFIG")
     .makeOptionMandatory(true));
 
 program

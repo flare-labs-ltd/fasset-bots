@@ -10,7 +10,7 @@ Preconditions:
 
 ### Challenge illegal payment
 Challenger part:
-- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `RUN_CONFIG_PATH` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
+- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
 - Build project `yarn build`.
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
@@ -27,7 +27,7 @@ Agent part:
 
 ### Challenge double payment:
 Challenger part:
-- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `RUN_CONFIG_PATH` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
+- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
 - Build project `yarn build`.
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
@@ -48,7 +48,7 @@ Agent part:
 
 ###  Challenge negative free balance:
 Challenger part:
-- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `RUN_CONFIG_PATH` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
+- Select appropriate constants (`CHALLENGER_ADDRESS`, `CHALLENGER_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol`) in `src/run/run-challenger.ts`.
 - Build project `yarn build`.
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
@@ -75,11 +75,10 @@ Preconditions:
 
 ###  Liquidate agent due to price changes:
 Liquidator part:
-- Select appropriate constants (`LIQUIDATOR_ADDRESS`, `LIQUIDATOR_PRIVATE_KEY`, `RUN_CONFIG_PATH` and `fAssetSymbol = 'FfakeXRP'`) in `src/run/run-liquidator.ts`.
+- Select appropriate constants (`LIQUIDATOR_ADDRESS`, `LIQUIDATOR_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol = 'FfakeXRP'`) in `src/run/run-liquidator.ts`.
 - Build project `yarn build`.
 - Run liquidator script `node dist/src/run/run-liquidator.js`.
 - Optionally mint against available agents with liquidator address to get some Fassets. (Without Fassets liquidator will still change agent's status to LIQUIDATION).
 
 Agent part:
 - Wait for Fasset developers to create agent and environment to manipulate with prices. Once prices on `fakeXRP` will be manipulated, `PriceEpochFinalized` event will get triggered and picked up by run liquidator script.
-

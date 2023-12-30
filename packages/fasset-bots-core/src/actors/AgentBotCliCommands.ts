@@ -21,7 +21,7 @@ import { getSecrets } from "../config/secrets";
 import { getAgentSettings, printAgentInfo } from "../utils/fasset-helpers";
 import { AgentSettings } from "../fasset/AssetManagerTypes";
 
-const RUN_CONFIG_PATH: string = requireEnv("RUN_CONFIG_PATH");
+const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -39,7 +39,7 @@ export class BotCliCommands {
      * @param runConfigFile path to configuration file
      * @returns instance of BotCliCommands class
      */
-    static async create(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH) {
+    static async create(fAssetSymbol: string, runConfigFile: string = FASSET_BOT_CONFIG) {
         const bot = new BotCliCommands();
         await bot.initEnvironment(fAssetSymbol, runConfigFile);
         return bot;
@@ -50,7 +50,7 @@ export class BotCliCommands {
      * @param fAssetSymbol symbol for the fasset
      * @param runConfigFile path to configuration file
      */
-    async initEnvironment(fAssetSymbol: string, runConfigFile: string = RUN_CONFIG_PATH): Promise<void> {
+    async initEnvironment(fAssetSymbol: string, runConfigFile: string = FASSET_BOT_CONFIG): Promise<void> {
         logger.info(`Owner ${requireSecret("owner.native_address")} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
         const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireSecret("owner.native_address")}`);
@@ -88,11 +88,15 @@ export class BotCliCommands {
      */
     async createAgentVault(poolTokenSuffix: string): Promise<Agent | null> {
         try {
+            logger.info("Create agent vault...");
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath, poolTokenSuffix);
             const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
             this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            logger.info("Done creating agent vault");
+            logger.error("Not really an error");
             return agentBot.agent;
         } catch (error) {
+            console.error(error);
             console.log(`Owner ${requireSecret("owner.native_address")} couldn't create agent.`);
             logger.error(`Owner ${requireSecret("owner.native_address")} couldn't create agent: ${error}`);
         }

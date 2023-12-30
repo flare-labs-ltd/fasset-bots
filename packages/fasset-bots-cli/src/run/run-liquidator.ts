@@ -7,11 +7,11 @@ import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fas
 
 const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.native_address");
 const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.native_private_key");
-const RUN_CONFIG_PATH: string = "./run-config/run-config-liquidator-coston-testxrp.json";
+const FASSET_BOT_CONFIG: string = "./run-config/run-config-liquidator-coston-testxrp.json";
 const fAssetSymbol = "FfakeXRP";
 
 toplevelRun(async () => {
-    const runConfig = loadConfigFile(RUN_CONFIG_PATH);
+    const runConfig = loadConfigFile(FASSET_BOT_CONFIG);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [LIQUIDATOR_PRIVATE_KEY], null);
     const config = await createBotConfig(runConfig, LIQUIDATOR_ADDRESS);
     const chainConfig = config.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
