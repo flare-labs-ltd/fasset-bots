@@ -1,4 +1,6 @@
-# Testing
+# FAsset bots core
+
+## Testing
 
 Tests are divided into two following folders:
 
@@ -15,11 +17,11 @@ Tests are divided into two following folders:
     -   `integration/`: integration tests
     -   `unit/`: unit tests
 
-## Coverage:
+### Coverage:
 
 -   Run `yarn cover` for coverage in `test-hardhat/` and `test/`. `html` coverage report is found in `/fasset-bots/coverage/index.html`
 
-# Debugging:
+## Debugging:
 
 There are two configurations in [`.vscode/launch.json`](.vscode/launch.json) that allow to debug individual test files from folders `test/` and `test-hardhat/`.
 

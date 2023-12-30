@@ -7,7 +7,7 @@ Wants = mysqld.service
 
 [Service]
 Type = exec
-ExecStart = /usr/bin/node dist/src/run/run-agent.js
+ExecStart = /usr/bin/node packages/fasset-bots-cli/dist/src/run/run-agent.js
 WorkingDirectory = /home/fasset-bots/fasset-bots
 Restart = always
 RestartSec = 10

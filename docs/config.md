@@ -243,7 +243,7 @@ Example:
 
 Variable `wallet.encryption_password` should be at least 16 characters long. It can be generated via command
 
-`yarn key createWalletEncryptionPassword`
+`yarn key-gen createWalletEncryptionPassword`
 
 ### Challenger bot secrets file
 

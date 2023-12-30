@@ -56,7 +56,7 @@ Available commands:
 
 ## How to use
 
-Usage: `yarn key [command]`
+Usage: `yarn key-gen [command]`
 
 Available commands:
 

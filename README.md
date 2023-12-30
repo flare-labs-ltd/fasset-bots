@@ -126,7 +126,8 @@ See [here](./docs/trackState.md).
 
 ## Test and debug
 
-See [here](./docs/testDebug.md).
+For testing `fasset-bots-core` package, see [here](./packages/fasset-bots-core/README.md).
+For testing `simple-wallet` package,  see [here](./packages/simple-wallet/README.md).
 
 ## Logging
 
@@ -155,4 +156,4 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 
 ### Simple wallet
 
-Payments in bots are performed via [simple-wallet](https://gitlab.com/flarenetwork/simple-wallet).
+Payments in bots are performed via simple-wallet package. See [simple-wallet](packages/simple-wallet/README.md).

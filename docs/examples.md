@@ -142,7 +142,7 @@ rBxp3z87UbwaUgP2U88pT4pjEaeNP3FVWm 00F903ED76E80E5EDBA58B4C5F4DA4FB2EE02E99F8752
 1. Create wallet encryption password that can be used in `secrets.json` file.
 
 ```console
-$ yarn key createWalletEncryptionPassword
+$ yarn key-gen createWalletEncryptionPassword
 9cbefd0062028c1437bcb37a51d8546d872dbf3f081eab4d246d87548e1e5448
 ```
 

@@ -4,7 +4,7 @@
 
 Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#env) for more.
 
-Api key and its hash can be generated via command `yarn key createApiKeyAndHash`. See more [here](./cli.md#cli-key);
+Api key and its hash can be generated via command `yarn key-gen createApiKeyAndHash`. See more [here](./cli.md#cli-key);
 
 To run service use `yarn agent_api_start`. Swagger is locally running at http://localhost:3306/api-doc.
 
