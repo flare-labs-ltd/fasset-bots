@@ -3,11 +3,11 @@ import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3, resolveInFassetBotsCore, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
 const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");
-const FASSET_BOT_CONFIG: string = "./run-config/run-config-challenger-coston-testxrp.json";
+const FASSET_BOT_CONFIG: string = resolveInFassetBotsCore("run-config/run-config-challenger-coston-testxrp.json");
 const fAssetSymbol = "FtestXRP";
 
 toplevelRun(async () => {

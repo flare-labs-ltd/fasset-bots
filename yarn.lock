@@ -1006,8 +1006,6 @@ __metadata:
     rxjs: ^7.8.1
     source-map-support: 0.5.21
     typescript: 5.2.2
-  bin:
-    api-key: dist/src/cli/apiKey.js
   languageName: unknown
   linkType: soft
 
@@ -1028,7 +1026,7 @@ __metadata:
   bin:
     agent-bot: dist/src/cli/agent.js
     fake-price-reader: dist/src/cli/fakePriceReader.js
-    key: dist/src/cli/key.js
+    key-gen: dist/src/cli/key-gen.js
     test-governance: dist/src/cli/testGovernance
     user-bot: dist/src/cli/user.js
     utils: dist/src/cli/utils.js

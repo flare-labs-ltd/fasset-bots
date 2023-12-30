@@ -3,11 +3,11 @@ import "source-map-support/register";
 
 import { ActorBaseKind, TimeKeeper } from "@flarelabs/fasset-bots-core";
 import { createActorAssetContext, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, sleep, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3, resolveInFassetBotsCore, sleep, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
 const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.native_address");
 const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.native_private_key");
-const FASSET_BOT_CONFIG: string = "./run-config/run-config-timeKeeper-coston-testxrp.json";
+const FASSET_BOT_CONFIG: string = resolveInFassetBotsCore("run-config/run-config-timeKeeper-coston-testxrp.json");
 const INTERVAL: number = 120_000; // in ms
 
 toplevelRun(async () => {
