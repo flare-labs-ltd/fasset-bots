@@ -3,7 +3,7 @@
 ## Agent default settings
 
 ```typescript
-export interface AgentSettingsConfig {
+interface AgentSettingsConfig {
     vaultCollateralFtsoSymbol: string; // FTSO symbol for chosen vault collateral.
     feeBIPS: string | number; // Agent's minting fee in BIPS.
     poolFeeShareBIPS: string | number; // Share of the minting fee that goes to the pool as percentage of the minting fee.
@@ -36,13 +36,15 @@ Example:
 ## Run config
 
 ```typescript
-export interface BotConfigFile {
+interface BotConfigFile {
     defaultAgentSettingsPath?: string; // Path to agent settings file. Required only for agent bot.
     ormOptions?: OrmConfigOptions; // ORM configuration options. Required only for agent bot and user.
     fAssetInfos: BotFAssetInfo[]; // Basic information about fassets.
+    walletOptions?: StuckTransaction; // Optional overwrite of default values in simple-wallet in case transaction gets stuck in mempool. For agent bot.
     loopDelay: number; // Delay in ms before running next agent bot's or other actor's step
     nativeChainInfo: NativeChainInfo; // Basic information about native chain.
     rpcUrl: string; // Native chain's url.
+    alertsUrl?: string; // Url to send notifications to.
     attestationProviderUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
     stateConnectorAddress?: string; // Address of StateConnector contract on native chain. Only for agent bot, user, challenger and timeKeeper.
     stateConnectorProofVerifierAddress?: string; // Address of SCProofVerifier contract on native chain. Only for agent bot, user, challenger and timeKeeper.
@@ -61,7 +63,7 @@ export interface BotConfigFile {
     };
 }
 
-export interface OrmConfigOptions {
+interface OrmConfigOptions {
     type: DatabaseType;
     schemaUpdate?: SchemaUpdate;
     debug?: boolean;
@@ -77,7 +79,7 @@ export interface OrmConfigOptions {
     [key: string]: any;
 }
 
-export interface BotFAssetInfo extends ChainInfo {
+interface BotFAssetInfo extends ChainInfo {
     walletUrl?: string; // Underlying chain's url. Only for agent bot and user.
     indexerUrl?: string; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
     // either one must be set.
@@ -86,7 +88,7 @@ export interface BotFAssetInfo extends ChainInfo {
     priceChangeEmitter?: string; // The name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'.
 }
 
-export interface ChainInfo {
+interface ChainInfo {
     // Underlying chain info.
     chainId: string;
     name: string;
@@ -96,9 +98,15 @@ export interface ChainInfo {
     requireEOAProof: boolean;
 }
 
-export interface NativeChainInfo {
+interface NativeChainInfo {
     finalizationBlocks: number; // Estimated number of blocks to reach finalization.
     readLogsChunkSize: number; // Max number of blocks to read past logs from
+}
+
+interface StuckTransaction {
+    blockOffset?: number; // How many block to wait for transaction to be validated
+    retries?: number; // How many times should transaction retry to successfully submit
+    feeIncrease?: number; // Factor to increase fee in resubmitting process
 }
 ```
 
@@ -188,25 +196,30 @@ type Secrets = {
         encryption_password: string; // Password to be used in encryption and decryption of addresses and private keys in local database. Only for agent bot and user.
     };
     apiKey: {
-        // Various API key needed to access certain services.
-        [key: string]: string;
+        [key: string]: string; // Various API key needed to access certain services.
     };
-    owner?: UnifiedAccount; // Agent owner's addresses and private keys.
-    user?: UnifiedAccount; // User's or liquidator's addresses and private keys.
-    challenger?: NativeAccount; // Challenger's native addresses and private keys.
-    timeKeeper?: NativeAccount; // Time keeper's native addresses and private keys.
-    systemKeeper?: NativeAccount; // System keeper's native addresses and private keys.
-    deployer?: NativeAccount; // Deployer's native addresses and private keys.
+    owner?: {
+        [key: string]: ChainAccount; // Agent owner's native and underlying addresses and private keys.
+    };
+    user?: {
+        [key: string]: ChainAccount; // User's native and underlying addresses and private keys.
+    };
+    challenger?: ChainAccount; // Challenger's native addresses and private keys.
+    liquidator?: ChainAccount; // Liquidator's native addresses and private keys.
+    timeKeeper?: ChainAccount; // Time keeper's native addresses and private keys.
+    systemKeeper?: ChainAccount; // System keeper's native addresses and private keys.
+    deployer?: ChainAccount; // Deployer's native addresses and private keys.
+    database?: DatabaseAccount; // Credentials required for database access.
 };
 
-export interface NativeAccount {
-    native_private_key: string;
-    native_address: string;
+interface ChainAccount {
+    address: string;
+    private_key: string;
 }
 
-export interface UnderlyingAccount {
-    underlying_private_key: string;
-    underlying_address: string;
+interface DatabaseAccount {
+    user: string;
+    password: string;
 }
 ```
 
@@ -222,19 +235,23 @@ export interface UnderlyingAccount {
         "native_rpc": ""
     },
     "owner": {
-        "native_private_key": "",
-        "native_address": "",
-        "underlying_private_key": "",
-        "underlying_address": ""
+        "native": {
+            "address": "",
+            "private_key": ""
+        },
+        "testXRP": {
+            "address": "",
+            "private_key": ""
+        }
     },
     "timeKeeper": {
-        "native_private_key": "",
-        "native_address": ""
+        "address": "",
+        "private_key": ""
     }
 }
 ```
 
-Variables `owner.underlying_private_key` and `owner.underlying_address` can be generated via command
+Underlying addresses `owner.[chainId].address` and private keys and `owner.[chainId].private_key` can be generated via command
 
 `yarn agent-bot createUnderlyingAccount -f <fassetSymbol>`
 
@@ -254,8 +271,8 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
         "native_rpc": ""
     },
     "challenger": {
-        "native_private_key": "",
-        "native_address": ""
+        "address": "",
+        "private_key": ""
     }
 }
 ```
@@ -268,9 +285,9 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
         "indexer": "",
         "native_rpc": ""
     },
-    "user": {
-        "native_private_key": "",
-        "native_address": ""
+    "liquidator": {
+        "address": "",
+        "private_key": ""
     }
 }
 ```
@@ -284,8 +301,8 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
         "native_rpc": ""
     },
     "systemKeeper": {
-        "native_private_key": "",
-        "native_address": ""
+        "address": "",
+        "private_key": ""
     }
 }
 ```
@@ -299,8 +316,8 @@ Variable `wallet.encryption_password` should be at least 16 characters long. It 
         "native_rpc": ""
     },
     "timeKeeper": {
-        "native_private_key": "",
-        "native_address": ""
+        "address": "",
+        "private_key": ""
     }
 }
 ```

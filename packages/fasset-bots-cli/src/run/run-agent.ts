@@ -2,13 +2,11 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner } from "@flarelabs/fasset-bots-core";
-import { createBotConfig, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const OWNER_ADDRESS: string = requireSecret("owner.native_address");
-const OWNER_PRIVATE_KEY: string = requireSecret("owner.native_private_key");
-const OWNER_UNDERLYING_ADDRESS: string = requireSecret("owner.underlying_address");
-const OWNER_UNDERLYING_PRIVATE_KEY: string = requireSecret("owner.underlying_private_key");
+const OWNER_ADDRESS: string = requireSecret("owner.native.address");
+const OWNER_PRIVATE_KEY: string = requireSecret("owner.native.private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 toplevelRun(async () => {
@@ -19,7 +17,9 @@ toplevelRun(async () => {
     const runner = await AgentBotRunner.create(botConfig);
     // store owner's underlying address
     for (const ctxMap of runner.contexts) {
-        await ctxMap[1].wallet.addExistingAccount(OWNER_UNDERLYING_ADDRESS, OWNER_UNDERLYING_PRIVATE_KEY);
+        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.address`);
+        const ownerUnderlyingPrivateKey = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.private_key`);
+        await ctxMap[1].wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
     }
     // run
     console.log("Agent bot started, press CTRL+C to end");

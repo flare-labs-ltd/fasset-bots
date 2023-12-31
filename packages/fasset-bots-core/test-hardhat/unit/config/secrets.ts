@@ -1,7 +1,9 @@
 import { expect } from "chai";
 import { Secrets, getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/helpers";
+import { decodedChainId } from "../../../src/config/BotConfig";
 
+const chainId = "testXRP";
 describe("Secrets unit tests", async () => {
     it("Should not return secret", async () => {
         const secretName = "wallet";
@@ -12,8 +14,8 @@ describe("Secrets unit tests", async () => {
     });
 
     it("Should not return secret 2", async () => {
-        const address = requireSecret("owner.underlying_address");
-        const secretName = "owner.underlying_address." + address + "." + address;
+        const address = requireSecret(`owner.${decodedChainId(chainId)}.address`);
+        const secretName = `owner.${chainId}.address.` + address + "." + address;
         const fn = () => {
             return requireSecret(secretName);
         };

@@ -1,3 +1,4 @@
+import { StuckTransaction } from "@flarelabs/simple-wallet";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { DatabaseType, SchemaUpdate } from "./orm";
 
@@ -20,11 +21,13 @@ export interface OrmConfigOptions {
 export interface BotConfigFile {
     defaultAgentSettingsPath?: string; // only for agent bot
     ormOptions?: OrmConfigOptions; // only for agent bot
+    walletOptions?: StuckTransaction, // optional wallet options, only for agent
     fAssetInfos: BotFAssetInfo[];
     // notifierFile: string;
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     rpcUrl: string;
+    alertsUrl?: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
     stateConnectorAddress?: string; // only for agent bot, challenger and timeKeeper, default is "StateConnector" in contracts json
     stateConnectorProofVerifierAddress?: string; // only for agent bot, challenger and timeKeeper, default is "SCProofVerifier" in contracts json

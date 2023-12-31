@@ -27,7 +27,6 @@ describe("InfoBot cli commands unit tests", async () => {
     let ownerAddress: string;
     let infoBot: InfoBot;
     let chain: MockChain;
-    let agent: Agent;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -61,9 +60,9 @@ describe("InfoBot cli commands unit tests", async () => {
             ],
             nativeChainInfo: testNativeChainInfo,
             addressUpdater: "",
+            alertsUrl: "",
         };
         infoBot = new InfoBot(context, config, config.fAssetInfos[0]);
-        agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
     });
 
     afterEach(function () {
@@ -71,6 +70,7 @@ describe("InfoBot cli commands unit tests", async () => {
     });
 
     it("Should get available agents and find best agent", async () => {
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         // create agents
         for (let i = 0; i <= 10; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
@@ -83,10 +83,11 @@ describe("InfoBot cli commands unit tests", async () => {
 
     it("Should not find best agent", async () => {
         const findBestAgent = await infoBot.findBestAgent(toBN(1));
-        expect(findBestAgent).to.not.be.undefined;
+        expect(findBestAgent).to.be.undefined;
     });
 
     it("Should get all agents", async () => {
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         // create agents
         for (let i = 0; i <= 10; i++) {
             await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i);
@@ -142,7 +143,7 @@ describe("InfoBot cli commands unit tests", async () => {
     });
 
     it("Should find pool by symbol", async () => {
-        const suffix = "POOL-TKN-TEST"
+        const suffix = "POOL-TKN-TEST";
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress, suffix);
         const symbol = await agent.collateralPoolToken.symbol();
         expect(await infoBot.findPoolBySymbol(symbol)).to.eq(agent.collateralPool.address);

@@ -5,8 +5,8 @@ import { ActorBaseKind, TimeKeeper } from "@flarelabs/fasset-bots-core";
 import { createActorAssetContext, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, sleep, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.native_address");
-const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.native_private_key");
+const TIMEKEEPER_ADDRESS: string = requireSecret("timeKeeper.address");
+const TIMEKEEPER_PRIVATE_KEY: string = requireSecret("timeKeeper.private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const INTERVAL: number = 120_000; // in ms
 

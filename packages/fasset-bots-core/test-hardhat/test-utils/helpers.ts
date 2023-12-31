@@ -1,7 +1,7 @@
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
-import { createAgentBotDefaultSettings } from "../../src/config/BotConfig";
+import { createAgentBotDefaultSettings, decodedChainId } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
@@ -10,7 +10,6 @@ import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
 import { BNish, toBN, toBNExp } from "../../src/utils/helpers";
 import { requireSecret } from "../../src/config/secrets";
-import { Notifier } from "../../src/utils/Notifier";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
@@ -24,15 +23,16 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { artifacts } from "../../src/utils/web3";
+import { MockNotifier } from "../../src/mock/MockNotifier";
 import { assert } from "chai";
 import BN from "bn.js";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
 
-const agentUnderlying: string = "UNDERLYING_ADDRESS";
-const redeemerUnderlying = "REDEEMER_UNDERLYING_ADDRESS";
-const minterUnderlying: string = "MINTER_UNDERLYING_ADDRESS";
+const agentUnderlyingAddress: string = "UNDERLYING_ADDRESS";
+const redeemerUnderlyingAddress: string = "REDEEMER_UNDERLYING_ADDRESS";
+const minterUnderlyingAddress: string = "MINTER_UNDERLYING_ADDRESS";
 const depositUSDC = toBNExp(1_000_000, 6);
 const depositNat = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(1_000_000, 6);
@@ -47,11 +47,12 @@ export async function createTestAgentBot(
     context: TestAssetBotContext,
     orm: ORM,
     ownerAddress: string,
-    notifier: Notifier = new Notifier(),
+    ownerUnderlyingAddress?: string,
+    notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ): Promise<AgentBot> {
-    const ownerUnderlyingAddress = requireSecret("owner.underlying_address");
-    await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
+    const underlyingAddress = ownerUnderlyingAddress ? ownerUnderlyingAddress : requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
+    await context.blockchainIndexer.chain.mint(underlyingAddress, depositUnderlying);
     const agentBotSettings: AgentBotDefaultSettings = options
         ? options
         : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
@@ -64,18 +65,18 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), new MockNotifier());
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state);
+    return new Liquidator(new ScopedRunner(), address, state, new MockNotifier());
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
     return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
-export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying): Promise<Agent> {
+export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlyingAddress): Promise<Agent> {
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
         context,
         DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
@@ -85,7 +86,7 @@ export async function createTestAgentB(context: TestAssetBotContext, ownerAddres
     return await Agent.create(context, ownerAddress, agentSettings);
 }
 
-export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlying, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
+export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlyingAddress, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
         context,
         DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
@@ -99,18 +100,18 @@ export function createTestAgentBotRunner(
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
     loopDelay: number,
-    notifier: Notifier = new Notifier()
+    notifier: MockNotifier = new MockNotifier()
 ): AgentBotRunner {
     return new AgentBotRunner(contexts, orm, loopDelay, notifier);
 }
 
-export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlying, amount: BN = depositUnderlying): Promise<Minter> {
+export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
     const minter = await Minter.createTest(context, minterAddress, underlyingAddress, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
 }
 
-export async function createTestRedeemer(context: IAssetAgentBotContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlying) {
+export async function createTestRedeemer(context: IAssetAgentBotContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlyingAddress) {
     const redeemer = await Redeemer.create(context, redeemerAddress, underlyingAddress);
     return redeemer;
 }
@@ -127,7 +128,7 @@ export async function createTestAgentAndMakeAvailable(context: TestAssetBotConte
 export async function createTestAgentBAndMakeAvailable(
     context: TestAssetBotContext,
     ownerAddress: string,
-    underlyingAddress: string = agentUnderlying
+    underlyingAddress: string = agentUnderlyingAddress
 ): Promise<Agent> {
     const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
     await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
@@ -141,10 +142,11 @@ export async function createTestAgentBotAndMakeAvailable(
     context: TestAssetBotContext,
     orm: ORM,
     ownerAddress: string,
-    notifier: Notifier = new Notifier(),
+    ownerUnderlyingAddress?: string,
+    notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ) {
-    const agentBot = await createTestAgentBot(context, orm, ownerAddress, notifier, options);
+    const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, ownerAddress);
     await agentBot.agent.depositVaultCollateral(depositUSDC);
     await agentBot.agent.buyCollateralPoolTokens(depositNat);

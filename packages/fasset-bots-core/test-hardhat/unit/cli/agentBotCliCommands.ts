@@ -10,7 +10,6 @@ import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { AgentEntity } from "../../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core";
-import { Notifier } from "../../../src/utils/Notifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
@@ -21,6 +20,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 use(chaiAsPromised);
 use(spies);
 
@@ -86,7 +86,7 @@ describe("AgentBot cli commands unit tests", async () => {
             ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new Notifier(),
+            notifier: new MockNotifier(),
             addressUpdater: "",
         };
         botCliCommands.agentSettingsPath = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
@@ -329,7 +329,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once;
+        expect(spyConsole).to.be.called.twice;
     });
 
     it("Should run command 'performUnderlyingWithdrawal'", async () => {
@@ -375,7 +375,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, "txHash");
-        expect(spyConsole).to.be.called.once;
+        expect(spyConsole).to.be.called.twice;
     });
 
     it("Should run command 'listActiveAgents'", async () => {
@@ -483,13 +483,13 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelWithdrawFromVaultAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once;
+        expect(spyConsole).to.be.called.twice;
     });
 
     it("Should run command 'cancelCollateralPoolTokensAnnouncement'", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelCollateralPoolTokensAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once;
+        expect(spyConsole).to.be.called.twice;
     });
 });

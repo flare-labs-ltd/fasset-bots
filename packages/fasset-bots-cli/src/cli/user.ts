@@ -125,7 +125,7 @@ program
     .argument("<amountLots>")
     .option("-u, --updateBlock")
     .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean }) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
@@ -143,7 +143,7 @@ program
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>")
     .action(async (requestId: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
         await minterBot.proveAndExecuteSavedMinting(requestId);
@@ -153,7 +153,7 @@ program
     .command("mintStatus")
     .description("List all open mintings")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, false);
         await minterBot.listMintings();
@@ -164,7 +164,7 @@ program
     .description("Triggers redemption")
     .argument("<amountLots>")
     .action(async (amountLots: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.redeem(amountLots);
@@ -175,7 +175,7 @@ program
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>")
     .action(async (requestId: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.savedRedemptionDefault(requestId);
@@ -185,7 +185,7 @@ program
     .command("redemptionStatus")
     .description("List all open redemptions")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.listRedemptions();
@@ -204,10 +204,10 @@ program
     .command("poolHoldings")
     .description("Print the amount of tokens the user owns per pool")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await InfoBot.create(options.config, options.fasset);
-        const address = requireSecret("user.native_address");
+        const address = requireSecret("user.native.address");
         await bot.printPoolTokenBalance(address);
     });
 
@@ -217,7 +217,7 @@ program
     .argument("<poolAddressOrTokenSymbol>")
     .argument("<collateralAmount>")
     .action(async (poolAddressOrTokenSymbol: string, collateralAmount: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
@@ -233,7 +233,7 @@ program
     .argument("<poolAddressOrTokenSymbol>")
     .argument("<amount>", 'the amount of tokens to burn, can be a number or "all"')
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
+        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);

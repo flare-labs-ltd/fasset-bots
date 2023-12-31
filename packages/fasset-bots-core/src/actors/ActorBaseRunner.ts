@@ -67,9 +67,9 @@ export class ActorBaseRunner {
         let actor: ActorBase;
         if (kind === ActorBaseKind.CHALLENGER) {
             const blockHeight = await assetContext.blockchainIndexer!.getBlockHeight();
-            actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight);
+            actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight, config.notifier);
         } else if (kind === ActorBaseKind.LIQUIDATOR) {
-            actor = new Liquidator(new ScopedRunner(), address, trackedState);
+            actor = new Liquidator(new ScopedRunner(), address, trackedState, config.notifier);
         } else {
             actor = new SystemKeeper(new ScopedRunner(), address, trackedState);
         }

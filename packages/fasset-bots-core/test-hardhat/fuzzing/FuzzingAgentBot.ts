@@ -50,7 +50,7 @@ export class FuzzingAgentBot {
                     "self-mint invalid agent status",
                     "invalid self-mint reference",
                     "self-mint payment too old",
-                ])
+                ], "AGENT", this.agentBot.agent.vaultAddress)
             );
         // 'self-mint payment too small' can happen after lot size change
         // 'invalid self-mint reference' can happen if agent is destroyed and re-created
@@ -70,13 +70,13 @@ export class FuzzingAgentBot {
         // // TODO: buy fassets
         const amountUBA = randomBN(ownersAssets);
         if (this.runner.avoidErrors && amountUBA.isZero()) return;
-        await this.agentBot.agent.selfClose(amountUBA).catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"]));
+        await this.agentBot.agent.selfClose(amountUBA).catch((e) => scope.exitOnExpectedError(e, ["f-asset balance too low", "redeem 0 lots"], "AGENT", this.agentBot.agent.vaultAddress));
         this.runner.comment(`self closed successfully`, `${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)}`);
     }
 
     async convertDustToTicket(scope: EventScope): Promise<void> {
         const agent = this.agentBot.agent; // save in case agent is destroyed and re-created
-        await this.agentBot.context.assetManager.convertDustToTicket(agent.vaultAddress).catch((e) => scope.exitOnExpectedError(e, []));
+        await this.agentBot.context.assetManager.convertDustToTicket(agent.vaultAddress).catch((e) => scope.exitOnExpectedError(e, [], "AGENT", this.agentBot.agent.vaultAddress));
         this.runner.comment(`converted dust to tickets successfully`, `${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)}`);
     }
 

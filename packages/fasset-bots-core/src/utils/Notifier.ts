@@ -1,4 +1,8 @@
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import chalk from "chalk";
+import { DEFAULT_TIMEOUT } from "./helpers";
+import { logger } from "./logger";
+import { formatArgs } from "./formatting";
 // agent status and settings
 const CCB_TITLE = "CCB";
 const LIQUIDATION_STARTED = "LIQUIDATION STARTED";
@@ -66,7 +70,57 @@ const REDEEM_POOL_TOKEN = "POOL TOKENS REDEMPTION";
 // other
 const DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK";
 
+// challenger
+const ILLEGAL_TRANSACTION_CHALLENGE = "ILLEGAL TRANSACTION CHALLENGE";
+const DOUBLE_PAYMENT_CHALLENGE = "DOUBLE PAYMENT CHALLENGE";
+const FREE_BALANCE_NEGATIVE_CHALLENGE = "FREE BALANCE NEGATIVE CHALLENGE";
+
+// liquidator
+const AGENT_LIQUIDATED = "AGENT LIQUIDATED";
+
+export enum BotType {
+    AGENT = "agent",
+    LIQUIDATOR = "liquidator",
+    CHALLENGER = "challenger",
+}
+
+export enum BotLevel {
+    INFO = "info",
+    DANGER = "danger",
+    CRITICAL = "critical",
+}
+
+interface PostAlert {
+    bot_type: "string"; // agent, liquidator, challenger
+    address: "string";
+    level: "string"; // info, danger, critical
+    title: "string";
+    description: "string";
+}
+
 export class Notifier {
+    client: AxiosInstance | undefined;
+
+    constructor(public alertsUrl: string | undefined) {
+        if (!alertsUrl) {
+            this.client = undefined;
+            return;
+        }
+        const createAxiosConfig: AxiosRequestConfig = {
+            baseURL: alertsUrl,
+            timeout: DEFAULT_TIMEOUT,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            validateStatus: function (status: number) {
+                /* istanbul ignore next */
+                return (status >= 200 && status < 300) || status == 500;
+            },
+        };
+        // set client
+        this.client = axios.create(createAxiosConfig);
+    }
+
     send(title: string, message?: string) {
         if (message) {
             console.log(chalk.cyan(title + ":") + " " + message);
@@ -75,45 +129,127 @@ export class Notifier {
         }
     }
 
-    sendCCBAlert(agentVault: string, timestamp: string) {
+    async sendToServer(type: BotType, address: string, level: BotLevel, title: string, message?: string) {
+        if (!this.client) {
+            return;
+        }
+        const request = {
+            bot_type: type,
+            address: address,
+            level: level,
+            title: title,
+            description: message,
+        };
+        await this.client.post<PostAlert>(`/api/0/bot_alert`, request).catch((e: AxiosError) => {
+            logger.error(`Notifier error: cannot send notification ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+            throw new Error(`Notifier error: cannot send request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+        });
+    }
+
+    async sendCCBAlert(agentVault: string, timestamp: string) {
         this.send(CCB_TITLE, `Agent ${agentVault} is in collateral call band since ${timestamp}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.DANGER, CCB_TITLE, `Agent ${agentVault} is in collateral call band since ${timestamp}.`);
     }
 
-    sendLiquidationStartAlert(agentVault: string, timestamp: string) {
+    async sendLiquidationStartAlert(agentVault: string, timestamp: string) {
         this.send(LIQUIDATION_STARTED, `Liquidation has started for agent ${agentVault} at ${timestamp}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            LIQUIDATION_STARTED,
+            `Liquidation has started for agent ${agentVault} at ${timestamp}.`
+        );
     }
 
-    sendFullLiquidationAlert(agentVault: string, payment1?: string, payment2?: string) {
+    async sendFullLiquidationAlert(agentVault: string, payment1?: string, payment2?: string) {
         if (payment1 && payment2) {
             this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to duplicate payment: ${payment1} and ${payment2}.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.CRITICAL,
+                FULL_LIQUIDATION_TITLE,
+                `Agent ${agentVault} is in full liquidation due to duplicate payment: ${payment1} and ${payment2}.`
+            );
         } else if (payment1) {
             this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to illegal payment: ${payment1}.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.CRITICAL,
+                FULL_LIQUIDATION_TITLE,
+                `Agent ${agentVault} is in full liquidation due to illegal payment: ${payment1}.`
+            );
         } else {
             this.send(FULL_LIQUIDATION_TITLE, `Agent ${agentVault} is in full liquidation due to negative underlying free balance.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.CRITICAL,
+                FULL_LIQUIDATION_TITLE,
+                `Agent ${agentVault} is in full liquidation due to negative underlying free balance.`
+            );
         }
     }
 
-    sendLiquidationWasPerformed(agentVault: string, value: string) {
+    async sendLiquidationWasPerformed(agentVault: string, value: string) {
         this.send(LIQUIDATION_WAS_PERFORMED, `Liquidation was performed for agent ${agentVault} with value of ${value}`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            LIQUIDATION_WAS_PERFORMED,
+            `Liquidation was performed for agent ${agentVault} with value of ${value}`
+        );
     }
 
-    sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean) {
+    async sendMintingCornerCase(agentVault: string, requestId: string, indexerExpired: boolean, paymentProof: boolean) {
         if (indexerExpired) {
             this.send(MINTING_CORNER_CASE, `Minting ${requestId} expired in indexer. Unstick minting was executed.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.INFO,
+                MINTING_CORNER_CASE,
+                `Minting ${requestId} expired in indexer. Unstick minting was executed.`
+            );
         } else if (paymentProof) {
             this.send(MINTING_CORNER_CASE, `Agent requested payment proof for minting ${requestId}.`);
+            await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, MINTING_CORNER_CASE, `Agent requested payment proof for minting ${requestId}.`);
         } else {
             this.send(MINTING_CORNER_CASE, `Agent requested non payment proof for minting ${requestId}.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.INFO,
+                MINTING_CORNER_CASE,
+                `Agent requested non payment proof for minting ${requestId}.`
+            );
         }
     }
 
-    sendRedemptionCornerCase(requestId: string, agentVault: string) {
+    async sendRedemptionCornerCase(agentVault: string, requestId: string) {
         this.send(REDEMPTION_CORNER_CASE, `Redemption ${requestId} expired in indexer. Redemption will finish without payment for agent ${agentVault}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            REDEMPTION_CORNER_CASE,
+            `Redemption ${requestId} expired in indexer. Redemption will finish without payment for agent ${agentVault}.`
+        );
     }
 
-    sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string) {
+    async sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string) {
         if (failureReason) {
             this.send(
+                REDEMPTION_FAILED_BLOCKED,
+                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${agentVault}.`
+            );
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.DANGER,
                 REDEMPTION_FAILED_BLOCKED,
                 `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${agentVault}.`
             );
@@ -122,28 +258,70 @@ export class Notifier {
                 REDEMPTION_FAILED_BLOCKED,
                 `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${agentVault}.`
             );
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.DANGER,
+                REDEMPTION_FAILED_BLOCKED,
+                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${agentVault}.`
+            );
         }
     }
 
-    sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string) {
+    async sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string) {
         this.send(REDEMPTION_DEFAULTED, `Redemption ${requestId} for redeemer ${redeemer} was defaulted for agent ${agentVault}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            REDEMPTION_DEFAULTED,
+            `Redemption ${requestId} for redeemer ${redeemer} was defaulted for agent ${agentVault}.`
+        );
     }
 
-    sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string) {
+    async sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string) {
         this.send(REDEMPTION_PERFORMED, `Redemption ${requestId} for redeemer ${redeemer} was performed for agent ${agentVault}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            REDEMPTION_PERFORMED,
+            `Redemption ${requestId} for redeemer ${redeemer} was performed for agent ${agentVault}.`
+        );
     }
 
-    sendCollateralTopUpAlert(agentVault: string, value: string, pool: boolean = false) {
+    async sendCollateralTopUpAlert(agentVault: string, value: string, pool: boolean = false) {
         if (pool) {
             this.send(POOL_COLLATERAL_TOP_UP, `Agent ${agentVault} POOL was automatically topped up with collateral ${value} due to price changes.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.INFO,
+                POOL_COLLATERAL_TOP_UP,
+                `Agent ${agentVault} POOL was automatically topped up with collateral ${value} due to price changes.`
+            );
         } else {
             this.send(AGENT_COLLATERAL_TOP_UP, `Agent ${agentVault} was automatically topped up with collateral ${value} due to price changes.`);
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.INFO,
+                AGENT_COLLATERAL_TOP_UP,
+                `Agent ${agentVault} was automatically topped up with collateral ${value} due to price changes.`
+            );
         }
     }
 
-    sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool: boolean = false) {
+    async sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool: boolean = false) {
         if (pool) {
             this.send(
+                POOL_COLLATERAL_TOP_UP_FAILED,
+                `Agent ${agentVault} POOL could not be automatically topped up with collateral ${value} due to price changes.`
+            );
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.DANGER,
                 POOL_COLLATERAL_TOP_UP_FAILED,
                 `Agent ${agentVault} POOL could not be automatically topped up with collateral ${value} due to price changes.`
             );
@@ -152,31 +330,73 @@ export class Notifier {
                 AGENT_COLLATERAL_TOP_UP_FAILED,
                 `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`
             );
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.DANGER,
+                AGENT_COLLATERAL_TOP_UP_FAILED,
+                `Agent ${agentVault} could not be automatically topped up with collateral ${value} due to price changes.`
+            );
         }
     }
 
-    sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string) {
+    async sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string) {
         this.send(
+            LOW_AGENT_FREE_UNDERLYING_BALANCE,
+            `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
+        );
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.DANGER,
             LOW_AGENT_FREE_UNDERLYING_BALANCE,
             `Agent ${agentVault} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
         );
     }
 
-    sendLowUnderlyingAgentBalance(agentVault: string, amount: string) {
+    async sendLowUnderlyingAgentBalance(agentVault: string, amount: string) {
         this.send(LOW_AGENT_FREE_UNDERLYING_BALANCE, `Agent ${agentVault} was automatically topped up with underlying ${amount}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            LOW_AGENT_FREE_UNDERLYING_BALANCE,
+            `Agent ${agentVault} was automatically topped up with underlying ${amount}.`
+        );
     }
 
-    sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: string) {
+    async sendLowBalanceOnUnderlyingOwnersAddress(agentVault: string, ownerUnderlyingAddress: string, ownerUnderlyingBalance: string) {
         this.send(LOW_OWNERS_UNDERLYING_BALANCE, `Owner's underlying address ${ownerUnderlyingAddress} has low underlying ${ownerUnderlyingBalance}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            LOW_OWNERS_UNDERLYING_BALANCE,
+            `Owner's underlying address ${ownerUnderlyingAddress} has low underlying ${ownerUnderlyingBalance}.`
+        );
     }
 
-    sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: string, tokenSymbol: string) {
+    async sendLowBalanceOnOwnersAddress(agentVault: string, ownerAddress: string, balance: string, tokenSymbol: string) {
         this.send(LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance: ${balance} ${tokenSymbol}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            LOW_OWNERS_NATIVE_BALANCE,
+            `Owner ${ownerAddress} has low balance: ${balance} ${tokenSymbol}.`
+        );
     }
 
-    sendNoProofObtained(agentVault: string, requestId: string | null, roundId: number, requestData: string, redemption?: boolean) {
+    async sendNoProofObtained(agentVault: string, requestId: string | null, roundId: number, requestData: string, redemption?: boolean) {
         if (!requestId) {
             this.send(
+                DAILY_TASK_NO_PROOF_OBTAINED,
+                `Agent ${agentVault} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
+            );
+            await this.sendToServer(
+                BotType.AGENT,
+                agentVault,
+                BotLevel.DANGER,
                 DAILY_TASK_NO_PROOF_OBTAINED,
                 `Agent ${agentVault} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
             );
@@ -186,8 +406,22 @@ export class Notifier {
                     REDEMPTION_NO_PROOF_OBTAINED,
                     `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
                 );
+                await this.sendToServer(
+                    BotType.AGENT,
+                    agentVault,
+                    BotLevel.DANGER,
+                    REDEMPTION_NO_PROOF_OBTAINED,
+                    `Agent ${agentVault} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
+                );
             } else {
                 this.send(
+                    MINTING_NO_PROOF_OBTAINED,
+                    `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+                );
+                await this.sendToServer(
+                    BotType.AGENT,
+                    agentVault,
+                    BotLevel.DANGER,
                     MINTING_NO_PROOF_OBTAINED,
                     `Agent ${agentVault} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
                 );
@@ -195,143 +429,336 @@ export class Notifier {
         }
     }
 
-    sendAgentDestroyed(agentVault: string) {
+    async sendAgentDestroyed(agentVault: string) {
         this.send(AGENT_DESTROYED, `Agent ${agentVault} was destroyed.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, AGENT_DESTROYED, `Agent ${agentVault} was destroyed.`);
     }
 
-    sendAgentCreated(agentVault: string) {
+    async sendAgentCreated(agentVault: string) {
         this.send(AGENT_CREATED, `Agent ${agentVault} was created.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, AGENT_CREATED, `Agent ${agentVault} was created.`);
     }
 
-    sendWithdrawVaultCollateral(agentVault: string, amount: string) {
+    async sendWithdrawVaultCollateral(agentVault: string, amount: string) {
         this.send(WITHDRAW_VAULT_COLLATERAL, `Agent ${agentVault} withdrew ${amount} of vault collateral.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            WITHDRAW_VAULT_COLLATERAL,
+            `Agent ${agentVault} withdrew ${amount} of vault collateral.`
+        );
     }
 
-    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
+    async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
         this.send(WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT,
+            `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`
+        );
     }
 
-    sendCancelVaultCollateralAnnouncement(agentVault: string) {
+    async sendCancelVaultCollateralAnnouncement(agentVault: string) {
         this.send(CANCEL_WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent's ${agentVault} vault collateral withdrawal announcement was successfully cancelled.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            CANCEL_WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT,
+            `Agent's ${agentVault} vault collateral withdrawal announcement was successfully cancelled.`
+        );
     }
 
-    sendRedeemCollateralPoolTokens(agentVault: string, amount: string) {
+    async sendRedeemCollateralPoolTokens(agentVault: string, amount: string) {
         this.send(REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed of ${amount} pool tokens.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed of ${amount} pool tokens.`);
     }
 
-    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string) {
+    async sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string) {
         this.send(CANCEL_POOL_TOKEN_ANNOUNCEMENT, `Agent's ${agentVault} pool token redemption announcement was successfully cancelled.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            CANCEL_POOL_TOKEN_ANNOUNCEMENT,
+            `Agent's ${agentVault} pool token redemption announcement was successfully cancelled.`
+        );
     }
 
-    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
         this.send(REDEEM_POOL_TOKEN_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            REDEEM_POOL_TOKEN_ANNOUNCEMENT,
+            `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`
+        );
     }
 
-    sendAgentSettingsUpdate(agentVault: string, settingName: string) {
+    async sendAgentSettingsUpdate(agentVault: string, settingName: string) {
         this.send(AGENT_SETTING_UPDATE, `Agent ${agentVault} setting ${settingName} was updated.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, AGENT_SETTING_UPDATE, `Agent ${agentVault} setting ${settingName} was updated.`);
     }
 
-    sendAgentAnnouncedExitAvailable(agentVault: string) {
+    async sendAgentAnnouncedExitAvailable(agentVault: string) {
         this.send(AGENT_EXIT_AVAILABLE_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED exit available list.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            AGENT_EXIT_AVAILABLE_ANNOUNCEMENT,
+            `Agent ${agentVault} ANNOUNCED exit available list.`
+        );
     }
 
-    sendAgentExitedAvailable(agentVault: string) {
+    async sendAgentExitedAvailable(agentVault: string) {
         this.send(AGENT_EXIT_AVAILABLE, `Agent ${agentVault} exited available list.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, AGENT_EXIT_AVAILABLE, `Agent ${agentVault} exited available list.`);
     }
 
-    sendAgentEnteredAvailable(agentVault: string) {
+    async sendAgentEnteredAvailable(agentVault: string) {
         this.send(AGENT_ENTER_AVAILABLE, `Agent ${agentVault} entered available list.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, AGENT_ENTER_AVAILABLE, `Agent ${agentVault} entered available list.`);
     }
 
-    sendAgentAnnounceDestroy(agentVault: string) {
+    async sendAgentAnnounceDestroy(agentVault: string) {
         this.send(AGENT_ANNOUNCE_DESTROY, `Agent ${agentVault} successfully announced its DESTRUCTION.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            AGENT_ANNOUNCE_DESTROY,
+            `Agent ${agentVault} successfully announced its DESTRUCTION.`
+        );
     }
 
-    sendConfirmWithdrawUnderlying(agentVault: string) {
+    async sendConfirmWithdrawUnderlying(agentVault: string) {
         this.send(CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${agentVault} underlying withdrawal was successfully confirmed.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            CONFIRM_WITHDRAW_UNDERLYING,
+            `Agent's ${agentVault} underlying withdrawal was successfully confirmed.`
+        );
     }
 
-    sendCancelWithdrawUnderlying(agentVault: string) {
+    async sendCancelWithdrawUnderlying(agentVault: string) {
         this.send(CANCEL_WITHDRAW_UNDERLYING, `Agent's ${agentVault} underlying withdrawal announcement was successfully cancelled.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            CANCEL_WITHDRAW_UNDERLYING,
+            `Agent's ${agentVault} underlying withdrawal announcement was successfully cancelled.`
+        );
     }
 
-    sendCollateralPoolTokensRedemption(agentVault: string) {
+    async sendCollateralPoolTokensRedemption(agentVault: string) {
         this.send(REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed pool tokens.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed pool tokens.`);
     }
 
-    sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
+    async sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
         this.send(BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
     }
 
-    sendVaultCollateralDeposit(agentVault: string, amount: string) {
+    async sendVaultCollateralDeposit(agentVault: string, amount: string) {
         this.send(VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} to agent ${agentVault} was successful.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            VAULT_COLLATERAL_DEPOSIT,
+            `Deposit of ${amount} to agent ${agentVault} was successful.`
+        );
     }
 
-    sendWithdrawPoolFees(agentVault: string, amount: string) {
+    async sendWithdrawPoolFees(agentVault: string, amount: string) {
         this.send(WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`);
     }
 
-    sendBalancePoolFees(agentVault: string, amount: string) {
+    async sendBalancePoolFees(agentVault: string, amount: string) {
         this.send(BALANCE_POOL_FEES, `Agent ${agentVault} has following pool fees balance ${amount}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, BALANCE_POOL_FEES, `Agent ${agentVault} has following pool fees balance ${amount}.`);
     }
 
-    sendSelfClose(agentVault: string) {
+    async sendSelfClose(agentVault: string) {
         this.send(SELF_CLOSE, `Agent ${agentVault} self closed successfully.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, SELF_CLOSE, `Agent ${agentVault} self closed successfully.`);
     }
 
-    sendActiveWithdrawal(agentVault: string) {
+    async sendActiveWithdrawal(agentVault: string) {
         this.send(ACTIVE_WITHDRAWAL, `Agent ${agentVault} already has an active underlying withdrawal announcement.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            ACTIVE_WITHDRAWAL,
+            `Agent ${agentVault} already has an active underlying withdrawal announcement.`
+        );
     }
 
-    sendNoActiveWithdrawal(agentVault: string) {
+    async sendNoActiveWithdrawal(agentVault: string) {
         this.send(NO_ACTIVE_WITHDRAWAL, `Agent ${agentVault} has NO active underlying withdrawal announcement.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            NO_ACTIVE_WITHDRAWAL,
+            `Agent ${agentVault} has NO active underlying withdrawal announcement.`
+        );
     }
 
-    sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
+    async sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string) {
         this.send(ANNOUNCE_WITHDRAW_UNDERLYING, `Agent ${agentVault} announced underlying withdrawal with payment reference ${paymentReference}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            ANNOUNCE_WITHDRAW_UNDERLYING,
+            `Agent ${agentVault} announced underlying withdrawal with payment reference ${paymentReference}.`
+        );
     }
 
-    sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
+    async sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string) {
         this.send(WITHDRAW_UNDERLYING, `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            WITHDRAW_UNDERLYING,
+            `Agent ${agentVault} withdrew underlying with transaction ${txHash}.`
+        );
     }
 
-    sendMintingExecuted(agentVault: string, requestId: string) {
+    async sendMintingExecuted(agentVault: string, requestId: string) {
         this.send(MINTING_EXECUTED, `Minting ${requestId} executed for ${agentVault}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, MINTING_EXECUTED, `Minting ${requestId} executed for ${agentVault}.`);
     }
 
-    sendMintingDeleted(agentVault: string, requestId: string) {
+    async sendMintingDeleted(agentVault: string, requestId: string) {
         this.send(MINTING_DELETED, `Minting ${requestId} deleted for ${agentVault}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, MINTING_DELETED, `Minting ${requestId} deleted for ${agentVault}.`);
     }
 
-    sendMintingStared(agentVault: string, requestId: string) {
+    async sendMintingStared(agentVault: string, requestId: string) {
         this.send(MINTING_STARTED, `Minting ${requestId} started for ${agentVault}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, MINTING_STARTED, `Minting ${requestId} started for ${agentVault}.`);
     }
 
-    sendRedemptionStarted(agentVault: string, requestId: string) {
+    async sendRedemptionStarted(agentVault: string, requestId: string) {
         this.send(REDEMPTION_STARTED, `Redemption ${requestId} started for ${agentVault}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, REDEMPTION_STARTED, `Redemption ${requestId} started for ${agentVault}.`);
     }
 
-    sendRedemptionPaid(agentVault: string, requestId: string) {
+    async sendRedemptionPaid(agentVault: string, requestId: string) {
         this.send(REDEMPTION_PAID, `Redemption ${requestId} was paid for ${agentVault}.`);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, REDEMPTION_PAID, `Redemption ${requestId} was paid for ${agentVault}.`);
     }
 
-    sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
+    async sendRedemptionRequestPaymentProof(agentVault: string, requestId: string) {
         this.send(REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${agentVault}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            REDEMPTION_PAYMENT_PROOF,
+            `Payment proof for redemption ${requestId} was requested for ${agentVault}.`
+        );
     }
 
-    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
+    async sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
         this.send(POOL_DELEGATE, `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${recipient} with ${bips}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            POOL_DELEGATE,
+            `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${recipient} with ${bips}.`
+        );
     }
 
-    sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
+    async sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
         this.send(POOL_UNDELEGATE, `Agent ${agentVault} undelegated all pool collateral ${poolCollateral}.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            POOL_UNDELEGATE,
+            `Agent ${agentVault} undelegated all pool collateral ${poolCollateral}.`
+        );
     }
 
-    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+    async sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
         this.send(AGENT_SETTING_UPDATE_FAILED, `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore. Try announcing setting update again.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            AGENT_SETTING_UPDATE_FAILED,
+            `Agent ${agentVault} could not update setting ${setting}, as it is not valid anymore.`
+        );
     }
 
-    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string) {
+    async sendIllegalTransactionChallenge(challenger: string, agentVault: string, transactionHash: string) {
+        this.send(
+            ILLEGAL_TRANSACTION_CHALLENGE,
+            `Challenger ${challenger} successfully challenged agent ${agentVault} for illegal transaction ${transactionHash}.`
+        );
+        await this.sendToServer(
+            BotType.CHALLENGER,
+            challenger,
+            BotLevel.INFO,
+            ILLEGAL_TRANSACTION_CHALLENGE,
+            `Challenger ${challenger} successfully challenged agent ${agentVault} for illegal transaction ${transactionHash}.`
+        );
+    }
+
+    async sendDoublePaymentChallenge(challenger: string, agentVault: string, transactionHash1: string, transactionHash2: string) {
+        this.send(
+            DOUBLE_PAYMENT_CHALLENGE,
+            `Challenger ${challenger} successfully challenged agent ${agentVault} for double payments for ${transactionHash1} and ${transactionHash2}.`
+        );
+        await this.sendToServer(
+            BotType.CHALLENGER,
+            challenger,
+            BotLevel.INFO,
+            DOUBLE_PAYMENT_CHALLENGE,
+            `Challenger ${challenger} successfully challenged agent ${agentVault} for double payments for ${transactionHash1} and ${transactionHash2}.`
+        );
+    }
+
+    async sendFreeBalanceNegative(challenger: string, agentVault: string) {
+        this.send(FREE_BALANCE_NEGATIVE_CHALLENGE, `Challenger ${challenger} successfully challenged agent ${agentVault} for free negative balance.`);
+        await this.sendToServer(
+            BotType.CHALLENGER,
+            challenger,
+            BotLevel.INFO,
+            FREE_BALANCE_NEGATIVE_CHALLENGE,
+            `Challenger ${challenger} successfully challenged agent ${agentVault} for free negative balance.`
+        );
+    }
+
+    async sendAgentLiquidated(liquidator: string, agentVault: string) {
+        this.send(AGENT_LIQUIDATED, `Liquidator ${liquidator} liquidated agent ${agentVault}.`);
+        await this.sendToServer(BotType.LIQUIDATOR, liquidator, BotLevel.INFO, AGENT_LIQUIDATED, `Liquidator ${liquidator} liquidated agent ${agentVault}.`);
+    }
+
+    async sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string) {
         this.send(WITHDRAWAL_FAILED, `Agent ${agentVault} could not withdrew ${type} collateral of ${amount}. Cancel ${type} collateral withdrawal announcement and try again.`);
+        await this.sendToServer(
+            BotType.AGENT,
+            agentVault,
+            BotLevel.INFO,
+            WITHDRAWAL_FAILED,
+            `Agent ${agentVault} could not withdrew ${type} collateral of ${amount}.`
+        );
     }
 }

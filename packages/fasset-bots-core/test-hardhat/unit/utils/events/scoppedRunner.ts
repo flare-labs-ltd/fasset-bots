@@ -9,7 +9,7 @@ describe("Scoped runner unit tests", async () => {
         try {
             throw Error(errorMessage);
         } catch (e) {
-            scope.exitOnExpectedError(e, []);
+            scope.exitOnExpectedError(e, [], "AGENT", "");
         }
     }
 

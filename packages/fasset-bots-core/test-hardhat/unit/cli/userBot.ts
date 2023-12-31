@@ -8,7 +8,6 @@ import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { Notifier } from "../../../src/utils/Notifier";
 import { checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -26,6 +25,7 @@ use(chaiAsPromised);
 use(spies);
 import fs from "fs";
 import path from "path";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -105,7 +105,7 @@ describe("UserBot cli commands unit tests", async () => {
             fAssets: [userBot.fassetConfig],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new Notifier(),
+            notifier: new MockNotifier(),
             addressUpdater: "",
         };
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
@@ -159,7 +159,7 @@ describe("UserBot cli commands unit tests", async () => {
     });
 
     it("Should mint and redeem and wait for redemption to be resolved", async () => {
-        const deposit = toBNExp(1_000_000, 18);
+        const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         await userBot.mint(agentBot.agent.vaultAddress, 2);

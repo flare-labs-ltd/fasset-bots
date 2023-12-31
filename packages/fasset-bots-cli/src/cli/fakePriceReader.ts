@@ -9,7 +9,7 @@ import { artifacts, authenticatedHttpProvider, initWeb3, requireEnv, requireNotN
 
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
-const deployerAddress = requireSecret("deployer.native_address");
+const deployerAddress = requireSecret("deployer.address");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 const program = new Command();
@@ -76,7 +76,7 @@ async function initEnvironment(fakePriceReader: boolean = true) {
     const configFile: string = FASSET_BOT_CONFIG;
     const runConfig = loadConfigFile(configFile);
     const contracts = loadContracts(requireNotNull(runConfig.contractsJsonFile));
-    const nativePrivateKey = requireSecret("deployer.native_private_key");
+    const nativePrivateKey = requireSecret("deployer.private_key");
     const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");

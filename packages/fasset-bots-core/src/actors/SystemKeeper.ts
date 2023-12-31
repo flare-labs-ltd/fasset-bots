@@ -1,5 +1,5 @@
 import { MintingExecuted } from "../../typechain-truffle/AssetManager";
-import { ActorBase } from "../fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -57,7 +57,7 @@ export class SystemKeeper extends ActorBase {
     async handleMintingExecuted(args: EventArgs<MintingExecuted>): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(args.agentVault);
         this.runner.startThread(async (scope) => {
-            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
+            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.SYSTEM_KEEPER, this.address));
         });
     }
 

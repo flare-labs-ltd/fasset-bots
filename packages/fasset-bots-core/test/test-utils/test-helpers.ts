@@ -11,22 +11,22 @@ import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIn
 import { SourceId } from "../../src/underlying-chain/SourceId";
 import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
-import { Notifier } from "../../src/utils/Notifier";
 import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
+import { MockNotifier } from "../../src/mock/MockNotifier";
 import BN from "bn.js";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
-const ownerAccountPrivateKey = requireSecret("owner.native_private_key");
-const account1PrivateKey = requireSecret("challenger.native_private_key");
-const userPrivateKey = requireSecret("user.native_private_key");
-const account3PrivateKey = requireSecret("timeKeeper.native_private_key");
-const account4PrivateKey = requireSecret("systemKeeper.native_private_key");
+const ownerAccountPrivateKey = requireSecret("owner.native.private_key");
+const account1PrivateKey = requireSecret("challenger.private_key");
+const userPrivateKey = requireSecret("user.native.private_key");
+const account3PrivateKey = requireSecret("timeKeeper.private_key");
+const account4PrivateKey = requireSecret("systemKeeper.private_key");
 
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 6);
 
@@ -112,7 +112,7 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
 
 export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, agentAddress: string, ownerAddress: string) {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentAddress, active: true } as FilterQuery<AgentEntity>);
-    const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
+    const agentBot = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
     const agentInfoForAnnounce = await context.assetManager.getAgentInfo(agentAddress);
     const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
     const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);
@@ -144,5 +144,5 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
 
 export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVaultAddress, active: true } as FilterQuery<AgentEntity>);
-    return await AgentBot.fromEntity(context, agentEnt, new Notifier());
+    return await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
 }

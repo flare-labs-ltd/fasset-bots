@@ -1,7 +1,8 @@
-import { ActorBase } from "../fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
+import { Notifier } from "../utils/Notifier";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
@@ -15,7 +16,8 @@ export class Liquidator extends ActorBase {
     constructor(
         public runner: ScopedRunner,
         public address: string,
-        public state: TrackedState
+        public state: TrackedState,
+        public notifier: Notifier | undefined
     ) {
         super(runner, address, state);
         if (state.context.liquidationStrategy === undefined) {
@@ -68,7 +70,7 @@ export class Liquidator extends ActorBase {
     async handleMintingExecuted(agentVault: string): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
-            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, []));
+            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
         });
     }
 
@@ -78,7 +80,7 @@ export class Liquidator extends ActorBase {
     async handleFullLiquidationStarted(agentVault: string): Promise<void> {
         const agent = await this.state.getAgentTriggerAdd(agentVault);
         this.runner.startThread(async (scope) => {
-            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, []));
+            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
         });
     }
 
@@ -113,6 +115,7 @@ export class Liquidator extends ActorBase {
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
         await this.liquidationStrategy.liquidate(agent);
         logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
+        await this.notifier?.sendAgentLiquidated(this.address, agent.vaultAddress);
         console.log(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
     }
 }

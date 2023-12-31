@@ -591,7 +591,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should fail to send notification - faulty notifier", async () => {
-        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, new FaultyNotifier());
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, new FaultyNotifier());
         const spyConsole = spy.on(console, "error");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);

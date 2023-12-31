@@ -12,6 +12,125 @@ import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 use(chaiAsPromised);
 
+const UTXOResponseData = {
+    blockhash: "000000000000477220a2eb2d74cf9840cf6b9f720cd706cca4b9c272aaa455df",
+    blocktime: 1688214011,
+    confirmations: 5,
+    fee: 0.00000481,
+    hash: "72072e1315e525b23060dfac7947692083755c8dd4b36b552a6c0cbe8442c0db",
+    hex: "02000000000102b27f3ad90280a31dea366efc8c97ed1e94d4ba36ad1721c7b9c0817971a8fbb80100000017160014bb6f51d0e9ca4971c3f996c389586145f083533dfefffffff89901d026f3eb73ae65424417a92dd840ab0c3c8870e09f2f2270c974978e2c030000006a473044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9012103eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0bfeffffff0740a301000000000017a914b5dcdebc745f68e93e344cad411383389b15f42b870d9f0100000000001976a914573a49bc303b276996af9247dabbda0a80836ada88accb9d0100000000001976a91457905ca9e3602de7cae446f51d6f336141c5868388ac12a601000000000017a914565289c10f4d5a6f91a5170eebefd177150da87b87fcec10000000000017a914c848a3ccf94e1fe3ce820c27435b0aa61a13fc96875a960100000000001976a91426a4e12633c2c53e9f6bacfe94f33f5dc6a77e3588ac48870100000000001976a914d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd788ac02473044022024d7ce738b190c3d6f81cb3fb88794d7c21707ffdf06083abfa76b28e03a83b302205751ce4861f581fe1666eeb9c9647aef63bd9a614424c7da418e10153fdb26ef0121033c257c008301aeb614d69d5bd3aa0bef528705d3e22c7fc628d74e54abac537300dd3a2500",
+    locktime: 2439901,
+    size: 563,
+    time: 1688214011,
+    txid: "31000edd8759f5ea13c98870170439c650c6927e0d1d30a7dfb880bad9447039",
+    version: 2,
+    vin: [
+        {
+            scriptSig: {
+                asm: "0014bb6f51d0e9ca4971c3f996c389586145f083533d",
+                hex: "160014bb6f51d0e9ca4971c3f996c389586145f083533d",
+            },
+            sequence: 4294967294,
+            txid: "b8fba8717981c0b9c72117ad36bad4941eed978cfc6e36ea1da38002d93a7fb2",
+            txinwitness: [
+                "3044022024d7ce738b190c3d6f81cb3fb88794d7c21707ffdf06083abfa76b28e03a83b302205751ce4861f581fe1666eeb9c9647aef63bd9a614424c7da418e10153fdb26ef01",
+                "033c257c008301aeb614d69d5bd3aa0bef528705d3e22c7fc628d74e54abac5373",
+            ],
+            vout: 1,
+        },
+        {
+            scriptSig: {
+                asm: "3044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9[ALL] 03eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0b",
+                hex: "473044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9012103eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0b",
+            },
+            sequence: 4294967294,
+            txid: "2c8e9774c970222f9fe070883c0cab40d82da917444265ae73ebf326d00199f8",
+            vout: 3,
+        },
+    ],
+    vout: [
+        {
+            n: 0,
+            scriptPubKey: {
+                address: "2N9pptKsrwwgxbEF58Wxekf2FSitKe45wVV",
+                asm: "OP_HASH160 b5dcdebc745f68e93e344cad411383389b15f42b OP_EQUAL",
+                desc: "addr(2N9pptKsrwwgxbEF58Wxekf2FSitKe45wVV)#gmzrh8n8",
+                hex: "a914b5dcdebc745f68e93e344cad411383389b15f42b87",
+                type: "scripthash",
+            },
+            value: 0.00107328,
+        },
+        {
+            n: 1,
+            scriptPubKey: {
+                address: "moUAufc9bcXg1LseNo8W9kARD8qyn9nSkq",
+                asm: "OP_DUP OP_HASH160 573a49bc303b276996af9247dabbda0a80836ada OP_EQUALVERIFY OP_CHECKSIG",
+                desc: "addr(moUAufc9bcXg1LseNo8W9kARD8qyn9nSkq)#hd23jv9y",
+                hex: "76a914573a49bc303b276996af9247dabbda0a80836ada88ac",
+                type: "pubkeyhash",
+            },
+            value: 0.00106253,
+        },
+        {
+            n: 2,
+            scriptPubKey: {
+                address: "moVx2BthpyVEsd4cfjgmq184UUrRJP5kzD",
+                asm: "OP_DUP OP_HASH160 57905ca9e3602de7cae446f51d6f336141c58683 OP_EQUALVERIFY OP_CHECKSIG",
+                desc: "addr(moVx2BthpyVEsd4cfjgmq184UUrRJP5kzD)#m67l4v7u",
+                hex: "76a91457905ca9e3602de7cae446f51d6f336141c5868388ac",
+                type: "pubkeyhash",
+            },
+            value: 0.00105931,
+        },
+        {
+            n: 3,
+            scriptPubKey: {
+                address: "2N17eydT2ENxcwYoMys6har4RBc8Fa5JGe3",
+                asm: "OP_HASH160 565289c10f4d5a6f91a5170eebefd177150da87b OP_EQUAL",
+                desc: "addr(2N17eydT2ENxcwYoMys6har4RBc8Fa5JGe3)#fgmddf3y",
+                hex: "a914565289c10f4d5a6f91a5170eebefd177150da87b87",
+                type: "scripthash",
+            },
+            value: 0.0010805,
+        },
+        {
+            n: 4,
+            scriptPubKey: {
+                address: "2NBWE9kkEC8YK537Xv6RzUtipR1kX2MXKs1",
+                asm: "OP_HASH160 c848a3ccf94e1fe3ce820c27435b0aa61a13fc96 OP_EQUAL",
+                desc: "addr(2NBWE9kkEC8YK537Xv6RzUtipR1kX2MXKs1)#le9k9psu",
+                hex: "a914c848a3ccf94e1fe3ce820c27435b0aa61a13fc9687",
+                type: "scripthash",
+            },
+            value: 0.01109244,
+        },
+        {
+            n: 5,
+            scriptPubKey: {
+                address: "mj3HVNVP4Q8uKtCrVPGfJFUoKMQ5GG8saJ",
+                asm: "OP_DUP OP_HASH160 26a4e12633c2c53e9f6bacfe94f33f5dc6a77e35 OP_EQUALVERIFY OP_CHECKSIG",
+                desc: "addr(mj3HVNVP4Q8uKtCrVPGfJFUoKMQ5GG8saJ)#ps5f6hgh",
+                hex: "76a91426a4e12633c2c53e9f6bacfe94f33f5dc6a77e3588ac",
+                type: "pubkeyhash",
+            },
+            value: 0.00104026,
+        },
+        {
+            n: 6,
+            scriptPubKey: {
+                address: "n12ZNBdxNL8Jo6533midaXviJ3n9EXqjAP",
+                asm: "OP_DUP OP_HASH160 d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd7 OP_EQUALVERIFY OP_CHECKSIG",
+                desc: "addr(n12ZNBdxNL8Jo6533midaXviJ3n9EXqjAP)#0z3j988m",
+                hex: "76a914d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd788ac",
+                type: "pubkeyhash",
+            },
+            value: 0.00100168,
+        },
+    ],
+    vsize: 481,
+    weight: 1922,
+};
+
 describe("testXRP blockchain tests via indexer", async () => {
     const sourceId: SourceId = SourceId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
@@ -304,247 +423,43 @@ describe("testBTC blockchain tests via indexer", async () => {
     });
 
     it("Should return inputs/outputs accordingly", async () => {
-        const responseData = {
-            blockhash: "000000000000477220a2eb2d74cf9840cf6b9f720cd706cca4b9c272aaa455df",
-            blocktime: 1688214011,
-            confirmations: 5,
-            fee: 0.00000481,
-            hash: "72072e1315e525b23060dfac7947692083755c8dd4b36b552a6c0cbe8442c0db",
-            hex: "02000000000102b27f3ad90280a31dea366efc8c97ed1e94d4ba36ad1721c7b9c0817971a8fbb80100000017160014bb6f51d0e9ca4971c3f996c389586145f083533dfefffffff89901d026f3eb73ae65424417a92dd840ab0c3c8870e09f2f2270c974978e2c030000006a473044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9012103eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0bfeffffff0740a301000000000017a914b5dcdebc745f68e93e344cad411383389b15f42b870d9f0100000000001976a914573a49bc303b276996af9247dabbda0a80836ada88accb9d0100000000001976a91457905ca9e3602de7cae446f51d6f336141c5868388ac12a601000000000017a914565289c10f4d5a6f91a5170eebefd177150da87b87fcec10000000000017a914c848a3ccf94e1fe3ce820c27435b0aa61a13fc96875a960100000000001976a91426a4e12633c2c53e9f6bacfe94f33f5dc6a77e3588ac48870100000000001976a914d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd788ac02473044022024d7ce738b190c3d6f81cb3fb88794d7c21707ffdf06083abfa76b28e03a83b302205751ce4861f581fe1666eeb9c9647aef63bd9a614424c7da418e10153fdb26ef0121033c257c008301aeb614d69d5bd3aa0bef528705d3e22c7fc628d74e54abac537300dd3a2500",
-            locktime: 2439901,
-            size: 563,
-            time: 1688214011,
-            txid: "31000edd8759f5ea13c98870170439c650c6927e0d1d30a7dfb880bad9447039",
-            version: 2,
-            vin: [
-                {
-                    scriptSig: {
-                        asm: "0014bb6f51d0e9ca4971c3f996c389586145f083533d",
-                        hex: "160014bb6f51d0e9ca4971c3f996c389586145f083533d",
-                    },
-                    sequence: 4294967294,
-                    txid: "b8fba8717981c0b9c72117ad36bad4941eed978cfc6e36ea1da38002d93a7fb2",
-                    txinwitness: [
-                        "3044022024d7ce738b190c3d6f81cb3fb88794d7c21707ffdf06083abfa76b28e03a83b302205751ce4861f581fe1666eeb9c9647aef63bd9a614424c7da418e10153fdb26ef01",
-                        "033c257c008301aeb614d69d5bd3aa0bef528705d3e22c7fc628d74e54abac5373",
-                    ],
-                    vout: 1,
-                },
-                {
-                    scriptSig: {
-                        asm: "3044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9[ALL] 03eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0b",
-                        hex: "473044022036792532c9f26e6127bd88c2b416d56f014abd8ee9537066bc49ef0a7f7d7bbb022044b2837a7f5f8ece17fcae6e3773842e069c8a5598cad0dcf548042f2ef9aeb9012103eab162df45c5354ade110d764e2e06d25e0b67c5e24afe0b21b15e00c268ba0b",
-                    },
-                    sequence: 4294967294,
-                    txid: "2c8e9774c970222f9fe070883c0cab40d82da917444265ae73ebf326d00199f8",
-                    vout: 3,
-                },
-            ],
-            vout: [
-                {
-                    n: 0,
-                    scriptPubKey: {
-                        address: "2N9pptKsrwwgxbEF58Wxekf2FSitKe45wVV",
-                        asm: "OP_HASH160 b5dcdebc745f68e93e344cad411383389b15f42b OP_EQUAL",
-                        desc: "addr(2N9pptKsrwwgxbEF58Wxekf2FSitKe45wVV)#gmzrh8n8",
-                        hex: "a914b5dcdebc745f68e93e344cad411383389b15f42b87",
-                        type: "scripthash",
-                    },
-                    value: 0.00107328,
-                },
-                {
-                    n: 1,
-                    scriptPubKey: {
-                        address: "moUAufc9bcXg1LseNo8W9kARD8qyn9nSkq",
-                        asm: "OP_DUP OP_HASH160 573a49bc303b276996af9247dabbda0a80836ada OP_EQUALVERIFY OP_CHECKSIG",
-                        desc: "addr(moUAufc9bcXg1LseNo8W9kARD8qyn9nSkq)#hd23jv9y",
-                        hex: "76a914573a49bc303b276996af9247dabbda0a80836ada88ac",
-                        type: "pubkeyhash",
-                    },
-                    value: 0.00106253,
-                },
-                {
-                    n: 2,
-                    scriptPubKey: {
-                        address: "moVx2BthpyVEsd4cfjgmq184UUrRJP5kzD",
-                        asm: "OP_DUP OP_HASH160 57905ca9e3602de7cae446f51d6f336141c58683 OP_EQUALVERIFY OP_CHECKSIG",
-                        desc: "addr(moVx2BthpyVEsd4cfjgmq184UUrRJP5kzD)#m67l4v7u",
-                        hex: "76a91457905ca9e3602de7cae446f51d6f336141c5868388ac",
-                        type: "pubkeyhash",
-                    },
-                    value: 0.00105931,
-                },
-                {
-                    n: 3,
-                    scriptPubKey: {
-                        address: "2N17eydT2ENxcwYoMys6har4RBc8Fa5JGe3",
-                        asm: "OP_HASH160 565289c10f4d5a6f91a5170eebefd177150da87b OP_EQUAL",
-                        desc: "addr(2N17eydT2ENxcwYoMys6har4RBc8Fa5JGe3)#fgmddf3y",
-                        hex: "a914565289c10f4d5a6f91a5170eebefd177150da87b87",
-                        type: "scripthash",
-                    },
-                    value: 0.0010805,
-                },
-                {
-                    n: 4,
-                    scriptPubKey: {
-                        address: "2NBWE9kkEC8YK537Xv6RzUtipR1kX2MXKs1",
-                        asm: "OP_HASH160 c848a3ccf94e1fe3ce820c27435b0aa61a13fc96 OP_EQUAL",
-                        desc: "addr(2NBWE9kkEC8YK537Xv6RzUtipR1kX2MXKs1)#le9k9psu",
-                        hex: "a914c848a3ccf94e1fe3ce820c27435b0aa61a13fc9687",
-                        type: "scripthash",
-                    },
-                    value: 0.01109244,
-                },
-                {
-                    n: 5,
-                    scriptPubKey: {
-                        address: "mj3HVNVP4Q8uKtCrVPGfJFUoKMQ5GG8saJ",
-                        asm: "OP_DUP OP_HASH160 26a4e12633c2c53e9f6bacfe94f33f5dc6a77e35 OP_EQUALVERIFY OP_CHECKSIG",
-                        desc: "addr(mj3HVNVP4Q8uKtCrVPGfJFUoKMQ5GG8saJ)#ps5f6hgh",
-                        hex: "76a91426a4e12633c2c53e9f6bacfe94f33f5dc6a77e3588ac",
-                        type: "pubkeyhash",
-                    },
-                    value: 0.00104026,
-                },
-                {
-                    n: 6,
-                    scriptPubKey: {
-                        address: "n12ZNBdxNL8Jo6533midaXviJ3n9EXqjAP",
-                        asm: "OP_DUP OP_HASH160 d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd7 OP_EQUALVERIFY OP_CHECKSIG",
-                        desc: "addr(n12ZNBdxNL8Jo6533midaXviJ3n9EXqjAP)#0z3j988m",
-                        hex: "76a914d603ba8fbb0e12fb8f5d241ec8a75dd52db54cd788ac",
-                        type: "pubkeyhash",
-                    },
-                    value: 0.00100168,
-                },
-            ],
-            vsize: 481,
-            weight: 1922,
-        };
-
-        const resInput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, true);
+        const resInput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", UTXOResponseData, true);
         expect(resInput[0][0]).to.eq("");
         expect(resInput[0][1].eq(toBN(0))).to.be.true;
-        const resInputCoinbase = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("coinbase", responseData, true);
+        const resInputCoinbase = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("coinbase", UTXOResponseData, true);
         expect(resInputCoinbase[0][0]).to.eq("");
         expect(resInputCoinbase[0][1].eq(toBN(0))).to.be.true;
         // delete inputs
-        responseData.vin = [];
-        const resInputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, true);
+        UTXOResponseData.vin = [];
+        const resInputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", UTXOResponseData, true);
         expect(resInputEmpty[0][0]).to.eq("");
         expect(resInputEmpty[0][1].eq(toBN(0))).to.be.true;
-        const resOutput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, false);
-        expect(resOutput.length).to.eq(responseData.vout.length);
+        const resOutput = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", UTXOResponseData, false);
+        expect(resOutput.length).to.eq(UTXOResponseData.vout.length);
         // delete outputs
-        responseData.vout = [];
-        const resOutputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", responseData, false);
+        UTXOResponseData.vout = [];
+        const resOutputEmpty = await rewiredBlockChainIndexerClient.UTXOInputsOutputs("payment", UTXOResponseData, false);
         expect(resOutputEmpty[0][0]).to.eq("");
         expect(resOutputEmpty[0][1].eq(toBN(0))).to.be.true;
     });
 });
 
-describe("LTC blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.LTC;
-    it("Should not create blockChainIndexerHelper - not supported chain id", async () => {
-        const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
+describe("other blockchain tests via indexer", async () => {
+    const sourceIdBTC: SourceId = SourceId.BTC;
+    const sourceIdDOGE: SourceId = SourceId.DOGE;
+    const sourceIdXRP: SourceId = SourceId.XRP;
 
-    it("Should not create BlockchainIndexerHelper instance - not supported chain id", async () => {
-        const fn = () => {
-            return new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-        };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
-    });
-});
+    it("Should not handle inputs and outputs - not supported chain id", async () => {
+        const rewiredBTCIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdBTC, "");
+        expect((await rewiredBTCIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true))[0][0]).to.eq(
+            ""
+        );
 
-describe("BTC blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.BTC;
-    it("Should create blockChainIndexerHelper", async () => {
-        const indexer = createBlockchainIndexerHelper(sourceId, "");
-        expect(indexer.sourceId).to.eq(`${sourceId}`);
-    });
-});
+        const rewiredDOGEIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdDOGE, "");
+        expect((await rewiredDOGEIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true))[0][0]).to.eq(
+            ""
+        );
 
-describe("DOGE blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.DOGE;
-    it("Should create blockChainIndexerHelper", async () => {
-        const indexer = createBlockchainIndexerHelper(sourceId, "");
-        expect(indexer.sourceId).to.eq(`${sourceId}`);
-    });
-});
-
-describe("XRP blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.XRP;
-    it("Should create blockChainIndexerHelper", async () => {
-        const indexer = createBlockchainIndexerHelper(sourceId, "");
-        expect(indexer.sourceId).to.eq(`${sourceId}`);
-    });
-});
-
-describe("Other blockchain tests via indexer", async () => {
-    const sourceId: SourceId = SourceId.XRP;
-    let indexer: BlockchainIndexerHelper;
-    let rewiredIndexer: typeof rewiredBlockchainIndexerHelperClass;
-
-    beforeEach(async () => {
-        indexer = createBlockchainIndexerHelper(sourceId, "");
-        rewiredIndexer = new rewiredBlockchainIndexerHelperClass("", sourceId, "");
-    });
-
-    it("Should fail - sourceId not supported", async () => {
-        const replacedId = SourceId.LTC;
-        indexer.sourceId = replacedId;
-        const fn = () => {
-            return indexer.secondsPerBlockByChain();
-        };
-        expect(fn).to.throw(`SourceId ${replacedId} not supported.`);
-    });
-
-    it("Should handle inputs and outputs for various UTXO sourceIds and throw when unsupported sourceId provided", async () => {
-        const data = {
-            transactionType: "coinbase",
-            response: {
-                txid: "a2ec924deccf70ab65550b3475aefa133c817864600dc0d0203be2db5af6c83b",
-                vout: [
-                    {
-                        value: "10000.00000000",
-                        n: 0,
-                        scriptPubKey: {
-                            address: "njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta",
-                            asm: "OP_DUP OP_HASH160 ad15fe0eef614f0600c78568d4a91ede27b19e51 OP_EQUALVERIFY OP_CHECKSIG",
-                            hex: "76a914ad15fe0eef614f0600c78568d4a91ede27b19e5188ac",
-                        },
-                    },
-                ],
-                vin: [
-                    {
-                        sequence: 4294967295,
-                        coinbase: "039ec659",
-                    },
-                ],
-            },
-        };
-        rewiredIndexer.sourceId = SourceId.BTC;
-        const resBTC = await rewiredIndexer.handleInputsOutputs(data, true);
-        expect(resBTC[0][0]).to.eq("");
-        expect(resBTC[0][1].eqn(0)).to.be.true;
-
-        rewiredIndexer.sourceId = SourceId.DOGE;
-        const resDOGE = await rewiredIndexer.handleInputsOutputs(data, true);
-        expect(resDOGE[0][0]).to.eq("");
-        expect(resDOGE[0][1].eqn(0)).to.be.true;
-
-        rewiredIndexer.sourceId = SourceId.LTC;
-        await expect(rewiredIndexer.handleInputsOutputs(data, true))
-            .to.eventually.be.rejectedWith(`Invalid SourceId: ${rewiredIndexer.sourceId}`)
-            .and.be.an.instanceOf(Error);
-    });
-
-    it("Should handle inputs and outputs for XRP", async () => {
         const data = {
             isNativePayment: true,
             response: {
@@ -559,9 +474,10 @@ describe("Other blockchain tests via indexer", async () => {
                 },
             },
         };
-        rewiredIndexer.sourceId = SourceId.XRP;
-        const resXRP = await rewiredIndexer.handleInputsOutputs(data, true);
-        expect(resXRP[0][0]).to.eq(data.response.result.Account);
-        expect(resXRP[0][1].eqn(data.response.result.Amount)).to.be.true;
+        const rewiredXRPIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdXRP, "");
+        expect((await rewiredXRPIndexerClient.handleInputsOutputs(data, true))[0][0]).to.eq(
+            data.response.result.Account
+        );
     });
-});
+
+    });

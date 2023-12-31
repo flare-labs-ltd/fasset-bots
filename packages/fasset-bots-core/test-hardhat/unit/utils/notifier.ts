@@ -1,17 +1,19 @@
-import { Notifier } from "../../../src/utils/Notifier";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
+import { FaultyNotifier } from "../../test-utils/FaultyNotifier";
+import { BotLevel, BotType, Notifier } from "../../../src/utils/Notifier";
 use(chaiAsPromised);
 use(spies);
 
 const title = "TITLE";
 const message = "MESSAGE";
 describe("Notifier tests", async () => {
-    let notifier: Notifier;
+    let notifier: MockNotifier;
 
     beforeEach(() => {
-        notifier = new Notifier();
+        notifier = new MockNotifier();
     });
 
     afterEach(function () {
@@ -59,15 +61,15 @@ describe("Notifier tests", async () => {
 
     it("Should send minting corner case alert", async () => {
         const spySend = spy.on(notifier, "sendMintingCornerCase");
-        notifier.sendMintingCornerCase("agentVault", true, false);
-        notifier.sendMintingCornerCase("agentVault", false, true);
-        notifier.sendMintingCornerCase("agentVault", false, false);
+        notifier.sendMintingCornerCase("agentVault", "id", true, false);
+        notifier.sendMintingCornerCase("agentVault", "id", false, true);
+        notifier.sendMintingCornerCase("agentVault", "id", false, false);
         expect(spySend).to.have.been.called.exactly(3);
     });
 
     it("Should send redemption corner case alert", async () => {
         const spySend = spy.on(notifier, "sendRedemptionCornerCase");
-        notifier.sendRedemptionCornerCase("id", "agentVault");
+        notifier.sendRedemptionCornerCase("agentVault", "id");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -118,13 +120,13 @@ describe("Notifier tests", async () => {
 
     it("Should send low balance on owner's underlying address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
-        notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1");
+        notifier.sendLowBalanceOnUnderlyingOwnersAddress("agentVault", "underlying", "1");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send low balance on owner's address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnOwnersAddress");
-        notifier.sendLowBalanceOnOwnersAddress("ownerAddress", "1", "NAT");
+        notifier.sendLowBalanceOnOwnersAddress("agentVault", "ownerAddress", "1", "NAT");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -295,6 +297,35 @@ describe("Notifier tests", async () => {
     it("Should send agent setting update expired", async () => {
         const spySend = spy.on(notifier, "sendAgentCannotUpdateSettingExpired");
         notifier.sendAgentCannotUpdateSettingExpired("agentVault", "setting");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should be unable to send request", async () => {
+        let Faultynotifier = new FaultyNotifier();
+        await expect(Faultynotifier.sendToServer(BotType.AGENT, "test", BotLevel.INFO, "test", "test")).to.eventually.be.rejectedWith(Error);
+    });
+
+    it("Should send illegal transaction challenge", async () => {
+        const spySend = spy.on(notifier, "sendIllegalTransactionChallenge");
+        notifier.sendIllegalTransactionChallenge("challenger", "agentVault", "txHash");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send double payment challenge", async () => {
+        const spySend = spy.on(notifier, "sendDoublePaymentChallenge");
+        notifier.sendDoublePaymentChallenge("challenger", "agentVault", "txHash1", "txHash2");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send free balance negative", async () => {
+        const spySend = spy.on(notifier, "sendFreeBalanceNegative");
+        notifier.sendFreeBalanceNegative("challenger", "agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent liquidated", async () => {
+        const spySend = spy.on(notifier, "sendAgentLiquidated");
+        notifier.sendAgentLiquidated("liquidator", "agentVault");
         expect(spySend).to.have.been.called.once;
     });
 

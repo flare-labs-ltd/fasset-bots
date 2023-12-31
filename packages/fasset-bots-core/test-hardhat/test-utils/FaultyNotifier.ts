@@ -1,162 +1,183 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Notifier } from "../../src/utils/Notifier";
+import MockAdapter from "axios-mock-adapter";
 
 // to use in tests
-export class FaultyNotifier implements Notifier {
-    sendCancelVaultCollateralAnnouncement(agentVault: string): void {
-        throw new Error("Method not implemented.");
+export class FaultyNotifier extends Notifier {
+    mock: MockAdapter | undefined;
+    constructor() {
+        super("FaultyNotifier")
+        if(this.mock && this.client){
+            this.mock.onPost('/api/0/bot_alert').reply(500, 'Internal Server Error');
+        }
     }
-    sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): void {
-        throw new Error("Method not implemented.");
-    }
-    sendRedeemCollateralPoolTokens(agentVault: string, amount: string): void {
-        throw new Error("Method not implemented.");
-    }
-    sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): void {
-        throw new Error("Method not implemented.");
-    }
+
     send(title: string, message?: string | undefined): void {
         throw new Error("Method not implemented.");
     }
-    sendCCBAlert(agentVault: string, timestamp: string): void {
+    async sendCCBAlert(agentVault: string, timestamp: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLiquidationStartAlert(agentVault: string, timestamp: string): void {
+    async sendLiquidationStartAlert(agentVault: string, timestamp: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendFullLiquidationAlert(agentVault: string, payment1?: string | undefined, payment2?: string | undefined): void {
+    async sendFullLiquidationAlert(agentVault: string, payment1?: string | undefined, payment2?: string | undefined): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLiquidationWasPerformed(agentVault: string, value: string): void {
+    async sendLiquidationWasPerformed(agentVault: string, value: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendMintingCornerCase(requestId: string, indexerExpired: boolean, paymentProof: boolean): void {
+    async sendMintingCornerCase(agentVault: string, requestId: string, indexerExpired: boolean, paymentProof: boolean): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionCornerCase(requestId: string, agentVault: string): void {
+    async sendRedemptionCornerCase(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): void {
+    async sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): void {
+    async sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string): void {
+    async sendRedemptionWasPerformed(requestId: string, redeemer: string, agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendCollateralTopUpAlert(agentVault: string, value: string, pool?: boolean): void {
+    async sendCollateralTopUpAlert(agentVault: string, value: string, pool?: boolean): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool?: boolean): void {
+    async sendCollateralTopUpFailedAlert(agentVault: string, value: string, pool?: boolean): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string): void {
+    async sendLowUnderlyingAgentBalanceFailed(agentVault: string, freeUnderlyingBalanceUBA: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLowUnderlyingAgentBalance(agentVault: string, amount: string): void {
+    async sendLowUnderlyingAgentBalance(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: string): void {
+    async sendLowBalanceOnUnderlyingOwnersAddress(agentVault: string, ownerUnderlyingAddress: string, ownerUnderlyingBalance: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: string, tokenSymbol: string): void {
+    async sendLowBalanceOnOwnersAddress(agentVault: string, ownerAddress: string, balance: string, tokenSymbol: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean | undefined): void {
+    async sendNoProofObtained(agentVault: string, requestId: string, roundId: number, requestData: string, redemption?: boolean | undefined): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentDestroyed(agentVault: string): void {
+    async sendAgentDestroyed(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentCreated(agentVault: string): void {
+    async sendAgentCreated(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendWithdrawVaultCollateral(agentVault: string, amount: string): void {
+    async sendWithdrawVaultCollateral(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): void {
+    async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string): Promise<void>  {
         throw new Error("Method not implemented.");
     }
-    sendAgentSettingsUpdate(agentVault: string, settingName: string): void {
+    async sendAgentSettingsUpdate(agentVault: string, settingName: string): Promise<void>  {
         throw new Error("Method not implemented.");
     }
-    sendAgentAnnouncedExitAvailable(agentVault: string): void {
+    async sendAgentAnnouncedExitAvailable(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentExitedAvailable(agentVault: string): void {
+    async sendAgentExitedAvailable(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentEnteredAvailable(agentVault: string): void {
+    async sendAgentEnteredAvailable(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentAnnounceDestroy(agentVault: string): void {
+    async sendAgentAnnounceDestroy(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendConfirmWithdrawUnderlying(agentVault: string): void {
+    async sendConfirmWithdrawUnderlying(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendCancelWithdrawUnderlying(agentVault: string): void {
+    async sendCancelWithdrawUnderlying(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendCollateralPoolTokensRedemption(agentVault: string): void {
+    async sendCollateralPoolTokensRedemption(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendBuyCollateralPoolTokens(agentVault: string, amount: string): void {
+    async sendBuyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendVaultCollateralDeposit(agentVault: string, amount: string): void {
+    async sendVaultCollateralDeposit(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendWithdrawPoolFees(agentVault: string, amount: string): void {
+    async sendWithdrawPoolFees(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendBalancePoolFees(agentVault: string, amount: string): void {
+    async sendBalancePoolFees(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendSelfClose(agentVault: string): void {
+    async sendSelfClose(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendActiveWithdrawal(agentVault: string): void {
+    async sendActiveWithdrawal(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendNoActiveWithdrawal(agentVault: string): void {
+    async sendNoActiveWithdrawal(agentVault: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string): void {
+    async sendAnnounceUnderlyingWithdrawal(agentVault: string, paymentReference: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string): void {
+    async sendUnderlyingWithdrawalPerformed(agentVault: string, txHash: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendMintingExecuted(agentVault: string, requestId: string): void {
+    async sendMintingExecuted(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendMintingDeleted(agentVault: string, requestId: string): void {
+    async sendMintingDeleted(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendMintingStared(agentVault: string, requestId: string): void {
+    async sendMintingStared(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionStarted(agentVault: string, requestId: string): void {
+    async sendRedemptionStarted(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionPaid(agentVault: string, requestId: string): void {
+    async sendRedemptionPaid(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendRedemptionRequestPaymentProof(agentVault: string, requestId: string): void {
+    async sendRedemptionRequestPaymentProof(agentVault: string, requestId: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
+    async sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string) {
+    async sendUndelegatePoolCollateral(agentVault: string, poolCollateral: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string) {
+    async sendAgentCannotUpdateSettingExpired(agentVault: string, setting: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendIllegalTransactionChallenge(challenger: string, agentVault: string, transactionHash: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendDoublePaymentChallenge(challenger: string, agentVault: string, transactionHash1: string, transactionHash2: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendFreeBalanceNegative(challenger: string, agentVault: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendAgentLiquidated(liquidator: string, agentVault: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendCancelVaultCollateralAnnouncement(agentVault: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendCancelRedeemCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendRedeemCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async sendAgentCannotWithdrawCollateral(agentVault: string, amount: string, type: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
 }

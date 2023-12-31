@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { ActorBase } from "../fasset-bots/ActorBase";
+import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
@@ -14,6 +14,7 @@ import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { compareHexValues, getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
+import { Notifier } from "../utils/Notifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { ChallengeStrategy, DefaultChallengeStrategy } from "./plugins/ChallengeStrategy";
 
@@ -33,7 +34,8 @@ export class Challenger extends ActorBase {
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
-        public lastEventUnderlyingBlockHandled: number
+        public lastEventUnderlyingBlockHandled: number,
+        public notifier: Notifier | undefined
     ) {
         super(runner, address, state);
         if (state.context.challengeStrategy === undefined) {
@@ -194,7 +196,7 @@ export class Challenger extends ActorBase {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
-            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+            await this.notifier?.sendIllegalTransactionChallenge(this.address, agent.vaultAddress, transaction.hash);
         });
     }
 
@@ -232,7 +234,7 @@ export class Challenger extends ActorBase {
             ]);
             await this.challengeStrategy.doublePaymentChallenge(scope, agent, web3DeepNormalize(proof1), web3DeepNormalize(proof2));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
-            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
+            await this.notifier?.sendDoublePaymentChallenge(this.address, agent.vaultAddress, tx1hash, tx2hash);
         });
     }
 
@@ -293,7 +295,7 @@ export class Challenger extends ActorBase {
             const proofs = await Promise.all(transactionHashes.map((txHash) => this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             await this.challengeStrategy.freeBalanceNegativeChallenge(scope, agent, web3DeepNormalize(proofs));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
-            console.log(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
+            await this.notifier?.sendFreeBalanceNegative(this.address, agent.vaultAddress);
         });
     }
 
@@ -348,7 +350,7 @@ export class Challenger extends ActorBase {
         await this.state.context.blockchainIndexer!.waitForUnderlyingTransactionFinalization(txHash);
         return await this.state.context
             .attestationProvider!.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
-            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError]));
+            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
     }
 
     /**

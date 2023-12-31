@@ -11,7 +11,6 @@ import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRed
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { time } from "@openzeppelin/test-helpers";
-import { Notifier } from "../../../src/utils/Notifier";
 import spies from "chai-spies";
 import { assert, expect, spy, use } from "chai";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
@@ -22,9 +21,12 @@ import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { decodedChainId } from "../../../src/config/BotConfig";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
+const chainId = "testXRP";
 describe("Agent bot unit tests", async () => {
     let accounts: string[];
     let context: TestAssetBotContext;
@@ -47,7 +49,7 @@ describe("Agent bot unit tests", async () => {
         chain.secondsPerBlock = 1;
         // accounts
         ownerAddress = accounts[3];
-        ownerUnderlyingAddress = requireSecret("owner.underlying_address");
+        ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(chainId)}.address`);
     });
 
     afterEach(function () {
@@ -63,7 +65,7 @@ describe("Agent bot unit tests", async () => {
     it("Should read agent bot from entity", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, new Notifier());
+        const agentBot = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
     });
