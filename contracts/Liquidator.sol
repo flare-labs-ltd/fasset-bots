@@ -2,10 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "./interface/ILiquidator.sol";
+import "./lib/Constants.sol";
 import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
 
@@ -25,19 +27,18 @@ contract Liquidator is ILiquidator {
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
     // those are initialized once and cannot be changed
-    IERC3156FlashLender public immutable flashLender;
-    IBlazeSwapRouter public immutable blazeSwapRouter;
+    address public immutable flashLender;
+    address public immutable dex;
 
     // takes care of flash loan getting executed exactly once
-    // when ran from runArbitrageWithCustomParams
     FlashLoanLock private status;
 
     constructor(
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwapRouter
+        IBlazeSwapRouter _dex
     ) {
-        flashLender = _flashLender;
-        blazeSwapRouter = _blazeSwapRouter;
+        flashLender = address(_flashLender);
+        dex = address(_dex);
     }
 
     modifier flashLoanInitiatorLock() {
@@ -59,46 +60,54 @@ contract Liquidator is ILiquidator {
 
     function runArbitrage(
         address _agentVault,
-        address _to
-    ) virtual public {
+        address _profitTo
+    )
+        public virtual
+    {
+        DexConfig memory dexConfig;
         runArbitrageWithCustomParams(
             _agentVault,
+            _profitTo,
             flashLender,
-            blazeSwapRouter,
-            _to
+            dex,
+            dexConfig
         );
     }
 
     function runArbitrageWithCustomParams(
         address _agentVault,
-        IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwapRouter,
-        address _to
-    ) virtual public {
+        address _profitTo,
+        address _flashLender,
+        address _dex,
+        DexConfig memory _dexConfig
+    )
+        public virtual
+    {
         // we have to start liquidation so that we get correct max f-assets
-        // this should probably be fixed in the later f-asset version
-        IIAssetManager _assetManager = IIAgentVault(_agentVault).assetManager();
-        _assetManager.startLiquidation(address(_agentVault));
+        // this should be fixed within the asset manager implementation
+        IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
+        assetManager.startLiquidation(_agentVault);
         // run liquidation arbitrage
-        Ecosystem.Data memory _data = Ecosystem.getData(
-            _agentVault,
-            address(_blazeSwapRouter),
-            address(_flashLender)
-        );
-        _runArbitrageWithData(_data);
+        Ecosystem.Data memory data = Ecosystem.getData(_agentVault, _dex, _flashLender);
+        _runArbitrageWithData(data, _extendDexConfig(data, _dexConfig));
         // send earnings to sender (along with any tokens sent to this contract)
-        uint256 earnings = IERC20(_data.vaultToken).balanceOf(address(this));
-        SafeERC20.safeTransfer(IERC20(_data.vaultToken), _to, earnings);
+        uint256 earnings = IERC20(data.vaultToken).balanceOf(address(this));
+        SafeERC20.safeTransfer(IERC20(data.vaultToken), _profitTo, earnings);
     }
 
     // non-reentrant
     function _runArbitrageWithData(
-        Ecosystem.Data memory _data
-    ) internal flashLoanInitiatorLock {
+        Ecosystem.Data memory _data,
+        DexConfig memory _dexConfig
+    )
+        internal
+        flashLoanInitiatorLock
+    {
         // check if any f-assets can be liquidated
         require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
         // get max and optimal vault collateral to flash loan
-        uint256 maxVaultFlashLoan = IERC3156FlashLender(_data.flashLender).maxFlashLoan(_data.vaultToken);
+        uint256 maxVaultFlashLoan = IERC3156FlashLender(_data.flashLender)
+            .maxFlashLoan(_data.vaultToken);
         require(maxVaultFlashLoan > 0, "Liquidator: Flash loan unavailable");
         uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profit available");
@@ -107,11 +116,11 @@ contract Liquidator is ILiquidator {
             this, _data.vaultToken,
             Math.min(maxVaultFlashLoan, optimalVaultAmount),
             abi.encode(
-                _data.fAssetToken,
                 _data.poolToken,
                 _data.assetManager,
                 _data.agentVault,
-                _data.blazeSwapRouter
+                _data.dex,
+                _dexConfig
             )
         );
     }
@@ -133,26 +142,26 @@ contract Liquidator is ILiquidator {
     {
         // execute arbitrage
         (
-            IFAsset _fAssetToken,
-            IERC20 _poolToken,
-            IAssetManager _assetManager,
-            IIAgentVault _agentVault,
-            IBlazeSwapRouter _blazeSwapRouter
+            address _poolToken,
+            address _assetManager,
+            address _agentVault,
+            address _dex,
+            DexConfig memory _dexConfig
         ) = abi.decode(_data, (
-            IFAsset,
-            IERC20,
-            IAssetManager,
-            IIAgentVault,
-            IBlazeSwapRouter
+            address,
+            address,
+            address,
+            address,
+            DexConfig
         ));
         _executeArbitrage(
             _amount,
-            _fAssetToken,
-            IERC20(_token),
+            _token,
             _poolToken,
             _assetManager,
             _agentVault,
-            _blazeSwapRouter
+            _dex,
+            _dexConfig
         );
         // approve flash loan spending to flash lender
         IERC20(_token).approve(msg.sender, 0);
@@ -162,47 +171,89 @@ contract Liquidator is ILiquidator {
 
     function _executeArbitrage(
         uint256 _vaultAmount,
-        IFAsset _fAsset,
-        IERC20 _vaultToken,
-        IERC20 _poolToken,
-        IAssetManager _assetManager,
-        IAgentVault _agentVault,
-        IBlazeSwapRouter _blazeSwapRouter
-    ) internal {
+        address _vaultToken,
+        address _poolToken,
+        address _assetManager,
+        address _agentVault,
+        address _dex,
+        DexConfig memory _dexConfig
+    )
+        internal
+    {
         uint256[] memory amountsRecv;
         // swap vault collateral for f-asset
-        _vaultToken.approve(address(_blazeSwapRouter), _vaultAmount);
-        (, amountsRecv) = _blazeSwapRouter.swapExactTokensForTokens(
+        IERC20(_vaultToken).approve(_dex, _vaultAmount);
+        (, amountsRecv) = IBlazeSwapRouter(_dex).swapExactTokensForTokens(
             _vaultAmount,
-            0,
-            toDynamicArray(address(_vaultToken), address(_fAsset)),
+            _minOut(_dex, _vaultAmount, _dexConfig.maxSlippageBips),
+            _dexConfig.vaultToFAssetPath,
             address(this),
             block.timestamp
         );
-        _vaultToken.approve(address(_blazeSwapRouter), 0);
+        IERC20(_vaultToken).approve(_dex, 0);
         // liquidate obtained f-asset
-        (,, uint256 obtainedPool) = _assetManager.liquidate(
-            address(_agentVault),
+        (,, uint256 obtainedPool) = IAssetManager(_assetManager).liquidate(
+            _agentVault,
             amountsRecv[1]
         );
         // swap pool for vault collateral
         if (obtainedPool > 0) {
-            _poolToken.approve(address(_blazeSwapRouter), obtainedPool);
-            (, amountsRecv) = _blazeSwapRouter.swapExactTokensForTokens(
+            IERC20(_poolToken).approve(_dex, obtainedPool);
+            (, amountsRecv) = IBlazeSwapRouter(_dex).swapExactTokensForTokens(
                 obtainedPool,
-                0,
-                toDynamicArray(address(_poolToken), address(_vaultToken)),
+                _minOut(_dex, obtainedPool, _dexConfig.maxSlippageBips),
+                _dexConfig.poolToVaultPath,
                 address(this),
                 block.timestamp
             );
-            _poolToken.approve(address(_blazeSwapRouter), 0);
+            IERC20(_poolToken).approve(_dex, 0);
         }
     }
 
-    function toDynamicArray(
+    function _extendDexConfig(
+        Ecosystem.Data memory _data,
+        DexConfig memory _dexConfig
+    )
+        internal pure
+        returns (DexConfig memory)
+    {
+        if (_dexConfig.vaultToFAssetPath.length == 0) {
+            _dexConfig.vaultToFAssetPath = _toDynamicArray(
+                _data.vaultToken,
+                _data.fAssetToken
+            );
+        }
+        if (_dexConfig.poolToVaultPath.length == 0) {
+            _dexConfig.poolToVaultPath = _toDynamicArray(
+                _data.poolToken,
+                _data.vaultToken
+            );
+        }
+        if (_dexConfig.maxSlippageBips == 0) {
+            _dexConfig.maxSlippageBips = MAX_SLIPPAGE_BIPS;
+        }
+        return _dexConfig;
+    }
+
+    // todo: define using a price oracle
+    function _minOut(
+        address /* _dex */,
+        uint256 /* _amountIn */,
+        uint256 /* _maxSlippageBips */
+    )
+        private pure
+        returns (uint256)
+    {
+        return 0;
+    }
+
+    function _toDynamicArray(
         address _x,
         address _y
-    ) private pure returns (address[] memory) {
+    )
+        private pure
+        returns (address[] memory)
+    {
         address[] memory _arr = new address[](2);
         _arr[0] = _x;
         _arr[1] = _y;

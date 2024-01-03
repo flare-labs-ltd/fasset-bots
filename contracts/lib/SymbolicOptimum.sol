@@ -3,13 +3,8 @@ pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
+import "./Constants.sol";
 import "./Ecosystem.sol";
-
-// constants for dex fees and bips settings
-uint256 constant MAX_ECO_BIPS = 10000;
-uint256 constant DEX_MAX_BIPS = 1000;
-uint256 constant DEX_FEE_BIPS = 3;
-uint256 constant DEX_FACTOR_BIPS = DEX_MAX_BIPS - DEX_FEE_BIPS;
 
 // embedded library
 library SymbolicOptimum {
@@ -57,14 +52,14 @@ library SymbolicOptimum {
             uint256 _aux1
                 = _data.reserveFAssetUBADex1
                 * _data.liquidationFactorVaultBips
-                / MAX_ECO_BIPS
+                / MAX_BIPS
                 * _data.priceFAssetVaultMul
                 / _data.priceFAssetVaultDiv
                 * _data.reservePoolWeiDex2;
             uint256 _aux2
                 = _data.reserveFAssetUBADex1
                 * _data.liquidationFactorPoolBips
-                / MAX_ECO_BIPS
+                / MAX_BIPS
                 * _data.priceFAssetPoolMul
                 / _data.priceFAssetPoolDiv
                 * DEX_FACTOR_BIPS

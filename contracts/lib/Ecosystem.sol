@@ -24,7 +24,7 @@ library Ecosystem {
         // addresses
         address assetManager;
         address agentVault;
-        address blazeSwapRouter;
+        address dex;
         address flashLender;
         // tokens
         address fAssetToken;
@@ -51,7 +51,7 @@ library Ecosystem {
 
     function getData(
         address _agentVault,
-        address _blazeSwapRouter,
+        address _dex,
         address _flashLender
     ) internal view returns (Data memory _data) {
         // extrapolate data
@@ -61,7 +61,7 @@ library Ecosystem {
         // addresses
         _data.assetManager = address(assetManager);
         _data.agentVault = _agentVault;
-        _data.blazeSwapRouter = _blazeSwapRouter;
+        _data.dex = _dex;
         _data.flashLender = _flashLender;
         // tokens
         _data.fAssetToken = settings.fAsset;
@@ -76,9 +76,9 @@ library Ecosystem {
         _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
         // dexes
         (_data.reserveVaultWeiDex1, _data.reserveFAssetUBADex1) =
-            IBlazeSwapRouter(_blazeSwapRouter).getReserves(_data.vaultToken, _data.fAssetToken);
+            IBlazeSwapRouter(_dex).getReserves(_data.vaultToken, _data.fAssetToken);
         (_data.reservePoolWeiDex2, _data.reserveVaultWeiDex2) =
-            IBlazeSwapRouter(_blazeSwapRouter).getReserves(_data.poolToken, _data.vaultToken);
+            IBlazeSwapRouter(_dex).getReserves(_data.poolToken, _data.vaultToken);
         // prices
         (
             _data.priceFAssetVaultMul,
