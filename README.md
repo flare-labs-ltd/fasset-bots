@@ -22,9 +22,6 @@ Clone this project `fasset-bots` and enter `fasset-bots` directory.
 If you are beta tester, switch to branch `private_beta_v.1.0`.
 
     git checkout private_beta_v.1.0
-    
--   Make sure you have appropriate permissions for repository `simple-wallet`. (Later npm package for `simple-wallet` is going to be released and therefore no permissions are going to be needed.)
-
 
 Install `fasset-bots`
 
@@ -153,6 +150,8 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 
 -   Coston
     -   https://coston1-faucet.towolabs.com/ - 100 CFLR per account per day
+
+- Please reach out to our Team Members on Telegram for TestUSDC/TestUSDT tokens
 
 ### Other usefull webclients
 
