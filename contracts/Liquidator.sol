@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
-import "fasset/contracts/fasset/interface/IFAsset.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "./interface/ILiquidator.sol";
@@ -18,7 +17,6 @@ import "./lib/Ecosystem.sol";
  * Ideally, we would save the hash of the data passed into
  * flash loan to storage, and validate it in onFlashLoan, then also check
  * that no funds were stolen for the three relevant tokens.
- * Also _approve(token, 0) would need to be called after each swap.
  */
 
 // Arbitrage is run without any funds sent to the contract.
@@ -192,9 +190,10 @@ contract Liquidator is ILiquidator {
         );
         IERC20(_vaultToken).approve(_dex, 0);
         // liquidate obtained f-asset
+        uint256 obtainedFAsset = amountsRecv[amountsRecv.length - 1];
         (,, uint256 obtainedPool) = IAssetManager(_assetManager).liquidate(
             _agentVault,
-            amountsRecv[1]
+            obtainedFAsset
         );
         // swap pool for vault collateral
         if (obtainedPool > 0) {
@@ -252,9 +251,8 @@ contract Liquidator is ILiquidator {
         address _y
     )
         private pure
-        returns (address[] memory)
+        returns (address[] memory _arr)
     {
-        address[] memory _arr = new address[](2);
         _arr[0] = _x;
         _arr[1] = _y;
         return _arr;
