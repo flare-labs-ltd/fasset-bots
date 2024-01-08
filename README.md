@@ -28,8 +28,7 @@ If you are beta tester, switch to branch `private_beta_v.1.0`.
 
 Install `fasset-bots`
 
-    yarn
-    yarn build
+    yarn && yarn build
 
 ## Configurations
 
