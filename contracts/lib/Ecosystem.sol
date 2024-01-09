@@ -24,8 +24,6 @@ library Ecosystem {
         // addresses
         address assetManager;
         address agentVault;
-        address dex;
-        address flashLender;
         // tokens
         address fAssetToken;
         address vaultToken;
@@ -52,7 +50,7 @@ library Ecosystem {
     function getData(
         address _agentVault,
         address _dex,
-        address _flashLender
+        address /* _flashLender */
     ) internal view returns (Data memory _data) {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
@@ -61,8 +59,6 @@ library Ecosystem {
         // addresses
         _data.assetManager = address(assetManager);
         _data.agentVault = _agentVault;
-        _data.dex = _dex;
-        _data.flashLender = _flashLender;
         // tokens
         _data.fAssetToken = settings.fAsset;
         _data.vaultToken = address(agentInfo.vaultCollateralToken);
