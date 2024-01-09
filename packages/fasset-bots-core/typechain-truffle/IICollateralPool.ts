@@ -427,6 +427,12 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  totalCollateral(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  totalFAssetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   undelegateAll: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -854,6 +860,12 @@ export interface IICollateralPoolInstance extends Truffle.ContractInstance {
     topupTokenPriceFactorBIPS(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    totalCollateral(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    totalFAssetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     undelegateAll: {
       (txDetails?: Truffle.TransactionDetails): Promise<

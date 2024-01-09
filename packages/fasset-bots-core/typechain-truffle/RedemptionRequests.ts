@@ -44,6 +44,20 @@ export interface RedeemedInCollateral {
   };
 }
 
+export interface RedemptionRejected {
+  name: "RedemptionRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    redemptionAmountUBA: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
 export interface RedemptionRequestIncomplete {
   name: "RedemptionRequestIncomplete";
   args: {
@@ -94,6 +108,7 @@ export type AllEvents =
   | DustChanged
   | LiquidationEnded
   | RedeemedInCollateral
+  | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequested
   | SelfClose;

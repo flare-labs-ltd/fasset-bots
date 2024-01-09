@@ -37,6 +37,93 @@
                 {
                   "components": [
                     {
+                      "internalType": "string",
+                      "name": "addressStr",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isValid",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "standardAddress",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardAddressHash",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct AddressValidity.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct AddressValidity.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyAddressValidity",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
                       "internalType": "bytes32",
                       "name": "transactionId",
                       "type": "bytes32"

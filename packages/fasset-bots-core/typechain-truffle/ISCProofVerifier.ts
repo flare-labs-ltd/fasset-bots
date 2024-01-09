@@ -15,6 +15,25 @@ export interface ISCProofVerifierContract
 export type AllEvents = never;
 
 export interface ISCProofVerifierInstance extends Truffle.ContractInstance {
+  verifyAddressValidity(
+    _proof: {
+      merkleProof: string[];
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: { addressStr: string };
+        responseBody: {
+          isValid: boolean;
+          standardAddress: string;
+          standardAddressHash: string;
+        };
+      };
+    },
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   verifyBalanceDecreasingTransaction(
     _proof: {
       merkleProof: string[];
@@ -118,6 +137,25 @@ export interface ISCProofVerifierInstance extends Truffle.ContractInstance {
   ): Promise<boolean>;
 
   methods: {
+    verifyAddressValidity(
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
     verifyBalanceDecreasingTransaction(
       _proof: {
         merkleProof: string[];
