@@ -1,11 +1,11 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
-import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { Agent } from "../fasset/Agent";
-import { AgentInfo, AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
+import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { SourceId } from "../underlying-chain/SourceId";
@@ -61,6 +61,23 @@ export class AgentBot {
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
     latestProof: ConfirmedBlockHeightExists.Proof | null = null;
 
+    static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentBotContext) {
+        return await rootEm.transactional(async () => await context.wallet.createAccount());
+    }
+
+    static async inititalizeUnderlyingAddress(context: IAssetAgentBotContext, ownerAddress: string, underlyingAddress: string) {
+        // on XRP chain, send 10 XRP from owners account to activate agent's account
+        await this.activateUnderlyingAccount(context, underlyingAddress);
+        // validate address
+        const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
+        // prove EOA if necessary
+        const settings = await context.assetManager.getSettings();
+        if (settings.requireEOAAddressProof) {
+            await this.proveEOAaddress(context, addressValidityProof.data.responseBody.standardAddress, ownerAddress);
+        }
+        return addressValidityProof;
+    }
+
     /**
      * Creates instance of AgentBot with newly created underlying address and with provided agent default settings.
      * Certain AgentBot properties are also stored in persistent state.
@@ -75,21 +92,16 @@ export class AgentBot {
         rootEm: EM,
         context: IAssetAgentBotContext,
         ownerAddress: string,
+        addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentBotDefaultSettings,
         notifier: Notifier
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${ownerAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
+        // create agent
         const lastBlock = await web3.eth.getBlockNumber();
+        const agent = await Agent.create(context, ownerAddress, addressValidityProof, agentSettingsConfig);
+        // save state
         return await rootEm.transactional(async (em) => {
-            const underlyingAddress = await context.wallet.createAccount();
-            // send 10 XRP from owners account to activate agent's account
-            await this.activateUnderlyingAccount(context, underlyingAddress);
-            const settings = await context.assetManager.getSettings();
-            if (settings.requireEOAAddressProof) {
-                await this.proveEOAaddress(context, underlyingAddress, ownerAddress);
-            }
-            const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentSettingsConfig };
-            const agent = await Agent.create(context, ownerAddress, agentSettings);
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.chainSymbol = context.chainInfo.symbol;

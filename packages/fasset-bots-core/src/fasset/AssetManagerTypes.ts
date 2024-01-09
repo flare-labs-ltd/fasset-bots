@@ -11,7 +11,7 @@ export enum CollateralClass {
 type _CollateralType = Parameters<AssetManagerContract["new"]>[1][0];
 export type CollateralType = _CollateralType;
 
-type _AgentSettings = Parameters<AssetManagerInstance["createAgentVault"]>[0];
+type _AgentSettings = Parameters<AssetManagerInstance["createAgentVault"]>[1];
 export type AgentSettings = _AgentSettings;
 
 // status as returned from GetAgentInfo

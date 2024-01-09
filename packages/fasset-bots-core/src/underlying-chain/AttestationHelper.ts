@@ -1,5 +1,5 @@
 import { constants } from "@openzeppelin/test-helpers";
-import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import { prefix0x, toHex } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
@@ -157,6 +157,18 @@ export class AttestationHelper {
         return await this.stateConnector.submitRequest(request);
     }
 
+    async requestAddressValidityProof(underlyingAddress: string): Promise<AttestationRequestId | null> {
+        const request: AddressValidity.Request = {
+            attestationType: AddressValidity.TYPE,
+            sourceId: this.chainId,
+            messageIntegrityCode: constants.ZERO_BYTES32,
+            requestBody: {
+                addressStr: underlyingAddress,
+            },
+        };
+        return await this.stateConnector.submitRequest(request);
+    }
+
     async obtainPaymentProof(round: number, requestData: string): Promise<Payment.Proof | AttestationNotProved> {
         logger.info(`Attestation helper: obtaining payment proof with round ${round} and requestData ${requestData}`);
         return await this.stateConnector.obtainProof(round, requestData);
@@ -174,6 +186,10 @@ export class AttestationHelper {
 
     async obtainConfirmedBlockHeightExistsProof(round: number, requestData: string): Promise<ConfirmedBlockHeightExists.Proof | AttestationNotProved> {
         logger.info(`Attestation helper: obtaining confirmed block height exists proof with round ${round} and requestData ${requestData}`);
+        return await this.stateConnector.obtainProof(round, requestData);
+    }
+
+    async obtainAddressValidityProof(round: number, requestData: string): Promise<AddressValidity.Proof | AttestationNotProved> {
         return await this.stateConnector.obtainProof(round, requestData);
     }
 
@@ -254,6 +270,19 @@ export class AttestationHelper {
         if (!attestationProved(result)) {
             logger.error(`Attestation helper error: confirmedBlockHeightExists not proved`);
             throw new AttestationHelperError("confirmedBlockHeightExists: not proved");
+        }
+        return result;
+    }
+
+    async proveAddressValidity(underlyingAddress: string): Promise<AddressValidity.Proof> {
+        const request = await this.requestAddressValidityProof(underlyingAddress);
+        if (request == null) {
+            throw new AttestationHelperError("addressValidity: not proved")
+        }
+        await this.stateConnector.waitForRoundFinalization(request.round);
+        const result = await this.stateConnector.obtainProof(request.round, request.data);
+        if (!attestationProved(result)) {
+            throw new AttestationHelperError("addressValidity: not proved")
         }
         return result;
     }

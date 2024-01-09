@@ -36,7 +36,6 @@ const VPContract = artifacts.require("VPContract");
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
 const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const FakeERC20 = artifacts.require("FakeERC20");
-const TrivialAddressValidatorMock = artifacts.require("TrivialAddressValidatorMock");
 const WhitelistMock = artifacts.require("WhitelistMock");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 
@@ -116,8 +115,6 @@ export async function createTestAssetContext(
     // create collateral pool factory
     const collateralPoolFactory = await CollateralPoolFactory.new();
     const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new();
-    // create address validator
-    const addressValidator = await TrivialAddressValidatorMock.new();
     // create liquidation strategy
     const liquidationStrategyLib = await artifacts.require("LiquidationStrategyImpl").new();
     const liquidationStrategy = liquidationStrategyLib.address;
@@ -135,7 +132,6 @@ export async function createTestAssetContext(
         AgentVaultFactory: newContract("AgentVaultFactory", "AgentVaultFactory.sol", agentVaultFactory.address),
         AssetManagerController: newContract("AssetManagerController", "AssetManagerController.sol", assetManagerController.address),
         CollateralPoolFactory: newContract("CollateralPoolFactory", "CollateralPoolFactory.sol", collateralPoolFactory.address),
-        AddressValidator: newContract("IAddressValidatorInstance", "IAddressValidatorInstance.sol", addressValidator.address),
         AgentWhiteList: newContract("WhiteList", "WhitelistMock.sol", agentWhitelist.address),
         CollateralPoolTokenFactory: newContract("CollateralPoolTokenFactory", "CollateralPoolTokenFactory.sol", collateralPoolTokenFactory.address),
         PriceReader: newContract("PriceReader", "PriceReader.sol", priceReader.address),
@@ -267,7 +263,6 @@ function createTestAssetManagerSettings(
         priceReader: contracts.PriceReader.address,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         agentWhitelist: contracts.AgentWhiteList?.address ?? ZERO_ADDRESS,
-        underlyingAddressValidator: contracts.AddressValidator!.address,
         liquidationStrategy: liquidationStrategy,
         burnAddress: parameters.burnAddress,
         chainId: chainInfo.chainId,

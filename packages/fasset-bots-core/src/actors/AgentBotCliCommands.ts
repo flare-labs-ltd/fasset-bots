@@ -88,9 +88,16 @@ export class BotCliCommands {
      */
     async createAgentVault(poolTokenSuffix: string): Promise<Agent | null> {
         try {
+            const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
+            console.log(`Validating new underlying address ${underlyingAddress}...`);
+            console.log(`Owner ${requireSecret("owner.native.address")} validating new underlying address ${underlyingAddress}.`);
+            const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(this.context, this.ownerAddress, underlyingAddress);
+            console.log(`Creating agent bot...`);
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath, poolTokenSuffix);
-            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, agentBotSettings, this.botConfig.notifier!);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
             await this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
+            console.log(`Agent bot created.`);
+            console.log(`Owner ${requireSecret("owner.native.address")} created ne agent vault at ${agentBot.agent.agentVault.address}.`);
             return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${requireSecret("owner.native.address")} couldn't create agent.`);
