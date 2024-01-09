@@ -178,6 +178,6 @@ export function swapToDexPrice(
 ): bigint {
   const [ratioA, ratioB] = priceAB(priceA, priceB, decimalsA, decimalsB)
   const aux = initialReserveB * initialReserveA * ratioB / ratioA
-  const amountA = (sqrt(aux) - initialReserveA)
+  const amountA = sqrt(aux) - initialReserveA
   return (amountA < maxAmountA) ? amountA : maxAmountA
 }

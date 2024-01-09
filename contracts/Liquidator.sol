@@ -3,23 +3,31 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
+import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
-import "./interface/ILiquidator.sol";
 import "./lib/Constants.sol";
 import "./lib/SymbolicOptimum.sol";
 import "./lib/Ecosystem.sol";
+import "./interface/ILiquidator.sol";
 
+
+struct DexPairConfig {
+    address[] path;
+    uint256 minPriceMul;
+    uint256 minPriceDiv;
+}
+struct DexConfig {
+    DexPairConfig vaultFAsset;
+    DexPairConfig poolVault;
+}
 
 /**
  * Do not send any tokens to this contract, they can be stolen!
  * Security is not put in place because of gas cost savings.
- * Ideally, we would save the hash of the data passed into
- * flash loan to storage, and validate it in onFlashLoan, then also check
- * that no funds were stolen for the three relevant tokens.
+ * Ideally, we would save the arbitrage data into storage and read it in
+ * onFlashLoan, but this would cost too much gas.
  */
-
-// Arbitrage is run without any funds sent to the contract.
 contract Liquidator is ILiquidator {
 
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
@@ -58,28 +66,47 @@ contract Liquidator is ILiquidator {
 
     function runArbitrage(
         address _agentVault,
-        address _profitTo
+        address _profitTo,
+        address _flashLender,
+        address _dex,
+        uint256 _vaultToFAssetMinDexPriceMul,
+        uint256 _vaultToFAssetMinDexPriceDiv,
+        uint256 _poolToVaultMinDexPriceMul,
+        uint256 _poolToVaultMinDexPriceDiv,
+        address[] memory _vaultToFAssetDexPath,
+        address[] memory _poolToVaultDexPath
     )
-        public virtual
+        public
     {
-        DexConfig memory dexConfig;
-        runArbitrageWithCustomParams(
+        DexConfig memory dexConfig = DexConfig({
+            vaultFAsset: DexPairConfig({
+                path: _vaultToFAssetDexPath,
+                minPriceMul: _vaultToFAssetMinDexPriceMul,
+                minPriceDiv: _vaultToFAssetMinDexPriceDiv
+            }),
+            poolVault: DexPairConfig({
+                path: _poolToVaultDexPath,
+                minPriceMul: _poolToVaultMinDexPriceMul,
+                minPriceDiv: _poolToVaultMinDexPriceDiv
+            })
+        });
+        _runArbitrage(
             _agentVault,
             _profitTo,
-            flashLender,
-            dex,
+            _flashLender == address(0) ? flashLender : _flashLender,
+            _dex == address(0) ? dex : _dex,
             dexConfig
         );
     }
 
-    function runArbitrageWithCustomParams(
+    function _runArbitrage(
         address _agentVault,
         address _profitTo,
         address _flashLender,
         address _dex,
         DexConfig memory _dexConfig
     )
-        public virtual
+        internal virtual
     {
         // we have to start liquidation so that we get correct max f-assets
         // this should be fixed within the asset manager implementation
@@ -87,7 +114,7 @@ contract Liquidator is ILiquidator {
         assetManager.startLiquidation(_agentVault);
         // run liquidation arbitrage
         Ecosystem.Data memory data = Ecosystem.getData(_agentVault, _dex, _flashLender);
-        _runArbitrageWithData(data, _extendDexConfig(data, _dexConfig));
+        _runArbitrageWithData(data, _fillDexConfigDefaultPaths(data, _dexConfig));
         // send earnings to sender (along with any tokens sent to this contract)
         uint256 earnings = IERC20(data.vaultToken).balanceOf(address(this));
         SafeERC20.safeTransfer(IERC20(data.vaultToken), _profitTo, earnings);
@@ -183,8 +210,12 @@ contract Liquidator is ILiquidator {
         IERC20(_vaultToken).approve(_dex, _vaultAmount);
         (, amountsRecv) = IBlazeSwapRouter(_dex).swapExactTokensForTokens(
             _vaultAmount,
-            _minOut(_dex, _vaultAmount, _dexConfig.maxSlippageBips),
-            _dexConfig.vaultToFAssetPath,
+            _convert(
+                _vaultAmount,
+                _dexConfig.vaultFAsset.minPriceMul,
+                _dexConfig.vaultFAsset.minPriceDiv
+            ),
+            _dexConfig.vaultFAsset.path,
             address(this),
             block.timestamp
         );
@@ -200,8 +231,12 @@ contract Liquidator is ILiquidator {
             IERC20(_poolToken).approve(_dex, obtainedPool);
             (, amountsRecv) = IBlazeSwapRouter(_dex).swapExactTokensForTokens(
                 obtainedPool,
-                _minOut(_dex, obtainedPool, _dexConfig.maxSlippageBips),
-                _dexConfig.poolToVaultPath,
+                _convert(
+                    obtainedPool,
+                    _dexConfig.poolVault.minPriceMul,
+                    _dexConfig.poolVault.minPriceDiv
+                ),
+                _dexConfig.poolVault.path,
                 address(this),
                 block.timestamp
             );
@@ -209,41 +244,37 @@ contract Liquidator is ILiquidator {
         }
     }
 
-    function _extendDexConfig(
+    function _fillDexConfigDefaultPaths(
         Ecosystem.Data memory _data,
         DexConfig memory _dexConfig
     )
         internal pure
         returns (DexConfig memory)
     {
-        if (_dexConfig.vaultToFAssetPath.length == 0) {
-            _dexConfig.vaultToFAssetPath = _toDynamicArray(
+        if (_dexConfig.vaultFAsset.path.length == 0) {
+            _dexConfig.vaultFAsset.path = _toDynamicArray(
                 _data.vaultToken,
                 _data.fAssetToken
             );
         }
-        if (_dexConfig.poolToVaultPath.length == 0) {
-            _dexConfig.poolToVaultPath = _toDynamicArray(
+        if (_dexConfig.poolVault.path.length == 0) {
+            _dexConfig.poolVault.path = _toDynamicArray(
                 _data.poolToken,
                 _data.vaultToken
             );
         }
-        if (_dexConfig.maxSlippageBips == 0) {
-            _dexConfig.maxSlippageBips = MAX_SLIPPAGE_BIPS;
-        }
         return _dexConfig;
     }
 
-    // todo: define using a price oracle
-    function _minOut(
-        address /* _dex */,
-        uint256 /* _amountIn */,
-        uint256 /* _maxSlippageBips */
+    function _convert(
+        uint256 _amount,
+        uint256 _priceMul,
+        uint256 _priceDiv
     )
         private pure
         returns (uint256)
     {
-        return 0;
+        return _amount * _priceMul / _priceDiv;
     }
 
     function _toDynamicArray(

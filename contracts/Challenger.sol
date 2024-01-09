@@ -15,8 +15,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
 
     constructor(
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _blazeSwap
-    ) Liquidator(_flashLender, _blazeSwap) {}
+        IBlazeSwapRouter _dexRouter
+    ) Liquidator(_flashLender, _dexRouter) {}
 
     function illegalPaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _transaction,
@@ -74,29 +74,21 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         payable(owner()).transfer(address(this).balance);
     }
 
-    //////////////////////////// impose internal on liquidator methods ////////////////////////////
-
     function runArbitrage(
         address _agentVault,
         address _profitTo
     )
-        public override
+        external
     {
-        require(address(msg.sender) == address(this), "calling an internal method");
-        super.runArbitrage(_agentVault, _profitTo);
-    }
-
-    function runArbitrageWithCustomParams(
-        address _agentVault,
-        address _profitTo,
-        address _flashLender,
-        address _dex,
-        DexConfig memory _dexConfig
-    )
-        public
-        override
-    {
-        require(address(msg.sender) == address(this), "calling an internal method");
-        super.runArbitrageWithCustomParams(_agentVault, _profitTo, _flashLender, _dex, _dexConfig);
+        require(msg.sender == address(this), "calling an internal method");
+        super.runArbitrage(
+            _agentVault,
+            _profitTo,
+            address(0),
+            address(0),
+            0, 0, 0, 0,
+            new address[](0),
+            new address[](0)
+        );
     }
 }
