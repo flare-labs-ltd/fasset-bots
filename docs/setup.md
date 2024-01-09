@@ -2,7 +2,7 @@
 
 ## Clone and setup repository
 
-1. Ensure you can access `fasset-bots` and `simple-wallet` GitLab repositories.
+1. Ensure you can access `fasset-bots` GitLab repository.
 
 2. Clone the repository:
 
