@@ -1,0 +1,46 @@
+{
+    "name": "@flarelabs/fasset-bots-cli",
+    "version": "1.0.0",
+    "description": "FAsset bots command line executables",
+    "author": "Flare Labs",
+    "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.com/flarenetwork/fasset-bots"
+    },
+    "license": "MIT",
+    "bin": {
+        "agent-bot": "dist/src/cli/agent.js",
+        "fake-price-reader": "dist/src/cli/fakePriceReader.js",
+        "key-gen": "dist/src/cli/key-gen.js",
+        "test-governance": "dist/src/cli/testGovernance",
+        "user-bot": "dist/src/cli/user.js",
+        "utils": "dist/src/cli/utils.js"
+    },
+    "mikro-orm": {
+        "useTsNode": true,
+        "configPaths": [
+            "./src/mikro-orm.config.ts",
+            "./dist/mikro-orm.config.js"
+        ]
+    },
+    "files": [
+        "/dist",
+        "/src"
+    ],
+    "dependencies": {
+        "@flarelabs/fasset-bots-core": "workspace:*",
+        "@flarenetwork/state-connector-protocol": "1.0.0-beta.2",
+        "@types/bn.js": "5.1.5",
+        "bn.js": "5.2.1",
+        "chalk": "4.1.2",
+        "commander": "11.0.0",
+        "dotenv": "16.3.1",
+        "source-map-support": "0.5.21",
+        "web3": "1.10.2"
+    },
+    "devDependencies": {
+        "typescript": "5.2.2"
+    },
+    "packageManager": "yarn@3.6.4"
+}

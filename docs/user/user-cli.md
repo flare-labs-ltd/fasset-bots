@@ -24,7 +24,7 @@ The script has one mandatory common argument `-f <fasset_symbol>` (except for su
 
 There are also two optional common arguments:
 
--   `-c <configFilePath>` - indicates the config file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_CONFIG` and if this is also missing, it uses a file in package with settings for Coston (`run-config/run-config-agent-coston-testxrp.json`).
+-   `-c <configFilePath>` - indicates the config file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_CONFIG` and if this is also missing, it uses a built-in file with settings for Coston (`run-config/coston-user.json` in package `fasset-bots-core`).
 -   `-s <secretsFilePath>` - indicates the secrets json file path. If it is omitted, the program uses the path in environment variable `FASSET_USER_SECRETS` and if this is also missing, it defaults to `<USERS_HOME>/fasset/secrets.json`.
 
 ## Secrets

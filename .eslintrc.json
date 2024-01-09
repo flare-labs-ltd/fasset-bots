@@ -2,7 +2,8 @@
     "root": true,
     "parser": "@typescript-eslint/parser",
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "node"
     ],
     "extends": [
         "eslint:recommended",
@@ -19,17 +20,23 @@
             "error",
             "unix"
         ],
+        "no-console": "off",
         "@typescript-eslint/prefer-namespace-keyword": "off",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-inferrable-types": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-unused-vars": ["error",
-            { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
-        ],
-        "no-console": 0
+        "@typescript-eslint/no-unused-vars": ["error", {
+            "varsIgnorePattern": "^_",
+            "argsIgnorePattern": "^_"
+        }],
+        "node/no-extraneous-import": "error",
+        "node/no-extraneous-require": "error"
     },
     "parserOptions": {
         "ecmaVersion": 2020,
-        "project": "./tsconfig.json"
+        "tsconfigRootDir": ".",
+        "project": [
+            "./packages/*/tsconfig.json"
+        ]
     }
 }
