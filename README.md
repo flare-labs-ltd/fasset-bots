@@ -85,7 +85,7 @@ The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The run
 
 In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot [command]`.
 
-### Challenger, Liquidator, SystemKeeper and Time keeper
+### Challenger, Liquidator, SystemKeeper and TimeKeeper
 
 Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 
