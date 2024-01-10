@@ -15,7 +15,7 @@ import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecod
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
-import { formatArgs } from "../utils/formatting";
+import { formatArgs, squashSpace } from "../utils/formatting";
 import {
     BN_ZERO,
     CCB_LIQUIDATION_PREVENTION_FACTOR,
@@ -1361,7 +1361,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} is handling open redemption ${redemption.requestId} in state ${redemption.state}.`);
                 switch (redemption.state) {
                     case AgentRedemptionState.STARTED:
-                        await this.payForRedemption(redemption);
+                        await this.checkBeforeRedemptionPayment(redemption);
                         break;
                     case AgentRedemptionState.PAID:
                         await this.checkPaymentProofAvailable(redemption);
@@ -1369,13 +1369,13 @@ export class AgentBot {
                     case AgentRedemptionState.REQUESTED_PROOF:
                         await this.checkConfirmPayment(redemption);
                         break;
+                    case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
+                        await this.checkRejectRedemption(redemption);
+                        break;
                     default:
                         console.error(`Redemption state: ${redemption.state} not supported`);
-                        logger.error(
-                            `Agent ${this.agent.vaultAddress} run into redemption state ${
-                                redemption.state
-                            } not supported for redemption ${redemption.requestId.toString()}.`
-                        );
+                        logger.error(squashSpace`Agent ${this.agent.vaultAddress} run into redemption state ${redemption.state} not supported
+                            for redemption ${redemption.requestId.toString()}.`);
                 }
             })
             .catch((error) => {
@@ -1389,34 +1389,108 @@ export class AgentBot {
      * Then it performs payment and sets the state of redemption in persistent state as PAID.
      * @param redemption AgentRedemption entity
      */
-    async payForRedemption(redemption: AgentRedemption): Promise<void> {
+    async checkBeforeRedemptionPayment(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         /* istanbul ignore else */
         if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
-            // pay
-            const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
-            // !!! TODO: what if there are too little funds on underlying address to pay for fee?
-            const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-            redemption.txHash = txHash;
-            redemption.state = AgentRedemptionState.PAID;
-            await this.notifier.sendRedemptionPaid(this.agent.vaultAddress, redemption.requestId.toString());
-            logger.info(
-                `Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId} with txHash ${txHash}; target underlying address ${
-                    redemption.paymentAddress
-                }, payment reference ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`
-            );
+            const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, redemption.paymentAddress);
+            if (validation.isValid && validation.standardAddress === redemption.paymentAddress) {
+                await this.payForRedemption(redemption);
+            } else {
+                await this.startRejectRedemption(redemption);
+            }
         } else if (lastBlock) {
-            logger.info(
-                `Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${
-                    redemption.requestId
-                }. Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()} with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${
-                    lastBlock.number
-                } with timestamp ${lastBlock.timestamp}.`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}.
+                Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()}
+                with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock.number}
+                with timestamp ${lastBlock.timestamp}.`);
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in payForRedemption for ${redemption.requestId}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in checkBeforeRedemptionPayment for ${redemption.requestId}.`);
+        }
+    }
+
+    async payForRedemption(redemption: AgentRedemption) {
+        const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
+        // !!! TODO: what if there are too little funds on underlying address to pay for fee?
+        const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+        redemption.txHash = txHash;
+        redemption.state = AgentRedemptionState.PAID;
+        await this.notifier.sendRedemptionPaid(this.agent.vaultAddress, redemption.requestId.toString());
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
+            with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
+            ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`);
+    }
+
+    async redeemerAddressValid(underlyingAddress: string) {
+        const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, underlyingAddress);
+        return validation.isValid && validation.standardAddress === underlyingAddress;
+    }
+
+    async startRejectRedemption(redemption: AgentRedemption) {
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
+            for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const request = await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
+        if (request) {
+            redemption.state = AgentRedemptionState.REQUESTED_REJECTION_PROOF;
+            redemption.proofRequestRound = request.round;
+            redemption.proofRequestData = request.data;
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for payment address invalidity
+                for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress},
+                proofRequestRound ${request.round}, proofRequestData ${request.data}`);
+        } else {
+            // else cannot prove request yet
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot request payment proof for payment address invalidity
+                for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
+        }
+    }
+
+    async checkRejectRedemption(redemption: AgentRedemption): Promise<void> {
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain proof for payment address invalidity
+            for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}
+            in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        if (proof === AttestationNotProved.NOT_FINALIZED) {
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
+                ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
+        } else if (attestationProved(proof)) {
+            const response = proof.data.responseBody;
+            if (!response.isValid || response.standardAddress !== redemption.paymentAddress) {
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained address validation proof for redemption
+                    ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
+                await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
+                redemption.state = AgentRedemptionState.DONE;
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}
+                    with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
+            } else {
+                // this should never happen unless there is a problem with the verifier server
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained conflicting address validation proof
+                    for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
+                await this.notifier.sendRedemptionAddressValidationProofConflict(
+                    redemption.agentAddress,
+                    redemption.requestId.toString(),
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    redemption.proofRequestRound!,
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    redemption.proofRequestData!,
+                    redemption.paymentAddress
+                );
+            }
+        } else {
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
+                in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
+            await this.notifier.sendRedemptionAddressValidationNoProof(
+                redemption.agentAddress,
+                redemption.requestId.toString(),
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                redemption.proofRequestRound!,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                redemption.proofRequestData!,
+                redemption.paymentAddress
+            );
         }
     }
 
@@ -1461,27 +1535,21 @@ export class AgentBot {
      * @param redemption AgentRedemption entity
      */
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
-        logger.info(
-            `Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${
-                redemption.txHash
-            } and redemption ${redemption.requestId.toString()}.`
-        );
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${redemption.txHash}
+            and redemption ${redemption.requestId.toString()}.`);
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_PROOF;
             redemption.proofRequestRound = request.round;
             redemption.proofRequestData = request.data;
-            logger.info(
-                `Agent ${this.agent.vaultAddress} requested payment proof for transaction ${redemption.txHash} and redemption ${redemption.requestId}; target underlying address ${redemption.paymentAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${redemption.txHash}
+                and redemption ${redemption.requestId}; target underlying address ${redemption.paymentAddress},
+                proofRequestRound ${request.round}, proofRequestData ${request.data}`);
         } else {
             // else cannot prove request yet
-            logger.info(
-                `Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${
-                    redemption.txHash
-                } and redemption ${redemption.requestId.toString()}.`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${redemption.txHash}
+                and redemption ${redemption.requestId.toString()}.`);
         }
     }
 
@@ -1712,7 +1780,12 @@ export class AgentBot {
         const nativeLowBlance = toBNExp(NATIVE_LOW_BALANCE, 18);
         if (ownerBalance.lte(nativeLowBlance)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.vaultAddress, this.agent.ownerAddress, ownerBalance.toString(), poolCollateralPrice.collateral.tokenFtsoSymbol);
+            await this.notifier.sendLowBalanceOnOwnersAddress(
+                this.agent.vaultAddress,
+                this.agent.ownerAddress,
+                ownerBalance.toString(),
+                poolCollateralPrice.collateral.tokenFtsoSymbol
+            );
             logger.info(
                 `Agent's ${this.agent.vaultAddress} owner ${this.agent.ownerAddress} has low native balance ${ownerBalance.toString()} ${
                     poolCollateralPrice.collateral.tokenFtsoSymbol

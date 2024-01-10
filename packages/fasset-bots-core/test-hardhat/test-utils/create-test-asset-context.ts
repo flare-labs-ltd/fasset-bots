@@ -21,6 +21,7 @@ import { ContractWithEvents } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, IERC20Instance } from "../../typechain-truffle";
 import { artifacts } from "../../src/utils/web3";
 import { FaultyWallet } from "./FaultyWallet";
+import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -147,6 +148,7 @@ export async function createTestAssetContext(
         useAlwaysFailsProver ? useAlwaysFailsProver : false
     );
     stateConnectorClient.addChain(chainInfo.chainId, chain);
+    const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
     const wallet = useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
     // create stablecoins
@@ -206,6 +208,7 @@ export async function createTestAssetContext(
         priceChangeEmitter: ftsoManager,
         collaterals,
         stablecoins,
+        verificationClient,
     };
 }
 

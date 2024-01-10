@@ -323,7 +323,7 @@ describe("Challenger tests", async () => {
         const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
         redemption.valueUBA = toBN(agentBalance);
         chain.requiredFee = toBN(redemption.feeUBA);
-        await agentBot.payForRedemption(redemption);
+        await agentBot.checkBeforeRedemptionPayment(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
         for (let i = 0; ; i++) {

@@ -190,6 +190,7 @@ export class AttestationHelper {
     }
 
     async obtainAddressValidityProof(round: number, requestData: string): Promise<AddressValidity.Proof | AttestationNotProved> {
+        logger.info(`Attestation helper: obtaining address validity proof with round ${round} and requestData ${requestData}`);
         return await this.stateConnector.obtainProof(round, requestData);
     }
 
@@ -280,7 +281,7 @@ export class AttestationHelper {
             throw new AttestationHelperError("addressValidity: not proved")
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
-        const result = await this.stateConnector.obtainProof(request.round, request.data);
+        const result = await this.obtainAddressValidityProof(request.round, request.data);
         if (!attestationProved(result)) {
             throw new AttestationHelperError("addressValidity: not proved")
         }
