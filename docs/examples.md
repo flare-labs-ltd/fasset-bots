@@ -1,6 +1,23 @@
-# Examples
+# Examples (provided for `testXRP`, `testUDC` and `Coston`)
 
-## How to create agent bot and make it available? (Only available agents can be minted against to.)
+## How to create secrets file for agent?
+
+1. Run following command, which prefill underlying and native account in output file `secrets.json`.
+
+```console
+yarn user-bot generateSecrets --agent -o secrets.json
+```
+
+2. Replace empty fields in apiKey (`native_rpc`, `xrp_rpc`, `indexer`) with api keys from your provider or delete them if not needed.
+
+3. Grant read access to `secrets.json`.
+
+```console
+chmod 600 secrets.json
+```
+Note: Fund `owner.native_address` with selected vault collateral and native collateral. In case of using `testXRP` or `XRP` activate underlying account `owner.underlying_address` by depositing 10 `testXRP` or `XRP`.
+
+## How to create agent and make it available? (Only available agents can be minted against to.)
 
 1. Create agent. The output is native address of created agent.
 
@@ -125,7 +142,7 @@ rBxp3z87UbwaUgP2U88pT4pjEaeNP3FVWm 00F903ED76E80E5EDBA58B4C5F4DA4FB2EE02E99F8752
 1. Create wallet encryption password that can be used in `secrets.json` file.
 
 ```console
-$ yarn key createWalletEncryptionPassword
+$ yarn key-gen createWalletEncryptionPassword
 9cbefd0062028c1437bcb37a51d8546d872dbf3f081eab4d246d87548e1e5448
 ```
 
@@ -134,7 +151,7 @@ $ yarn key createWalletEncryptionPassword
 1. List available agents that user can mint against.
 
 ```console
-$ yarn user-bot agents -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot agents -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 ADDRESS                                     MAX_LOTS  FEE
@@ -152,7 +169,7 @@ ADDRESS                                     MAX_LOTS  FEE
 1. Mint _1 FtestXR_P_ fasset against agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_.
 
 ```console
-$ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Reserving collateral...
@@ -179,7 +196,7 @@ MINTING EXECUTED: Minting 18455 executed for 0x97204bd339e5e33acc7675dea5593f254
 1. Redeem _1 FtestXRP_ fasset.
 
 ```console
-$ yarn user-bot redeem 1 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot redeem 1 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Asking for redemption of 1 lots
@@ -202,7 +219,7 @@ REDEMPTION PAYMENT PROOF REQUESTED: Payment proof for redemption 17644 was reque
 1. List system info.
 
 ```console
-$ yarn user-bot info -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot info -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 FAsset: F-TestXRP (FtestXRP) at 0xA86379bC8644Ce1919cc750844E819c0a2cD28dB
@@ -213,8 +230,7 @@ Minted: 13.60 FtestXRP  (1.36 lots)
 2. List system info with basic agent's info.
 
 ```console
-$ yarn user-bot info --agents -f FtestXRP -c ./run-config/run-config-user-coston-
-testxrp.json
+$ yarn user-bot info --agents -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 FAsset: F-TestXRP (FtestXRP) at 0xA86379bC8644Ce1919cc750844E819c0a2cD28dB
@@ -241,13 +257,13 @@ Vault address                               Owner address                       
 ### User command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP -c ./run-config/run-config-user-coston-testxrp.json
+$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 ```
 
 ### Agent command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP -c ./run-config/run-config-agent-coston-testxrp.json
+$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP
 ```
 
 ### Result

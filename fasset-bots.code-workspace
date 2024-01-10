@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"name": "✨ fasset-bots monorepo",
+			"path": "."
+		},
+		{
+			"name": "📦 core",
+			"path": "packages/fasset-bots-core"
+		},
+		{
+			"name": "🚀 api",
+			"path": "packages/fasset-bots-api"
+		},
+		{
+			"name": "⚙️ cli",
+			"path": "packages/fasset-bots-cli"
+		},
+		{
+			"name": "📦 simple-wallet",
+			"path": "packages/simple-wallet"
+		}
+	],
+	"settings": {
+		"yaml.customTags": [
+			"!reference sequence"
+		],
+		"search.useParentIgnoreFiles": true
+	}
+}

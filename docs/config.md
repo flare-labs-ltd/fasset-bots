@@ -102,12 +102,12 @@ export interface NativeChainInfo {
 }
 ```
 
-### Agent bot run config
-
+### Bot run config for `testXRP` and `Coston`
+Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
 ```json
 {
     "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
+    "contractsJsonFile": "../fasset-deployment/coston.json",
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -133,86 +133,19 @@ export interface NativeChainInfo {
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
-    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json"
-}
-```
-
-### Challenger run config
-
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
+    "defaultAgentSettingsPath": "./run-config/agent-settings-config.json",
+    "liquidationStrategy": {
+        "className": "DexLiquidationStrategy",
+        "config": {
+            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
         }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
-}
-```
-
-### Liquidator and system keeper run config
-
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
     },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP"
+    "challengeStrategy": {
+        "className": "DexChallengeStrategy",
+        "config": {
+            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
         }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc"
-}
-```
-
-### Time keeper run config
-
-```json
-{
-    "loopDelay": 5000,
-    "contractsJsonFile": "./fasset-deployment/coston.json",
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssetInfos": [
-        {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
-            "fAssetSymbol": "FtestXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
-        }
-    ],
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    }
 }
 ```
 
@@ -223,14 +156,23 @@ See [`.env.template`](../.env.template).
 Example:
 
 ```env
-## Path to config file for the agent bot
-RUN_CONFIG_PATH="./run-config/run-config-agent-coston-testxrp.json"
+## Path to config file for the agent bot (and other bots)
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
 
-## (Optional) Path to config file for users, instead you can use `-c` parameter
-# USER_CONFIG_PATH="./run-config/run-config-coston-testxrp.json"
+## Path to secrets file for the agent bot (and other bots)
+FASSET_BOT_SECRETS="./secrets.json"
 
 ## Enable the following line on Windows to allow reading secrets, since secrets file permission check does not work
 # ALLOW_SECRETS_ON_WINDOWS=true
+
+## (Optional) Path to config file for users, instead you can use `-c` parameter
+# FASSET_USER_CONFIG="./packages/fasset-bots-core/run-config/coston-user.json"
+
+## (Optional) Path to secrets json file for users, instead you can use `-s` parameter.
+# FASSET_USER_SECRETS=""
+
+## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset` subdirectory in user's home directory.
+# FASSET_USER_DATA_DIR=""
 ```
 
 ## Secrets file
@@ -301,7 +243,7 @@ Example:
 
 Variable `wallet.encryption_password` should be at least 16 characters long. It can be generated via command
 
-`yarn key createWalletEncryptionPassword`
+`yarn key-gen createWalletEncryptionPassword`
 
 ### Challenger bot secrets file
 

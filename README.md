@@ -39,7 +39,7 @@ Configurations:
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. `secrets.json`. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#agent-bot-secrets-file)
 
@@ -47,7 +47,7 @@ Configurations:
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#challenger-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -55,7 +55,7 @@ Configurations:
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -63,7 +63,7 @@ Configurations:
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -71,7 +71,7 @@ Configurations:
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `RUN_CONFIG_PATH`. See [configuration and example](./docs/config.md#env).
+-   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
 -   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
@@ -109,6 +109,10 @@ More information about the user bot can be found [here](./docs/user/user-cli.md)
 ## Command line interface
 
 Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
+
+## User bot
+
+More information about the user bot can be found [here](./docs/user/user-cli.md).
 
 ### Examples
 

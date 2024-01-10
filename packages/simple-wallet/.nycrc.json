@@ -1,0 +1,6 @@
+{
+    "extends": "../../.nycrc.json",
+    "include": [
+        "src/**/*.ts"
+    ]
+}

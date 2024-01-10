@@ -1,32 +1,37 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es2018",
-        "declaration": true,
-        "declarationMap": true,
-        "strict": true,
-        "esModuleInterop": true,
-        "outDir": "./dist",
-        "sourceMap": true,
-        "allowSyntheticDefaultImports": true,
-        "forceConsistentCasingInFileNames": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "skipLibCheck": true,
-        "typeRoots": [
-            "test/types",
-            "node_modules/@types"
-        ]
+  "compilerOptions": {
+    "module": "node16",
+    "target": "es2018",
+    "moduleResolution": "node16",
+    "allowJs": true,
+    "declaration": true,
+    "declarationMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "newLine": "lf"
+  },
+  "include": [],
+  "ts-node": {
+    "files": true
+  },
+  "references": [
+    {
+      "path": "packages/fasset-bots-api"
     },
-    "include": [
-        "src/**/*",
-        "test/**/*",
-        "test-hardhat/**/*",
-        "./typechain-truffle",
-        "./typechain-truffle/types.d.ts",
-        "./hardhat.config.ts"
-    ],
-    "ts-node": {
-        "files": true
+    {
+      "path": "packages/fasset-bots-cli"
+    },
+    {
+      "path": "packages/fasset-bots-core"
+    },
+    {
+      "path": "packages/simple-wallet"
     }
+  ]
 }
