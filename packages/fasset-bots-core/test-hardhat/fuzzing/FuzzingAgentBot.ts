@@ -7,7 +7,8 @@ import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
 import { EventScope } from "../../src/utils/events/ScopedEvents";
 import { MAX_BIPS, checkedCast, toBN } from "../../src/utils/helpers";
-import { coinFlip, formatBN, getLotSize, randomBN, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
+import { coinFlip, getLotSize, randomBN, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
+import { formatBN } from "../../src/utils/formatting";
 import { FuzzingRunner } from "./FuzzingRunner";
 
 export class FuzzingAgentBot {

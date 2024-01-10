@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { formatBN } from "./fuzzing-utils";
+import { formatBN } from "../../src/utils/formatting";
 import { web3 } from "../../src/utils/web3";
 import { BaseEvent } from "../../src/utils/events/common";
 
