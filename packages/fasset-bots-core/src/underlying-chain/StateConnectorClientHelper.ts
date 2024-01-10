@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import {
     ARBase,
     ARESBase,
+    AddressValidity,
     AttestationDefinitionStore,
     BalanceDecreasingTransaction,
     ConfirmedBlockHeightExists,
@@ -234,6 +235,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 return await this.scProofVerifier.verifyConfirmedBlockHeightExists(normalizedProofData);
             case ReferencedPaymentNonexistence.TYPE:
                 return await this.scProofVerifier.verifyReferencedPaymentNonexistence(normalizedProofData);
+            case AddressValidity.TYPE:
+                return await this.scProofVerifier.verifyAddressValidity(normalizedProofData);
             default:
                 logger.error(`State connector error: invalid attestation type ${proofData.data.attestationType}`);
                 throw new StateConnectorError(`Invalid attestation type ${proofData.data.attestationType}`);

@@ -198,7 +198,9 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     }
 
     private proveParsedRequestBody(chain: MockChain, parsedRequest: ARBase) {
-        const prover = this.useAlwaysFailsProver ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds) : new MockAttestationProver(chain, this.queryWindowSeconds);
+        const prover = this.useAlwaysFailsProver
+            ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds)
+            : new MockAttestationProver(chain, this.queryWindowSeconds);
         switch (parsedRequest.attestationType) {
             case Payment.TYPE: {
                 const request = parsedRequest.requestBody as Payment.RequestBody;
