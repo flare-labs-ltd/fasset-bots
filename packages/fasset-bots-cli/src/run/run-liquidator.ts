@@ -5,8 +5,8 @@ import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.native_address");
-const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.native_private_key");
+const LIQUIDATOR_ADDRESS: string = requireSecret("liquidator.address");
+const LIQUIDATOR_PRIVATE_KEY: string = requireSecret("liquidator.private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 toplevelRun(async () => {

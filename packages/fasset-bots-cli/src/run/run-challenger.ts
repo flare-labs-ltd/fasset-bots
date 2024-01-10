@@ -5,8 +5,8 @@ import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const CHALLENGER_ADDRESS: string = requireSecret("challenger.native_address");
-const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.native_private_key");
+const CHALLENGER_ADDRESS: string = requireSecret("challenger.address");
+const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 toplevelRun(async () => {

@@ -5,8 +5,8 @@ import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 
-const SYSTEM_KEEPER_ADDRESS: string = requireSecret("systemKeeper.native_address");
-const SYSTEM_KEEPER_PRIVATE_KEY: string = requireSecret("systemKeeper.native_private_key");
+const SYSTEM_KEEPER_ADDRESS: string = requireSecret("systemKeeper.address");
+const SYSTEM_KEEPER_PRIVATE_KEY: string = requireSecret("systemKeeper.private_key");
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 toplevelRun(async () => {
