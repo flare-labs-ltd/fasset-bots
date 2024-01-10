@@ -109,12 +109,24 @@ export class UserBot {
         this.fassetConfig = chainConfig;
         // create underlying wallet key
         if (requireWallet) {
-            this.underlyingAddress = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.address`);
+            const underlyingAddress = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.address`);
+            this.underlyingAddress = await this.validateUnderlyingAddress(underlyingAddress);
             const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.private_key`);
             await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
         }
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
+    }
+
+    // User must make sure that underlying address is valid and normalized.
+    // Otherwise the agent will reject the redemption and the user will lose the fasset value.
+    async validateUnderlyingAddress(underlyingAddress: string) {
+        const res = await this.fassetConfig.verificationClient!.checkAddressValidity(this.fassetConfig.chainInfo.chainId, underlyingAddress);
+        if (!res.isValid) {
+            logger.error(`User ${this.nativeAddress} has invalid underlying address.`);
+            throw new CommandLineError("Invalid underlying address");
+        }
+        return res.standardAddress;
     }
 
     infoBot(): InfoBot {
