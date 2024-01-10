@@ -2,7 +2,7 @@
 
 ## FAsset bots
 
-The automated system of [FAsset system](https://github.com/flare-labs-ltd/fassets), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
+The automated system of [FAsset system](https://docs.flare.network/tech/fassets/), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
 
 ## Actors in FAsset system
 
@@ -14,7 +14,7 @@ The automated system of [FAsset system](https://github.com/flare-labs-ltd/fasset
 
 ## Install
 
-Clone this project `fasset-bots` and enter `fasset-bots` directory.
+Clone this repository `fasset-bots` and enter `fasset-bots` directory.
 
     git clone git@gitlab.com:flarenetwork/fasset-bots.git
     cd fassets-bots
@@ -27,11 +27,15 @@ Install `fasset-bots`
 
     yarn && yarn build
 
-## Configurations
+## Setup
 
-### [Agent bot]((./docs/actors/agent.md))
+### Agent Bot
 
--   Generate default agent settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
+[Follow this step by step guide to setup an Agent Bot for XRP on Testnet](./docs/setup.md)
+
+Configurations: 
+
+-  Generate default agent settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
 
 -   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
@@ -81,7 +85,7 @@ The script will create [AgentBotRunner](./src/actors/AgentBotRunner.ts). The run
 
 In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot [command]`.
 
-### Challenger, Liquidator and SystemKeeper
+### Challenger, Liquidator, SystemKeeper and Time keeper
 
 Other bots can be run using [ActorBaseRunner](./src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 
@@ -93,17 +97,18 @@ Example for such scripts:
 
 -   System keeper [`run-systemKeeper.ts`](./src/run/run-systemKeeper.ts) run by command `node dist/src/run/run-systemKeeper.js`.
 
-### Time keeper
+-   Time keeper [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by command `node dist/src/run/run-timeKeeper.js`.
 
-Example scripts [`run-timeKeeper.ts`](./src/run/run-timeKeeper.ts) run by command `node dist/src/run/run-timeKeeper.js`.
+**Helpers**: In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [_TrackedState_](./src/state/TrackedState.ts) and [_TrackedAgentState_](./src/state/TrackedAgentState.ts).
+See [here](./docs/trackState.md).
+
+### User bot
+
+More information about the user bot can be found [here](./docs/user/user-cli.md).
 
 ## Command line interface
 
 Command line interface is provided for Agent bot, User bot and for key/password generation. For more see [here](./docs/cli.md).
-
-## User bot
-
-More information about the user bot can be found [here](./docs/user/user-cli.md).
 
 ### Examples
 
@@ -119,20 +124,15 @@ More information about the user bot can be found [here](./docs/user/user-cli.md)
 -   [How to list system info?](./docs/examples.md#how-to-list-system-info)
 -   [How to list agent info?](./docs/examples.md#how-to-list-agent-info)
 
-## REST APIs for Agent bot
+### REST APIs for Agent bot
 
 Same commands as in [cli `agent-bot`](./docs/cli.md#cli-agent-bot) can be run via REST APIs. For more see [here](./docs/api.md).
 
-## Helpers
+### Test and Debug
 
-In order to efficiently run Challenger, Liquidation, SystemKeeper some non-persistent state is being tracked with [_TrackedState_](./src/state/TrackedState.ts) and [_TrackedAgentState_](./src/state/TrackedAgentState.ts).
-See [here](./docs/trackState.md).
+Checkout [this file](./docs/testDebug.md) to learn more about testing & debugging
 
-## Test and debug
-
-See [here](./docs/testDebug.md).
-
-## Logging
+### Logging
 
 Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src/cli/BotCliCommands.ts) are being logged. Log files are created every hour and can be found in `log/log/log-YYYY-MM-DD-HH.log`.
 
@@ -143,22 +143,18 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 
 ### Testnet faucets
 
--   testnet XRP
+- Please reach out to our Team Members on Telegram for TestUSDC/TestUSDT tokens
 
+-   Testnet XRP
     -   https://yusufsahinhamza.github.io/xrp-testnet-faucet/ - 980 XRP (not limited per day)
     -   https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
 
 -   Coston
     -   https://coston1-faucet.towolabs.com/ - 100 CFLR per account per day
 
-- Please reach out to our Team Members on Telegram for TestUSDC/TestUSDT tokens
 
 ### Other usefull webclients
 
 -   [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#).
 -   [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
 -   [Testnet XRP Explorer](https://testnet.xrpl.org/)
-
-### Simple wallet
-
-Payments in bots are performed via [simple-wallet](https://gitlab.com/flarenetwork/simple-wallet).
