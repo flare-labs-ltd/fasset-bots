@@ -101,7 +101,7 @@ describe("InfoBot cli commands unit tests", async () => {
         // create agents
         for (let i = 0; i <= 5; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
-            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + (i + 1));
+            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + (100 + i));
         }
         await infoBot.printSystemInfo();
         expect(spyLog).to.be.called.gt(0);
@@ -112,7 +112,7 @@ describe("InfoBot cli commands unit tests", async () => {
         // create agents
         for (let i = 0; i <= 5; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
-            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i + 1);
+            await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + (100 + i));
         }
         await infoBot.printAllAgents();
         await infoBot.printAvailableAgents();
