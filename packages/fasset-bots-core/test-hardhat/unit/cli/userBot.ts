@@ -241,7 +241,7 @@ describe("UserBot cli commands unit tests", async () => {
         const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
         // redemption default - invalid payment reference
         await expect(
-            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp, rdReq.executor)
+            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
         )
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
@@ -408,7 +408,7 @@ describe("UserBot cli commands unit tests", async () => {
         expect(state.executorAddress).to.eq(executor);
         // redemption default - invalid payment reference
         await expect(
-            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp, rdReq.executor)
+            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
         )
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);

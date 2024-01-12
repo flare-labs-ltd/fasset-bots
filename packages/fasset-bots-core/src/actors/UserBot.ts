@@ -175,17 +175,25 @@ export class UserBot {
      * Mints desired amount of lots against desired agent.
      * @param agentVault agent's vault address
      * @param lots number of lots to mint
+     * @param executorAddress optional address of the executor
+     * @param executorFeeNatWei optional executor fee (required if executor is used)
      */
-    async mint(agentVault: string, lots: BNish): Promise<void> {
-        const requestId = await this.reserveCollateral(agentVault, lots, ZERO_ADDRESS, undefined);
+    async mint(agentVault: string, lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+        const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
+        console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
+        console.log("    " + this.stateFilePath("mint", requestId));
         await this.proveAndExecuteSavedMinting(requestId);
         logger.info(`User ${this.nativeAddress} finished minting with agent ${agentVault}.`);
     }
 
-    async proveAndExecuteSavedMinting(requestId: BNish) {
-        const state = this.readState("mint", requestId);
-        await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress, state.executorAddress);
-        this.deleteState(state);
+    /**
+     * Proves minting payment and executes minting.
+     * @param requestIdOrPath minting request id or minting state file path
+     */
+    async proveAndExecuteSavedMinting(requestIdOrPath: BNish | string) {
+        const state = this.readState("mint", requestIdOrPath);
+        await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+        this.deleteState(state, requestIdOrPath);
     }
 
     /**
@@ -193,9 +201,8 @@ export class UserBot {
      * @param collateralReservationId collateral reservation id
      * @param transactionHash transaction hash of minting payment
      * @param paymentAddress agent's underlying address
-     * @param executorAddress executor's address
      */
-    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string, executorAddress: string): Promise<void> {
+    async proveAndExecuteMinting(collateralReservationId: BNish, transactionHash: string, paymentAddress: string): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Waiting for transaction finalization...");
         logger.info(`User ${this.nativeAddress} is waiting for transaction ${transactionHash} finalization for reservation ${collateralReservationId}.`);
@@ -211,7 +218,7 @@ export class UserBot {
                 web3DeepNormalize(proof)
             )} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`
         );
-        await minter.executeProvedMinting(collateralReservationId, proof, executorAddress);
+        await minter.executeProvedMinting(collateralReservationId, proof, ZERO_ADDRESS);
         console.log("Done");
         logger.info(
             `User ${this.nativeAddress} executed minting with proof ${JSON.stringify(
@@ -237,7 +244,7 @@ export class UserBot {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async redeem(lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<void> {
+    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
@@ -251,6 +258,7 @@ export class UserBot {
         console.log(`Triggered ${requests.length} payment requests (addresses, block numbers and timestamps are on underlying chain):`);
         logger.info(`User ${this.nativeAddress} triggered ${requests.length} payment requests.`);
         let loggedRequests = ``;
+        const requestFiles: string[] = [];
         for (const req of requests) {
             const amount = toBN(req.valueUBA).sub(toBN(req.feeUBA));
             console.log(
@@ -271,21 +279,29 @@ export class UserBot {
                 executorAddress: String(req.executor),
                 createdAt: this.timestampToDateString(timestamp),
             });
+            requestFiles.push(this.stateFilePath("redeem", req.requestId));
+        }
+        if (executorAddress !== ZERO_ADDRESS) {
+            console.log("In case of redemption non-payment, the default can be triggered by the executor. Please pass the executor the state file(s):");
+            requestFiles.forEach(fname => console.log("    " + fname));
         }
         logger.info(loggedRequests);
     }
 
-    async savedRedemptionDefault(requestId: BNish): Promise<void> {
-        const state = this.readState("redeem", requestId);
+    /**
+     * Call redemption default with saved redemption state.
+     * @param requestIdOrPath redemption request id or minting state file path
+     */
+    async savedRedemptionDefault(requestIdOrPath: BNish | string): Promise<void> {
+        const state = this.readState("redeem", requestIdOrPath);
         await this.redemptionDefault(
             state.amountUBA,
             state.paymentReference,
             state.firstUnderlyingBlock,
             state.lastUnderlyingBlock,
-            state.lastUnderlyingTimestamp,
-            state.executorAddress
+            state.lastUnderlyingTimestamp
         );
-        this.deleteState(state);
+        this.deleteState(state, requestIdOrPath);
     }
 
     /**
@@ -301,8 +317,7 @@ export class UserBot {
         paymentReference: string,
         firstUnderlyingBlock: BNish,
         lastUnderlyingBlock: BNish,
-        lastUnderlyingTimestamp: BNish,
-        executorAddress: string
+        lastUnderlyingTimestamp: BNish
     ): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         const requestId = PaymentReference.decodeId(paymentReference);
@@ -323,7 +338,7 @@ export class UserBot {
         );
         console.log("Executing payment default...");
         logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
-        await redeemer.executePaymentDefault(requestId, proof, executorAddress);
+        await redeemer.executePaymentDefault(requestId, proof, ZERO_ADDRESS);   // executor must call from own user address
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }
@@ -379,6 +394,14 @@ export class UserBot {
         return requiredEventArgs(res, "Exited");
     }
 
+    stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {
+        if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
+            return path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}/${requestIdOrPath}.json`);
+        } else {
+            return path.resolve(requestIdOrPath); // full path passed
+        }
+    }
+
     writeState(data: StateData): void {
         const dir = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}`);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -386,8 +409,8 @@ export class UserBot {
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
     }
 
-    readState<T extends StateData["type"]>(type: T, requestId: BNish): Extract<StateData, { type: T }> {
-        const fname = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}/${requestId}.json`);
+    readState<T extends StateData["type"]>(type: T, requestIdOrPath: BNish | string): Extract<StateData, { type: T }> {
+        const fname = this.stateFilePath(type, requestIdOrPath);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);
     }
@@ -406,8 +429,8 @@ export class UserBot {
             })
     }
 
-    deleteState(data: StateData): void {
-        const fname = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}/${data.requestId}.json`);
+    deleteState(data: StateData, requestIdOrPath?: BNish | string): void {
+        const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
         fs.unlinkSync(fname);
     }
 

@@ -119,43 +119,14 @@ program
     });
 
 program
-    .command("reserveCollateral")
-    .description("reserves collateral to mint Fassets")
-    .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
-    .argument("<amountLots>")
-    .option("-u, --updateBlock")
-    .option("-e, --executorAddress <executorAddress>", "executor's native address")
-    .option("-f, --executorFee <executorFee>", "executor's fee in nat wei")
-    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executorAddress?: string, executorFee?: string }) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secret.");
-        const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true);
-        const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
-        if (agentVault == null) {
-            throw new CommandLineError("No agent with enough free lots available");
-        }
-        if (cmdOptions.updateBlock) {
-            await minterBot.updateUnderlyingTime();
-        }
-        if (cmdOptions.executorAddress && cmdOptions.executorFee) {
-            await minterBot.reserveCollateral(agentVault, amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
-        }
-        if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
-            throw new CommandLineError("Missing executorFee");
-        }
-        if (!cmdOptions.executorAddress && cmdOptions.executorFee) {
-            throw new CommandLineError("Missing executorAddress");
-        }
-        await minterBot.reserveCollateral(agentVault, amountLots, ZERO_ADDRESS, undefined);
-    });
-
-program
     .command("mint")
     .description("Mints the amount of FAssets in lots")
     .option("-a --agent <agentVaultAddress>", "agent to use for minting; if omitted, use the one with least fee that can mint required number of lots")
     .argument("<amountLots>")
     .option("-u, --updateBlock")
-    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean }) => {
+    .option("--executor <executorAddress>", "optional executor's native address")
+    .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
+    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executor?: string, executorFee?: string }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
@@ -166,13 +137,23 @@ program
         if (cmdOptions.updateBlock) {
             await minterBot.updateUnderlyingTime();
         }
-        await minterBot.mint(agentVault, amountLots);
+        if (cmdOptions.executor && !cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executorFee");
+        }
+        if (!cmdOptions.executor && cmdOptions.executorFee) {
+            throw new CommandLineError("Missing executor address");
+        }
+        if (cmdOptions.executor && cmdOptions.executorFee) {
+            await minterBot.mint(agentVault, amountLots, cmdOptions.executor, cmdOptions.executorFee);
+        } else {
+            await minterBot.mint(agentVault, amountLots);
+        }
     });
 
 program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
-    .argument("<requestId>")
+    .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
@@ -194,28 +175,29 @@ program
     .command("redeem")
     .description("Triggers redemption")
     .argument("<amountLots>")
-    .option("-e, --executorAddress <executorAddress>", "executor's native address")
-    .option("-f, --executorFee <executorFee>", "executor's fee in nat wei")
+    .option("--executor <executorAddress>", "optional executor's native address")
+    .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
-        if (cmdOptions.executorAddress && cmdOptions.executorFee) {
-            await redeemerBot.redeem(amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
-        }
         if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
             throw new CommandLineError("Missing executorFee");
         }
         if (!cmdOptions.executorAddress && cmdOptions.executorFee) {
             throw new CommandLineError("Missing executorAddress");
         }
-        await redeemerBot.redeem(amountLots, ZERO_ADDRESS, undefined);
+        if (cmdOptions.executorAddress && cmdOptions.executorFee) {
+            await redeemerBot.redeem(amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
+        } else {
+            await redeemerBot.redeem(amountLots);
+        }
     });
 
 program
     .command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
-    .argument("<requestId>")
+    .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
         if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
