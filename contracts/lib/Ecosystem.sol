@@ -8,50 +8,23 @@ import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/CollateralType.sol";
+import "./Constants.sol";
 
-// embedded library
+import "hardhat/console.sol";
+
 library Ecosystem {
 
+    // ftso symbols
     struct FtsoSymbols {
         string asset;
         string vault;
         string pool;
     }
 
-    // for now assume that flash loans do
-    // not have fees or that they are fixed
-    struct Data {
-        // addresses
-        address assetManager;
-        address agentVault;
-        // tokens
-        address fAssetToken;
-        address vaultToken;
-        address poolToken;
-        // agent vars
-        uint256 agentVaultCollateralWei;
-        uint256 agentPoolCollateralWei;
-        uint256 maxLiquidatedFAssetUBA;
-        uint256 liquidationFactorVaultBips;
-        uint256 liquidationFactorPoolBips;
-        uint256 assetMintingGranularityUBA;
-        // dex vars
-        uint256 reserveVaultWeiDex1;
-        uint256 reserveFAssetUBADex1;
-        uint256 reservePoolWeiDex2;
-        uint256 reserveVaultWeiDex2;
-        // price vars
-        uint256 priceFAssetVaultMul;
-        uint256 priceFAssetVaultDiv;
-        uint256 priceFAssetPoolMul;
-        uint256 priceFAssetPoolDiv;
-    }
-
     function getData(
         address _agentVault,
-        address _dex,
-        address /* _flashLender */
-    ) internal view returns (Data memory _data) {
+        address _dex
+    ) internal view returns (EcosystemData memory _data) {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));

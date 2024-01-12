@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////
 // conversions
 
-export function convertUsd5ToTokens(
+export function convertUsd5ToToken(
   amountUsd5: bigint,
   tokenDecimals: bigint,
   tokenPriceUsd5: bigint

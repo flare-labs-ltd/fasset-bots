@@ -99,6 +99,7 @@ describe.only("Tests for Liquidator contract", () => {
       expect(balanceAfter - balanceBefore).to.be.approximately(
         ethers.parseEther("1"), ethers.parseEther("0.0001"))
     })
+
   })
 
   describe("security", () => {

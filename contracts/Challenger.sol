@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IChallenger.sol";
 import "./Liquidator.sol";
 
+
 /**
  * @title Challenger
  * @notice Contract to challenge the asset manager
@@ -84,9 +85,10 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         super.runArbitrage(
             _agentVault,
             _profitTo,
+            0, 1,
+            0, 1,
             address(0),
             address(0),
-            0, 0, 0, 0,
             new address[](0),
             new address[](0)
         );

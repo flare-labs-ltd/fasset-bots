@@ -3,6 +3,7 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import * as crypto from 'crypto'
 import * as calc from '../../calculations'
+import type { AddressLike, Signer } from 'ethers'
 import type { ERC20, BlazeSwapRouter, ERC20Mock, FakePriceReader } from '../../../types'
 import type { UnderlyingAsset, EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 
@@ -23,13 +24,17 @@ export async function setFtsoPrices(
   await priceReader.setPrice(assetConfig.pool.ftsoSymbol, pricePool)
 }
 
-export async function setupEcosystem(config: EcosystemConfig, assetConfig: AssetConfig, context: TestContext): Promise<void> {
+export async function setupEcosystem(
+  config: EcosystemConfig,
+  assetConfig: AssetConfig,
+  context: TestContext
+): Promise<void> {
   const { assetManager, blazeSwapRouter, fAsset, vault, pool, agent, priceReader } = context.contracts
   // set ftso prices and dex reserves
   await assetManager.setLiquidationFactors(config.liquidationFactorBips, config.liquidationFactorVaultBips)
   await setFtsoPrices(assetConfig, priceReader, config.assetFtsoPrice, config.vaultFtsoPrice, config.poolFtsoPrice)
-  await addLiquidity(blazeSwapRouter, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, context.signers.deployer.address)
-  await addLiquidity(blazeSwapRouter, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, context.signers.deployer.address)
+  await addLiquidity(blazeSwapRouter, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, context.signers.deployer)
+  await addLiquidity(blazeSwapRouter, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, context.signers.deployer)
   // deposit collaterals and mint
   await agent.depositVaultCollateral(config.vaultCollateral)
   await agent.depositPoolCollateral(config.poolCollateral)
@@ -45,6 +50,29 @@ export async function setupEcosystem(config: EcosystemConfig, assetConfig: Asset
 
 ////////////////////////////////////////////////////////////////////////////
 // blaze swap
+
+export async function addLiquidity(
+  router: BlazeSwapRouter,
+  tokenA: ERC20Mock,
+  tokenB: ERC20Mock,
+  amountA: bigint,
+  amountB: bigint,
+  liquidityProvider: Signer
+): Promise<void> {
+  // mint because we just want to add liquidity to the pool,
+  // are not testing for the effects on liquidity providers
+  await tokenA.mint(liquidityProvider, amountA)
+  await tokenB.mint(liquidityProvider, amountB)
+  await tokenA.connect(liquidityProvider).approve(router, amountA)
+  await tokenB.connect(liquidityProvider).approve(router, amountB)
+  await router.connect(liquidityProvider).addLiquidity(
+    tokenA, tokenB,
+    amountA, amountB,
+    0, 0, 0, 0,
+    liquidityProvider,
+    ethers.MaxUint256
+  )
+}
 
 // calculates the amount of tokenB received
 // when swapping amountA of tokenA
@@ -70,27 +98,16 @@ export async function swapInput(
   return calc.swapInput(reserveA, reserveB, amountB)
 }
 
-export async function addLiquidity(
+export async function swap(
   router: BlazeSwapRouter,
   tokenA: ERC20Mock,
-  tokenB: ERC20Mock,
+  tokenPath: ERC20Mock[],
   amountA: bigint,
-  amountB: bigint,
-  liquidityProvider: string
+  swapper: Signer
 ): Promise<void> {
-  await tokenA.mint(liquidityProvider, amountA)
-  await tokenB.mint(liquidityProvider, amountB)
-  await tokenA.approve(router, amountA)
-  await tokenB.approve(router, amountB)
-  await router.addLiquidity(
-    tokenA, tokenB,
-    amountA, amountB,
-    0, 0, 0, 0,
-    liquidityProvider,
-    ethers.MaxUint256
-  )
+  await tokenA.connect(swapper).approve(router, amountA)
+  await router.connect(swapper).swapExactTokensForTokens(amountA, 0, tokenPath, swapper, ethers.MaxUint256)
 }
-
 
 ////////////////////////////////////////////////////////////////////////////
 // f-asset conversions

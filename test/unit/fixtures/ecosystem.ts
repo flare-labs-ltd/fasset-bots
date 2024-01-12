@@ -1,22 +1,13 @@
 import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../helpers/utils"
-import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToTokens, roundUpWithPrecision } from "../../calculations"
+import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations"
 import type { AssetConfig, EcosystemConfig } from "./interface"
 
 
 export class EcosystemFactory {
   // fixed default values
-  protected defaultDex1FAssetReserve: bigint
-  protected defaultDex2VaultReserve: bigint
-  protected defaultMintedUBA: bigint
-  // fixed example ecosystem configs
-  public baseEcosystem: EcosystemConfig
-  public healthyEcosystemWithVaultUnderwater: EcosystemConfig
-  public healthyEcosystemWithPoolUnderwater: EcosystemConfig
-  public healthyEcosystemWithZeroVaultCollateral: EcosystemConfig
-  public healthyEcosystemWithZeroPoolCollateral: EcosystemConfig
-  public semiHealthyEcosystemWithHighSlippage: EcosystemConfig
-  public unhealthyEcosystemWithHighFAssetDexPrice: EcosystemConfig
-  public unhealthyEcosystemWithBadDebt: EcosystemConfig
+  public defaultDex1FAssetReserve: bigint
+  public defaultDex2VaultReserve: bigint
+  public defaultMintedUBA: bigint
 
   constructor(public config: AssetConfig) {
     // customly configured reserves and minted f-assets (by their value in usd5)
@@ -24,36 +15,27 @@ export class EcosystemFactory {
     const defaultDex2LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
     const defaultMintedFAssetValueUsd5 = BigInt(10) ** BigInt(5 + 6) // million$
     // convert to actual reserves and minted f-assets
-    this.defaultDex1FAssetReserve = convertUsd5ToTokens(
+    this.defaultDex1FAssetReserve = convertUsd5ToToken(
       defaultDex1LiquidityUsd5,
       config.asset.decimals,
       config.asset.defaultPriceUsd5
     )
-    this.defaultDex2VaultReserve = convertUsd5ToTokens(
+    this.defaultDex2VaultReserve = convertUsd5ToToken(
       defaultDex2LiquidityUsd5,
       config.vault.decimals,
       config.vault.defaultPriceUsd5
     )
     this.defaultMintedUBA = roundUpWithPrecision( // in lots
-      convertUsd5ToTokens(
+      convertUsd5ToToken(
         defaultMintedFAssetValueUsd5,
         config.asset.decimals,
         config.asset.defaultPriceUsd5
       ),
       lotSizeUba(config.asset)
     )
-    // get fixed example ecosystem configs
-    this.baseEcosystem = this.getBaseEcosystem()
-    this.healthyEcosystemWithVaultUnderwater = this.getHealthyEcosystemWithVaultUnderwater()
-    this.healthyEcosystemWithPoolUnderwater = this.getHealthyEcosystemWithPoolUnderwater()
-    this.healthyEcosystemWithZeroVaultCollateral = this.getHealthyEcosystemWithZeroVaultCollateral()
-    this.healthyEcosystemWithZeroPoolCollateral = this.getHealthyEcosystemWithZeroPoolCollateral()
-    this.semiHealthyEcosystemWithHighSlippage = this.getSemiHealthyEcosystemWithHighSlippage()
-    this.unhealthyEcosystemWithHighFAssetDexPrice = this.getUnhealthyEcosystemWithHighFAssetDexPrice()
-    this.unhealthyEcosystemWithBadDebt = this.getUnhealthyEcosystemWithBadDebt()
   }
 
-  protected getBaseEcosystem(): EcosystemConfig {
+  public get baseEcosystem(): EcosystemConfig {
     // set liquidation factors such that reward is half the pool's min cr backing overflow,
     // and it is covered by the pool, while vault covers the exact value of liquidated f-assets
     const liquidationFactorBips = (this.config.pool.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
@@ -111,7 +93,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getHealthyEcosystemWithVaultUnderwater(): EcosystemConfig {
+  public get healthyEcosystemWithVaultUnderwater(): EcosystemConfig {
     const vaultCrBips = (this.config.vault.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
       ...this.baseEcosystem,
@@ -128,7 +110,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getHealthyEcosystemWithPoolUnderwater(): EcosystemConfig {
+  public get healthyEcosystemWithPoolUnderwater(): EcosystemConfig {
     const poolCrBips = (this.config.pool.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
       ...this.baseEcosystem,
@@ -145,7 +127,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getHealthyEcosystemWithZeroVaultCollateral(): EcosystemConfig {
+  public get healthyEcosystemWithZeroVaultCollateral(): EcosystemConfig {
     return {
       ...this.baseEcosystem,
       name: 'vault cr is 0, pool ftw',
@@ -154,7 +136,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getHealthyEcosystemWithZeroPoolCollateral(): EcosystemConfig {
+  public get healthyEcosystemWithZeroPoolCollateral(): EcosystemConfig {
     return {
       ...this.baseEcosystem,
       name: 'pool cr is 0, vault ftw',
@@ -163,7 +145,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getSemiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
+  public get semiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
       name: 'arbitrage not possible, dex1 has too high slippage due to low liquidity',
@@ -182,7 +164,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getUnhealthyEcosystemWithHighFAssetDexPrice(): EcosystemConfig {
+  public get unhealthyEcosystemWithHighFAssetDexPrice(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
       name: 'arbitrage not possible, dex1 f-asset price too high',
@@ -191,7 +173,7 @@ export class EcosystemFactory {
     }
   }
 
-  protected getUnhealthyEcosystemWithBadDebt(): EcosystemConfig {
+  public get unhealthyEcosystemWithBadDebt(): EcosystemConfig {
     return {
       ...this.baseEcosystem,
       name: 'vault and pool cr combined is below 1, causing bad debt',
@@ -214,6 +196,41 @@ export class EcosystemFactory {
       expectedVaultCrBips: BigInt(5000),
       expectedPoolCrBips: BigInt(4000)
     }
+  }
+
+  public getHealthyEcosystems(count: number): EcosystemConfig[] {
+    const configs: EcosystemConfig[] = [
+      this.healthyEcosystemWithVaultUnderwater,
+      this.healthyEcosystemWithPoolUnderwater,
+      this.healthyEcosystemWithZeroVaultCollateral,
+      this.healthyEcosystemWithZeroPoolCollateral
+    ]
+    for (let i = 0; i < count; i++) {
+      configs.push(this.randomizeEcosystem(
+        this.baseEcosystem,
+        `randomized healthy ecosystem ${i}`))
+    }
+    return configs
+  }
+
+  public getSemiHealthyEcosystems(count: number): EcosystemConfig[] {
+    const configs: EcosystemConfig[] = [
+      this.semiHealthyEcosystemWithHighSlippage
+    ]
+    for (let i = 0; i < count; i++) {
+      configs.push(this.randomizeEcosystem(
+        this.semiHealthyEcosystemWithHighSlippage,
+        `randomized semi-healthy ecosystem ${i}`))
+    }
+    return configs
+  }
+
+  public getUnhealthyEcosystems(count: number): EcosystemConfig[] {
+    const configs: EcosystemConfig[] = [
+      this.unhealthyEcosystemWithHighFAssetDexPrice,
+      this.unhealthyEcosystemWithBadDebt
+    ]
+    return configs
   }
 
   protected randomizeEcosystem(ecosystem: EcosystemConfig, name: string): EcosystemConfig {
@@ -263,40 +280,5 @@ export class EcosystemFactory {
       expectedVaultCrBips: vaultCrBips,
       expectedPoolCrBips: poolCrBips
     }
-  }
-
-  public getHealthyEcosystems(count: number): EcosystemConfig[] {
-    const configs: EcosystemConfig[] = [
-      this.healthyEcosystemWithVaultUnderwater,
-      this.healthyEcosystemWithPoolUnderwater,
-      this.healthyEcosystemWithZeroVaultCollateral,
-      this.healthyEcosystemWithZeroPoolCollateral
-    ]
-    for (let i = 0; i < count; i++) {
-      configs.push(this.randomizeEcosystem(
-        this.baseEcosystem,
-        `randomized healthy ecosystem ${i}`))
-    }
-    return configs
-  }
-
-  public getSemiHealthyEcosystems(count: number): EcosystemConfig[] {
-    const configs: EcosystemConfig[] = [
-      this.semiHealthyEcosystemWithHighSlippage
-    ]
-    for (let i = 0; i < count; i++) {
-      configs.push(this.randomizeEcosystem(
-        this.semiHealthyEcosystemWithHighSlippage,
-        `randomized semi-healthy ecosystem ${i}`))
-    }
-    return configs
-  }
-
-  public getUnhealthyEcosystems(count: number): EcosystemConfig[] {
-    const configs: EcosystemConfig[] = [
-      this.unhealthyEcosystemWithHighFAssetDexPrice,
-      this.unhealthyEcosystemWithBadDebt
-    ]
-    return configs
   }
 }

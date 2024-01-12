@@ -4,45 +4,38 @@ pragma solidity 0.8.20;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "blazeswap/contracts/shared/libraries/Babylonian.sol";
 import "./Constants.sol";
-import "./Ecosystem.sol";
+
 
 // embedded library
 library SymbolicOptimum {
     using Babylonian for uint256;
 
     function getFlashLoanedVaultCollateral(
-        Ecosystem.Data memory _data
+        EcosystemData memory _data
+
     ) internal pure returns (uint256) {
-        uint256 optVaultAmount = calculateOptimalVaultCollateral(_data);
-        uint256 optFAssetAmountUBA = Math.min(
-            roundUpWithPrecision(
-                getBlazeSwapAmountOut(
-                    optVaultAmount,
-                    _data.reserveVaultWeiDex1,
-                    _data.reserveFAssetUBADex1
-                ),  _data.assetMintingGranularityUBA
-            ), _data.maxLiquidatedFAssetUBA
-        );
-        return (optFAssetAmountUBA == 0) ? 0 : Math.min(
-            getBlazeSwapAmountIn(
-                optFAssetAmountUBA,
-                _data.reserveVaultWeiDex1,
-                _data.reserveFAssetUBADex1
-            ), _data.reserveVaultWeiDex1
-        );
+        uint256 optVaultCollateral = calculateOptimalVaultCollateral(_data);
+        return getDexSwapAmountInForAmgMultiplier(_data, optVaultCollateral);
     }
 
     function calculateOptimalVaultCollateral(
-        Ecosystem.Data memory _data
+        EcosystemData memory _data
     ) internal pure returns (uint256 _amount) {
+        // set fee factors (1 - fee) for each dex
+        // depends on length of the path to swap through!
+        uint256 feeFactorBipsDex1
+            = DEX_FACTOR_BIPS ** (_data.dex1PathLength - 1)
+            / DEX_MAX_BIPS ** (_data.dex1PathLength - 2);
+        uint256 feeFactorBipsDex2
+            = DEX_FACTOR_BIPS ** (_data.dex2PathLength - 1)
+            / DEX_MAX_BIPS ** (_data.dex2PathLength - 2);
         // to avoid overflow, we never multiply three non-bips vars
         // (two are ok, as blazeswap allows only 112-bit reserves)
-        // unfortunately this can introduce a bit of numerical errors
         {
             // scope to avoid stack too deep error
             _amount
                 = _data.reserveVaultWeiDex1
-                * DEX_FACTOR_BIPS
+                * feeFactorBipsDex1
                 / DEX_MAX_BIPS
                 * _data.reservePoolWeiDex2;
             _amount = _amount.sqrt();
@@ -62,7 +55,7 @@ library SymbolicOptimum {
                 / MAX_BIPS
                 * _data.priceFAssetPoolMul
                 / _data.priceFAssetPoolDiv
-                * DEX_FACTOR_BIPS
+                * feeFactorBipsDex2
                 / DEX_MAX_BIPS
                 * _data.reserveVaultWeiDex2;
             _amount *= (_aux1 + _aux2).sqrt();
@@ -78,13 +71,44 @@ library SymbolicOptimum {
             _amount -= _aux1;
         }
         _amount *= DEX_MAX_BIPS;
-        _amount /= DEX_FACTOR_BIPS;
+        _amount /= feeFactorBipsDex1;
         _amount /= _data.reservePoolWeiDex2;
+    }
+
+    // reduce the amount in such a way that once
+    // it gets swapped through the dex1 path, it will
+    // produce output that is a multiplier of AMG
+    function getDexSwapAmountInForAmgMultiplier(
+        EcosystemData memory _data,
+        uint256 _amountIn
+    ) internal pure returns (uint256) {
+        for (uint256 i = 1; i < _data.dex1PathLength; i++) {
+            _amountIn = getDexSwapAmountOut(
+                _amountIn,
+                _data.reserveVaultWeiDex1,
+                _data.reserveFAssetUBADex1
+            );
+        }
+        _amountIn = Math.min(
+            roundUpWithPrecision(
+                _amountIn,
+                _data.assetMintingGranularityUBA
+            ), _data.maxLiquidatedFAssetUBA
+        );
+        if (_amountIn == 0) return 0;
+        for (uint256 i = 1; i < _data.dex1PathLength; i++) {
+            _amountIn = getDexSwapAmountIn(
+                _amountIn,
+                _data.reserveVaultWeiDex1,
+                _data.reserveFAssetUBADex1
+            );
+        }
+        return Math.min(_amountIn, _data.reserveVaultWeiDex1);
     }
 
     // given an output amount of an asset and pair reserves,
     // returns a required input amount of the other asset
-    function getBlazeSwapAmountIn(
+    function getDexSwapAmountIn(
         uint256 amountOut,
         uint256 reserveIn,
         uint256 reserveOut
@@ -96,7 +120,7 @@ library SymbolicOptimum {
 
     // given an input amount of an asset and pair reserves,
     // returns the maximum output amount of the other asset
-    function getBlazeSwapAmountOut(
+    function getDexSwapAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
         uint256 reserveOut
