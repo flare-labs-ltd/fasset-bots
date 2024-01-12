@@ -254,6 +254,8 @@ export interface CollateralReserved {
     lastUnderlyingTimestamp: BN;
     paymentAddress: string;
     paymentReference: string;
+    executor: string;
+    executorFeeNatWei: BN;
     0: string;
     1: string;
     2: BN;
@@ -264,6 +266,8 @@ export interface CollateralReserved {
     7: BN;
     8: string;
     9: string;
+    10: string;
+    11: BN;
   };
 }
 
@@ -562,6 +566,8 @@ export interface RedemptionRequested {
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
+    executor: string;
+    executorFeeNatWei: BN;
     0: string;
     1: string;
     2: BN;
@@ -572,6 +578,8 @@ export interface RedemptionRequested {
     7: BN;
     8: BN;
     9: string;
+    10: string;
+    11: BN;
   };
 }
 
@@ -2709,21 +2717,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
     (
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _lots: number | BN | string,
       _redeemerUnderlyingAddressString: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2734,6 +2746,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _receiver: string,
       _amountUBA: number | BN | string,
       _receiverUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -2741,6 +2754,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _receiver: string,
       _amountUBA: number | BN | string,
       _receiverUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
@@ -2748,6 +2762,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _receiver: string,
       _amountUBA: number | BN | string,
       _receiverUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -2755,6 +2770,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _receiver: string,
       _amountUBA: number | BN | string,
       _receiverUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2898,24 +2914,28 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       _agentVault: string,
       _lots: number | BN | string,
       _maxMintingFeeBIPS: number | BN | string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _lots: number | BN | string,
       _maxMintingFeeBIPS: number | BN | string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _lots: number | BN | string,
       _maxMintingFeeBIPS: number | BN | string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _lots: number | BN | string,
       _maxMintingFeeBIPS: number | BN | string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -5425,21 +5445,25 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
       (
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _lots: number | BN | string,
         _redeemerUnderlyingAddressString: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -5450,6 +5474,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _receiver: string,
         _amountUBA: number | BN | string,
         _receiverUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -5457,6 +5482,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _receiver: string,
         _amountUBA: number | BN | string,
         _receiverUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
@@ -5464,6 +5490,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _receiver: string,
         _amountUBA: number | BN | string,
         _receiverUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -5471,6 +5498,7 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _receiver: string,
         _amountUBA: number | BN | string,
         _receiverUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -5614,24 +5642,28 @@ export interface AssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         _lots: number | BN | string,
         _maxMintingFeeBIPS: number | BN | string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _lots: number | BN | string,
         _maxMintingFeeBIPS: number | BN | string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _lots: number | BN | string,
         _maxMintingFeeBIPS: number | BN | string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _lots: number | BN | string,
         _maxMintingFeeBIPS: number | BN | string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

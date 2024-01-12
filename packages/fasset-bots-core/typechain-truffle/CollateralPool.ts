@@ -382,24 +382,28 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -885,24 +889,28 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

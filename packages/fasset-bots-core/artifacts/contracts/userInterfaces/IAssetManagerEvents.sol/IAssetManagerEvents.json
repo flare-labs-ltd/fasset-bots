@@ -419,6 +419,18 @@
           "internalType": "bytes32",
           "name": "paymentReference",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "executor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "executorFeeNatWei",
+          "type": "uint256"
         }
       ],
       "name": "CollateralReserved",
@@ -1101,6 +1113,18 @@
           "internalType": "bytes32",
           "name": "paymentReference",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "executor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "executorFeeNatWei",
+          "type": "uint256"
         }
       ],
       "name": "RedemptionRequested",

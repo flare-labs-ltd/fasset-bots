@@ -239,24 +239,28 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
       _redeemerUnderlyingAddress: string,
+      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -266,6 +270,12 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
   topupTokenPriceFactorBIPS(
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  totalCollateral(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  totalFAssetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   undelegateAll: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -485,24 +495,28 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
         _redeemerUnderlyingAddress: string,
+        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -514,6 +528,12 @@ export interface ICollateralPoolInstance extends Truffle.ContractInstance {
     topupTokenPriceFactorBIPS(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    totalCollateral(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    totalFAssetFeeDebt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    totalFAssetFees(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     undelegateAll: {
       (txDetails?: Truffle.TransactionDetails): Promise<

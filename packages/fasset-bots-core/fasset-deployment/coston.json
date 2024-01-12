@@ -200,16 +200,6 @@
     "address": "0x9819645ab3E99a0A2c0ECF797Da4B9312b31121F"
   },
   {
-    "name": "USDC",
-    "contractName": "FakeERC20.sol",
-    "address": "0xC06496FA0551bf4996fb5Df876cBcC6F1d836460"
-  },
-  {
-    "name": "USDT",
-    "contractName": "FakeERC20.sol",
-    "address": "0xD256b237dE74d3DaA24A2290efF48BBeF8feAF55"
-  },
-  {
     "name": "testUSDC",
     "contractName": "FakeERC20.sol",
     "address": "0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d"

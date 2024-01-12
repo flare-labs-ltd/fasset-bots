@@ -189,6 +189,8 @@ export interface CollateralReserved {
     lastUnderlyingTimestamp: BN;
     paymentAddress: string;
     paymentReference: string;
+    executor: string;
+    executorFeeNatWei: BN;
     0: string;
     1: string;
     2: BN;
@@ -199,6 +201,8 @@ export interface CollateralReserved {
     7: BN;
     8: string;
     9: string;
+    10: string;
+    11: BN;
   };
 }
 
@@ -497,6 +501,8 @@ export interface RedemptionRequested {
     lastUnderlyingBlock: BN;
     lastUnderlyingTimestamp: BN;
     paymentReference: string;
+    executor: string;
+    executorFeeNatWei: BN;
     0: string;
     1: string;
     2: BN;
@@ -507,6 +513,8 @@ export interface RedemptionRequested {
     7: BN;
     8: BN;
     9: string;
+    10: string;
+    11: BN;
   };
 }
 

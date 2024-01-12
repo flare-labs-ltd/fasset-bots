@@ -419,6 +419,18 @@
           "internalType": "bytes32",
           "name": "paymentReference",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "executor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "executorFeeNatWei",
+          "type": "uint256"
         }
       ],
       "name": "CollateralReserved",
@@ -1101,6 +1113,18 @@
           "internalType": "bytes32",
           "name": "paymentReference",
           "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "executor",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "executorFeeNatWei",
+          "type": "uint256"
         }
       ],
       "name": "RedemptionRequested",
@@ -3892,6 +3916,11 @@
           "internalType": "string",
           "name": "_redeemerUnderlyingAddressString",
           "type": "string"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_executor",
+          "type": "address"
         }
       ],
       "name": "redeem",
@@ -3902,7 +3931,7 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -4032,6 +4061,11 @@
           "internalType": "uint256",
           "name": "_maxMintingFeeBIPS",
           "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_executor",
+          "type": "address"
         }
       ],
       "name": "reserveCollateral",
