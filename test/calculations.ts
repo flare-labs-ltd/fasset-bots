@@ -107,9 +107,9 @@ export function assetPriceForAgentCr(
 // calculates the amount of tokenB received
 // when swapping amountA of tokenA
 export function swapOutput(
+  amountA: bigint,
   reserveA: bigint,
-  reserveB: bigint,
-  amountA: bigint
+  reserveB: bigint
 ): bigint {
   const amountAWithFee = BigInt(997) * amountA
   const numerator = amountAWithFee * reserveB
@@ -120,9 +120,9 @@ export function swapOutput(
 // calculates the amount of tokenB needed
 // to swap to obtain amountA of tokenIn
 export function swapInput(
+  amountB: bigint,
   reserveA: bigint,
-  reserveB: bigint,
-  amountB: bigint
+  reserveB: bigint
 ): bigint {
   const numerator = BigInt(1000) * reserveA * amountB
   const denominator = BigInt(997) * (reserveB - amountB)

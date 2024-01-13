@@ -49,6 +49,9 @@ export interface EcosystemConfig {
   // dex(pool, vault)
   dex2PoolReserve: bigint
   dex2VaultReserve: bigint
+  // dex(f-asset, pool) - needed only for testing swaps through non-arbitrary paths
+  dex3FAssetReserve: bigint
+  dex3PoolReserve: bigint
   // agent settings
   mintedUBA: bigint
   vaultCollateral: bigint

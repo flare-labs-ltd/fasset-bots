@@ -48,10 +48,10 @@ describe("Tests for BlazeSwapRouter contract", () => {
     const swapB = swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA, maxSwapB)
     if (swapA > 0) {
       await tokenA.mint(signer, swapA)
-      await swap(blazeSwapRouter, tokenA, [tokenA, tokenB], swapA, signer)
+      await swap(blazeSwapRouter, [tokenA, tokenB], swapA, signer)
     } else if (swapB > 0) {
       await tokenB.mint(signer, swapB)
-      await swap(blazeSwapRouter, tokenB, [tokenB, tokenA], swapB, signer)
+      await swap(blazeSwapRouter, [tokenB, tokenA], swapB, signer)
     }
   }
 
@@ -91,7 +91,7 @@ describe("Tests for BlazeSwapRouter contract", () => {
     // exchange some dust, to make sure it's close to setup price
     const amountA = BigInt(10) ** BigInt(decimalsA)
     await tokenA.mint(swapper, amountA)
-    await swap(blazeSwapRouter, tokenA, [tokenA, tokenB], amountA, swapper)
+    await swap(blazeSwapRouter, [tokenA, tokenB], amountA, swapper)
     const amountB = await tokenB.balanceOf(swapper)
     const amountBByPrice = amountA * wPriceA / wPriceB
     const amountBByPriceWithFee = amountBByPrice * BigInt(997) / BigInt(1000)
@@ -104,10 +104,10 @@ describe("Tests for BlazeSwapRouter contract", () => {
     // amount of token A to swap ($0.01)
     const amountA = convertUsd5ToToken(BigInt(100), decimalsA, priceTokenAUsd5)
     // swap from tokenA to tokenC via tokenB
-    const expectedOutB = await swapOutput(blazeSwapRouter, tokenA, tokenB, amountA)
-    const expectedOutC = await swapOutput(blazeSwapRouter, tokenB, tokenC, expectedOutB)
+    const expectedOutB = await swapOutput(blazeSwapRouter, [tokenA, tokenB], amountA)
+    const expectedOutC = await swapOutput(blazeSwapRouter, [tokenB, tokenC], expectedOutB)
     await tokenA.connect(signer).mint(signer, amountA)
-    await swap(blazeSwapRouter, tokenA, [tokenA, tokenB, tokenC], amountA, signer)
+    await swap(blazeSwapRouter, [tokenA, tokenB, tokenC], amountA, signer)
     // check that the minter got the right amount of tokenC
     const amountC = await tokenC.balanceOf(signer)
     expect(amountC).to.equal(expectedOutC)

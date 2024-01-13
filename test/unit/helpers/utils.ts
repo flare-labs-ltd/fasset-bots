@@ -3,7 +3,7 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import * as crypto from 'crypto'
 import * as calc from '../../calculations'
-import type { AddressLike, Signer } from 'ethers'
+import type { Signer } from 'ethers'
 import type { ERC20, BlazeSwapRouter, ERC20Mock, FakePriceReader } from '../../../types'
 import type { UnderlyingAsset, EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 
@@ -25,16 +25,17 @@ export async function setFtsoPrices(
 }
 
 export async function setupEcosystem(
-  config: EcosystemConfig,
   assetConfig: AssetConfig,
+  config: EcosystemConfig,
   context: TestContext
 ): Promise<void> {
   const { assetManager, blazeSwapRouter, fAsset, vault, pool, agent, priceReader } = context.contracts
-  // set ftso prices and dex reserves
+  // set ftso prices and dex reserves (pool-fAsset is needed only for testing swaps through non-arbitrary paths)
   await assetManager.setLiquidationFactors(config.liquidationFactorBips, config.liquidationFactorVaultBips)
   await setFtsoPrices(assetConfig, priceReader, config.assetFtsoPrice, config.vaultFtsoPrice, config.poolFtsoPrice)
   await addLiquidity(blazeSwapRouter, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, context.signers.deployer)
   await addLiquidity(blazeSwapRouter, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, context.signers.deployer)
+  await addLiquidity(blazeSwapRouter, pool, fAsset, config.dex3PoolReserve, config.dex3FAssetReserve, context.signers.deployer)
   // deposit collaterals and mint
   await agent.depositVaultCollateral(config.vaultCollateral)
   await agent.depositPoolCollateral(config.poolCollateral)
@@ -49,7 +50,7 @@ export async function setupEcosystem(
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// blaze swap
+// dex helpers
 
 export async function addLiquidity(
   router: BlazeSwapRouter,
@@ -74,38 +75,41 @@ export async function addLiquidity(
   )
 }
 
-// calculates the amount of tokenB received
-// when swapping amountA of tokenA
+// calculates the amount received when swapping amountA through path
 export async function swapOutput(
   router: BlazeSwapRouter,
-  tokenA: ERC20,
-  tokenB: ERC20,
+  path: ERC20[],
   amountA: bigint
 ): Promise<bigint> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA, tokenB)
-  return calc.swapOutput(reserveA, reserveB, amountA)
+  let amountB = amountA
+  for (let i = 1; i < path.length; i++) {
+    const { 0: reserveA, 1: reserveB } = await router.getReserves(path[i-1], path[i])
+    amountB = calc.swapOutput(amountB, reserveA, reserveB)
+  }
+  return amountB
 }
 
-// calculates the amount of tokenB needed
-// to swap to obtain amountA of tokenA
+// calculates the amount of input needed to swap to amountB through path
 export async function swapInput(
   router: BlazeSwapRouter,
-  tokenA: ERC20,
-  tokenB: ERC20,
+  path: ERC20[],
   amountB: bigint
 ): Promise<bigint> {
-  const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA, tokenB)
-  return calc.swapInput(reserveA, reserveB, amountB)
+  let amountA = amountB
+  for (let i = path.length - 1; i > 0; i--) {
+    const { 0: reserveA, 1: reserveB } = await router.getReserves(path[i-1], path[i])
+    amountA = calc.swapInput(amountA, reserveA, reserveB)
+  }
+  return amountA
 }
 
 export async function swap(
   router: BlazeSwapRouter,
-  tokenA: ERC20Mock,
   tokenPath: ERC20Mock[],
   amountA: bigint,
   swapper: Signer
 ): Promise<void> {
-  await tokenA.connect(swapper).approve(router, amountA)
+  await tokenPath[0].connect(swapper).approve(router, amountA)
   await router.connect(swapper).swapExactTokensForTokens(amountA, 0, tokenPath, swapper, ethers.MaxUint256)
 }
 

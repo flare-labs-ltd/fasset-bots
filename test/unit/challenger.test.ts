@@ -43,7 +43,7 @@ describe.only("Tests for Liquidator contract", () => {
 
         it("should do a successfull challenge, then fail liquidating an agent", async () => {
           const { challenger, assetManager, vault, agent, flashLender } = context.contracts
-          await setupEcosystem(ecosystem, assetConfig, context)
+          await setupEcosystem(assetConfig, ecosystem, context)
           await vault.burn(flashLender, await vault.balanceOf(flashLender)) // empty flash lender
           const { status: statusBefore, mintedUBA: mintedBefore } = await assetManager.getAgentInfo(agent)
           expect(statusBefore).to.be.lessThan(3)
@@ -57,7 +57,7 @@ describe.only("Tests for Liquidator contract", () => {
 
         it("should successfully challenge otherwise healthy agent, then liquidate", async () => {
           const { challenger, assetManager, vault, agent } = context.contracts
-          await setupEcosystem(ecosystem, assetConfig, context)
+          await setupEcosystem(assetConfig, ecosystem, context)
           const { status: statusBefore } = await assetManager.getAgentInfo(agent)
           expect(statusBefore).to.be.lessThan(3)
           await challenge(challenger.connect(context.signers.challenger), agent)

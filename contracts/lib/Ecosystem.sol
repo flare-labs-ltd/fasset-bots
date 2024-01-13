@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "blazeswap/contracts/periphery/interfaces/IBlazeSwapRouter.sol";
 import "fasset/contracts/fasset/interface/IIAssetManager.sol";
@@ -8,6 +9,7 @@ import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/CollateralType.sol";
+import "./Structs.sol";
 import "./Constants.sol";
 
 import "hardhat/console.sol";
@@ -21,9 +23,9 @@ library Ecosystem {
         string pool;
     }
 
-    function getData(
-        address _agentVault,
-        address _dex
+    // note: this doesn't include the dex reserves
+    function getFAssetData(
+        address _agentVault
     ) internal view returns (EcosystemData memory _data) {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
@@ -34,8 +36,8 @@ library Ecosystem {
         _data.agentVault = _agentVault;
         // tokens
         _data.fAssetToken = settings.fAsset;
-        _data.vaultToken = address(agentInfo.vaultCollateralToken);
-        _data.poolToken = address(assetManager.getWNat());
+        _data.vaultCT = address(agentInfo.vaultCollateralToken);
+        _data.poolCT = address(assetManager.getWNat());
         // agent
         _data.agentVaultCollateralWei = agentInfo.totalVaultCollateralWei;
         _data.agentPoolCollateralWei = agentInfo.totalPoolCollateralNATWei;
@@ -43,48 +45,59 @@ library Ecosystem {
         _data.liquidationFactorVaultBips = agentInfo.liquidationPaymentFactorVaultBIPS;
         _data.liquidationFactorPoolBips = agentInfo.liquidationPaymentFactorPoolBIPS;
         _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
-        // dexes
-        (_data.reserveVaultWeiDex1, _data.reserveFAssetUBADex1) =
-            IBlazeSwapRouter(_dex).getReserves(_data.vaultToken, _data.fAssetToken);
-        (_data.reservePoolWeiDex2, _data.reserveVaultWeiDex2) =
-            IBlazeSwapRouter(_dex).getReserves(_data.poolToken, _data.vaultToken);
-        // prices
+        // ftso prices
         (
-            _data.priceFAssetVaultMul,
-            _data.priceFAssetVaultDiv,
-            _data.priceFAssetPoolMul,
-            _data.priceFAssetPoolDiv
-        ) = getPrices(
+            _data.priceFAssetVaultCTMul,
+            _data.priceFAssetVaultCTDiv,
+            _data.priceFAssetPoolCTMul,
+            _data.priceFAssetPoolCTDiv
+        ) = _getPrices(
             IAssetManager(_data.assetManager),
             IPriceReader(settings.priceReader),
             _data.fAssetToken,
-            _data.vaultToken,
-            _data.poolToken
+            _data.vaultCT,
+            _data.poolCT
         );
     }
 
-    function getPrices(
+    function getDexReserves(
+        address _dexRouter,
+        address[] memory _path
+    )
+        internal view
+        returns (LiquidityPoolReserves[] memory _reserves)
+    {
+        _reserves = new LiquidityPoolReserves[](_path.length - 1);
+        for (uint256 i = 0; i < _path.length - 1; i++) {
+            (_reserves[i].reserveA, _reserves[i].reserveB) =
+                IBlazeSwapRouter(_dexRouter).getReserves(
+                    _path[i], _path[i + 1]
+                );
+        }
+    }
+
+    function _getPrices(
         IAssetManager _assetManager,
         IPriceReader _priceReader,
         address _fAssetToken,
         address _vaultToken,
         address _poolToken
     )
-        internal view
+        private view
         returns (
-            uint256 priceFAssetVaultMul,
-            uint256 priceFAssetVaultDiv,
-            uint256 priceFAssetPoolMul,
-            uint256 priceFAssetPoolDiv
+            uint256 priceFAssetVaultCTMul,
+            uint256 priceFAssetVaultCTDiv,
+            uint256 priceFAssetPoolCTMul,
+            uint256 priceFAssetPoolCTDiv
         )
     {
-        FtsoSymbols memory symbols = getFtsoSymbols(_assetManager, IERC20(_vaultToken), IERC20(_poolToken));
+        FtsoSymbols memory symbols = _getFtsoSymbols(_assetManager, IERC20(_vaultToken), IERC20(_poolToken));
         uint8 fAssetDecimals = IERC20Metadata(_fAssetToken).decimals();
         (uint256 fAssetFtsoPrice,, uint256 fAssetFtsoDecimals) = _priceReader.getPrice(symbols.asset);
         {
             // scope to avoid stack too deep error
             (uint256 vaultFtsoPrice,, uint256 vaultFtsoDecimals) = _priceReader.getPrice(symbols.vault);
-            (priceFAssetVaultMul, priceFAssetVaultDiv) = getTokenAToTokenBPriceMulDiv(
+            (priceFAssetVaultCTMul, priceFAssetVaultCTDiv) = _getTokenAToTokenBPriceMulDiv(
                 fAssetDecimals,
                 fAssetFtsoDecimals,
                 fAssetFtsoPrice,
@@ -96,7 +109,7 @@ library Ecosystem {
         {
             // scope to avoid stack too deep error
             (uint256 poolFtsoPrice,, uint256 poolFtsoDecimals) = _priceReader.getPrice(symbols.pool);
-            (priceFAssetPoolMul, priceFAssetPoolDiv) = getTokenAToTokenBPriceMulDiv(
+            (priceFAssetPoolCTMul, priceFAssetPoolCTDiv) = _getTokenAToTokenBPriceMulDiv(
                 fAssetDecimals,
                 fAssetFtsoDecimals,
                 fAssetFtsoPrice,
@@ -107,11 +120,14 @@ library Ecosystem {
         }
     }
 
-    function getFtsoSymbols(
+    function _getFtsoSymbols(
         IAssetManager _assetManager,
         IERC20 _vaultToken,
         IERC20 _poolToken
-    ) internal view returns (FtsoSymbols memory _ftsoSymbols) {
+    )
+        private view
+        returns (FtsoSymbols memory _ftsoSymbols)
+    {
         CollateralType.Data memory vaultData = _assetManager.getCollateralType(
             CollateralType.Class.VAULT, _vaultToken
         );
@@ -123,14 +139,17 @@ library Ecosystem {
         _ftsoSymbols.pool = poolData.tokenFtsoSymbol;
     }
 
-    function getTokenAToTokenBPriceMulDiv(
+    function _getTokenAToTokenBPriceMulDiv(
         uint256 _decimalsA,
         uint256 _ftsoDecimalsA,
         uint256 _priceA,
         uint256 _decimalsB,
         uint256 _ftsoDecimalsB,
         uint256 _priceB
-    ) internal pure returns (uint256, uint256) {
+    )
+        private pure
+         returns (uint256, uint256)
+    {
         return (
             _priceA * (10 ** (_decimalsB + _ftsoDecimalsB)),
             _priceB * (10 ** (_decimalsA + _ftsoDecimalsA))

@@ -5,14 +5,16 @@ import type { AssetConfig, EcosystemConfig } from "./interface"
 
 export class EcosystemFactory {
   // fixed default values
-  public defaultDex1FAssetReserve: bigint
-  public defaultDex2VaultReserve: bigint
-  public defaultMintedUBA: bigint
+  public defaultDex1FAssetReserve: bigint // dex1 = vault / f-asset
+  public defaultDex2VaultReserve: bigint // dex2 = pool / vault
+  public defaultDex3PoolReserve: bigint // dex3 = pool / f-asset
+  public defaultMintedUBA: bigint // in lots
 
   constructor(public config: AssetConfig) {
     // customly configured reserves and minted f-assets (by their value in usd5)
     const defaultDex1LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
     const defaultDex2LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
+    const defaultDex3LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
     const defaultMintedFAssetValueUsd5 = BigInt(10) ** BigInt(5 + 6) // million$
     // convert to actual reserves and minted f-assets
     this.defaultDex1FAssetReserve = convertUsd5ToToken(
@@ -25,7 +27,12 @@ export class EcosystemFactory {
       config.vault.decimals,
       config.vault.defaultPriceUsd5
     )
-    this.defaultMintedUBA = roundUpWithPrecision( // in lots
+    this.defaultDex3PoolReserve = convertUsd5ToToken(
+      defaultDex3LiquidityUsd5,
+      config.pool.decimals,
+      config.pool.defaultPriceUsd5
+    )
+    this.defaultMintedUBA = roundUpWithPrecision(
       convertUsd5ToToken(
         defaultMintedFAssetValueUsd5,
         config.asset.decimals,
@@ -63,6 +70,14 @@ export class EcosystemFactory {
         this.config.vault.decimals,
         this.config.pool.decimals,
         this.defaultDex2VaultReserve
+      ),
+      dex3PoolReserve: this.defaultDex3PoolReserve,
+      dex3FAssetReserve: priceBasedInitialDexReserve(
+        this.config.pool.defaultPriceUsd5,
+        this.config.asset.defaultPriceUsd5,
+        this.config.pool.decimals,
+        this.config.asset.decimals,
+        this.defaultDex3PoolReserve
       ),
       // we set agent collateral such that
       // collateral ratios are stable
@@ -205,10 +220,12 @@ export class EcosystemFactory {
       this.healthyEcosystemWithZeroVaultCollateral,
       this.healthyEcosystemWithZeroPoolCollateral
     ]
-    for (let i = 0; i < count; i++) {
-      configs.push(this.randomizeEcosystem(
-        this.baseEcosystem,
-        `randomized healthy ecosystem ${i}`))
+    if (count < 4) {
+      return configs.slice(0, count)
+    }
+    for (let i = 0; i < count - 4; i++) {
+      let config = configs[i % 4]
+      configs.push(this.randomizeEcosystem(config, `randomized ecosystem ${config.name}`))
     }
     return configs
   }

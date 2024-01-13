@@ -7,38 +7,34 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "./lib/Constants.sol";
-import "./lib/SymbolicOptimum.sol";
+import "./lib/Optimum.sol";
 import "./lib/Ecosystem.sol";
 import "./interface/ILiquidator.sol";
 
 
 /**
- * Do not send any tokens to this contract, they can be stolen!
- * Security is not put in place because of gas cost savings.
- * Ideally, we would save the arbitrage data into storage and read it in
- * onFlashLoan, but this would cost too much gas.
- *
  * It is recommended for each person to deploy their own ownable
  * liquidator contract to avoid flash bots stealing the arbitrage profits.
+ * Note: after each run approvals are set to zero
  */
 contract Liquidator is ILiquidator {
 
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
-    // those are initialized once and cannot be changed
+    // change those by redeploying the contract
     address public immutable flashLender;
-    address public immutable dex;
+    address public immutable dexRouter;
 
-    // takes care of flash loan getting executed exactly once
+    // one storage slot
     FlashLoanLock private status; // uint8
-    bytes31 private hash; // truncated keccak256 so it fits into one storage slot
+    bytes31 private hash; // truncated keccak256
 
     constructor(
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _dex
+        IBlazeSwapRouter _dexRouter
     ) {
         flashLender = address(_flashLender);
-        dex = address(_dex);
+        dexRouter = address(_dexRouter);
     }
 
     modifier flashLoanInitiatorLock() {
@@ -66,7 +62,7 @@ contract Liquidator is ILiquidator {
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
         address _flashLender,
-        address _dex,
+        address _dexRouter,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
@@ -75,18 +71,18 @@ contract Liquidator is ILiquidator {
         if (_flashLender == address(0)) {
             _flashLender = flashLender;
         }
-        if (_dex == address(0)) {
-            _dex = dex;
+        if (_dexRouter == address(0)) {
+            _dexRouter = dexRouter;
         }
         ArbitrageConfig memory config = ArbitrageConfig({
             flashLender: _flashLender,
-            dex: _dex,
-            dex1: DexPairConfig({
+            dexRouter: _dexRouter,
+            dexPair1: DexPairConfig({
                 path: _vaultToFAssetDexPath,
                 minPriceMul: _vaultToFAssetMinDexPriceMul,
                 minPriceDiv: _vaultToFAssetMinDexPriceDiv
             }),
-            dex2: DexPairConfig({
+            dexPair2: DexPairConfig({
                 path: _poolToVaultDexPath,
                 minPriceMul: _poolToVaultMinDexPriceMul,
                 minPriceDiv: _poolToVaultMinDexPriceDiv
@@ -106,39 +102,44 @@ contract Liquidator is ILiquidator {
         // this should be fixed within the asset manager implementation!
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.startLiquidation(_agentVault);
-        // get data (path length determines for dex fees)
-        EcosystemData memory data = Ecosystem.getData(_agentVault, _config.dex);
-        data.dex1PathLength = Math.max(_config.dex1.path.length, 2);
-        data.dex2PathLength = Math.max(_config.dex2.path.length, 2);
-        // run arbitrage
-        uint256 balanceBefore = IERC20(data.vaultToken).balanceOf(address(this));
-        _runArbitrageWithData(data, _fillDexConfigDefaultPaths(
+        // get data needed for arbitrage strategy calculation
+        // note: to determine default token paths we need the token addresses
+        // obtained within getFAssetData, but dex reserves need those paths
+        EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
+        ArbitrageConfig memory config = _configureOrValidateSwapPaths(
             _config,
             data.fAssetToken,
-            data.vaultToken,
-            data.poolToken
-        ));
-        uint256 balanceAfter = IERC20(data.vaultToken).balanceOf(address(this));
+            data.vaultCT,
+            data.poolCT
+        );
+        data.reservePathDex1 = Ecosystem.getDexReserves(
+            config.dexRouter, config.dexPair1.path);
+        data.reservePathDex2 = Ecosystem.getDexReserves(
+            config.dexRouter, config.dexPair2.path);
+        // run arbitrage
+        uint256 balanceBefore = IERC20(data.vaultCT).balanceOf(address(this));
+        _runArbitrageWithData(config, data);
+        uint256 balanceAfter = IERC20(data.vaultCT).balanceOf(address(this));
         // send profit to sender
-        uint256 profit = balanceAfter - balanceBefore; // revert if negative
-        SafeERC20.safeTransfer(IERC20(data.vaultToken), _profitTo, profit);
+        require(balanceAfter >= balanceBefore,
+            "Liquidator: Negative profit would decrease contract balance");
+        uint256 profit = balanceAfter - balanceBefore;
+        SafeERC20.safeTransfer(IERC20(data.vaultCT), _profitTo, profit);
     }
 
     // non-reentrant
     function _runArbitrageWithData(
-        EcosystemData memory _data,
-        ArbitrageConfig memory _config
+        ArbitrageConfig memory _config,
+        EcosystemData memory _data
     )
         internal
         flashLoanInitiatorLock
     {
-        // check if any f-assets can be liquidated
         require(_data.maxLiquidatedFAssetUBA > 0, "Liquidator: No f-asset to liquidate");
-        // get max and optimal vault collateral to flash loan
         uint256 maxVaultFlashLoan = IERC3156FlashLender(_config.flashLender)
-            .maxFlashLoan(_data.vaultToken);
+            .maxFlashLoan(_data.vaultCT);
         require(maxVaultFlashLoan > 0, "Liquidator: Flash loan unavailable");
-        uint256 optimalVaultAmount = SymbolicOptimum.getFlashLoanedVaultCollateral(_data);
+        uint256 optimalVaultAmount = Optimum.getFlashLoanedVaultCollateral(_data);
         require(optimalVaultAmount > 0, "Liquidator: No profit available");
         // run flash loan
         bytes memory encodedParams = abi.encode(
@@ -149,10 +150,11 @@ contract Liquidator is ILiquidator {
         hash = bytes31(keccak256(encodedParams));
         IERC3156FlashLender(_config.flashLender).flashLoan(
             this,
-            _data.vaultToken,
+            _data.vaultCT,
             Math.min(maxVaultFlashLoan, optimalVaultAmount),
             encodedParams
         );
+        IERC20(_data.vaultCT).approve(_config.flashLender, 0);
     }
 
     // dangerous!
@@ -170,10 +172,8 @@ contract Liquidator is ILiquidator {
         flashLoanReceiverLock
         returns (bytes32)
     {
-        // ensure the validity of _data
         require(hash == bytes31(keccak256(_data)),
             "Liquidator: Flash lender passed invalid data");
-        // unpack _data
         (
             address _assetManager,
             address _agentVault,
@@ -183,19 +183,14 @@ contract Liquidator is ILiquidator {
             address,
             ArbitrageConfig
         ));
-        // ensure the validity of _token
-        // _amount can be safely invalid, _fee is chosen by flash lender
-        require(_token == _config.dex1.path[0],
-            "Liquidator: Flash lender passed invalid data");
-        // execute arbitrage
-        _executeArbitrage( _amount, _assetManager, _agentVault, _config);
-        // approve flash loan spending to flash lender
-        IERC20(_token).approve(msg.sender, 0);
-        IERC20(_token).approve(msg.sender, _amount + _fee);
+        require(_token == _config.dexPair1.path[0],
+            "Liquidator: Flash lender passed invalid token");
+        _executeStrategy(_amount, _assetManager, _agentVault, _config);
+        IERC20(_token).approve(_config.flashLender, _amount + _fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
-    function _executeArbitrage(
+    function _executeStrategy(
         uint256 _vaultAmount,
         address _assetManager,
         address _agentVault,
@@ -204,73 +199,74 @@ contract Liquidator is ILiquidator {
         internal
     {
         uint256[] memory amountsRecv;
-        address vaultToken = _config.dex1.path[0];
-        address poolToken = _config.dex2.path[0];
+        uint256[] memory amountsSent;
+        address vaultCT = _config.dexPair1.path[0];
+        address poolCT = _config.dexPair2.path[0];
         // swap vault collateral for f-asset
-        IERC20(vaultToken).approve(_config.dex, _vaultAmount);
-        (, amountsRecv) = IBlazeSwapRouter(_config.dex).swapExactTokensForTokens(
+        IERC20(vaultCT).approve(_config.dexRouter, _vaultAmount);
+        (amountsSent, amountsRecv) = IBlazeSwapRouter(_config.dexRouter).swapExactTokensForTokens(
             _vaultAmount,
             _convert(
                 _vaultAmount,
-                _config.dex1.minPriceMul,
-                _config.dex1.minPriceDiv
+                _config.dexPair1.minPriceMul,
+                _config.dexPair1.minPriceDiv
             ),
-            _config.dex1.path,
+            _config.dexPair1.path,
             address(this),
             block.timestamp
         );
-        IERC20(vaultToken).approve(_config.dex, 0);
+        IERC20(vaultCT).approve(_config.dexRouter, 0);
         // liquidate obtained f-asset
-        uint256 obtainedFAsset = amountsRecv[amountsRecv.length - 1];
+        uint256 obtainedFAsset = amountsRecv[amountsRecv.length-1];
         (,, uint256 obtainedPool) = IAssetManager(_assetManager).liquidate(
             _agentVault,
             obtainedFAsset
         );
         if (obtainedPool > 0) {
             // swap pool for vault collateral
-            IERC20(poolToken).approve(_config.dex, obtainedPool);
-            (, amountsRecv) = IBlazeSwapRouter(_config.dex).swapExactTokensForTokens(
+            IERC20(poolCT).approve(_config.dexRouter, obtainedPool);
+            (, amountsRecv) = IBlazeSwapRouter(_config.dexRouter).swapExactTokensForTokens(
                 obtainedPool,
                 _convert(
                     obtainedPool,
-                    _config.dex2.minPriceMul,
-                    _config.dex2.minPriceDiv
+                    _config.dexPair2.minPriceMul,
+                    _config.dexPair2.minPriceDiv
                 ),
-                _config.dex2.path,
+                _config.dexPair2.path,
                 address(this),
                 block.timestamp
             );
-            IERC20(poolToken).approve(_config.dex, 0);
+            IERC20(poolCT).approve(_config.dexRouter, 0);
         }
     }
 
-    function _fillDexConfigDefaultPaths(
+    function _configureOrValidateSwapPaths(
         ArbitrageConfig memory _config,
         address _fAssetToken,
         address _vaultToken,
         address _poolToken
     )
-        internal pure
+        private pure
         returns (ArbitrageConfig memory)
     {
-        if (_config.dex1.path.length == 0) {
-            _config.dex1.path = _toDynamicArray(_vaultToken, _fAssetToken);
+        if (_config.dexPair1.path.length == 0) {
+            _config.dexPair1.path = _toDynamicArray(_vaultToken, _fAssetToken);
         } else {
-            uint256 len = _config.dex1.path.length;
+            uint256 len = _config.dexPair1.path.length;
             require(
-                len > 2 &&
-                _config.dex1.path[0] == _vaultToken &&
-                _config.dex1.path[len - 1] == _fAssetToken,
+                len >= 2 &&
+                _config.dexPair1.path[0] == _vaultToken &&
+                _config.dexPair1.path[len - 1] == _fAssetToken,
                 "Liquidator: Invalid vault to f-asset dex path");
         }
-        if (_config.dex2.path.length == 0) {
-            _config.dex2.path = _toDynamicArray(_poolToken, _vaultToken);
+        if (_config.dexPair2.path.length == 0) {
+            _config.dexPair2.path = _toDynamicArray(_poolToken, _vaultToken);
         } else {
-            uint256 len = _config.dex2.path.length;
+            uint256 len = _config.dexPair2.path.length;
             require(
-                len > 2 &&
-                _config.dex2.path[0] == _poolToken &&
-                _config.dex2.path[len - 1] == _vaultToken,
+                len >= 2 &&
+                _config.dexPair2.path[0] == _poolToken &&
+                _config.dexPair2.path[len - 1] == _vaultToken,
                 "Liquidator: Invalid pool to vault dex path");
         }
         return _config;

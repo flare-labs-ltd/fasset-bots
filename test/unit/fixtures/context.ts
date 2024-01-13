@@ -65,17 +65,18 @@ export async function getContracts(
   return contracts
 }
 
-export async function getTestContext(assetConfig: AssetConfig): Promise<TestContext> {
-  // define signers
+export async function getSigners(): Promise<TestSigners> {
   const _signers = await ethers.getSigners()
   const deployer = _signers[0]
   const challenger = _signers[10]
   const liquidator = _signers[11]
   const rewardee = _signers[12]
   const fAssetMinter = _signers[13]
-  // define signers and contracts
-  const signers = { deployer, challenger, liquidator, fAssetMinter, rewardee }
+  return { deployer, challenger, liquidator, fAssetMinter, rewardee }
+}
+
+export async function getTestContext(assetConfig: AssetConfig): Promise<TestContext> {
+  const signers = await getSigners()
   const contracts = await getContracts(assetConfig, signers)
-  // return asset config
   return { signers, contracts }
 }
