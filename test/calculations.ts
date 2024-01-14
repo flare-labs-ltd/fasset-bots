@@ -129,7 +129,6 @@ export function swapInput(
   return numerator / denominator + BigInt(1)
 }
 
-
 ////////////////////////////////////////////////////////////////////////////
 // ecosystem setters used to align dex prices with ftso
 

@@ -60,6 +60,10 @@ export interface EcosystemConfig {
   // asset manager settings
   liquidationFactorBips: bigint
   liquidationFactorVaultBips: bigint
+  // initial liquidator funds
+  initialLiquidatorFAsset: bigint
+  initialLiquidatorVault: bigint
+  initialLiquidatorPool: bigint
   // expected implicit data
   expectedVaultCrBips: bigint
   expectedPoolCrBips: bigint

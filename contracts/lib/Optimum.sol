@@ -23,10 +23,7 @@ library Optimum {
         uint256 optVaultCollateral = numeric
             ? numericOptimalVaultCollateral(_data)
             : symbolicOptimalVaultCollateral(_data);
-        uint256 a = _capOrroundInputUpToAmg(_data, optVaultCollateral);
-        console.log("optVaultCollateral", optVaultCollateral);
-        console.log("maxVaultCollateral", _calcSwapAmountIn(_data.maxLiquidatedFAssetUBA, _data.reservePathDex1));
-        return a;
+        return _capOrroundInputUpToAmg(_data, optVaultCollateral);
     }
 
     function symbolicOptimalVaultCollateral(
@@ -99,19 +96,29 @@ library Optimum {
         uint256 phi = 1618; // Approximation of the golden ratio * 1000
         uint256 invPhi = 1000; // Inverse of phi for fixed point math
         uint256 a = 0;
-        uint256 b = _calcSwapAmountIn(_data.maxLiquidatedFAssetUBA, _data.reservePathDex1);
+        uint256 b = _data.maxLiquidatedFAssetUBA;
         for (uint256 i = 0; i < MAX_BISECTION_ITERATIONS; i++) {
-            uint256 c = b - (b - a) * invPhi / phi;
-            uint256 d = a + (b - a) * invPhi / phi;
+            uint256 c = _roundUpWithPrecision(b - (b - a) * invPhi / phi, _data.assetMintingGranularityUBA);
+            uint256 d = _roundUpWithPrecision(a + (b - a) * invPhi / phi, _data.assetMintingGranularityUBA);
             if (b - d <= BISECTION_PRECISION)
                 break;
-            if (_calcArbitrageProfit(_data, c) > _calcArbitrageProfit(_data, d)) {
+            uint256 profitAtC = _calcArbitrageProfit(_data, c);
+            uint256 profitAtD = _calcArbitrageProfit(_data, d);
+            if (profitAtC > profitAtD) {
                 b = d;
             } else {
                 a = c;
             }
         }
-        return b;
+        uint256 avg = _roundUpWithPrecision((a + b) / 2, _data.assetMintingGranularityUBA);
+        uint256 profitAtB = _calcArbitrageProfit(_data, b);
+        uint256 profitAtAvg = _calcArbitrageProfit(_data, avg);
+        console.log("max profit", Math.max(profitAtAvg, profitAtB));
+        if (profitAtAvg == 0 && profitAtB == 0)
+            return 0;
+        if (profitAtAvg <= profitAtB)
+            return _calcSwapAmountIn(b, _data.reservePathDex1);
+        return _calcSwapAmountIn(avg, _data.reservePathDex1);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -136,27 +143,27 @@ library Optimum {
 
     function _calcArbitrageProfit(
         EcosystemData memory _data,
-        uint256 _vaultAmount
+        uint256 _fAssetAmount
     )
         internal pure
         returns (uint256 _profit)
     {
-        uint256 fAssetAmount = _calcSwapAmountOut(_vaultAmount, _data.reservePathDex1);
-        uint256 vaultLiquidationReward = fAssetAmount
-            * _data.priceFAssetVaultCTMul
-            / _data.priceFAssetVaultCTDiv
+        uint256 vaultLiquidationReward = _fAssetAmount
             * _data.liquidationFactorVaultBips
-            / MAX_BIPS;
-        uint256 poolLiquidationReward = fAssetAmount
-            * _data.priceFAssetPoolCTMul
-            / _data.priceFAssetPoolCTDiv
+            * _data.priceFAssetVaultCTMul
+            / MAX_BIPS
+            / _data.priceFAssetVaultCTDiv;
+        uint256 poolLiquidationReward = _fAssetAmount
             * _data.liquidationFactorPoolBips
-            / MAX_BIPS;
+            * _data.priceFAssetPoolCTMul
+            / MAX_BIPS
+            / _data.priceFAssetPoolCTDiv;
         uint256 vaultTotalReward = vaultLiquidationReward + _calcSwapAmountOut(
             poolLiquidationReward,
             _data.reservePathDex2
         );
-        return vaultTotalReward - _vaultAmount;
+        uint256 vaultAmount = _calcSwapAmountIn(_fAssetAmount, _data.reservePathDex1);
+        return vaultTotalReward > vaultAmount ? vaultTotalReward - vaultAmount : 0;
     }
 
     function _calcSwapAmountIn(

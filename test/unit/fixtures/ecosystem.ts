@@ -104,7 +104,11 @@ export class EcosystemFactory {
       liquidationFactorVaultBips: liquidationFactorVaultBips,
       // configs should implicitly set the following data
       expectedVaultCrBips: this.config.vault.minCollateralRatioBips,
-      expectedPoolCrBips: this.config.pool.minCollateralRatioBips
+      expectedPoolCrBips: this.config.pool.minCollateralRatioBips,
+      // initial liquidator contract funds
+      initialLiquidatorFAsset: BigInt(1e9),
+      initialLiquidatorVault: BigInt(1e9),
+      initialLiquidatorPool: BigInt(1e9)
     }
   }
 
@@ -163,7 +167,7 @@ export class EcosystemFactory {
   public get semiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
-      name: 'arbitrage not possible, dex1 has too high slippage due to low liquidity',
+      name: 'dex1 has high slippage on vault / f-asset pool',
       // make dex1 f-assets have same price but low liquidity
       dex1FAssetReserve: this.defaultMintedUBA * BigInt(10) / BigInt(9),
       dex1VaultReserve: priceBasedInitialDexReserve(
@@ -179,10 +183,10 @@ export class EcosystemFactory {
     }
   }
 
-  public get unhealthyEcosystemWithHighFAssetDexPrice(): EcosystemConfig {
+  public get unhealthyEcosystemWithHighVaultFAssetDexPrice(): EcosystemConfig {
     return {
       ...this.healthyEcosystemWithVaultUnderwater,
-      name: 'arbitrage not possible, dex1 f-asset price too high',
+      name: 'too high f-asset price on vault / f-asset pool',
       // make dex f-assets 100x more expensive than on the ftso
       dex1FAssetReserve: this.healthyEcosystemWithVaultUnderwater.dex1FAssetReserve / BigInt(100),
     }
@@ -244,7 +248,7 @@ export class EcosystemFactory {
 
   public getUnhealthyEcosystems(count: number): EcosystemConfig[] {
     const configs: EcosystemConfig[] = [
-      this.unhealthyEcosystemWithHighFAssetDexPrice,
+      this.unhealthyEcosystemWithHighVaultFAssetDexPrice,
       this.unhealthyEcosystemWithBadDebt
     ]
     return configs
