@@ -48,7 +48,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
     yarn user-bot generateSecrets --agent --output secrets.json
     ```
 
-   You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc`, `xrp_rpc` and `indexer`.
+   You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc`, `xrp_rpc` and `indexer`. You can ask for these values from us during the beta testing phase.
 
    The relevant field for the agent is the `owner` field, which contains two accounts:
 
@@ -65,8 +65,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 ## Create an Agent Vault
 
-1. Choose your unique collateral pool token suffix.
-It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
+1. Choose your unique collateral pool token suffix. It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 
 2. To create an agent vault and output its address, you need to run the following command:
 
@@ -76,7 +75,7 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 
    It will create an agent vault and output its address. Please save this address for future reference.
 
-3. To make the agent operational, you need to fund the vault with two types of collateral.
+3. To make the agent operational, you need to fund the vault with two types of collateral. You can ask for test CFLR tokens, and we will provide them during the beta period.
 
     3.1 The first one is USDC, which you can deposit using the command:
 
@@ -90,16 +89,16 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
     yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> --fasset FtestXRP
     ```
 
-4. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command:
-
-    ```console
-    yarn user-bot agents --fasset FtestXRP
-    ```
-
-5. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
+4. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
 
     ```console
     yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
+    ```
+
+5. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command:
+
+    ```console
+    yarn user-bot agents --fasset FtestXRP
     ```
 
 ## Run the agent bot
@@ -107,7 +106,7 @@ It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 The agent bot responds to all requests made to the agent vaults you have created. To run the agent bot, you need to run the following command:
 
 ```console
-yarn ts-node src/run/run-agent.ts
+yarn run-agent
 ```
 
 ## Minting
@@ -118,4 +117,14 @@ With the agent bot running, users can now mint FtestXRP by running:
 
 ```console
 yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secrets secrets.json
+```
+
+## Redeeming
+
+Before proceeding with redeeming, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
+
+With the agent bot running, users can now redeem FtestXRP by running:
+
+```console
+yarn user-bot redeem <amountLots> -f FtestXRP --secrets secrets.json
 ```
