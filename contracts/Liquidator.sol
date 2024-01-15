@@ -106,19 +106,19 @@ contract Liquidator is ILiquidator {
         // note: to determine default token paths we need the token addresses
         // obtained within getFAssetData, but dex reserves need those paths
         EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
-        ArbitrageConfig memory config = _configureOrValidateSwapPaths(
-            _config,
-            data.fAssetToken,
-            data.vaultCT,
-            data.poolCT
-        );
+        _config.dexPair1.path = _getExplicitPath(
+            _config.dexPair1.path, data.vaultCT, data.fAssetToken);
+        _config.dexPair2.path = _getExplicitPath(
+            _config.dexPair2.path, data.poolCT, data.vaultCT);
         data.reservePathDex1 = Ecosystem.getDexReserves(
-            config.dexRouter, config.dexPair1.path);
+            _config.dexRouter, _config.dexPair1.path);
         data.reservePathDex2 = Ecosystem.getDexReserves(
-            config.dexRouter, config.dexPair2.path);
+            _config.dexRouter, _config.dexPair2.path);
+        data.swapPathDex1 = _config.dexPair1.path;
+        data.swapPathDex2 = _config.dexPair2.path;
         // run arbitrage
         uint256 balanceBefore = IERC20(data.vaultCT).balanceOf(address(this));
-        _runArbitrageWithData(config, data);
+        _runArbitrageWithData(_config, data);
         uint256 balanceAfter = IERC20(data.vaultCT).balanceOf(address(this));
         // send profit to sender
         require(balanceAfter >= balanceBefore,
@@ -240,36 +240,20 @@ contract Liquidator is ILiquidator {
         }
     }
 
-    function _configureOrValidateSwapPaths(
-        ArbitrageConfig memory _config,
-        address _fAssetToken,
-        address _vaultToken,
-        address _poolToken
+    function _getExplicitPath(
+        address[] memory _path,
+        address _tokenIn,
+        address _tokenOut
     )
         private pure
-        returns (ArbitrageConfig memory)
+        returns (address[] memory)
     {
-        if (_config.dexPair1.path.length == 0) {
-            _config.dexPair1.path = _toDynamicArray(_vaultToken, _fAssetToken);
-        } else {
-            uint256 len = _config.dexPair1.path.length;
-            require(
-                len >= 2 &&
-                _config.dexPair1.path[0] == _vaultToken &&
-                _config.dexPair1.path[len - 1] == _fAssetToken,
-                "Liquidator: Invalid vault to f-asset dex path");
+        if (_path.length == 0) {
+            return _toDynamicArray(_tokenIn, _tokenOut);
         }
-        if (_config.dexPair2.path.length == 0) {
-            _config.dexPair2.path = _toDynamicArray(_poolToken, _vaultToken);
-        } else {
-            uint256 len = _config.dexPair2.path.length;
-            require(
-                len >= 2 &&
-                _config.dexPair2.path[0] == _poolToken &&
-                _config.dexPair2.path[len - 1] == _vaultToken,
-                "Liquidator: Invalid pool to vault dex path");
-        }
-        return _config;
+        require(_path[0] == _tokenIn && _path[_path.length-1] == _tokenOut,
+            "Liquidator: Invalid token in path");
+        return _path;
     }
 
     function _convert(

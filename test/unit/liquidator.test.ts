@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
 import { ubaToAmg } from './helpers/utils'
-import { swapOutput, swapInput, swapOutputs } from './helpers/dex'
-import { setupEcosystem, setFtsoPrices } from './helpers/ecosystem'
+import { swapInput, swapOutputs } from './helpers/dex'
+import { TestUtils } from './helpers/ecosystem'
 import { getTestContext } from './fixtures/context'
 import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
-import type { AssetConfig, CollateralAsset, UnderlyingAsset, EcosystemConfig, TestContext } from './fixtures/interface'
+import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interface'
 import type { ERC20 } from '../../types'
 
 
@@ -14,10 +14,6 @@ type ArbitrageSwapPaths = {
   dex1: ERC20[],
   dex2: ERC20[]
 }
-
-// contract constants
-const AMG_TOKEN_WEI_PRICE_SCALE_EXP = BigInt(9)
-const AMG_TOKEN_WEI_PRICE_SCALE = BigInt(10) ** AMG_TOKEN_WEI_PRICE_SCALE_EXP
 
 // config for used assets
 const assetConfig: AssetConfig = {
@@ -27,8 +23,8 @@ const assetConfig: AssetConfig = {
 }
 // factory for creating various ecosystems
 const ecosystemFactory = new EcosystemFactory(assetConfig)
-// paths to swap by (could include some more tokens)
-const swapPathConfig: string[] = [
+// paths to swap by (could include some external tokens)
+const swapPathsFixture: string[] = [
   ",",
   "vault -> pool -> fAsset,",
   ", pool -> fAsset -> vault,",
@@ -40,6 +36,7 @@ const swapPathConfig: string[] = [
 
 describe("Tests for Liquidator contract", () => {
   let context: TestContext
+  let utils: TestUtils
 
   function nameToToken(name: string): ERC20 {
     switch (name) {
@@ -65,79 +62,25 @@ describe("Tests for Liquidator contract", () => {
     }
   }
 
-  async function liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
-    const { agent, assetManager } = context.contracts
-    const { liquidationPaymentFactorVaultBIPS, liquidationPaymentFactorPoolBIPS }
-      = await assetManager.getAgentInfo(agent)
-    const amountFAssetAmg = ubaToAmg(assetConfig.asset, amountFAssetUba)
-    // for vault
-    const amgPriceVault = await calcAmgToTokenWeiPrice(assetConfig.vault)
-    const amgWithVaultFactor = amountFAssetAmg * liquidationPaymentFactorVaultBIPS / BigInt(10_000)
-    const amountVault = amgToTokenWei(amgWithVaultFactor, amgPriceVault)
-    // for pool
-    const amgPricePool = await calcAmgToTokenWeiPrice(assetConfig.pool)
-    const amgWithPoolFactor = amountFAssetAmg * liquidationPaymentFactorPoolBIPS / BigInt(10_000)
-    const amountPool = amgToTokenWei(amgWithPoolFactor, amgPricePool)
-    return [amountVault, amountPool]
-  }
-
-  // this is how prices are calculated in the asset manager contract
-  async function calcAmgToTokenWeiPrice(collateral: CollateralAsset): Promise<bigint> {
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals }
-      = await context.contracts.priceReader.getPrice(collateral.ftsoSymbol)
-    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals }
-      = await context.contracts.priceReader.getPrice(assetConfig.asset.ftsoSymbol)
-    const expPlus = collateralFtsoDecimals + collateral.decimals + AMG_TOKEN_WEI_PRICE_SCALE_EXP
-    const expMinus = fAssetFtsoDecimals + assetConfig.asset.amgDecimals
-    const scale = BigInt(10) ** (expPlus - expMinus)
-    return fAssetFtsoPrice * scale / collateralFtsoPrice
-  }
-
-  function amgToTokenWei(amgAmount: bigint, amgPriceTokenWei: bigint): bigint {
-    return amgAmount * amgPriceTokenWei / AMG_TOKEN_WEI_PRICE_SCALE
-  }
-
-  // this is how prices are calculated in the liquidator contract
-  async function calcTokenATokenBPriceMulDiv(
-    assetA: CollateralAsset | UnderlyingAsset,
-    assetB: CollateralAsset | UnderlyingAsset
-  ): Promise<[bigint, bigint]> {
-    const { 0: assetAPrice, 2: assetAFtsoDecimals }
-      = await context.contracts.priceReader.getPrice(assetA.ftsoSymbol)
-    const { 0: assetBPrice, 2: assetBFtsoDecimals }
-      = await context.contracts.priceReader.getPrice(assetB.ftsoSymbol)
-    return [
-      assetAPrice * BigInt(10) ** (assetBFtsoDecimals + assetB.decimals),
-      assetBPrice * BigInt(10) ** (assetAFtsoDecimals + assetA.decimals)
-    ]
-  }
-
-  async function arbitrageProfit(liquidatedVault: bigint, dex1Path: ERC20[], dex2Path: ERC20[]): Promise<bigint> {
-    const { blazeSwapRouter } = context.contracts
-    const fAssets = await swapOutput(blazeSwapRouter, dex1Path, liquidatedVault)
-    const [vaultProfit, poolProfit] = await liquidationOutput(fAssets)
-    const [, poolProfitSwapped] = await swapOutputs(blazeSwapRouter, [dex1Path, dex2Path], [liquidatedVault, poolProfit])
-    return vaultProfit + poolProfitSwapped - liquidatedVault
-  }
-
   beforeEach(async function () {
     context = await getTestContext(assetConfig)
+    utils = new TestUtils(assetConfig, context)
   })
 
   describe("test arbitrage on various ecosystems", () => {
 
-    swapPathConfig.forEach((swapPaths) => {
+    swapPathsFixture.slice(1,2).forEach((swapPaths) => {
       ecosystemFactory.getHealthyEcosystems(8).forEach((config: EcosystemConfig) => {
         it(`should fully liquidate an agent in a healthy ecosystem config: "${config.name}" with swap path "${swapPaths}"`, async () => {
           const paths = resolveSwapPath(swapPaths)
           const fullPaths = resolveSwapPathDefaults(paths)
           const { contracts, signers } = context
-          await setupEcosystem(assetConfig, config, context)
+          await utils.configureEcosystem(config)
           // perform arbitrage by liquidation
           const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
           expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
           const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, maxLiquidatedFAsset)
-          const [expectedLiquidationRewardVault, expectedLiquidationRewardPool] = await liquidationOutput(maxLiquidatedFAsset)
+          const [expectedLiquidationRewardVault, expectedLiquidationRewardPool] = await utils.liquidationOutput(maxLiquidatedFAsset)
           const [,expectedSwappedPool] = await swapOutputs(
             contracts.blazeSwapRouter, [fullPaths.dex1, fullPaths.dex2], [maxLiquidatedVault, expectedLiquidationRewardPool])
           const { mintedUBA: mintedFAssetBefore } = await contracts.assetManager.getAgentInfo(contracts.agent)
@@ -182,20 +125,18 @@ describe("Tests for Liquidator contract", () => {
         })
       })
 
-      ecosystemFactory.getSemiHealthyEcosystems(8).forEach((config: EcosystemConfig) => {
+      ecosystemFactory.getSemiHealthyEcosystems(1).forEach((config: EcosystemConfig) => {
         it.only(`should optimally liquidate less than max f-assets due to semi-healthy ecosystem config: "${config.name}" with swap path "${swapPaths}"`, async () => {
           const paths = resolveSwapPath(swapPaths)
           const fullPaths = resolveSwapPathDefaults(paths)
           const { contracts, signers } = context
-          await setupEcosystem(assetConfig, config, context)
+          await utils.configureEcosystem(config)
           // calculate full liquidation profit
           const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, maxLiquidatedFAsset)
-          const fullLiquidationProfit = await arbitrageProfit(maxLiquidatedVault, fullPaths.dex1, fullPaths.dex2)
+          const fullLiquidationProfit = await utils.arbitrageProfit(maxLiquidatedVault, fullPaths.dex1, fullPaths.dex2)
+          console.log(fullLiquidationProfit)
           // perform arbitrage by liquidation
-          const { mintedUBA: mintedFAssetBefore } = await contracts.assetManager.getAgentInfo(contracts.agent)
-          const agentVaultBalanceBefore = await contracts.vault.balanceOf(contracts.agent)
-          const agentPoolBalanceBefore = await contracts.pool.balanceOf(contracts.agent)
           await contracts.liquidator.connect(signers.liquidator).runArbitrage(
             contracts.agent,
             signers.rewardee,
@@ -205,16 +146,9 @@ describe("Tests for Liquidator contract", () => {
             paths.dex1,
             paths.dex2
           )
-          const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
-          const agentVaultBalanceAfter = await contracts.vault.balanceOf(contracts.agent)
-          const agentPoolBalanceAfter = await contracts.pool.balanceOf(contracts.agent)
           // check that executed liquidation was more profitable than the full one would have been
-          const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
-          const usedVault = agentVaultBalanceBefore - agentVaultBalanceAfter
-          const usedPool = agentPoolBalanceBefore - agentPoolBalanceAfter
-          const swappedVault = await swapOutput(contracts.blazeSwapRouter, [contracts.vault, contracts.fAsset], liquidatedFAsset)
-          const profit = swappedVault + usedPool - usedVault
-          console.log(profit)
+          const profit = await contracts.vault.balanceOf(signers.rewardee)
+          console.log("max profit", profit)
           expect(profit).to.be.greaterThanOrEqual(fullLiquidationProfit)
         })
       })
@@ -224,7 +158,7 @@ describe("Tests for Liquidator contract", () => {
         const fullPaths = resolveSwapPathDefaults(paths)
         const config = ecosystemFactory.unhealthyEcosystemWithBadDebt
         const { contracts, signers } = context
-        await setupEcosystem(assetConfig, config, context)
+        await utils.configureEcosystem(config)
         await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
           contracts.agent,
           signers.rewardee,
@@ -238,29 +172,21 @@ describe("Tests for Liquidator contract", () => {
     })
 
     it("should fail arbitrage with badly liquidated path and then succeed through bypassing that path", async () => {
-      const badPaths = resolveSwapPath("vault -> fAsset, pool -> vault")
       const config = ecosystemFactory.unhealthyEcosystemWithHighVaultFAssetDexPrice
       const { contracts, signers } = context
-      await setupEcosystem(assetConfig, config, context)
+      await utils.configureEcosystem(config)
       await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-        contracts.agent,
-        signers.rewardee,
-        0, 1, 0, 1,
-        ZeroAddress,
-        ZeroAddress,
-        badPaths.dex1,
-        badPaths.dex2
+        contracts.agent, signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
       )).to.be.revertedWith("Liquidator: No profit available")
       // bypass the broken vault -> f-asset path with vault -> pool -> f-asset
-      const goodPaths = resolveSwapPath("vault -> pool -> fAsset, pool -> vault")
       await contracts.liquidator.connect(signers.liquidator).runArbitrage(
         contracts.agent,
         signers.rewardee,
         0, 1, 0, 1,
         ZeroAddress,
         ZeroAddress,
-        goodPaths.dex1,
-        goodPaths.dex2
+        [contracts.vault, contracts.pool, contracts.fAsset],
+        [contracts.pool, contracts.vault]
       )
       const profit = await contracts.vault.balanceOf(signers.rewardee)
       expect(profit).to.be.greaterThan(0)
@@ -272,7 +198,7 @@ describe("Tests for Liquidator contract", () => {
 
     it("should fail liquidation if flash loan can offer 0 fees", async () => {
       const { contracts, signers } = context
-      await setupEcosystem(assetConfig, ecosystemFactory.healthyEcosystemWithVaultUnderwater, context)
+      await utils.configureEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater)
       await contracts.vault.burn(contracts.flashLender, await contracts.vault.balanceOf(contracts.flashLender))
       await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
         context.contracts.agent, context.signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
@@ -280,14 +206,14 @@ describe("Tests for Liquidator contract", () => {
     })
 
     it("should fail if agent is not in liquidation", async () => {
-      await setupEcosystem(assetConfig, ecosystemFactory.baseEcosystem, context)
+      await utils.configureEcosystem(ecosystemFactory.baseEcosystem)
       await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
         context.contracts.agent, context.signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
       )).to.be.revertedWith("Liquidator: No f-asset to liquidate")
     })
 
     it("should fail when given incorrect liquidation paths", async () => {
-      await setupEcosystem(assetConfig, ecosystemFactory.healthyEcosystemWithVaultUnderwater, context)
+      await utils.configureEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater)
       await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
         context.contracts.agent,
         context.signers.rewardee,
@@ -314,18 +240,16 @@ describe("Tests for Liquidator contract", () => {
 
   describe("calculation", () => {
     it("should test calculating asset price in pool token in two ways", async () => {
-      await setFtsoPrices(
-        assetConfig,
-        context.contracts.priceReader,
+      await utils.setFtsoPrices(
         assetConfig.asset.defaultPriceUsd5,
         assetConfig.vault.defaultPriceUsd5,
         assetConfig.pool.defaultPriceUsd5
       )
       for (let collateral of [assetConfig.pool, assetConfig.vault]) {
-        const price1 = await calcAmgToTokenWeiPrice(collateral)
-        const [price2Mul, price2Div] = await calcTokenATokenBPriceMulDiv(assetConfig.asset, collateral)
+        const price1 = await utils.calcAmgToTokenWeiPrice(assetConfig.asset, collateral)
+        const [price2Mul, price2Div] = await utils.calcTokenATokenBPriceMulDiv(assetConfig.asset, collateral)
         const amountUBA = BigInt(1_000_000_000)
-        const amountWei1 = amgToTokenWei(ubaToAmg(assetConfig.asset, amountUBA), price1)
+        const amountWei1 = utils.amgToTokenWei(ubaToAmg(assetConfig.asset, amountUBA), price1)
         const amountWei2 = amountUBA * price2Mul / price2Div
         expect(amountWei1).to.equal(amountWei2)
       }

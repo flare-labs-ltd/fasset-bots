@@ -148,22 +148,55 @@ library Optimum {
         internal pure
         returns (uint256 _profit)
     {
-        uint256 vaultLiquidationReward = _fAssetAmount
+        // calculate the amount in along the path while
+        // also updating the reserves on dex2 path
+        uint256 vaultAmount = _fAssetAmount;
+        for (uint256 i = _data.reservePathDex1.length; i > 0; i--) {
+            uint256 aux = _calcSwapAmountIn(
+                vaultAmount,
+                _data.reservePathDex1[i-1].reserveA,
+                _data.reservePathDex1[i-1].reserveB
+            );
+            for (uint256 j = 1; j < _data.swapPathDex2.length; j++) {
+                if (_data.swapPathDex2[j-1] == _data.swapPathDex1[i]
+                    && _data.swapPathDex2[j] == _data.swapPathDex1[i-1]) {
+                    _data.reservePathDex2[j-1].reserveA -= vaultAmount;
+                    _data.reservePathDex2[j-1].reserveB += aux;
+                } else if (_data.swapPathDex2[j-1] == _data.swapPathDex1[i-1]
+                    && _data.swapPathDex2[j] == _data.swapPathDex1[i]) {
+                    _data.reservePathDex2[j-1].reserveA += aux;
+                    _data.reservePathDex2[j-1].reserveB -= vaultAmount;
+                }
+            }
+            vaultAmount = aux;
+        }
+        (uint256 vaultLiquidationReward, uint256 poolLiquidationReward)
+            = _calcLiquidationReward(_data, _fAssetAmount);
+        uint256 vaultTotalReward = vaultLiquidationReward + _calcSwapAmountOut(
+            poolLiquidationReward, _data.reservePathDex2);
+        return vaultTotalReward > vaultAmount ? vaultTotalReward - vaultAmount : 0;
+    }
+
+    function _calcLiquidationReward(
+        EcosystemData memory _data,
+        uint256 _fAssetAmount
+    )
+        internal pure
+        returns (
+            uint256 _vaultLiquidationReward,
+            uint256 _poolLiquidationReward
+        )
+    {
+        _vaultLiquidationReward = _fAssetAmount
             * _data.liquidationFactorVaultBips
             * _data.priceFAssetVaultCTMul
             / MAX_BIPS
             / _data.priceFAssetVaultCTDiv;
-        uint256 poolLiquidationReward = _fAssetAmount
+        _poolLiquidationReward = _fAssetAmount
             * _data.liquidationFactorPoolBips
             * _data.priceFAssetPoolCTMul
             / MAX_BIPS
             / _data.priceFAssetPoolCTDiv;
-        uint256 vaultTotalReward = vaultLiquidationReward + _calcSwapAmountOut(
-            poolLiquidationReward,
-            _data.reservePathDex2
-        );
-        uint256 vaultAmount = _calcSwapAmountIn(_fAssetAmount, _data.reservePathDex1);
-        return vaultTotalReward > vaultAmount ? vaultTotalReward - vaultAmount : 0;
     }
 
     function _calcSwapAmountIn(

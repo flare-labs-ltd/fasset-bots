@@ -21,9 +21,11 @@ struct EcosystemData {
     uint256 liquidationFactorVaultBips;
     uint256 liquidationFactorPoolBips;
     uint256 assetMintingGranularityUBA;
-    // dex reserves
+    // dex data
     LiquidityPoolReserves[] reservePathDex1;
     LiquidityPoolReserves[] reservePathDex2;
+    address[] swapPathDex1;
+    address[] swapPathDex2;
     // ftso prices
     uint256 priceFAssetVaultCTMul;
     uint256 priceFAssetVaultCTDiv;

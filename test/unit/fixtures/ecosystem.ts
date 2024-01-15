@@ -238,7 +238,7 @@ export class EcosystemFactory {
     const configs: EcosystemConfig[] = [
       this.semiHealthyEcosystemWithHighSlippage
     ]
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count-1; i++) {
       configs.push(this.randomizeEcosystem(
         this.semiHealthyEcosystemWithHighSlippage,
         `randomized semi-healthy ecosystem ${i}`))
