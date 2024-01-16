@@ -1,8 +1,6 @@
 import { readFileSync, statSync } from "fs";
 import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
 
-const DEFAULT_SECRETS_JSON_PATH = requireEnv("FASSET_BOT_SECRETS");
-
 export type Secrets = {
     wallet?: {
         encryption_password: string;
@@ -36,7 +34,7 @@ export interface DatabaseAccount {
 
 export function getSecrets(): Secrets {
     if (loadedSecrets == undefined) {
-        loadedSecrets = loadSecrets(DEFAULT_SECRETS_JSON_PATH);
+        loadedSecrets = loadSecrets(requireEnv("FASSET_BOT_SECRETS"));
     }
     return loadedSecrets;
 }
