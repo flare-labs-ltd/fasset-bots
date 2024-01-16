@@ -38,8 +38,8 @@ program
             if (!program.getOptionValue("fasset")) {
                 throw new CommandLineError("required option '-f, --fasset <fAssetSymbol>' not specified");
             }
+            resetSecrets(getSecretsPath());
         }
-        resetSecrets(getSecretsPath());
     });
 
 function getSecretsPath() {
