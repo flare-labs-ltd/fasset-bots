@@ -36,7 +36,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 ## Configure your environment
 
-1. Rename `.env.template` into `.env` and uncomment the commented lines.
+1. Rename `.env.template` into `.env`.
 
     ```console
     mv .env.template .env
