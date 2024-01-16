@@ -131,11 +131,14 @@ describe("Tests for Liquidator contract", () => {
           const fullPaths = resolveSwapPathDefaults(paths)
           const { contracts, signers } = context
           await utils.configureEcosystem(config)
+
+          console.log(await utils.arbitrageProfit(BigInt("1008012833796544491803220"), fullPaths.dex1, fullPaths.dex2))
+          console.log(await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, BigInt("1999933865300")))
+
           // calculate full liquidation profit
           const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, maxLiquidatedFAsset)
           const fullLiquidationProfit = await utils.arbitrageProfit(maxLiquidatedVault, fullPaths.dex1, fullPaths.dex2)
-          console.log(fullLiquidationProfit)
           // perform arbitrage by liquidation
           await contracts.liquidator.connect(signers.liquidator).runArbitrage(
             contracts.agent,
@@ -153,9 +156,8 @@ describe("Tests for Liquidator contract", () => {
         })
       })
 
-      it("should fail the arbitrage if there is bad debt", async () => {
-        const paths = resolveSwapPath(swapPaths)
-        const fullPaths = resolveSwapPathDefaults(paths)
+      it("should fail the arbitrage in the case of bad debt", async () => {
+        const fullPaths = resolveSwapPathDefaults(resolveSwapPath(swapPaths))
         const config = ecosystemFactory.unhealthyEcosystemWithBadDebt
         const { contracts, signers } = context
         await utils.configureEcosystem(config)
@@ -190,6 +192,10 @@ describe("Tests for Liquidator contract", () => {
       )
       const profit = await contracts.vault.balanceOf(signers.rewardee)
       expect(profit).to.be.greaterThan(0)
+    })
+
+    it("should fail arbitrage with dexes price falling lower than specified min price", async () => {
+      // TODO
     })
 
   })

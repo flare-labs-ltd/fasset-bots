@@ -23,7 +23,9 @@ library Optimum {
         uint256 optVaultCollateral = numeric
             ? numericOptimalVaultCollateral(_data)
             : symbolicOptimalVaultCollateral(_data);
-        return _capOrroundInputUpToAmg(_data, optVaultCollateral);
+        uint256 investedVault = _capOrroundInputUpToAmg(_data, optVaultCollateral);
+        console.log("invested vault", investedVault);
+        return investedVault;
     }
 
     function symbolicOptimalVaultCollateral(
@@ -113,33 +115,18 @@ library Optimum {
         uint256 avg = _roundUpWithPrecision((a + b) / 2, _data.assetMintingGranularityUBA);
         uint256 profitAtB = _calcArbitrageProfit(_data, b);
         uint256 profitAtAvg = _calcArbitrageProfit(_data, avg);
-        console.log("max profit", Math.max(profitAtAvg, profitAtB));
         if (profitAtAvg == 0 && profitAtB == 0)
             return 0;
-        if (profitAtAvg <= profitAtB)
+        if (profitAtAvg <= profitAtB) {
+            console.log("values", profitAtB, b, _calcSwapAmountIn(b, _data.reservePathDex1));
             return _calcSwapAmountIn(b, _data.reservePathDex1);
+        }
+        console.log("values", profitAtAvg, avg, _calcSwapAmountIn(avg, _data.reservePathDex1));
         return _calcSwapAmountIn(avg, _data.reservePathDex1);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
     // helper functions
-
-    // reduce the amount in such a way that once it gets swapped through the dex1 path,
-    // it will produce output that is a multiplier of AMG
-    function _capOrroundInputUpToAmg(
-        EcosystemData memory _data,
-        uint256 _amountIn
-    ) private pure returns (uint256) {
-        uint256 amountOut = _calcSwapAmountOut(_amountIn, _data.reservePathDex1);
-        if (amountOut > _data.maxLiquidatedFAssetUBA) {
-            amountOut = _data.maxLiquidatedFAssetUBA; // cap
-        }
-        uint256 amountOutRoundedToAmg = _roundUpWithPrecision(
-            amountOut, _data.assetMintingGranularityUBA);
-        if (amountOutRoundedToAmg == 0) return 0;
-        uint256 amountIn = _calcSwapAmountIn(amountOutRoundedToAmg, _data.reservePathDex1);
-        return amountIn;
-    }
 
     function _calcArbitrageProfit(
         EcosystemData memory _data,
@@ -164,8 +151,8 @@ library Optimum {
                     _data.reservePathDex2[j-1].reserveB += aux;
                 } else if (_data.swapPathDex2[j-1] == _data.swapPathDex1[i-1]
                     && _data.swapPathDex2[j] == _data.swapPathDex1[i]) {
-                    _data.reservePathDex2[j-1].reserveA += aux;
-                    _data.reservePathDex2[j-1].reserveB -= vaultAmount;
+                    _data.reservePathDex2[j-1].reserveA -= aux;
+                    _data.reservePathDex2[j-1].reserveB += vaultAmount;
                 }
             }
             vaultAmount = aux;
@@ -197,6 +184,23 @@ library Optimum {
             * _data.priceFAssetPoolCTMul
             / MAX_BIPS
             / _data.priceFAssetPoolCTDiv;
+    }
+
+    // increase the amount in such a way that once it gets swapped through the dex1 path,
+    // it will produce output that is a multiplier of AMG
+    function _capOrroundInputUpToAmg(
+        EcosystemData memory _data,
+        uint256 _amountIn
+    ) private pure returns (uint256) {
+        uint256 amountOut = _calcSwapAmountOut(_amountIn, _data.reservePathDex1);
+        if (amountOut > _data.maxLiquidatedFAssetUBA) {
+            amountOut = _data.maxLiquidatedFAssetUBA; // cap
+        }
+        uint256 amountOutRoundedToAmg = _roundUpWithPrecision(
+            amountOut, _data.assetMintingGranularityUBA);
+        if (amountOutRoundedToAmg == 0) return 0;
+        uint256 amountIn = _calcSwapAmountIn(amountOutRoundedToAmg, _data.reservePathDex1);
+        return amountIn;
     }
 
     function _calcSwapAmountIn(

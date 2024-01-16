@@ -166,7 +166,7 @@ export class EcosystemFactory {
 
   public get semiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
     return {
-      ...this.healthyEcosystemWithVaultUnderwater,
+      ...this.baseEcosystem,
       name: 'dex1 has high slippage on vault / f-asset pool',
       // make dex1 f-assets have same price but low liquidity
       dex1FAssetReserve: this.defaultMintedUBA * BigInt(10) / BigInt(9),

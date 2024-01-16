@@ -12,7 +12,6 @@ import "fasset/contracts/userInterfaces/data/CollateralType.sol";
 import "./Structs.sol";
 import "./Constants.sol";
 
-import "hardhat/console.sol";
 
 library Ecosystem {
 

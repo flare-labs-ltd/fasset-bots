@@ -106,9 +106,9 @@ contract Liquidator is ILiquidator {
         // note: to determine default token paths we need the token addresses
         // obtained within getFAssetData, but dex reserves need those paths
         EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
-        _config.dexPair1.path = _getExplicitPath(
+        _config.dexPair1.path = _getEnsurePath(
             _config.dexPair1.path, data.vaultCT, data.fAssetToken);
-        _config.dexPair2.path = _getExplicitPath(
+        _config.dexPair2.path = _getEnsurePath(
             _config.dexPair2.path, data.poolCT, data.vaultCT);
         data.reservePathDex1 = Ecosystem.getDexReserves(
             _config.dexRouter, _config.dexPair1.path);
@@ -240,7 +240,7 @@ contract Liquidator is ILiquidator {
         }
     }
 
-    function _getExplicitPath(
+    function _getEnsurePath(
         address[] memory _path,
         address _tokenIn,
         address _tokenOut
