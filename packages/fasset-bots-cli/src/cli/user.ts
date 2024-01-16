@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import chalk from "chalk";
 import { Command } from "commander";
-import { InfoBot, SecretsUser, UserBot } from "@flarelabs/fasset-bots-core";
+import { InfoBot, SecretsUser, SourceId, UserBot, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { requireSecret, resetSecrets } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
@@ -61,12 +61,10 @@ program
     .option("--agent", "also generate secrets for agent")
     .option("--other", "also generate secrets for other bots (challenger, etc.)")
     .action(async (opts: { output?: string; overwrite?: boolean; agent?: boolean; other?: boolean }) => {
-        const options: { config: string; fasset?: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
         const users: SecretsUser[] = ["user"];
         if (opts.agent) users.push("agent");
         if (opts.other) users.push("other");
-        const secrets = bot.generateSecrets(users);
+        const secrets = generateSecrets(users, SourceId.XRP);
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {

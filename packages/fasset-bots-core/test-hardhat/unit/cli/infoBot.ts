@@ -15,6 +15,7 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgent, createTestAgentAndMakeAvailable } from "../../test-utils/helpers";
 import { BotConfigFile } from "../../../src/config/config-files";
+import { generateSecrets } from "../../../src";
 use(chaiAsPromised);
 use(spies);
 
@@ -133,11 +134,11 @@ describe("InfoBot cli commands unit tests", async () => {
     });
 
     it("Should generate secrets", async () => {
-        const agent = infoBot.generateSecrets(["agent"]);
+        const agent = generateSecrets(["agent"], SourceId.XRP);
         expect(agent).to.not.be.empty;
-        const other = infoBot.generateSecrets(["other"]);
+        const other = generateSecrets(["other"], SourceId.XRP);
         expect(other).to.not.be.empty;
-        const user = infoBot.generateSecrets(["user"]);
+        const user = generateSecrets(["user"], SourceId.XRP);
         expect(user).to.not.be.empty;
     });
 

@@ -4,5 +4,7 @@ export { BotCliCommands } from "./actors/AgentBotCliCommands";
 export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper } from "./actors/TimeKeeper";
 export { UserBot } from "./actors/UserBot";
-export { InfoBot, SecretsUser } from "./actors/InfoBot";
+export { InfoBot } from "./actors/InfoBot";
+export { generateSecrets, SecretsUser } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
+export { SourceId } from "./underlying-chain/SourceId";
