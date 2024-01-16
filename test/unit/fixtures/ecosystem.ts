@@ -224,14 +224,11 @@ export class EcosystemFactory {
       this.healthyEcosystemWithZeroVaultCollateral,
       this.healthyEcosystemWithZeroPoolCollateral
     ]
-    if (count < 4) {
-      return configs.slice(0, count)
-    }
     for (let i = 0; i < count - 4; i++) {
       let config = configs[i % 4]
       configs.push(this.randomizeEcosystem(config, `randomized ecosystem ${config.name}`))
     }
-    return configs
+    return configs.slice(0, count)
   }
 
   public getSemiHealthyEcosystems(count: number): EcosystemConfig[] {
@@ -243,7 +240,7 @@ export class EcosystemFactory {
         this.semiHealthyEcosystemWithHighSlippage,
         `randomized semi-healthy ecosystem ${i}`))
     }
-    return configs
+    return configs.slice(0, count)
   }
 
   public getUnhealthyEcosystems(count: number): EcosystemConfig[] {
@@ -251,7 +248,7 @@ export class EcosystemFactory {
       this.unhealthyEcosystemWithHighVaultFAssetDexPrice,
       this.unhealthyEcosystemWithBadDebt
     ]
-    return configs
+    return configs.slice(0, count)
   }
 
   protected randomizeEcosystem(ecosystem: EcosystemConfig, name: string): EcosystemConfig {

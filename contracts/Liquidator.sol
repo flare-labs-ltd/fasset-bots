@@ -103,8 +103,6 @@ contract Liquidator is ILiquidator {
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
         assetManager.startLiquidation(_agentVault);
         // get data needed for arbitrage strategy calculation
-        // note: to determine default token paths we need the token addresses
-        // obtained within getFAssetData, but dex reserves need those paths
         EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
         _config.dexPair1.path = _getEnsurePath(
             _config.dexPair1.path, data.vaultCT, data.fAssetToken);
@@ -252,7 +250,7 @@ contract Liquidator is ILiquidator {
             return _toDynamicArray(_tokenIn, _tokenOut);
         }
         require(_path[0] == _tokenIn && _path[_path.length-1] == _tokenOut,
-            "Liquidator: Invalid token in path");
+            "Liquidator: Invalid token path");
         return _path;
     }
 

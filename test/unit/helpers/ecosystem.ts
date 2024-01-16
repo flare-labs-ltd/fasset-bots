@@ -65,7 +65,7 @@ export class TestUtils {
   }
 
   // this is how prices are calculated in the asset manager contract
-  async calcAmgToTokenWeiPrice(fAsset: UnderlyingAsset, collateral: CollateralAsset): Promise<bigint> {
+  async amgToTokenPrice(fAsset: UnderlyingAsset, collateral: CollateralAsset): Promise<bigint> {
     const { contracts } = this.context
     const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals }
       = await contracts.priceReader.getPrice(collateral.ftsoSymbol)
@@ -77,23 +77,8 @@ export class TestUtils {
     return fAssetFtsoPrice * scale / collateralFtsoPrice
   }
 
-  amgToTokenWei(amgAmount: bigint, amgPriceTokenWei: bigint): bigint {
+  amgToToken(amgAmount: bigint, amgPriceTokenWei: bigint): bigint {
     return amgAmount * amgPriceTokenWei / AMG_TOKEN_WEI_PRICE_SCALE
-  }
-
-  // this is how prices are calculated in the liquidator contract
-  async calcTokenATokenBPriceMulDiv(
-    assetA: CollateralAsset | UnderlyingAsset,
-    assetB: CollateralAsset | UnderlyingAsset
-  ): Promise<[bigint, bigint]> {
-    const { 0: assetAPrice, 2: assetAFtsoDecimals }
-      = await this.context.contracts.priceReader.getPrice(assetA.ftsoSymbol)
-    const { 0: assetBPrice, 2: assetBFtsoDecimals }
-      = await this.context.contracts.priceReader.getPrice(assetB.ftsoSymbol)
-    return [
-      assetAPrice * BigInt(10) ** (assetBFtsoDecimals + assetB.decimals),
-      assetBPrice * BigInt(10) ** (assetAFtsoDecimals + assetA.decimals)
-    ]
   }
 
   async liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
@@ -102,13 +87,13 @@ export class TestUtils {
       = await contracts.assetManager.getAgentInfo(contracts.agent)
     const amountFAssetAmg = ubaToAmg(this.assetConfig.asset, amountFAssetUba)
     // for vault
-    const amgPriceVault = await this.calcAmgToTokenWeiPrice(this.assetConfig.asset, this.assetConfig.vault)
+    const amgPriceVault = await this.amgToTokenPrice(this.assetConfig.asset, this.assetConfig.vault)
     const amgWithVaultFactor = amountFAssetAmg * liquidationPaymentFactorVaultBIPS / BigInt(10_000)
-    const amountVault = this.amgToTokenWei(amgWithVaultFactor, amgPriceVault)
+    const amountVault = this.amgToToken(amgWithVaultFactor, amgPriceVault)
     // for pool
-    const amgPricePool = await this.calcAmgToTokenWeiPrice(this.assetConfig.asset, this.assetConfig.pool)
+    const amgPricePool = await this.amgToTokenPrice(this.assetConfig.asset, this.assetConfig.pool)
     const amgWithPoolFactor = amountFAssetAmg * liquidationPaymentFactorPoolBIPS / BigInt(10_000)
-    const amountPool = this.amgToTokenWei(amgWithPoolFactor, amgPricePool)
+    const amountPool = this.amgToToken(amgWithPoolFactor, amgPricePool)
     return [amountVault, amountPool]
   }
 

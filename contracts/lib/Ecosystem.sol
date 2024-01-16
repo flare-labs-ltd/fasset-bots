@@ -44,19 +44,10 @@ library Ecosystem {
         _data.liquidationFactorVaultBips = agentInfo.liquidationPaymentFactorVaultBIPS;
         _data.liquidationFactorPoolBips = agentInfo.liquidationPaymentFactorPoolBIPS;
         _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
+        _data.assetMintingDecimals = settings.assetMintingDecimals;
         // ftso prices
-        (
-            _data.priceFAssetVaultCTMul,
-            _data.priceFAssetVaultCTDiv,
-            _data.priceFAssetPoolCTMul,
-            _data.priceFAssetPoolCTDiv
-        ) = _getPrices(
-            IAssetManager(_data.assetManager),
-            IPriceReader(settings.priceReader),
-            _data.fAssetToken,
-            _data.vaultCT,
-            _data.poolCT
-        );
+        (_data.priceFAssetAmgVaultCT, _data.priceFAssetAmgPoolCT)
+            = _getPrices(_data, IPriceReader(settings.priceReader));
     }
 
     function getDexReserves(
@@ -64,9 +55,9 @@ library Ecosystem {
         address[] memory _path
     )
         internal view
-        returns (LiquidityPoolReserves[] memory _reserves)
+        returns (PoolReserves[] memory _reserves)
     {
-        _reserves = new LiquidityPoolReserves[](_path.length - 1);
+        _reserves = new PoolReserves[](_path.length - 1);
         for (uint256 i = 0; i < _path.length - 1; i++) {
             (_reserves[i].reserveA, _reserves[i].reserveB) =
                 IBlazeSwapRouter(_dexRouter).getReserves(
@@ -76,47 +67,44 @@ library Ecosystem {
     }
 
     function _getPrices(
-        IAssetManager _assetManager,
-        IPriceReader _priceReader,
-        address _fAssetToken,
-        address _vaultToken,
-        address _poolToken
+        EcosystemData memory _data,
+        IPriceReader _priceReader
     )
         private view
         returns (
-            uint256 priceFAssetVaultCTMul,
-            uint256 priceFAssetVaultCTDiv,
-            uint256 priceFAssetPoolCTMul,
-            uint256 priceFAssetPoolCTDiv
+            uint256 priceFAssetAmgVaultCT,
+            uint256 priceFAssetAmgPoolCT
         )
     {
-        FtsoSymbols memory symbols = _getFtsoSymbols(_assetManager, IERC20(_vaultToken), IERC20(_poolToken));
-        uint8 fAssetDecimals = IERC20Metadata(_fAssetToken).decimals();
-        (uint256 fAssetFtsoPrice,, uint256 fAssetFtsoDecimals) = _priceReader.getPrice(symbols.asset);
-        {
-            // scope to avoid stack too deep error
-            (uint256 vaultFtsoPrice,, uint256 vaultFtsoDecimals) = _priceReader.getPrice(symbols.vault);
-            (priceFAssetVaultCTMul, priceFAssetVaultCTDiv) = _getTokenAToTokenBPriceMulDiv(
-                fAssetDecimals,
-                fAssetFtsoDecimals,
-                fAssetFtsoPrice,
-                IERC20Metadata(_vaultToken).decimals(),
+        FtsoSymbols memory symbols = _getFtsoSymbols(
+            IAssetManager(_data.assetManager),
+            IERC20(_data.vaultCT),
+            IERC20(_data.poolCT)
+        );
+        (uint256 fAssetFtsoPrice,, uint256 fAssetFtsoDecimals)
+            = _priceReader.getPrice(symbols.asset);
+        (uint256 vaultFtsoPrice,, uint256 vaultFtsoDecimals)
+            = _priceReader.getPrice(symbols.vault);
+        (uint256 poolFtsoPrice,, uint256 poolFtsoDecimals)
+            = _priceReader.getPrice(symbols.pool);
+        return (
+            _calcAmgToTokenPrice(
+                IERC20Metadata(_data.vaultCT).decimals(),
+                vaultFtsoPrice,
                 vaultFtsoDecimals,
-                vaultFtsoPrice
-            );
-        }
-        {
-            // scope to avoid stack too deep error
-            (uint256 poolFtsoPrice,, uint256 poolFtsoDecimals) = _priceReader.getPrice(symbols.pool);
-            (priceFAssetPoolCTMul, priceFAssetPoolCTDiv) = _getTokenAToTokenBPriceMulDiv(
-                fAssetDecimals,
-                fAssetFtsoDecimals,
+                _data.assetMintingDecimals,
                 fAssetFtsoPrice,
-                IERC20Metadata(_poolToken).decimals(),
+                fAssetFtsoDecimals
+            ),
+            _calcAmgToTokenPrice(
+                IERC20Metadata(_data.poolCT).decimals(),
+                poolFtsoPrice,
                 poolFtsoDecimals,
-                poolFtsoPrice
-            );
-        }
+                _data.assetMintingDecimals,
+                fAssetFtsoPrice,
+                fAssetFtsoDecimals
+            )
+        );
     }
 
     function _getFtsoSymbols(
@@ -138,20 +126,23 @@ library Ecosystem {
         _ftsoSymbols.pool = poolData.tokenFtsoSymbol;
     }
 
-    function _getTokenAToTokenBPriceMulDiv(
-        uint256 _decimalsA,
-        uint256 _ftsoDecimalsA,
-        uint256 _priceA,
-        uint256 _decimalsB,
-        uint256 _ftsoDecimalsB,
-        uint256 _priceB
+    function _calcAmgToTokenPrice(
+        uint256 _tokenDecimals,
+        uint256 _tokenFtsoPrice,
+        uint256 _tokenFtsoDecimals,
+        uint256 _assetMintingDecimals,
+        uint256 _assetFtsoPrice,
+        uint256 _assetFtsoDecimals
     )
         private pure
-         returns (uint256, uint256)
+        returns (uint256)
     {
-        return (
-            _priceA * (10 ** (_decimalsB + _ftsoDecimalsB)),
-            _priceB * (10 ** (_decimalsA + _ftsoDecimalsA))
-        );
+        uint256 expPlus = _tokenDecimals + _tokenFtsoDecimals + AMG_TOKEN_WEI_PRICE_SCALE_EXP;
+        uint256 expMinus = _assetMintingDecimals + _assetFtsoDecimals;
+        // If negative, price would probably always be 0 after division, so this is forbidden.
+        // Anyway, we should know about this before we add the token and/or asset, since
+        // token decimals and ftso decimals typically never change.
+        assert(expPlus >= expMinus);
+        return _assetFtsoPrice * (10 ** (expPlus - expMinus)) / _tokenFtsoPrice;
     }
 }
