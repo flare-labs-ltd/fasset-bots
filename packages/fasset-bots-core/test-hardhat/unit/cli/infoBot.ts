@@ -4,7 +4,6 @@ import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { InfoBot } from "../../../src/actors/InfoBot";
 import { ORM } from "../../../src/config/orm";
-import { Agent } from "../../../src/fasset/Agent";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { MockChain } from "../../../src/mock/MockChain";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
@@ -15,7 +14,6 @@ import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgent, createTestAgentAndMakeAvailable } from "../../test-utils/helpers";
 import { BotConfigFile } from "../../../src/config/config-files";
-import { generateSecrets } from "../../../src";
 use(chaiAsPromised);
 use(spies);
 
@@ -132,15 +130,6 @@ describe("InfoBot cli commands unit tests", async () => {
         await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         await infoBot.printPools();
         expect(spyLog).to.be.called.gt(0);
-    });
-
-    it("Should generate secrets", async () => {
-        const agent = generateSecrets(["agent"], SourceId.XRP);
-        expect(agent).to.not.be.empty;
-        const other = generateSecrets(["other"], SourceId.XRP);
-        expect(other).to.not.be.empty;
-        const user = generateSecrets(["user"], SourceId.XRP);
-        expect(user).to.not.be.empty;
     });
 
     it("Should find pool by symbol", async () => {

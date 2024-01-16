@@ -75,13 +75,15 @@ const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>(resolveInFassetB
  * @param configInfo
  * @returns instance BotConfigFile
  */
-export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
+export function loadConfigFile(fPath: string, configInfo?: string, validate: boolean = true): BotConfigFile {
     try {
         const config = botConfigLoader.load(fPath);
         updateConfigFilePaths(fPath, config);
-        validateConfigFile(config);
-        // check secrets.json file permission
-        getSecrets();
+        if (validate) {
+            validateConfigFile(config);
+            // check secrets.json file permission
+            getSecrets();
+        }
         return config;
     } catch (e) {
         /* istanbul ignore next */

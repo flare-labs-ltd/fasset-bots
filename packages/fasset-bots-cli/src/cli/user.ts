@@ -61,10 +61,11 @@ program
     .option("--agent", "also generate secrets for agent")
     .option("--other", "also generate secrets for other bots (challenger, etc.)")
     .action(async (opts: { output?: string; overwrite?: boolean; agent?: boolean; other?: boolean }) => {
+        const options: { config: string } = program.opts();
         const users: SecretsUser[] = ["user"];
         if (opts.agent) users.push("agent");
         if (opts.other) users.push("other");
-        const secrets = generateSecrets(users, SourceId.XRP);
+        const secrets = generateSecrets(options.config, users);
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
