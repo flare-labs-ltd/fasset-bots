@@ -21,6 +21,13 @@ async function whitelistAgent(configFileName: string, ownerAddress: string) {
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
+async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
+    return agentWhitelist.isWhitelisted(ownerAddress);
+}
+
 async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
@@ -88,6 +95,16 @@ program
     .action(async (address: string) => {
         const options: { config: string } = program.opts();
         await whitelistAgent(options.config, address);
+    });
+
+program
+    .command("isAgentWhitelisted")
+    .description("check if agent owner address is whitelisted")
+    .argument("address", "owner's address")
+    .action(async (address: string) => {
+        const options: { config: string } = program.opts();
+        const isWhitelisted = await isAgentWhitelisted(options.config, address);
+        console.log(isWhitelisted);
     });
 
 program
