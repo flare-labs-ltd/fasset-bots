@@ -31,10 +31,10 @@ AGENT CREATED: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was created.
 2. Deposit enough vault collateral to agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. In this example _25000 testUSDC_.
 
 ```console
-$ yarn agent-bot depositVaultCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 25000000000000000000000 -f FtestXRP
+$ yarn agent-bot depositVaultCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 25000000000 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
-VAULT COLLATERAL DEPOSIT: Deposit of 2500000000000000000000 to agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was successful.
+VAULT COLLATERAL DEPOSIT: Deposit of 25000000000 to agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was successful.
 ```
 
 2. Buy enough pool collateral for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. In this example _4500 CFLR_.
