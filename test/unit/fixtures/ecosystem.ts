@@ -9,6 +9,8 @@ export class EcosystemFactory {
   public defaultDex2VaultReserve: bigint // dex2 = pool / vault
   public defaultDex3PoolReserve: bigint // dex3 = pool / f-asset
   public defaultMintedUBA: bigint // in lots
+  // cached ecosystem
+  private _baseEcosystem: EcosystemConfig
 
   constructor(public config: AssetConfig) {
     // customly configured reserves and minted f-assets (by their value in usd5)
@@ -40,6 +42,8 @@ export class EcosystemFactory {
       ),
       lotSizeUba(config.asset)
     )
+    // cache this one to optimize things
+    this._baseEcosystem = this.baseEcosystem
   }
 
   public get baseEcosystem(): EcosystemConfig {
@@ -115,13 +119,13 @@ export class EcosystemFactory {
   public get healthyEcosystemWithVaultUnderwater(): EcosystemConfig {
     const vaultCrBips = (this.config.vault.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'vault cr underwater',
       vaultCollateral: collateralForAgentCr(
         vaultCrBips,
         this.defaultMintedUBA,
-        this.baseEcosystem.assetFtsoPrice,
-        this.baseEcosystem.vaultFtsoPrice,
+        this._baseEcosystem.assetFtsoPrice,
+        this._baseEcosystem.vaultFtsoPrice,
         this.config.asset.decimals,
         this.config.vault.decimals
       ),
@@ -132,13 +136,13 @@ export class EcosystemFactory {
   public get healthyEcosystemWithPoolUnderwater(): EcosystemConfig {
     const poolCrBips = (this.config.pool.minCollateralRatioBips + BigInt(10_000)) / BigInt(2)
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'pool cr underwater',
       poolCollateral: collateralForAgentCr(
         poolCrBips,
         this.defaultMintedUBA,
-        this.baseEcosystem.assetFtsoPrice,
-        this.baseEcosystem.poolFtsoPrice,
+        this._baseEcosystem.assetFtsoPrice,
+        this._baseEcosystem.poolFtsoPrice,
         this.config.asset.decimals,
         this.config.pool.decimals
       ),
@@ -148,7 +152,7 @@ export class EcosystemFactory {
 
   public get healthyEcosystemWithZeroVaultCollateral(): EcosystemConfig {
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'vault cr is 0, pool ftw',
       vaultCollateral: BigInt(0),
       expectedVaultCrBips: BigInt(0)
@@ -157,7 +161,7 @@ export class EcosystemFactory {
 
   public get healthyEcosystemWithZeroPoolCollateral(): EcosystemConfig {
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'pool cr is 0, vault ftw',
       poolCollateral: BigInt(0),
       expectedPoolCrBips: BigInt(0)
@@ -165,17 +169,18 @@ export class EcosystemFactory {
   }
 
   public get semiHealthyEcosystemWithHighSlippage(): EcosystemConfig {
+    const fAssetReserves = this.defaultMintedUBA * BigInt(10) / BigInt(9)
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'dex1 has high slippage on vault / f-asset pool',
       // make dex1 f-assets have same price but low liquidity
-      dex1FAssetReserve: this.defaultMintedUBA * BigInt(10) / BigInt(9),
+      dex1FAssetReserve: fAssetReserves,
       dex1VaultReserve: priceBasedInitialDexReserve(
         this.config.asset.defaultPriceUsd5,
         this.config.vault.defaultPriceUsd5,
         this.config.asset.decimals,
         this.config.vault.decimals,
-        this.defaultMintedUBA * BigInt(10) / BigInt(9)
+        fAssetReserves
       ),
       // force full liquidation
       vaultCollateral: BigInt(0),
@@ -194,21 +199,21 @@ export class EcosystemFactory {
 
   public get unhealthyEcosystemWithBadDebt(): EcosystemConfig {
     return {
-      ...this.baseEcosystem,
+      ...this._baseEcosystem,
       name: 'vault and pool cr combined is below 1, causing bad debt',
       vaultCollateral: collateralForAgentCr(
         BigInt(5000),
-        this.baseEcosystem.mintedUBA,
-        this.baseEcosystem.assetFtsoPrice,
-        this.baseEcosystem.vaultFtsoPrice,
+        this._baseEcosystem.mintedUBA,
+        this._baseEcosystem.assetFtsoPrice,
+        this._baseEcosystem.vaultFtsoPrice,
         this.config.asset.decimals,
         this.config.vault.decimals
       ),
       poolCollateral: collateralForAgentCr(
         BigInt(4000),
-        this.baseEcosystem.mintedUBA,
-        this.baseEcosystem.assetFtsoPrice,
-        this.baseEcosystem.poolFtsoPrice,
+        this._baseEcosystem.mintedUBA,
+        this._baseEcosystem.assetFtsoPrice,
+        this._baseEcosystem.poolFtsoPrice,
         this.config.asset.decimals,
         this.config.pool.decimals
       ),

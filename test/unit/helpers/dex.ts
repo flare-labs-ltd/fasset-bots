@@ -1,5 +1,9 @@
 import { ethers } from 'hardhat'
-import { swapInput as calcSwapInput, swapOutput as calcSwapOutput } from '../../calculations'
+import {
+  swapInput as calcSwapInput,
+  swapOutput as calcSwapOutput,
+  swapOutputs as calcSwapOutputs
+} from '../../calculations'
 import type { Signer } from 'ethers'
 import type { ERC20, BlazeSwapRouter, ERC20Mock } from '../../../types'
 
@@ -65,12 +69,6 @@ export async function swap(
   await router.connect(swapper).swapExactTokensForTokens(amountA, 0, tokenPath, swapper, ethers.MaxUint256)
 }
 
-async function serializeTokenPair(tokenA: ERC20, tokenB: ERC20): Promise<string> {
-  const nameA = await tokenA.name()
-  const nameB = await tokenB.name()
-  return (nameA < nameB) ? nameA + nameB : nameB + nameA
-}
-
 // needed if a swap affects the reserves of a pair used in a subsequent swap
 export async function swapOutputs(
   router: BlazeSwapRouter,
@@ -78,37 +76,17 @@ export async function swapOutputs(
   amountsA: bigint[]
 ): Promise<bigint[]> {
   // store reserves
-  const reserves = new Map<string, Map<ERC20, bigint>>()
+  const reserves = []
   for (let i = 0; i < paths.length; i++) {
-    const path = paths[i]
-    for (let j = 1; j < path.length; j++) {
-      const tokenA = path[j-1]
-      const tokenB = path[j]
-      const pairKey = await serializeTokenPair(tokenA, tokenB)
-      if (reserves.get(pairKey) === undefined) {
-        const pairReserves = new Map<ERC20, bigint>()
-        const { 0: reserveA, 1: reserveB } = await router.getReserves(tokenA, tokenB)
-        pairReserves.set(tokenA, reserveA)
-        pairReserves.set(tokenB, reserveB)
-        reserves.set(pairKey, pairReserves)
-      }
+    const reserve = []
+    for (let j = 1; j < paths[i].length; j++) {
+      const { 0: reserveA, 1: reserveB } = await router.getReserves(paths[i][j-1], paths[i][j])
+      reserve.push([reserveA, reserveB] as [bigint, bigint])
     }
+    reserves.push(reserve)
   }
-  // calc output
-  let amountsB = amountsA.slice()
-  for (let i = 0; i < paths.length; i++) {
-    const path = paths[i]
-    for (let j = 1; j < path.length; j++) {
-      const tokenA = path[j-1]
-      const tokenB = path[j]
-      const pairKey = await serializeTokenPair(tokenA, tokenB)
-      const pairReserves = reserves.get(pairKey)!
-      const reserveA = pairReserves.get(tokenA)!
-      const reserveB = pairReserves.get(tokenB)!
-      pairReserves.set(tokenA, reserveA + amountsB[i])
-      amountsB[i] = calcSwapOutput(amountsB[i], reserveA, reserveB)
-      pairReserves.set(tokenB, reserveB - amountsB[i])
-    }
-  }
-  return amountsB
+  const namePaths = await Promise.all(paths.map(async path =>
+    await Promise.all(path.map(async token => await token.name()))
+  ))
+  return calcSwapOutputs(amountsA, namePaths, reserves)
 }

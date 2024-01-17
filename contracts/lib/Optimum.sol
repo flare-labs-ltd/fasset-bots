@@ -25,9 +25,11 @@ library Optimum {
             : symbolicOptimalFAssetAmg(_data);
         // return 0 before it's too late
         if (optFAssetAmg == 0) return 0;
-        uint256 optFAssetUba = _convertAmgToUba(
-            Math.min(optFAssetAmg, _data.maxLiquidatedFAssetUBA),
-            _data.assetMintingGranularityUBA
+        uint256 optFAssetUba = Math.min(
+            _convertAmgToUba(
+                optFAssetAmg,
+                _data.assetMintingGranularityUBA
+            ), _data.maxLiquidatedFAssetUBA
         );
         return _calcSwapAmountIn(optFAssetUba, _data.reservePathDex1);
     }
@@ -61,21 +63,21 @@ library Optimum {
                 _data.assetMintingGranularityUBA
             );
             uint256 _aux1 = _convertFAssetAmgToToken(
-                reserveFAssetAmg
+                reserveFAssetAmg,
+                _data.priceFAssetAmgVaultCT
+            )
                 * _data.liquidationFactorVaultBips
                 / MAX_BIPS
-                * reservePoolCT,
-                _data.priceFAssetAmgVaultCT
-            );
+                * reservePoolCT;
             uint256 _aux2 = _convertFAssetAmgToToken(
-                reserveFAssetAmg
+                reserveFAssetAmg,
+                _data.priceFAssetAmgPoolCT
+            )
                 * _data.liquidationFactorPoolBips
                 / MAX_BIPS
                 * DEX_FACTOR_BIPS
                 / DEX_MAX_BIPS
-                * reserveVaultCT2,
-                _data.priceFAssetAmgPoolCT
-            );
+                * reserveVaultCT2;
             _amount *= (_aux1 + _aux2).sqrt();
         }
         {
@@ -91,34 +93,27 @@ library Optimum {
         _amount *= DEX_MAX_BIPS;
         _amount /= DEX_FACTOR_BIPS;
         _amount /= reservePoolCT; // max vault collateral
-
-        console.log(_amount);
-        _amount = _convertUbaToAmg(
-            _calcSwapAmountOut(_amount, reserveVaultCT1, reserveFAsset),
-            _data.assetMintingGranularityUBA
-        );
-
-        console.log(_calcArbitrageProfit(_data, _amount));
+        // convert to f-asset amg
+        _amount = _calcSwapAmountOut(_amount, reserveVaultCT2, reserveFAsset);
+        _amount = _convertUbaToAmg(_amount, _data.assetMintingGranularityUBA);
     }
 
-    // note: The method finds maximums on the edges of the interval
     function numericOptimalFAssetAmg(
         EcosystemData memory _data
     )
         internal pure
         returns (uint256)
     {
-        // assume there's one maximum (probably is tho) and find it with "Golden Section Search"
-        uint256 phi = 1618; // Approximation of the golden ratio * 1000
-        uint256 invPhi = 1000; // Inverse of phi for fixed point math
-        uint256 a = 0;
-        uint256 b = _convertUbaToAmg(
+        // find the maximum with "Golden Section Search"
+        uint256 maxLiquidatedAmg = _convertUbaToAmg(
             _data.maxLiquidatedFAssetUBA,
             _data.assetMintingGranularityUBA
         );
+        uint256 a = 0;
+        uint256 b = maxLiquidatedAmg;
         for (uint256 i = 0; i < MAX_BISECTION_ITERATIONS; i++) {
-            uint256 c = b - (b - a) * invPhi / phi;
-            uint256 d = a + (b - a) * invPhi / phi;
+            uint256 c = b - (b - a) * MAX_BIPS / PHI_BIPS;
+            uint256 d = a + (b - a) * MAX_BIPS / PHI_BIPS;
             if (b - d <= BISECTION_PRECISION) {
                 break;
             }
@@ -130,14 +125,15 @@ library Optimum {
                 a = c;
             }
         }
+        // prefer liquidating max f-asset
         uint256 max = (a + b) / 2;
-        uint256 profitAtB = _calcArbitrageProfit(_data, b);
+        uint256 profitAtEdge = _calcArbitrageProfit(_data, maxLiquidatedAmg);
         uint256 profitAtMax = _calcArbitrageProfit(_data, max);
-        if (profitAtMax == 0 && profitAtB == 0) {
+        if (profitAtMax == 0 && profitAtEdge == 0) {
            return 0;
         }
-        if (profitAtMax <= profitAtB) {
-            max = b;
+        if (profitAtMax <= profitAtEdge) {
+            max = maxLiquidatedAmg;
         }
         return max;
     }

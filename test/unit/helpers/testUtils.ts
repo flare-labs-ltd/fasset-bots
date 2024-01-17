@@ -1,14 +1,10 @@
 import { expect } from 'chai'
+import { liquidationOutput as calcLiquidationOutput, amgToTokenPrice as calcAmgToTokenPrice } from '../../calculations'
 import { ubaToAmg } from './utils'
 import { addLiquidity, swapOutput, swapOutputs } from './dex'
-import type { UnderlyingAsset, CollateralAsset } from '../fixtures/interface'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 import type { ERC20 } from '../../../types'
 
-
-// contract constants
-const AMG_TOKEN_WEI_PRICE_SCALE_EXP = BigInt(9)
-const AMG_TOKEN_WEI_PRICE_SCALE = BigInt(10) ** AMG_TOKEN_WEI_PRICE_SCALE_EXP
 
 export class TestUtils {
 
@@ -64,37 +60,35 @@ export class TestUtils {
     return vaultProfit + poolProfitSwapped - liquidatedVault
   }
 
-  // this is how prices are calculated in the asset manager contract
-  async amgToTokenPrice(fAsset: UnderlyingAsset, collateral: CollateralAsset): Promise<bigint> {
-    const { contracts } = this.context
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals }
-      = await contracts.priceReader.getPrice(collateral.ftsoSymbol)
-    const { 0: fAssetFtsoPrice, 2: fAssetFtsoDecimals }
-      = await contracts.priceReader.getPrice(fAsset.ftsoSymbol)
-    const expPlus = collateralFtsoDecimals + collateral.decimals + AMG_TOKEN_WEI_PRICE_SCALE_EXP
-    const expMinus = fAssetFtsoDecimals + fAsset.amgDecimals
-    const scale = BigInt(10) ** (expPlus - expMinus)
-    return fAssetFtsoPrice * scale / collateralFtsoPrice
-  }
-
-  amgToToken(amgAmount: bigint, amgPriceTokenWei: bigint): bigint {
-    return amgAmount * amgPriceTokenWei / AMG_TOKEN_WEI_PRICE_SCALE
-  }
-
-  async liquidationOutput(amountFAssetUba: bigint): Promise<[bigint, bigint]> {
+  async liquidationOutput(amountFAsset: bigint): Promise<[bigint, bigint]> {
     const { contracts } = this.context
     const { liquidationPaymentFactorVaultBIPS, liquidationPaymentFactorPoolBIPS }
       = await contracts.assetManager.getAgentInfo(contracts.agent)
-    const amountFAssetAmg = ubaToAmg(this.assetConfig.asset, amountFAssetUba)
-    // for vault
-    const amgPriceVault = await this.amgToTokenPrice(this.assetConfig.asset, this.assetConfig.vault)
-    const amgWithVaultFactor = amountFAssetAmg * liquidationPaymentFactorVaultBIPS / BigInt(10_000)
-    const amountVault = this.amgToToken(amgWithVaultFactor, amgPriceVault)
-    // for pool
-    const amgPricePool = await this.amgToTokenPrice(this.assetConfig.asset, this.assetConfig.pool)
-    const amgWithPoolFactor = amountFAssetAmg * liquidationPaymentFactorPoolBIPS / BigInt(10_000)
-    const amountPool = this.amgToToken(amgWithPoolFactor, amgPricePool)
-    return [amountVault, amountPool]
+    const [assetFtsoPrice,, assetFtsoDecimals] = await contracts.priceReader.getPrice(this.assetConfig.asset.ftsoSymbol)
+    const [vaultFtsoPrice,, vaultFtsoDecimals] = await contracts.priceReader.getPrice(this.assetConfig.vault.ftsoSymbol)
+    const [poolFtsoPrice,, poolFtsoDecimals] = await contracts.priceReader.getPrice(this.assetConfig.pool.ftsoSymbol)
+    const amountFAssetAmg = ubaToAmg(this.assetConfig.asset, amountFAsset)
+    return calcLiquidationOutput(
+      amountFAssetAmg,
+      liquidationPaymentFactorVaultBIPS,
+      liquidationPaymentFactorPoolBIPS,
+      calcAmgToTokenPrice(
+        this.assetConfig.asset.amgDecimals,
+        assetFtsoDecimals,
+        assetFtsoPrice,
+        this.assetConfig.vault.decimals,
+        vaultFtsoDecimals,
+        vaultFtsoPrice
+      ),
+      calcAmgToTokenPrice(
+        this.assetConfig.asset.amgDecimals,
+        assetFtsoDecimals,
+        assetFtsoPrice,
+        this.assetConfig.pool.decimals,
+        poolFtsoDecimals,
+        poolFtsoPrice
+      )
+    )
   }
 
 }

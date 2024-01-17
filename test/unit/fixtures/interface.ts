@@ -12,7 +12,7 @@ import type {
 ////////////////////////////////////////////////////////////////////////
 // unit testing config interfaces
 
-interface BaseAsset {
+export interface Asset {
   name: string
   symbol: string
   decimals: bigint
@@ -21,12 +21,12 @@ interface BaseAsset {
   defaultPriceUsd5: bigint
 }
 
-export interface CollateralAsset extends BaseAsset {
+export interface CollateralAsset extends Asset {
   kind: "vault" | "pool"
   minCollateralRatioBips: bigint
 }
 
-export interface UnderlyingAsset extends BaseAsset {
+export interface UnderlyingAsset extends Asset {
   amgDecimals: bigint
   lotSize: bigint
 }

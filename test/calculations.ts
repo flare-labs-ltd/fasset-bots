@@ -1,3 +1,5 @@
+import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP } from "./constants"
+
 ////////////////////////////////////////////////////////////////////////////
 // conversions
 
@@ -129,6 +131,40 @@ export function swapInput(
   return numerator / denominator + BigInt(1)
 }
 
+// for consecutive swaps that affect the following ones
+// so we have to track and adjust the reserves
+export function swapOutputs(
+  amountsIn: bigint[],
+  paths: string[][],
+  reserves: [bigint, bigint][][]
+): bigint[] {
+  const amountsOut = amountsIn.slice()
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i]
+    const reserve = reserves[i]
+    for (let j = 1; j < path.length; j++) {
+      // liquidity pool path[j-1] / path[j]
+      const [resA, resB] = reserve[j-1]
+      const aux = swapOutput(amountsOut[i], resA, resB)
+      for (let k = i + 1; k < paths.length; k++) {
+        // liquidity pool paths[k][j-1] / paths[k][j]
+        const pathToModify = paths[k]
+        for (let l = 1; l < pathToModify.length; l++) {
+          if (pathToModify[l-1] == path[j-1] && pathToModify[l] == path[j]) {
+            reserves[k][l-1][0] += amountsOut[i]
+            reserves[k][l-1][1] -= aux
+          } else if (pathToModify[l-1] == path[j] && pathToModify[l] == path[j-1]) {
+            reserves[k][l-1][0] -= aux
+            reserves[k][l-1][1] += amountsOut[i]
+          }
+        }
+      }
+      amountsOut[i] = aux
+    }
+  }
+  return amountsOut
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // ecosystem setters used to align dex prices with ftso
 
@@ -179,4 +215,52 @@ export function swapToDexPrice(
   const aux = initialReserveB * initialReserveA * ratioB / ratioA
   const amountA = sqrt(aux) - initialReserveA
   return (amountA < maxAmountA) ? amountA : maxAmountA
+}
+
+////////////////////////////////////////////////////////////////////////////
+// asset manager's liquidation calculations
+
+
+export function currentLiquidationFactorBIPS(
+  liquidationFactorBips: bigint,
+  liquidationFactorVaultBips: bigint
+): [bigint, bigint] {
+  const factorBIPS = liquidationFactorBips
+  const c1FactorBIPS = (liquidationFactorVaultBips < factorBIPS)
+    ? liquidationFactorVaultBips : factorBIPS
+  const poolFactorBIPS = factorBIPS - c1FactorBIPS
+  return [c1FactorBIPS, poolFactorBIPS]
+}
+
+export function amgToTokenPrice(
+  assetAmgDecimals: bigint,
+  assetFtsoDecimals: bigint,
+  assetFtsoPrice: bigint,
+  tokenDecimals: bigint,
+  tokenFtsoDecimals: bigint,
+  tokenFtsoPrice: bigint
+  ): bigint {
+  const expPlus = tokenFtsoDecimals + tokenDecimals + AMG_TOKEN_WEI_PRICE_SCALE_EXP
+  const expMinus = assetFtsoDecimals + assetAmgDecimals
+  const scale = BigInt(10) ** BigInt(expPlus - expMinus)
+  return assetFtsoPrice * scale / tokenFtsoPrice
+}
+
+export function amgToToken(amgAmount: bigint, amgPrice: bigint): bigint {
+  return amgAmount * amgPrice / AMG_TOKEN_WEI_PRICE_SCALE
+}
+
+export function liquidationOutput(
+  amountFAssetAmg: bigint,
+  vaultFactorBips: bigint,
+  poolFactorBips: bigint,
+  amgVaultPrice: bigint,
+  amgPoolPrice: bigint
+): [bigint, bigint] {
+  // for vault
+  const amgWithVaultFactor = amountFAssetAmg * vaultFactorBips / BigInt(10_000)
+  const amountVault = amgToToken(amgWithVaultFactor, amgVaultPrice)
+  const amgWithPoolFactor = amountFAssetAmg * poolFactorBips / BigInt(10_000)
+  const amountPool = amgToToken(amgWithPoolFactor, amgPoolPrice)
+  return [amountVault, amountPool]
 }
