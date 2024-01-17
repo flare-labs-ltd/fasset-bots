@@ -48,7 +48,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
     yarn user-bot generateSecrets --agent --output secrets.json
     ```
 
-   You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc`, `xrp_rpc` and `indexer`. You can ask for these values from us during the beta testing phase.
+   You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc` and `indexer`. You can ask for these values from us during the beta testing phase.
 
    The relevant field for the agent is the `owner` field, which contains two accounts:
 
