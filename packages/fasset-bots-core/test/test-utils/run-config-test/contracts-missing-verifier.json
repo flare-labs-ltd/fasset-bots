@@ -215,8 +215,8 @@
         "address": "0x364441A0cfcBc5dB89C082805406a6Bb9502E010"
     },
     {
-        "name": "AgentWhitelist",
-        "contractName": "Whitelist.sol",
+        "name": "AgentOwnerRegistry",
+        "contractName": "AgentOwnerRegistry.sol",
         "address": "0x2740e86c6e031e35A597dAFD49a1bE38e52Dea29",
         "mustSwitchToProduction": true
     },

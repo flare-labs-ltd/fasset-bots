@@ -37,7 +37,7 @@ const VPContract = artifacts.require("VPContract");
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
 const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const FakeERC20 = artifacts.require("FakeERC20");
-const WhitelistMock = artifacts.require("WhitelistMock");
+const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 
 export type AssetManagerControllerEvents = import("../../typechain-truffle/AssetManagerController").AllEvents;
@@ -119,8 +119,9 @@ export async function createTestAssetContext(
     // create liquidation strategy
     const liquidationStrategyLib = await artifacts.require("LiquidationStrategyImpl").new();
     const liquidationStrategy = liquidationStrategyLib.address;
-    // create allow-all agent whitelist
-    const agentWhitelist = await WhitelistMock.new(true);
+    // create allow-all agent owner registry
+    const agentOwnerRegistry = await AgentOwnerRegistry.new(governanceSettings.address, governance, true);
+    await agentOwnerRegistry.setAllowAll(true, { from: governance });
     // set contracts
     const contracts: ChainContracts = {
         GovernanceSettings: newContract("GovernanceSettings", "GovernanceSettings.sol", governanceSettings.address),
@@ -133,7 +134,7 @@ export async function createTestAssetContext(
         AgentVaultFactory: newContract("AgentVaultFactory", "AgentVaultFactory.sol", agentVaultFactory.address),
         AssetManagerController: newContract("AssetManagerController", "AssetManagerController.sol", assetManagerController.address),
         CollateralPoolFactory: newContract("CollateralPoolFactory", "CollateralPoolFactory.sol", collateralPoolFactory.address),
-        AgentWhiteList: newContract("WhiteList", "WhitelistMock.sol", agentWhitelist.address),
+        AgentOwnerRegistry: newContract("AgentOwnerRegistry", "AgentOwnerRegistry.sol", agentOwnerRegistry.address),
         CollateralPoolTokenFactory: newContract("CollateralPoolTokenFactory", "CollateralPoolTokenFactory.sol", collateralPoolTokenFactory.address),
         PriceReader: newContract("PriceReader", "PriceReader.sol", priceReader.address),
     };
@@ -265,7 +266,7 @@ function createTestAssetManagerSettings(
         scProofVerifier: contracts.SCProofVerifier.address,
         priceReader: contracts.PriceReader.address,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
-        agentWhitelist: contracts.AgentWhiteList?.address ?? ZERO_ADDRESS,
+        agentOwnerRegistry: contracts.AgentOwnerRegistry.address ?? ZERO_ADDRESS,
         liquidationStrategy: liquidationStrategy,
         burnAddress: parameters.burnAddress,
         chainId: chainInfo.chainId,

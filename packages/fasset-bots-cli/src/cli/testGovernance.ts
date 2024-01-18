@@ -9,7 +9,7 @@ import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, 
 import { readFileSync } from "fs";
 
 const FakeERC20 = artifacts.require("FakeERC20");
-const Whitelist = artifacts.require("Whitelist");
+const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const AssetManagerController = artifacts.require("AssetManagerController");
 
 const deployerAddress = requireSecret("deployer.address");
@@ -17,15 +17,15 @@ const deployerAddress = requireSecret("deployer.address");
 async function whitelistAgent(configFileName: string, ownerAddress: string) {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
-    await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    await agentOwnerRegistry.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
 async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
-    return agentWhitelist.isWhitelisted(ownerAddress);
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    return agentOwnerRegistry.isWhitelisted(ownerAddress);
 }
 
 async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
