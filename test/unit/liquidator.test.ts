@@ -10,6 +10,7 @@ import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/inter
 import type { ERC20 } from '../../types'
 
 import { FixtureUtils } from './helpers/fixture'
+import { dexMinPriceFromMaxSlippage } from '../calculations'
 
 type SwapPathsFixture = [string[], string[]]
 type SwapPaths = [ERC20[], ERC20[]]
@@ -202,7 +203,22 @@ describe("Tests for Liquidator contract", () => {
     })
 
     it("should fail arbitrage with dexes price falling lower than specified min price", async () => {
-      // TODO
+      const config = ecosystemFactory.semiHealthyEcosystemWithHighSlippage
+      const { contracts, signers } = context
+      await utils.configureEcosystem(config)
+      // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
+      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
+      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1000, config.dex2VaultReserve, config.dex2PoolReserve)
+      await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
+        contracts.agent,
+        signers.rewardee,
+        minPriceDex1Mul,
+        minPriceDex1Div,
+        minPriceDex2Mul,
+        minPriceDex2Div,
+        ZeroAddress, ZeroAddress,
+        [], []
+      )).to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
     })
 
   })

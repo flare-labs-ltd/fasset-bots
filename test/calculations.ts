@@ -177,16 +177,13 @@ export function swapInputs(
   return amountIn
 }
 
-// procrastinate
+// procrastinate P(A,B) can drop for maxSlippageBips
 export function dexMinPriceFromMaxSlippage(
-  slippageBips: number,
+  maxSlippageBips: number,
   reserveA: bigint,
   reserveB: bigint
 ): [bigint, bigint] {
-  return [
-    reserveB * BigInt(10_000),
-    reserveA + BigInt(slippageBips)
-  ]
+  return [reserveB * BigInt(10_000 - maxSlippageBips), reserveA]
 }
 
 ////////////////////////////////////////////////////////////////////////////
