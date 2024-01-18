@@ -90,7 +90,7 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
   getAgentVaultOwner(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: string; 1: string }>;
+  ): Promise<string>;
 
   getAllAgents(
     _start: number | BN | string,
@@ -113,7 +113,7 @@ export interface AgentsExternalInstance extends Truffle.ContractInstance {
     getAgentVaultOwner(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: string; 1: string }>;
+    ): Promise<string>;
 
     getAllAgents(
       _start: number | BN | string,

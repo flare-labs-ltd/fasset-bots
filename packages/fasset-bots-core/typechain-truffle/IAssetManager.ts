@@ -2040,7 +2040,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
   getAgentVaultOwner(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: string; 1: string }>;
+  ): Promise<string>;
 
   getAllAgents(
     _start: number | BN | string,
@@ -2122,7 +2122,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     collateralPoolTokenFactory: string;
     poolTokenSuffix: string;
     whitelist: string;
-    agentWhitelist: string;
+    agentOwnerRegistry: string;
     scProofVerifier: string;
     liquidationStrategy: string;
     burnAddress: string;
@@ -2942,25 +2942,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       },
       _agentVault: string,
       _lots: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setOwnerWorkAddress: {
-    (
-      _ownerWorkAddress: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _ownerWorkAddress: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _ownerWorkAddress: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _ownerWorkAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -4564,7 +4545,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     getAgentVaultOwner(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: string; 1: string }>;
+    ): Promise<string>;
 
     getAllAgents(
       _start: number | BN | string,
@@ -4646,7 +4627,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       collateralPoolTokenFactory: string;
       poolTokenSuffix: string;
       whitelist: string;
-      agentWhitelist: string;
+      agentOwnerRegistry: string;
       scProofVerifier: string;
       liquidationStrategy: string;
       burnAddress: string;
@@ -5466,25 +5447,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         },
         _agentVault: string,
         _lots: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setOwnerWorkAddress: {
-      (
-        _ownerWorkAddress: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _ownerWorkAddress: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _ownerWorkAddress: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _ownerWorkAddress: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

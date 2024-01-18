@@ -13,6 +13,7 @@ import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
+import { AgentOwnerRegistryContract } from "./AgentOwnerRegistry";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
@@ -36,7 +37,6 @@ import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
 import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPriceReaderContract } from "./IPriceReader";
-import { IWhitelistContract } from "./IWhitelist";
 import { IWNatContract } from "./IWNat";
 import { AgentsCreateDestroyContract } from "./AgentsCreateDestroy";
 import { AgentSettingsUpdaterContract } from "./AgentSettingsUpdater";
@@ -79,11 +79,14 @@ import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
 import { SCProofVerifierContract } from "./SCProofVerifier";
 import { ISCProofVerifierContract } from "./ISCProofVerifier";
 import { StateConnectorMockContract } from "./StateConnectorMock";
+import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
 import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
+import { IWhitelistContract } from "./IWhitelist";
+import { MathUtilsMockContract } from "./MathUtilsMock";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
@@ -139,6 +142,7 @@ export type * from "./types";
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
+      require(name: "AgentOwnerRegistry"): AgentOwnerRegistryContract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
@@ -168,7 +172,6 @@ export type * from "./types";
       require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPriceReader"): IPriceReaderContract;
-      require(name: "IWhitelist"): IWhitelistContract;
       require(name: "IWNat"): IWNatContract;
       require(name: "AgentsCreateDestroy"): AgentsCreateDestroyContract;
       require(name: "AgentSettingsUpdater"): AgentSettingsUpdaterContract;
@@ -217,11 +220,14 @@ export type * from "./types";
       require(name: "SCProofVerifier"): SCProofVerifierContract;
       require(name: "ISCProofVerifier"): ISCProofVerifierContract;
       require(name: "StateConnectorMock"): StateConnectorMockContract;
+      require(name: "IAgentOwnerRegistry"): IAgentOwnerRegistryContract;
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
       require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
+      require(name: "IWhitelist"): IWhitelistContract;
+      require(name: "MathUtilsMock"): MathUtilsMockContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
@@ -288,6 +294,10 @@ export {
 export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
+export {
+  AgentOwnerRegistryContract,
+  AgentOwnerRegistryInstance,
+} from "./AgentOwnerRegistry";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
 export {
   AgentVaultFactoryContract,
@@ -359,7 +369,6 @@ export {
   IPriceChangeEmitterInstance,
 } from "./IPriceChangeEmitter";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
-export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export {
   AgentsCreateDestroyContract,
@@ -483,6 +492,10 @@ export {
   StateConnectorMockContract,
   StateConnectorMockInstance,
 } from "./StateConnectorMock";
+export {
+  IAgentOwnerRegistryContract,
+  IAgentOwnerRegistryInstance,
+} from "./IAgentOwnerRegistry";
 export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
 export {
@@ -497,6 +510,8 @@ export {
   ICollateralPoolTokenContract,
   ICollateralPoolTokenInstance,
 } from "./ICollateralPoolToken";
+export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
+export { MathUtilsMockContract, MathUtilsMockInstance } from "./MathUtilsMock";
 export {
   SafeMath64MockContract,
   SafeMath64MockInstance,

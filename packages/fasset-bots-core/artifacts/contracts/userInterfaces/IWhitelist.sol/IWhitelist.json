@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IWhitelist",
-  "sourceName": "contracts/fasset/interface/IWhitelist.sol",
+  "sourceName": "contracts/userInterfaces/IWhitelist.sol",
   "abi": [
     {
       "anonymous": false,

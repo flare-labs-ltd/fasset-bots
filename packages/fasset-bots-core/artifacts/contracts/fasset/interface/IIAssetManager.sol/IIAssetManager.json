@@ -3158,11 +3158,6 @@
           "internalType": "address",
           "name": "_ownerManagementAddress",
           "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_ownerWorkAddress",
-          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -3530,7 +3525,7 @@
             },
             {
               "internalType": "address",
-              "name": "agentWhitelist",
+              "name": "agentOwnerRegistry",
               "type": "address"
             },
             {
@@ -4764,19 +4759,6 @@
         }
       ],
       "name": "setCollateralRatiosForToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_ownerWorkAddress",
-          "type": "address"
-        }
-      ],
-      "name": "setOwnerWorkAddress",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

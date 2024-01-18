@@ -74,7 +74,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
   getAgentVaultOwner(
     arg0: string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: string; 1: string }>;
+  ): Promise<string>;
 
   getCollateralPool(
     arg0: string,
@@ -402,7 +402,7 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     getAgentVaultOwner(
       arg0: string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: string; 1: string }>;
+    ): Promise<string>;
 
     getCollateralPool(
       arg0: string,
