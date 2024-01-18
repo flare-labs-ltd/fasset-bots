@@ -104,7 +104,7 @@ export function assetPriceForAgentCr(
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// blaze swap
+// uniswap v2 formulas
 
 // calculates the amount of tokenB received
 // when swapping amountA of tokenA
@@ -165,6 +165,30 @@ export function swapOutputs(
   return amountsOut
 }
 
+export function swapInputs(
+  amountOut: bigint,
+  reserves: [bigint, bigint][]
+): bigint {
+  let amountIn = amountOut
+  for (let i = reserves.length; i > 0; i--) {
+    const [reserveA, reserveB] = reserves[i-1]
+    amountIn = swapInput(amountIn, reserveA, reserveB)
+  }
+  return amountIn
+}
+
+// procrastinate
+export function dexMinPriceFromMaxSlippage(
+  slippageBips: number,
+  reserveA: bigint,
+  reserveB: bigint
+): [bigint, bigint] {
+  return [
+    reserveB * BigInt(10_000),
+    reserveA + BigInt(slippageBips)
+  ]
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // ecosystem setters used to align dex prices with ftso
 
@@ -220,16 +244,43 @@ export function swapToDexPrice(
 ////////////////////////////////////////////////////////////////////////////
 // asset manager's liquidation calculations
 
+export function liquidationOutput(
+  amountFAssetAmg: bigint,
+  vaultFactorBips: bigint,
+  poolFactorBips: bigint,
+  amgVaultPrice: bigint,
+  amgPoolPrice: bigint
+): [bigint, bigint] {
+  const amgWithVaultFactor = amountFAssetAmg * vaultFactorBips / BigInt(10_000)
+  const amountVault = amgToToken(amgWithVaultFactor, amgVaultPrice)
+  const amgWithPoolFactor = amountFAssetAmg * poolFactorBips / BigInt(10_000)
+  const amountPool = amgToToken(amgWithPoolFactor, amgPoolPrice)
+  return [amountVault, amountPool]
+}
 
 export function currentLiquidationFactorBIPS(
   liquidationFactorBips: bigint,
-  liquidationFactorVaultBips: bigint
+  liquidationFactorVaultBips: bigint,
+  vaultCR: bigint,
+  poolCR: bigint
 ): [bigint, bigint] {
-  const factorBIPS = liquidationFactorBips
-  const c1FactorBIPS = (liquidationFactorVaultBips < factorBIPS)
-    ? liquidationFactorVaultBips : factorBIPS
-  const poolFactorBIPS = factorBIPS - c1FactorBIPS
-  return [c1FactorBIPS, poolFactorBIPS]
+  const factorBips = liquidationFactorBips
+  let c1FactorBips = (liquidationFactorVaultBips < factorBips)
+    ? liquidationFactorVaultBips : factorBips
+  if (c1FactorBips > vaultCR) {
+    c1FactorBips = vaultCR
+  }
+  let poolFactorBips = factorBips - c1FactorBips
+  if (poolFactorBips > poolCR) {
+    poolFactorBips = poolCR;
+    const aux = factorBips - poolFactorBips
+    c1FactorBips = (aux < vaultCR) ? aux : vaultCR
+}
+  return [c1FactorBips, poolFactorBips]
+}
+
+export function amgToToken(amgAmount: bigint, amgPrice: bigint): bigint {
+  return amgAmount * amgPrice / AMG_TOKEN_WEI_PRICE_SCALE
 }
 
 export function amgToTokenPrice(
@@ -246,21 +297,24 @@ export function amgToTokenPrice(
   return assetFtsoPrice * scale / tokenFtsoPrice
 }
 
-export function amgToToken(amgAmount: bigint, amgPrice: bigint): bigint {
-  return amgAmount * amgPrice / AMG_TOKEN_WEI_PRICE_SCALE
-}
-
-export function liquidationOutput(
-  amountFAssetAmg: bigint,
-  vaultFactorBips: bigint,
-  poolFactorBips: bigint,
-  amgVaultPrice: bigint,
-  amgPoolPrice: bigint
-): [bigint, bigint] {
-  // for vault
-  const amgWithVaultFactor = amountFAssetAmg * vaultFactorBips / BigInt(10_000)
-  const amountVault = amgToToken(amgWithVaultFactor, amgVaultPrice)
-  const amgWithPoolFactor = amountFAssetAmg * poolFactorBips / BigInt(10_000)
-  const amountPool = amgToToken(amgWithPoolFactor, amgPoolPrice)
-  return [amountVault, amountPool]
+export function maxLiquidationAmountAmg(
+  collateralRatioBips: bigint,
+  factorBips: bigint,
+  targetRatioBips: bigint,
+  mintedAmg: bigint,
+  lotSize: bigint,
+  fullLiquidation: boolean
+): bigint {
+  if (fullLiquidation) {
+    return mintedAmg
+  }
+  if (targetRatioBips <= collateralRatioBips) {
+    return BigInt(0)
+  }
+  if (collateralRatioBips <= factorBips) {
+    return mintedAmg
+  }
+  let maxLiquidatedAMG = mintedAmg * (targetRatioBips - collateralRatioBips) / (targetRatioBips - factorBips)
+  maxLiquidatedAMG = roundUpWithPrecision(maxLiquidatedAMG, lotSize)
+  return (maxLiquidatedAMG < mintedAmg) ? maxLiquidatedAMG : mintedAmg
 }

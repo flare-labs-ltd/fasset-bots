@@ -26,6 +26,10 @@ export function ubaToAmg(fAsset: UnderlyingAsset, uba: bigint): bigint {
   return uba / amgSizeUba(fAsset)
 }
 
+export function amgToUba(fAsset: UnderlyingAsset, amg: bigint): bigint {
+  return amg * amgSizeUba(fAsset)
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // bigint extensions
 

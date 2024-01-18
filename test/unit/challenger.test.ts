@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { configureEcosystem } from './helpers/testUtils'
+import { configureEcosystem } from './helpers/context'
 import { getTestContext } from './fixtures/context'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import { balanceDecreasingTxProof } from './fixtures/attestations'

@@ -1,29 +1,17 @@
 import { expect } from 'chai'
-import { liquidationOutput as calcLiquidationOutput, amgToTokenPrice as calcAmgToTokenPrice } from '../../calculations'
+import { liquidationOutput, amgToTokenPrice, dexMinPriceFromMaxSlippage } from '../../calculations'
 import { ubaToAmg } from './utils'
 import { addLiquidity, swapOutput, swapOutputs } from './dex'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 import type { ERC20 } from '../../../types'
 
 
-export class TestUtils {
+export class ContextUtils {
 
   constructor(
     private assetConfig: AssetConfig,
     private context: TestContext
   ) {}
-
-  // prices expressed in e.g. usd
-  async setFtsoPrices(
-    priceAsset: bigint,
-    priceVault: bigint,
-    pricePool: bigint
-  ): Promise<void> {
-    const priceReader = this.context.contracts.priceReader
-    await priceReader.setPrice(this.assetConfig.asset.ftsoSymbol, priceAsset)
-    await priceReader.setPrice(this.assetConfig.vault.ftsoSymbol, priceVault)
-    await priceReader.setPrice(this.assetConfig.pool.ftsoSymbol, pricePool)
-  }
 
   async configureEcosystem(config: EcosystemConfig): Promise<void> {
     const { contracts, signers } = this.context
@@ -51,6 +39,18 @@ export class TestUtils {
     await contracts.pool.mint(contracts.liquidator, config.initialLiquidatorPool)
   }
 
+  // prices expressed in e.g. usd
+  async setFtsoPrices(
+    priceAsset: bigint,
+    priceVault: bigint,
+    pricePool: bigint
+  ): Promise<void> {
+    const priceReader = this.context.contracts.priceReader
+    await priceReader.setPrice(this.assetConfig.asset.ftsoSymbol, priceAsset)
+    await priceReader.setPrice(this.assetConfig.vault.ftsoSymbol, priceVault)
+    await priceReader.setPrice(this.assetConfig.pool.ftsoSymbol, pricePool)
+  }
+
   async arbitrageProfit(liquidatedVault: bigint, dex1Path: ERC20[], dex2Path: ERC20[]): Promise<bigint> {
     const { contracts } = this.context
     const fAssets = await swapOutput(contracts.blazeSwapRouter, dex1Path, liquidatedVault)
@@ -58,6 +58,11 @@ export class TestUtils {
     const [, poolProfitSwapped] = await swapOutputs(
       contracts.blazeSwapRouter, [dex1Path, dex2Path], [liquidatedVault, poolProfit])
     return vaultProfit + poolProfitSwapped - liquidatedVault
+  }
+
+  async dexMinPriceFromMaxSlippage(slippageBips: number, tokenA: ERC20, tokenB: ERC20): Promise<[bigint, bigint]> {
+    const [tokenAReserve, tokenBReserve] = await this.context.contracts.blazeSwapRouter.getReserves(tokenA, tokenB)
+    return dexMinPriceFromMaxSlippage(slippageBips, tokenAReserve, tokenBReserve)
   }
 
   async liquidationOutput(amountFAsset: bigint): Promise<[bigint, bigint]> {
@@ -68,11 +73,11 @@ export class TestUtils {
     const [vaultFtsoPrice,, vaultFtsoDecimals] = await contracts.priceReader.getPrice(this.assetConfig.vault.ftsoSymbol)
     const [poolFtsoPrice,, poolFtsoDecimals] = await contracts.priceReader.getPrice(this.assetConfig.pool.ftsoSymbol)
     const amountFAssetAmg = ubaToAmg(this.assetConfig.asset, amountFAsset)
-    return calcLiquidationOutput(
+    return liquidationOutput(
       amountFAssetAmg,
       liquidationPaymentFactorVaultBIPS,
       liquidationPaymentFactorPoolBIPS,
-      calcAmgToTokenPrice(
+      amgToTokenPrice(
         this.assetConfig.asset.amgDecimals,
         assetFtsoDecimals,
         assetFtsoPrice,
@@ -80,7 +85,7 @@ export class TestUtils {
         vaultFtsoDecimals,
         vaultFtsoPrice
       ),
-      calcAmgToTokenPrice(
+      amgToTokenPrice(
         this.assetConfig.asset.amgDecimals,
         assetFtsoDecimals,
         assetFtsoPrice,

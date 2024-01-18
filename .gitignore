@@ -158,3 +158,4 @@ typechain-ethers/
 types/
 Challenger.sol
 coverage.json
+data/

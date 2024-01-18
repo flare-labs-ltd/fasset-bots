@@ -94,7 +94,7 @@ library Optimum {
         _amount /= DEX_FACTOR_BIPS;
         _amount /= reservePoolCT; // max vault collateral
         // convert to f-asset amg
-        _amount = _calcSwapAmountOut(_amount, reserveVaultCT2, reserveFAsset);
+        _amount = _calcSwapAmountOut(_amount, reserveVaultCT1, reserveFAsset);
         _amount = _convertUbaToAmg(_amount, _data.assetMintingGranularityUBA);
     }
 

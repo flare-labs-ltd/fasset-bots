@@ -1,18 +1,18 @@
-import { expect } from 'chai'
+import { expect, util } from 'chai'
 import { ZeroAddress } from 'ethers'
 import { swapInput, swapOutputs } from './helpers/dex'
-import { TestUtils } from './helpers/testUtils'
+import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
+import { storeTestResult } from './helpers/test-results'
 import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interface'
 import type { ERC20 } from '../../types'
 
+import { FixtureUtils } from './helpers/fixture'
 
-type ArbitrageSwapPaths = {
-  dex1: ERC20[],
-  dex2: ERC20[]
-}
+type SwapPathsFixture = [string[], string[]]
+type SwapPaths = [ERC20[], ERC20[]]
 
 // config for used assets
 const assetConfig: AssetConfig = {
@@ -23,16 +23,16 @@ const assetConfig: AssetConfig = {
 // factory for creating various ecosystems
 const ecosystemFactory = new EcosystemFactory(assetConfig)
 // paths to swap by (could include some external tokens)
-const swapPathsFixture: string[] = [
-  ",",
-  "vault -> pool -> fAsset,",
-  ", pool -> fAsset -> vault,",
-  "vault -> pool -> fAsset, pool -> fAsset -> vault",
+const swapPathsFixture: SwapPathsFixture[] = [
+  [["vault", "fAsset"], ["pool", "vault"]],
+  [["vault", "pool", "fAsset"], ["pool", "vault"]],
+  [["vault", "fAsset"], ["pool", "fAsset", "vault"]],
+  [["vault", "pool", "fAsset"], ["pool", "fAsset", "vault"]]
 ]
 
 describe("Tests for Liquidator contract", () => {
   let context: TestContext
-  let utils: TestUtils
+  let utils: ContextUtils
 
   function nameToToken(name: string): ERC20 {
     switch (name) {
@@ -43,42 +43,31 @@ describe("Tests for Liquidator contract", () => {
     }
   }
 
-  function resolveSwapPath(paths: string): ArbitrageSwapPaths {
-    const [dex1, dex2] = paths.split(",").map((s) => s.trim())
-    return {
-      dex1: (dex1 !== "") ? dex1.split("->").map((s) => s.trim()).map(nameToToken) : [],
-      dex2: (dex2 !== "") ? dex2.split("->").map((s) => s.trim()).map(nameToToken) : []
-    }
-  }
-
-  function resolveSwapPathDefaults(paths: ArbitrageSwapPaths): ArbitrageSwapPaths {
-    return {
-      dex1: (paths.dex1.length > 0) ? paths.dex1 : [context.contracts.vault, context.contracts.fAsset],
-      dex2: (paths.dex2.length > 0) ? paths.dex2 : [context.contracts.pool, context.contracts.vault]
-    }
+  function resolveSwapPath(paths: SwapPathsFixture): SwapPaths {
+    const [path1, path2] = paths
+    return [path1.map(s => nameToToken(s)), path2.map(s => nameToToken(s))]
   }
 
   beforeEach(async function () {
     context = await getTestContext(assetConfig)
-    utils = new TestUtils(assetConfig, context)
+    utils = new ContextUtils(assetConfig, context)
   })
 
   describe("test arbitrage on various ecosystems", () => {
 
-    swapPathsFixture.forEach((swapPaths) => {
+    swapPathsFixture.forEach((swapPaths: SwapPathsFixture) => {
       ecosystemFactory.getHealthyEcosystems(8).forEach((config: EcosystemConfig) => {
-        it.only(`should fully liquidate an agent in a healthy ecosystem config: "${config.name}" with swap path "${swapPaths}"`, async () => {
-          const paths = resolveSwapPath(swapPaths)
-          const fullPaths = resolveSwapPathDefaults(paths)
+        it(`should fully liquidate an agent in a healthy ecosystem config: "${config.name}" with swap path "${swapPaths}"`, async () => {
+          const [swapPath1, swapPath2] = resolveSwapPath(swapPaths)
           const { contracts, signers } = context
           await utils.configureEcosystem(config)
           // perform arbitrage by liquidation
           const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
           expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
-          const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, maxLiquidatedFAsset)
+          const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, swapPath1, maxLiquidatedFAsset)
           const [expectedLiquidationRewardVault, expectedLiquidationRewardPool] = await utils.liquidationOutput(maxLiquidatedFAsset)
           const [,expectedSwappedPool] = await swapOutputs(
-            contracts.blazeSwapRouter, [fullPaths.dex1, fullPaths.dex2], [maxLiquidatedVault, expectedLiquidationRewardPool])
+            contracts.blazeSwapRouter, [swapPath1, swapPath2], [maxLiquidatedVault, expectedLiquidationRewardPool])
           const { mintedUBA: mintedFAssetBefore } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const agentVaultBalanceBefore = await contracts.vault.balanceOf(contracts.agent)
           const agentPoolBalanceBefore = await contracts.pool.balanceOf(contracts.agent)
@@ -88,8 +77,8 @@ describe("Tests for Liquidator contract", () => {
             0, 1, 0, 1,
             ZeroAddress,
             ZeroAddress,
-            paths.dex1,
-            paths.dex2
+            swapPath1,
+            swapPath2
           )
           const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const agentVaultBalanceAfter = await contracts.vault.balanceOf(contracts.agent)
@@ -120,38 +109,62 @@ describe("Tests for Liquidator contract", () => {
           expect(vaultBalanceLiquidatorContract).to.equal(config.initialLiquidatorVault)
         })
       })
-    })
 
-    swapPathsFixture.slice(0,0).forEach((swapPaths) => {
-      ecosystemFactory.getSemiHealthyEcosystems(8).forEach((config: EcosystemConfig) => {
-        it(`should optimally liquidate less than max f-assets due to semi-healthy ecosystem config: "${config.name}" with swap path "${swapPaths}"`, async () => {
-          const paths = resolveSwapPath(swapPaths)
-          const fullPaths = resolveSwapPathDefaults(paths)
-          const { contracts, signers } = context
-          await utils.configureEcosystem(config)
-          // calculate full liquidation profit
-          const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
-          const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, fullPaths.dex1, maxLiquidatedFAsset)
-          const fullLiquidationProfit = await utils.arbitrageProfit(maxLiquidatedVault, fullPaths.dex1, fullPaths.dex2)
-          // perform arbitrage by liquidation
-          await contracts.liquidator.connect(signers.liquidator).runArbitrage(
-            contracts.agent,
-            signers.rewardee,
-            0, 1, 0, 1,
-            ZeroAddress,
-            ZeroAddress,
-            paths.dex1,
-            paths.dex2
-          )
-          // check that executed liquidation was more profitable than the full one would have been
-          const profit = await contracts.vault.balanceOf(signers.rewardee)
-          expect(profit).to.be.greaterThanOrEqual(fullLiquidationProfit)
-          expect(profit).to.be.greaterThan(0)
-        })
+      it(`should optimally liquidate less than max f-assets due to low liquidated vault / f-asset dex with swap path "${swapPaths}"`, async () => {
+        if (swapPaths[0].length == 3 && swapPaths[1].length == 3) {
+          // this doesn't work for a very specific reason:
+          // when we swap from vault to f-asset we avoid the low liquiditated vault / f-asset pool
+          // but because agent has no vault collateral in this config, liquidator only gets the pool reward
+          // this pool reward goes through the low liquidated pool which reduces the profit by more than
+          // the liquidation reward. Note that if the first swap goes through the low liquidated pool
+          // it raises the price so we can profitably swap pool collateral on that pool back even with low slippage.
+          return
+        }
+        const config = ecosystemFactory.semiHealthyEcosystemWithHighSlippage
+        const [swapPath1, swapPath2] = resolveSwapPath(swapPaths)
+        const { contracts, signers } = context
+        await utils.configureEcosystem(config)
+        // calculate full liquidation profit
+        const { maxLiquidationAmountUBA: maxLiquidatedFAsset, mintedUBA: mintedFAssetBefore }
+          = await contracts.assetManager.getAgentInfo(contracts.agent)
+        const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, swapPath1, maxLiquidatedFAsset)
+        const fullLiquidationProfit = await utils.arbitrageProfit(maxLiquidatedVault, swapPath1, swapPath2)
+        // get flash lender vault funds
+        const flashLenderVaultBefore = await contracts.vault.balanceOf(contracts.flashLender)
+        // perform arbitrage by liquidation
+        await contracts.liquidator.connect(signers.liquidator).runArbitrage(
+          contracts.agent,
+          signers.rewardee,
+          0, 1, 0, 1,
+          ZeroAddress,
+          ZeroAddress,
+          swapPath1,
+          swapPath2
+        )
+        const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
+        const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
+        storeTestResult(
+          { ecosystem: config, assets: assetConfig, paths: swapPaths, liquidatedFAsset },
+          `TestResult|${config.name}|${swapPaths[0].join("-")}|${swapPaths[1].join("-")}`
+        )
+        // check that executed liquidation was at least as profitable as the full one would have been
+        const profit = await contracts.vault.balanceOf(signers.rewardee)
+        expect(profit).to.be.greaterThanOrEqual(fullLiquidationProfit)
+        expect(profit).to.be.greaterThan(0)
+        // check that flash lender didn't lose any money
+        const flashLenderAfter = await contracts.vault.balanceOf(contracts.flashLender)
+        expect(flashLenderAfter).to.equal(flashLenderVaultBefore)
+        // check that liquidator contract had not had any funds stolen or given
+        const fAssetBalanceLiquidatorContract = await contracts.fAsset.balanceOf(contracts.liquidator)
+        expect(fAssetBalanceLiquidatorContract).to.equal(config.initialLiquidatorFAsset)
+        const poolBalanceLiquidatorContract = await contracts.pool.balanceOf(contracts.liquidator)
+        expect(poolBalanceLiquidatorContract).to.equal(config.initialLiquidatorPool)
+        const vaultBalanceLiquidatorContract = await contracts.vault.balanceOf(contracts.liquidator)
+        expect(vaultBalanceLiquidatorContract).to.equal(config.initialLiquidatorVault)
       })
 
       it(`should fail the arbitrage in the case of bad debt on path "${swapPaths}"`, async () => {
-        const fullPaths = resolveSwapPathDefaults(resolveSwapPath(swapPaths))
+        const [swapPath1, swapPath2] = resolveSwapPath(swapPaths)
         const config = ecosystemFactory.unhealthyEcosystemWithBadDebt
         const { contracts, signers } = context
         await utils.configureEcosystem(config)
@@ -161,8 +174,8 @@ describe("Tests for Liquidator contract", () => {
           0, 1, 0, 1,
           ZeroAddress,
           ZeroAddress,
-          fullPaths.dex1,
-          fullPaths.dex2
+          swapPath1,
+          swapPath2
         )).to.be.revertedWith("Liquidator: No profit available")
       })
     })
