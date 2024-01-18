@@ -1,10 +1,50 @@
 import "dotenv/config";
 import "source-map-support/register";
 
+import { SecretsUser, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { createSha256Hash, generateRandomHexString, resolveInFassetBotsCore, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import chalk from "chalk";
 import { Command } from "commander";
-import { createSha256Hash, generateRandomHexString, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import fs from "fs";
 
 const program = new Command();
+
+program
+    .command("generateSecrets")
+    .description("generate new secrets file")
+    .option("-c, --config <configFile>",
+        "Config file path. If omitted, env var FASSET_BOT_CONFIG or FASSET_USER_CONFIG is used. If this is undefined, use embedded config.")
+    .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
+    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
+    .option("--user", "generate secrets for user")
+    .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management address")
+    .option("--other", "generate secrets for other bots (challenger, etc.)")
+    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
+        const users: SecretsUser[] = [];
+        if (opts.user) users.push("user");
+        if (opts.agent) users.push("agent");
+        if (opts.other) users.push("other");
+        if (!opts.config) {
+            opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json");
+        }
+        const secrets = generateSecrets(opts.config, users);
+        const json = JSON.stringify(secrets, null, 4);
+        if (opts.output) {
+            if (fs.existsSync(opts.output) && !opts.overwrite) {
+                program.error(`error: file ${opts.output} already exists`);
+            }
+            fs.writeFileSync(opts.output, json);
+        } else {
+            console.log(json);
+        }
+        const emptyFields = Object.keys(secrets.apiKey).filter((k) => !secrets.apiKey[k]);
+        if (emptyFields.length !== 0) {
+            console.error(
+                chalk.yellow("NOTE:"),
+                `Replace empty fields in apiKey (${emptyFields.join(", ")}) with api keys from your provider or delete them if not needed.`
+            );
+        }
+    });
 
 program
     .command("createApiKeyAndHash")

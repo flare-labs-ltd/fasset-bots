@@ -5,12 +5,13 @@ import Web3 from "web3";
 import { SourceId } from "../underlying-chain/SourceId";
 import { ChainAccount, Secrets } from "./secrets";
 import { loadConfigFile } from ".";
+import { requireNotNull } from "../utils";
 
 export type SecretsUser = "user" | "agent" | "other";
 
-export function generateSecrets(configFile: string, users: SecretsUser[]) {
+export function generateSecrets(configFile: string, users: SecretsUser[], agentManagementAddress?: string) {
     const web3 = new Web3();
-    function generateAccount(chainIds: Set<string>): { [key: string]: ChainAccount } {
+    function generateAccount(chainIds: Set<string>) {
         const result: { [key: string]: ChainAccount } = {};
         result.native = generateNativeAccount();
         for (const chainId of chainIds) {
@@ -45,6 +46,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[]) {
             encryption_password: crypto.randomBytes(15).toString("base64"),
         };
         secrets.owner = generateAccount(chainIds);
+        secrets.owner.management = { address: requireNotNull(agentManagementAddress) } as any;
     }
     if (users.includes("user")) {
         secrets.user = generateAccount(chainIds);

@@ -1,11 +1,10 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import chalk from "chalk";
-import { Command } from "commander";
-import { InfoBot, SecretsUser, SourceId, UserBot, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { InfoBot, UserBot } from "@flarelabs/fasset-bots-core";
 import { requireSecret, resetSecrets } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, ZERO_ADDRESS, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { Command } from "commander";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -31,15 +30,13 @@ program
             )
             .env("FASSET_USER_SECRETS")
     )
-    .addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query"))
+    .addOption(
+        program
+            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+            .makeOptionMandatory()
+    )
     .hook("preAction", (_, command) => {
-        // make --fasset option mandatory always except for 'generateSecrets' command
-        if (command.name() !== "generateSecrets") {
-            if (!program.getOptionValue("fasset")) {
-                throw new CommandLineError("required option '-f, --fasset <fAssetSymbol>' not specified");
-            }
-            resetSecrets(getSecretsPath());
-        }
+        resetSecrets(getSecretsPath());
     });
 
 function getSecretsPath() {
@@ -52,37 +49,6 @@ function getSecretsPath() {
     }
     return null;
 }
-
-program
-    .command("generateSecrets")
-    .description("generate new secrets file")
-    .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
-    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
-    .option("--agent", "also generate secrets for agent")
-    .option("--other", "also generate secrets for other bots (challenger, etc.)")
-    .action(async (opts: { output?: string; overwrite?: boolean; agent?: boolean; other?: boolean }) => {
-        const options: { config: string } = program.opts();
-        const users: SecretsUser[] = ["user"];
-        if (opts.agent) users.push("agent");
-        if (opts.other) users.push("other");
-        const secrets = generateSecrets(options.config, users);
-        const json = JSON.stringify(secrets, null, 4);
-        if (opts.output) {
-            if (fs.existsSync(opts.output) && !opts.overwrite) {
-                program.error(`error: file ${opts.output} already exists`);
-            }
-            fs.writeFileSync(opts.output, json);
-        } else {
-            console.log(json);
-        }
-        const emptyFields = Object.keys(secrets.apiKey).filter((k) => !secrets.apiKey[k]);
-        if (emptyFields.length !== 0) {
-            console.error(
-                chalk.yellow("NOTE:"),
-                `Replace empty fields in apiKey (${emptyFields.join(", ")}) with api keys from your provider or delete them if not needed.`
-            );
-        }
-    });
 
 program
     .command("info")
