@@ -1038,6 +1038,37 @@
         {
           "indexed": true,
           "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redemptionAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionRejected",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "redeemer",
           "type": "address"
         },
@@ -2110,10 +2141,78 @@
         {
           "components": [
             {
-              "internalType": "string",
-              "name": "underlyingAddressString",
-              "type": "string"
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
             },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "addressStr",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isValid",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "standardAddress",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardAddressHash",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct AddressValidity.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct AddressValidity.Proof",
+          "name": "_addressProof",
+          "type": "tuple"
+        },
+        {
+          "components": [
             {
               "internalType": "contract IERC20",
               "name": "vaultCollateralToken",
@@ -3441,11 +3540,6 @@
             },
             {
               "internalType": "address",
-              "name": "underlyingAddressValidator",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
               "name": "liquidationStrategy",
               "type": "address"
             },
@@ -4353,6 +4447,92 @@
         }
       ],
       "name": "redemptionPaymentDefault",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "addressStr",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "isValid",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "standardAddress",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardAddressHash",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct AddressValidity.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct AddressValidity.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct AddressValidity.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "rejectInvalidRedemption",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -20,7 +20,6 @@ import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } f
 import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { Agent } from "../../../src/fasset/Agent";
-import { AgentSettings } from "../../../src/fasset/AssetManagerTypes";
 import { getSecrets } from "../../../src/config/secrets";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
@@ -156,7 +155,7 @@ describe("Actor tests - coston", async () => {
             DEFAULT_POOL_TOKEN_SUFFIX()
         );
         const underlyingAddress = "underlying";
-        const agentSettings: AgentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
-        await expect(Agent.create(context, "ownerAddress", agentSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
+        const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
+        await expect(Agent.create(context, "ownerAddress", addressValidityProof, agentBotSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
 });

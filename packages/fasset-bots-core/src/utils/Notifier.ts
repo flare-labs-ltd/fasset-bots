@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import chalk from "chalk";
 import { DEFAULT_TIMEOUT } from "./helpers";
 import { logger } from "./logger";
-import { formatArgs } from "./formatting";
+import { formatArgs, squashSpace } from "./formatting";
 // agent status and settings
 const CCB_TITLE = "CCB";
 const LIQUIDATION_STARTED = "LIQUIDATION STARTED";
@@ -31,6 +31,8 @@ const REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED";
 const REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED";
 const REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED";
 const REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION";
+const REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED = "NO ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION";
+const REDEMPTION_CONFLICTING_ADDRESS_VALIDITY_PROOF_OBTAINED = "CONFLICTING ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION";
 const REDEMPTION_STARTED = "REDEMPTION STARTED";
 const REDEMPTION_PAID = "REDEMPTION PAID";
 const REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED";
@@ -385,6 +387,20 @@ export class Notifier {
             LOW_OWNERS_NATIVE_BALANCE,
             `Owner ${ownerAddress} has low balance: ${balance} ${tokenSymbol}.`
         );
+    }
+
+    async sendRedemptionAddressValidationNoProof(agentVault: string, requestId: string | null, roundId: number, requestData: string, address: string) {
+        const msg = squashSpace`Agent ${agentVault} cannot obtain proof for address validity for redemption ${requestId}
+            and address ${address} in round ${roundId} with requested data ${requestData}.`
+        this.send(REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED, msg);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.DANGER, REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED, msg);
+    }
+
+    async sendRedemptionAddressValidationProofConflict(agentVault: string, requestId: string | null, roundId: number, requestData: string, address: string) {
+        const msg = squashSpace`Agent ${agentVault} obtain ed conflicting proof for address validity for redemption ${requestId}
+                and address ${address} in round ${roundId} with requested data ${requestData}.`;
+        this.send(REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED, msg);
+        await this.sendToServer(BotType.AGENT, agentVault, BotLevel.DANGER, REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED, msg);
     }
 
     async sendNoProofObtained(agentVault: string, requestId: string | null, roundId: number, requestData: string, redemption?: boolean) {

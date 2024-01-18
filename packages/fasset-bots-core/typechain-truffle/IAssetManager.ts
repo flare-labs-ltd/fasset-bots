@@ -476,6 +476,20 @@ export interface RedemptionPerformed {
   };
 }
 
+export interface RedemptionRejected {
+  name: "RedemptionRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    redemptionAmountUBA: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
 export interface RedemptionRequestIncomplete {
   name: "RedemptionRequestIncomplete";
   args: {
@@ -662,6 +676,7 @@ export type AllEvents =
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed
   | RedemptionPerformed
+  | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequested
   | SelfClose
@@ -1263,8 +1278,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
 
   createAgentVault: {
     (
+      _addressProof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -1279,8 +1308,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
+      _addressProof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -1295,8 +1338,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     sendTransaction(
+      _addressProof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -1311,8 +1368,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
+      _addressProof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -2053,7 +2124,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     whitelist: string;
     agentWhitelist: string;
     scProofVerifier: string;
-    underlyingAddressValidator: string;
     liquidationStrategy: string;
     burnAddress: string;
     priceReader: string;
@@ -2600,6 +2670,85 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
             minimalBlockTimestamp: number | BN | string;
             firstOverflowBlockNumber: number | BN | string;
             firstOverflowBlockTimestamp: number | BN | string;
+          };
+        };
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  rejectInvalidRedemption: {
+    (
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
           };
         };
       },
@@ -3653,8 +3802,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
 
     createAgentVault: {
       (
+        _addressProof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -3669,8 +3832,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
+        _addressProof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -3685,8 +3862,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       sendTransaction(
+        _addressProof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -3701,8 +3892,22 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
+        _addressProof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -4443,7 +4648,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       whitelist: string;
       agentWhitelist: string;
       scProofVerifier: string;
-      underlyingAddressValidator: string;
       liquidationStrategy: string;
       burnAddress: string;
       priceReader: string;
@@ -4990,6 +5194,85 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
               minimalBlockTimestamp: number | BN | string;
               firstOverflowBlockNumber: number | BN | string;
               firstOverflowBlockTimestamp: number | BN | string;
+            };
+          };
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    rejectInvalidRedemption: {
+      (
+        _proof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _proof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _proof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
+            };
+          };
+        },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _proof: {
+          merkleProof: string[];
+          data: {
+            attestationType: string;
+            sourceId: string;
+            votingRound: number | BN | string;
+            lowestUsedTimestamp: number | BN | string;
+            requestBody: { addressStr: string };
+            responseBody: {
+              isValid: boolean;
+              standardAddress: string;
+              standardAddressHash: string;
             };
           };
         },

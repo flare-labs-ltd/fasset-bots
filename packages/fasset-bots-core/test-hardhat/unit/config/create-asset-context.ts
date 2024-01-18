@@ -11,6 +11,7 @@ import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
@@ -49,6 +50,7 @@ describe("Create asset context unit tests", async () => {
             },
             blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),
+            verificationClient: new MockVerificationApiClient(),
         };
         await expect(getAssetManagerAndController(chainConfig, null, null))
             .to.eventually.be.rejectedWith(`assetManager or fAssetSymbol required in chain config`)
@@ -68,6 +70,7 @@ describe("Create asset context unit tests", async () => {
             },
             blockchainIndexerClient: context.blockchainIndexer,
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: new MockChain() }, "auto"),
+            verificationClient: new MockVerificationApiClient(),
         };
         const config: BotConfig = {
             loopDelay: 1000,

@@ -240,7 +240,7 @@ export class AgentRedemption {
     @Property({ nullable: true })
     txHash?: string;
 
-    // 'REQUESTED_PROOF' state data
+    // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
     @Property({ nullable: true })
     proofRequestRound?: number;
@@ -299,4 +299,5 @@ export enum AgentRedemptionState {
     PAID = "paid",
     REQUESTED_PROOF = "requestedProof",
     NOT_REQUESTED_PROOF = "notRequestedProof",
+    REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
 }

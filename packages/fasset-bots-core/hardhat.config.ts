@@ -69,6 +69,7 @@ const config: HardhatUserConfig = {
         },
         hardhat: {
             accounts,
+            allowUnlimitedContractSize: true,
             blockGasLimit: 125000000 // 10x ETH gas
         },
         local: {

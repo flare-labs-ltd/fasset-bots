@@ -23,7 +23,6 @@ export interface ICollateralPoolFactoryInstance
       _assetManager: string,
       _agentVault: string,
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -41,7 +40,6 @@ export interface ICollateralPoolFactoryInstance
       _assetManager: string,
       _agentVault: string,
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -59,7 +57,6 @@ export interface ICollateralPoolFactoryInstance
       _assetManager: string,
       _agentVault: string,
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -77,7 +74,6 @@ export interface ICollateralPoolFactoryInstance
       _assetManager: string,
       _agentVault: string,
       _settings: {
-        underlyingAddressString: string;
         vaultCollateralToken: string;
         poolTokenSuffix: string;
         feeBIPS: number | BN | string;
@@ -99,7 +95,6 @@ export interface ICollateralPoolFactoryInstance
         _assetManager: string,
         _agentVault: string,
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -117,7 +112,6 @@ export interface ICollateralPoolFactoryInstance
         _assetManager: string,
         _agentVault: string,
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -135,7 +129,6 @@ export interface ICollateralPoolFactoryInstance
         _assetManager: string,
         _agentVault: string,
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;
@@ -153,7 +146,6 @@ export interface ICollateralPoolFactoryInstance
         _assetManager: string,
         _agentVault: string,
         _settings: {
-          underlyingAddressString: string;
           vaultCollateralToken: string;
           poolTokenSuffix: string;
           feeBIPS: number | BN | string;

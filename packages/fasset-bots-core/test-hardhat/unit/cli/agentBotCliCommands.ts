@@ -21,6 +21,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 use(chaiAsPromised);
 use(spies);
 
@@ -81,6 +82,7 @@ describe("AgentBot cli commands unit tests", async () => {
                     wallet: new MockChainWallet(chain),
                     blockchainIndexerClient: new MockIndexer("", chainId, chain),
                     stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
+                    verificationClient: new MockVerificationApiClient(),
                     assetManager: "",
                 },
             ],

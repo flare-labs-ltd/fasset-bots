@@ -33,8 +33,12 @@ export async function createTestAgentBot(
     defaultAgentConfigPath: string,
     notifier: MockNotifier = new MockNotifier()
 ): Promise<AgentBot> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
-    return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
+    const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    console.log(`Validating new underlying address ${underlyingAddress}...`);
+    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, ownerAddress, underlyingAddress);
+    console.log(`Creating agent bot...`);
+         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
+    return await AgentBot.create(orm.em, context, ownerAddress, addressValidityProof, agentBotSettings, notifier);
 }
 
 export async function createTestAgentBotAndDepositCollaterals(

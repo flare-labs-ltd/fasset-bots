@@ -41,6 +41,7 @@ import { MockNotifier } from "../../src/mock/MockNotifier";
 import { FuzzingTimeline } from "./FuzzingTimeline";
 import { FuzzingStateComparator } from "./FuzzingStateComparator";
 import { FuzzingState } from "./FuzzingState";
+import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 
 export type MiningMode = "auto" | "manual";
 
@@ -122,6 +123,7 @@ describe("Fuzzing tests", async () => {
                         wallet: new MockChainWallet(chain),
                         blockchainIndexerClient: new MockIndexer("", chainId, chain),
                         stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
+                        verificationClient: new MockVerificationApiClient(),
                         assetManager: "",
                     },
                 ],

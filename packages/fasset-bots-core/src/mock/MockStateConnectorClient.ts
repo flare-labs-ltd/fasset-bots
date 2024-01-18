@@ -1,5 +1,5 @@
 import { constants } from "@openzeppelin/test-helpers";
-import { ARBase, ARESBase, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT,
+import { ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT,
     MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
@@ -198,7 +198,9 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     }
 
     private proveParsedRequestBody(chain: MockChain, parsedRequest: ARBase) {
-        const prover = this.useAlwaysFailsProver ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds) : new MockAttestationProver(chain, this.queryWindowSeconds);
+        const prover = this.useAlwaysFailsProver
+            ? new MockAlwaysFailsAttestationProver(chain, this.queryWindowSeconds)
+            : new MockAttestationProver(chain, this.queryWindowSeconds);
         switch (parsedRequest.attestationType) {
             case Payment.TYPE: {
                 const request = parsedRequest.requestBody as Payment.RequestBody;
@@ -216,6 +218,10 @@ export class MockStateConnectorClient implements IStateConnectorClient {
             case ConfirmedBlockHeightExists.TYPE: {
                 const request = parsedRequest.requestBody as ConfirmedBlockHeightExists.RequestBody;
                 return prover.confirmedBlockHeightExists(toNumber(request.blockNumber), toNumber(request.queryWindow));
+            }
+            case AddressValidity.TYPE: {
+                const request = parsedRequest.requestBody as AddressValidity.RequestBody;
+                return prover.addressValidity(request.addressStr);
             }
             default: {
                 throw new StateConnectorClientError(`StateConnectorClient: unsupported attestation request ${decodeAttestationName(parsedRequest.attestationType)} (${parsedRequest.attestationType})`);

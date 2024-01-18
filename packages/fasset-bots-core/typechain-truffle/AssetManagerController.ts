@@ -509,6 +509,20 @@ export interface RedemptionPerformed {
   };
 }
 
+export interface RedemptionRejected {
+  name: "RedemptionRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    redemptionAmountUBA: BN;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+  };
+}
+
 export interface RedemptionRequestIncomplete {
   name: "RedemptionRequestIncomplete";
   args: {
@@ -718,6 +732,7 @@ export type AllEvents =
   | RedemptionPaymentBlocked
   | RedemptionPaymentFailed
   | RedemptionPerformed
+  | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequested
   | SelfClose
@@ -1755,29 +1770,6 @@ export interface AssetManagerControllerInstance
     estimateGas(
       _assetManagers: string[],
       _value: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setUnderlyingAddressValidator: {
-    (
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _assetManagers: string[],
-      _value: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _assetManagers: string[],
-      _value: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2992,29 +2984,6 @@ export interface AssetManagerControllerInstance
       estimateGas(
         _assetManagers: string[],
         _value: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setUnderlyingAddressValidator: {
-      (
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _assetManagers: string[],
-        _value: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _assetManagers: string[],
-        _value: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

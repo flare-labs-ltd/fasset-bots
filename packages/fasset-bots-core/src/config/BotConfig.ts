@@ -27,6 +27,8 @@ import { loadContracts } from "./contracts";
 import { artifacts } from "../utils/web3";
 import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import path from "path";
+import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
 export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
 const AddressUpdater = artifacts.require("AddressUpdater");
@@ -59,6 +61,7 @@ export interface BotFAssetConfig {
     chainInfo: ChainInfo;
     blockchainIndexerClient?: BlockchainIndexerHelper; // only for agent bot and challenger
     stateConnector?: IStateConnectorClient; // only for agent bot, challenger and timeKeeper
+    verificationClient?: IVerificationApiClient, // only for agent bot and user bot
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
@@ -252,14 +255,15 @@ export async function createChainConfig(
     const blockchainIndexerClient = chainInfo.indexerUrl
         ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl)
         : undefined;
-    const stateConnector =
-        stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls && chainInfo.indexerUrl
+    const stateConnector = stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls && chainInfo.indexerUrl
             ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
             : undefined;
+    const verificationClient = chainInfo.indexerUrl ? await createVerificationApiClient(chainInfo.indexerUrl) : undefined;
     return {
         chainInfo: chainInfo,
         blockchainIndexerClient: blockchainIndexerClient,
         stateConnector: stateConnector,
+        verificationClient: verificationClient,
         assetManager: chainInfo.assetManager,
         fAssetSymbol: chainInfo.fAssetSymbol,
         priceChangeEmitter: chainInfo.priceChangeEmitter,
@@ -424,6 +428,13 @@ export async function createStateConnectorClient(
 ): Promise<StateConnectorClientHelper> {
     const apiKey = requireSecret("apiKey.indexer");
     return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+}
+
+export async function createVerificationApiClient(
+    indexerWebServerUrl: string,
+): Promise<VerificationPrivateApiClient> {
+    const apiKey = requireSecret("apiKey.indexer");
+    return new VerificationPrivateApiClient(indexerWebServerUrl, apiKey);
 }
 
 const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.testXRP, SourceId.testBTC, SourceId.testDOGE];

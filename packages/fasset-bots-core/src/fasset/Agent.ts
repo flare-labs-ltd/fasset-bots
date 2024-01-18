@@ -24,6 +24,7 @@ import { CollateralDataFactory } from "./CollateralData";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts } from "../utils/web3";
 import BN from "bn.js";
+import { AddressValidity } from "@flarenetwork/state-connector-protocol";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -94,9 +95,10 @@ export class Agent {
      * @returns instance of Agent
      */
 
-    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, agentSettings: AgentSettings): Promise<Agent> {
+    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
-        const response = await ctx.assetManager.createAgentVault(web3DeepNormalize(agentSettings), { from: ownerAddress });
+        const response = await ctx.assetManager.createAgentVault(
+            web3DeepNormalize(addressValidityProof), web3DeepNormalize(agentSettings), { from: ownerAddress });
         // extract agent vault address from AgentVaultCreated event
         const event = findRequiredEvent(response, "AgentVaultCreated");
         // get vault contract at agent's vault address address
@@ -107,7 +109,8 @@ export class Agent {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken, agentSettings.underlyingAddressString);
+        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken,
+            addressValidityProof.data.responseBody.standardAddress);
     }
 
     /**

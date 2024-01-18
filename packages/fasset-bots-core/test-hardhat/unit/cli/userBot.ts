@@ -26,6 +26,7 @@ use(spies);
 import fs from "fs";
 import path from "path";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -98,6 +99,7 @@ describe("UserBot cli commands unit tests", async () => {
             wallet: new MockChainWallet(chain),
             blockchainIndexerClient: new MockIndexer("", chainId, chain),
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
+            verificationClient: new MockVerificationApiClient(),
             assetManager: "",
             fAssetSymbol: "TESTHHSYM",
         };

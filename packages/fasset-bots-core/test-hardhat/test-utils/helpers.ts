@@ -51,12 +51,12 @@ export async function createTestAgentBot(
     notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ): Promise<AgentBot> {
-    const underlyingAddress = ownerUnderlyingAddress ? ownerUnderlyingAddress : requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
-    await context.blockchainIndexer.chain.mint(underlyingAddress, depositUnderlying);
-    const agentBotSettings: AgentBotDefaultSettings = options
-        ? options
-        : await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
-    return await AgentBot.create(orm.em, context, ownerAddress, agentBotSettings, notifier);
+    ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
+    await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
+    const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, ownerAddress, underlyingAddress);
+    const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
+    return await AgentBot.create(orm.em, context, ownerAddress, addressValidityProof, agentBotSettings, notifier);
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
@@ -82,8 +82,8 @@ export async function createTestAgentB(context: TestAssetBotContext, ownerAddres
         DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
         DEFAULT_POOL_TOKEN_SUFFIX()
     );
-    const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
-    return await Agent.create(context, ownerAddress, agentSettings);
+    const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
+    return await Agent.create(context, ownerAddress, addressValidityProof, agentBotSettings);
 }
 
 export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlyingAddress, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
@@ -92,8 +92,8 @@ export async function createTestAgent(context: TestAssetBotContext, ownerAddress
         DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
         suffix
     );
-    const agentSettings = { underlyingAddressString: underlyingAddress, ...agentBotSettings };
-    return await Agent.create(context, ownerAddress, agentSettings);
+    const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
+    return await Agent.create(context, ownerAddress, addressValidityProof, agentBotSettings);
 }
 
 export function createTestAgentBotRunner(

@@ -13,11 +13,6 @@ import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
-import { RippleAddressValidatorContract } from "./RippleAddressValidator";
-import { IAddressValidatorContract } from "./IAddressValidator";
-import { Base58MockContract } from "./Base58Mock";
-import { BytesMockContract } from "./BytesMock";
-import { TrivialAddressValidatorMockContract } from "./TrivialAddressValidatorMock";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
@@ -144,13 +139,6 @@ export type * from "./types";
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
-      require(name: "RippleAddressValidator"): RippleAddressValidatorContract;
-      require(name: "IAddressValidator"): IAddressValidatorContract;
-      require(name: "Base58Mock"): Base58MockContract;
-      require(name: "BytesMock"): BytesMockContract;
-      require(
-        name: "TrivialAddressValidatorMock"
-      ): TrivialAddressValidatorMockContract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
@@ -300,20 +288,6 @@ export {
 export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
-export {
-  RippleAddressValidatorContract,
-  RippleAddressValidatorInstance,
-} from "./RippleAddressValidator";
-export {
-  IAddressValidatorContract,
-  IAddressValidatorInstance,
-} from "./IAddressValidator";
-export { Base58MockContract, Base58MockInstance } from "./Base58Mock";
-export { BytesMockContract, BytesMockInstance } from "./BytesMock";
-export {
-  TrivialAddressValidatorMockContract,
-  TrivialAddressValidatorMockInstance,
-} from "./TrivialAddressValidatorMock";
 export { AgentVaultContract, AgentVaultInstance } from "./AgentVault";
 export {
   AgentVaultFactoryContract,

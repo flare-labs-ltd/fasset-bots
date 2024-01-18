@@ -1,4 +1,4 @@
-import { BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import { MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
 import BN from "bn.js";
@@ -24,5 +24,9 @@ export class MockAlwaysFailsAttestationProver {
 
     confirmedBlockHeightExists(blockNumber: number, queryWindow: number): ConfirmedBlockHeightExists.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.confirmedBlockHeightExists: failed`);
+    }
+
+    addressValidity(addressStr: string): AddressValidity.ResponseBody {
+        throw new MockAttestationProverError(`AttestationProver.addressValidity: failed`);
     }
 }

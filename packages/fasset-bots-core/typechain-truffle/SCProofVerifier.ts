@@ -20,6 +20,25 @@ export type AllEvents = never;
 export interface SCProofVerifierInstance extends Truffle.ContractInstance {
   merkleRootStorage(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  verifyAddressValidity(
+    _proof: {
+      merkleProof: string[];
+      data: {
+        attestationType: string;
+        sourceId: string;
+        votingRound: number | BN | string;
+        lowestUsedTimestamp: number | BN | string;
+        requestBody: { addressStr: string };
+        responseBody: {
+          isValid: boolean;
+          standardAddress: string;
+          standardAddressHash: string;
+        };
+      };
+    },
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   verifyBalanceDecreasingTransaction(
     _proof: {
       merkleProof: string[];
@@ -124,6 +143,25 @@ export interface SCProofVerifierInstance extends Truffle.ContractInstance {
 
   methods: {
     merkleRootStorage(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    verifyAddressValidity(
+      _proof: {
+        merkleProof: string[];
+        data: {
+          attestationType: string;
+          sourceId: string;
+          votingRound: number | BN | string;
+          lowestUsedTimestamp: number | BN | string;
+          requestBody: { addressStr: string };
+          responseBody: {
+            isValid: boolean;
+            standardAddress: string;
+            standardAddressHash: string;
+          };
+        };
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     verifyBalanceDecreasingTransaction(
       _proof: {

@@ -23,6 +23,7 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { decodedChainId } from "../../../src/config/BotConfig";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -603,7 +604,7 @@ describe("Agent bot unit tests", async () => {
     });
 
     it("Should not request proofs - cannot prove requests yet", async () => {
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
@@ -624,6 +625,9 @@ describe("Agent bot unit tests", async () => {
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
         };
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        // switch attestation prover to always fail mode
+        checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
+        //
         await agentBot.requestNonPaymentProofForMinting(minting);
         expect(minting.state).to.eq("started");
         const transactionHash = await agentBot.agent.wallet.addTransaction(

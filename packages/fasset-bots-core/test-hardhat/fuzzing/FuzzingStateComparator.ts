@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { BN_ZERO, BNish, toBN } from "../../src/utils/helpers";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { formatBN } from "../test-utils/fuzzing-utils";
+import { formatBN } from "../../src/utils/formatting";
 
 export class FuzzingStateComparator {
     problems: number = 0;

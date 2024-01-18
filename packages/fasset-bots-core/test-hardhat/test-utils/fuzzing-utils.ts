@@ -282,32 +282,3 @@ export function mulDecimal(a: BN, b: number) {
 export function getLotSize(settings: AssetManagerSettings): BN {
     return toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
 }
-
-/**
- * Format large number in more readable format, using 'fixed-exponential' format, with 'e+18' suffix for very large numbers.
- * (This makes them easy to visually detect bigger/smaller numbers.)
- */
-export function formatBN(x: BN | string | number) {
-    const xs = x.toString();
-    if (xs.length >= 18) {
-        const dec = Math.max(0, 22 - xs.length);
-        const xm = (Number(xs) / 1e18).toFixed(dec);
-        return groupIntegerDigits(xm) + "e+18";
-    } else {
-        return groupIntegerDigits(xs);
-    }
-}
-
-/**
- * Put '_' characters between 3-digit groups in integer part of a number.
- */
-export function groupIntegerDigits(x: string) {
-    let startp = x.indexOf(".");
-    if (startp < 0) startp = x.length;
-    const endp = x[0] === "-" ? 1 : 0;
-    for (let p = startp - 3; p > endp; p -= 3) {
-        x = x.slice(0, p) + "_" + x.slice(p);
-        x;
-    }
-    return x;
-}

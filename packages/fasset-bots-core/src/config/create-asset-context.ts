@@ -27,6 +27,9 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
     if (!chainConfig.stateConnector) {
         throw new Error("Missing state connector configuration");
     }
+    if (!chainConfig.verificationClient) {
+        throw new Error("Missing verification client configuration");
+    }
     const nativeContext = await createNativeContext(botConfig, chainConfig);
     return {
         ...nativeContext,
@@ -35,6 +38,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         wallet: chainConfig.wallet,
         attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
+        verificationClient: chainConfig.verificationClient
     };
 }
 

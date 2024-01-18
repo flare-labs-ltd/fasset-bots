@@ -18,11 +18,6 @@
         {
           "components": [
             {
-              "internalType": "string",
-              "name": "underlyingAddressString",
-              "type": "string"
-            },
-            {
               "internalType": "contract IERC20",
               "name": "vaultCollateralToken",
               "type": "address"
