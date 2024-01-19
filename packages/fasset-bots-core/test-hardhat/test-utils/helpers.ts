@@ -140,7 +140,7 @@ export async function createTestAgentBotAndMakeAvailable(
     options?: AgentBotDefaultSettings
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
-    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, ownerAddress);
+    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress);
     await agentBot.agent.depositVaultCollateral(depositUSDC);
     await agentBot.agent.buyCollateralPoolTokens(depositNat);
     await agentBot.agent.makeAvailable();

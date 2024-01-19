@@ -5,8 +5,8 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN } from "../../src/utils/helpers";
-import { artifacts, web3 } from "../../src/utils/web3";
+import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN, requireNotNull } from "../../src/utils/helpers";
+import { artifacts, contractSettings, web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
@@ -31,6 +31,7 @@ import BN from "bn.js";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
+import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -47,6 +48,18 @@ describe("Agent bot tests", async () => {
     let minter: Minter;
     let redeemer: Redeemer;
 
+    const ownerManagementAddress = "0xBcAf5dAA7497dfc21D7C009C555E17E8a2574dE5";
+    const ownerManagementPrivateKey = "0x713163204991ba62e8f50f5a29c518484e7fe4a8a35f3b932c986748c1fc0940";
+
+    async function testSetWorkAddress(agentOwnerRegistry: AgentOwnerRegistryInstance, managementAddress: string, managementPrivateKey: string, workAddress: string) {
+        const methodAbi = requireNotNull(agentOwnerRegistry.abi.find(it => it.name === "setWorkAddress"));
+        const data = web3.eth.abi.encodeFunctionCall(methodAbi, [workAddress]);
+        const account = web3.eth.accounts.privateKeyToAccount(managementPrivateKey);
+        assert.equal(account.address, managementAddress);
+        const signedTx = await web3.eth.accounts.signTransaction({ from: managementAddress, to: agentOwnerRegistry.address, data: data, gas: 100000 }, managementPrivateKey);
+        await web3.eth.sendSignedTransaction(requireNotNull(signedTx.rawTransaction));
+    }
+
     before(async () => {
         accounts = await web3.eth.getAccounts();
         orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
@@ -60,10 +73,20 @@ describe("Agent bot tests", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
-        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        // create work address
+        await web3.eth.sendTransaction({ from: accounts[0], to: ownerManagementAddress, value: toBNExp(1, 18).toString(), gas: 100000 });
+        await testSetWorkAddress(context.agentOwnerRegistry, ownerManagementAddress, ownerManagementPrivateKey, ownerAddress);
+        //
+        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress);
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+    });
+
+    it("Management address should not work for sending from server", async () => {
+        await web3.eth.sendTransaction({ from: ownerAddress, to: accounts[0], value: "1", gas: 100000 });
+        await expectRevert(web3.eth.sendTransaction({ from: ownerManagementAddress, to: accounts[0], value: "1", gas: 100000 }),
+            "unknown account");
     });
 
     it("Should perform minting", async () => {
