@@ -210,6 +210,7 @@ export async function createTestAssetContext(
         collaterals,
         stablecoins,
         verificationClient,
+        agentOwnerRegistry,
     };
 }
 
@@ -227,6 +228,7 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext, us
         priceChangeEmitter: context.priceChangeEmitter,
         collaterals: context.collaterals,
         stablecoins: context.stablecoins,
+        agentOwnerRegistry: context.agentOwnerRegistry,
         liquidationStrategy: useCustomStrategy
             ? {
                   className: "DefaultLiquidationStrategy",

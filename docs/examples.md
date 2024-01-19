@@ -5,17 +5,21 @@
 1. Run following command, which prefill underlying and native account in output file `secrets.json`.
 
 ```console
-yarn user-bot generateSecrets --agent -o secrets.json
+yarn key-gen generateSecrets --agent MANAGEMENT_ADDRESS --user -o secrets.json
 ```
 
-2. Replace empty fields in apiKey (`native_rpc`, `xrp_rpc`, `indexer`) with api keys from your provider or delete them if not needed.
+where MANAGEMENT_ADDRESS is your adress from Metamask.
 
-3. Grant read access to `secrets.json`.
+2. Assign work address to your owner: connect Coston block explorer to your metamask, find contract `AgentOwnerRegistry` and execute `setWorkAddress` with address owner.native.address from generated secrets.json.
+
+3. Replace empty fields in apiKey (`native_rpc`, `xrp_rpc`, `indexer`) with api keys from your provider or delete them if not needed.
+
+4. Grant read access to `secrets.json`.
 
 ```console
 chmod 600 secrets.json
 ```
-Note: Fund `owner.native_address` with selected vault collateral and native collateral. In case of using `testXRP` or `XRP` activate underlying account `owner.underlying_address` by depositing 10 `testXRP` or `XRP`.
+Note: Fund `owner.native.address` with selected vault collateral and native collateral. In case of using `testXRP` or `XRP` activate underlying account `owner.underlying_address` by depositing 10 `testXRP` or `XRP`.
 
 ## How to create agent and make it available? (Only available agents can be minted against to.)
 

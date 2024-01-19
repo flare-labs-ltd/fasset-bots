@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { AddressUpdaterInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
@@ -13,6 +13,7 @@ export type AssetManagerEvents = import("../../typechain-truffle/AssetManager").
 export type FAssetEvents = import("../../typechain-truffle/FAsset").AllEvents;
 export type IERC20Events = import("../../typechain-truffle/IERC20").AllEvents;
 export type IPriceChangeEmitterEvents = import("../../typechain-truffle/IPriceChangeEmitter").AllEvents;
+export type AgentOwnerRegistryEvents = import("../../typechain-truffle/AgentOwnerRegistry").AllEvents;
 
 export interface IAssetNativeChainContext {
     nativeChainInfo: NativeChainInfo;
@@ -21,6 +22,7 @@ export interface IAssetNativeChainContext {
     fAsset: ContractWithEvents<FAssetInstance, FAssetEvents>;
     assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>;
     addressUpdater: ContractWithEvents<AddressUpdaterInstance, AddressUpdaterEvents>;
+    agentOwnerRegistry: ContractWithEvents<AgentOwnerRegistryInstance, AgentOwnerRegistryEvents>;
 }
 
 export interface IAssetAgentBotContext extends IAssetNativeChainContext {

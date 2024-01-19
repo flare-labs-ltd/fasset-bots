@@ -17,7 +17,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
-import { Agent } from "../../../src/fasset/Agent";
+import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
@@ -44,7 +44,7 @@ describe("AgentBot cli commands unit tests", async () => {
     let governance: string;
 
     async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
-        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.botConfig.orm!, botCliCommands.ownerAddress);
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.botConfig.orm!, botCliCommands.owner.managementAddress);
         return agentBot.agent;
     }
 
@@ -64,7 +64,7 @@ describe("AgentBot cli commands unit tests", async () => {
         // bot cli commands
         botCliCommands = new BotCliCommands();
         botCliCommands.context = context;
-        botCliCommands.ownerAddress = ownerAddress;
+        botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
         const chainId = SourceId.testXRP;
         botCliCommands.botConfig = {
             rpcUrl: "",

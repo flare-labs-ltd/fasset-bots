@@ -13,6 +13,7 @@ const AddressUpdater = artifacts.require("AddressUpdater");
 const WNat = artifacts.require("WNat");
 const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
 const FAsset = artifacts.require("FAsset");
+const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 
 /**
  * Creates asset context needed for AgentBot.
@@ -83,15 +84,18 @@ export async function createNativeContext(config: BotConfig | BotConfigFile, cha
         const wNat = await WNat.at(contracts.WNat.address);
         const addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
         const fAsset = await FAsset.at(await assetManager.fAsset());
-        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter };
+        const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
+        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const addressUpdater = await AddressUpdater.at(config.addressUpdater!);
         const [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+        const settings = await assetManager.getSettings();
         const priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
         const wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
         const fAsset = await FAsset.at(await assetManager.fAsset());
-        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter };
+        const agentOwnerRegistry = await AgentOwnerRegistry.at(settings.agentOwnerRegistry);
+        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
     }
 }
 

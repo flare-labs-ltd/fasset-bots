@@ -4,7 +4,7 @@
 
 ### Onboarding requirements
 
-To participate in Testnet beta, you only need a server. The server stores all the wallet private keys and they can be generated during [agent setup](/docs/examples.md) using the command `generate-secrets --agent`. After generating the keys, you must deposit enough collateral (CFLR and USDC or USDT) into the agent's native Coston address `owner.native_address`. Also, make sure that the agent's XRP address `owner.underlying_address` has a minimum of 10 testXRP per vault to initialize the vault underlying address(es).
+To participate in Testnet beta, you only need a server. The server stores all the wallet private keys and they can be generated during [agent setup](/docs/examples.md) using the command `generate-secrets --agent`. After generating the keys, you must deposit enough collateral (CFLR and USDC or USDT) into the agent's native Coston address `owner.native.address`. Also, make sure that the agent's XRP address `owner.underlying_address` has a minimum of 10 testXRP per vault to initialize the vault underlying address(es).
 
 If you're using Songbird or Flare, it's recommended to have a more secure native address, such as a hardware wallet. While a secure XRP address is also an option, for now it can only be used to extract fees. In addition, when initializing a vault, the initial XRPs must first be transferred to the server address before being used.
 
@@ -45,23 +45,28 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 2. Generate the private keys bound to agent bot operations using the following command:
 
     ```console
-    yarn user-bot generateSecrets --agent --output secrets.json
+    yarn key-gen generateSecrets --agent MANAGEMENT_ADDRESS --user --output secrets.json
     ```
+
+   where MANAGEMENT_ADDRESS is your adress from Metamask.
 
    You should have the generated `secrets.json` file in the root folder and now you need to provide the API key values for `native_rpc`, `xrp_rpc` and `indexer`. You can ask for these values from us during the beta testing phase.
 
-   The relevant field for the agent is the `owner` field, which contains two accounts:
+   The relevant field for the agent is the `owner` field, which contains three accounts:
 
-   - The Flare account funds the agent vaults and pays gas fees for various smart contract calls. Fund this account with enough CFLR and USDC to deposit collateral to agent vaults and pay for transaction gas fees. You can reach out to us, and we can provide these funds.
+   - The Flare management account, with only the account address (private key will never be on server).
+   - The Flare work account funds the agent vaults and pays gas fees for various smart contract calls. Fund this account with enough CFLR and USDC to deposit collateral to agent vaults and pay for transaction gas fees. You can reach out to us, and we can provide these funds.
    - The underlying test-XRP account pays the underlying chain's transaction fees. Activate this account by sending test-XRP to it. You can use the [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/).
 
-3. Grant read access to `secrets.json` by:
+3. Assign work address to your owner: connect Coston block explorer to your metamask, find contract `AgentOwnerRegistry` and execute `setWorkAddress` with address owner.native.address from generated secrets.json.
+
+4. Grant read access to `secrets.json` by:
 
    ```console
    chmod 600 secrets.json
    ```
 
-4. We need to whitelist your native address. Please provide `owner.native_address` from the `secrets.json` file.
+5. We need to whitelist your native address. Please provide `owner.management.address` from the `secrets.json` file.
 
 ## Create an Agent Vault
 
@@ -111,7 +116,7 @@ yarn run-agent
 
 ## Minting
 
-Before proceeding with minting, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
+Before proceeding with minting, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native.address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
 
 With the agent bot running, users can now mint FtestXRP by running:
 
@@ -121,7 +126,7 @@ yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secre
 
 ## Redeeming
 
-Before proceeding with redeeming, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
+Before proceeding with redeeming, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native.address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
 
 With the agent bot running, users can now redeem FtestXRP by running:
 

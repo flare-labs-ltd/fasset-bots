@@ -13,7 +13,7 @@ export class AgentService {
         if (agent) {
             return {
                 vaultAddress: agent.vaultAddress,
-                ownerAddress: agent.ownerAddress,
+                ownerAddress: agent.owner.managementAddress,
                 collateralPoolAddress: agent.collateralPool.address,
                 collateralPoolTokenAddress: agent.collateralPoolToken.address,
                 underlyingAddress: agent.underlyingAddress,

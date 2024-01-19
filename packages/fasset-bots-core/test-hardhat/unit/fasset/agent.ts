@@ -48,7 +48,7 @@ describe("Agent unit tests", async () => {
 
     it("Should create agent", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        expect(agent.ownerAddress).to.eq(ownerAddress);
+        expect(agent.owner.managementAddress).to.eq(ownerAddress);
         expect(agent.underlyingAddress).to.eq(underlyingAddress);
     });
 
@@ -197,7 +197,7 @@ describe("Agent unit tests", async () => {
         const fPoolBalance = await agent.poolFeeBalance();
         await agent.withdrawPoolFees(fPoolBalance);
         const fPoolBalanceAfterWithdraw = await agent.poolFeeBalance();
-        const ownerFassets = await context.fAsset.balanceOf(agent.ownerAddress);
+        const ownerFassets = await context.fAsset.balanceOf(agent.owner.workAddress);
         expect(ownerFassets.eq(fPoolBalance)).to.be.true;
         expect(fPoolBalanceAfterWithdraw.eqn(0)).to.be.true;
     });

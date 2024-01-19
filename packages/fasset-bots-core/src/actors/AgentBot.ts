@@ -4,7 +4,7 @@ import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle
 import { EM } from "../config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { Agent } from "../fasset/Agent";
+import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { CollateralPrice } from "../state/CollateralPrice";
@@ -65,15 +65,15 @@ export class AgentBot {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
     }
 
-    static async inititalizeUnderlyingAddress(context: IAssetAgentBotContext, ownerAddress: string, underlyingAddress: string) {
+    static async inititalizeUnderlyingAddress(context: IAssetAgentBotContext, owner: OwnerAddressPair, underlyingAddress: string) {
         // on XRP chain, send 10 XRP from owners account to activate agent's account
-        await this.activateUnderlyingAccount(context, underlyingAddress);
+        await this.activateUnderlyingAccount(context, owner, underlyingAddress);
         // validate address
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
         // prove EOA if necessary
         const settings = await context.assetManager.getSettings();
         if (settings.requireEOAAddressProof) {
-            await this.proveEOAaddress(context, addressValidityProof.data.responseBody.standardAddress, ownerAddress);
+            await this.proveEOAaddress(context, addressValidityProof.data.responseBody.standardAddress, owner);
         }
         return addressValidityProof;
     }
@@ -91,21 +91,21 @@ export class AgentBot {
     static async create(
         rootEm: EM,
         context: IAssetAgentBotContext,
-        ownerAddress: string,
+        owner: OwnerAddressPair,
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentBotDefaultSettings,
         notifier: Notifier
     ): Promise<AgentBot> {
-        logger.info(`Starting to create agent for owner ${ownerAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
+        logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
         // create agent
         const lastBlock = await web3.eth.getBlockNumber();
-        const agent = await Agent.create(context, ownerAddress, addressValidityProof, agentSettingsConfig);
+        const agent = await Agent.create(context, owner, addressValidityProof, agentSettingsConfig);
         // save state
         return await rootEm.transactional(async (em) => {
             const agentEntity = new AgentEntity();
             agentEntity.chainId = context.chainInfo.chainId;
             agentEntity.chainSymbol = context.chainInfo.symbol;
-            agentEntity.ownerAddress = agent.ownerAddress;
+            agentEntity.ownerAddress = agent.owner.managementAddress;
             agentEntity.vaultAddress = agent.vaultAddress;
             agentEntity.underlyingAddress = agent.underlyingAddress;
             agentEntity.active = true;
@@ -113,9 +113,8 @@ export class AgentBot {
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
             agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
-            logger.info(
-                `Agent ${agent.vaultAddress} was created by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
-            );
+            logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
+                underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
             return new AgentBot(agent, notifier);
         });
     }
@@ -126,12 +125,13 @@ export class AgentBot {
      * @param underlyingAddress agent's underlying address
      * @param ownerAddress agent's owner native address
      */
-    static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, ownerAddress: string): Promise<void> {
+    static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
+        const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
-        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, PaymentReference.addressOwnership(ownerAddress));
+        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
-        await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: ownerAddress });
+        await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: owner.workAddress });
     }
 
     /**
@@ -149,11 +149,12 @@ export class AgentBot {
         // get pool token
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
+        // get work address
+        const owner = await Agent.getOwnerAddressPair(context, agentEntity.ownerAddress);
         // agent
-        const agent = new Agent(context, agentEntity.ownerAddress, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
-        logger.info(
-            `Agent ${agent.vaultAddress} was restored from DB by owner ${agent.ownerAddress} with underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`
-        );
+        const agent = new Agent(context, owner, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
+        logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
+            underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         return new AgentBot(agent, notifier);
     }
 
@@ -162,22 +163,21 @@ export class AgentBot {
      * @param context fasset agent bot context
      * @param agentUnderlyingAddress agent's underlying address
      */
-    static async activateUnderlyingAccount(context: IAssetAgentBotContext, agentUnderlyingAddress: string): Promise<void> {
-        const ownerAddress = requireSecret("owner.native.address");
+    static async activateUnderlyingAccount(context: IAssetAgentBotContext, owner: OwnerAddressPair, agentUnderlyingAddress: string): Promise<void> {
         try {
             if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
             const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
-            const reference = requireSecret("owner.native.address");
+            const reference = owner.managementAddress;
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
                 throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
             }
-            logger.info(`Owner ${ownerAddress} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
+            logger.info(`Owner ${owner} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
-            logger.error(`Owner ${ownerAddress} couldn't activate underlying address ${agentUnderlyingAddress}: ${error}`);
+            logger.error(`Owner ${owner} couldn't activate underlying address ${agentUnderlyingAddress}: ${error}`);
             throw new Error(`Could not activate or verify new XRP account ${agentUnderlyingAddress}`);
         }
     }
@@ -504,10 +504,10 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch.toString()}`);
                 if (type === ClaimType.VAULT) {
                     await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, addressToClaim, {
-                        from: this.agent.ownerAddress,
+                        from: this.agent.owner.workAddress,
                     });
                 } else {
-                    await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, { from: this.agent.ownerAddress });
+                    await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
                 }
             }
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
@@ -531,10 +531,10 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for ${addressToClaim} for month ${endMonth}.`);
                 if (type === ClaimType.VAULT) {
                     await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, addressToClaim, {
-                        from: this.agent.ownerAddress,
+                        from: this.agent.owner.workAddress,
                     });
                 } else {
-                    await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonth, { from: this.agent.ownerAddress });
+                    await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonth, { from: this.agent.owner.workAddress });
                 }
             }
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for airdrop distribution.`);
@@ -1087,7 +1087,7 @@ export class AgentBot {
             );
             // TODO what to do if owner does not have enough nat
             await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), {
-                from: this.agent.ownerAddress,
+                from: this.agent.owner.workAddress,
                 value: burnNats,
             });
             minting.state = AgentMintingState.DONE;
@@ -1197,7 +1197,7 @@ export class AgentBot {
                 `Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
             const nonPaymentProof = proof;
-            await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.owner.workAddress });
             minting.state = AgentMintingState.DONE;
             await this.mintingExecuted(minting, true);
             logger.info(
@@ -1236,7 +1236,7 @@ export class AgentBot {
                 `Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`
             );
             const paymentProof = proof;
-            await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.owner.workAddress });
             minting.state = AgentMintingState.DONE;
             logger.info(
                 `Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`
@@ -1324,7 +1324,7 @@ export class AgentBot {
                     `Agent ${this.agent.vaultAddress} found corner case for redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`
                 );
                 // corner case - agent did not pay
-                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.ownerAddress });
+                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
                 rd.state = AgentRedemptionState.DONE;
                 await this.notifier.sendRedemptionCornerCase(rd.agentAddress, rd.requestId.toString());
                 await rootEm.persistAndFlush(rd);
@@ -1461,7 +1461,7 @@ export class AgentBot {
             if (!response.isValid || response.standardAddress !== redemption.paymentAddress) {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained address validation proof for redemption
                     ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-                await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.ownerAddress });
+                await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
                 redemption.state = AgentRedemptionState.DONE;
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}
                     with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
@@ -1576,7 +1576,7 @@ export class AgentBot {
                 `Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`
             );
             const paymentProof = proof;
-            await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.ownerAddress });
+            await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.owner.workAddress });
             redemption.state = AgentRedemptionState.DONE;
             logger.info(
                 `Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(
@@ -1683,17 +1683,11 @@ export class AgentBot {
         const expectedBalance = toBN(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
         if (ownerUnderlyingBalance.lte(expectedBalance)) {
             await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.agent.vaultAddress, ownerUnderlyingAddress, ownerUnderlyingBalance.toString());
-            logger.info(
-                `Agent's ${this.agent.vaultAddress} owner ${
-                    this.agent.ownerAddress
-                } has low balance ${ownerUnderlyingBalance.toString()} on underlying address ${ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`
-            );
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
+                ${ownerUnderlyingBalance.toString()} on underlying address ${ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
         } else {
-            logger.info(
-                `Agent's ${this.agent.vaultAddress} owner ${
-                    this.agent.ownerAddress
-                } has ${ownerUnderlyingBalance.toString()} on underlying address ${ownerUnderlyingAddress}.`
-            );
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance.toString()}
+                on underlying address ${ownerUnderlyingAddress}.`);
         }
     }
 
@@ -1718,79 +1712,57 @@ export class AgentBot {
         }
         if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
             try {
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpVaultCollateral.toString()} from owner ${
-                        this.agent.ownerAddress
-                    }.`
-                );
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up vault collateral
+                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
                 await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
                 await this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpVaultCollateral.toString()} from owner ${
-                        this.agent.ownerAddress
-                    }.`
-                );
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} topped up vault collateral
+                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
             } catch (err) {
                 await this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
-                logger.error(
-                    `Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpVaultCollateral.toString()} from owner ${
-                        this.agent.ownerAddress
-                    }. `
-                );
+                logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral
+                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
             }
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
             try {
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpPool.toString()} from owner ${
-                        this.agent.ownerAddress
-                    }.`
-                );
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens
+                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
                 await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
                 await this.notifier.sendCollateralTopUpAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.info(
-                    `Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpPool.toString()} from owner ${this.agent.ownerAddress}.`
-                );
+                logger.info(squashSpace`Agent ${this.agent.vaultAddress} bought collateral pool tokens
+                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
             } catch (err) {
                 await this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
-                logger.error(
-                    `Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpPool.toString()} from owner ${
-                        this.agent.ownerAddress
-                    }.`
-                );
+                logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens
+                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
             }
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
-        const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.ownerAddress);
+        const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.owner.workAddress);
         const stableCoinLowBalance = toBNExp(STABLE_COIN_LOW_BALANCE, Number(vaultCollateralPrice.collateral.decimals));
         if (ownerBalanceVaultCollateral.lte(stableCoinLowBalance)) {
             await this.notifier.sendLowBalanceOnOwnersAddress(
                 this.agent.vaultAddress,
-                this.agent.ownerAddress,
+                this.agent.owner.workAddress,
                 ownerBalanceVaultCollateral.toString(),
                 vaultCollateralPrice.collateral.tokenFtsoSymbol
             );
-            logger.info(
-                `Agent's ${this.agent.vaultAddress} owner ${
-                    this.agent.ownerAddress
-                } has low vault collateral balance ${ownerBalanceVaultCollateral.toString()} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`
-            );
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance
+                ${ownerBalanceVaultCollateral.toString()} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`);
         }
-        const ownerBalance = toBN(await web3.eth.getBalance(this.agent.ownerAddress));
+        const ownerBalance = toBN(await web3.eth.getBalance(this.agent.owner.workAddress));
         const nativeLowBlance = toBNExp(NATIVE_LOW_BALANCE, 18);
         if (ownerBalance.lte(nativeLowBlance)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             await this.notifier.sendLowBalanceOnOwnersAddress(
                 this.agent.vaultAddress,
-                this.agent.ownerAddress,
+                this.agent.owner.workAddress,
                 ownerBalance.toString(),
                 poolCollateralPrice.collateral.tokenFtsoSymbol
             );
-            logger.info(
-                `Agent's ${this.agent.vaultAddress} owner ${this.agent.ownerAddress} has low native balance ${ownerBalance.toString()} ${
-                    poolCollateralPrice.collateral.tokenFtsoSymbol
-                }.`
-            );
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance
+                ${ownerBalance.toString()} ${poolCollateralPrice.collateral.tokenFtsoSymbol}.`);
         }
     }
 

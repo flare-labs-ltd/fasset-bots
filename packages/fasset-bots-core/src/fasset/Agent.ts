@@ -11,7 +11,7 @@ import {
     UnderlyingWithdrawalConfirmed,
 } from "../../typechain-truffle/AssetManager";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, toBN } from "../utils/helpers";
+import { BNish, ZERO_ADDRESS, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -31,10 +31,21 @@ const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20 = artifacts.require("IERC20");
 
+export class OwnerAddressPair {
+    constructor(
+        public managementAddress: string,
+        public workAddress: string,
+    ) { }
+
+    toString() {
+        return `${this.managementAddress} with work address ${this.workAddress}`;
+    }
+}
+
 export class Agent {
     constructor(
         public context: IAssetAgentBotContext,
-        public ownerAddress: string,
+        public owner: OwnerAddressPair,
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
@@ -89,16 +100,16 @@ export class Agent {
     /**
      * Creates instance of Agent
      * @param ctx fasset agent bot context
-     * @param ownerAddress native owner address
+     * @param ownerManagementAddress native owner address
      * @param agentSettings desired agent's initial setting
      * @param index needed/used in case pool token suffix is already taken
      * @returns instance of Agent
      */
 
-    static async create(ctx: IAssetAgentBotContext, ownerAddress: string, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
+    static async create(ctx: IAssetAgentBotContext, owner: OwnerAddressPair, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
         const response = await ctx.assetManager.createAgentVault(
-            web3DeepNormalize(addressValidityProof), web3DeepNormalize(agentSettings), { from: ownerAddress });
+            web3DeepNormalize(addressValidityProof), web3DeepNormalize(agentSettings), { from: owner.workAddress });
         // extract agent vault address from AgentVaultCreated event
         const event = findRequiredEvent(response, "AgentVaultCreated");
         // get vault contract at agent's vault address address
@@ -109,8 +120,17 @@ export class Agent {
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // create object
-        return new Agent(ctx, ownerAddress, agentVault, collateralPool, collateralPoolToken,
-            addressValidityProof.data.responseBody.standardAddress);
+        return new Agent(ctx, owner, agentVault, collateralPool, collateralPoolToken, addressValidityProof.data.responseBody.standardAddress);
+    }
+
+    static async getOwnerWorkAddress(ctx: IAssetAgentBotContext, ownerManagementAddress: string) {
+        const ownerWorkAddress = await ctx.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
+        return ownerWorkAddress !== ZERO_ADDRESS ? ownerWorkAddress : ownerManagementAddress;
+    }
+
+    static async getOwnerAddressPair(ctx: IAssetAgentBotContext, ownerManagementAddress: string): Promise<OwnerAddressPair> {
+        const ownerWorkAddress = await Agent.getOwnerWorkAddress(ctx, ownerManagementAddress);
+        return new OwnerAddressPair(ownerManagementAddress, ownerWorkAddress);
     }
 
     /**
@@ -120,8 +140,8 @@ export class Agent {
     async depositVaultCollateral(amountTokenWei: BNish) {
         const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
         const vaultCollateralToken = await IERC20.at(vaultCollateralTokenAddress);
-        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.ownerAddress });
-        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.ownerAddress });
+        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
+        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.owner.workAddress });
     }
 
     /**
@@ -129,7 +149,7 @@ export class Agent {
      * @param amountNatWei amount to be deposited in nat wei
      */
     async buyCollateralPoolTokens(amountNatWei: BNish) {
-        return await this.agentVault.buyCollateralPoolTokens({ from: this.ownerAddress, value: toBN(amountNatWei) });
+        return await this.agentVault.buyCollateralPoolTokens({ from: this.owner.workAddress, value: toBN(amountNatWei) });
     }
 
     /**
@@ -137,7 +157,7 @@ export class Agent {
      * @returns event's AgentAvailable arguments
      */
     async makeAvailable(): Promise<EventArgs<AgentAvailable>> {
-        const res = await this.assetManager.makeAgentAvailable(this.vaultAddress, { from: this.ownerAddress });
+        const res = await this.assetManager.makeAgentAvailable(this.vaultAddress, { from: this.owner.workAddress });
         return requiredEventArgs(res, "AgentAvailable");
     }
 
@@ -146,7 +166,7 @@ export class Agent {
      * @returns timestamp when exit is allowed
      */
     async announceExitAvailable(): Promise<BN> {
-        const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
+        const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AvailableAgentExitAnnounced");
         return args.exitAllowedAt;
     }
@@ -156,7 +176,7 @@ export class Agent {
      * @returns event's AvailableAgentExited arguments
      */
     async exitAvailable(): Promise<EventArgs<AvailableAgentExited>> {
-        const res = await this.assetManager.exitAvailableAgentList(this.vaultAddress, { from: this.ownerAddress });
+        const res = await this.assetManager.exitAvailableAgentList(this.vaultAddress, { from: this.owner.workAddress });
         return requiredEventArgs(res, "AvailableAgentExited");
     }
 
@@ -166,7 +186,7 @@ export class Agent {
      * @returns timestamp when withdrawal is allowed
      */
     async announceVaultCollateralWithdrawal(amountWei: BNish): Promise<BN> {
-        const res = await this.assetManager.announceVaultCollateralWithdrawal(this.vaultAddress, amountWei, { from: this.ownerAddress });
+        const res = await this.assetManager.announceVaultCollateralWithdrawal(this.vaultAddress, amountWei, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "VaultCollateralWithdrawalAnnounced");
         return args.withdrawalAllowedAt;
     }
@@ -178,7 +198,7 @@ export class Agent {
      */
     async withdrawVaultCollateral(amountWei: BNish) {
         const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        return await this.agentVault.withdrawCollateral(vaultCollateralTokenAddress, amountWei, this.ownerAddress, { from: this.ownerAddress });
+        return await this.agentVault.withdrawCollateral(vaultCollateralTokenAddress, amountWei, this.owner.workAddress, { from: this.owner.workAddress });
     }
 
     /**
@@ -187,8 +207,8 @@ export class Agent {
      * @param recipient native address that receives pool fees
      * @returns
      */
-    async withdrawPoolFees(amountUBA: BNish, recipient: string = this.ownerAddress): Promise<void> {
-        await this.agentVault.withdrawPoolFees(amountUBA, recipient, { from: this.ownerAddress });
+    async withdrawPoolFees(amountUBA: BNish, recipient: string = this.owner.workAddress): Promise<void> {
+        await this.agentVault.withdrawPoolFees(amountUBA, recipient, { from: this.owner.workAddress });
     }
 
     /**
@@ -204,7 +224,7 @@ export class Agent {
      * @returns timestamp when destruction is allowed
      */
     async announceDestroy(): Promise<BN> {
-        const res = await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.ownerAddress });
+        const res = await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AgentDestroyAnnounced");
         return args.destroyAllowedAt;
     }
@@ -214,8 +234,8 @@ export class Agent {
      * @param amountWei amount to be withdrawn in wei
      * @returns
      */
-    async destroy(recipient: string = this.ownerAddress): Promise<EventArgs<AgentDestroyed>> {
-        const res = await this.assetManager.destroyAgent(this.vaultAddress, recipient, { from: this.ownerAddress });
+    async destroy(recipient: string = this.owner.workAddress): Promise<EventArgs<AgentDestroyed>> {
+        const res = await this.assetManager.destroyAgent(this.vaultAddress, recipient, { from: this.owner.workAddress });
         return requiredEventArgs(res, "AgentDestroyed");
     }
 
@@ -235,7 +255,7 @@ export class Agent {
      */
     async confirmTopupPayment(transactionHash: string): Promise<void> {
         const proof = await this.attestationProvider.provePayment(transactionHash, null, this.underlyingAddress);
-        await this.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agentVault.address, { from: this.ownerAddress });
+        await this.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agentVault.address, { from: this.owner.workAddress });
     }
 
     /**
@@ -243,7 +263,7 @@ export class Agent {
      * @returns event's UnderlyingWithdrawalAnnounced arguments
      */
     async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
-        const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
+        const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.owner.workAddress });
         return requiredEventArgs(res, "UnderlyingWithdrawalAnnounced");
     }
 
@@ -265,7 +285,7 @@ export class Agent {
      */
     async confirmUnderlyingWithdrawal(transactionHash: string): Promise<EventArgs<UnderlyingWithdrawalConfirmed>> {
         const proof = await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, null);
-        const res = await this.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agentVault.address, { from: this.ownerAddress });
+        const res = await this.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agentVault.address, { from: this.owner.workAddress });
         return requiredEventArgs(res, "UnderlyingWithdrawalConfirmed");
     }
 
@@ -274,7 +294,7 @@ export class Agent {
      * @returns event's UnderlyingWithdrawalCancelled arguments
      */
     async cancelUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalCancelled>> {
-        const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.ownerAddress });
+        const res = await this.assetManager.cancelUnderlyingWithdrawal(this.agentVault.address, { from: this.owner.workAddress });
         return requiredEventArgs(res, "UnderlyingWithdrawalCancelled");
     }
 
@@ -284,7 +304,7 @@ export class Agent {
      * @returns event's SelfClose arguments
      */
     async selfClose(amountUBA: BNish): Promise<EventArgs<SelfClose>> {
-        const res = await this.assetManager.selfClose(this.agentVault.address, amountUBA, { from: this.ownerAddress });
+        const res = await this.assetManager.selfClose(this.agentVault.address, amountUBA, { from: this.owner.workAddress });
         return requiredEventArgs(res, "SelfClose");
     }
 
@@ -312,7 +332,7 @@ export class Agent {
      * @returns timestamp when setting update is allowed
      */
     async announceAgentSettingUpdate(settingName: string, settingValue: BNish): Promise<BN> {
-        const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.ownerAddress });
+        const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AgentSettingChangeAnnounced");
         return args.validAt;
     }
@@ -322,7 +342,7 @@ export class Agent {
      * @param settingName
      */
     async executeAgentSettingUpdate(settingName: string): Promise<void> {
-        await this.assetManager.executeAgentSettingUpdate(this.vaultAddress, settingName, { from: this.ownerAddress });
+        await this.assetManager.executeAgentSettingUpdate(this.vaultAddress, settingName, { from: this.owner.workAddress });
     }
 
     /**
@@ -331,7 +351,7 @@ export class Agent {
      * @returns timestamp when withdrawn is allowed
      */
     async announcePoolTokenRedemption(amountWei: BNish) {
-        const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.ownerAddress });
+        const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "PoolTokenRedemptionAnnounced");
         return args.withdrawalAllowedAt;
     }
@@ -342,8 +362,8 @@ export class Agent {
      * @param recipient receiver's native address
      * @returns
      */
-    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.ownerAddress) {
-        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.ownerAddress });
+    async redeemCollateralPoolTokens(amountWei: BNish, recipient: string = this.owner.workAddress) {
+        return await this.agentVault.redeemCollateralPoolTokens(amountWei, recipient, { from: this.owner.workAddress });
     }
 
     /**
@@ -351,13 +371,13 @@ export class Agent {
      * @param token vault collateral token address
      */
     async switchVaultCollateral(token: string): Promise<void> {
-        await this.assetManager.switchVaultCollateral(this.vaultAddress, token, { from: this.ownerAddress });
+        await this.assetManager.switchVaultCollateral(this.vaultAddress, token, { from: this.owner.workAddress });
     }
 
     /**
      * Upgrades WNat contract. It swaps old WNat tokens for new ones and sets it for use by the pool.
      */
     async upgradeWNatContract(): Promise<void> {
-        await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.ownerAddress });
+        await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
     }
 }

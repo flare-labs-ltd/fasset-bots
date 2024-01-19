@@ -14,7 +14,7 @@ import {
     convertFromUSD5,
     createCRAndPerformMinting,
     createCRAndPerformMintingAndRunSteps,
-    createTestAgentB,
+    createTestAgent,
     createTestAgentBotAndMakeAvailable,
     createTestMinter,
     createTestRedeemer,
@@ -262,7 +262,7 @@ describe("Agent bot tests", async () => {
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
             .divn(MAX_BIPS);
         const proof = await agentBot.agent.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
-        await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.ownerAddress, value: burnNats ?? BN_ZERO });
+        await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.owner.workAddress, value: burnNats ?? BN_ZERO });
         await agentBot.runStep(orm.em);
         // should have an closed minting
         const openMintings2 = await agentBot.openMintings(orm.em, false);
@@ -484,7 +484,7 @@ describe("Agent bot tests", async () => {
         await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice2.divn(10000), 0);
         // agent ends liquidation
-        await context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: agentBot.agent.ownerAddress });
+        await context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: agentBot.agent.owner.workAddress });
         // check agent status
         const status3 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status3, AgentStatus.NORMAL);
@@ -642,7 +642,7 @@ describe("Agent bot tests", async () => {
     it("Should not top up collateral - fails on owner side due to no NAT", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
-        const agentB = await createTestAgentB(context, ownerAddress);
+        const agentB = await createTestAgent(context, ownerAddress);
         const deposit = ownerBalance.sub(toBNExp(NATIVE_LOW_BALANCE, 18));
         await agentB.buyCollateralPoolTokens(deposit);
         const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
@@ -679,7 +679,7 @@ describe("Agent bot tests", async () => {
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
         await context.ftsoManager.mockFinalizePriceEpoch();
         // create another agent and buy pool tokens
-        const agent = await createTestAgentB(context, ownerAddress);
+        const agent = await createTestAgent(context, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const forDeposit = ownerBalance.sub(ownerBalance.divn(1000000));
         await agent.buyCollateralPoolTokens(forDeposit);

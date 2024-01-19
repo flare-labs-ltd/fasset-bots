@@ -235,6 +235,9 @@ interface DatabaseAccount {
         "native_rpc": ""
     },
     "owner": {
+        "management": {
+            "address": ""
+        },
         "native": {
             "address": "",
             "private_key": ""

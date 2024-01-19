@@ -31,11 +31,11 @@ describe("AgentBot cli commands unit tests", async () => {
         botCliCommands = new BotCliCommands();
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
-        expect(botCliCommands.ownerAddress).to.be.undefined;
+        expect(botCliCommands.owner).to.be.undefined;
         await botCliCommands.initEnvironment(fAssetSymbol);
         expect(botCliCommands.botConfig.orm).to.not.be.null;
         expect(botCliCommands.context).to.not.be.null;
-        expect(botCliCommands.ownerAddress).to.not.be.null;
+        expect(botCliCommands.owner).to.not.be.null;
     });
 
     it("Should create agent bot via bot cli commands", async () => {
@@ -43,7 +43,7 @@ describe("AgentBot cli commands unit tests", async () => {
         await botCliCommands.initEnvironment(fAssetSymbol);
         const agent = await botCliCommands.createAgentVault(DEFAULT_POOL_TOKEN_SUFFIX());
         expect(agent!.underlyingAddress).is.not.null;
-        expect(agent!.ownerAddress).to.eq(ownerAddress);
+        expect(agent!.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up
         await agent!.announceDestroy();
     });

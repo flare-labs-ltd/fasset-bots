@@ -42,6 +42,7 @@ import { FuzzingTimeline } from "./FuzzingTimeline";
 import { FuzzingStateComparator } from "./FuzzingStateComparator";
 import { FuzzingState } from "./FuzzingState";
 import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
+import { OwnerAddressPair } from "../../src/fasset/Agent";
 
 export type MiningMode = "auto" | "manual";
 
@@ -112,7 +113,7 @@ describe("Fuzzing tests", async () => {
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
-            botCliCommands.ownerAddress = ownerAddress;
+            botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
             const chainId = chainInfo.chainId;
             botCliCommands.botConfig = {
                 rpcUrl: "",

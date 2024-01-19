@@ -18,7 +18,7 @@ import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import {
-    createTestAgentB,
+    createTestAgent,
     createTestAgentBAndMakeAvailable,
     createCRAndPerformMinting,
     createTestMinter,
@@ -127,7 +127,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should create agent with current state", async () => {
-        const agentBLocal = await createTestAgentB(context, accounts[0]);
+        const agentBLocal = await createTestAgent(context, accounts[0]);
         await trackedState.createAgentWithCurrentState(agentBLocal.vaultAddress);
         expect(trackedState.agents.size).to.eq(1);
     });
@@ -152,7 +152,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should get agent and add it if it does not exist", async () => {
-        const agentBLocal = await createTestAgentB(context, accounts[0]);
+        const agentBLocal = await createTestAgent(context, accounts[0]);
         const agentUndefined = trackedState.getAgent(agentBLocal.vaultAddress);
         expect(agentUndefined).to.be.undefined;
         const agent = await trackedState.getAgentTriggerAdd(agentBLocal.vaultAddress);
@@ -172,7 +172,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'AgentVaultCreated'", async () => {
-        await createTestAgentB(context, accounts[0]);
+        await createTestAgent(context, accounts[0]);
         expect(trackedState.agents.size).to.eq(0);
         await trackedState.readUnhandledEvents();
         expect(trackedState.agents.size).to.eq(1);
@@ -180,7 +180,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'AgentAvailable'", async () => {
         const ownerLocal = accounts[0];
-        const agentBLocal = await createTestAgentB(context, ownerLocal);
+        const agentBLocal = await createTestAgent(context, ownerLocal);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
         await agentBLocal.depositVaultCollateral(depositUSDC);
         await agentBLocal.buyCollateralPoolTokens(depositWei);
@@ -194,7 +194,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'AvailableAgentExited'", async () => {
         const ownerLocal = accounts[0];
-        const agentBLocal = await createTestAgentB(context, ownerLocal);
+        const agentBLocal = await createTestAgent(context, ownerLocal);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
         await agentBLocal.depositVaultCollateral(depositUSDC);
         await agentBLocal.buyCollateralPoolTokens(depositWei);
@@ -214,7 +214,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'AgentDestroyed'", async () => {
         const ownerLocal = accounts[0];
-        const agentBLocal = await createTestAgentB(context, ownerLocal);
+        const agentBLocal = await createTestAgent(context, ownerLocal);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerLocal);
         await agentBLocal.depositVaultCollateral(depositUSDC);
         await agentBLocal.announceDestroy();
@@ -230,7 +230,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'SelfClose'", async () => {
-        const agentBLocal = await createTestAgentB(context, ownerAddress);
+        const agentBLocal = await createTestAgent(context, ownerAddress);
         await mintAndDepositVaultCollateralToOwner(context, agentBLocal, depositUSDC, ownerAddress);
         await agentBLocal.depositVaultCollateral(depositUSDC);
         await agentBLocal.buyCollateralPoolTokens(depositWei);
@@ -253,7 +253,7 @@ describe("Tracked state tests", async () => {
             PaymentReference.selfMint(agentBLocal.agentVault.address)
         );
         const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);
-        const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.ownerAddress });
+        const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.owner.workAddress });
         const selfMint = requiredEventArgs(res, "MintingExecuted");
 
         await trackedState.readUnhandledEvents();
@@ -310,7 +310,7 @@ describe("Tracked state tests", async () => {
             crt.lastUnderlyingBlock.toNumber(),
             crt.lastUnderlyingTimestamp.toNumber()
         );
-        await agentB.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: agentB.ownerAddress });
+        await agentB.assetManager.mintingPaymentDefault(proof, crt.collateralReservationId, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -387,7 +387,7 @@ describe("Tracked state tests", async () => {
         const [rdReqs] = await redeemer.requestRedemption(lots);
         const tx1Hash = await performRedemptionPayment(agentB, rdReqs[0]);
         const proof = await agentB.attestationProvider.provePayment(tx1Hash, agentB.underlyingAddress, rdReqs[0].paymentAddress);
-        await agentB.assetManager.confirmRedemptionPayment(proof, rdReqs[0].requestId, { from: agentB.ownerAddress });
+        await agentB.assetManager.confirmRedemptionPayment(proof, rdReqs[0].requestId, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         expect(spyRedemption).to.have.been.called.once;
     });
@@ -410,7 +410,7 @@ describe("Tracked state tests", async () => {
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
             .divn(MAX_BIPS);
         const proof = await agentB.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
-        await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.ownerAddress, value: burnNats ?? BN_ZERO });
+        await agentB.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentB.owner.workAddress, value: burnNats ?? BN_ZERO });
         await trackedState.readUnhandledEvents();
         const agentAfter = Object.assign({}, trackedState.getAgent(agentB.vaultAddress));
         expect(agentMiddle.reservedUBA.gt(agentBefore.reservedUBA)).to.be.true;
@@ -418,7 +418,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle events 'UnderlyingWithdrawalAnnounced' and 'UnderlyingWithdrawalCancelled'", async () => {
-        const agentBLocal = await createTestAgentB(context, ownerAddress);
+        const agentBLocal = await createTestAgent(context, ownerAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentBLocal.vaultAddress));
         await agentBLocal.announceUnderlyingWithdrawal();
         await trackedState.readUnhandledEvents();
@@ -434,7 +434,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'UnderlyingBalanceToppedUp", async () => {
-        const agentBLocal = await createTestAgentB(context, ownerAddress);
+        const agentBLocal = await createTestAgent(context, ownerAddress);
         await agentBLocal.announceUnderlyingWithdrawal();
         await trackedState.readUnhandledEvents();
         const agentBefore = trackedState.agents.get(agentBLocal.vaultAddress);
@@ -578,7 +578,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'AgentSettingChanged'", async () => {
-        const agentBLocal = await createTestAgentB(context, accounts[0]);
+        const agentBLocal = await createTestAgent(context, accounts[0]);
         await trackedState.createAgentWithCurrentState(agentBLocal.vaultAddress);
         const agentSettingsBefore = trackedState.agents.get(agentBLocal.vaultAddress)!.agentSettings;
         const agentBLocalSettingsBefore = await agentBLocal.getAgentSettings();
@@ -595,7 +595,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'Transfer'", async () => {
-        const agentB = await createTestAgentB(context, ownerAddress);
+        const agentB = await createTestAgent(context, ownerAddress);
         const agentInfo = await agentB.getAgentInfo();
         await trackedState.createAgentWithCurrentState(agentB.vaultAddress);
         await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
@@ -647,7 +647,7 @@ describe("Tracked state tests", async () => {
         const getCollateral1 = trackedState.collaterals.get(agentVaultCollateral.collateralClass, agentVaultCollateral.token);
         expect(toBN(getCollateral1.validUntil).gtn(0)).to.be.true;
         // switch collateral
-        await agentB.assetManager.switchVaultCollateral(agentB.vaultAddress, newCollateral.token, { from: agentB.ownerAddress });
+        await agentB.assetManager.switchVaultCollateral(agentB.vaultAddress, newCollateral.token, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         expect(trackedState.agents.get(agentB.agentVault.address)?.agentSettings.vaultCollateralToken).to.eq(newCollateral.token);
     });
@@ -658,14 +658,14 @@ describe("Tracked state tests", async () => {
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
         const newWnat = await await ERC20Mock.new("Wrapped NAT", "WNAT");
-        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
+        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         await context.assetManager.updateSettings(
             web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
             web3.eth.abi.encodeParameters(["address", "address"], [context.assetManagerController.address, newWnat.address]),
             { from: assetManagerControllerAddress }
         );
-        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.ownerAddress });
+        await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         expect(spyCollateralChanged).to.be.called.exactly(0);
     });

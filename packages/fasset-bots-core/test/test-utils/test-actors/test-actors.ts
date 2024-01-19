@@ -14,6 +14,7 @@ import { cleanUp } from "../test-helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { Agent } from "../../../src/fasset/Agent";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
@@ -29,16 +30,17 @@ export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: st
 export async function createTestAgentBot(
     context: IAssetAgentBotContext,
     orm: ORM,
-    ownerAddress: string,
+    ownerManagementAddress: string,
     defaultAgentConfigPath: string,
     notifier: MockNotifier = new MockNotifier()
 ): Promise<AgentBot> {
+    const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     console.log(`Validating new underlying address ${underlyingAddress}...`);
-    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, ownerAddress, underlyingAddress);
+    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     console.log(`Creating agent bot...`);
          const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
-    return await AgentBot.create(orm.em, context, ownerAddress, addressValidityProof, agentBotSettings, notifier);
+    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
 }
 
 export async function createTestAgentBotAndDepositCollaterals(

@@ -33,7 +33,7 @@ The script requires a secrets file in json format that holds user addresses and 
 
 There is a command to generate secrets json file and seed the secrets file with new keys and passwords:
 
-    user-bot generateSecrets
+    key-gen generateSecrets --user
 
 By default, this prints the secrets to standard output. By adding `-o <filename>` parameter, it saves secrets to a file.
 

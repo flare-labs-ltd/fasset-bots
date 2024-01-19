@@ -46,17 +46,18 @@ export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
 export async function createTestAgentBot(
     context: TestAssetBotContext,
     orm: ORM,
-    ownerAddress: string,
+    ownerManagementAddress: string,
     ownerUnderlyingAddress?: string,
     notifier: MockNotifier = new MockNotifier(),
     options?: AgentBotDefaultSettings
 ): Promise<AgentBot> {
+    const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
-    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, ownerAddress, underlyingAddress);
+    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX());
-    return await AgentBot.create(orm.em, context, ownerAddress, addressValidityProof, agentBotSettings, notifier);
+    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
@@ -76,24 +77,16 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
     return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
-export async function createTestAgentB(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlyingAddress): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
-        context,
-        DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
-        DEFAULT_POOL_TOKEN_SUFFIX()
-    );
+export async function createTestAgent(
+    context: TestAssetBotContext,
+    ownerManagementAddress: string,
+    underlyingAddress: string = agentUnderlyingAddress,
+    suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()
+): Promise<Agent> {
+    const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, suffix);
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
-    return await Agent.create(context, ownerAddress, addressValidityProof, agentBotSettings);
-}
-
-export async function createTestAgent(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string = agentUnderlyingAddress, suffix: string = DEFAULT_POOL_TOKEN_SUFFIX()): Promise<Agent> {
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
-        context,
-        DEFAULT_AGENT_SETTINGS_PATH_HARDHAT,
-        suffix
-    );
-    const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
-    return await Agent.create(context, ownerAddress, addressValidityProof, agentBotSettings);
+    return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
 }
 
 export function createTestAgentBotRunner(
@@ -130,7 +123,7 @@ export async function createTestAgentBAndMakeAvailable(
     ownerAddress: string,
     underlyingAddress: string = agentUnderlyingAddress
 ): Promise<Agent> {
-    const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
+    const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
     await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
     await agentB.depositVaultCollateral(depositUSDC);
     await agentB.buyCollateralPoolTokens(depositNat);
@@ -205,7 +198,7 @@ export async function convertFromUSD5(amount: BN, collateralToken: CollateralTyp
 export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<InitialAgentData> {
     const agentInfo = await agent.getAgentInfo();
     const initialAgentData = {
-        owner: agent.ownerAddress,
+        owner: agent.owner.managementAddress,
         agentVault: agent.vaultAddress,
         collateralPool: agentInfo.collateralPool,
         underlyingAddress: agent.underlyingAddress,

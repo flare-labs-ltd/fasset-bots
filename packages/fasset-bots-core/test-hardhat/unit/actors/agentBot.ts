@@ -59,7 +59,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should create agent bot", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+        expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         expect(agentBot.agent.underlyingAddress).to.not.be.null;
     });
 
@@ -68,7 +68,7 @@ describe("Agent bot unit tests", async () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const agentBot = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
         expect(agentBot.agent.underlyingAddress).is.not.null;
-        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+        expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
     });
 
     it("Should run readUnhandledEvents", async () => {
@@ -576,7 +576,7 @@ describe("Agent bot unit tests", async () => {
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
         const proof = await agentBot.agent.attestationProvider.provePayment(transactionHash, null, agentBot.agent.underlyingAddress);
-        const res = await agentBot.agent.assetManager.selfMint(proof, agentBot.agent.agentVault.address, lots, { from: agentBot.agent.ownerAddress });
+        const res = await agentBot.agent.assetManager.selfMint(proof, agentBot.agent.agentVault.address, lots, { from: agentBot.agent.owner.workAddress });
         const selfMint = requiredEventArgs(res, "MintingExecuted");
         expect(selfMint.collateralReservationId.isZero()).to.be.true;
         await agentBot.runStep(orm.em);

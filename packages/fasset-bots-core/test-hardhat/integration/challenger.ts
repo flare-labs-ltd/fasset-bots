@@ -343,7 +343,7 @@ describe("Challenger tests", async () => {
         const fetchedRedemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
         const proof = await context.attestationProvider.obtainPaymentProof(fetchedRedemption.proofRequestRound!, fetchedRedemption.proofRequestData!);
         if (!attestationProved(proof)) assert.fail("not proved");
-        const res = await context.assetManager.confirmRedemptionPayment(proof, fetchedRedemption.requestId, { from: agentBot.agent.ownerAddress });
+        const res = await context.assetManager.confirmRedemptionPayment(proof, fetchedRedemption.requestId, { from: agentBot.agent.owner.workAddress });
         // finish redemption
         await agentBot.runStep(orm.em);
         expect(fetchedRedemption.state).eq(AgentRedemptionState.DONE);

@@ -42,7 +42,7 @@ export class FuzzingAgentBot {
         // execute
         const proof = await this.agentBot.context.attestationProvider.provePayment(txHash, null, agent.underlyingAddress);
         await this.agentBot.context.assetManager
-            .selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.ownerAddress })
+            .selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.owner.workAddress })
             .catch((e) =>
                 scope.exitOnExpectedError(e, [
                     "cannot mint 0 lots",
@@ -66,7 +66,7 @@ export class FuzzingAgentBot {
         if (Number(agentInfo.status) !== AgentStatus.NORMAL) return; // reduce noise in case of (full) liquidation
         const mintedAssets = toBN(agentInfo.mintedUBA);
         if (mintedAssets.isZero()) return;
-        const ownersAssets = await this.agentBot.context.fAsset.balanceOf(this.agentBot.agent.ownerAddress);
+        const ownersAssets = await this.agentBot.context.fAsset.balanceOf(this.agentBot.agent.owner.workAddress);
         if (ownersAssets.isZero()) return;
         // // TODO: buy fassets
         const amountUBA = randomBN(ownersAssets);

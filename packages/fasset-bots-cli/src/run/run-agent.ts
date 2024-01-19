@@ -16,10 +16,11 @@ toplevelRun(async () => {
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);
     // store owner's underlying address
-    for (const ctxMap of runner.contexts) {
-        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.address`);
-        const ownerUnderlyingPrivateKey = requireSecret(`owner.${decodedChainId(ctxMap[1].chainInfo.chainId)}.private_key`);
-        await ctxMap[1].wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
+    for (const ctx of runner.contexts.values()) {
+        const chainName = decodedChainId(ctx.chainInfo.chainId);
+        const ownerUnderlyingAddress = requireSecret(`owner.${chainName}.address`);
+        const ownerUnderlyingPrivateKey = requireSecret(`owner.${chainName}.private_key`);
+        await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
     }
     // run
     console.log("Agent bot started, press CTRL+C to end");

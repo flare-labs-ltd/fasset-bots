@@ -19,7 +19,7 @@ import { createTestAgentBot, createTestChallenger, createTestLiquidator, createT
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
-import { Agent } from "../../../src/fasset/Agent";
+import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { getSecrets } from "../../../src/config/secrets";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
@@ -76,12 +76,12 @@ describe("Actor tests - coston", async () => {
     it("Should create agent bot and announce destroy", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, runConfig.defaultAgentSettingsPath!);
         expect(agentBot.agent.underlyingAddress).is.not.null;
-        expect(agentBot.agent.ownerAddress).to.eq(ownerAddress);
+        expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
-        expect(agentBotFromEnt.agent.ownerAddress).to.eq(ownerAddress);
+        expect(agentBotFromEnt.agent.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up
         await agentBot.agent.announceDestroy();
         destroyAgentsAfterTests.push(agentBot.agent.vaultAddress);
@@ -156,6 +156,7 @@ describe("Actor tests - coston", async () => {
         );
         const underlyingAddress = "underlying";
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
-        await expect(Agent.create(context, "ownerAddress", addressValidityProof, agentBotSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
+        const owner = new OwnerAddressPair("ownerAddress", "ownerAddress");
+        await expect(Agent.create(context, owner, addressValidityProof, agentBotSettings)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
 });

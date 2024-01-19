@@ -9,6 +9,7 @@ import { requireSecret } from "../config/secrets";
 import { Notifier } from "../utils/Notifier";
 import { AgentBot } from "./AgentBot";
 import { logger } from "../utils/logger";
+import { squashSpace } from "../utils/formatting";
 
 export class AgentBotRunner {
     constructor(
@@ -45,16 +46,16 @@ export class AgentBotRunner {
                 const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
-                    logger.warn(`Owner's ${requireSecret("owner.native.address")} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
+                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
                 }
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
-                logger.info(`Owner's ${requireSecret("owner.native.address")} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
+                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
-                logger.info(`Owner's ${requireSecret("owner.native.address")} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
+                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
-                logger.error(`Owner's ${requireSecret("owner.native.address")} AgentBotRunner run into error with agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner run into error with agent ${agentEntity.vaultAddress}: ${error}`);
             }
         }
     }
@@ -65,21 +66,19 @@ export class AgentBotRunner {
      * @returns instance of AgentBotRunner
      */
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
-        logger.info(`Owner ${requireSecret("owner.native.address")} started to create AgentBotRunner.`);
+        const ownerAddress = requireSecret("owner.management.address");
+        logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.fAssets) {
             const assetContext = await createAssetContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
-            logger.info(
-                `Owner's ${requireSecret("owner.native.address")} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId} with symbol ${
-                    chainConfig.chainInfo.symbol
-                }.`
-            );
+            logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
+                with symbol ${chainConfig.chainInfo.symbol}.`);
         }
-        logger.info(`Owner ${requireSecret("owner.native.address")} created AgentBotRunner.`);
+        logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         if (!botConfig.orm || !botConfig.notifier) {
-            logger.info(`Owner ${requireSecret("owner.native.address")} cannot create AgentBotRunner. Missing notifier or orm in config.`);
-            throw new Error(`Missing notifier or orm in config for owner ${requireSecret("owner.native.address")}.`);
+            logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing notifier or orm in config.`);
+            throw new Error(`Missing notifier or orm in config for owner ${ownerAddress}.`);
         }
         return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifier);
     }

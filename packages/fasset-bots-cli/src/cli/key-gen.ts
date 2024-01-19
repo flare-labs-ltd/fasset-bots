@@ -6,6 +6,7 @@ import { createSha256Hash, generateRandomHexString, resolveInFassetBotsCore, top
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
+import { squashSpace } from "../../../fasset-bots-core/src/utils/formatting";
 
 const program = new Command();
 
@@ -17,7 +18,7 @@ program
     .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
     .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
     .option("--user", "generate secrets for user")
-    .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management address")
+    .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")
     .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
         const users: SecretsUser[] = [];
@@ -27,7 +28,7 @@ program
         if (!opts.config) {
             opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json");
         }
-        const secrets = generateSecrets(opts.config, users);
+        const secrets = generateSecrets(opts.config, users, opts.agent);
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
@@ -43,6 +44,14 @@ program
                 chalk.yellow("NOTE:"),
                 `Replace empty fields in apiKey (${emptyFields.join(", ")}) with api keys from your provider or delete them if not needed.`
             );
+        }
+        if (secrets.owner) {
+            const workAddress = secrets.owner.native.address;
+            console.error(squashSpace`${chalk.yellow("NOTE:")} New agent's work address ${workAddress} has been created.
+                To use it, first make sure your management address has been whitelisted, and then
+                execute ${chalk.green(`AgentOwnerRegistry.setWorkAddress(${workAddress})`)} on block explorer.`);
+            console.error(squashSpace`${chalk.yellow("WARNING:")} Be careful - there can be only one work address per management address,
+                so make sure you don't owerwrite it.`);
         }
     });
 

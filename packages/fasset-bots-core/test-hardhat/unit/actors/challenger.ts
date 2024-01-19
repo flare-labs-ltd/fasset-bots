@@ -4,7 +4,7 @@ import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockCha
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { assertWeb3DeepEqual, createTestAgentB, createTestChallenger } from "../../test-utils/helpers";
+import { assertWeb3DeepEqual, createTestAgent, createTestChallenger } from "../../test-utils/helpers";
 import {
     createTestAssetContext,
     getTestAssetTrackedStateContext,
@@ -64,7 +64,7 @@ describe("Challenger unit tests", async () => {
 
     it("Should add unconfirmed transaction", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
+        const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
         // add transaction
@@ -76,7 +76,7 @@ describe("Challenger unit tests", async () => {
 
     it("Should delete unconfirmed transactions", async () => {
         const challenger = await createTestChallenger(challengerAddress, state);
-        const agentB = await createTestAgentB(context, ownerAddress, underlyingAddress);
+        const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
         // add transactions

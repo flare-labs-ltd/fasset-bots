@@ -12,7 +12,7 @@ import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { Agent } from "../fasset/Agent";
+import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { logger } from "../utils/logger";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
@@ -27,7 +27,7 @@ const IERC20 = artifacts.require("IERC20Metadata");
 
 export class BotCliCommands {
     context!: IAssetAgentBotContext;
-    ownerAddress!: string;
+    owner!: OwnerAddressPair;
     botConfig!: BotConfig;
     agentSettingsPath!: string;
     BotFAssetInfo!: ChainInfo;
@@ -51,25 +51,26 @@ export class BotCliCommands {
      * @param runConfigFile path to configuration file
      */
     async initEnvironment(fAssetSymbol: string, runConfigFile: string = FASSET_BOT_CONFIG): Promise<void> {
-        logger.info(`Owner ${requireSecret("owner.native.address")} started to initialize cli environment.`);
+        this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), requireSecret("owner.native.address"));
+        // load config
+        logger.info(`Owner ${this.owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
-        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${requireSecret("owner.native.address")}`);
+        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${this.owner.managementAddress}`);
         // init web3 and accounts
-        this.ownerAddress = requireSecret("owner.native.address");
         const nativePrivateKey = requireSecret("owner.native.private_key");
         const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
         /* istanbul ignore next */
-        if (this.ownerAddress !== accounts[0]) {
-            logger.error(`Owner ${requireSecret("owner.native.address")} has invalid address/private key pair.`);
+        if (this.owner.workAddress !== accounts[0]) {
+            logger.error(`Owner ${this.owner.managementAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
         this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
-        this.botConfig = await createBotConfig(runConfig, this.ownerAddress);
+        this.botConfig = await createBotConfig(runConfig, this.owner.workAddress);
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
-            logger.error(`Owner ${requireSecret("owner.native.address")} has invalid FAsset symbol ${fAssetSymbol}.`);
+            logger.error(`Owner ${this.owner.managementAddress} has invalid FAsset symbol ${fAssetSymbol}.`);
             throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
@@ -79,7 +80,7 @@ export class BotCliCommands {
         const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.private_key`);
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
-        logger.info(`Owner ${requireSecret("owner.native.address")} successfully finished initializing cli environment.`);
+        logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
     }
 
     /**
@@ -90,18 +91,18 @@ export class BotCliCommands {
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
-            console.log(`Owner ${requireSecret("owner.native.address")} validating new underlying address ${underlyingAddress}.`);
-            const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(this.context, this.ownerAddress, underlyingAddress);
+            console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
+            const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(this.context, this.owner, underlyingAddress);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath, poolTokenSuffix);
-            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.ownerAddress, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
+            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
             await this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
             console.log(`Agent bot created.`);
-            console.log(`Owner ${requireSecret("owner.native.address")} created ne agent vault at ${agentBot.agent.agentVault.address}.`);
+            console.log(`Owner ${this.owner} created ne agent vault at ${agentBot.agent.agentVault.address}.`);
             return agentBot.agent;
         } catch (error) {
-            console.log(`Owner ${requireSecret("owner.native.address")} couldn't create agent.`);
-            logger.error(`Owner ${requireSecret("owner.native.address")} couldn't create agent: ${error}`);
+            console.log(`Owner ${this.owner} couldn't create agent.`);
+            logger.error(`Owner ${this.owner} couldn't create agent: ${error}`);
         }
         return null;
     }
@@ -112,11 +113,11 @@ export class BotCliCommands {
      * @param amount amount to be deposited
      */
     async depositToVault(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} is starting vault collateral deposit ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} is starting vault collateral deposit ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositVaultCollateral(amount);
         await this.botConfig.notifier!.sendVaultCollateralDeposit(agentVault, amount);
-        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} deposited vault collateral ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} deposited vault collateral ${amount}.`);
     }
 
     /**
@@ -125,11 +126,11 @@ export class BotCliCommands {
      * @param amount add pool tokens in that correspond to amount of nat
      */
     async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
-        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} is starting to buy collateral pool tokens ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy collateral pool tokens ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
         await this.botConfig.notifier!.sendBuyCollateralPoolTokens(agentVault, amount);
-        logger.info(`Agent's ${agentVault} owner ${this.ownerAddress} bought collateral pool tokens ${amount}.`);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} bought collateral pool tokens ${amount}.`);
     }
 
     /**
