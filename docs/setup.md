@@ -12,6 +12,8 @@ If you're using Songbird or Flare, it's recommended to have a more secure native
 
 The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the database is on a separate server, the RAM requirement can be lowered to 2GB.
 
+Keep in mind that you need to be running agent bot all the time to avoid circumstances of lost funds.
+
 ## Clone and setup repository
 
 1. Ensure you can access `fasset-bots` GitLab repository.
@@ -111,6 +113,8 @@ yarn run-agent
 
 ## Minting
 
+Keep in mind that you need to be running agent bot all the time to avoid circumstances of lost funds.
+
 Before proceeding with minting, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
 
 With the agent bot running, users can now mint FtestXRP by running:
@@ -120,6 +124,8 @@ yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secre
 ```
 
 ## Redeeming
+
+Keep in mind that you need to be running agent bot all the time to avoid circumstances of lost funds.
 
 Before proceeding with redeeming, you need to fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/).
 
