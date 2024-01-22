@@ -72,13 +72,13 @@ export interface UnderlyingWithdrawalConfirmed {
   name: "UnderlyingWithdrawalConfirmed";
   args: {
     agentVault: string;
+    announcementId: BN;
     spentUBA: BN;
     transactionHash: string;
-    announcementId: BN;
     0: string;
     1: BN;
-    2: string;
-    3: BN;
+    2: BN;
+    3: string;
   };
 }
 

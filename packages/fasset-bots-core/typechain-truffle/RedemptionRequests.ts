@@ -49,8 +49,8 @@ export interface RedemptionRejected {
   args: {
     agentVault: string;
     redeemer: string;
-    redemptionAmountUBA: BN;
     requestId: BN;
+    redemptionAmountUBA: BN;
     0: string;
     1: string;
     2: BN;

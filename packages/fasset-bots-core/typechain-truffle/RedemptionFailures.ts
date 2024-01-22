@@ -17,10 +17,10 @@ export interface RedemptionDefault {
   args: {
     agentVault: string;
     redeemer: string;
+    requestId: BN;
     redemptionAmountUBA: BN;
     redeemedVaultCollateralWei: BN;
     redeemedPoolCollateralWei: BN;
-    requestId: BN;
     0: string;
     1: string;
     2: BN;

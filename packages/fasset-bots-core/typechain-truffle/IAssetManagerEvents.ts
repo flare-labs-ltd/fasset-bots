@@ -411,10 +411,10 @@ export interface RedemptionDefault {
   args: {
     agentVault: string;
     redeemer: string;
+    requestId: BN;
     redemptionAmountUBA: BN;
     redeemedVaultCollateralWei: BN;
     redeemedPoolCollateralWei: BN;
-    requestId: BN;
     0: string;
     1: string;
     2: BN;
@@ -429,14 +429,14 @@ export interface RedemptionPaymentBlocked {
   args: {
     agentVault: string;
     redeemer: string;
+    requestId: BN;
     transactionHash: string;
     redemptionAmountUBA: BN;
     spentUnderlyingUBA: BN;
-    requestId: BN;
     0: string;
     1: string;
-    2: string;
-    3: BN;
+    2: BN;
+    3: string;
     4: BN;
     5: BN;
   };
@@ -447,14 +447,14 @@ export interface RedemptionPaymentFailed {
   args: {
     agentVault: string;
     redeemer: string;
+    requestId: BN;
     transactionHash: string;
     spentUnderlyingUBA: BN;
-    requestId: BN;
     failureReason: string;
     0: string;
     1: string;
-    2: string;
-    3: BN;
+    2: BN;
+    3: string;
     4: BN;
     5: string;
   };
@@ -465,14 +465,14 @@ export interface RedemptionPerformed {
   args: {
     agentVault: string;
     redeemer: string;
+    requestId: BN;
     transactionHash: string;
     redemptionAmountUBA: BN;
     spentUnderlyingUBA: BN;
-    requestId: BN;
     0: string;
     1: string;
-    2: string;
-    3: BN;
+    2: BN;
+    3: string;
     4: BN;
     5: BN;
   };
@@ -483,8 +483,8 @@ export interface RedemptionRejected {
   args: {
     agentVault: string;
     redeemer: string;
-    redemptionAmountUBA: BN;
     requestId: BN;
+    redemptionAmountUBA: BN;
     0: string;
     1: string;
     2: BN;
@@ -622,13 +622,13 @@ export interface UnderlyingWithdrawalConfirmed {
   name: "UnderlyingWithdrawalConfirmed";
   args: {
     agentVault: string;
+    announcementId: BN;
     spentUBA: BN;
     transactionHash: string;
-    announcementId: BN;
     0: string;
     1: BN;
-    2: string;
-    3: BN;
+    2: BN;
+    3: string;
   };
 }
 
