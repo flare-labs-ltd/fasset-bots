@@ -1,6 +1,7 @@
-import { expect, util } from 'chai'
+import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
-import { swapInput, swapOutputs } from './helpers/dex'
+import { dexMinPriceFromMaxSlippage } from '../calculations'
+import { swapInput, swapOutputs } from './helpers/uniswap-v2'
 import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
 import { storeTestResult } from './helpers/test-results'
@@ -8,9 +9,6 @@ import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interface'
 import type { ERC20 } from '../../types'
-
-import { FixtureUtils } from './helpers/fixture'
-import { dexMinPriceFromMaxSlippage } from '../calculations'
 
 type SwapPathsFixture = [string[], string[]]
 type SwapPaths = [ERC20[], ERC20[]]
@@ -31,7 +29,7 @@ const swapPathsFixture: SwapPathsFixture[] = [
   [["vault", "pool", "fAsset"], ["pool", "fAsset", "vault"]]
 ]
 
-describe("Tests for Liquidator contract", () => {
+describe("Tests for the Liquidator contract", () => {
   let context: TestContext
   let utils: ContextUtils
 
@@ -54,7 +52,7 @@ describe("Tests for Liquidator contract", () => {
     utils = new ContextUtils(assetConfig, context)
   })
 
-  describe("test arbitrage on various ecosystems", () => {
+  describe("Arbitrages on various ecosystems", () => {
 
     swapPathsFixture.forEach((swapPaths: SwapPathsFixture) => {
       ecosystemFactory.getHealthyEcosystems(8).forEach((config: EcosystemConfig) => {
@@ -65,10 +63,10 @@ describe("Tests for Liquidator contract", () => {
           // perform arbitrage by liquidation
           const { maxLiquidationAmountUBA: maxLiquidatedFAsset } = await contracts.assetManager.getAgentInfo(contracts.agent)
           expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
-          const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, swapPath1, maxLiquidatedFAsset)
+          const maxLiquidatedVault = await swapInput(contracts.uniswapV2, swapPath1, maxLiquidatedFAsset)
           const [expectedLiquidationRewardVault, expectedLiquidationRewardPool] = await utils.liquidationOutput(maxLiquidatedFAsset)
           const [,expectedSwappedPool] = await swapOutputs(
-            contracts.blazeSwapRouter, [swapPath1, swapPath2], [maxLiquidatedVault, expectedLiquidationRewardPool])
+            contracts.uniswapV2, [swapPath1, swapPath2], [maxLiquidatedVault, expectedLiquidationRewardPool])
           const { mintedUBA: mintedFAssetBefore } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const agentVaultBalanceBefore = await contracts.vault.balanceOf(contracts.agent)
           const agentPoolBalanceBefore = await contracts.pool.balanceOf(contracts.agent)
@@ -128,7 +126,7 @@ describe("Tests for Liquidator contract", () => {
         // calculate full liquidation profit
         const { maxLiquidationAmountUBA: maxLiquidatedFAsset, mintedUBA: mintedFAssetBefore }
           = await contracts.assetManager.getAgentInfo(contracts.agent)
-        const maxLiquidatedVault = await swapInput(contracts.blazeSwapRouter, swapPath1, maxLiquidatedFAsset)
+        const maxLiquidatedVault = await swapInput(contracts.uniswapV2, swapPath1, maxLiquidatedFAsset)
         const fullLiquidationProfit = await utils.arbitrageProfit(maxLiquidatedVault, swapPath1, swapPath2)
         // get flash lender vault funds
         const flashLenderVaultBefore = await contracts.vault.balanceOf(contracts.flashLender)
@@ -223,7 +221,7 @@ describe("Tests for Liquidator contract", () => {
 
   })
 
-  describe("generic arbitrage failures", async () => {
+  describe("Generic arbitrage failures", async () => {
 
     it("should fail liquidation if flash loan can offer 0 fees", async () => {
       const { contracts, signers } = context
@@ -267,7 +265,7 @@ describe("Tests for Liquidator contract", () => {
 
   })
 
-  describe("security", () => {
+  describe("Security", () => {
 
     it("should prevent direct external call to onFlashLoan", async () => {
       const { liquidator } = context.contracts

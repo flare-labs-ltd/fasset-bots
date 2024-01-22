@@ -2,8 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
-import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "fasset/contracts/userInterfaces/IAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "./lib/Constants.sol";
@@ -11,21 +9,19 @@ import "./lib/Optimum.sol";
 import "./lib/Ecosystem.sol";
 import "./interface/ILiquidator.sol";
 
-import "hardhat/console.sol";
-
-
 /**
  * It is recommended for each person to deploy their own ownable
  * liquidator contract to avoid flash bots stealing the arbitrage profits.
- * Note: after each run approvals are set to zero
+ * Note: f-assets within the contract are not safe from theft,
+ * but they can be stolen only by the asset manager liquidations.
  */
 contract Liquidator is ILiquidator {
 
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
     // change those by redeploying the contract
-    address public immutable flashLender;
-    address public immutable dexRouter;
+    IERC3156FlashLender public immutable flashLender;
+    IUniswapV2Router public immutable dex;
 
     // one storage slot
     FlashLoanLock private status; // uint8
@@ -33,10 +29,10 @@ contract Liquidator is ILiquidator {
 
     constructor(
         IERC3156FlashLender _flashLender,
-        IBlazeSwapRouter _dexRouter
+        IUniswapV2Router _dex
     ) {
-        flashLender = address(_flashLender);
-        dexRouter = address(_dexRouter);
+        flashLender = _flashLender;
+        dex = _dex;
     }
 
     modifier flashLoanInitiatorLock() {
@@ -63,22 +59,22 @@ contract Liquidator is ILiquidator {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dexRouter,
+        IERC3156FlashLender _flashLender,
+        IUniswapV2Router _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
-        public
+        public virtual
     {
-        if (_flashLender == address(0)) {
+        if (address(_flashLender) == address(0)) {
             _flashLender = flashLender;
         }
-        if (_dexRouter == address(0)) {
-            _dexRouter = dexRouter;
+        if (address(_dex) == address(0)) {
+            _dex = dex;
         }
         ArbitrageConfig memory config = ArbitrageConfig({
-            flashLender: _flashLender,
-            dexRouter: _dexRouter,
+            flashLender: address(_flashLender),
+            dex: address(_dex),
             dexPair1: DexPairConfig({
                 path: _vaultToFAssetDexPath,
                 minPriceMul: _vaultToFAssetMinDexPriceMul,
@@ -111,19 +107,25 @@ contract Liquidator is ILiquidator {
         _config.dexPair2.path = _getEnsurePath(
             _config.dexPair2.path, data.poolCT, data.vaultCT);
         data.reservePathDex1 = Ecosystem.getDexReserves(
-            _config.dexRouter, _config.dexPair1.path);
+            _config.dex, _config.dexPair1.path);
         data.reservePathDex2 = Ecosystem.getDexReserves(
-            _config.dexRouter, _config.dexPair2.path);
+            _config.dex, _config.dexPair2.path);
         data.swapPathDex1 = _config.dexPair1.path;
         data.swapPathDex2 = _config.dexPair2.path;
         // run arbitrage
-        uint256 balanceBefore = IERC20(data.vaultCT).balanceOf(address(this));
+        uint256 vaultBalanceBefore = IERC20(data.vaultCT).balanceOf(address(this));
+        uint256 poolBalanceBefore = IERC20(data.poolCT).balanceOf(address(this));
         _runArbitrageWithData(_config, data);
-        uint256 balanceAfter = IERC20(data.vaultCT).balanceOf(address(this));
-        // send profit to sender
-        require(balanceAfter >= balanceBefore,
-            "Liquidator: Negative profit would decrease contract balance");
-        uint256 profit = balanceAfter - balanceBefore;
+        uint256 vaultBalanceAfter = IERC20(data.vaultCT).balanceOf(address(this));
+        uint256 poolBalanceAfter = IERC20(data.poolCT).balanceOf(address(this));
+        // ensure no collaterals were stolen from the contract
+        require(
+            vaultBalanceAfter >= vaultBalanceBefore &&
+            poolBalanceAfter >= poolBalanceBefore,
+            "Liquidator: Negative profit would decrease contract balance"
+        );
+        // send the profit to the specified address
+        uint256 profit = vaultBalanceAfter - vaultBalanceBefore;
         SafeERC20.safeTransfer(IERC20(data.vaultCT), _profitTo, profit);
     }
 
@@ -203,8 +205,8 @@ contract Liquidator is ILiquidator {
         address vaultCT = _config.dexPair1.path[0];
         address poolCT = _config.dexPair2.path[0];
         // swap vault collateral for f-asset
-        IERC20(vaultCT).approve(_config.dexRouter, _vaultAmount);
-        (amountsSent, amountsRecv) = IBlazeSwapRouter(_config.dexRouter).swapExactTokensForTokens(
+        IERC20(vaultCT).approve(_config.dex, _vaultAmount);
+        (amountsSent, amountsRecv) = IUniswapV2Router(_config.dex).swapExactTokensForTokens(
             _vaultAmount,
             _convert(
                 _vaultAmount,
@@ -215,7 +217,7 @@ contract Liquidator is ILiquidator {
             address(this),
             block.timestamp
         );
-        IERC20(vaultCT).approve(_config.dexRouter, 0);
+        IERC20(vaultCT).approve(_config.dex, 0);
         // liquidate obtained f-asset
         uint256 obtainedFAsset = amountsRecv[amountsRecv.length-1];
         (,, uint256 obtainedPool) = IAssetManager(_assetManager).liquidate(
@@ -224,8 +226,8 @@ contract Liquidator is ILiquidator {
         );
         if (obtainedPool > 0) {
             // swap pool for vault collateral
-            IERC20(poolCT).approve(_config.dexRouter, obtainedPool);
-            (, amountsRecv) = IBlazeSwapRouter(_config.dexRouter).swapExactTokensForTokens(
+            IERC20(poolCT).approve(_config.dex, obtainedPool);
+            (, amountsRecv) = IUniswapV2Router(_config.dex).swapExactTokensForTokens(
                 obtainedPool,
                 _convert(
                     obtainedPool,
@@ -236,7 +238,7 @@ contract Liquidator is ILiquidator {
                 address(this),
                 block.timestamp
             );
-            IERC20(poolCT).approve(_config.dexRouter, 0);
+            IERC20(poolCT).approve(_config.dex, 0);
         }
     }
 

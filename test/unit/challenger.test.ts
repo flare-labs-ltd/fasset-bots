@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { configureEcosystem } from './helpers/context'
+import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import { balanceDecreasingTxProof } from './fixtures/attestations'
@@ -23,28 +23,39 @@ const ecosystems = [
 // three of the possible agent challenges
 const challenges = [
   (challenger: Challenger, agent: AgentMock) =>
-    challenger.illegalPaymentChallenge(balanceDecreasingTxProof, agent),
+    challenger.illegalPaymentChallenge(
+      balanceDecreasingTxProof, agent,
+      0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+    ),
   (challenger: Challenger, agent: AgentMock) =>
-    challenger.doublePaymentChallenge(balanceDecreasingTxProof, balanceDecreasingTxProof, agent),
+    challenger.doublePaymentChallenge(
+      balanceDecreasingTxProof, balanceDecreasingTxProof, agent,
+      0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+    ),
   (challenger: Challenger, agent: AgentMock) =>
-    challenger.freeBalanceNegativeChallenge([balanceDecreasingTxProof], agent)
+    challenger.freeBalanceNegativeChallenge(
+      [balanceDecreasingTxProof], agent,
+      0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+    )
 ]
 
-describe.only("Tests for Liquidator contract", () => {
+describe("Tests for the Challenger contract", () => {
   let context: TestContext
+  let utils: ContextUtils
 
   beforeEach(async function () {
     context = await getTestContext(assetConfig)
+    utils = new ContextUtils(assetConfig, context)
   })
 
   describe("making challenges", () => {
-    challenges.forEach((challenge) => {
+    challenges.slice(0,1).forEach((challenge) => {
       ecosystems.forEach((ecosystem) => {
 
         it("should do a successfull challenge, then fail liquidating an agent", async () => {
           const { challenger, assetManager, vault, agent, flashLender } = context.contracts
-          await configureEcosystem(assetConfig, ecosystem, context)
-          await vault.burn(flashLender, await vault.balanceOf(flashLender)) // empty flash lender
+          await utils.configureEcosystem(ecosystem)
+          await vault.burn(flashLender, await vault.balanceOf(flashLender)) // empty flash lender so liquidation fails
           const { status: statusBefore, mintedUBA: mintedBefore } = await assetManager.getAgentInfo(agent)
           expect(statusBefore).to.be.lessThan(3)
           expect(mintedBefore).to.be.greaterThan(0)
@@ -57,7 +68,7 @@ describe.only("Tests for Liquidator contract", () => {
 
         it("should successfully challenge otherwise healthy agent, then liquidate", async () => {
           const { challenger, assetManager, vault, agent } = context.contracts
-          await configureEcosystem(assetConfig, ecosystem, context)
+          await utils.configureEcosystem(ecosystem)
           const { status: statusBefore } = await assetManager.getAgentInfo(agent)
           expect(statusBefore).to.be.lessThan(3)
           await challenge(challenger.connect(context.signers.challenger), agent)

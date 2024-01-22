@@ -26,8 +26,7 @@ export function storeTestResult(
   name: string
 ): void {
   mkdirSync(DATA_DIR_PATH, { recursive: true })
-  name = name.replace(/\s/g, "_").replace(/\//g, "")
-  const filepath = path.join(DATA_DIR_PATH, name + '.json')
+  const filepath = path.join(DATA_DIR_PATH, name.replace(/\//g, "|") + '.json')
   const graph = graphData(testResult)
   const json = JSON.stringify(
     { ...testResult, graph },

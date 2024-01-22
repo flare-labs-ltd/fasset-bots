@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { liquidationOutput, amgToTokenPrice, dexMinPriceFromMaxSlippage } from '../../calculations'
 import { ubaToAmg } from './utils'
-import { addLiquidity, swapOutput, swapOutputs } from './dex'
+import { addLiquidity, swapOutput, swapOutputs } from './uniswap-v2'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 import type { ERC20 } from '../../../types'
 
@@ -15,13 +15,13 @@ export class ContextUtils {
 
   async configureEcosystem(config: EcosystemConfig): Promise<void> {
     const { contracts, signers } = this.context
-    const { assetManager, blazeSwapRouter, fAsset, vault, pool, agent } = contracts
+    const { assetManager, uniswapV2, fAsset, vault, pool, agent } = contracts
     // set ftso prices and dex reserves (pool-fAsset is needed only for testing swaps through non-arbitrary paths)
     await assetManager.setLiquidationFactors(config.liquidationFactorBips, config.liquidationFactorVaultBips)
     await this.setFtsoPrices(config.assetFtsoPrice, config.vaultFtsoPrice, config.poolFtsoPrice)
-    await addLiquidity(blazeSwapRouter, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, signers.deployer)
-    await addLiquidity(blazeSwapRouter, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, signers.deployer)
-    await addLiquidity(blazeSwapRouter, pool, fAsset, config.dex3PoolReserve, config.dex3FAssetReserve, signers.deployer)
+    await addLiquidity(uniswapV2, vault, fAsset, config.dex1VaultReserve, config.dex1FAssetReserve, signers.deployer)
+    await addLiquidity(uniswapV2, pool, vault, config.dex2PoolReserve, config.dex2VaultReserve, signers.deployer)
+    await addLiquidity(uniswapV2, pool, fAsset, config.dex3PoolReserve, config.dex3FAssetReserve, signers.deployer)
     // deposit collaterals and mint
     await agent.depositVaultCollateral(config.vaultCollateral)
     await agent.depositPoolCollateral(config.poolCollateral)
@@ -53,15 +53,15 @@ export class ContextUtils {
 
   async arbitrageProfit(liquidatedVault: bigint, dex1Path: ERC20[], dex2Path: ERC20[]): Promise<bigint> {
     const { contracts } = this.context
-    const fAssets = await swapOutput(contracts.blazeSwapRouter, dex1Path, liquidatedVault)
+    const fAssets = await swapOutput(contracts.uniswapV2, dex1Path, liquidatedVault)
     const [vaultProfit, poolProfit] = await this.liquidationOutput(fAssets)
     const [, poolProfitSwapped] = await swapOutputs(
-      contracts.blazeSwapRouter, [dex1Path, dex2Path], [liquidatedVault, poolProfit])
+      contracts.uniswapV2, [dex1Path, dex2Path], [liquidatedVault, poolProfit])
     return vaultProfit + poolProfitSwapped - liquidatedVault
   }
 
   async dexMinPriceFromMaxSlippage(slippageBips: number, tokenA: ERC20, tokenB: ERC20): Promise<[bigint, bigint]> {
-    const [tokenAReserve, tokenBReserve] = await this.context.contracts.blazeSwapRouter.getReserves(tokenA, tokenB)
+    const [tokenAReserve, tokenBReserve] = await this.context.contracts.uniswapV2.getReserves(tokenA, tokenB)
     return dexMinPriceFromMaxSlippage(slippageBips, tokenAReserve, tokenBReserve)
   }
 

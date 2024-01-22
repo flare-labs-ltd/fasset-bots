@@ -1,10 +1,9 @@
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type {
-  BlazeSwapRouter__factory, BlazeSwapManager__factory, BlazeSwapFactory__factory,
   FlashLender__factory, ERC20Mock__factory,
   AssetManagerMock__factory, AgentMock__factory, FakePriceReader__factory,
   Liquidator__factory, Challenger__factory,
-  BlazeSwapRouter, FlashLender, FakePriceReader, ERC20Mock, AssetManagerMock,
+  IUniswapV2Router, FlashLender, FakePriceReader, ERC20Mock, AssetManagerMock,
   AgentMock, Liquidator, Challenger
 } from '../../../types'
 
@@ -72,13 +71,10 @@ export interface EcosystemConfig {
 ////////////////////////////////////////////////////////////////////////
 // unit testing context interfaces
 
+// uniswap-v2 factory is dynamic
 export interface ContractFactories {
   // flash loan
   flashLender: FlashLender__factory
-  // blaze-swap
-  blazeSwapManager: BlazeSwapManager__factory
-  blazeSwapRouter: BlazeSwapRouter__factory
-  blazeSwapFactory: BlazeSwapFactory__factory
   // f-asset system
   assetManager: AssetManagerMock__factory
   priceReader: FakePriceReader__factory
@@ -99,7 +95,7 @@ export interface TestContracts {
   vault: ERC20Mock
   pool: ERC20Mock
   agent: AgentMock
-  blazeSwapRouter: BlazeSwapRouter
+  uniswapV2: IUniswapV2Router
   flashLender: FlashLender
   liquidator: Liquidator
   challenger: Challenger

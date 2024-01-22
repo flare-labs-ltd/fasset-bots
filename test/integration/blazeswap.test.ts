@@ -35,8 +35,8 @@ describe("Ecosystem setup", () => {
   }
 
   async function getDexPrices(): Promise<[bigint, bigint]> {
-    const [dex1FAsset, dex1Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
-    const [dex2WNat, dex2Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.wNat, contracts.usdc)
+    const [dex1FAsset, dex1Usdc] = await contracts.uniswapV2.getReserves(contracts.fAsset, contracts.usdc)
+    const [dex2WNat, dex2Usdc] = await contracts.uniswapV2.getReserves(contracts.wNat, contracts.usdc)
     const dex1Price = BigInt(10_000) * dex1FAsset * BigInt(1e12) / dex1Usdc
     const dex2Price = BigInt(10_000) * dex2Usdc / dex2WNat
     return [dex1Price, dex2Price]
@@ -70,9 +70,9 @@ describe("Ecosystem setup", () => {
   // it is basically testing the `syncDeXReservesWithFtsoPrices` function
   it("should use one or two accounts' funds to liquidate dexes to match the ftso price", async () => {
     try {
-      const initialReservesDex1 = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
+      const initialReservesDex1 = await contracts.uniswapV2.getReserves(contracts.fAsset, contracts.usdc)
       console.log("initial reserves on dex1:", initialReservesDex1 ?? 'none')
-      const initialReservesDex2 = await contracts.blazeSwapRouter.getReserves(contracts.wNat, contracts.usdc)
+      const initialReservesDex2 = await contracts.uniswapV2.getReserves(contracts.wNat, contracts.usdc)
       console.log("initial reserves on dex2:", initialReservesDex2 ?? 'none')
     } catch {}
     // get user balances before
@@ -111,11 +111,11 @@ describe("Ecosystem setup", () => {
     console.log('usdc2 spent:  ', `${Number(usdc2SpentPerc)}%`)
     console.log('wNat2 spent:  ', `${Number(wNat2SpentPerc)}%`)
     // remove liquidity from dexes from funded account 1
-    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded1, provider)
-    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex2Token, contracts.usdc, contracts.wNat, funded1, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded1, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.dex2Token, contracts.usdc, contracts.wNat, funded1, provider)
     // remove liquidity from dexes from funded account 2
-    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded2, provider)
-    await removeLiquidity(contracts.blazeSwapRouter, contracts.dex2Token, contracts.usdc, contracts.wNat, funded2, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.dex1Token, contracts.fAsset, contracts.usdc, funded2, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.dex2Token, contracts.usdc, contracts.wNat, funded2, provider)
     // check that funded account 1 had funds returned
     const [fAsset1AfterDrain, usdc1AfterDrain, wNat1AfterDrain] = await getBalances(funded1)
     assert.equal(fAsset1AfterDrain, fAsset1Before)
@@ -133,7 +133,7 @@ describe("Ecosystem setup", () => {
     const [dex1Price1,] = await getDexPrices()
     // someone makes the transaction that raises dex price through slippage
     const swapAmount = ethers.parseEther("1")
-    await swap(contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc, swapAmount, funded1, provider)
+    await swap(contracts.uniswapV2, contracts.fAsset, contracts.usdc, swapAmount, funded1, provider)
     // check that price has changed
     const [dex1Price2,] = await getDexPrices()
     assert.notEqual(dex1Price1, dex1Price2)

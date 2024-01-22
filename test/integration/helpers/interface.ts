@@ -1,6 +1,6 @@
 import type {
-  IWNat, FakeERC20, FlashLender, BlazeSwapRouter, IBlazeSwapPair,
-  Liquidator, IIAssetManager, IFAssetMetadata, FakePriceReader
+  IWNat, FakeERC20, FlashLender, IUniswapV2Router, IUniswapV2Pair,
+  Liquidator, IIAssetManager, IERC20Metadata, FakePriceReader
 } from '../../../types'
 
 
@@ -20,19 +20,19 @@ export interface NetworkAddressesJson {
 export interface BaseContracts {
   wNat: IWNat
   usdc: FakeERC20
-  blazeSwapRouter: BlazeSwapRouter
+  uniswapV2: IUniswapV2Router
   flashLender: FlashLender
   liquidator: Liquidator
 }
 
 export interface FAssetContracts {
   assetManager: IIAssetManager
-  fAsset: IFAssetMetadata
+  fAsset: IERC20Metadata
   priceReader: FakePriceReader
 }
 
 // all relevant contracts to the system or testing
 export interface Contracts extends BaseContracts, FAssetContracts {
-  dex1Token: IBlazeSwapPair
-  dex2Token: IBlazeSwapPair
+  dex1Token: IUniswapV2Pair
+  dex2Token: IUniswapV2Pair
 }

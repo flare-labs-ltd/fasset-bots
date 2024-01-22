@@ -177,7 +177,7 @@ export function swapInputs(
   return amountIn
 }
 
-// procrastinate P(A,B) can drop for maxSlippageBips
+// P(A,B) can drop for maxSlippageBips
 export function dexMinPriceFromMaxSlippage(
   maxSlippageBips: number,
   reserveA: bigint,

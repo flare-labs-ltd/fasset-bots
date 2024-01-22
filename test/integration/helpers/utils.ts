@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { priceBasedAddedDexReserves, swapToDexPrice, assetPriceForAgentCr } from "../../calculations"
-import type { IBlazeSwapPair, IBlazeSwapRouter, IERC20Metadata } from "../../../types"
+import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair } from "../../../types"
 import type { Contracts } from "./interface"
 
 /////////////////////////////////////////////////////////////////////////
@@ -89,8 +89,8 @@ export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
   const ftsoPrice1 = BigInt(10_000) * usdcPrice / assetPrice
   const ftsoPrice2 = BigInt(10_000) * wNatPrice / usdcPrice
   // get dex reserves
-  const [dex1FAsset, dex1Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.fAsset, contracts.usdc)
-  const [dex2WNat, dex2Usdc] = await contracts.blazeSwapRouter.getReserves(contracts.wNat, contracts.usdc)
+  const [dex1FAsset, dex1Usdc] = await contracts.uniswapV2.getReserves(contracts.fAsset, contracts.usdc)
+  const [dex2WNat, dex2Usdc] = await contracts.uniswapV2.getReserves(contracts.wNat, contracts.usdc)
   const dexPrice1 = BigInt(10_000) * dex1FAsset * BigInt(1e12) / dex1Usdc
   const dexPrice2 = BigInt(10_000) * dex2Usdc / dex2WNat
   return {
@@ -138,7 +138,7 @@ export async function syncDexReservesWithFtsoPrices(
   } catch {}
   try {
     await addLiquidityToDexPairPrice(
-      contracts.blazeSwapRouter, contracts.fAsset, contracts.usdc,
+      contracts.uniswapV2, contracts.fAsset, contracts.usdc,
       assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
       signer, provider)
   } catch {}
@@ -151,7 +151,7 @@ export async function syncDexReservesWithFtsoPrices(
   } catch {}
   try {
     await addLiquidityToDexPairPrice(
-      contracts.blazeSwapRouter, contracts.wNat, contracts.usdc,
+      contracts.uniswapV2, contracts.wNat, contracts.usdc,
       wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
       signer, provider)
   } catch {}
@@ -161,7 +161,7 @@ export async function syncDexReservesWithFtsoPrices(
 // set dex price of tokenA in tokenB by adding liquidity.
 // both prices in the same currency, e.g. FLR/$, XRP/$
 async function addLiquidityToDexPairPrice(
-  blazeSwapRouter: IBlazeSwapRouter,
+  uniswapV2: IUniswapV2Router,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   priceA: bigint,
@@ -176,7 +176,7 @@ async function addLiquidityToDexPairPrice(
   let reserveA = BigInt(0)
   let reserveB = BigInt(0)
   try {
-    [reserveA, reserveB] = await blazeSwapRouter.getReserves(tokenA, tokenB)
+    [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
   } catch {
     // means there's no reserves for the dex pair
   }
@@ -187,7 +187,7 @@ async function addLiquidityToDexPairPrice(
   if (addedA == BigInt(0) && addedB == BigInt(0)) {
     console.error('add liquidity failure: no reserves can be added')
   } else {
-    await addLiquidity(blazeSwapRouter, tokenA, tokenB, addedA, addedB, signer, provider)
+    await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
   }
 }
 
@@ -206,13 +206,13 @@ export async function swapDexPairToPrice(
   // align dex prices with the ftso prices while not exceeding available balances
   const decimalsA = await tokenA.decimals()
   const decimalsB = await tokenB.decimals()
-  const [reserveA, reserveB] = await contracts.blazeSwapRouter.getReserves(tokenA, tokenB)
+  const [reserveA, reserveB] = await contracts.uniswapV2.getReserves(tokenA, tokenB)
   let swapA = swapToDexPrice(reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxSwapA)
   let swapB = swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA, maxSwapB)
   if (swapA > 0) {
-    await swap(contracts.blazeSwapRouter, tokenA, tokenB, swapA, signer, provider)
+    await swap(contracts.uniswapV2, tokenA, tokenB, swapA, signer, provider)
   } else if (swapB > 0) {
-    await swap(contracts.blazeSwapRouter, tokenB, tokenA, swapB, signer, provider)
+    await swap(contracts.uniswapV2, tokenB, tokenA, swapB, signer, provider)
   }
 }
 
@@ -221,7 +221,7 @@ export async function swapDexPairToPrice(
 
 // blazeswap add liquidity with wait finalize
 async function addLiquidity(
-  blazeSwapRouter: IBlazeSwapRouter,
+  uniswapV2: IUniswapV2Router,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   amountA: bigint,
@@ -229,9 +229,9 @@ async function addLiquidity(
   signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
-  await waitFinalize(provider, signer, tokenA.connect(signer).approve(blazeSwapRouter, amountA))
-  await waitFinalize(provider, signer, tokenB.connect(signer).approve(blazeSwapRouter, amountB))
-  await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).addLiquidity(
+  await waitFinalize(provider, signer, tokenA.connect(signer).approve(uniswapV2, amountA))
+  await waitFinalize(provider, signer, tokenB.connect(signer).approve(uniswapV2, amountB))
+  await waitFinalize(provider, signer, uniswapV2.connect(signer).addLiquidity(
     tokenA, tokenB,
     amountA, amountB,
     0, 0, 0, 0,
@@ -242,8 +242,8 @@ async function addLiquidity(
 
 // blazeswap remove liquidity with wait finalize
 export async function removeLiquidity(
-  blazeSwapRouter: IBlazeSwapRouter,
-  blazeSwapPair: IBlazeSwapPair,
+  uniswapV2: IUniswapV2Router,
+  blazeSwapPair: IUniswapV2Pair,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   signer: ethers.Signer,
@@ -251,8 +251,8 @@ export async function removeLiquidity(
 ): Promise<void> {
   const dexTokens = await blazeSwapPair.balanceOf(signer)
   if (dexTokens > BigInt(0)) {
-    await waitFinalize(provider, signer, blazeSwapPair.connect(signer).approve(blazeSwapRouter, dexTokens))
-    await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).removeLiquidity(
+    await waitFinalize(provider, signer, blazeSwapPair.connect(signer).approve(uniswapV2, dexTokens))
+    await waitFinalize(provider, signer, uniswapV2.connect(signer).removeLiquidity(
       tokenA, tokenB,
       dexTokens,
       0, 0,
@@ -265,15 +265,15 @@ export async function removeLiquidity(
 }
 
 export async function swap(
-  blazeSwapRouter: IBlazeSwapRouter,
+  uniswapV2: IUniswapV2Router,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   amountA: bigint,
   signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<void> {
-  await waitFinalize(provider, signer, tokenA.connect(signer).approve(blazeSwapRouter, amountA))
-  await waitFinalize(provider, signer, blazeSwapRouter.connect(signer).swapExactTokensForTokens(
+  await waitFinalize(provider, signer, tokenA.connect(signer).approve(uniswapV2, amountA))
+  await waitFinalize(provider, signer, uniswapV2.connect(signer).swapExactTokensForTokens(
     amountA, 0,
     [tokenA, tokenB],
     signer,

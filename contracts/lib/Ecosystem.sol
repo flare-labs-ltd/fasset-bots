@@ -3,12 +3,12 @@ pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "blazeswap/contracts/periphery/interfaces/IBlazeSwapRouter.sol";
 import "fasset/contracts/fasset/interface/IIAssetManager.sol";
 import "fasset/contracts/fasset/interface/IIAgentVault.sol";
 import "fasset/contracts/fasset/interface/IPriceReader.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/CollateralType.sol";
+import "../interface/IUniswapV2/IUniswapV2Router.sol";
 import "./Structs.sol";
 import "./Constants.sol";
 
@@ -51,7 +51,7 @@ library Ecosystem {
     }
 
     function getDexReserves(
-        address _dexRouter,
+        address _dex,
         address[] memory _path
     )
         internal view
@@ -60,9 +60,7 @@ library Ecosystem {
         _reserves = new PoolReserves[](_path.length - 1);
         for (uint256 i = 0; i < _path.length - 1; i++) {
             (_reserves[i].reserveA, _reserves[i].reserveB) =
-                IBlazeSwapRouter(_dexRouter).getReserves(
-                    _path[i], _path[i + 1]
-                );
+                IUniswapV2Router(_dex).getReserves(_path[i], _path[i + 1]);
         }
     }
 

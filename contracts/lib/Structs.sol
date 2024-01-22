@@ -40,7 +40,7 @@ struct DexPairConfig {
 
 struct ArbitrageConfig {
     address flashLender;
-    address dexRouter;
+    address dex;
     DexPairConfig dexPair1;
     DexPairConfig dexPair2;
 }

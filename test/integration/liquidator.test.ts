@@ -29,7 +29,7 @@ describe("Liquidator", () => {
     liquidator = await provider.getSigner(1)
     // get contracts
     contracts = await getContracts(await getAgentsAssetManager(AGENT_ADDRESS, provider), "coston", provider)
-    contracts.liquidator = await deployLiquidator(contracts.flashLender, contracts.blazeSwapRouter, liquidator, provider)
+    contracts.liquidator = await deployLiquidator(contracts.flashLender, contracts.uniswapV2, liquidator, provider)
     // mint USDC to deployer and wrap their CFLR (they will provide liquidity to dexes)
     await waitFinalize(provider, deployer, contracts.usdc.connect(deployer).mintAmount(deployer, USDC_BALANCE))
     const availableWNat = await provider.getBalance(deployer) - ethers.WeiPerEther
@@ -46,7 +46,9 @@ describe("Liquidator", () => {
     const { mintedUBA: mintedUbaBefore,  poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(poolCollateralRatioBIPS, BigInt(18_900))
     // liquidate agent
-    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(AGENT_ADDRESS, liquidator))
+    await waitFinalize(provider, liquidator, contracts.liquidator.connect(liquidator).runArbitrage(
+      AGENT_ADDRESS, liquidator, 0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+    ))
     // check that agent was fully liquidated and put out of liquidation
     const { status: statusAfter, mintedUBA: mintedUbaAfter } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(statusAfter, BigInt(0))

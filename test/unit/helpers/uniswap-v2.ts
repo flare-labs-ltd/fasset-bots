@@ -5,11 +5,11 @@ import {
   swapOutputs as calcSwapOutputs
 } from '../../calculations'
 import type { Signer } from 'ethers'
-import type { ERC20, BlazeSwapRouter, ERC20Mock } from '../../../types'
+import type { ERC20, ERC20Mock, IUniswapV2Router } from '../../../types'
 
 
 export async function addLiquidity(
-  router: BlazeSwapRouter,
+  router: IUniswapV2Router,
   tokenA: ERC20Mock,
   tokenB: ERC20Mock,
   amountA: bigint,
@@ -33,7 +33,7 @@ export async function addLiquidity(
 
 // calculates the amount received when swapping amountA through path
 export async function swapOutput(
-  router: BlazeSwapRouter,
+  router: IUniswapV2Router,
   path: ERC20[],
   amountA: bigint
 ): Promise<bigint> {
@@ -47,7 +47,7 @@ export async function swapOutput(
 
 // calculates the amount of input needed to swap to amountB through path
 export async function swapInput(
-  router: BlazeSwapRouter,
+  router: IUniswapV2Router,
   path: ERC20[],
   amountB: bigint
 ): Promise<bigint> {
@@ -60,7 +60,7 @@ export async function swapInput(
 }
 
 export async function swap(
-  router: BlazeSwapRouter,
+  router: IUniswapV2Router,
   tokenPath: ERC20Mock[],
   amountA: bigint,
   swapper: Signer
@@ -71,7 +71,7 @@ export async function swap(
 
 // needed if a swap affects the reserves of a pair used in a subsequent swap
 export async function swapOutputs(
-  router: BlazeSwapRouter,
+  router: IUniswapV2Router,
   paths: ERC20[][],
   amountsA: bigint[]
 ): Promise<bigint[]> {

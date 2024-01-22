@@ -10,8 +10,6 @@ import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/AssetManagerSettings.sol";
 import "fasset/contracts/fasset/library/CollateralTypes.sol";
 import "./AgentMock.sol";
-import "./AssetManagerMock.sol";
-
 
 contract AssetManagerMock {
     using MathUtils for uint256;

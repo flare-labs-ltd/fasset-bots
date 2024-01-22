@@ -1,15 +1,28 @@
 import { ethers } from 'hardhat'
 import { AssetConfig } from './interface'
 import { lotSizeAmg } from '../helpers/utils'
+import type { Signer } from 'ethers'
 import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
+import type { IUniswapV2Router, ERC20 } from '../../../types'
 
+
+// deploy uniswap-v2 (currently blazeswap)
+export async function deployUniswapV2(
+  wNat: ERC20,
+  deployer: Signer
+): Promise<IUniswapV2Router> {
+  const blazeSwapRouterFactory = await ethers.getContractFactory("BlazeSwapRouter")
+  const blazeSwapFactoryFactory = await ethers.getContractFactory("BlazeSwapBaseFactory")
+  const blazeSwapManagerFactory = await ethers.getContractFactory("BlazeSwapManager")
+  const blazeSwapManager = await blazeSwapManagerFactory.deploy(deployer)
+  const blazeSwapFactory = await blazeSwapFactoryFactory.deploy(blazeSwapManager)
+  await blazeSwapManager.setFactory(blazeSwapFactory)
+  return blazeSwapRouterFactory.deploy(blazeSwapFactory, wNat, false)
+}
 
 export async function getFactories(): Promise<ContractFactories> {
   return {
     flashLender: await ethers.getContractFactory("FlashLender"),
-    blazeSwapManager: await ethers.getContractFactory("BlazeSwapManager"),
-    blazeSwapFactory: await ethers.getContractFactory("BlazeSwapBaseFactory"),
-    blazeSwapRouter: await ethers.getContractFactory("BlazeSwapRouter"),
     assetManager: await ethers.getContractFactory("AssetManagerMock"),
     priceReader: await ethers.getContractFactory("FakePriceReader"),
     agent: await ethers.getContractFactory("AgentMock"),
@@ -19,6 +32,16 @@ export async function getFactories(): Promise<ContractFactories> {
     liquidator: await ethers.getContractFactory("Liquidator"),
     challenger: await ethers.getContractFactory("Challenger"),
   }
+}
+
+export async function getSigners(): Promise<TestSigners> {
+  const _signers = await ethers.getSigners()
+  const deployer = _signers[0]
+  const challenger = _signers[10]
+  const liquidator = _signers[11]
+  const rewardee = _signers[12]
+  const fAssetMinter = _signers[13]
+  return { deployer, challenger, liquidator, fAssetMinter, rewardee }
 }
 
 export async function getContracts(
@@ -51,28 +74,15 @@ export async function getContracts(
   )
   // set agent
   contracts.agent = await factories.agent.deploy(contracts.assetManager, contracts.vault)
-  // set up blazeswap
-  const blazeSwapManager = await factories.blazeSwapManager.deploy(signers.deployer)
-  const blazeSwapFactory = await factories.blazeSwapFactory.deploy(blazeSwapManager)
-  await blazeSwapManager.setFactory(blazeSwapFactory)
-  contracts.blazeSwapRouter = await factories.blazeSwapRouter.deploy(blazeSwapFactory, contracts.pool, false)
+  // set up uniswap-v2 implementation
+  contracts.uniswapV2 = await deployUniswapV2(contracts.pool, signers.deployer)
   // set up flash loans
   contracts.flashLender = await factories.flashLender.deploy(contracts.vault)
-  await contracts.vault.mint(contracts.flashLender, ethers.MaxUint256 / BigInt(10))
+  await contracts.vault.mint(contracts.flashLender, ethers.MaxUint256 / BigInt(100))
   // set liquidator and challenger
-  contracts.liquidator = await factories.liquidator.connect(signers.liquidator).deploy(contracts.flashLender, contracts.blazeSwapRouter)
-  contracts.challenger = await factories.challenger.connect(signers.challenger).deploy(contracts.flashLender, contracts.blazeSwapRouter)
+  contracts.liquidator = await factories.liquidator.connect(signers.liquidator).deploy(contracts.flashLender, contracts.uniswapV2)
+  contracts.challenger = await factories.challenger.connect(signers.challenger).deploy(contracts.flashLender, contracts.uniswapV2)
   return contracts
-}
-
-export async function getSigners(): Promise<TestSigners> {
-  const _signers = await ethers.getSigners()
-  const deployer = _signers[0]
-  const challenger = _signers[10]
-  const liquidator = _signers[11]
-  const rewardee = _signers[12]
-  const fAssetMinter = _signers[13]
-  return { deployer, challenger, liquidator, fAssetMinter, rewardee }
 }
 
 export async function getTestContext(assetConfig: AssetConfig): Promise<TestContext> {
