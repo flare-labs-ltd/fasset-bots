@@ -22,7 +22,6 @@ export interface BaseContracts {
   usdc: FakeERC20
   uniswapV2: IUniswapV2Router
   flashLender: FlashLender
-  liquidator: Liquidator
 }
 
 export interface FAssetContracts {

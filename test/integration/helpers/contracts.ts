@@ -2,10 +2,10 @@ import { ethers } from 'ethers'
 import { waitFinalize } from './utils'
 import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
 import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
-import { abi as flashLenderAbi } from '../../../artifacts/contracts/FlashLender.sol/FlashLender.json'
 import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAgentVault.sol/IIAgentVault.json'
 import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
 import { abi as erc20MetadataAbi } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json'
+import { abi as flashLenderAbi } from '../../../artifacts/@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol/IERC3156FlashLender.json'
 import { abi as uniswapV2RouterAbi } from '../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Router.sol/IUniswapV2Router.json'
 import { abi as uniswapV2PairAbi } from '../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
@@ -26,7 +26,6 @@ export function getBaseContracts(network: string, provider: ethers.JsonRpcProvid
     usdc: new ethers.Contract(address.usdc, fakeERC20Abi, provider) as any,
     uniswapV2: new ethers.Contract(address.blazeSwapRouter, uniswapV2RouterAbi, provider) as any,
     flashLender: new ethers.Contract(address.flashLender, flashLenderAbi, provider) as any,
-    liquidator: new ethers.Contract(address.liquidator, liquidatorAbi, provider) as any
   }
 }
 

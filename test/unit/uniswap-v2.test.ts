@@ -104,13 +104,12 @@ describe("Tests for the UniswapV2 implementation", () => {
     // amount of token A to swap ($0.01)
     const amountA = convertUsd5ToToken(BigInt(100), decimalsA, priceTokenAUsd5)
     // swap from tokenA to tokenC via tokenB
-    const expectedOutB = await swapOutput(uniswapV2, [tokenA, tokenB], amountA)
-    const expectedOutC = await swapOutput(uniswapV2, [tokenB, tokenC], expectedOutB)
+    const expectedSwapOutput = await swapOutput(uniswapV2, [tokenA, tokenB, tokenC], amountA)
     await tokenA.connect(signer).mint(signer, amountA)
     await swap(uniswapV2, [tokenA, tokenB, tokenC], amountA, signer)
     // check that the minter got the right amount of tokenC
     const amountC = await tokenC.balanceOf(signer)
-    expect(amountC).to.equal(expectedOutC)
+    expect(amountC).to.equal(expectedSwapOutput)
   })
 
 })

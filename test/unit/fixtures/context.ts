@@ -6,8 +6,7 @@ import type { ContractFactories, TestContracts, TestContext, TestSigners } from 
 import type { IUniswapV2Router, ERC20 } from '../../../types'
 
 
-// deploy uniswap-v2 (currently blazeswap)
-export async function deployUniswapV2(
+async function deployBlazeSwap(
   wNat: ERC20,
   deployer: Signer
 ): Promise<IUniswapV2Router> {
@@ -19,6 +18,8 @@ export async function deployUniswapV2(
   await blazeSwapManager.setFactory(blazeSwapFactory)
   return blazeSwapRouterFactory.deploy(blazeSwapFactory, wNat, false)
 }
+
+export const deployUniswapV2 = deployBlazeSwap
 
 export async function getFactories(): Promise<ContractFactories> {
   return {

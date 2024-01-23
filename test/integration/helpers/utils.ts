@@ -1,5 +1,6 @@
-import { ethers } from "ethers"
+import { WeiPerEther, MaxUint256 } from "ethers"
 import { priceBasedAddedDexReserves, swapToDexPrice, assetPriceForAgentCr } from "../../calculations"
+import type { AddressLike, Signer, JsonRpcProvider, ContractTransactionResponse, ContractTransactionReceipt } from "ethers"
 import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair } from "../../../types"
 import type { Contracts } from "./interface"
 
@@ -18,10 +19,10 @@ async function sleep(milliseconds: number) {
 // ethers specific
 
 export async function waitFinalize(
-  provider: ethers.JsonRpcProvider,
-  signer: ethers.Signer,
-  prms: Promise<ethers.ContractTransactionResponse>
-): Promise<ethers.ContractTransactionReceipt> {
+  provider: JsonRpcProvider,
+  signer: Signer,
+  prms: Promise<ContractTransactionResponse>
+): Promise<ContractTransactionReceipt> {
   const signerAddress = await signer.getAddress()
   const nonce = await provider.getTransactionCount(signer)
   let response
@@ -43,7 +44,7 @@ export async function waitFinalize(
 // obtains the f-assets's price that results in agent having collateral ratio of crBips
 export async function getCollateralPriceForAgentCr(
   contracts: Contracts,
-  agentAddress: ethers.AddressLike,
+  agentAddress: AddressLike,
   crBips: number,
   collateralKind: "vault" | "pool",
 ): Promise<bigint> {
@@ -105,13 +106,13 @@ export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
   */
 export async function syncDexReservesWithFtsoPrices(
   contracts: Contracts,
-  signer: ethers.Wallet,
-  provider: ethers.JsonRpcProvider,
+  signer: Signer,
+  provider: JsonRpcProvider,
   wrapNat = false
 ): Promise<void> {
   if (wrapNat) {
     // wrap user nat
-    const leftoverNat = BigInt(100) * ethers.WeiPerEther
+    const leftoverNat = BigInt(100) * WeiPerEther
     const availableNat = await provider.getBalance(signer)
     if (availableNat > leftoverNat) {
       const wrapNat = availableNat - leftoverNat
@@ -168,8 +169,8 @@ async function addLiquidityToDexPairPrice(
   priceB: bigint,
   maxAddedA: bigint,
   maxAddedB: bigint,
-  signer: ethers.Signer,
-  provider: ethers.JsonRpcProvider
+  signer: Signer,
+  provider: JsonRpcProvider
 ): Promise<void> {
   const decimalsA = await tokenA.decimals()
   const decimalsB = await tokenB.decimals()
@@ -200,8 +201,8 @@ export async function swapDexPairToPrice(
   priceB: bigint,
   maxSwapA: bigint,
   maxSwapB: bigint,
-  signer: ethers.Signer,
-  provider: ethers.JsonRpcProvider
+  signer: Signer,
+  provider: JsonRpcProvider
 ): Promise<void> {
   // align dex prices with the ftso prices while not exceeding available balances
   const decimalsA = await tokenA.decimals()
@@ -226,8 +227,8 @@ async function addLiquidity(
   tokenB: IERC20Metadata,
   amountA: bigint,
   amountB: bigint,
-  signer: ethers.Signer,
-  provider: ethers.JsonRpcProvider
+  signer: Signer,
+  provider: JsonRpcProvider
 ): Promise<void> {
   await waitFinalize(provider, signer, tokenA.connect(signer).approve(uniswapV2, amountA))
   await waitFinalize(provider, signer, tokenB.connect(signer).approve(uniswapV2, amountB))
@@ -236,7 +237,7 @@ async function addLiquidity(
     amountA, amountB,
     0, 0, 0, 0,
     signer,
-    ethers.MaxUint256
+    MaxUint256
   ))
 }
 
@@ -246,8 +247,8 @@ export async function removeLiquidity(
   blazeSwapPair: IUniswapV2Pair,
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
-  signer: ethers.Signer,
-  provider: ethers.JsonRpcProvider
+  signer: Signer,
+  provider: JsonRpcProvider
 ): Promise<void> {
   const dexTokens = await blazeSwapPair.balanceOf(signer)
   if (dexTokens > BigInt(0)) {
@@ -257,7 +258,7 @@ export async function removeLiquidity(
       dexTokens,
       0, 0,
       signer,
-      ethers.MaxUint256
+      MaxUint256
     ))
   } else {
     console.log('remove liquidity failure: no liquidity to remove')
@@ -269,14 +270,14 @@ export async function swap(
   tokenA: IERC20Metadata,
   tokenB: IERC20Metadata,
   amountA: bigint,
-  signer: ethers.Signer,
-  provider: ethers.JsonRpcProvider
+  signer: Signer,
+  provider: JsonRpcProvider
 ): Promise<void> {
   await waitFinalize(provider, signer, tokenA.connect(signer).approve(uniswapV2, amountA))
   await waitFinalize(provider, signer, uniswapV2.connect(signer).swapExactTokensForTokens(
     amountA, 0,
     [tokenA, tokenB],
     signer,
-    ethers.MaxUint256
+    MaxUint256
   ))
 }

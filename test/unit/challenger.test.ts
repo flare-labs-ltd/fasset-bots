@@ -49,7 +49,7 @@ describe("Tests for the Challenger contract", () => {
   })
 
   describe("making challenges", () => {
-    challenges.slice(0,1).forEach((challenge) => {
+    challenges.forEach((challenge) => {
       ecosystems.forEach((ecosystem) => {
 
         it("should do a successfull challenge, then fail liquidating an agent", async () => {

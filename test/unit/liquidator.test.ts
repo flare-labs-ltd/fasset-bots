@@ -99,7 +99,7 @@ describe("Tests for the Liquidator contract", () => {
           const expectedVaultEarnings = expectedLiquidationRewardVault + expectedSwappedPool - maxLiquidatedVault
           const earnings = await contracts.vault.balanceOf(signers.rewardee)
           expect(earnings).to.equal(expectedVaultEarnings)
-          // check that liquidator contract had not had any funds stolen or given
+          // check that liquidator contract had not had any funds stolen
           const fAssetBalanceLiquidatorContract = await contracts.fAsset.balanceOf(contracts.liquidator)
           expect(fAssetBalanceLiquidatorContract).to.equal(config.initialLiquidatorFAsset)
           const poolBalanceLiquidatorContract = await contracts.pool.balanceOf(contracts.liquidator)
