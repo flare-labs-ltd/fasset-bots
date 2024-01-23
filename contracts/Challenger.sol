@@ -146,7 +146,7 @@ contract Challenger is IChallenger, Liquidator, Ownable {
     )
         public override
     {
-        require(msg.sender == address(this), "calling an internal method");
+        require(msg.sender == address(this), "Challenger: Calling an internal method");
         super.runArbitrage(
             _agentVault,
             _profitTo,

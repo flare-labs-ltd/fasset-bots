@@ -127,5 +127,10 @@ describe("Tests for the Challenger contract", () => {
         .to.be.revertedWith("Ownable: caller is not the owner")
     })
 
+    it("should not allow running any `runArbitrage` function by non challenger contract owner", async () => {
+      await expect(context.contracts.challenger.connect(context.signers.liquidator).runArbitrage(
+        ethers.ZeroAddress, ethers.ZeroAddress, 0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+      )).to.be.revertedWith("Challenger: Calling an internal method")
+    })
   })
 })
