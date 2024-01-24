@@ -14,14 +14,14 @@ const AssetManagerController = artifacts.require("AssetManagerController");
 
 const deployerAddress = requireSecret("deployer.native_address");
 
-async function whitelistAgent(configFileName: string, ownerAddress: string) {
+async function whitelistOwner(configFileName: string, ownerAddress: string) {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
     await agentWhitelist.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
-async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
+async function isOwnerWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const agentWhitelist = await Whitelist.at(contracts["AgentWhitelist"]!.address);
@@ -89,21 +89,21 @@ program.addOption(program.createOption("-c, --config <configFile>", "Config file
     .makeOptionMandatory(true));
 
 program
-    .command("whitelistAgent")
+    .command("whitelistOwner")
     .description("allow agent owner address to operate")
     .argument("address", "owner's address")
     .action(async (address: string) => {
         const options: { config: string } = program.opts();
-        await whitelistAgent(options.config, address);
+        await whitelistOwner(options.config, address);
     });
 
 program
-    .command("isAgentWhitelisted")
+    .command("isOwnerWhitelisted")
     .description("check if agent owner address is whitelisted")
     .argument("address", "owner's address")
     .action(async (address: string) => {
         const options: { config: string } = program.opts();
-        const isWhitelisted = await isAgentWhitelisted(options.config, address);
+        const isWhitelisted = await isOwnerWhitelisted(options.config, address);
         console.log(isWhitelisted);
     });
 
