@@ -20,6 +20,7 @@ import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
 import { getAgentSettings, printAgentInfo } from "../utils/fasset-helpers";
 import { AgentSettings } from "../fasset/AssetManagerTypes";
+import BN from "bn.js";
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -112,7 +113,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be deposited
      */
-    async depositToVault(agentVault: string, amount: string): Promise<void> {
+    async depositToVault(agentVault: string, amount: string | BN): Promise<void> {
         logger.info(`Agent's ${agentVault} owner ${this.owner} is starting vault collateral deposit ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositVaultCollateral(amount);
@@ -125,7 +126,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount add pool tokens in that correspond to amount of nat
      */
-    async buyCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
+    async buyCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
         logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy collateral pool tokens ${amount}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
@@ -178,12 +179,12 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be withdrawn
      */
-    async announceWithdrawFromVault(agentVault: string, amount: string): Promise<void> {
+    async announceWithdrawFromVault(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
         await this.botConfig.notifier!.sendWithdrawVaultCollateralAnnouncement(agentVault, amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.withdrawalAllowedAtAmount = amount;
+        agentEnt.withdrawalAllowedAtAmount = String(amount);
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
@@ -208,12 +209,12 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be redeemed
      */
-    async announceRedeemCollateralPoolTokens(agentVault: string, amount: string): Promise<void> {
+    async announceRedeemCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         await this.botConfig.notifier!.sendRedeemCollateralPoolTokensAnnouncement(agentVault, amount);
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount;
+        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = String(amount);
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced pool token redemption of ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
@@ -237,7 +238,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amount amount to be withdrawn
      */
-    async withdrawPoolFees(agentVault: string, amount: string): Promise<void> {
+    async withdrawPoolFees(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
         await this.botConfig.notifier!.sendWithdrawPoolFees(agentVault, amount);
@@ -261,7 +262,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      * @param amountUBa amount of fassets to self-close
      */
-    async selfClose(agentVault: string, amountUBA: string): Promise<void> {
+    async selfClose(agentVault: string, amountUBA: string | BN): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.selfClose(amountUBA);
         await this.botConfig.notifier!.sendSelfClose(agentVault);
@@ -369,7 +370,7 @@ export class BotCliCommands {
      * @param paymentReference announced underlying payment reference
      * @returns transaction hash
      */
-    async performUnderlyingWithdrawal(agentVault: string, amount: string, destinationAddress: string, paymentReference: string): Promise<string> {
+    async performUnderlyingWithdrawal(agentVault: string, amount: string | BN, destinationAddress: string, paymentReference: string): Promise<string> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
@@ -518,7 +519,7 @@ export class BotCliCommands {
      * @param recipient address of the recipient
      * @param bips percentage of voting power to be delegated in bips
      */
-    async delegatePoolCollateral(agentVault: string, recipient: string, bips: string): Promise<void> {
+    async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
         const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.delegate(recipient, bips, { from: agentEnt.ownerAddress });
@@ -558,10 +559,7 @@ export class BotCliCommands {
     async getFreeVaultCollateral(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        const freeCollateral = info.freeVaultCollateralWei.toString();
-        console.log(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`);
-        logger.info(`Agent ${agentVault} has ${freeCollateral} free vault collateral.`);
-        return freeCollateral;
+        return info.freeVaultCollateralWei.toString();
     }
 
     /**
@@ -572,10 +570,7 @@ export class BotCliCommands {
     async getFreePoolCollateral(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        const freeCollateral = info.freePoolCollateralNATWei.toString();
-        console.log(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`);
-        logger.info(`Agent ${agentVault} has ${freeCollateral} free pool collateral.`);
-        return freeCollateral;
+        return info.freePoolCollateralNATWei.toString();
     }
 
     /**
@@ -586,10 +581,7 @@ export class BotCliCommands {
     async getFreeUnderlying(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        const freeUnderlying = info.freeUnderlyingBalanceUBA.toString();
-        console.log(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
-        logger.info(`Agent ${agentVault} has ${freeUnderlying} free underlying.`);
-        return freeUnderlying;
+        return info.freeUnderlyingBalanceUBA.toString();
     }
 
     /**

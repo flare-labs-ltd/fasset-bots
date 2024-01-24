@@ -2,11 +2,10 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { SecretsUser, generateSecrets } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, resolveInFassetBotsCore, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { createSha256Hash, generateRandomHexString, resolveInFassetBotsCore, squashSpace, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
-import { squashSpace } from "../../../fasset-bots-core/src/utils/formatting";
 
 const program = new Command();
 

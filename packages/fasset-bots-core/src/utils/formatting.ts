@@ -57,13 +57,42 @@ export function formatBN(x: BN | string | number) {
 /**
  * Put '_' characters between 3-digit groups in integer part of a number.
  */
-function groupIntegerDigits(x: string) {
+function groupIntegerDigits(x: string, seperator: string = "_") {
     let startp = x.indexOf(".");
     if (startp < 0) startp = x.length;
     const endp = x[0] === "-" ? 1 : 0;
     for (let p = startp - 3; p > endp; p -= 3) {
-        x = x.slice(0, p) + "_" + x.slice(p);
-        x;
+        x = x.slice(0, p) + seperator + x.slice(p);
     }
     return x;
+}
+
+export interface FormatSettings {
+    decimals?: number;          // maximum decimals to display
+    padRight?: boolean;         // if true, display decimals even if they are 0
+    groupDigits?: boolean;      // group integer digits (thousands) with thousandSeparator or "_"
+    groupSeparator?: string;    // default "_"
+}
+
+const BN_TEN = new BN(10);
+
+export function formatFixed(value: BN, decimals: number, format: FormatSettings = {}) {
+    let displayDecimals = decimals;
+    if (format.decimals != null && format.decimals < decimals) {
+        displayDecimals = Math.max(format.decimals, 0);
+        value = value.divRound(BN_TEN.pow(new BN(decimals - displayDecimals)));
+    }
+    if (displayDecimals === 0) {
+        return value.toString(10);
+    }
+    const mantissa = value.toString(10).padStart(displayDecimals + 1, "0");
+    const dotPos = mantissa.length - displayDecimals;
+    let result = mantissa.slice(0, dotPos) + "." + mantissa.slice(dotPos);
+    if (!format.padRight) {
+        result = result.replace(/\.?0+$/, "");
+    }
+    if (format.groupDigits) {
+        result = groupIntegerDigits(result, format.groupSeparator ?? "_");
+    }
+    return result;
 }

@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { DEFAULT_TIMEOUT } from "./helpers";
 import { logger } from "./logger";
 import { formatArgs, squashSpace } from "./formatting";
+import BN from "bn.js";
 // agent status and settings
 const CCB_TITLE = "CCB";
 const LIQUIDATION_STARTED = "LIQUIDATION STARTED";
@@ -466,7 +467,7 @@ export class Notifier {
         );
     }
 
-    async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string) {
+    async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string | BN) {
         this.send(WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED withdrawal of ${amount} for vault collateral.`);
         await this.sendToServer(
             BotType.AGENT,
@@ -504,7 +505,7 @@ export class Notifier {
         );
     }
 
-    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string) {
+    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string | BN) {
         this.send(REDEEM_POOL_TOKEN_ANNOUNCEMENT, `Agent ${agentVault} ANNOUNCED redemptions of ${amount} pool tokens.`);
         await this.sendToServer(
             BotType.AGENT,
@@ -579,12 +580,12 @@ export class Notifier {
         await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, REDEEM_POOL_TOKEN, `Agent ${agentVault} redeemed pool tokens.`);
     }
 
-    async sendBuyCollateralPoolTokens(agentVault: string, amount: string) {
+    async sendBuyCollateralPoolTokens(agentVault: string, amount: string | BN) {
         this.send(BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
         await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, BUY_POOL_TOKENS, `Agent ${agentVault} bought ${amount} of pool tokens successfully.`);
     }
 
-    async sendVaultCollateralDeposit(agentVault: string, amount: string) {
+    async sendVaultCollateralDeposit(agentVault: string, amount: string | BN) {
         this.send(VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} to agent ${agentVault} was successful.`);
         await this.sendToServer(
             BotType.AGENT,
@@ -595,7 +596,7 @@ export class Notifier {
         );
     }
 
-    async sendWithdrawPoolFees(agentVault: string, amount: string) {
+    async sendWithdrawPoolFees(agentVault: string, amount: string | BN) {
         this.send(WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`);
         await this.sendToServer(BotType.AGENT, agentVault, BotLevel.INFO, WITHDRAW_POOL_FEES, `Agent ${agentVault} withdrew pool fees ${amount} successfully.`);
     }
@@ -690,7 +691,7 @@ export class Notifier {
         );
     }
 
-    async sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string) {
+    async sendDelegatePoolCollateral(agentVault: string, poolCollateral: string, recipient: string, bips: string | BN) {
         this.send(POOL_DELEGATE, `Agent ${agentVault} delegated pool collateral ${poolCollateral} to ${recipient} with ${bips}.`);
         await this.sendToServer(
             BotType.AGENT,

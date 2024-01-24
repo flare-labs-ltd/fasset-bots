@@ -2,8 +2,8 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { Command } from "commander";
-import { toplevelRun } from "@flarelabs/fasset-bots-core/utils";
-import { BotCliCommands } from "@flarelabs/fasset-bots-core";
+import { toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
 
 const program = new Command();
 
@@ -29,7 +29,8 @@ program
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.depositToVault(agentVault, amount);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'vault');
+        await cli.depositToVault(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -40,7 +41,8 @@ program
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.buyCollateralPoolTokens(agentVault, amount);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'pool');
+        await cli.buyCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -113,7 +115,8 @@ program
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.announceWithdrawFromVault(agentVault, amount);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'vault');
+        await cli.announceWithdrawFromVault(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -134,7 +137,8 @@ program
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.announceRedeemCollateralPoolTokens(agentVault, amount);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'pool');
+        await cli.announceRedeemCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -155,7 +159,8 @@ program
     .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.withdrawPoolFees(agentVault, amount);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'fasset');
+        await cli.withdrawPoolFees(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -172,11 +177,12 @@ program
     .command("selfClose")
     .description("self close agent vault with amountUBA of FAssets")
     .argument("<agentVaultAddress>")
-    .argument("<amountUBA>")
-    .action(async (agentVault: string, amountUBA: string) => {
+    .argument("<amount>")
+    .action(async (agentVault: string, amount: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.selfClose(agentVault, amountUBA);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'fasset');
+        await cli.selfClose(agentVault, await converter.parseToWei(amount));
     });
 
 program
@@ -209,7 +215,8 @@ program
     .action(async (agentVault: string, amount: string, destinationAddress: string, paymentReference: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.performUnderlyingWithdrawal(agentVault, amount, destinationAddress, paymentReference);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'fasset');
+        await cli.performUnderlyingWithdrawal(agentVault, await converter.parseToWei(amount), destinationAddress, paymentReference);
     });
 
 program
@@ -247,11 +254,11 @@ program
     .description("delegate pool collateral, where <bips> is basis points (1/100 of one percent)")
     .argument("<agentVaultAddress>")
     .argument("<recipient>")
-    .argument("<bips>")
-    .action(async (agentVault: string, recipient: string, bips: string) => {
+    .argument("<share>", "vote power share as decimal number (e.g. 0.3) or percentage (e.g. 30%)")
+    .action(async (agentVault: string, recipient: string, share: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.delegatePoolCollateral(agentVault, recipient, bips);
+        await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
     });
 
 program
@@ -280,7 +287,9 @@ program
     .action(async (agentVault: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.getFreeVaultCollateral(agentVault);
+        const freeCollateral = await cli.getFreeVaultCollateral(agentVault);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'vault');
+        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral)} free vault collateral.`);
     });
 
 program
@@ -290,7 +299,9 @@ program
     .action(async (agentVault: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.getFreePoolCollateral(agentVault);
+        const freeCollateral = await cli.getFreePoolCollateral(agentVault);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'pool');
+        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral) } free pool collateral.`);
     });
 
 program
@@ -300,7 +311,9 @@ program
     .action(async (agentVault: string) => {
         const options: { fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.fasset);
-        await cli.getFreeUnderlying(agentVault);
+        const freeUnderlying = await cli.getFreeUnderlying(agentVault);
+        const converter = new AgentTokenConverter(cli.context, agentVault, 'fasset');
+        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeUnderlying) } free underlying.`);
     });
 
 program
