@@ -1,5 +1,5 @@
 import { encodeBytes32String } from 'ethers'
-import { BalanceDecreasingTransaction } from '../../../types/contracts/Challenger'
+import type { BalanceDecreasingTransaction } from '../../../types/contracts/Challenger'
 
 
 export const balanceDecreasingTxProof: BalanceDecreasingTransaction.ProofStruct = {

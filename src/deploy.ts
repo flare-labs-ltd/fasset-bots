@@ -22,7 +22,7 @@ export async function deployLiquidator(
   const addresses = require("../addresses.json")[network]
   await deployContract(
     liquidatorAbi, liquidatorBytecode,
-    [addresses.flashLender, addresses.blazeSwapRouter],
+    [addresses.flashLender, addresses.uniswapV2],
     provider, signer
   )
 }
@@ -35,7 +35,7 @@ export async function deployChallenger(
   const addresses = require("../addresses.json")[network]
   await deployContract(
     challengerAbi, challengerBytecode,
-    [addresses.flashLender, addresses.blazeSwapRouter],
+    [addresses.flashLender, addresses.uniswapV2],
     provider, signer
   )
 }

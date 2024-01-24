@@ -45,6 +45,7 @@
     "blazeswap": "git+https://github.com/blazeswap/contracts.git#main",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
+    "enosys": "git+ssh://git@github.com:flrfinance/enosys-dex-contracts.git#master",
     "ethers": "^6.7.1",
     "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#beta-deploy"
   }

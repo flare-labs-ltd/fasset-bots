@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "fasset/contracts/fasset/interface/IIAssetManager.sol";
-import "fasset/contracts/fasset/interface/IIAgentVault.sol";
-import "fasset/contracts/fasset/interface/IPriceReader.sol";
-import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
-import "fasset/contracts/userInterfaces/data/CollateralType.sol";
-import "../interface/IUniswapV2/IUniswapV2Router.sol";
-import "./Structs.sol";
-import "./Constants.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { IAssetManager, IIAssetManager, AssetManagerSettings } from "fasset/contracts/fasset/interface/IIAssetManager.sol";
+import { IIAgentVault } from "fasset/contracts/fasset/interface/IIAgentVault.sol";
+import { IPriceReader } from "fasset/contracts/fasset/interface/IPriceReader.sol";
+import { AgentInfo } from "fasset/contracts/userInterfaces/data/AgentInfo.sol";
+import { CollateralType } from "fasset/contracts/userInterfaces/data/CollateralType.sol";
+import { UniswapV2 } from './UniswapV2.sol';
+import { EcosystemData, PoolReserves } from "./Structs.sol";
+import { AMG_TOKEN_WEI_PRICE_SCALE_EXP } from "./Constants.sol";
 
 
 library Ecosystem {
+    using UniswapV2 for address;
 
     // ftso symbols
     struct FtsoSymbols {
@@ -60,7 +62,7 @@ library Ecosystem {
         _reserves = new PoolReserves[](_path.length - 1);
         for (uint256 i = 0; i < _path.length - 1; i++) {
             (_reserves[i].reserveA, _reserves[i].reserveB) =
-                IUniswapV2Router(_dex).getReserves(_path[i], _path[i + 1]);
+                _dex.getReserves(_path[i], _path[i + 1]);
         }
     }
 

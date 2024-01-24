@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./Babylonian.sol";
-import "./Structs.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Babylonian } from "./Babylonian.sol";
+import { EcosystemData, PoolReserves } from "./Structs.sol";
 import "./Constants.sol";
 
 

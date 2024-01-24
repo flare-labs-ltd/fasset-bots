@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
-import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
-import "./IUniswapV2/IUniswapV2Router.sol";
+import { IERC3156FlashBorrower } from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 
 
 /**
@@ -32,8 +30,8 @@ interface ILiquidator is IERC3156FlashBorrower {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
      ) external;

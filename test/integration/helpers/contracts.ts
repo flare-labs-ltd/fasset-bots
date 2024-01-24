@@ -24,8 +24,8 @@ export function getBaseContracts(network: string, provider: ethers.JsonRpcProvid
   return {
     wNat: new ethers.Contract(address.wNat, wNatAbi, provider) as any,
     usdc: new ethers.Contract(address.usdc, fakeERC20Abi, provider) as any,
-    uniswapV2: new ethers.Contract(address.blazeSwapRouter, uniswapV2RouterAbi, provider) as any,
-    flashLender: new ethers.Contract(address.flashLender, flashLenderAbi, provider) as any,
+    uniswapV2: new ethers.Contract(address.uniswapV2, uniswapV2RouterAbi, provider) as any,
+    flashLender: new ethers.Contract(address.flashLender, flashLenderAbi, provider) as any
   }
 }
 
@@ -45,9 +45,9 @@ export async function getContracts(
   network: string,
   provider: ethers.JsonRpcProvider
 ): Promise<Contracts> {
-  const ecosystemContracts = getBaseContracts(network, provider)
+  const baseContracts = getBaseContracts(network, provider)
   const fAssetContracts = await getFAssetContracts(assetManagerAddress, provider)
-  const contracts = { ...ecosystemContracts, ...fAssetContracts }
+  const contracts = { ...baseContracts, ...fAssetContracts }
   const pair1 = await contracts.uniswapV2.pairFor(contracts.fAsset, contracts.usdc)
   const pair2 = await contracts.uniswapV2.pairFor(contracts.wNat, contracts.usdc)
   const dex1Token = new ethers.Contract(pair1, uniswapV2PairAbi, provider) as any
@@ -65,11 +65,11 @@ export async function getAgentsAssetManager(
 
 export async function deployLiquidator(
   flashLender: IERC3156FlashLender,
-  blazeSwapRouter: IUniswapV2Router,
+  uniswapV2: IUniswapV2Router,
   signer: ethers.Signer,
   provider: ethers.JsonRpcProvider
 ): Promise<Liquidator> {
   const factory = new ethers.ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
   // @ts-ignore deploy not returning a transaction response
-  return waitFinalize(provider, signer, factory.connect(signer).deploy(flashLender, blazeSwapRouter)) as any
+  return waitFinalize(provider, signer, factory.connect(signer).deploy(flashLender, uniswapV2)) as any
 }

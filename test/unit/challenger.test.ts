@@ -8,6 +8,7 @@ import { XRP, WFLR, USDT } from './fixtures/assets'
 import type { AssetConfig, TestContext } from './fixtures/interface'
 import type { Challenger, AgentMock } from '../../types'
 
+
 // config for used assets
 const assetConfig: AssetConfig = {
   asset: XRP,

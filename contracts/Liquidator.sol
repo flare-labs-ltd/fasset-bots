@@ -1,35 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "fasset/contracts/userInterfaces/IAssetManager.sol";
-import "fasset/contracts/fasset/interface/IIAgentVault.sol";
-import "./lib/Constants.sol";
-import "./lib/Optimum.sol";
-import "./lib/Ecosystem.sol";
-import "./interface/ILiquidator.sol";
+import { IERC3156FlashLender } from "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IAssetManager, IIAssetManager } from "fasset/contracts/fasset/interface/IIAssetManager.sol";
+import { IIAgentVault } from "fasset/contracts/fasset/interface/IIAgentVault.sol";
+import { ILiquidator } from  "./interface/ILiquidator.sol";
+import { ArbitrageConfig, EcosystemData, DexPairConfig } from "./lib/Structs.sol";
+import { UniswapV2 } from "./lib/UniswapV2.sol";
+import { Ecosystem } from "./lib/Ecosystem.sol";
+import { Optimum } from "./lib/Optimum.sol";
 
 /**
  * It is recommended for each person to deploy their own ownable
  * liquidator contract to avoid flash bots stealing the arbitrage profits.
- * Note: f-assets within the contract are not safe from theft,
- * but they can be stolen only by the asset manager liquidations.
+ * Note: f-assets within the contract are not safe from being liquidated by a malicious actor,
+ * Note: the supported dexes right now are those interfaced with either IEnosysDexRouter or IBlazeSwapRouter
  */
 contract Liquidator is ILiquidator {
+    using UniswapV2 for address;
 
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
 
     // change those by redeploying the contract
-    IERC3156FlashLender public immutable flashLender;
-    IUniswapV2Router public immutable dex;
+    address public immutable flashLender;
+    address public immutable dex;
 
     // one storage slot
     FlashLoanLock private status; // uint8
     bytes31 private hash; // truncated keccak256
 
     constructor(
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex
+        address _flashLender,
+        address _dex
     ) {
         flashLender = _flashLender;
         dex = _dex;
@@ -59,8 +64,8 @@ contract Liquidator is ILiquidator {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
@@ -206,7 +211,7 @@ contract Liquidator is ILiquidator {
         address poolCT = _config.dexPair2.path[0];
         // swap vault collateral for f-asset
         IERC20(vaultCT).approve(_config.dex, _vaultAmount);
-        (amountsSent, amountsRecv) = IUniswapV2Router(_config.dex).swapExactTokensForTokens(
+        (amountsSent, amountsRecv) = _config.dex.swapExactTokensForTokens(
             _vaultAmount,
             _convert(
                 _vaultAmount,
@@ -227,7 +232,7 @@ contract Liquidator is ILiquidator {
         if (obtainedPool > 0) {
             // swap pool for vault collateral
             IERC20(poolCT).approve(_config.dex, obtainedPool);
-            (, amountsRecv) = IUniswapV2Router(_config.dex).swapExactTokensForTokens(
+            (, amountsRecv) = _config.dex.swapExactTokensForTokens(
                 obtainedPool,
                 _convert(
                     obtainedPool,

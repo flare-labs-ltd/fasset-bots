@@ -11,10 +11,8 @@ export interface AddressesJson {
 export interface NetworkAddressesJson {
   wNat: string
   usdc: string
-  assetManagerController: string
-  blazeSwapRouter: string
+  uniswapV2: string
   flashLender: string
-  liquidator: string
 }
 
 export interface BaseContracts {

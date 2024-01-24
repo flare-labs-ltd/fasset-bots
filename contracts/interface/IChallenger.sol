@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
-import "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
-import "./IUniswapV2/IUniswapV2Router.sol";
+import { BalanceDecreasingTransaction } from  "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
+
 
 interface IChallenger {
 
@@ -14,8 +13,8 @@ interface IChallenger {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     ) external;
@@ -28,8 +27,8 @@ interface IChallenger {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     ) external;
@@ -41,8 +40,8 @@ interface IChallenger {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     ) external;

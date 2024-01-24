@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interface/IChallenger.sol";
-import "./Liquidator.sol";
-
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IIAgentVault, IIAssetManager, IAssetManager } from "fasset/contracts/fasset/interface/IIAgentVault.sol";
+import { BalanceDecreasingTransaction } from "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
+import { IChallenger } from "./interface/IChallenger.sol";
+import { Liquidator } from "./Liquidator.sol";
 
 /**
  * @title Challenger
@@ -15,8 +17,8 @@ import "./Liquidator.sol";
 contract Challenger is IChallenger, Liquidator, Ownable {
 
     constructor(
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex
+        address _flashLender,
+        address _dex
     ) Liquidator(_flashLender, _dex) {}
 
     function illegalPaymentChallenge(
@@ -26,8 +28,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
@@ -59,8 +61,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
@@ -91,8 +93,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )
@@ -139,8 +141,8 @@ contract Challenger is IChallenger, Liquidator, Ownable {
         uint256 _vaultToFAssetMinDexPriceDiv,
         uint256 _poolToVaultMinDexPriceMul,
         uint256 _poolToVaultMinDexPriceDiv,
-        IERC3156FlashLender _flashLender,
-        IUniswapV2Router _dex,
+        address _flashLender,
+        address _dex,
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
     )

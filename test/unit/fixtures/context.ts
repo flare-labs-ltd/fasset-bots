@@ -1,25 +1,9 @@
 import { ethers } from 'hardhat'
 import { AssetConfig } from './interface'
 import { lotSizeAmg } from '../helpers/utils'
-import type { Signer } from 'ethers'
+import deployUniswapV2 from './dexes'
 import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
-import type { IUniswapV2Router, ERC20 } from '../../../types'
 
-
-async function deployBlazeSwap(
-  wNat: ERC20,
-  deployer: Signer
-): Promise<IUniswapV2Router> {
-  const blazeSwapRouterFactory = await ethers.getContractFactory("BlazeSwapRouter")
-  const blazeSwapFactoryFactory = await ethers.getContractFactory("BlazeSwapBaseFactory")
-  const blazeSwapManagerFactory = await ethers.getContractFactory("BlazeSwapManager")
-  const blazeSwapManager = await blazeSwapManagerFactory.deploy(deployer)
-  const blazeSwapFactory = await blazeSwapFactoryFactory.deploy(blazeSwapManager)
-  await blazeSwapManager.setFactory(blazeSwapFactory)
-  return blazeSwapRouterFactory.deploy(blazeSwapFactory, wNat, false)
-}
-
-export const deployUniswapV2 = deployBlazeSwap
 
 export async function getFactories(): Promise<ContractFactories> {
   return {
