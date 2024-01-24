@@ -25,16 +25,16 @@ describe("Web3 event decoder unit tests", async () => {
     it("Should handle anonymous event", async () => {
         const assetManagerAddress = context.assetManager.address;
         const rawEvent = {
-            removed: false,
-            logIndex: 4,
-            transactionIndex: 0,
-            transactionHash: "0xb0aec2df0e08686589a0c37c130fed9347966bbf30770642183d5a949f10e967",
-            blockHash: "0xab8d4feed8f41ca471daeee1d1029eea959874f9a77a936e86fc4b692bc5aa87",
-            blockNumber: 71,
-            address: assetManagerAddress,
-            data: "0x0000000000000000000000000000000000000000000000000000000000000045000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000004a817c8000000000000000000000000000000000000000000000000000000000047868c00000000000000000000000000000000000000000000000000000000002faf0800",
-            topics: ["0x000000000000000000000000ea6abef9ea06253364bb6cf53065dafd2ca122fc"],
-            id: "log_f104578b",
+            "removed": false,
+            "logIndex": 0,
+            "transactionIndex": 0,
+            "transactionHash": "0x453b338dd87494bcd2a9c2f3ca3fda717fef1d4d882d53666fd7d7e4f40cdf7f",
+            "blockHash": "0xabeb07002dd9e2fc4d76c847d3829957bbb80fea576bd41bb18895654b8ed10f",
+            "blockNumber": 81,
+            "address": assetManagerAddress,
+            "data": "0x00000000000000000000000000000000000000000000000000000000000000020000000000000000000000006f35c791c8e6a2fb92fcee0b7c8609bb7f6dde2d0000000000000000000000000000000000000000000000000000000065b23737",
+            "topics": ["0x0a93c441628a8345854526201d5fec9110fe2e4ad5a0822eb6eda950864075e6"],
+            "id": "log_4059b9da"
         };
         const eventDecoder = new Web3ContractEventDecoder(
             { assetManager: context.assetManager, ftsoManager: context.ftsoManager },
@@ -43,11 +43,11 @@ describe("Web3 event decoder unit tests", async () => {
         // set event as anonymous and do some id changes to satisy requirements
         // must make a copy, otherwise later tests break
         const evtType = JSON.parse(
-            JSON.stringify(eventDecoder.eventTypes.get("0x48f66332f8d4c9cd3dc39336964f371b632b938e98a5b5c921caa4084cb51064"))
+            JSON.stringify(eventDecoder.eventTypes.get("0xfa93c441628a8345854526201d5fec9110fe2e4ad5a0822eb6eda950864075e6"))
         ) as AbiItem;
         evtType!.anonymous = true;
         evtType!.name = undefined;
-        eventDecoder.eventTypes.set("0x000000000000000000000000ea6abef9ea06253364bb6cf53065dafd2ca122fc", evtType!);
+        eventDecoder.eventTypes.set("0x0a93c441628a8345854526201d5fec9110fe2e4ad5a0822eb6eda950864075e6", evtType!);
         // decode event
         const decode = eventDecoder.decodeEvent(rawEvent);
         expect(decode?.event).eq("<unknown>");
