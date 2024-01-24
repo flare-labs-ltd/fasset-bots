@@ -1,19 +1,16 @@
 import "dotenv/config";
 import "source-map-support/register";
 
+import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
+import { CommandLineError, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import chalk from "chalk";
-import { Command } from "commander";
-import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { programWithCommonOptions } from "../utils/program";
 
-const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
-const program = new Command();
+const program = programWithCommonOptions("bot", "single_fasset");
 
-program.addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
-
-program.name("utils").description("Command line commands for AgentBot");
+program.name("utils").description("Command line command helpers");
 
 program
     .command("addTransaction")
@@ -35,7 +32,8 @@ toplevelRun(async () => {
 
 async function setupContext(fAssetSymbol: string) {
     console.log(chalk.cyan("Initializing wallet..."));
-    const runConfig = loadAgentConfigFile(FASSET_BOT_CONFIG);
+    const options: { config: string } = program.opts();
+    const runConfig = loadAgentConfigFile(options.config);
     if (!runConfig.ormOptions) {
         throw new CommandLineError("Missing ormOptions in runConfig");
     }

@@ -1,13 +1,11 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { Command } from "commander";
 import { toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
+import { programWithCommonOptions } from "../utils/program";
 
-const program = new Command();
-
-program.addOption(program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query").makeOptionMandatory(true));
+const program = programWithCommonOptions("bot", "single_fasset");
 
 program.name("agent-bot").description("Command line commands for AgentBot");
 

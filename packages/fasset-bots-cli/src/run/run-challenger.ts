@@ -3,18 +3,20 @@ import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { programWithCommonOptions } from "../utils/program";
 
-const CHALLENGER_ADDRESS: string = requireSecret("challenger.address");
-const CHALLENGER_PRIVATE_KEY: string = requireSecret("challenger.private_key");
-const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
+const program = programWithCommonOptions("bot", "all_fassets");
 
-toplevelRun(async () => {
-    const runConfig = loadConfigFile(FASSET_BOT_CONFIG);
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [CHALLENGER_PRIVATE_KEY], null);
-    const config = await createBotConfig(runConfig, CHALLENGER_ADDRESS);
+program.action(async () => {
+    const options: { config: string } = program.opts();
+    const runConfig = loadConfigFile(options.config);
+    const challengerAddress: string = requireSecret("challenger.address");
+    const challengerPrivateKey: string = requireSecret("challenger.private_key");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [challengerPrivateKey], null);
+    const config = await createBotConfig(runConfig, challengerAddress);
     const runners = await Promise.all(config.fAssets.map(
-        (chainConfig) => ActorBaseRunner.create(config, CHALLENGER_ADDRESS, ActorBaseKind.CHALLENGER, chainConfig)
+        (chainConfig) => ActorBaseRunner.create(config, challengerAddress, ActorBaseKind.CHALLENGER, chainConfig)
     ));
     // run
     console.log("Challenger bot started, press CTRL+C to end");
@@ -26,4 +28,8 @@ toplevelRun(async () => {
         runner => runner.run(ActorBaseKind.CHALLENGER))
     );
     console.log("Challenger bot stopped");
+});
+
+toplevelRun(async () => {
+    await program.parseAsync();
 });

@@ -3,16 +3,18 @@ import "source-map-support/register";
 
 import { AgentBotRunner } from "@flarelabs/fasset-bots-core";
 import { createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, requireEnv, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { programWithCommonOptions } from "../utils/program";
 
-const OWNER_ADDRESS: string = requireSecret("owner.native.address");
-const OWNER_PRIVATE_KEY: string = requireSecret("owner.native.private_key");
-const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
+const program = programWithCommonOptions("bot", "all_fassets");
 
-toplevelRun(async () => {
-    const runConfig = loadAgentConfigFile(FASSET_BOT_CONFIG);
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [OWNER_PRIVATE_KEY], null);
-    const botConfig = await createBotConfig(runConfig, OWNER_ADDRESS);
+program.action(async () => {
+    const options: { config: string } = program.opts();
+    const runConfig = loadAgentConfigFile(options.config);
+    const ownerAddress: string = requireSecret("owner.native.address");
+    const ownerPrivateKey: string = requireSecret("owner.native.private_key");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [ownerPrivateKey], null);
+    const botConfig = await createBotConfig(runConfig, ownerAddress);
     // create runner and agents
     const runner = await AgentBotRunner.create(botConfig);
     // store owner's underlying address
@@ -30,4 +32,8 @@ toplevelRun(async () => {
     });
     await runner.run();
     console.log("Agent bot stopped");
+});
+
+toplevelRun(async () => {
+    await program.parseAsync();
 });

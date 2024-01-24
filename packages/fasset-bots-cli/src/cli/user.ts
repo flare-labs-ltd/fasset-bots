@@ -2,53 +2,14 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { InfoBot, UserBot } from "@flarelabs/fasset-bots-core";
-import { requireSecret, resetSecrets } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, minBN, resolveInFassetBotsCore, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
-import { Command } from "commander";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import { requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { CommandLineError, minBN, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import Web3 from "web3";
+import { programWithCommonOptions } from "../utils/program";
 
-const program = new Command();
+const program = programWithCommonOptions("user", "single_fasset");
 
-program
-    .addOption(
-        program
-            .createOption(
-                "-c, --config <configFile>",
-                "Config file path. If not provided, environment variable FASSET_USER_CONFIG is used as path, if set. Default file is embedded in the program and usually works."
-            )
-            .env("FASSET_USER_CONFIG")
-            .default(resolveInFassetBotsCore("run-config/coston-user.json"))
-    )
-    .addOption(
-        program
-            .createOption(
-                "-s, --secrets <secretsFile>",
-                "File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable FASSET_USER_SECRETS is used as path, if set. Default file is <USER_HOME>/.fasset/secrets.json."
-            )
-            .env("FASSET_USER_SECRETS")
-    )
-    .addOption(
-        program
-            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-            .makeOptionMandatory()
-    )
-    .hook("preAction", (_, command) => {
-        resetSecrets(getSecretsPath());
-    });
-
-function getSecretsPath() {
-    const options: { secrets?: string } = program.opts();
-    const defaultSecretsPath = path.resolve(os.homedir(), "fasset/secrets.json");
-    if (options.secrets != null) {
-        return options.secrets;
-    } else if (fs.existsSync(defaultSecretsPath)) {
-        return defaultSecretsPath;
-    }
-    return null;
-}
+program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
 
 program
     .command("info")
@@ -92,7 +53,6 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
     .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executor?: string, executorFee?: string }) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
@@ -120,7 +80,6 @@ program
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
         await minterBot.proveAndExecuteSavedMinting(requestId);
@@ -130,7 +89,6 @@ program
     .command("mintStatus")
     .description("List all open mintings")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, false);
         await minterBot.listMintings();
@@ -143,7 +101,6 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
@@ -164,7 +121,6 @@ program
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.savedRedemptionDefault(requestId);
@@ -174,7 +130,6 @@ program
     .command("redemptionStatus")
     .description("List all open redemptions")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
         await redeemerBot.listRedemptions();
@@ -193,7 +148,6 @@ program
     .command("poolHoldings")
     .description("Print the amount of tokens the user owns per pool")
     .action(async () => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await InfoBot.create(options.config, options.fasset);
         const address = requireSecret("user.native.address");
@@ -204,9 +158,8 @@ program
     .command("enterPool")
     .description("Enter a collateral pool with specified amount of collateral")
     .argument("<poolAddressOrTokenSymbol>")
-    .argument("<collateralAmount>")
+    .argument("<collateralAmount>", "amount of collateral (FLR or SGB) to add to the pool")
     .action(async (poolAddressOrTokenSymbol: string, collateralAmount: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
@@ -222,7 +175,6 @@ program
     .argument("<poolAddressOrTokenSymbol>")
     .argument("<amount>", 'the amount of tokens to burn, can be a number or "all"')
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
-        if (!getSecretsPath()) throw new CommandLineError("Missing secrets file. Perhaps you need to add argument --secrets.");
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);

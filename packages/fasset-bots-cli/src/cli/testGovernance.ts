@@ -1,92 +1,20 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { Command } from "commander";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
+import { programWithCommonOptions } from "../utils/program";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const AssetManagerController = artifacts.require("AssetManagerController");
 
-const deployerAddress = requireSecret("deployer.address");
+const program = programWithCommonOptions("bot", "all_fassets");
 
-async function whitelistAgent(configFileName: string, ownerAddress: string) {
-    const config = await initEnvironment(configFileName);
-    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
-    await agentOwnerRegistry.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
-}
-
-async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
-    const config = await initEnvironment(configFileName);
-    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
-    return agentOwnerRegistry.isWhitelisted(ownerAddress);
-}
-
-async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
-    const config = await initEnvironment(configFileName);
-    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;
-    const token = await FakeERC20.at(tokenAddres);
-    await token.mintAmount(recipientAddress, amount, { from: deployerAddress });
-}
-
-async function runOnAssetManagerController(configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {
-    const config = await initEnvironment(configFileName);
-    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const controller = await AssetManagerController.at(contracts.AssetManagerController.address);
-    const assetManagers = await controller.getAssetManagers();
-    return await method(controller, assetManagers);
-}
-
-async function addCollateralToken(configFileName: string, paramFile: string) {
-    const config = await initEnvironment(configFileName);
-    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const parameters = JSON.parse(readFileSync(paramFile).toString());
-    const collateralType: CollateralType = {
-        collateralClass: CollateralClass.VAULT,
-        token: addressFromParameter(contracts, parameters.token),
-        decimals: parameters.decimals,
-        validUntil: 0,  // not deprecated
-        directPricePair: parameters.directPricePair,
-        assetFtsoSymbol: parameters.assetFtsoSymbol,
-        tokenFtsoSymbol: parameters.tokenFtsoSymbol,
-        minCollateralRatioBIPS: parameters.minCollateralRatioBIPS,
-        ccbMinCollateralRatioBIPS: parameters.ccbMinCollateralRatioBIPS,
-        safetyMinCollateralRatioBIPS: parameters.safetyMinCollateralRatioBIPS,
-    };
-    const controller = await AssetManagerController.at(contracts.AssetManagerController.address);
-    const assetManagers = await controller.getAssetManagers();
-    await controller.addCollateralType(assetManagers, collateralType, { from: deployerAddress });
-}
-
-function addressFromParameter(contracts: ChainContracts, addressOrName: string) {
-    if (addressOrName.startsWith('0x')) return addressOrName;
-    const contract = contracts[addressOrName];
-    if (contract != null) return contract.address;
-    throw new Error(`Missing contract ${addressOrName}`);
-}
-
-async function initEnvironment(configFile: string) {
-    const config = loadConfigFile(configFile);
-    const nativePrivateKey = requireSecret("deployer.private_key");
-    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
-    if (deployerAddress !== accounts[0]) {
-        throw new Error("Invalid address/private key pair");
-    }
-    return config;
-}
-
-const program = new Command();
-
-program.addOption(program.createOption("-c, --config <configFile>", "Config file path (REQUIRED)")
-    .env("FASSET_BOT_CONFIG")
-    .makeOptionMandatory(true));
+program.name("testGovernance").description("Command line commands for governance operation (not in production mode)");
 
 program
     .command("whitelistAgent")
@@ -133,6 +61,7 @@ program
     .argument("tokenAddress", "token address")
     .action(async (tokenAddress: string) => {
         const options: { config: string } = program.opts();
+        const deployerAddress = requireSecret("deployer.address");
         await runOnAssetManagerController(options.config, async (controller, managers) => {
             await controller.deprecateCollateralType(managers, CollateralClass.VAULT, tokenAddress, 86400, { from: deployerAddress });
         });
@@ -141,3 +70,75 @@ program
 toplevelRun(async () => {
     await program.parseAsync();
 });
+
+async function whitelistAgent(configFileName: string, ownerAddress: string) {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = requireSecret("deployer.address");
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    await agentOwnerRegistry.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
+}
+
+async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    return agentOwnerRegistry.isWhitelisted(ownerAddress);
+}
+
+async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = requireSecret("deployer.address");
+    const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;
+    const token = await FakeERC20.at(tokenAddres);
+    await token.mintAmount(recipientAddress, amount, { from: deployerAddress });
+}
+
+async function runOnAssetManagerController(configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const controller = await AssetManagerController.at(contracts.AssetManagerController.address);
+    const assetManagers = await controller.getAssetManagers();
+    return await method(controller, assetManagers);
+}
+
+async function addCollateralToken(configFileName: string, paramFile: string) {
+    const config = await initEnvironment(configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = requireSecret("deployer.address");
+    const parameters = JSON.parse(readFileSync(paramFile).toString());
+    const collateralType: CollateralType = {
+        collateralClass: CollateralClass.VAULT,
+        token: addressFromParameter(contracts, parameters.token),
+        decimals: parameters.decimals,
+        validUntil: 0,  // not deprecated
+        directPricePair: parameters.directPricePair,
+        assetFtsoSymbol: parameters.assetFtsoSymbol,
+        tokenFtsoSymbol: parameters.tokenFtsoSymbol,
+        minCollateralRatioBIPS: parameters.minCollateralRatioBIPS,
+        ccbMinCollateralRatioBIPS: parameters.ccbMinCollateralRatioBIPS,
+        safetyMinCollateralRatioBIPS: parameters.safetyMinCollateralRatioBIPS,
+    };
+    const controller = await AssetManagerController.at(contracts.AssetManagerController.address);
+    const assetManagers = await controller.getAssetManagers();
+    await controller.addCollateralType(assetManagers, collateralType, { from: deployerAddress });
+}
+
+function addressFromParameter(contracts: ChainContracts, addressOrName: string) {
+    if (addressOrName.startsWith('0x')) return addressOrName;
+    const contract = contracts[addressOrName];
+    if (contract != null) return contract.address;
+    throw new Error(`Missing contract ${addressOrName}`);
+}
+
+async function initEnvironment(configFile: string) {
+    const config = loadConfigFile(configFile);
+    const deployerAddress = requireSecret("deployer.address");
+    const nativePrivateKey = requireSecret("deployer.private_key");
+    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+    if (deployerAddress !== accounts[0]) {
+        throw new Error("Invalid address/private key pair");
+    }
+    return config;
+}
