@@ -4,7 +4,7 @@
 
 ### Onboarding requirements
 
-To participate in the Testnet beta, you only need a server. The server stores all the wallet private keys and they can be generated during [agent setup](/docs/examples.md) using the command `generate-secrets --agent`. After generating the keys, you must deposit enough collateral (CFLR and USDC or USDT) into the agent's native Coston address `owner.native_address`. Also, ensure that the agent's XRP address `owner.underlying_address` has a minimum of 100 testXRP per vault to initialize the vault underlying address(es).
+To participate in the Testnet beta, you only need a server. The server stores all the wallet private keys and they can be generated during agent setup using the command `generate-secrets --agent`. After generating the keys, you must deposit enough collateral (CFLR and USDC or USDT) into the agent's native Coston address `owner.native_address`. Also, ensure that the agent's XRP address `owner.underlying_address` has a minimum of 100 testXRP per vault to initialize the vault underlying address(es).
 
 If you're using Songbird or Flare, it's recommended to have a more secure native address, such as a hardware wallet. While a secure XRP address is also an option, for now it can only be used to extract fees. In addition, when initializing a vault, the initial XRPs must be transferred to the server address before being used.
 
@@ -76,6 +76,15 @@ Keep in mind that you need to be running an agent bot all the time to avoid circ
 
     It will create an agent vault and output its address. Please save this address for future reference.
 
+    Example:
+
+    ```console
+    $ yarn agent-bot create POOLT-1 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    AGENT CREATED: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was created.
+    ```
+
     You can see your agent's information using this command:
 
     ```console
@@ -92,6 +101,15 @@ Keep in mind that you need to be running an agent bot all the time to avoid circ
 
     Please note that the USDC value is expressed with six decimal places.
 
+    In this example _25000(25K) testUSDC_ is deposited.
+
+    ```console
+    $ yarn agent-bot depositVaultCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 25000000000 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    VAULT COLLATERAL DEPOSIT: Deposit of 25000000000 to agent      0x5bc0886D3117507C779BD8c6240eb1C396385223 was successful.
+    ```
+
     3.2 Then you need to deposit CFLR, which is done by buying collateral pool tokens using this command:
 
     ```console
@@ -100,11 +118,30 @@ Keep in mind that you need to be running an agent bot all the time to avoid circ
 
     Please note that the FLR value is expressed with 18 decimal places.
 
+    In this example _4500 CFLR_ is deposited.
+
+    ```console
+    yarn agent-bot buyPoolCollateral 0x5bc0886D3117507C779BD8c6240eb1C396385223 4500000000000000000000 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    BUY POOL TOKENS: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 bought 4500000000000000000000 of pool tokens successfully.
+    ```
+
+
 4. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
 
     ```console
     yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
     ```
+
+    Example
+    ```console
+    $ yarn agent-bot enter 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    AGENT ENTERED AVAILABLE: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 entered available list.
+    ```
+
 
 5. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command.
 
@@ -138,6 +175,30 @@ yarn run-agent
     yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secrets secrets.json
     ```
 
+    Example:
+    Note: It might take a while to approve payments and get prices.
+
+    ```console
+    $ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    Reserving collateral...
+    Paying on the underlying chain for reservation 18455 to address r9K5mVRUXefhoc4zfJcQMidYtSne5vGpCB...
+    Waiting for transaction finalization...
+    Waiting for proof of underlying payment transaction 377DA47EABCBA2C23CDC13433074A83C1E248A7894DCA4E7FDE78C074FF4FD6D...
+    Executing payment...
+    Done
+    ```
+
+    From Agent's perspective
+
+    Minting will be automatically recognized via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified about it.
+
+    ```console
+    MINTING STARTED: Minting 18455 started for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
+    MINTING EXECUTED: Minting 18455 executed for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
+    ```
+
 ## Redeeming
 
 1. Start and keep running the agent bot:
@@ -153,3 +214,30 @@ yarn run-agent
     ```console
     yarn user-bot redeem <amountLots> -f FtestXRP --secrets secrets.json
     ```
+
+    Example:
+    note: It might take a while to get payment proofs and prices.
+
+    ```console
+    $ yarn user-bot redeem 1 -f FtestXRP
+    Initializing environment...
+    Environment successfully initialized.
+    Asking for redemption of 1 lots
+    Triggered 1 payment requests (addresses, block numbers and timestamps are on underlying chain):
+    id=17644  to=r3rep182VUoYCCNFqdCyNhbKzS3phQDwU  amount=9900000  agentVault=0x97204bd339e5e33acc7675dea5593f254BD8476C  reference=0x46425052664100020000000000000000000000000000000000000000000044ec  firstBlock=42746846  lastBlock=42747346  lastTimestamp=1699522276
+    ```
+
+    From Agent's perspective
+
+    Redemption will be automatically recognized and executed via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified about it.
+
+    ```console
+    REDEMPTION STARTED: Redemption 17644 started for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
+    REDEMPTION PAID: Redemption 17644 was paid for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
+    REDEMPTION PAYMENT PROOF REQUESTED: Payment proof for redemption 17644 was requested for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
+    ```
+
+## Miscellaneous
+
+Discover additional actions and functionalities by exploring further [in this guide](/docs/examples.md) such as listing and changing agent settings, and withdrawing the underlying assets.
+
