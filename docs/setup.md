@@ -127,21 +127,20 @@ Keep in mind that you need to be running an agent bot all the time to avoid circ
     BUY POOL TOKENS: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 bought 4500000000000000000000 of pool tokens successfully.
     ```
 
-
 4. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
 
     ```console
     yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
     ```
 
-    Example
+    Example:
+
     ```console
     $ yarn agent-bot enter 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
     Initializing environment...
     Environment successfully initialized.
     AGENT ENTERED AVAILABLE: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 entered available list.
     ```
-
 
 5. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command.
 
@@ -240,4 +239,3 @@ yarn run-agent
 ## Miscellaneous
 
 Discover additional actions and functionalities by exploring further [in this guide](/docs/examples.md) such as listing and changing agent settings, and withdrawing the underlying assets.
-
