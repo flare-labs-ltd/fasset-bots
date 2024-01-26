@@ -2,7 +2,8 @@
 import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX } from "../../test-utils/helpers";
-import { AgentSettingsConfig, createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
+import { createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
+import { AgentSettingsConfig } from "../../../src/config/config-files";
 import { web3 } from "../../../src/utils/web3";
 import { readFileSync } from "fs";
 import chaiAsPromised from "chai-as-promised";

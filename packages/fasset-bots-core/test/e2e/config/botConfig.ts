@@ -1,5 +1,4 @@
 import {
-    BotConfigFile,
     createAttestationHelper,
     createBlockchainIndexerHelper,
     createBlockchainWalletHelper,
@@ -11,6 +10,7 @@ import {
     loadConfigFile,
     updateConfigFilePaths,
 } from "../../../src/config/BotConfig";
+import { BotConfigFile } from "../../../src/config/config-files";
 import { initWeb3 } from "../../../src/utils/web3";
 import {
     ATTESTATION_PROVIDER_URLS,

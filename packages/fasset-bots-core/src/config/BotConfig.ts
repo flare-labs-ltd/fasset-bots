@@ -29,7 +29,6 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import path from "path";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
-export { BotConfigFile, BotFAssetInfo, AgentSettingsConfig } from "./config-files";
 
 const AddressUpdater = artifacts.require("AddressUpdater");
 

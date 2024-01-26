@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import { BotConfig, BotConfigFile, createBotConfig, updateConfigFilePaths } from "../../../src/config/BotConfig";
+import { BotConfig, createBotConfig, updateConfigFilePaths } from "../../../src/config/BotConfig";
+import { BotConfigFile } from "../../../src/config/config-files";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentBotContext, IAssetActorContext } from "../../../src/fasset-bots/IAssetBotContext";
 import {

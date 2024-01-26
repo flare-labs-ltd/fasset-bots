@@ -1,5 +1,6 @@
 import chalk from "chalk";
-import { BotConfigFile, BotFAssetInfo, loadConfigFile } from "../config/BotConfig";
+import { loadConfigFile } from "../config/BotConfig";
+import { BotConfigFile, BotFAssetInfo } from "../config/config-files";
 import { createNativeContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";

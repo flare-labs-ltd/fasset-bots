@@ -4,7 +4,8 @@ import { IAssetAgentBotContext, IAssetActorContext, IAssetNativeChainContext } f
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
-import { BotConfig, BotConfigFile, BotFAssetConfig, BotFAssetInfo } from "./BotConfig";
+import { BotConfig, BotFAssetConfig } from "./BotConfig";
+import { BotConfigFile, BotFAssetInfo } from "./config-files";
 import { ChainContracts, loadContracts } from "./contracts";
 
 const AssetManager = artifacts.require("AssetManager");
