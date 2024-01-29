@@ -1,9 +1,10 @@
-import { Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentCreateResponse, AgentSettings } from "../../common/AgentResponse";
+import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 
 @ApiTags("Agent")
 @Controller("api/agent")
@@ -12,12 +13,12 @@ import { AgentCreateResponse, AgentSettings } from "../../common/AgentResponse";
 export class AgentController {
     constructor(private readonly agentService: AgentService) {}
 
-    @Get("create/:fAssetSymbol/:poolTokenSuffix")
+    @Post("create/:fAssetSymbol")
     public async create(
         @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("poolTokenSuffix") poolTokenSuffix: string
+        @Body() agentSettings: AgentSettingsConfig
     ): Promise<ApiResponseWrapper<AgentCreateResponse | null>> {
-        return handleApiResponse(this.agentService.createAgent(fAssetSymbol, poolTokenSuffix));
+        return handleApiResponse(this.agentService.createAgent(fAssetSymbol, agentSettings));
     }
 
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")

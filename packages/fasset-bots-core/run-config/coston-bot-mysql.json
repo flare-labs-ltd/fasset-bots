@@ -42,7 +42,6 @@
         "port": 3306,
         "allowGlobalContext": true
     },
-    "defaultAgentSettingsPath": "./agent-settings-config.json",
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",
         "config": {

@@ -15,13 +15,14 @@ import { MockIndexer } from "../../../src/mock/MockIndexer";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { time } from "@openzeppelin/test-helpers";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { createTestAgentBot } from "../../test-utils/helpers";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { loadAgentSettings } from "../../../src/config";
 use(chaiAsPromised);
 use(spies);
 
@@ -91,7 +92,6 @@ describe("AgentBot cli commands unit tests", async () => {
             notifier: new MockNotifier(),
             addressUpdater: "",
         };
-        botCliCommands.agentSettingsPath = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
     });
 
     afterEach(function () {
@@ -475,7 +475,7 @@ describe("AgentBot cli commands unit tests", async () => {
 
     it("Should not create agent bot via bot cli commands", async () => {
         const localContext = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
-        const agent = await botCliCommands.createAgentVault(DEFAULT_POOL_TOKEN_SUFFIX());
+        const agent = await botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
         expect(agent).to.be.null;
         //change context back
         botCliCommands.context = context;

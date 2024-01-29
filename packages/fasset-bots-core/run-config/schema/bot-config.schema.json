@@ -153,9 +153,6 @@
         "contractsJsonFile": {
             "type": "string"
         },
-        "defaultAgentSettingsPath": {
-            "type": "string"
-        },
         "fAssetInfos": {
             "items": {
                 "$ref": "#/definitions/BotFAssetInfo"
@@ -192,6 +189,21 @@
         },
         "stateConnectorProofVerifierAddress": {
             "type": "string"
+        },
+        "walletOptions": {
+            "additionalProperties": false,
+            "properties": {
+                "blockOffset": {
+                    "type": "number"
+                },
+                "feeIncrease": {
+                    "type": "number"
+                },
+                "retries": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
         }
     },
     "required": [

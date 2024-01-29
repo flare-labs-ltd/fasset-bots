@@ -3,10 +3,11 @@ import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
 import { initWeb3 } from "../../../src/utils/web3";
 import spies from "chai-spies";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { COSTON_RPC } from "../../test-utils/test-bot-config";
+import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
+import { loadAgentSettings } from "../../../src/config";
 use(chaiAsPromised);
 use(spies);
 
@@ -41,7 +42,7 @@ describe("AgentBot cli commands unit tests", async () => {
     it("Should create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fAssetSymbol);
-        const agent = await botCliCommands.createAgentVault(DEFAULT_POOL_TOKEN_SUFFIX());
+        const agent = await botCliCommands.createAgentVault(loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
         expect(agent!.underlyingAddress).is.not.null;
         expect(agent!.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up

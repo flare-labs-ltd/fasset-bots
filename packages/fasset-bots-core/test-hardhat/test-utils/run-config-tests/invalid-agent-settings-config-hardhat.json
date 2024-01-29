@@ -1,11 +1,13 @@
 {
+    "$schema": "../../../run-config/schema/agent-settings.schema.json",
+    "poolTokenSuffix": "ABCX",
     "vaultCollateralFtsoSymbol": "USDCXYZ",
-    "feeBIPS": 1000,
-    "poolFeeShareBIPS": 4000,
-    "mintingVaultCollateralRatioConstant": 1.2,
-    "mintingPoolCollateralRatioConstant": 1.2,
-    "poolExitCollateralRatioConstant": 1.3,
-    "buyFAssetByAgentFactorBIPS": 9000,
-    "poolTopupCollateralRatioConstant": 1.1,
-    "poolTopupTokenPriceFactorBIPS": 8000
+    "fee": "0.5%",
+    "poolFeeShare": "40%",
+    "mintingVaultCollateralRatio": "1.6",
+    "mintingPoolCollateralRatio": "2.4",
+    "poolExitCollateralRatio": "2.6",
+    "buyFAssetByAgentFactor": "0.99",
+    "poolTopupCollateralRatio": "2.2",
+    "poolTopupTokenPriceFactor": "0.8"
 }

@@ -40,7 +40,6 @@
         "dbName": "fasset-bots-coston.db",
         "allowGlobalContext": true
     },
-    "defaultAgentSettingsPath": "./agent-settings-config.json",
     "alertsUrl": "https://fasset-dashboard-backend.aflabs.org/",
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",

@@ -1,9 +1,11 @@
 import "dotenv/config";
 import "source-map-support/register";
 
+import fs from "fs";
 import { toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
 import { programWithCommonOptions } from "../utils/program";
+import { loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
@@ -12,11 +14,29 @@ program.name("agent-bot").description("Command line commands for AgentBot");
 program
     .command("create")
     .description("create new agent vault")
-    .argument("<poolTokenSuffix>")
-    .action(async (poolTokenSuffix: string) => {
+    .option("--prepare")
+    .argument("[agentSettingsPath]")
+    .action(async (agentSettingsPath: string | undefined, opts: { prepare?: string }) => {
         const options: { fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.fasset);
-        await cli.createAgentVault(poolTokenSuffix);
+        if (opts.prepare) {
+            const cli = await BotCliCommands.create(options.fasset);
+            const template = await cli.prepareCreateAgentSettings();
+            const fname = "tmp.agent-settings.json";
+            fs.writeFileSync(fname, JSON.stringify(template, null, 4));
+            console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "agent-bot create ${fname}"`);
+        } else if (agentSettingsPath != null && fs.existsSync(agentSettingsPath)) {
+            const cli = await BotCliCommands.create(options.fasset);
+            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+        } else {
+            if (agentSettingsPath != null) {
+                console.error(`File ${agentSettingsPath} does not exist.`)
+            } else {
+                console.error(`Missing agentSettingsPath argument.`)
+            }
+            console.error(`First execute "agent-bot create --prepare" to generate initial setting file.`);
+            console.error(`Then edit that file and execute again with edited file's path as argument.`);
+            process.exit(1);
+        }
     });
 
 program

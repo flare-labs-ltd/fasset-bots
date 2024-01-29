@@ -133,8 +133,7 @@ describe("InfoBot cli commands unit tests", async () => {
     });
 
     it("Should find pool by symbol", async () => {
-        const suffix = "POOL-TKN-TEST";
-        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress, suffix);
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         const symbol = await agent.collateralPoolToken.symbol();
         expect(await infoBot.findPoolBySymbol(symbol)).to.eq(agent.collateralPool.address);
         const invalidSymbol = "INVALID_POOL";

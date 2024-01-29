@@ -4,7 +4,7 @@ import { BNish, fail } from "../../../src/utils/helpers";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { ORM } from "../../../src/config/orm";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { createAgentBotDefaultSettings } from "../../../src/config/BotConfig";
+import { createAgentBotDefaultSettings, loadAgentSettings } from "../../../src/config/BotConfig";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { Challenger } from "../../../src/actors/Challenger";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
@@ -39,7 +39,7 @@ export async function createTestAgentBot(
     console.log(`Validating new underlying address ${underlyingAddress}...`);
     const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     console.log(`Creating agent bot...`);
-         const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, defaultAgentConfigPath, DEFAULT_POOL_TOKEN_SUFFIX());
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(defaultAgentConfigPath));
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
 }
 

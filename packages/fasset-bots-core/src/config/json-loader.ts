@@ -3,6 +3,11 @@ import { readFileSync } from "fs";
 
 const ajv = new Ajv({ allowUnionTypes: true });
 
+export interface IJsonLoader<T> {
+    load(filename: string): T;
+    validate(data: unknown): T;
+}
+
 export class JsonLoader<T> {
     private ajvValidator?: ValidateFunction<T>;
 

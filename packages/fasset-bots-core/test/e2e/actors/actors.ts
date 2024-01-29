@@ -6,7 +6,7 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, createBotConfig, createAgentBotDefaultSettings, loadConfigFile } from "../../../src/config/BotConfig";
+import { BotConfig, createBotConfig, createAgentBotDefaultSettings, loadConfigFile, loadAgentSettings } from "../../../src/config/BotConfig";
 import { BotConfigFile } from "../../../src/config/config-files";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
@@ -17,7 +17,7 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { requireSecret } from "../../../src/config/secrets";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
-import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import chaiAsPromised from "chai-as-promised";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
@@ -75,7 +75,7 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should create agent bot and announce destroy", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, runConfig.defaultAgentSettingsPath!);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, COSTON_TEST_AGENT_SETTINGS);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         // read from entity
@@ -150,11 +150,7 @@ describe("Actor tests - coston", async () => {
     });
 
     it("Should not create agent - unknown address", async () => {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(
-            context,
-            runConfig.defaultAgentSettingsPath!,
-            DEFAULT_POOL_TOKEN_SUFFIX()
-        );
+        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
         const underlyingAddress = "underlying";
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
         const owner = new OwnerAddressPair("ownerAddress", "ownerAddress");

@@ -4,6 +4,7 @@ node_modules/
 dist/
 cache/
 log/
+temp/
 
 ### VisualStudioCode template
 .vscode/*
@@ -43,6 +44,7 @@ user-data/
 *.Identifier
 test/e2e/actors/tmp.ts
 tsconfig.tsbuildinfo
+tmp.*
 
 # config file with various keys and addresses
 secrets.json

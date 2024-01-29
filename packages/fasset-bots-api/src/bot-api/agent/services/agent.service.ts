@@ -1,15 +1,16 @@
-import { Injectable } from "@nestjs/common";
 import { BotCliCommands } from "@flarelabs/fasset-bots-core";
-import { AgentCreateResponse, AgentBalance, AgentUnderlying, AgentSettings } from "../../common/AgentResponse";
+import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { artifacts } from "@flarelabs/fasset-bots-core/utils";
+import { Injectable } from "@nestjs/common";
+import { AgentBalance, AgentCreateResponse, AgentSettings, AgentUnderlying } from "../../common/AgentResponse";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
 @Injectable()
 export class AgentService {
-    async createAgent(fAssetSymbol: string, poolTokenSuffix: string): Promise<AgentCreateResponse | null> {
+    async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
         const cli = await BotCliCommands.create(fAssetSymbol);
-        const agent = await cli.createAgentVault(poolTokenSuffix);
+        const agent = await cli.createAgentVault(agentSettings);
         if (agent) {
             return {
                 vaultAddress: agent.vaultAddress,

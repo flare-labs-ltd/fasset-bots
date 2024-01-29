@@ -13,12 +13,12 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
-import { requireNotNull, toBN } from "../utils/helpers";
+import { requireNotNull, toBIPS, toBN } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
 import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
-import { JsonLoader } from "./json-loader";
+import { IJsonLoader, JsonLoader } from "./json-loader";
 import { logger } from "../utils/logger";
 import { SourceId } from "../underlying-chain/SourceId";
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
@@ -68,8 +68,11 @@ export interface BotFAssetConfig {
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
-const botConfigLoader = new JsonLoader<BotConfigFile>(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
-const agentSettingsLoader = new JsonLoader<AgentSettingsConfig>(resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json"), "agent settings JSON");
+export const botConfigLoader: IJsonLoader<BotConfigFile> =
+    new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
+
+export const agentSettingsLoader: IJsonLoader<AgentSettingsConfig> =
+    new JsonLoader(resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json"), "agent settings JSON");
 
 /**
  * Loads configuration file and checks it.
@@ -115,13 +118,10 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     if (config.contractsJsonFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
     }
-    if (config.defaultAgentSettingsPath) {
-        config.defaultAgentSettingsPath = path.resolve(cfDir, config.defaultAgentSettingsPath);
-    }
 }
 
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
-export type AgentBotConfigFile = BotConfigFile & { defaultAgentSettingsPath: string; ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
+export type AgentBotConfigFile = BotConfigFile & { ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
 
 /**
  * Loads agent configuration file and checks it.
@@ -269,6 +269,10 @@ export async function createChainConfig(
     };
 }
 
+export function loadAgentSettings(fname: string) {
+    return agentSettingsLoader.load(fname);
+}
+
 /**
  * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
  * @param context fasset agent bot context
@@ -278,30 +282,27 @@ export async function createChainConfig(
  */
 export async function createAgentBotDefaultSettings(
     context: IAssetAgentBotContext,
-    agentSettingsConfigPath: string,
-    poolTokenSuffix: string
+    agentSettings: AgentSettingsConfig
 ): Promise<AgentBotDefaultSettings> {
-    const agentSettingsConfig = agentSettingsLoader.load(agentSettingsConfigPath);
     const collateralTypes = await context.assetManager.getCollateralTypes();
     const vaultCollateralToken = collateralTypes.find((token) =>
         Number(token.collateralClass) === CollateralClass.VAULT &&
-        token.tokenFtsoSymbol === agentSettingsConfig.vaultCollateralFtsoSymbol &&
+        token.tokenFtsoSymbol === agentSettings.vaultCollateralFtsoSymbol &&
         toBN(token.validUntil).eqn(0));
     if (!vaultCollateralToken) {
-        throw new Error(`Invalid vault collateral token ${agentSettingsConfig.vaultCollateralFtsoSymbol}`);
+        throw new Error(`Invalid vault collateral token ${agentSettings.vaultCollateralFtsoSymbol}`);
     }
-    const poolToken = await context.assetManager.getCollateralType(CollateralClass.POOL, await context.assetManager.getWNat());
     const agentBotSettings: AgentBotDefaultSettings = {
         vaultCollateralToken: vaultCollateralToken.token,
-        poolTokenSuffix: poolTokenSuffix,
-        feeBIPS: toBN(agentSettingsConfig.feeBIPS),
-        poolFeeShareBIPS: toBN(agentSettingsConfig.poolFeeShareBIPS),
-        mintingVaultCollateralRatioBIPS: toBN(vaultCollateralToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingVaultCollateralRatioConstant),
-        mintingPoolCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.mintingPoolCollateralRatioConstant),
-        poolExitCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolExitCollateralRatioConstant),
-        buyFAssetByAgentFactorBIPS: toBN(agentSettingsConfig.buyFAssetByAgentFactorBIPS),
-        poolTopupCollateralRatioBIPS: toBN(poolToken.minCollateralRatioBIPS).muln(agentSettingsConfig.poolTopupCollateralRatioConstant),
-        poolTopupTokenPriceFactorBIPS: toBN(agentSettingsConfig.poolTopupTokenPriceFactorBIPS),
+        poolTokenSuffix: agentSettings.poolTokenSuffix,
+        feeBIPS: toBIPS(agentSettings.fee),
+        poolFeeShareBIPS: toBIPS(agentSettings.poolFeeShare),
+        mintingVaultCollateralRatioBIPS: toBIPS(agentSettings.mintingVaultCollateralRatio),
+        mintingPoolCollateralRatioBIPS: toBIPS(agentSettings.mintingPoolCollateralRatio),
+        poolExitCollateralRatioBIPS: toBIPS(agentSettings.poolExitCollateralRatio),
+        buyFAssetByAgentFactorBIPS: toBIPS(agentSettings.buyFAssetByAgentFactor),
+        poolTopupCollateralRatioBIPS: toBIPS(agentSettings.poolTopupCollateralRatio),
+        poolTopupTokenPriceFactorBIPS: toBIPS(agentSettings.poolTopupTokenPriceFactor),
     };
     return agentBotSettings;
 }

@@ -19,8 +19,10 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
 import { getAgentSettings, printAgentInfo } from "../utils/fasset-helpers";
-import { AgentSettings } from "../fasset/AssetManagerTypes";
+import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import BN from "bn.js";
+import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
+import { resolveInFassetBotsCore } from "../utils";
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -30,7 +32,6 @@ export class BotCliCommands {
     context!: IAssetAgentBotContext;
     owner!: OwnerAddressPair;
     botConfig!: BotConfig;
-    agentSettingsPath!: string;
     BotFAssetInfo!: ChainInfo;
 
     /**
@@ -66,7 +67,6 @@ export class BotCliCommands {
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        this.agentSettingsPath = runConfig.defaultAgentSettingsPath;
         this.botConfig = await createBotConfig(runConfig, this.owner.workAddress);
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
@@ -84,18 +84,36 @@ export class BotCliCommands {
         logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
     }
 
+    async prepareCreateAgentSettings(): Promise<Schema_AgentSettingsConfig> {
+        const allCollaterals = await this.context.assetManager.getCollateralTypes();
+        const collaterals = allCollaterals.filter(c => Number(c.collateralClass) === CollateralClass.VAULT && String(c.validUntil) === "0");
+        return {
+            $schema: "file:///" + resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json").replace(/\\/g, "/"),
+            poolTokenSuffix: "",
+            vaultCollateralFtsoSymbol: collaterals.map(c => c.tokenFtsoSymbol).join("|"),
+            fee: "0.5%",
+            poolFeeShare: "40%",
+            mintingVaultCollateralRatio: "1.6",
+            mintingPoolCollateralRatio: "2.4",
+            poolExitCollateralRatio: "2.6",
+            poolTopupCollateralRatio: "2.2",
+            poolTopupTokenPriceFactor: "0.8",
+            buyFAssetByAgentFactor: "0.99",
+        };
+    }
+
     /**
      * Creates instance of Agent.
      * @param poolTokenSuffix
      */
-    async createAgentVault(poolTokenSuffix: string): Promise<Agent | null> {
+    async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent | null> {
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
             const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(this.context, this.owner, underlyingAddress);
             console.log(`Creating agent bot...`);
-            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, this.agentSettingsPath, poolTokenSuffix);
+            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
             await this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
             console.log(`Agent bot created.`);
