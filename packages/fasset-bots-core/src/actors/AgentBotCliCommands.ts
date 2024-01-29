@@ -8,7 +8,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { BN_ZERO, CommandLineError, requireEnv, toBN } from "../utils/helpers";
+import { BN_ZERO, CommandLineError, toBN } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
@@ -24,7 +24,6 @@ import BN from "bn.js";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
 import { resolveInFassetBotsCore } from "../utils";
 
-const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -37,22 +36,22 @@ export class BotCliCommands {
     /**
      *
      * Creates instance of BotCliCommands.
-     * @param fAssetSymbol symbol for the fasset
      * @param runConfigFile path to configuration file
+     * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(fAssetSymbol: string, runConfigFile: string = FASSET_BOT_CONFIG) {
+    static async create(runConfigFile: string, fAssetSymbol: string) {
         const bot = new BotCliCommands();
-        await bot.initEnvironment(fAssetSymbol, runConfigFile);
+        await bot.initEnvironment(runConfigFile, fAssetSymbol);
         return bot;
     }
 
     /**
      * Initializes asset context from AgentBotRunConfig
-     * @param fAssetSymbol symbol for the fasset
      * @param runConfigFile path to configuration file
+     * @param fAssetSymbol symbol for the fasset
      */
-    async initEnvironment(fAssetSymbol: string, runConfigFile: string = FASSET_BOT_CONFIG): Promise<void> {
+    async initEnvironment(runConfigFile: string, fAssetSymbol: string): Promise<void> {
         this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), requireSecret("owner.native.address"));
         // load config
         logger.info(`Owner ${this.owner.managementAddress} started to initialize cli environment.`);
