@@ -7,32 +7,32 @@
         },
         "buyFAssetByAgentFactor": {
             "description": "FTSO price factor at which the agent pays for burned fassets (in vault tokens) during pool providers' self close exit.",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "fee": {
             "description": "The minting fee percentage.",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "mintingPoolCollateralRatio": {
             "description": "Agent's minting collateral ratio for pool collateral (minimum CR at which the minting can happen).",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "mintingVaultCollateralRatio": {
             "description": "Agent's minting collateral ratio for vault collateral (minimum CR at which the minting can happen).",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "poolExitCollateralRatio": {
             "description": "Collateral pool's exit collateral ratio (minimum CR for pool collateral at which the collateral pool providers can exit;\nhowever, self-close exit is allowed even at lower pool CR).",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "poolFeeShare": {
             "description": "The percentage of the minting fee that goes to the collateral pool.",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "poolTokenSuffix": {
@@ -42,12 +42,12 @@
         },
         "poolTopupCollateralRatio": {
             "description": "Pool collateral ratio below which the providers can enter at discounted rate.",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "poolTopupTokenPriceFactor": {
             "description": "Discounted price factor at which providers can enter when topup is active (i.e. the pool CR is below poolTopupCollateralRatio).",
-            "pattern": "^\\d+(\\.\\d+)?\\%?$",
+            "pattern": "^\\d+(\\.\\d+)?%?$",
             "type": "string"
         },
         "vaultCollateralFtsoSymbol": {
