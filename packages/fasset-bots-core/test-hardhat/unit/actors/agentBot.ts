@@ -469,10 +469,11 @@ describe("Agent bot unit tests", async () => {
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", feeBIPS.muln(10));
         agentEnt.agentSettingUpdateValidAtFeeBIPS = validAtFeeBIPS;
         await orm.em.persist(agentEnt).flush();
+        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.false;
         //allowed
         await time.increaseTo(validAtFeeBIPS);
         await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.false;
+        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.true;
     });
 
     it("Should exit available", async () => {

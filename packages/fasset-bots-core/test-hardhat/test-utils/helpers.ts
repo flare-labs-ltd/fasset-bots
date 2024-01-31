@@ -57,6 +57,7 @@ export async function createTestAgentBot(
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
 }
 
@@ -84,6 +85,7 @@ export async function createTestAgent(
 ): Promise<Agent> {
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
     return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
 }

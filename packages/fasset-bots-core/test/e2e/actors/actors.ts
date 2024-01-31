@@ -22,7 +22,6 @@ import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers
 import chaiAsPromised from "chai-as-promised";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { getSecrets } from "../../../src/config/secrets";
-import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 import { MockNotifier } from "../../../src/mock/MockNotifier";
 use(chaiAsPromised);
 const fAssetSymbol = "FtestXRP";
@@ -34,6 +33,7 @@ describe("Actor tests - coston", async () => {
     let runConfig: BotConfigFile;
     let context: IAssetAgentBotContext;
     let orm: ORM;
+    let ownerManagementAddress: string;
     let ownerAddress: string;
     // for challenger, liquidator, systemKeeper
     let actorConfig: BotConfig;
@@ -51,6 +51,7 @@ describe("Actor tests - coston", async () => {
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
+        ownerManagementAddress = requireSecret("owner.management.address");
         ownerAddress = requireSecret("owner.native.address");
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
@@ -108,10 +109,10 @@ describe("Actor tests - coston", async () => {
         const config2 = Object.assign({}, botConfig);
         config2.notifier = undefined;
         await expect(AgentBotRunner.create(config1))
-            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`)
+            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerManagementAddress}.`)
             .and.be.an.instanceOf(Error);
         await expect(AgentBotRunner.create(config2))
-            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerAddress}.`)
+            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerManagementAddress}.`)
             .and.be.an.instanceOf(Error);
     });
 
