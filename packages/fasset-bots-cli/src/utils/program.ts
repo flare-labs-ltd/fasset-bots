@@ -12,34 +12,33 @@ export function programWithCommonOptions(user: 'bot' | 'user', fassets: 'single_
     const secretsEnvVar = user === 'user' ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
     const allowDefaultSecrets = user === 'user';
 
-    program
-        .addOption(
-            program
-                .createOption(
-                    "-c, --config <configFile>",
-                    squashSpace`Config file path. If not provided, environment variable ${configEnvVar} is used as path, if set.
+    program.addOption(
+        program
+            .createOption(
+                "-c, --config <configFile>",
+                squashSpace`Config file path. If not provided, environment variable ${configEnvVar} is used as path, if set.
                         Default file is embedded in the program and usually works.`
-                )
-                .env(configEnvVar)
-                .default(resolveInFassetBotsCore("run-config/coston-user.json"))
-        )
-        .addOption(
-            program
-                .createOption(
-                    "-s, --secrets <secretsFile>",
-                    `File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
+            )
+            .env(configEnvVar)
+            .default(resolveInFassetBotsCore("run-config/coston-user.json"))
+    );
+    program.addOption(
+        program
+            .createOption(
+                "-s, --secrets <secretsFile>",
+                `File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
                         is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/.fasset/secrets.json." : ""}`
-                )
-                .env(secretsEnvVar)
-        )
-        .addOption(
-            program
-                .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-                .makeOptionMandatory(fassets === 'single_fasset')
-        )
-        .hook("preAction", (_, command) => {
-            initializeSecrets(program, allowDefaultSecrets);
-        });
+            )
+            .env(secretsEnvVar)
+    );
+    if (fassets === 'single_fasset') {
+        program.addOption(
+            program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+        );
+    }
+    program.hook("preAction", (_, command) => {
+        initializeSecrets(program, allowDefaultSecrets);
+    });
 
     return program;
 }

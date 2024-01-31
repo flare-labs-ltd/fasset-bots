@@ -12,7 +12,7 @@ const PriceReader = artifacts.require("FtsoV1PriceReader");
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
-program.name("fakePriceReader").description("Command line commands managing and reading prices on fake price reader");
+program.name("fake-price-reader").description("Command line commands managing and reading prices on fake price reader");
 
 program
     .command("setPrice")

@@ -9,6 +9,8 @@ import fs from "fs";
 
 const program = new Command();
 
+program.name("key-gen").description("Command line commands for generating keys and secrets file");
+
 program
     .command("generateSecrets")
     .description("generate new secrets file")

@@ -14,7 +14,7 @@ const AssetManagerController = artifacts.require("AssetManagerController");
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
-program.name("testGovernance").description("Command line commands for governance operation (not in production mode)");
+program.name("test-governance").description("Command line commands for governance operation (not in production mode)");
 
 program
     .command("whitelistAgent")
@@ -75,14 +75,14 @@ async function whitelistAgent(configFileName: string, ownerAddress: string) {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = requireSecret("deployer.address");
-    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     await agentOwnerRegistry.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
 }
 
 async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts["AgentOwnerRegistry"]!.address);
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
 }
 

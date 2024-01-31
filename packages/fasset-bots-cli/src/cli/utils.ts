@@ -10,7 +10,7 @@ import { programWithCommonOptions } from "../utils/program";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
-program.name("utils").description("Command line command helpers");
+program.name("utils").description("Command line blockchain helpers");
 
 program
     .command("addTransaction")
