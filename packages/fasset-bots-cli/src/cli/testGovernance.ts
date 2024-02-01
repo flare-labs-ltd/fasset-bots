@@ -4,7 +4,7 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { BN_TEN, BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -89,13 +89,15 @@ async function isAgentWhitelisted(configFileName: string, ownerAddress: string):
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
 }
 
-async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: BNish): Promise<void> {
+async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = requireSecret("deployer.address");
     const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;
     const token = await FakeERC20.at(tokenAddres);
-    await token.mintAmount(recipientAddress, amount, { from: deployerAddress });
+    const decimals = Number(await token.decimals());
+    const amountBN = toBNExp(amount, decimals);
+    await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
 }
 
 async function runOnAssetManagerController(configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {

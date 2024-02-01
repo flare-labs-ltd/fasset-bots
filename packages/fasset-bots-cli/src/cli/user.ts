@@ -51,7 +51,7 @@ program
     .argument("<amountLots>")
     .option("-u, --updateBlock")
     .option("--executor <executorAddress>", "optional executor's native address")
-    .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
+    .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executor?: string, executorFee?: string }) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
@@ -99,7 +99,7 @@ program
     .description("Triggers redemption")
     .argument("<amountLots>")
     .option("--executor <executorAddress>", "optional executor's native address")
-    .option("--executorFee <executorFee>", "optional executor's fee in nat wei")
+    .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);

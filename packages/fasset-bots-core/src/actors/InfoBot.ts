@@ -117,7 +117,7 @@ export class InfoBot {
         for (const agent of agents) {
             const lots = String(agent.freeCollateralLots);
             const fee = Number(agent.feeBIPS) / 100;
-            const line = printer.line(agent.agentVault, lots, fee.toFixed(2));
+            const line = printer.line(agent.agentVault, lots, fee.toFixed(2) + "%");
             console.log(line);
             loggedAgents += `InfoBot fetched agent: ${line}\n`;
         }

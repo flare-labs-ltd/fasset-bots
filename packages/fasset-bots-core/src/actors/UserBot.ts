@@ -113,9 +113,10 @@ export class UserBot {
         this.fassetConfig = chainConfig;
         // create underlying wallet key
         if (requireWallet) {
-            const underlyingAddress = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.address`);
+            const chainName = decodedChainId(this.fassetConfig.chainInfo.chainId);
+            const underlyingAddress = requireSecret(`user.${chainName}.address`);
             this.underlyingAddress = await this.validateUnderlyingAddress(underlyingAddress);
-            const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.fassetConfig.chainInfo.chainId)}.private_key`);
+            const underlyingPrivateKey = requireSecret(`user.${chainName}.private_key`);
             await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
         }
         console.error(chalk.cyan("Environment successfully initialized."));
@@ -193,8 +194,10 @@ export class UserBot {
      */
     async mint(agentVault: string, lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
         const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
-        console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
-        console.log("    " + this.stateFilePath("mint", requestId));
+        if (executorAddress !== ZERO_ADDRESS) {
+            console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
+            console.log("    " + this.stateFilePath("mint", requestId));
+        }
         await this.proveAndExecuteSavedMinting(requestId);
         logger.info(`User ${this.nativeAddress} finished minting with agent ${agentVault}.`);
     }
