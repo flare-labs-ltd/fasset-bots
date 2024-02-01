@@ -622,31 +622,6 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "redemptionTicketId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "valueUBA",
-          "type": "uint256"
-        }
-      ],
-      "name": "DustConvertedToTicket",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "agentVault",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
           "name": "timestamp",
           "type": "uint256"
         }
@@ -743,12 +718,6 @@
           "indexed": true,
           "internalType": "uint256",
           "name": "collateralReservationId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "redemptionTicketId",
           "type": "uint256"
         },
         {
@@ -1159,6 +1128,75 @@
         }
       ],
       "name": "RedemptionRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "redemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ticketValueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionTicketCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "redemptionTicketId",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionTicketDeleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "redemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ticketValueUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionTicketUpdated",
       "type": "event"
     },
     {
@@ -2178,6 +2216,11 @@
         {
           "internalType": "uint256",
           "name": "_blockTimestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lastUpdateTs",
           "type": "uint256"
         }
       ],

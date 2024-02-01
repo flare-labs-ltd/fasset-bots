@@ -98,6 +98,28 @@ export interface RedemptionRequested {
   };
 }
 
+export interface RedemptionTicketDeleted {
+  name: "RedemptionTicketDeleted";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface SelfClose {
   name: "SelfClose";
   args: {
@@ -115,6 +137,8 @@ export type AllEvents =
   | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequested
+  | RedemptionTicketDeleted
+  | RedemptionTicketUpdated
   | SelfClose;
 
 export interface RedemptionRequestsInstance extends Truffle.ContractInstance {

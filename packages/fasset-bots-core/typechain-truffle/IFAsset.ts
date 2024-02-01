@@ -16,6 +16,10 @@ export type AllEvents = never;
 export interface IFAssetInstance extends Truffle.ContractInstance {
   assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   burn: {
     (
       _owner: string,
@@ -75,6 +79,10 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
 
   methods: {
     assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     burn: {
       (

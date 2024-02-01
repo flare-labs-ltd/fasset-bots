@@ -13,6 +13,8 @@ export interface FAssetMockContract
     _governance: string,
     _name: string,
     _symbol: string,
+    _assetName: string,
+    _assetSymbol: string,
     _decimals: number | BN | string,
     meta?: Truffle.TransactionDetails
   ): Promise<FAssetMockInstance>;
@@ -152,6 +154,10 @@ export interface FAssetMockInstance extends Truffle.ContractInstance {
   };
 
   assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   balanceHistoryCleanup: {
     (
@@ -910,6 +916,10 @@ export interface FAssetMockInstance extends Truffle.ContractInstance {
     };
 
     assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     balanceHistoryCleanup: {
       (

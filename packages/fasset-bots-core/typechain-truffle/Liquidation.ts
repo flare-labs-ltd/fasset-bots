@@ -62,12 +62,36 @@ export interface LiquidationStarted {
   };
 }
 
+export interface RedemptionTicketDeleted {
+  name: "RedemptionTicketDeleted";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export type AllEvents =
   | AgentInCCB
   | DustChanged
   | LiquidationEnded
   | LiquidationPerformed
-  | LiquidationStarted;
+  | LiquidationStarted
+  | RedemptionTicketDeleted
+  | RedemptionTicketUpdated;
 
 export interface LiquidationInstance extends Truffle.ContractInstance {
   methods: {};

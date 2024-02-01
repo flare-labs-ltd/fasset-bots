@@ -12,6 +12,8 @@ export interface FAssetContract extends Truffle.Contract<FAssetInstance> {
     _governance: string,
     _name: string,
     _symbol: string,
+    _assetName: string,
+    _assetSymbol: string,
     _decimals: number | BN | string,
     meta?: Truffle.TransactionDetails
   ): Promise<FAssetInstance>;
@@ -151,6 +153,10 @@ export interface FAssetInstance extends Truffle.ContractInstance {
   };
 
   assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   balanceHistoryCleanup: {
     (
@@ -886,6 +892,10 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     };
 
     assetManager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetName(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    assetSymbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     balanceHistoryCleanup: {
       (

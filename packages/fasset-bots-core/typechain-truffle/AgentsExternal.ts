@@ -34,18 +34,6 @@ export interface DustChanged {
   };
 }
 
-export interface DustConvertedToTicket {
-  name: "DustConvertedToTicket";
-  args: {
-    agentVault: string;
-    redemptionTicketId: BN;
-    valueUBA: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface LiquidationEnded {
   name: "LiquidationEnded";
   args: {
@@ -60,6 +48,18 @@ export interface PoolTokenRedemptionAnnounced {
     agentVault: string;
     amountWei: BN;
     withdrawalAllowedAt: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface RedemptionTicketCreated {
+  name: "RedemptionTicketCreated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
     0: string;
     1: BN;
     2: BN;
@@ -81,9 +81,9 @@ export interface VaultCollateralWithdrawalAnnounced {
 export type AllEvents =
   | AgentCollateralTypeChanged
   | DustChanged
-  | DustConvertedToTicket
   | LiquidationEnded
   | PoolTokenRedemptionAnnounced
+  | RedemptionTicketCreated
   | VaultCollateralWithdrawalAnnounced;
 
 export interface AgentsExternalInstance extends Truffle.ContractInstance {

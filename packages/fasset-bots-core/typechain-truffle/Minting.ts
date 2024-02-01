@@ -26,7 +26,6 @@ export interface MintingExecuted {
   args: {
     agentVault: string;
     collateralReservationId: BN;
-    redemptionTicketId: BN;
     mintedAmountUBA: BN;
     agentFeeUBA: BN;
     poolFeeUBA: BN;
@@ -35,7 +34,18 @@ export interface MintingExecuted {
     2: BN;
     3: BN;
     4: BN;
-    5: BN;
+  };
+}
+
+export interface RedemptionTicketCreated {
+  name: "RedemptionTicketCreated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
   };
 }
 
@@ -49,7 +59,11 @@ export interface UnderlyingBalanceChanged {
   };
 }
 
-export type AllEvents = DustChanged | MintingExecuted | UnderlyingBalanceChanged;
+export type AllEvents =
+  | DustChanged
+  | MintingExecuted
+  | RedemptionTicketCreated
+  | UnderlyingBalanceChanged;
 
 export interface MintingInstance extends Truffle.ContractInstance {
   methods: {};

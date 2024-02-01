@@ -283,18 +283,6 @@ export interface DustChanged {
   };
 }
 
-export interface DustConvertedToTicket {
-  name: "DustConvertedToTicket";
-  args: {
-    agentVault: string;
-    redemptionTicketId: BN;
-    valueUBA: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
 export interface FullLiquidationStarted {
   name: "FullLiquidationStarted";
   args: {
@@ -350,7 +338,6 @@ export interface MintingExecuted {
   args: {
     agentVault: string;
     collateralReservationId: BN;
-    redemptionTicketId: BN;
     mintedAmountUBA: BN;
     agentFeeUBA: BN;
     poolFeeUBA: BN;
@@ -359,7 +346,6 @@ export interface MintingExecuted {
     2: BN;
     3: BN;
     4: BN;
-    5: BN;
   };
 }
 
@@ -529,6 +515,40 @@ export interface RedemptionRequested {
   };
 }
 
+export interface RedemptionTicketCreated {
+  name: "RedemptionTicketCreated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface RedemptionTicketDeleted {
+  name: "RedemptionTicketDeleted";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    0: string;
+    1: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface SelfClose {
   name: "SelfClose";
   args: {
@@ -661,7 +681,6 @@ export type AllEvents =
   | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
-  | DustConvertedToTicket
   | FullLiquidationStarted
   | IllegalPaymentConfirmed
   | LiquidationEnded
@@ -678,6 +697,9 @@ export type AllEvents =
   | RedemptionRejected
   | RedemptionRequestIncomplete
   | RedemptionRequested
+  | RedemptionTicketCreated
+  | RedemptionTicketDeleted
+  | RedemptionTicketUpdated
   | SelfClose
   | SettingArrayChanged
   | SettingChanged
