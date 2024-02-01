@@ -1,4 +1,4 @@
-import Ajv, { JSONSchemaType, ValidateFunction } from "ajv";
+import Ajv, { ErrorObject, JSONSchemaType, ValidateFunction } from "ajv";
 import { readFileSync } from "fs";
 
 const ajv = new Ajv({ allowUnionTypes: true });
@@ -6,6 +6,15 @@ const ajv = new Ajv({ allowUnionTypes: true });
 export interface IJsonLoader<T> {
     load(filename: string): T;
     validate(data: unknown): T;
+}
+
+export class JsonLoaderError extends Error {
+    constructor(
+        message: string,
+        public validatorErrors: ErrorObject[]
+    ) {
+        super(message);
+    }
 }
 
 export class JsonLoader<T> {
@@ -35,6 +44,11 @@ export class JsonLoader<T> {
             delete (data as any)["$schema"]; // $schema field is only needed for validation, might interfere otherwise
             return data;
         }
-        throw new Error(`Invalid ${this.formatName} format: ${JSON.stringify(validator.errors)}`);
+        throw new JsonLoaderError(`Invalid ${this.formatName} format: ${this.formatErrors(validator.errors ?? [])}`, validator.errors ?? []);
+    }
+
+    private formatErrors(errors: ErrorObject[]) {
+        const linePrefix = errors.length > 1 ? "\n    - " : "";
+        return errors.map(err => `${linePrefix}${err.propertyName ?? err.instancePath.replace(/^\//, "")} ${err.message}`).join("");
     }
 }

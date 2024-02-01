@@ -13,7 +13,7 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { Notifier } from "../utils/Notifier";
-import { requireNotNull, toBIPS, toBN } from "../utils/helpers";
+import { CommandLineError, requireNotNull, toBIPS, toBN } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { requireSecret } from "./secrets";
 import { CreateOrmOptions, EM, ORM } from "./orm";
@@ -270,7 +270,11 @@ export async function createChainConfig(
 }
 
 export function loadAgentSettings(fname: string) {
-    return agentSettingsLoader.load(fname);
+    try {
+        return agentSettingsLoader.load(fname);
+    } catch (error) {
+        throw CommandLineError.wrap(error);
+    }
 }
 
 /**

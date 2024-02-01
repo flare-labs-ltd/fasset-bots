@@ -191,7 +191,11 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
-export class CommandLineError extends Error {}
+export class CommandLineError extends Error {
+    static wrap(error: any) {
+        return error?.message ? new CommandLineError(error.message) : error;
+    }
+}
 
 // toplevel async function runner for node.js
 /* istanbul ignore next */

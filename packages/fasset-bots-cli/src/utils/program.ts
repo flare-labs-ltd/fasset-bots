@@ -30,10 +30,12 @@ export function programWithCommonOptions(user: 'bot' | 'user', fassets: 'single_
                         is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/.fasset/secrets.json." : ""}`
             )
             .env(secretsEnvVar)
+            .makeOptionMandatory()
     );
     if (fassets === 'single_fasset') {
         program.addOption(
             program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+                .makeOptionMandatory()
         );
     }
     program.hook("preAction", (_, command) => {

@@ -86,11 +86,12 @@ export class BotCliCommands {
     async prepareCreateAgentSettings(): Promise<Schema_AgentSettingsConfig> {
         const allCollaterals = await this.context.assetManager.getCollateralTypes();
         const collaterals = allCollaterals.filter(c => Number(c.collateralClass) === CollateralClass.VAULT && String(c.validUntil) === "0");
+        const schema = resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json").replace(/\\/g, "/");
         return {
-            $schema: "file:///" + resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json").replace(/\\/g, "/"),
+            $schema: `file://${schema.startsWith("/") ? "" : "/"}${schema}`,
             poolTokenSuffix: "",
             vaultCollateralFtsoSymbol: collaterals.map(c => c.tokenFtsoSymbol).join("|"),
-            fee: "0.5%",
+            fee: "0.25%",
             poolFeeShare: "40%",
             mintingVaultCollateralRatio: "1.6",
             mintingPoolCollateralRatio: "2.4",
