@@ -14,6 +14,20 @@ export interface IAgentOwnerRegistryContract
   ): Promise<IAgentOwnerRegistryInstance>;
 }
 
+export interface AgentDataChanged {
+  name: "AgentDataChanged";
+  args: {
+    managementAddress: string;
+    name: string;
+    description: string;
+    iconUrl: string;
+    0: string;
+    1: string;
+    2: string;
+    3: string;
+  };
+}
+
 export interface Whitelisted {
   name: "Whitelisted";
   args: {
@@ -42,9 +56,28 @@ export interface WorkAddressChanged {
   };
 }
 
-export type AllEvents = Whitelisted | WhitelistingRevoked | WorkAddressChanged;
+export type AllEvents =
+  | AgentDataChanged
+  | Whitelisted
+  | WhitelistingRevoked
+  | WorkAddressChanged;
 
 export interface IAgentOwnerRegistryInstance extends Truffle.ContractInstance {
+  getAgentDescription(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getAgentIconUrl(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getAgentName(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   getManagementAddress(
     _workAddress: string,
     txDetails?: Truffle.TransactionDetails
@@ -61,6 +94,21 @@ export interface IAgentOwnerRegistryInstance extends Truffle.ContractInstance {
   ): Promise<boolean>;
 
   methods: {
+    getAgentDescription(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getAgentIconUrl(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getAgentName(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
     getManagementAddress(
       _workAddress: string,
       txDetails?: Truffle.TransactionDetails

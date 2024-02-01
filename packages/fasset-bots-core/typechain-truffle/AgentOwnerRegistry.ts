@@ -17,6 +17,20 @@ export interface AgentOwnerRegistryContract
   ): Promise<AgentOwnerRegistryInstance>;
 }
 
+export interface AgentDataChanged {
+  name: "AgentDataChanged";
+  args: {
+    managementAddress: string;
+    name: string;
+    description: string;
+    iconUrl: string;
+    0: string;
+    1: string;
+    2: string;
+    3: string;
+  };
+}
+
 export interface GovernanceCallTimelocked {
   name: "GovernanceCallTimelocked";
   args: {
@@ -94,6 +108,7 @@ export interface WorkAddressChanged {
 }
 
 export type AllEvents =
+  | AgentDataChanged
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
@@ -177,6 +192,21 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  getAgentDescription(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getAgentIconUrl(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  getAgentName(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
 
   getManagementAddress(
     _workAddress: string,
@@ -303,6 +333,37 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: string }>;
 
+  whitelistAndDescribeAgent: {
+    (
+      _managementAddress: string,
+      _name: string,
+      _description: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _managementAddress: string,
+      _name: string,
+      _description: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _managementAddress: string,
+      _name: string,
+      _description: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _managementAddress: string,
+      _name: string,
+      _description: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
     addAddressToWhitelist: {
       (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -377,6 +438,21 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    getAgentDescription(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getAgentIconUrl(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getAgentName(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
 
     getManagementAddress(
       _workAddress: string,
@@ -502,6 +578,37 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       arg0: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: string }>;
+
+    whitelistAndDescribeAgent: {
+      (
+        _managementAddress: string,
+        _name: string,
+        _description: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _managementAddress: string,
+        _name: string,
+        _description: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _managementAddress: string,
+        _name: string,
+        _description: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _managementAddress: string,
+        _name: string,
+        _description: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;
