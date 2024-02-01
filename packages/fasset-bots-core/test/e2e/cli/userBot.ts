@@ -34,7 +34,7 @@ describe("UserBot cli commands unit tests", async () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should should get infoBot", async () => {
+    it("Should get infoBot", async () => {
         const userBot = await UserBot.create(FASSET_BOT_CONFIG, "FtestXRP", false);
         const infoBot = userBot.infoBot();
         expect(infoBot.fassetInfo.symbol).to.eq("testXRP")

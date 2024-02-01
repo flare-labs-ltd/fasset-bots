@@ -30,11 +30,11 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
             sourceId: chainId,
             requestBody: { addressStr },
         };
-        const response = await this.prepareResponse<AddressValidity.ResponseBody>(request);
+        const response = await this.prepareResponse<AddressValidity.Response>(request);
         if (response.response == null) {
             throw new VerificationApiError(`Invalid request ${formatArgs(request)}`);
         }
-        return response.response;
+        return response.response.responseBody;
     }
 
     async prepareResponse<T>(request: ARBase): Promise<PreparedResponseRes<T>> {
