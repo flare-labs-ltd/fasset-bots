@@ -39,25 +39,10 @@ export async function createTestAgentBot(
     console.log(`Validating new underlying address ${underlyingAddress}...`);
     const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     console.log(`Creating agent bot...`);
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(defaultAgentConfigPath));
+    const settings = loadAgentSettings(defaultAgentConfigPath);
+    settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
+    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, settings);
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
-}
-
-export async function createTestAgentBotAndDepositCollaterals(
-    context: IAssetAgentBotContext,
-    orm: ORM,
-    ownerAddress: string,
-    defaultAgentConfigPath: string,
-    depositVaultCollateralAmount: BNish,
-    buyPoolTokensAmount: BNish,
-    notifier: MockNotifier = new MockNotifier()
-): Promise<AgentBot> {
-    const agentBot = await createTestAgentBot(context, orm, ownerAddress, defaultAgentConfigPath, notifier);
-    // deposit class 1
-    await agentBot.agent.depositVaultCollateral(depositVaultCollateralAmount);
-    // buy collateral pool tokens
-    await agentBot.agent.buyCollateralPoolTokens(buyPoolTokensAmount);
-    return agentBot;
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {

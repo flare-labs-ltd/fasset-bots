@@ -8,6 +8,7 @@ import chaiAsPromised from "chai-as-promised";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { loadAgentSettings } from "../../../src/config";
 import { requireEnv } from "../../../src/utils";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -44,9 +45,11 @@ describe("AgentBot cli commands unit tests", async () => {
     it("Should create agent bot via bot cli commands", async () => {
         botCliCommands = new BotCliCommands();
         await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
-        const agent = await botCliCommands.createAgentVault(loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
+        const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
+        agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
+        const agent = await botCliCommands.createAgentVault(agentSettings);
         expect(agent!.underlyingAddress).is.not.null;
-        expect(agent!.owner.managementAddress).to.eq(ownerAddress);
+        expect(agent!.owner.workAddress).to.eq(ownerAddress);
         // sort of clean up
         await agent!.announceDestroy();
     });
