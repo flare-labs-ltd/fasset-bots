@@ -11,6 +11,8 @@ export async function newAssetManager(
     assetManagerController: string | AssetManagerControllerInstance,
     name: string,
     symbol: string,
+    assetName: string,
+    assetSymbol: string,
     decimals: number,
     assetManagerSettings: AssetManagerSettings,
     collateralTokens: CollateralType[],
@@ -19,7 +21,7 @@ export async function newAssetManager(
 ): Promise<[AssetManagerInstance, FAssetInstance]> {
     const AssetManager = await linkAssetManager();
     const FAsset = artifacts.require("FAsset");
-    const fAsset = await FAsset.new(governanceAddress, name, symbol, decimals);
+    const fAsset = await FAsset.new(governanceAddress, name, symbol, assetName, assetSymbol, decimals);
     const assetManagerControllerAddress = typeof assetManagerController === "string" ? assetManagerController : assetManagerController.address;
     assetManagerSettings = web3DeepNormalize({
         ...assetManagerSettings,

@@ -177,6 +177,8 @@ export async function createTestAssetContext(
         assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
         chainInfo.name,
         chainInfo.symbol,
+        chainInfo.name,
+        chainInfo.symbol,
         chainInfo.decimals,
         web3DeepNormalize(settings),
         collaterals,
