@@ -35,4 +35,16 @@ interface ILiquidator is IERC3156FlashBorrower {
         address[] memory _vaultToFAssetDexPath,
         address[] memory _poolToVaultDexPath
      ) external;
+
+    /**
+     * Returns the minimum prices of relevant dexes from the given maximum slippage.
+     * @param _maxSlippageBipsDex1 The maximum slippage for the vault / f-asset dex
+     * @param _maxSlippageBipsDex2 The maximum slippage for the pool / vault dex
+     * @param _agentVault The agent vault from which to deduce vault, pool, and f-asset tokens
+     **/
+    function maxSlippageToMinPrices(
+        uint256 _maxSlippageBipsDex1,
+        uint256 _maxSlippageBipsDex2,
+        address _agentVault
+    ) external view returns (uint256, uint256, uint256, uint256);
 }

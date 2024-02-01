@@ -20,12 +20,12 @@ export async function getFactories(): Promise<ContractFactories> {
 }
 
 export async function getSigners(): Promise<TestSigners> {
-  const _signers = await ethers.getSigners()
-  const deployer = _signers[0]
-  const challenger = _signers[10]
-  const liquidator = _signers[11]
-  const rewardee = _signers[12]
-  const fAssetMinter = _signers[13]
+  const signers = await ethers.getSigners()
+  const deployer = signers[0]
+  const challenger = signers[10]
+  const liquidator = signers[11]
+  const rewardee = signers[12]
+  const fAssetMinter = signers[13]
   return { deployer, challenger, liquidator, fAssetMinter, rewardee }
 }
 

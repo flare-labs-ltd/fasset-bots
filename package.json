@@ -13,7 +13,7 @@
     "precoverage": "sh ./scripts/fix-blazeswap-hash.sh",
     "test": "yarn hardhat test",
     "test:unit": "yarn hardhat test test/unit/uniswap-v2.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
-    "test:integration": "yarn mocha -r ts-node/register test test/integration/liquidator.test.ts --timeout 1000000",
+    "test:integration": "yarn mocha --loader=ts-node/esm test test/integration/liquidator.test.ts --timeout 1000000",
     "coverage": "yarn hardhat coverage --testfiles \"test/unit/**/*.test.ts\""
   },
   "license": "MIT",
@@ -31,6 +31,7 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.7",
     "chai": "^4.3.10",
+    "chalk": "^4.3.0",
     "cross-env": "^7.0.3",
     "hardhat": "^2.12.2",
     "hardhat-gas-reporter": "^1.0.9",
@@ -45,7 +46,6 @@
     "blazeswap": "git+https://github.com/blazeswap/contracts.git#main",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
-    "enosys": "git+ssh://git@github.com:flrfinance/enosys-dex-contracts.git#master",
     "ethers": "^6.7.1",
     "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#beta-deploy"
   }

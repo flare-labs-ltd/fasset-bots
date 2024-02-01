@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { liquidationOutput, amgToTokenPrice, dexMinPriceFromMaxSlippage } from '../../calculations'
 import { ubaToAmg } from './utils'
-import { addLiquidity, swapOutput, swapOutputs } from './uniswap-v2'
+import { addLiquidity, swapOutput, swapOutputs, swapInput } from './uniswap-v2'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 import type { ERC20 } from '../../../types'
 
@@ -94,6 +94,10 @@ export class ContextUtils {
         poolFtsoPrice
       )
     )
+  }
+
+  async swapInput(path: ERC20[], amount: bigint): Promise<bigint> {
+    return swapInput(this.context.contracts.uniswapV2, path, amount)
   }
 
 }

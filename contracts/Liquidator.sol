@@ -7,11 +7,12 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IAssetManager, IIAssetManager } from "fasset/contracts/fasset/interface/IIAssetManager.sol";
 import { IIAgentVault } from "fasset/contracts/fasset/interface/IIAgentVault.sol";
-import { ILiquidator } from  "./interface/ILiquidator.sol";
+import { ILiquidator } from "./interface/ILiquidator.sol";
 import { ArbitrageConfig, EcosystemData, DexPairConfig } from "./lib/Structs.sol";
 import { UniswapV2 } from "./lib/UniswapV2.sol";
 import { Ecosystem } from "./lib/Ecosystem.sol";
 import { Optimum } from "./lib/Optimum.sol";
+
 
 /**
  * It is recommended for each person to deploy their own ownable
@@ -92,6 +93,23 @@ contract Liquidator is ILiquidator {
             })
         });
         _runArbitrage(_agentVault, _profitTo, config);
+    }
+
+    function maxSlippageToMinPrices(
+        uint256 _maxSlippageBipsDex1,
+        uint256 _maxSlippageBipsDex2,
+        address _agentVault
+    )
+        external view
+        returns (uint256, uint256, uint256, uint256)
+    {
+        address _dex = dex; // gas savings
+        EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
+        (uint256 minPriceMul1, uint256 minPriceDiv1) = _maxSlippageToMinPrice(
+            _dex, _maxSlippageBipsDex1, data.vaultCT, data.fAssetToken);
+        (uint256 minPriceMul2, uint256 minPriceDiv2) = _maxSlippageToMinPrice(
+            _dex, _maxSlippageBipsDex2, data.poolCT, data.vaultCT);
+        return (minPriceMul1, minPriceDiv1, minPriceMul2, minPriceDiv2);
     }
 
     function _runArbitrage(
@@ -245,6 +263,21 @@ contract Liquidator is ILiquidator {
             );
             IERC20(poolCT).approve(_config.dex, 0);
         }
+    }
+
+    function _maxSlippageToMinPrice(
+        address _dex,
+        uint256 _maxSlippageBips,
+        address _tokenA,
+        address _tokenB
+    )
+        internal view
+        returns (uint256, uint256)
+    {
+        (uint256 reservesA, uint256 reservesB) = _dex.getReserves(_tokenA, _tokenB);
+        uint256 minPriceMul = reservesB * (10000 - _maxSlippageBips);
+        uint256 minPriceDiv = reservesA * 10000;
+        return (minPriceMul, minPriceDiv);
     }
 
     function _getEnsurePath(

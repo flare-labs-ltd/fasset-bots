@@ -130,32 +130,41 @@ export async function syncDexReservesWithFtsoPrices(
   const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
   // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances
   // do this in two ways - with swap and with add liquidity
+  const address = await signer.getAddress()
   try {
     await swapDexPairToPrice(
       contracts, contracts.fAsset, contracts.usdc,
       assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
       signer, provider
     )
-  } catch {}
+  } catch {
+    console.error(`swap of ${address} for USDC/FAsset pair failed`)
+  }
   try {
     await addLiquidityToDexPairPrice(
       contracts.uniswapV2, contracts.fAsset, contracts.usdc,
       assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
       signer, provider)
-  } catch {}
+  } catch {
+    console.error(`add liquidity of ${address} for USDC/FAsset pair failed`)
+  }
   try {
     await swapDexPairToPrice(
       contracts, contracts.wNat, contracts.usdc,
       wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
       signer, provider
     )
-  } catch {}
+  } catch {
+    console.error(`swap of ${address} for WNAT/USDC pair failed`)
+  }
   try {
     await addLiquidityToDexPairPrice(
       contracts.uniswapV2, contracts.wNat, contracts.usdc,
       wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
       signer, provider)
-  } catch {}
+  } catch {
+    console.error(`add liquidity of ${address} for WNAT/USDC pair failed`)
+  }
 }
 
 // (TODO: do not assume that ftso decimals are 5)

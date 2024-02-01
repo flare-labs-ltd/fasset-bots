@@ -177,13 +177,24 @@ export function swapInputs(
   return amountIn
 }
 
-// P(A,B) can drop for maxSlippageBips
+// dex price can drop for <= maxSlippageBips
 export function dexMinPriceFromMaxSlippage(
   maxSlippageBips: number,
   reserveA: bigint,
   reserveB: bigint
 ): [bigint, bigint] {
-  return [reserveB * BigInt(10_000 - maxSlippageBips), reserveA]
+  return [reserveB * BigInt(10_000 - maxSlippageBips), BigInt(10_000) * reserveA]
+}
+
+// slippage from swappig amountA
+export function slippageBipsFromSwapAmount(
+  amountA: bigint,
+  reserveA: bigint,
+  reserveB: bigint
+): bigint {
+  const amountB = swapOutput(amountA, reserveA, reserveB)
+  const slippageFactor = BigInt(10_000) * amountB * reserveA / (amountA * reserveB)
+  return BigInt(10_000) - slippageFactor
 }
 
 ////////////////////////////////////////////////////////////////////////////

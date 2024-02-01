@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
-import { dexMinPriceFromMaxSlippage } from '../calculations'
+import { dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmount } from '../calculations'
 import { swapInput, swapOutputs } from './helpers/uniswap-v2'
 import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
@@ -200,25 +200,6 @@ describe("Tests for the Liquidator contract", () => {
       expect(profit).to.be.greaterThan(0)
     })
 
-    it("should fail arbitrage with dexes price falling lower than specified min price", async () => {
-      const config = ecosystemFactory.semiHealthyEcosystemWithHighSlippage
-      const { contracts, signers } = context
-      await utils.configureEcosystem(config)
-      // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
-      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
-      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1000, config.dex2VaultReserve, config.dex2PoolReserve)
-      await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-        contracts.agent,
-        signers.rewardee,
-        minPriceDex1Mul,
-        minPriceDex1Div,
-        minPriceDex2Mul,
-        minPriceDex2Div,
-        ZeroAddress, ZeroAddress,
-        [], []
-      )).to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
-    })
-
   })
 
   describe("Generic arbitrage failures", async () => {
@@ -263,6 +244,47 @@ describe("Tests for the Liquidator contract", () => {
       )).to.be.revertedWith("Liquidator: Invalid token path")
     })
 
+    it("should fail arbitrage with dexes price falling lower than specified min price", async () => {
+      const config = ecosystemFactory.semiHealthyEcosystemWithHighSlippage
+      const { contracts, signers } = context
+      await utils.configureEcosystem(config)
+      // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
+      // for exact percentage we would need to calculate what the optimal swapping amount is going to be
+      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
+      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1000, config.dex2PoolReserve, config.dex2VaultReserve)
+      await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
+        contracts.agent,
+        signers.rewardee,
+        minPriceDex1Mul,
+        minPriceDex1Div,
+        minPriceDex2Mul,
+        minPriceDex2Div,
+        ZeroAddress, ZeroAddress,
+        [], []
+      )).to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+    })
+
+  })
+
+  describe("Tools", () => {
+
+    it("should correctly calculate min price from max slippage", async () => {
+      const config = ecosystemFactory.baseEcosystem
+      await utils.configureEcosystem(config)
+      const { contracts } = context
+      // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
+      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
+      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1200, config.dex2PoolReserve, config.dex2VaultReserve)
+      // get the agent's min prices from contract
+      const [_minPriceDex1Mul, _minPriceDex1Div, _minPriceDex2Mul, _minPriceDex2Div]
+        = await contracts.liquidator.maxSlippageToMinPrices(1000, 1200, contracts.agent)
+      // check that the calculated min prices are the same as the ones from the contract
+      expect(minPriceDex1Mul).to.equal(_minPriceDex1Mul)
+      expect(minPriceDex1Div).to.equal(_minPriceDex1Div)
+      expect(minPriceDex2Mul).to.equal(_minPriceDex2Mul)
+      expect(minPriceDex2Div).to.equal(_minPriceDex2Div)
+    })
+
   })
 
   describe("Security", () => {
@@ -277,5 +299,6 @@ describe("Tests for the Liquidator contract", () => {
         "0x"
       )).to.be.revertedWith("Liquidator: Flash loan with invalid initiator")
     })
+
   })
 })

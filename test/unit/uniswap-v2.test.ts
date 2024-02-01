@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { XRP, USDT, WFLR } from './fixtures/assets'
 import { getFactories } from './fixtures/context'
 import deployUniswapV2 from './fixtures/dexes'
-import { convertUsd5ToToken, priceAB, swapToDexPrice } from '../calculations'
+import { convertUsd5ToToken, priceAB, swapToDexPrice, dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmount } from '../calculations'
 import { addLiquidity, swap, swapOutput } from './helpers/uniswap-v2'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type { IUniswapV2Router, ERC20Mock } from '../../types'
@@ -111,6 +111,39 @@ describe("Tests for the UniswapV2 implementation", () => {
     // check that the minter got the right amount of tokenC
     const amountC = await tokenC.balanceOf(signer)
     expect(amountC).to.equal(expectedSwapOutput)
+  })
+
+  it("should test restricting swap output if slippage is too high", async () => {
+    // declare vars for multiple tests
+    let minPriceMul: bigint
+    let minPriceDiv: bigint
+    let minOutB: bigint
+    // setup
+    await addInitialLiquidity()
+    const { 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB)
+    const amountA = reserveA / BigInt(1000)
+    await tokenA.mint(signer, amountA)
+    // three tests
+    // can't swap our amount at zero slippage
+    ;[minPriceMul, minPriceDiv] = dexMinPriceFromMaxSlippage(0, reserveA, reserveB)
+    minOutB = amountA * minPriceMul / minPriceDiv
+    await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, minOutB))
+      .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+    // can't swap at too low slippage of 0.1%
+    ;[minPriceMul, minPriceDiv] = dexMinPriceFromMaxSlippage(10, reserveA, reserveB)
+    minOutB = amountA * minPriceMul / minPriceDiv
+    await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, minOutB))
+      .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+    // can't swap at slippage a little below max
+    const slippage = slippageBipsFromSwapAmount(amountA, reserveA, reserveB)
+    ;[minPriceMul, minPriceDiv] = dexMinPriceFromMaxSlippage(Number(slippage) - 1, reserveA, reserveB)
+    minOutB = amountA * minPriceMul / minPriceDiv
+    await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, minOutB))
+      .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+    // can swap at slippage a little above max
+    ;[minPriceMul, minPriceDiv] = dexMinPriceFromMaxSlippage(Number(slippage) + 1, reserveA, reserveB)
+    minOutB = amountA * minPriceMul / minPriceDiv
+    await swap(uniswapV2, [tokenA, tokenB], amountA, signer, minOutB)
   })
 
 })

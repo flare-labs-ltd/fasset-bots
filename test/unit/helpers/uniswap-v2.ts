@@ -63,10 +63,11 @@ export async function swap(
   router: IUniswapV2Router,
   tokenPath: ERC20Mock[],
   amountA: bigint,
-  swapper: Signer
+  swapper: Signer,
+  minPrice: bigint = BigInt(0)
   ): Promise<void> {
     await tokenPath[0].connect(swapper).approve(router, amountA)
-  await router.connect(swapper).swapExactTokensForTokens(amountA, 0, tokenPath, swapper, ethers.MaxUint256)
+  await router.connect(swapper).swapExactTokensForTokens(amountA, minPrice, tokenPath, swapper, ethers.MaxUint256)
 }
 
 // needed if a swap affects the reserves of a pair used in a subsequent swap
