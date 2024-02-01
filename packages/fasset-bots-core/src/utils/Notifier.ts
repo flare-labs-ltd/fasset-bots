@@ -145,7 +145,8 @@ export class Notifier {
         };
         await this.client.post<PostAlert>(`/api/0/bot_alert`, request).catch((e: AxiosError) => {
             logger.error(`Notifier error: cannot send notification ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
-            throw new Error(`Notifier error: cannot send request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+            console.error(`${chalk.red("Notifier error:")} cannot send notification (${request.level} to ${request.bot_type}) "${request.title}: ${request.description}"`)
+            // throw new Error(`Notifier error: cannot send request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
         });
     }
 
