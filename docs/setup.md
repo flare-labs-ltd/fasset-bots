@@ -72,13 +72,26 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 1. Choose your unique collateral pool token suffix. It can include upper-case letters, numbers, and dashes (e.g. `ALPHA-1`).
 
-2. To create an agent vault and output its address, you need to run the following command:
+2. To create an agent vault and output its address, you need to run the following commands:
+
+   First, generate the initial agent settings file
 
    ```console
-   yarn agent-bot create <poolTokenSuffix> --fasset FtestXRP
+   yarn agent-bot create --prepare --fasset FtestXRP
+   ```
+
+   This will create the aggent setting file `tmp.agent-settings.json`.
+   Then fix the settings in the file - choose the collateral currency, set the pool token suffix and review/change other settings (fees, minting collateral ratios etc.).
+
+   Then create the agent by executing
+
+   ```console
+   yarn agent-bot create tmp.agent-settings.json --fasset FtestXRP
    ```
 
    It will create an agent vault and output its address. Please save this address for future reference.
+
+   You can delete `tmp.agent-settings.json` when done.
 
 3. To make the agent operational, you need to fund the vault with two types of collateral. You can ask for test CFLR tokens, and we will provide them during the beta period.
 

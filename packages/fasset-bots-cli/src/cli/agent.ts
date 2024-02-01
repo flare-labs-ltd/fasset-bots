@@ -23,7 +23,7 @@ program
             const template = await cli.prepareCreateAgentSettings();
             const fname = "tmp.agent-settings.json";
             fs.writeFileSync(fname, JSON.stringify(template, null, 4));
-            console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "agent-bot create ${fname}"`);
+            console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "yarn agent-bot create ${fname}"`);
         } else if (agentSettingsPath != null && fs.existsSync(agentSettingsPath)) {
             const cli = await BotCliCommands.create(options.config, options.fasset);
             await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
@@ -33,7 +33,7 @@ program
             } else {
                 console.error(`Missing agentSettingsPath argument.`)
             }
-            console.error(`First execute "agent-bot create --prepare" to generate initial setting file.`);
+            console.error(`First execute "yarn agent-bot create --prepare" to generate initial setting file.`);
             console.error(`Then edit that file and execute again with edited file's path as argument.`);
             process.exit(1);
         }

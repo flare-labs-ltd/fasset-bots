@@ -15,7 +15,7 @@ Challenger part:
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
 Agent part:
-- Set up agent `yarn agent-bot create <poolTokenSuffix> -f <fAssetSymbol>`.
+- Set up agent `yarn agent-bot create --prepare -f <fAssetSymbol>`, fix file `tmp.agent-settings.json` and then run `yarn agent-bot create tmp.agent-settings.json -f <fAssetSymbol>`.
 - Deposit vault collateral to agent `yarn agent-bot depositVaultCollateral <agentVault> 1000000000000000000000 -f <fAssetSymbol>` (e.g. 1000 testUSDT should be enough).
 - Check and make note of vault collateral token balance of challenger and agent (e.g. https://coston-explorer.flare.network/address/<challenger.address>, https://coston-explorer.flare.network/address/<agentVault>).
 - Get agent's underlying address `yarn agent-bot info <agentVault> -f <fAssetSymbol>`.
@@ -32,7 +32,7 @@ Challenger part:
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
 Agent part:
--  Set up agent `yarn agent-bot create <poolTokenSuffix> -f <fAssetSymbol>`.
+- Set up agent `yarn agent-bot create --prepare -f <fAssetSymbol>`, fix file `tmp.agent-settings.json` and then run `yarn agent-bot create tmp.agent-settings.json -f <fAssetSymbol>`.
 - Deposit vault collateral to agent `yarn agent-bot depositVaultCollateral <agentVault> 1000000000000000000000 -f <fAssetSymbol>` (e.g. 1000 testUSDT should be enough).
 - Check and make note of vault collateral token balance of challenger and agent (e.g. https://coston-explorer.flare.network/address/<challenger.address>, https://coston-explorer.flare.network/address/<agentVault>).
 - Get agent's underlying address `yarn agent-bot info <agentVault> -f <fAssetSymbol>`.
@@ -53,7 +53,7 @@ Challenger part:
 - Run challenger script `node dist/src/run/run-challenger.js`.
 
 Agent part:
-- Set up agent `yarn agent-bot create <poolTokenSuffix> -f <fAssetSymbol>`.
+- Set up agent `yarn agent-bot create --prepare -f <fAssetSymbol>`, fix file `tmp.agent-settings.json` and then run `yarn agent-bot create tmp.agent-settings.json -f <fAssetSymbol>`.
 - Deposit vault collateral to agent `yarn agent-bot depositVaultCollateral <agentVault> 1000000000000000000000 -f <fAssetSymbol>` (e.g. 1000 testUSDT should be enough).
 - Check and make note of vault collateral token balance of challenger and agent (e.g. https://coston-explorer.flare.network/address/<challenger.address>, https://coston-explorer.flare.network/address/<agentVault>).
 - Get agent's underlying address `yarn agent-bot info <agentVault> -f <fAssetSymbol>`.

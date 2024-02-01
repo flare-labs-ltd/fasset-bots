@@ -26,7 +26,12 @@ Note: Fund `owner.native.address` with selected vault collateral and native coll
 1. Create agent. The output is native address of created agent.
 
 ```console
-$ yarn agent-bot create POOLT-1 -f FtestXRP
+$ yarn agent-bot create --prepare -f FtestXRP
+Initializing environment...
+Environment successfully initialized.
+Initial settings have been written to tmp.agent-settings.json. Please edit this file and then execute "yarn agent-bot create tmp.agent-settings.json"
+
+$ yarn agent-bot create tmp.agent-settings.json -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 AGENT CREATED: Agent 0x5bc0886D3117507C779BD8c6240eb1C396385223 was created.
