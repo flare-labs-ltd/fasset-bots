@@ -20,9 +20,12 @@ program
     .command("whitelistAgent")
     .description("allow agent owner address to operate")
     .argument("address", "owner's address")
-    .action(async (address: string) => {
+    .argument("name", "owner's name")
+    .argument("description", "owner's description")
+    .argument("[iconUrl]", "owner's icon url")
+    .action(async (address: string, name: string, description: string, iconUrl?: string) => {
         const options: { config: string } = program.opts();
-        await whitelistAgent(options.config, address);
+        await whitelistAndDescribeAgent(options.config, address, name, description, iconUrl ?? "");
     });
 
 program
@@ -71,12 +74,12 @@ toplevelRun(async () => {
     await program.parseAsync();
 });
 
-async function whitelistAgent(configFileName: string, ownerAddress: string) {
+async function whitelistAndDescribeAgent(configFileName: string, ownerAddress: string, name: string, description: string, iconUrl: string) {
     const config = await initEnvironment(configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = requireSecret("deployer.address");
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
-    await agentOwnerRegistry.addAddressesToWhitelist([ownerAddress], { from: deployerAddress });
+    await agentOwnerRegistry.whitelistAndDescribeAgent(ownerAddress, name, description, iconUrl, { from: deployerAddress });
 }
 
 async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
