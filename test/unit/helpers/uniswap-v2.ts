@@ -14,12 +14,13 @@ export async function addLiquidity(
   tokenB: ERC20Mock,
   amountA: bigint,
   amountB: bigint,
-  liquidityProvider: Signer
+  liquidityProvider: Signer,
+  mint: boolean = true
 ): Promise<void> {
-  // mint because we just want to add liquidity to the pool,
-  // are not testing for the effects on liquidity providers
-  await tokenA.mint(liquidityProvider, amountA)
-  await tokenB.mint(liquidityProvider, amountB)
+  if (mint) {
+    await tokenA.mint(liquidityProvider, amountA)
+    await tokenB.mint(liquidityProvider, amountB)
+  }
   await tokenA.connect(liquidityProvider).approve(router, amountA)
   await tokenB.connect(liquidityProvider).approve(router, amountB)
   await router.connect(liquidityProvider).addLiquidity(

@@ -32,78 +32,6 @@ export function priceAB(
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// implicit ecosystem setters
-
-// get tokenA/tokenB reserve, based on
-// the prices that they should have and
-// tokenB/tokenA reserve
-// prices should be in the same currency,
-// e.g. FLR/$, XRP/$
-export function priceBasedInitialDexReserve(
-  priceA: bigint,
-  priceB: bigint,
-  decimalsA: bigint,
-  decimalsB: bigint,
-  reserveA: bigint,
-): bigint {
-  // reserveB / reserveA = priceA / priceB
-  return reserveA
-    * priceA
-    * BigInt(10) ** decimalsB
-    / BigInt(10) ** decimalsA
-    / priceB
-}
-
-// prices are in some same currency
-export function collateralForAgentCr(
-  crBips: bigint,
-  totalMintedUBA: bigint,
-  priceFAsset: bigint,
-  priceCollateral: bigint,
-  decimalsFAsset: bigint,
-  decimalsCollateral: bigint
-): bigint {
-  return totalMintedUBA
-    * priceFAsset
-    * BigInt(10) ** decimalsCollateral
-    * crBips
-    / priceCollateral
-    / BigInt(10) ** decimalsFAsset
-    / BigInt(10_000)
-}
-
-// get the asset price that results in given
-// given collateral ratio for the agent
-export function assetPriceForAgentCr(
-  crBips: bigint,
-  totalMintedUBA: bigint,
-  collateralWei: bigint,
-  collateralFtsoPrice: bigint,
-  collateralFtsoDecimals: bigint,
-  collateralTokenDecimals: bigint,
-  fAssetFtsoDecimals: bigint,
-  fAssetTokenDecimals: bigint
-): bigint {
-  // price of f-asset UBA in collateral Wei
-  // v / (P(Fu, Vw) f) = R
-  // P(Fu, Vw) = v / (f R)
-  // new ftso price for the asset
-  // P(Fu, Vw) = 10^((dV + fV) - (dF + fF)) P(F, SF) / P(V, SV)
-  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) P(Fu, Vw)
-  // put together
-  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) v / (f R)
-  const expPlus = fAssetTokenDecimals + fAssetFtsoDecimals
-  const expMinus = collateralTokenDecimals + collateralFtsoDecimals
-  return BigInt(10) ** expPlus
-    * collateralFtsoPrice
-    * collateralWei
-    * BigInt(10_000)
-    / BigInt(10) ** expMinus
-    / crBips
-    / totalMintedUBA
-}
-
-////////////////////////////////////////////////////////////////////////////
 // uniswap v2 formulas
 
 // calculates the amount of tokenB received
@@ -197,8 +125,93 @@ export function slippageBipsFromSwapAmount(
   return BigInt(10_000) - slippageFactor
 }
 
+// exact liquidity to be deposited
+export function acceptedLiquidity(
+  reserveA: bigint,
+  reserveB: bigint,
+  addedA: bigint,
+  addedB: bigint
+): [bigint, bigint] {
+  const exactAddedA = addedB * reserveA / reserveB
+  if (exactAddedA <= addedA) {
+    return [exactAddedA, addedB]
+  } else {
+    const exactAddedB = addedA * reserveB / reserveA
+    return [addedA, exactAddedB]
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////
-// ecosystem setters used to align dex prices with ftso
+// implicit ecosystem setters
+
+// get tokenA/tokenB reserve, based on
+// the prices that they should have and
+// tokenB/tokenA reserve
+// prices should be in the same currency,
+// e.g. FLR/$, XRP/$
+export function priceBasedInitialDexReserve(
+  priceA: bigint,
+  priceB: bigint,
+  decimalsA: bigint,
+  decimalsB: bigint,
+  reserveA: bigint,
+): bigint {
+  // reserveB / reserveA = priceA / priceB
+  return reserveA
+    * priceA
+    * BigInt(10) ** decimalsB
+    / BigInt(10) ** decimalsA
+    / priceB
+}
+
+// prices are in some same currency
+export function collateralForAgentCr(
+  crBips: bigint,
+  totalMintedUBA: bigint,
+  priceFAsset: bigint,
+  priceCollateral: bigint,
+  decimalsFAsset: bigint,
+  decimalsCollateral: bigint
+): bigint {
+  return totalMintedUBA
+    * priceFAsset
+    * BigInt(10) ** decimalsCollateral
+    * crBips
+    / priceCollateral
+    / BigInt(10) ** decimalsFAsset
+    / BigInt(10_000)
+}
+
+// get the asset price that results in given
+// given collateral ratio for the agent
+export function assetPriceForAgentCr(
+  crBips: bigint,
+  totalMintedUBA: bigint,
+  collateralWei: bigint,
+  collateralFtsoPrice: bigint,
+  collateralFtsoDecimals: bigint,
+  collateralTokenDecimals: bigint,
+  fAssetFtsoDecimals: bigint,
+  fAssetTokenDecimals: bigint
+): bigint {
+  // price of f-asset UBA in collateral Wei
+  // v / (P(Fu, Vw) f) = R
+  // P(Fu, Vw) = v / (f R)
+  // new ftso price for the asset
+  // P(Fu, Vw) = 10^((dV + fV) - (dF + fF)) P(F, SF) / P(V, SV)
+  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) P(Fu, Vw)
+  // put together
+  // P(F, SF) = 10^((dF + fF) - (dV + fV)) P(V, SV) v / (f R)
+  const expPlus = fAssetTokenDecimals + fAssetFtsoDecimals
+  const expMinus = collateralTokenDecimals + collateralFtsoDecimals
+  return BigInt(10) ** expPlus
+    * collateralFtsoPrice
+    * collateralWei
+    * BigInt(10_000)
+    / BigInt(10) ** expMinus
+    / crBips
+    / totalMintedUBA
+}
 
 // returns the maximal reserves that can be added to a dex,
 // with some initial reserves, that produce the given price on

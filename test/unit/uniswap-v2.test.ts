@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { XRP, USDT, WFLR } from './fixtures/assets'
 import { getFactories } from './fixtures/context'
 import deployUniswapV2 from './fixtures/dexes'
-import { convertUsd5ToToken, priceAB, swapToDexPrice, dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmount } from '../calculations'
+import { convertUsd5ToToken, priceAB, swapToDexPrice, dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmount, acceptedLiquidity } from '../calculations'
 import { addLiquidity, swap, swapOutput } from './helpers/uniswap-v2'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type { IUniswapV2Router, ERC20Mock } from '../../types'
@@ -144,6 +144,29 @@ describe("Tests for the UniswapV2 implementation", () => {
     ;[minPriceMul, minPriceDiv] = dexMinPriceFromMaxSlippage(Number(slippage) + 1, reserveA, reserveB)
     minOutB = amountA * minPriceMul / minPriceDiv
     await swap(uniswapV2, [tokenA, tokenB], amountA, signer, minOutB)
+  })
+
+  it("should test adding liquidity", async () => {
+    const liquidityTokenA = BigInt(10) ** BigInt(18)
+    const liquidityTokenB = BigInt(10) ** BigInt(18)
+    await addLiquidity(uniswapV2, tokenA, tokenB, liquidityTokenA, liquidityTokenB, signer)
+    const { 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB)
+    const balanceA = await tokenA.balanceOf(signer)
+    const balanceB = await tokenB.balanceOf(signer)
+    expect(balanceA).to.equal(0)
+    expect(balanceB).to.equal(0)
+    // try adding more liquidity
+    const addedLiquidityTokenA = BigInt(41412) * BigInt(10) ** BigInt(18)
+    const addedLiquidityTokenB = BigInt(1231) * BigInt(10) ** BigInt(18)
+    await tokenA.mint(signer, addedLiquidityTokenA)
+    await tokenB.mint(signer, addedLiquidityTokenB)
+    await addLiquidity(uniswapV2, tokenA, tokenB, addedLiquidityTokenA, addedLiquidityTokenB, signer, false)
+    // check that the liquidity is correct
+    const balanceAAfter = await tokenA.balanceOf(signer)
+    const balanceBAfter = await tokenB.balanceOf(signer)
+    const [expectedAddedA, expectedAddedB] = acceptedLiquidity(reserveA, reserveB, addedLiquidityTokenA, addedLiquidityTokenB)
+    expect(balanceAAfter).to.equal(addedLiquidityTokenA - expectedAddedA)
+    expect(balanceBAfter).to.equal(addedLiquidityTokenB - expectedAddedB)
   })
 
 })

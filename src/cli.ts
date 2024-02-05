@@ -1,7 +1,8 @@
 import { Command, OptionValues } from "commander"
 import { JsonRpcProvider, Wallet } from "ethers"
 import { deployLiquidator, deployChallenger } from "./deploy"
-import { getDexVsFtsoPrices, fixDex, setUpDex, removeDexLiquidity, setUpFlashLender } from "./dex"
+import { getDexVsFtsoPrices, setUpDex, fixDex, removeDexLiquidity } from "./dex"
+import { getBaseContracts, getContracts } from "../test/integration/helpers/contracts"
 
 
 export async function cli(program: Command) {
@@ -11,7 +12,7 @@ export async function cli(program: Command) {
     .option("-e, --env-path <env-path>", "path to the file with private key and rpc url", ".env")
     .hook("preAction", (cmd) => {
       const opts = cmd.opts()
-      if (opts.envPath !== undefined) {
+      if (opts.envPath === undefined) {
         require("dotenv").config({ path: opts.envPath })
         opts.provider = new JsonRpcProvider(process.env.RPC!)
         opts.signer = new Wallet(process.env.PRIVATE_KEY!, opts.provider)
@@ -30,5 +31,21 @@ export async function cli(program: Command) {
       }
     })
   program
-    .command("dex").description("set up dex")
+    .command("dex").description("methods regarding used dex")
+    .argument("<prices|setup|fix|remove-liquidity>", "action to perform")
+    .argument("asset-manager", "address of the asset manager")
+    .action(async (action: string, assetManager: string, opts: OptionValues) => {
+      const contracts = await getContracts(assetManager, opts.network, opts.provider)
+      if (action === "prices") {
+        await getDexVsFtsoPrices(contracts)
+      } else if (action === "setup") {
+        await setUpDex(assetManager, opts.network, opts.provider, opts.signer)
+      } else if (action === "fix") {
+        await fixDex(assetManager, opts.network, opts.provider, opts.signer)
+      } else if (action === "remove-liquidity") {
+        await removeDexLiquidity(assetManager, opts.network, opts.provider, opts.signer)
+      } else {
+        throw new Error("invalid action")
+      }
+    })
 }

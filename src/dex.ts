@@ -6,7 +6,6 @@ import { syncDexReservesWithFtsoPrices, dexVsFtsoPrices, removeLiquidity, swapDe
 import type { Signer } from "ethers"
 import type { Contracts } from "../test/integration/helpers/interface"
 
-const assetManagerAddress = "0xEB9900EB5fB4eC73EF177e1904f80F1F589D9d5f"
 
 export async function getDexVsFtsoPrices(
   contracts: Contracts
