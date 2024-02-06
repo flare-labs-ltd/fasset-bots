@@ -129,7 +129,7 @@ program
     .command("announceVaultCollateralWithdrawal")
     .description("announce vault collateral withdrawal from agent's to owner’s address")
     .argument("<agentVaultAddress>")
-    .argument("<amount")
+    .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.config, options.fasset);
@@ -151,7 +151,7 @@ program
     .command("announceCollateralPoolTokenRedemption")
     .description("announce collateral pool tokens redemption from agent's to owner’s address")
     .argument("<agentVaultAddress>")
-    .argument("<amount")
+    .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.config, options.fasset);
