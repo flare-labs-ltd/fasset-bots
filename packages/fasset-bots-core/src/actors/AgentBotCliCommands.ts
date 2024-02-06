@@ -117,7 +117,7 @@ export class BotCliCommands {
             const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
             await this.botConfig.notifier!.sendAgentCreated(agentBot.agent.vaultAddress);
             console.log(`Agent bot created.`);
-            console.log(`Owner ${this.owner} created ne agent vault at ${agentBot.agent.agentVault.address}.`);
+            console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
             return agentBot.agent;
         } catch (error) {
             console.log(`Owner ${this.owner} couldn't create agent.`);
