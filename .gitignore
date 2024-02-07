@@ -48,3 +48,9 @@ tmp.*
 
 # config file with various keys and addresses
 secrets.json
+
+# fasset-liquidator specific
+packages/fasset-liquidator/types
+packages/fasset-liquidator/data
+packages/fasset-liquidator/artifacts
+packages/fasset-liquidator/.yarn
