@@ -1,0 +1,8 @@
+{
+    "coston": {
+        "wNat": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
+        "usdc": "0xC06496FA0551bf4996fb5Df876cBcC6F1d836460",
+        "uniswapV2": "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4",
+        "flashLender": "0x729A282e9d15beD1cd046D80406d35849457AA23"
+    }
+}
