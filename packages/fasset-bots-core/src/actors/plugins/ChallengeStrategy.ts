@@ -1,9 +1,11 @@
+import BN from "bn.js";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
 import { BalanceDecreasingTransaction } from "@flarenetwork/state-connector-protocol";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
 import { ActorBaseKind } from "../../fasset-bots/ActorBase";
+import type { ChallengerInstance } from "../../../typechain-truffle";
 
 const Challenger = artifacts.require("Challenger");
 
@@ -26,6 +28,7 @@ export abstract class ChallengeStrategy {
 }
 
 export class DefaultChallengeStrategy extends ChallengeStrategy {
+
     public async illegalTransactionChallenge(scope: EventScope, agent: TrackedAgentState, proof: BalanceDecreasingTransaction.Proof): Promise<void> {
         // due to async nature of challenging (and the fact that challenger might start tracking agent later),
         // there may be some false challenges which will be rejected
@@ -63,10 +66,26 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
 }
 
 export class DexChallengeStrategy extends ChallengeStrategy {
+
+    protected async dexMinPriceOracle(challenger: ChallengerInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
+        const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
+            await challenger.maxSlippageToMinPrices(1000, 2000, agent.vaultAddress, { from: this.address })
+        return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2]
+    }
+
     public async illegalTransactionChallenge(scope: EventScope, agent: TrackedAgentState, proof: BalanceDecreasingTransaction.Proof): Promise<void> {
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger
-            .illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address })
+            .illegalPaymentChallenge(
+                proof,
+                agent.vaultAddress,
+                ...await this.dexMinPriceOracle(challenger, agent),
+                "0x0000000000000000000000000000000000000000",
+                "0x0000000000000000000000000000000000000000",
+                [],
+                [],
+                { from: this.address }
+            )
             .catch((e) =>
                 scope.exitOnExpectedError(e, [
                     "chlg: already liquidating",
@@ -86,15 +105,41 @@ export class DexChallengeStrategy extends ChallengeStrategy {
         // due to async nature of challenging there may be some false challenges which will be rejected
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger
-            .doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
+            .doublePaymentChallenge(
+                proof1,
+                proof2,
+                agent.vaultAddress,
+                ...await this.dexMinPriceOracle(challenger, agent),
+                "0x0000000000000000000000000000000000000000",
+                "0x0000000000000000000000000000000000000000",
+                [],
+                [],
+                { from: this.address })
+            .catch((e) =>
+                scope.exitOnExpectedError(e, [
+                    "chlg dbl: already liquidating"
+                ], ActorBaseKind.CHALLENGER, this.address)
+            );
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]): Promise<void> {
         // due to async nature of challenging there may be some false challenges which will be rejected
         const challenger = await Challenger.at(this.state.context.challengeStrategy!.config.address);
         await challenger
-            .freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
-            .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"], ActorBaseKind.CHALLENGER, this.address));
+            .freeBalanceNegativeChallenge(
+                proofs,
+                agent.vaultAddress,
+                ...await this.dexMinPriceOracle(challenger, agent),
+                "0x0000000000000000000000000000000000000000",
+                "0x0000000000000000000000000000000000000000",
+                [],
+                [],
+                { from: this.address }
+            ).catch((e) =>
+                scope.exitOnExpectedError(e, [
+                    "mult chlg: already liquidating",
+                    "mult chlg: enough balance"
+                ], ActorBaseKind.CHALLENGER, this.address)
+            );
     }
 }
