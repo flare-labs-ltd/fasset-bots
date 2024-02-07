@@ -31,7 +31,7 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.7",
     "chai": "^4.3.10",
-    "chalk": "^4.3.0",
+    "chalk": "4.1.2",
     "cross-env": "^7.0.3",
     "hardhat": "^2.12.2",
     "hardhat-gas-reporter": "^1.0.9",
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3",
-    "blazeswap": "git+https://github.com/blazeswap/contracts.git#main",
+    "blazeswap": "git+https://github.com/kuco23/blazeswap.git#main",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
