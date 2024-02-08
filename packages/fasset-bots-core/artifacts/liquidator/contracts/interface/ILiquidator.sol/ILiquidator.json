@@ -6,6 +6,50 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_maxSlippageBipsDex1",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxSlippageBipsDex2",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "maxSlippageToMinPrices",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "initiator",
           "type": "address"
@@ -51,39 +95,51 @@
         },
         {
           "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        }
-      ],
-      "name": "runArbitrage",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_agentVault",
+          "name": "_profitTo",
           "type": "address"
         },
         {
-          "internalType": "contract IERC3156FlashLender",
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
           "name": "_flashLender",
           "type": "address"
         },
         {
-          "internalType": "contract IBlazeSwapRouter",
-          "name": "_blazeswap",
+          "internalType": "address",
+          "name": "_dex",
           "type": "address"
         },
         {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
         }
       ],
-      "name": "runArbitrageWithCustomParams",
+      "name": "runArbitrage",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -50,10 +50,8 @@ tmp.*
 secrets.json
 
 # fasset-liquidator specific
-packages/fasset-liquidator/types
 packages/fasset-liquidator/data
 packages/fasset-liquidator/.yarn
-
 # might include later
-artifacts
-typechain-truffle
+packages/fasset-liquidator/types
+packages/fasset-liquidator/artifacts

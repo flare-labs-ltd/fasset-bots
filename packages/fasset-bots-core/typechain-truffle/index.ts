@@ -126,8 +126,10 @@ import { WNatContract } from "./WNat";
 import { ChallengerContract } from "./Challenger";
 import { FlashLenderContract } from "./FlashLender";
 import { IChallengerContract } from "./IChallenger";
-import { IFAssetMetadataContract } from "./IFAssetMetadata";
 import { ILiquidatorContract } from "./ILiquidator";
+import { IUniswapV2PairContract } from "./IUniswapV2Pair";
+import { IUniswapV2RouterContract } from "./IUniswapV2Router";
+import { IEnosysDexRouterContract } from "./IEnosysDexRouter";
 import { LiquidatorContract } from "./Liquidator";
 
 export type * from "./types";
@@ -269,8 +271,10 @@ export type * from "./types";
       require(name: "Challenger"): ChallengerContract;
       require(name: "FlashLender"): FlashLenderContract;
       require(name: "IChallenger"): IChallengerContract;
-      require(name: "IFAssetMetadata"): IFAssetMetadataContract;
       require(name: "ILiquidator"): ILiquidatorContract;
+      require(name: "IUniswapV2Pair"): IUniswapV2PairContract;
+      require(name: "IUniswapV2Router"): IUniswapV2RouterContract;
+      require(name: "IEnosysDexRouter"): IEnosysDexRouterContract;
       require(name: "Liquidator"): LiquidatorContract;
     }
 
@@ -611,9 +615,17 @@ export { WNatContract, WNatInstance } from "./WNat";
 export { ChallengerContract, ChallengerInstance } from "./Challenger";
 export { FlashLenderContract, FlashLenderInstance } from "./FlashLender";
 export { IChallengerContract, IChallengerInstance } from "./IChallenger";
-export {
-  IFAssetMetadataContract,
-  IFAssetMetadataInstance,
-} from "./IFAssetMetadata";
 export { ILiquidatorContract, ILiquidatorInstance } from "./ILiquidator";
+export {
+  IUniswapV2PairContract,
+  IUniswapV2PairInstance,
+} from "./IUniswapV2Pair";
+export {
+  IUniswapV2RouterContract,
+  IUniswapV2RouterInstance,
+} from "./IUniswapV2Router";
+export {
+  IEnosysDexRouterContract,
+  IEnosysDexRouterInstance,
+} from "./IEnosysDexRouter";
 export { LiquidatorContract, LiquidatorInstance } from "./Liquidator";

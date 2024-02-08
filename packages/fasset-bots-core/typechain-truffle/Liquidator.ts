@@ -11,7 +11,7 @@ export interface LiquidatorContract
   extends Truffle.Contract<LiquidatorInstance> {
   "new"(
     _flashLender: string,
-    _blazeSwapRouter: string,
+    _dex: string,
     meta?: Truffle.TransactionDetails
   ): Promise<LiquidatorInstance>;
 }
@@ -19,9 +19,16 @@ export interface LiquidatorContract
 export type AllEvents = never;
 
 export interface LiquidatorInstance extends Truffle.ContractInstance {
-  blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  dex(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   flashLender(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  maxSlippageToMinPrices(
+    _maxSlippageBipsDex1: number | BN | string,
+    _maxSlippageBipsDex2: number | BN | string,
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
   onFlashLoan: {
     (
@@ -61,61 +68,69 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
   runArbitrage: {
     (
       _agentVault: string,
-      _to: string,
+      _profitTo: string,
+      _vaultToFAssetMinDexPriceMul: number | BN | string,
+      _vaultToFAssetMinDexPriceDiv: number | BN | string,
+      _poolToVaultMinDexPriceMul: number | BN | string,
+      _poolToVaultMinDexPriceDiv: number | BN | string,
+      _flashLender: string,
+      _dex: string,
+      _vaultToFAssetDexPath: string[],
+      _poolToVaultDexPath: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
-      _to: string,
+      _profitTo: string,
+      _vaultToFAssetMinDexPriceMul: number | BN | string,
+      _vaultToFAssetMinDexPriceDiv: number | BN | string,
+      _poolToVaultMinDexPriceMul: number | BN | string,
+      _poolToVaultMinDexPriceDiv: number | BN | string,
+      _flashLender: string,
+      _dex: string,
+      _vaultToFAssetDexPath: string[],
+      _poolToVaultDexPath: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
-      _to: string,
+      _profitTo: string,
+      _vaultToFAssetMinDexPriceMul: number | BN | string,
+      _vaultToFAssetMinDexPriceDiv: number | BN | string,
+      _poolToVaultMinDexPriceMul: number | BN | string,
+      _poolToVaultMinDexPriceDiv: number | BN | string,
+      _flashLender: string,
+      _dex: string,
+      _vaultToFAssetDexPath: string[],
+      _poolToVaultDexPath: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
-      _to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  runArbitrageWithCustomParams: {
-    (
-      _agentVault: string,
+      _profitTo: string,
+      _vaultToFAssetMinDexPriceMul: number | BN | string,
+      _vaultToFAssetMinDexPriceDiv: number | BN | string,
+      _poolToVaultMinDexPriceMul: number | BN | string,
+      _poolToVaultMinDexPriceDiv: number | BN | string,
       _flashLender: string,
-      _blazeSwapRouter: string,
-      _to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _agentVault: string,
-      _flashLender: string,
-      _blazeSwapRouter: string,
-      _to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _agentVault: string,
-      _flashLender: string,
-      _blazeSwapRouter: string,
-      _to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _agentVault: string,
-      _flashLender: string,
-      _blazeSwapRouter: string,
-      _to: string,
+      _dex: string,
+      _vaultToFAssetDexPath: string[],
+      _poolToVaultDexPath: string[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   methods: {
-    blazeSwapRouter(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    dex(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     flashLender(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    maxSlippageToMinPrices(
+      _maxSlippageBipsDex1: number | BN | string,
+      _maxSlippageBipsDex2: number | BN | string,
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
     onFlashLoan: {
       (
@@ -155,53 +170,54 @@ export interface LiquidatorInstance extends Truffle.ContractInstance {
     runArbitrage: {
       (
         _agentVault: string,
-        _to: string,
+        _profitTo: string,
+        _vaultToFAssetMinDexPriceMul: number | BN | string,
+        _vaultToFAssetMinDexPriceDiv: number | BN | string,
+        _poolToVaultMinDexPriceMul: number | BN | string,
+        _poolToVaultMinDexPriceDiv: number | BN | string,
+        _flashLender: string,
+        _dex: string,
+        _vaultToFAssetDexPath: string[],
+        _poolToVaultDexPath: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
-        _to: string,
+        _profitTo: string,
+        _vaultToFAssetMinDexPriceMul: number | BN | string,
+        _vaultToFAssetMinDexPriceDiv: number | BN | string,
+        _poolToVaultMinDexPriceMul: number | BN | string,
+        _poolToVaultMinDexPriceDiv: number | BN | string,
+        _flashLender: string,
+        _dex: string,
+        _vaultToFAssetDexPath: string[],
+        _poolToVaultDexPath: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
-        _to: string,
+        _profitTo: string,
+        _vaultToFAssetMinDexPriceMul: number | BN | string,
+        _vaultToFAssetMinDexPriceDiv: number | BN | string,
+        _poolToVaultMinDexPriceMul: number | BN | string,
+        _poolToVaultMinDexPriceDiv: number | BN | string,
+        _flashLender: string,
+        _dex: string,
+        _vaultToFAssetDexPath: string[],
+        _poolToVaultDexPath: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
-        _to: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    runArbitrageWithCustomParams: {
-      (
-        _agentVault: string,
+        _profitTo: string,
+        _vaultToFAssetMinDexPriceMul: number | BN | string,
+        _vaultToFAssetMinDexPriceDiv: number | BN | string,
+        _poolToVaultMinDexPriceMul: number | BN | string,
+        _poolToVaultMinDexPriceDiv: number | BN | string,
         _flashLender: string,
-        _blazeSwapRouter: string,
-        _to: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _agentVault: string,
-        _flashLender: string,
-        _blazeSwapRouter: string,
-        _to: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _agentVault: string,
-        _flashLender: string,
-        _blazeSwapRouter: string,
-        _to: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _agentVault: string,
-        _flashLender: string,
-        _blazeSwapRouter: string,
-        _to: string,
+        _dex: string,
+        _vaultToFAssetDexPath: string[],
+        _poolToVaultDexPath: string[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

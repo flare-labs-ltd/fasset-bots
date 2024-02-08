@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "FlashLender",
-  "sourceName": "liquidator/contracts/FlashLender.sol",
+  "sourceName": "liquidator/contracts/ecosystem/FlashLender.sol",
   "abi": [
     {
       "inputs": [
