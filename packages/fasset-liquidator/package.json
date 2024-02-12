@@ -1,0 +1,52 @@
+{
+  "name": "fasset-liquidator",
+  "version": "0.0.0",
+  "description": "Liquidator utilities for the f-asset bridge on the Flare network",
+  "scripts": {
+    "------------ contracts -------------": "----------------- contracts -----------------",
+    "clean": "rimraf ./artifacts ./cache ./coverage ./types ./coverage.json && yarn typechain",
+    "compile": "yarn clean && cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
+    "fork": "yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 11484960",
+    "------------ tests ---------------": "----------------- tests -----------------",
+    "pretest": "sh ./scripts/fix-blazeswap-hash.sh",
+    "pretest:unit": "sh ./scripts/fix-blazeswap-hash.sh",
+    "precoverage": "sh ./scripts/fix-blazeswap-hash.sh",
+    "test": "yarn hardhat test",
+    "test:unit": "yarn hardhat test test/unit/uniswap-v2.test.ts test/unit/liquidator.test.ts test/unit/challenger.test.ts",
+    "test:integration": "yarn mocha --loader=ts-node/esm test test/integration/liquidator.test.ts --timeout 1000000",
+    "coverage": "yarn hardhat coverage --testfiles \"test/unit/**/*.test.ts\""
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@ethersproject/keccak256": "^5.7.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
+    "@nomicfoundation/hardhat-ethers": "^3.0.4",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^1.1.1",
+    "@typechain/ethers-v6": "^0.4.0",
+    "@typechain/hardhat": "^8.0.3",
+    "@types/chai": "^4.3.6",
+    "@types/dotenv": "^8.2.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.5.7",
+    "chai": "^4.3.10",
+    "chalk": "4.1.2",
+    "cross-env": "^7.0.3",
+    "hardhat": "^2.12.2",
+    "hardhat-gas-reporter": "^1.0.9",
+    "rimraf": "^5.0.1",
+    "solidity-coverage": "^0.8.5",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.2.0",
+    "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.3",
+    "blazeswap": "git+https://github.com/kuco23/blazeswap.git#main",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.7.1",
+    "fasset": "git+https://github.com/flare-labs-ltd/fassets.git#private_beta"
+  }
+}

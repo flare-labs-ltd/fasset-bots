@@ -1,0 +1,579 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     20996,        571]
+NotebookOptionsPosition[     19490,        540]
+NotebookOutlinePosition[     19896,        556]
+CellTagsIndexPosition[     19853,        553]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[TextData[Cell[BoxData[{
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["dex", "1"],
+     FontWeight->"Bold"], 
+    StyleBox[" ",
+     FontWeight->"Bold"], "is", " ", "v2"}], "-", 
+   RowBox[{
+   "uniswap", " ", "between", " ", "vault", " ", "collateral", " ", "and", 
+    " ", "f"}], "-", "asset"}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["dex", "2"],
+     FontWeight->"Bold"], " ", "is", " ", "v2"}], "-", 
+   RowBox[{
+   "uniswap", " ", "between", " ", "pool", " ", "collateral", " ", "and", " ",
+     "vault", " ", "collateral"}]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["V", 
+     SubscriptBox["dex", "1"]],
+    FontWeight->"Bold"], " ", "is", " ", "vault", " ", "collateral", " ", 
+   "reserve", " ", "of", " ", 
+   SubscriptBox["dex", "1"]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["F", 
+      SubscriptBox["dex", "1"]],
+     FontWeight->"Bold"], " ", "is", " ", "f"}], "-", 
+   RowBox[{"asset", " ", "reserve", " ", "of", " ", 
+    SubscriptBox["dex", "1"]}]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]],
+    FontWeight->"Bold"], " ", "is", " ", "pool", " ", "collateral", " ", 
+   "reserve", " ", "of", " ", 
+   SubscriptBox["dex", "2"]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["V", 
+     SubscriptBox["dex", "2"]],
+    FontWeight->"Bold"], " ", "is", " ", "vault", " ", "collateral", " ", 
+   "reserve", " ", "of", " ", 
+   SubscriptBox["dex", "2"]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["Price", "V"],
+     FontWeight->"Bold"], " ", "is", " ", "price", " ", "of", " ", "f"}], "-", 
+   RowBox[{
+   "asset", " ", "in", " ", "vault", " ", "collateral", " ", "on", " ", 
+    "flare", " ", "ftso"}]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["Price", "W"],
+     FontWeight->"Bold"], " ", "is", " ", "price", " ", "of", " ", "f"}], "-", 
+   RowBox[{
+   "asset", " ", "in", " ", "native", " ", "currency", " ", "on", " ", 
+    "flare", " ", "ftso"}]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["LFactor", 
+     RowBox[{"V", " "}]],
+    FontWeight->"Bold"], " ", "is", " ", "vault", " ", "collateral", " ", 
+   "liquidation", " ", "reward", " ", "factor"}], 
+  TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["LFactor", "W"],
+    FontWeight->"Bold"], " ", "is", " ", "pool", " ", "collateral", " ", 
+   "liquidation", " ", "reward", " ", "factor"}], 
+  TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   StyleBox[
+    SubscriptBox["\[Rho]", 
+     SubscriptBox["dex", 
+      RowBox[{"1", " "}]]],
+    FontWeight->"Bold"], " ", "is", " ", "the", " ", "fee", " ", "factor", 
+   " ", "of", " ", 
+   SubscriptBox["dex", "1"]}], TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{
+    StyleBox[
+     SubscriptBox["\[Rho]", 
+      SubscriptBox["dex", 
+       RowBox[{"2", " "}]]],
+     FontWeight->"Bold"], " ", "is", " ", "the", " ", "fee", " ", "factor", 
+    " ", "of", " ", 
+    SubscriptBox["dex", "2"]}], "\[IndentingNewLine]"}], 
+  TraditionalForm], "\[IndentingNewLine]", 
+ FormBox[
+  RowBox[{
+   RowBox[{"Swap", " ", "for", " ", 
+    SubscriptBox["dex", "2"], " ", "made", " ", "optimum", " ", "calculation",
+     " ", "too", " ", "complex"}], ",", " ", 
+   RowBox[{
+   "so", " ", "we", " ", "simplified", " ", "it", " ", "by", " ", "ignoring", 
+    " ", 
+    SubscriptBox["dex", "2"], " ", 
+    RowBox[{"slippage", ".", " ", "It"}], " ", "should", " ", "not", " ", 
+    "matter", " ", "too", " ", "much", " ", "if", " ", 
+    SubscriptBox["dex", "2"], " ", "has", " ", "enough", " ", 
+    RowBox[{"liquidity", "."}]}]}], 
+  TraditionalForm]}],ExpressionUUID->"765700ab-2a5c-4f09-aafb-9d81db3394d6"]],\
+ "Text",
+ CellChangeTimes->{{3.9031162932208633`*^9, 3.9031165967534885`*^9}, {
+  3.903116632351318*^9, 3.9031166757424326`*^9}, {3.903116763869707*^9, 
+  3.9031167768758254`*^9}, {3.9031168170273476`*^9, 3.90311689099265*^9}, {
+  3.9031555049727545`*^9, 3.903155548108878*^9}, {3.9031866633414364`*^9, 
+  3.9031866641029034`*^9}, {3.9031886974162416`*^9, 3.903188702130861*^9}, {
+  3.9032882602540073`*^9, 3.9032882607777987`*^9}, {3.9035341046356077`*^9, 
+  3.9035341053456373`*^9}, {3.9035348458095245`*^9, 3.90353489444337*^9}, {
+  3.9047487013034306`*^9, 3.9047487307573986`*^9}, {3.9055970852153683`*^9, 
+  3.9055971424273195`*^9}},ExpressionUUID->"82180e06-fd4d-4c7d-9a35-\
+692622d2af33"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["Swap", 
+     RowBox[{
+      SubscriptBox["dex", "1"], "F"}]], "[", "v_", "]"}], " ", ":=", " ", 
+   RowBox[{
+    SubscriptBox["\[Rho]", 
+     SubscriptBox["dex", "1"]], " ", "v", " ", 
+    RowBox[{
+     SubscriptBox["F", 
+      SubscriptBox["dex", "1"]], " ", "/", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SubscriptBox["V", 
+        SubscriptBox["dex", "1"]], " ", "+", " ", 
+       RowBox[{"v", " ", 
+        SubscriptBox["\[Rho]", 
+         SubscriptBox["dex", "1"]]}]}], ")"}]}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["Swap", 
+     RowBox[{
+      SubscriptBox["dex", "2"], "V"}]], "[", "w_", "]"}], " ", ":=", " ", 
+   RowBox[{
+    SubscriptBox["\[Rho]", 
+     SubscriptBox["dex", "2"]], " ", "w", " ", 
+    RowBox[{
+     SubscriptBox["V", 
+      SubscriptBox["dex", "2"]], " ", "/", " ", 
+     SubscriptBox["W", 
+      SubscriptBox["dex", "2"]]}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["Liquidate", "V"], "[", "f_", "]"}], " ", ":=", " ", 
+   RowBox[{"f", " ", 
+    SubscriptBox["Price", "V"], " ", 
+    SubscriptBox["LFactor", "V"]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    SubscriptBox["Liquidate", "W"], "[", "f_", "]"}], " ", ":=", " ", 
+   RowBox[{"f", " ", 
+    SubscriptBox["Price", "w"], " ", 
+    SubscriptBox["LFactor", "W"]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Arbitrage", "[", "v_", "]"}], ":=", " ", 
+   RowBox[{
+    RowBox[{
+     SubscriptBox["Liquidate", "V"], "[", 
+     RowBox[{
+      SubscriptBox["Swap", 
+       RowBox[{
+        SubscriptBox["dex", "1"], "F"}]], "[", "v", "]"}], "]"}], " ", "+", 
+    " ", 
+    RowBox[{
+     SubscriptBox["Swap", 
+      RowBox[{
+       SubscriptBox["dex", "2"], "V"}]], "[", 
+     RowBox[{
+      SubscriptBox["Liquidate", "W"], "[", 
+      RowBox[{
+       SubscriptBox["Swap", 
+        RowBox[{
+         SubscriptBox["dex", "1"], "F"}]], "[", "v", "]"}], "]"}], "]"}], " ",
+     "-", " ", "v"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.902900895257979*^9, 3.902900936497165*^9}, {
+   3.9029087652447534`*^9, 3.902908765878471*^9}, {3.9029090714134893`*^9, 
+   3.9029090840445995`*^9}, {3.9029102676356955`*^9, 3.902910287955145*^9}, {
+   3.9029880436547117`*^9, 3.9029880537501173`*^9}, {3.9029979391088014`*^9, 
+   3.9029980150568466`*^9}, {3.903114456276924*^9, 3.9031151378385763`*^9}, {
+   3.90311517401068*^9, 3.90311589900215*^9}, {3.903115965679291*^9, 
+   3.9031159749348297`*^9}, {3.903116034102171*^9, 3.903116034138297*^9}, {
+   3.9031161173262978`*^9, 3.90311611737197*^9}, {3.9031162805644608`*^9, 
+   3.9031162817036*^9}, {3.9031555651839767`*^9, 3.9031555661168213`*^9}, 
+   3.9031855871705465`*^9, {3.9031877967404647`*^9, 3.903187797941474*^9}, {
+   3.903189342212657*^9, 3.903189343390143*^9}, {3.903288273033044*^9, 
+   3.9032882920349503`*^9}, 3.90353410668419*^9, {3.9040503973572197`*^9, 
+   3.9040504096425314`*^9}},ExpressionUUID->"f709db59-644d-46b1-9390-\
+c93ac5c9cb4c"],
+
+Cell["There are two extremes, only one can be positive", "Text",
+ CellChangeTimes->{{3.903116806425336*^9, 3.9031168151753635`*^9}, {
+  3.9031169264480295`*^9, 3.9031169358318863`*^9}, {3.9031555952941055`*^9, 
+  3.903155595626266*^9}},ExpressionUUID->"f0513101-83d3-439f-8bab-\
+ef380286ecdc"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"extremes", "=", " ", 
+   RowBox[{"Solve", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"D", "[", 
+       RowBox[{
+        RowBox[{"Arbitrage", "[", "x", "]"}], ",", " ", "x"}], "]"}], " ", "==",
+       " ", "0"}], ",", " ", "x"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"Arbitrage", "[", "x", "]"}], " ", "/.", " ", 
+    RowBox[{"extremes", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}], " ", "//", " ", "FullSimplify"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"Arbitrage", "[", "x", "]"}], " ", "/.", " ", 
+    RowBox[{"extremes", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}], " ", "//", " ", "FullSimplify"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  SubscriptBox["v", "o"], " ", "=", 
+  RowBox[{
+   RowBox[{"x", " ", "/.", " ", 
+    RowBox[{"extremes", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}], " ", "//", " ", 
+   "FullSimplify"}]}]}], "Input",
+ CellChangeTimes->{{3.902900895257979*^9, 3.902900936497165*^9}, {
+   3.9029087652447534`*^9, 3.902908765878471*^9}, {3.9029090714134893`*^9, 
+   3.9029090840445995`*^9}, {3.9029102676356955`*^9, 3.902910287955145*^9}, {
+   3.9029880436547117`*^9, 3.9029880537501173`*^9}, {3.9029979391088014`*^9, 
+   3.9029980150568466`*^9}, {3.903114456276924*^9, 3.9031151378385763`*^9}, {
+   3.90311517401068*^9, 3.903115927121336*^9}, {3.9031159818961945`*^9, 
+   3.903115989609868*^9}, {3.9031160241139326`*^9, 3.9031160395035944`*^9}, {
+   3.903116132917425*^9, 3.9031162208215218`*^9}, {3.903116251625409*^9, 
+   3.9031162738677907`*^9}, {3.903184247448305*^9, 3.903184248093546*^9}, {
+   3.903189346997063*^9, 3.903189351231183*^9}, {3.9032883145789056`*^9, 
+   3.9032883163657885`*^9}, {3.903344173270087*^9, 3.9033442334211783`*^9}, 
+   3.903349387909893*^9, {3.9033494350768275`*^9, 3.9033494480111914`*^9}, {
+   3.9035341130064125`*^9, 3.903534115636026*^9}, {3.904050718563637*^9, 
+   3.904050747164607*^9}, {3.9040508127785673`*^9, 3.9040508517276287`*^9}},
+ CellLabel->"In[46]:=",ExpressionUUID->"4bcf5699-246b-4407-a012-fa42f83d9e93"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   RowBox[{
+    RowBox[{"-", 
+     SubscriptBox["V", 
+      SubscriptBox["dex", "1"]]}], " ", 
+    SubscriptBox["\[Rho]", 
+     SubscriptBox["dex", "1"]]}], "+", 
+   FractionBox[
+    SqrtBox[
+     RowBox[{
+      SubscriptBox["F", 
+       SubscriptBox["dex", "1"]], " ", 
+      SubscriptBox["V", 
+       SubscriptBox["dex", "1"]], " ", 
+      SubscriptBox["W", 
+       SubscriptBox["dex", "2"]], " ", 
+      SubsuperscriptBox["\[Rho]", 
+       SubscriptBox["dex", "1"], "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         SubscriptBox["LFactor", "V"], " ", 
+         SubscriptBox["Price", "V"], " ", 
+         SubscriptBox["W", 
+          SubscriptBox["dex", "2"]]}], "+", 
+        RowBox[{
+         SubscriptBox["LFactor", "W"], " ", 
+         SubscriptBox["Price", "w"], " ", 
+         SubscriptBox["V", 
+          SubscriptBox["dex", "2"]], " ", 
+         SubscriptBox["\[Rho]", 
+          SubscriptBox["dex", "2"]]}]}], ")"}]}]], 
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]]]}], 
+  SubsuperscriptBox["\[Rho]", 
+   SubscriptBox["dex", "1"], "2"]]], "Output",
+ CellChangeTimes->{
+  3.9031158776783047`*^9, {3.903115983228944*^9, 3.9031159898791637`*^9}, {
+   3.9031160285391116`*^9, 3.903116047422891*^9}, {3.9031161254936447`*^9, 
+   3.9031162218665476`*^9}, 3.903116253655942*^9, {3.9031842494906974`*^9, 
+   3.903184255532901*^9}, 3.903185526945323*^9, 3.9031893557197523`*^9, {
+   3.90328830048734*^9, 3.903288317337338*^9}, 3.9033461533002653`*^9, 
+   3.9033494493777356`*^9, 3.9035341307281666`*^9, 3.9040129066148014`*^9, {
+   3.9040507194192376`*^9, 3.904050747436431*^9}, {3.904050814636577*^9, 
+   3.904050854811688*^9}},
+ CellLabel->"Out[49]=",ExpressionUUID->"0568c3db-3595-44d9-bc92-d1ddb4880b68"]
+}, Open  ]],
+
+Cell["\<\
+Note that that the tradeoff between numeric errors and avoiding 256-bit \
+overflows made the calculation of the optimal vault collateral be implemented \
+in the below order.\
+\>", "Text",
+ CellChangeTimes->{{3.9031889559175625`*^9, 3.9031889661197834`*^9}, {
+  3.903189227439418*^9, 3.9031892666858563`*^9}, {3.9031893643955493`*^9, 
+  3.9031893693605413`*^9}, {3.903189490254855*^9, 3.9031895135994396`*^9}, {
+  3.90318960500953*^9, 3.903189634751243*^9}, {3.9031899254401755`*^9, 
+  3.903190019084835*^9}, {3.904012918949246*^9, 3.9040129460852146`*^9}, {
+  3.9040129820777035`*^9, 3.9040130470931406`*^9}, {3.904051233395976*^9, 
+  3.904051250831775*^9}, {3.9047486396034985`*^9, 3.9047486705054607`*^9}, {
+  3.9055968628480835`*^9, 3.9055968801978626`*^9}, {3.905597051951571*^9, 
+  3.90559705770068*^9}},ExpressionUUID->"c538d92f-4980-44e9-9cc1-\
+2f63826e0569"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"-", 
+      SubscriptBox["V", 
+       SubscriptBox["dex", "1"]]}], " ", 
+     SubscriptBox["W", 
+      SubscriptBox["dex", "2"]]}], " ", "+", " ", 
+    RowBox[{
+     RowBox[{"\[Sqrt]", 
+      RowBox[{"(", 
+       RowBox[{
+        SubscriptBox["V", 
+         SubscriptBox["dex", "1"]], " ", 
+        SubscriptBox["W", 
+         SubscriptBox["dex", "2"]], 
+        SubscriptBox["\[Rho]", 
+         SubscriptBox["dex", "1"]]}], ")"}]}], 
+     RowBox[{"\[Sqrt]", 
+      RowBox[{"(", 
+       RowBox[{
+        SubscriptBox["F", 
+         SubscriptBox["dex", "1"]], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           SubscriptBox["LFactor", "V"], 
+           SubscriptBox["Price", "V"], 
+           SubscriptBox["W", 
+            SubscriptBox["dex", "2"]]}], " ", "+", " ", 
+          RowBox[{
+           SubscriptBox["LFactor", "W"], " ", 
+           SubscriptBox["Price", "W"], " ", 
+           SubscriptBox["V", 
+            SubscriptBox["dex", "2"]], 
+           SubscriptBox["\[Rho]", 
+            SubscriptBox["dex", "2"]]}]}], ")"}]}], ")"}]}]}]}], ")"}], " ", 
+  "/", " ", 
+  RowBox[{"(", 
+   RowBox[{
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]], " ", 
+    SubscriptBox["\[Rho]", 
+     SubscriptBox["dex", "1"]]}], ")"}]}]], "Input",
+ CellChangeTimes->{{3.9031889695572233`*^9, 3.9031891628044286`*^9}, {
+  3.903189762688012*^9, 3.9031897651521015`*^9}},
+ CellLabel->"In[10]:=",ExpressionUUID->"96f82651-58d8-4050-8cea-7e5a19e465ca"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   RowBox[{
+    RowBox[{"-", 
+     SubscriptBox["V", 
+      SubscriptBox["dex", "1"]]}], " ", 
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]]}], "+", 
+   RowBox[{
+    SqrtBox[
+     RowBox[{
+      SubscriptBox["V", 
+       SubscriptBox["dex", "1"]], " ", 
+      SubscriptBox["W", 
+       SubscriptBox["dex", "2"]], " ", 
+      SubscriptBox["\[Rho]", 
+       SubscriptBox["dex", "1"]]}]], " ", 
+    SqrtBox[
+     RowBox[{
+      SubscriptBox["F", 
+       SubscriptBox["dex", "1"]], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         SubscriptBox["LFactor", "V"], " ", 
+         SubscriptBox["Price", "V"], " ", 
+         SubscriptBox["W", 
+          SubscriptBox["dex", "2"]]}], "+", 
+        RowBox[{
+         SubscriptBox["LFactor", "W"], " ", 
+         SubscriptBox["Price", "W"], " ", 
+         SubscriptBox["V", 
+          SubscriptBox["dex", "2"]], " ", 
+         SubscriptBox["\[Rho]", 
+          SubscriptBox["dex", "2"]]}]}], ")"}]}]]}]}], 
+  RowBox[{
+   SubscriptBox["W", 
+    SubscriptBox["dex", "2"]], " ", 
+   SubscriptBox["\[Rho]", 
+    SubscriptBox["dex", "1"]]}]]], "Output",
+ CellChangeTimes->{3.9031891653084545`*^9, 3.9031897663015213`*^9, 
+  3.90353413259147*^9},
+ CellLabel->"Out[10]=",ExpressionUUID->"425ff5c3-c020-4357-9a3c-d01afc4fa112"]
+}, Open  ]],
+
+Cell[TextData[{
+ "In this way, we cap the numeric error at about ",
+ Cell[BoxData[
+  FormBox[
+   SqrtBox[
+    SubscriptBox["F", 
+     SubscriptBox["dex", "1"]]], TraditionalForm]],ExpressionUUID->
+  "9b4934d5-4d28-4962-92bc-619646635904"],
+ " + ",
+ Cell[BoxData[
+  FormBox[
+   SqrtBox[
+    SubscriptBox["W", 
+     SubscriptBox["dex", "2"]]], TraditionalForm]],ExpressionUUID->
+  "1b64d37b-ae87-4583-b674-9b25ff59e8e9"],
+ ". This cap might be problematic if our vault collateral had a small amount \
+of decimals, in comparison to either pool collateral or f-asset token. For \
+now this is not the case, as all vault collateral type tokens use 18 \
+decimals, with f-asset tokens usually using less, and wrapped native using \
+18.\n\nIn the end we have to cap this value by the vault collateral that gets \
+swapped to max liquidation f-asset amount."
+}], "Text",
+ CellChangeTimes->{{3.903185481850884*^9, 3.903185515340127*^9}, {
+  3.905596881843457*^9, 
+  3.905597039760017*^9}},ExpressionUUID->"4d0bd073-b434-4bc3-be11-\
+6749ea372c2b"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  SubscriptBox["max", "V"], " ", "=", " ", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"InverseFunction", "[", 
+     SubscriptBox["Swap", 
+      RowBox[{
+       SubscriptBox["dex", "1"], "F"}]], "]"}], "[", 
+    SubscriptBox["max", "F"], "]"}], " ", "//", " ", "Simplify"}]}]], "Input",
+ CellChangeTimes->{{3.903185518429276*^9, 3.903185610530817*^9}, {
+  3.903346139642687*^9, 3.9033461463671637`*^9}},
+ CellLabel->"In[13]:=",ExpressionUUID->"d61f5898-1609-43d8-af28-189cb9d95e73"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   SubscriptBox["max", "F"], " ", 
+   SubscriptBox["V", 
+    SubscriptBox["dex", "1"]]}], 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{
+     SubscriptBox["F", 
+      SubscriptBox["dex", "1"]], "-", 
+     SubscriptBox["max", "F"]}], ")"}], " ", 
+   SubscriptBox["\[Rho]", 
+    SubscriptBox["dex", "1"]]}]]], "Output",
+ CellChangeTimes->{{3.9031855797782927`*^9, 3.9031856109004593`*^9}, 
+   3.9031893610208216`*^9, 3.90328832552211*^9, {3.9033461425650463`*^9, 
+   3.903346156257043*^9}, 3.90353413928407*^9, 3.904012910239977*^9, 
+   3.904013056300769*^9},
+ CellLabel->"Out[13]=",ExpressionUUID->"6c0f0c31-c573-4576-998f-568058620d97"]
+}, Open  ]],
+
+Cell[TextData[{
+ "Ideally, we want the chain conditions such that users profit the most by \
+liquidating all the vault collateral that is needed to get an agent out of \
+liquidation. This means we want Arbitrage to be maximized at a value larger \
+or equal than ",
+ Cell[BoxData[
+  FormBox[
+   SubscriptBox["max", "V"], TraditionalForm]],ExpressionUUID->
+  "534ec38c-eff7-4553-96c4-7a521122620c"],
+ "."
+}], "Text",
+ CellChangeTimes->{{3.9033427173149*^9, 3.903342785652141*^9}, {
+  3.903342833178138*^9, 3.903342921332443*^9}, {3.9033429727866125`*^9, 
+  3.903343063276394*^9}, {3.903349524837351*^9, 3.9033495265173364`*^9}, {
+  3.9047486108557615`*^9, 
+  3.9047486121130714`*^9}},ExpressionUUID->"d5705be0-4844-4a4e-a7fb-\
+6ea238ba3880"]
+},
+WindowSize->{1280, 732},
+WindowMargins->{{-5.5, Automatic}, {Automatic, -5.5}},
+FrontEndVersion->"13.2 for Microsoft Windows (64-bit) (January 30, 2023)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"fa279a33-0442-400d-b6fd-3eab6b480b15"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 4832, 131, 347, "Text",ExpressionUUID->"82180e06-fd4d-4c7d-9a35-692622d2af33"],
+Cell[5393, 153, 3087, 84, 114, "Input",ExpressionUUID->"f709db59-644d-46b1-9390-c93ac5c9cb4c"],
+Cell[8483, 239, 293, 4, 35, "Text",ExpressionUUID->"f0513101-83d3-439f-8bab-ef380286ecdc"],
+Cell[CellGroupData[{
+Cell[8801, 247, 2113, 45, 86, "Input",ExpressionUUID->"4bcf5699-246b-4407-a012-fa42f83d9e93"],
+Cell[10917, 294, 1782, 47, 80, "Output",ExpressionUUID->"0568c3db-3595-44d9-bc92-d1ddb4880b68"]
+}, Open  ]],
+Cell[12714, 344, 876, 14, 35, "Text",ExpressionUUID->"c538d92f-4980-44e9-9cc1-2f63826e0569"],
+Cell[CellGroupData[{
+Cell[13615, 362, 1547, 48, 31, "Input",ExpressionUUID->"96f82651-58d8-4050-8cea-7e5a19e465ca"],
+Cell[15165, 412, 1322, 43, 61, "Output",ExpressionUUID->"425ff5c3-c020-4357-9a3c-d01afc4fa112"]
+}, Open  ]],
+Cell[16502, 458, 1034, 25, 109, "Text",ExpressionUUID->"4d0bd073-b434-4bc3-be11-6749ea372c2b"],
+Cell[CellGroupData[{
+Cell[17561, 487, 498, 12, 31, "Input",ExpressionUUID->"d61f5898-1609-43d8-af28-189cb9d95e73"],
+Cell[18062, 501, 670, 18, 56, "Output",ExpressionUUID->"6c0f0c31-c573-4576-998f-568058620d97"]
+}, Open  ]],
+Cell[18747, 522, 739, 16, 58, "Text",ExpressionUUID->"d5705be0-4844-4a4e-a7fb-6ea238ba3880"]
+}
+]
+*)
+

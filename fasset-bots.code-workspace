@@ -19,6 +19,10 @@
 		{
 			"name": "📦 simple-wallet",
 			"path": "packages/simple-wallet"
+		},
+		{
+			"name": "🔌 fasset-liquidator",
+			"path": "packages/fasset-liquidator"
 		}
 	],
 	"settings": {

@@ -1,0 +1,1 @@
+forge flatten contracts/Challenger.sol -o Challenger.sol && python3 scripts/fix-challenger.py;

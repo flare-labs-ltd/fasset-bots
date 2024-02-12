@@ -1,4 +1,14 @@
 {
+    "[typescript]": {
+        "editor.tabSize": 4,
+    },
+    "[python]": {
+        "editor.tabSize": 4,
+    },
+    "[solidity]": {
+        "editor.tabSize": 4,
+    },
+    "editor.insertSpaces": true,
     "editor.trimAutoWhitespace": true,
     "files.trimTrailingWhitespace": true,
     "files.trimFinalNewlines": true,

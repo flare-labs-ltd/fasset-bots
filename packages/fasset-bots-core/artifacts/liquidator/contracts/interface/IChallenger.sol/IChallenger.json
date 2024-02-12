@@ -185,6 +185,46 @@
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
         }
       ],
       "name": "doublePaymentChallenge",
@@ -286,6 +326,46 @@
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
         }
       ],
       "name": "freeBalanceNegativeChallenge",
@@ -387,6 +467,46 @@
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
         }
       ],
       "name": "illegalPaymentChallenge",
