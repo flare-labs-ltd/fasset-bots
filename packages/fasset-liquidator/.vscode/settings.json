@@ -1,7 +1,7 @@
 {
     "[typescript]": {
         "editor.defaultFormatter": "vscode.typescript-language-features",
-        "editor.tabSize": 2,
+        "editor.tabSize": 4,
     },
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",

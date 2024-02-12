@@ -4,38 +4,38 @@ import { abi as challengerAbi, bytecode as challengerBytecode } from '../artifac
 
 
 async function deployContract(
-  abi: any, bytecode: any, args: any[],
-  provider: JsonRpcProvider, signer: Signer
+    abi: any, bytecode: any, args: any[],
+    provider: JsonRpcProvider, signer: Signer
 ) {
 
-  const factory = new ContractFactory(abi, bytecode, signer)
-  const contract = await factory.deploy(...args)
-  const address = await contract.getAddress()
-  console.log(`contract deployed at ${address}`)
+    const factory = new ContractFactory(abi, bytecode, signer)
+    const contract = await factory.deploy(...args)
+    const address = await contract.getAddress()
+    console.log(`contract deployed at ${address}`)
 }
 
 export async function deployLiquidator(
-  network: string,
-  provider: JsonRpcProvider,
-  signer: Signer
+    network: string,
+    provider: JsonRpcProvider,
+    signer: Signer
 ) {
-  const addresses = require("../addresses.json")[network]
-  await deployContract(
-    liquidatorAbi, liquidatorBytecode,
-    [addresses.flashLender, addresses.uniswapV2],
-    provider, signer
-  )
+    const addresses = require("../addresses.json")[network]
+    await deployContract(
+        liquidatorAbi, liquidatorBytecode,
+        [addresses.flashLender, addresses.uniswapV2],
+        provider, signer
+    )
 }
 
 export async function deployChallenger(
-  network: string,
-  provider: JsonRpcProvider,
-  signer: Signer
+    network: string,
+    provider: JsonRpcProvider,
+    signer: Signer
 ) {
-  const addresses = require("../addresses.json")[network]
-  await deployContract(
-    challengerAbi, challengerBytecode,
-    [addresses.flashLender, addresses.uniswapV2],
-    provider, signer
-  )
+    const addresses = require("../addresses.json")[network]
+    await deployContract(
+        challengerAbi, challengerBytecode,
+        [addresses.flashLender, addresses.uniswapV2],
+        provider, signer
+    )
 }

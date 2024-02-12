@@ -47,6 +47,6 @@
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
-    "fasset": "git+ssh://git@gitlab.com/flarenetwork/fasset#beta-deploy"
+    "fasset": "git+https://github.com/flare-labs-ltd/fassets.git#private_beta"
   }
 }

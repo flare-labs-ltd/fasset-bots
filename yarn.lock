@@ -1160,7 +1160,6 @@ __metadata:
     "@types/glob": 8.1.0
     "@types/mocha": 10.0.1
     "@types/node": 20.7.0
-    "@types/rewire": 2.5.28
     ajv: 8.12.0
     axios: 1.5.1
     axios-mock-adapter: 1.22.0
@@ -3211,7 +3210,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.1":
+"@types/mocha@npm:10.0.6, @types/mocha@npm:^10.0.1":
   version: 10.0.6
   resolution: "@types/mocha@npm:10.0.6"
   checksum: f7c836cf6cf27dc0f5970d262591b56f2a3caeaec8cfdc612c12e1cfbb207f601f710ece207e935164d4e3343b93be5054d0db5544f31f453b3923775d82099f
@@ -3375,10 +3374,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/rewire@npm:2.5.28":
-  version: 2.5.28
-  resolution: "@types/rewire@npm:2.5.28"
-  checksum: c416a0f30b68c3d7aa7d67fa1297506d7ae890f831363f5e7a2ca704e0d3e2ec564efe1ce1f20a31f4f6408b3dc76a0f6ed79048ef4b7cc38905db31aeaf55df
+"@types/rewire@npm:2.5.30":
+  version: 2.5.30
+  resolution: "@types/rewire@npm:2.5.30"
+  checksum: 75f756ee068ad7f8aac697dc80f0007afa8c837e7aa211fd95ba7eeea8905043b20439e9b1c8326be77643159580aeebc49a464e626b0837ee188bd8a05dfe84
   languageName: node
   linkType: hard
 
@@ -8167,7 +8166,7 @@ __metadata:
     cross-env: ^7.0.3
     dotenv: ^16.3.1
     ethers: ^6.7.1
-    fasset: "git+ssh://git@gitlab.com/flarenetwork/fasset#beta-deploy"
+    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#private_beta"
     hardhat: ^2.12.2
     hardhat-gas-reporter: ^1.0.9
     rimraf: ^5.0.1
@@ -8178,14 +8177,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset@git+ssh://git@gitlab.com/flarenetwork/fasset#beta-deploy":
+"fasset@git+https://github.com/flare-labs-ltd/fassets.git#private_beta":
   version: 0.0.1
-  resolution: "fasset@git+ssh://git@gitlab.com/flarenetwork/fasset#commit=bc5f9d5a4c39484a6a9264e055d7c4c9b47abe4b"
+  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=ee841fd09cf0996e0afcd441e7664489a145bf18"
   dependencies:
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
     "@openzeppelin/contracts": 4.9.2
     flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
-  checksum: f3db25d22ac6b80aad549f8afb56d95ac2a908170c369b134fae0a95a4805b3fe097644d35dcbaf70f37657f5d626805540116ef5854098d5c0b8242628e76d1
+  checksum: ab626c0b01e37ef08e1bb2cb6651673b9306c8fc950a522216dae962a81b49e2239db2653fecea62eaa280fd72d0a861cbdcd41d1d30135324c32eed309c3a9d
   languageName: node
   linkType: hard
 
@@ -14475,6 +14474,8 @@ __metadata:
     "@types/chai": 4.3.6
     "@types/chai-as-promised": 7.1.6
     "@types/chai-spies": 1.0.4
+    "@types/mocha": 10.0.6
+    "@types/rewire": 2.5.30
     "@typescript-eslint/eslint-plugin": 6.7.3
     "@typescript-eslint/parser": 6.7.3
     chai: 4.3.8
