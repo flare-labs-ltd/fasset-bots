@@ -24,10 +24,10 @@ Remember that you must be running an agent bot all the time to avoid circumstanc
     git clone git@gitlab.com:flarenetwork/fasset-bots.git
     ```
 
-3. Switch to `private_beta_v.1.0`:
+3. Switch to `private_beta`:
 
     ```console
-    git checkout private_beta_v.1.0
+    git checkout private_beta
     ```
 
 4. Install dependencies and build the project:
