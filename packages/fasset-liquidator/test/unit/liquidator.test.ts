@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
-import { dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmount } from '../calculations'
+import { dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmountIn } from '../calculations'
 import { swapInput, swapOutputs } from './helpers/uniswap-v2'
 import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
@@ -142,6 +142,7 @@ describe("Tests for the Liquidator contract", () => {
         )
         const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
         const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
+        // store test results, so we can graph how close the profit was to the maximum
         storeTestResult(
           { ecosystem: config, assets: assetConfig, paths: swapPaths, liquidatedFAsset },
           `TestResult|${config.name}|${swapPaths[0].join("-")}|${swapPaths[1].join("-")}`

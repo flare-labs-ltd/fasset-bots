@@ -1,9 +1,8 @@
 // set up the live ecosystem
 import "dotenv/config"
-import { Wallet, MaxUint256, JsonRpcProvider } from "ethers"
+import { Wallet, MaxUint256, type JsonRpcProvider, type Signer } from "ethers"
 import { getContracts, getBaseContracts } from "../test/integration/helpers/contracts"
 import { syncDexReservesWithFtsoPrices, dexVsFtsoPrices, removeLiquidity, swapDexPairToPrice } from "../test/integration/helpers/utils"
-import type { Signer } from "ethers"
 import type { Contracts } from "../test/integration/helpers/interface"
 
 

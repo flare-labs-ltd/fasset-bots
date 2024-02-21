@@ -1,4 +1,8 @@
-import { swapOutputs, swapInputs, amgToTokenPrice, liquidationOutput, currentLiquidationFactorBIPS, maxLiquidationAmountAmg } from "../../calculations"
+import {
+    consecutiveSwapOutputs, swapInputs,
+    amgToTokenPrice, liquidationOutput,
+    currentLiquidationFactorBIPS, maxLiquidationAmountAmg
+} from "../../calculations"
 import { amgToUba, ubaToAmg } from "./utils"
 import type { EcosystemConfig, AssetConfig, UnderlyingAsset, CollateralAsset } from "../fixtures/interface"
 
@@ -13,9 +17,9 @@ export class FixtureUtils {
   arbitrageProfit(amountVault: bigint): bigint {
     const [paths1, paths2] = this.pathConfig
     const [reserves1, reserves2] = this.getDexReserves()
-    const [fAssetToLiquidate] = swapOutputs([amountVault], [paths1], [reserves1])
+    const [fAssetToLiquidate] = consecutiveSwapOutputs([amountVault], [paths1], [reserves1])
     const [liquidationPayoutVault, liquidationPayoutPool] = this.liquidationOutput(fAssetToLiquidate)
-    const [,vaultFromPool] = swapOutputs([amountVault, liquidationPayoutPool], [paths1, paths2], [reserves1, reserves2])
+    const [,vaultFromPool] = consecutiveSwapOutputs([amountVault, liquidationPayoutPool], [paths1, paths2], [reserves1, reserves2])
     return liquidationPayoutVault + vaultFromPool - amountVault
   }
 

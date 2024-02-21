@@ -42,13 +42,25 @@ export function randBigInt(min: bigint, max: bigint): bigint {
   return min + randbytes % diff
 }
 
-export function randBigIntInRadius (center: bigint, radius: bigint): bigint {
+export function randBigIntInRadius(center: bigint, radius: bigint): bigint {
   const min = center - radius
   const max = center + radius
   return randBigInt(min, max)
 }
 
-export function randBigIntInRelRadius (center: bigint, radiusPerc: number): bigint {
+export function randBigIntInRelRadius(center: bigint, radiusPerc: number): bigint {
   const radius = center * BigInt(radiusPerc) / BigInt(100)
   return randBigIntInRadius(center, radius)
+}
+
+export function sqrt(value: bigint): bigint {
+    if (value < BigInt(0)) throw Error()
+    if (value < BigInt(2)) return value
+    function newtonIteration(n: bigint, x0: bigint): bigint {
+        const x1 = ((n / x0) + x0) >> BigInt(1)
+        if (x0 === x1 || x0 === (x1 - BigInt(1)))
+            return x0
+        return newtonIteration(n, x1)
+    }
+    return newtonIteration(value, BigInt(1))
 }
