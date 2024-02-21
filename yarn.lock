@@ -1122,7 +1122,7 @@ __metadata:
   resolution: "@flarelabs/fasset-bots-cli@workspace:packages/fasset-bots-cli"
   dependencies:
     "@flarelabs/fasset-bots-core": "workspace:*"
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.2
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.4
     "@types/bn.js": 5.1.5
     bn.js: 5.2.1
     chalk: 4.1.2
@@ -1146,7 +1146,7 @@ __metadata:
   resolution: "@flarelabs/fasset-bots-core@workspace:packages/fasset-bots-core"
   dependencies:
     "@flarelabs/simple-wallet": "workspace:*"
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.4
     "@mikro-orm/cli": 5.8.4
     "@mikro-orm/core": 5.8.4
     "@mikro-orm/knex": 5.8.4
@@ -1220,16 +1220,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2":
-  version: 1.0.0-beta.2
-  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.2"
-  dependencies:
-    "@openzeppelin/contracts": ^4.9.3
-    ethers: ^6.7.1
-  checksum: fdacf12cb3382f87a7d2bad7e1cfafef11ad31aa4828f46d33ce9b3a271f42a0f7086e6afb93e51cd2f442e0a1a7a24a7a135ddce9eb6370422174878e72cd75
-  languageName: node
-  linkType: hard
-
 "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.3":
   version: 1.0.0-beta.3
   resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.3"
@@ -1237,6 +1227,16 @@ __metadata:
     "@openzeppelin/contracts": ^4.9.3
     ethers: ^6.7.1
   checksum: a1757ebdc6a3f61d11f6269caca1c0b872b2591412e884ab4fae18d0a49afd70d51388951ef13a4da5bedb4c00aacd80d51c63388dabb5516098348a03f4ad9d
+  languageName: node
+  linkType: hard
+
+"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.4":
+  version: 1.0.0-beta.4
+  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.4"
+  dependencies:
+    "@openzeppelin/contracts": ^4.9.3
+    ethers: ^6.7.1
+  checksum: 440132dcd86a3fa47d0214add2c65da165444fe5a856be4acdf56467cd66fa3b31d6c350815586d8a61589f25d134e57770c737e61d2a6b6ff653af1ea8c3902
   languageName: node
   linkType: hard
 
