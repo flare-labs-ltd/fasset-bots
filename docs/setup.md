@@ -84,7 +84,10 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 3. Choose one of the stable tokens or wrapped ETH in `vaultCollateralFtsoSymbol`. This asset will be used to back up the agent vault collateral. Ask the developer relations team to provide you with the chosen test token.
 
-4. In `secrets.json`, the `owner.testXRP.address` field is the underlying test-XRP account that pays the underlying chain's transaction fees. Activate your underlying XRP account by sending at least 100 test-XRP to it. You can use the XRP testnet [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/).
+4. In `secrets.json`, the `owner.testXRP.address` field is the underlying test-XRP account that pays the underlying chain's transaction fees. Activate your underlying XRP account by sending at least 100 test-XRP to it. You can use one of the the XRP testnet faucets:
+
+   * [first option](https://yusufsahinhamza.github.io/xrp-testnet-faucet/)
+   * [second option](https://test.bithomp.com/faucet/).
 
 5. Create the agent specifying the Fasset and agent settings. Please keep in mind that this operation can take a while.
 
