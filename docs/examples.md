@@ -178,7 +178,7 @@ ADDRESS                                     MAX_LOTS  FEE
 1. Mint _1 FtestXR_P_ fasset against agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_.
 
 ```console
-$ yarn user-bot mint 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
+$ yarn user-bot mint -a 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 Reserving collateral...
