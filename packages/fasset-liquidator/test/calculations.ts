@@ -1,5 +1,5 @@
-import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS, MAX_UINT_256 } from "./constants"
-import { sqrt } from "./unit/helpers/utils"
+import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS } from "./constants"
+import { isqrt } from "./unit/helpers/utils"
 
 ////////////////////////////////////////////////////////////////////////////
 // conversions
@@ -133,7 +133,8 @@ export function slippageBipsFromSwapAmountIn(
     reserveB: bigint
 ): bigint {
     const amountB = swapOutput(amountA, reserveA, reserveB)
-    return FASSET_MAX_BIPS * amountB * reserveA / (amountA * reserveB)
+    const slippageFactorBips = FASSET_MAX_BIPS * amountB * reserveA / (amountA * reserveB)
+    return FASSET_MAX_BIPS - slippageFactorBips
 }
 
 // slippage from receiving amountB when swapping through
@@ -144,7 +145,7 @@ export function slippageBipsFromSwapAmountOut(
     reserveB: bigint
 ): bigint {
     const amountA = swapInput(amountB, reserveA, reserveB)
-    return FASSET_MAX_BIPS * amountB * reserveA / (amountA * reserveB)
+    return slippageBipsFromSwapAmountIn(amountA, reserveA, reserveB)
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -253,13 +254,13 @@ export function swapToDexRatio(
 ): bigint {
     const aux1 = BigInt(4) * initialReserveB * desiredRatioA * DEX_FACTOR_BIPS / DEX_MAX_BIPS
     const aux2 = initialReserveA * desiredRatioB * (DEX_FACTOR_BIPS - DEX_MAX_BIPS) ** BigInt(2) / DEX_MAX_BIPS ** BigInt(2)
-    const aux3 = sqrt(initialReserveA * (aux1 + aux2) / desiredRatioB)
+    const aux3 = isqrt(initialReserveA * (aux1 + aux2) / desiredRatioB)
+
     const aux4 = initialReserveA * (DEX_FACTOR_BIPS + DEX_MAX_BIPS) / DEX_MAX_BIPS
     return (aux3 - aux4) * DEX_MAX_BIPS / (BigInt(2) * DEX_FACTOR_BIPS)
 }
 
-// dex price can drop for <= maxSlippageBips
-export function dexMinPriceFromMaxSlippage(
+export function applySlippageToDexPrice(
     maxSlippageBips: number,
     reserveA: bigint,
     reserveB: bigint
@@ -276,33 +277,28 @@ export function addedliquidityFromSlippage(
     reserveB: bigint
 ): [bigint, bigint] {
     const adjustedDexFactor = FASSET_MAX_BIPS / DEX_MAX_BIPS * DEX_FACTOR_BIPS
-    const newReserveA = amountA * adjustedDexFactor * BigInt(slippageBips)
-        / (FASSET_MAX_BIPS - BigInt(slippageBips)) / FASSET_MAX_BIPS
+    const slippageFactorBips = FASSET_MAX_BIPS - BigInt(slippageBips)
+    const newReserveA = amountA * adjustedDexFactor * slippageFactorBips
+        / (adjustedDexFactor - slippageFactorBips) / FASSET_MAX_BIPS
     const addedA = newReserveA - reserveA
     const addedB = addedA * reserveB / reserveA
     return [addedA, addedB]
 }
 
-export function swapAndAddLiquidityToGetReserves(
+export function swapAndChangeLiquidityToGetReserves(
     oldReserveA: bigint,
     oldReserveB: bigint,
     newReserveA: bigint,
     newReserveB: bigint
 ): [bigint, bigint, bigint, bigint] {
-    const swapInA = swapToDexRatio(
-        oldReserveA, oldReserveB,
-        newReserveA, newReserveB
-    )
+    const swapInA = swapToDexRatio(oldReserveA, oldReserveB, newReserveA, newReserveB)
     if (swapInA > 0) {
         const swapOutB = swapOutput(swapInA, oldReserveA, oldReserveB)
         const adddedLiquidityA = newReserveA - (oldReserveA + swapInA)
         const addedLiquidityB = newReserveB - (oldReserveB - swapOutB)
         return [swapInA, BigInt(0), adddedLiquidityA, addedLiquidityB]
     }
-    const swapInB = swapToDexRatio(
-        oldReserveB, oldReserveA,
-        newReserveB, newReserveA
-    )
+    const swapInB = swapToDexRatio(oldReserveB, oldReserveA, newReserveB, newReserveA)
     const swapOutA = swapOutput(swapInB, oldReserveB, oldReserveA)
     const adddedLiquidityA = newReserveA - (oldReserveA - swapOutA)
     const addedLiquidityB = newReserveB - (oldReserveB + swapInB)

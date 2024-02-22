@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { liquidationOutput, amgToTokenPrice, dexMinPriceFromMaxSlippage } from '../../calculations'
+import { liquidationOutput, amgToTokenPrice, applySlippageToDexPrice } from '../../calculations'
 import { ubaToAmg } from './utils'
 import { addLiquidity, swapOutput, swapOutputs, swapInput } from './uniswap-v2'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
@@ -62,7 +62,7 @@ export class ContextUtils {
 
   async dexMinPriceFromMaxSlippage(slippageBips: number, tokenA: ERC20, tokenB: ERC20): Promise<[bigint, bigint]> {
     const [tokenAReserve, tokenBReserve] = await this.context.contracts.uniswapV2.getReserves(tokenA, tokenB)
-    return dexMinPriceFromMaxSlippage(slippageBips, tokenAReserve, tokenBReserve)
+    return applySlippageToDexPrice(slippageBips, tokenAReserve, tokenBReserve)
   }
 
   async liquidationOutput(amountFAsset: bigint): Promise<[bigint, bigint]> {

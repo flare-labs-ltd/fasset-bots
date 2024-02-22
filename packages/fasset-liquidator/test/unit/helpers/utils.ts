@@ -53,14 +53,27 @@ export function randBigIntInRelRadius(center: bigint, radiusPerc: number): bigin
   return randBigIntInRadius(center, radius)
 }
 
-export function sqrt(value: bigint): bigint {
-    if (value < BigInt(0)) throw Error()
-    if (value < BigInt(2)) return value
-    function newtonIteration(n: bigint, x0: bigint): bigint {
-        const x1 = ((n / x0) + x0) >> BigInt(1)
-        if (x0 === x1 || x0 === (x1 - BigInt(1)))
-            return x0
-        return newtonIteration(n, x1)
-    }
-    return newtonIteration(value, BigInt(1))
+export function isqrt(value: bigint) {
+	if (value < BigInt(2)) {
+		return value;
+	}
+	if (value < BigInt(16)) {
+		return BigInt(Math.sqrt(Number(value))|0);
+	}
+    let x0, x1;
+	if (value < BigInt(4503599627370496)){//1n<<52n
+		x1 = BigInt(Math.sqrt(Number(value))|0) - BigInt(3);
+	} else {
+		let vlen = value.toString().length;
+		if (!(vlen&1)) {
+			x1 = BigInt(10) ** (BigInt(vlen/2));
+		} else {
+			x1 = BigInt(4) * BigInt(10) ** (BigInt((vlen/2)|0));
+		}
+	}
+	do {
+		x0 = x1;
+		x1 = ((value / x0) + x0) >> BigInt(1);
+	} while((x0 !== x1 && x0 !== (x1 - BigInt(1))));
+	return x0;
 }

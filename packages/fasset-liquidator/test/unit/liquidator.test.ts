@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
-import { dexMinPriceFromMaxSlippage, slippageBipsFromSwapAmountIn } from '../calculations'
+import { applySlippageToDexPrice } from '../calculations'
 import { swapInput, swapOutputs } from './helpers/uniswap-v2'
 import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
@@ -251,8 +251,8 @@ describe("Tests for the Liquidator contract", () => {
       await utils.configureEcosystem(config)
       // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
       // for exact percentage we would need to calculate what the optimal swapping amount is going to be
-      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
-      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1000, config.dex2PoolReserve, config.dex2VaultReserve)
+      const [minPriceDex1Mul, minPriceDex1Div] = applySlippageToDexPrice(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
+      const [minPriceDex2Mul, minPriceDex2Div] = applySlippageToDexPrice(1000, config.dex2PoolReserve, config.dex2VaultReserve)
       await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
         contracts.agent,
         signers.rewardee,
@@ -274,8 +274,8 @@ describe("Tests for the Liquidator contract", () => {
       await utils.configureEcosystem(config)
       const { contracts } = context
       // tolerate 10% price slippage (get the price oracle from dex reserves - ideally from last transaction on the last block)
-      const [minPriceDex1Mul, minPriceDex1Div] = dexMinPriceFromMaxSlippage(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
-      const [minPriceDex2Mul, minPriceDex2Div] = dexMinPriceFromMaxSlippage(1200, config.dex2PoolReserve, config.dex2VaultReserve)
+      const [minPriceDex1Mul, minPriceDex1Div] = applySlippageToDexPrice(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
+      const [minPriceDex2Mul, minPriceDex2Div] = applySlippageToDexPrice(1200, config.dex2PoolReserve, config.dex2VaultReserve)
       // get the agent's min prices from contract
       const [_minPriceDex1Mul, _minPriceDex1Div, _minPriceDex2Mul, _minPriceDex2Div]
         = await contracts.liquidator.maxSlippageToMinPrices(1000, 1200, contracts.agent)

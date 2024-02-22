@@ -1,8 +1,11 @@
 import { ethers } from 'hardhat'
 import * as calc from '../../calculations'
 import type { Signer } from 'ethers'
-import type { ERC20, ERC20Mock, IUniswapV2Router } from '../../../types'
+import type { ERC20, ERC20Mock, IUniswapV2Pair, IUniswapV2Router } from '../../../types'
 
+
+//////////////////////////////////////////////////////////////////////
+// basic unsafe wrappers
 
 export async function addLiquidity(
     router: IUniswapV2Router,
@@ -30,16 +33,12 @@ export async function addLiquidity(
 
 export async function removeLiquidity(
     router: IUniswapV2Router,
-    pair: ERC20,
     tokenA: ERC20Mock,
     tokenB: ERC20Mock,
-    amountA: bigint,
+    liquidity: bigint,
     signer: Signer
 ): Promise<void> {
-    const totalLiquidity = await pair.totalSupply()
-    const pairTokenABalance = await tokenA.balanceOf(pair)
-    const liquidity = totalLiquidity * amountA / pairTokenABalance
-    await router.removeLiquidity(
+    await router.connect(signer).removeLiquidity(
         tokenA, tokenB, liquidity,
         0, 0,
         signer, ethers.MaxUint256
@@ -110,17 +109,39 @@ export async function swapOutputs(
     return calc.consecutiveSwapOutputs(amountsA, namePaths, reserves)
 }
 
-export async function swapAndAddLiquidityToGetReserves(
+//////////////////////////////////////////////////////////////////////
+// specific methods
+
+export async function changeLiquidity(
+    router: IUniswapV2Router,
+    pair: IUniswapV2Pair,
+    tokenA: ERC20Mock,
+    tokenB: ERC20Mock,
+    amountA: bigint,
+    amountB: bigint,
+    signer: Signer
+): Promise<void> {
+    if (amountA > 0 && amountB > 0) {
+        await addLiquidity(router, tokenA, tokenB, amountA, amountB, signer)
+    } else if (amountA < 0 && amountB < 0) {
+        const liquiditySupply = await pair.totalSupply()
+        const pairBalanceA = await tokenA.balanceOf(pair)
+        const liquidity = liquiditySupply * (-amountA) / pairBalanceA
+        await pair.connect(signer).approve(router, liquidity)
+        await removeLiquidity(router, tokenA, tokenB, liquidity, signer)
+    } else {
+        throw new Error("changeLiquidity: invalid amounts")
+    }
+}
+
+export async function multiswap(
     router: IUniswapV2Router,
     tokenA: ERC20Mock,
     tokenB: ERC20Mock,
-    newReservesA: bigint,
-    newReservesB: bigint,
+    swapA: bigint,
+    swapB: bigint,
     signer: Signer
 ): Promise<void> {
-    const [oldReservesA, oldReservesB] = await router.getReserves(tokenA, tokenB)
-    const [swapA, swapB, addLiquidityA, addLiquidityB] = calc.swapAndAddLiquidityToGetReserves(
-        oldReservesA, oldReservesB, newReservesA, newReservesB)
     if (swapA > 0) {
         await tokenA.mint(signer, swapA)
         await swap(router, [tokenA, tokenB], swapA, signer)
@@ -128,9 +149,66 @@ export async function swapAndAddLiquidityToGetReserves(
         await tokenB.mint(signer, swapB)
         await swap(router, [tokenB, tokenA], swapB, signer)
     }
-    if (addLiquidityA > 0 && addLiquidityB > 0) {
-        await addLiquidity(router, tokenA, tokenB, addLiquidityA, addLiquidityB, signer)
-    } else if (addLiquidityA < 0 && addLiquidityB < 0) {
-        await removeLiquidity(router, tokenA, tokenA, tokenB, -addLiquidityA, signer)
-    }
+}
+
+// swap on dexes to achieve the given price
+export async function swapToPrice(
+    router: IUniswapV2Router,
+    tokenA: ERC20Mock,
+    tokenB: ERC20Mock,
+    priceA: bigint,
+    priceB: bigint,
+    decimalsA: bigint,
+    decimalsB: bigint,
+    signer: Signer
+): Promise<void> {
+    const [reserveA, reserveB] = await router.getReserves(tokenA, tokenB)
+    const swapA = calc.swapToDexPrice(reserveA, reserveB, priceA, priceB, decimalsA, decimalsB)
+    const swapB = calc.swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA)
+    await multiswap(router, tokenA, tokenB, swapA, swapB, signer)
+}
+
+export async function swapToRatio(
+    router: IUniswapV2Router,
+    tokenA: ERC20Mock,
+    tokenB: ERC20Mock,
+    ratioA: bigint,
+    ratioB: bigint,
+    signer: Signer
+): Promise<void> {
+    const [reserveA, reserveB] = await router.getReserves(tokenA, tokenB)
+    const swapA = calc.swapToDexRatio(reserveA, reserveB, ratioA, ratioB)
+    const swapB = calc.swapToDexRatio(reserveB, reserveA, ratioB, ratioA)
+    await multiswap(router, tokenA, tokenB, swapA, swapB, signer)
+}
+
+export async function swapAndChangeLiquidityToGetReserves(
+    router: IUniswapV2Router,
+    pair: IUniswapV2Pair,
+    tokenA: ERC20Mock,
+    tokenB: ERC20Mock,
+    newReservesA: bigint,
+    newReservesB: bigint,
+    signer: Signer
+): Promise<void> {
+    const [oldReservesA, oldReservesB] = await router.getReserves(tokenA, tokenB)
+    const [swapA, swapB, addLiquidityA, addLiquidityB] = calc.swapAndChangeLiquidityToGetReserves(
+        oldReservesA, oldReservesB, newReservesA, newReservesB)
+    await multiswap(router, tokenA, tokenB, swapA, swapB, signer)
+    await changeLiquidity(router, pair, tokenA, tokenB, addLiquidityA, addLiquidityB, signer)
+}
+
+export async function changeLiquidityToProduceSlippage(
+    router: IUniswapV2Router,
+    pair: IUniswapV2Pair,
+    tokenA: ERC20Mock,
+    tokenB: ERC20Mock,
+    slippageBips: number,
+    slippageVolume: bigint,
+    signer: Signer
+): Promise<void> {
+    const [oldReserveA, oldReserveB] = await router.getReserves(tokenA, tokenB)
+    const [addedLiquidityA, addedLiquidityB] = calc.addedliquidityFromSlippage(
+        slippageVolume, slippageBips, oldReserveA, oldReserveB)
+    await changeLiquidity(router, pair, tokenA, tokenB, addedLiquidityA, addedLiquidityB, signer)
 }
