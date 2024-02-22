@@ -79,7 +79,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
     yarn agent-bot -f FtestXRP create --prepare
     ```
 
-2. Choose the suffix for your agent's collateral pool and fill in the `poolTokenSuffix` field. The suffix should include only upper-case letters and `-` symbols. For example, `MY-ALPHA-AGENT-1`.
+2. Choose the suffix for your agent's collateral pool and fill in the `poolTokenSuffix` field. The suffix should include only upper-case letters, numbers, and `-` symbols in-between. For example, `MY-ALPHA-AGENT-1`.
 
 3. Choose one of the stable tokens or wrapped ETH in `vaultCollateralFtsoSymbol`. This asset will be used to back up the agent vault collateral. Ask the developer relations team to provide you with the chosen test token.
 
