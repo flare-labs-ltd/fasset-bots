@@ -21,6 +21,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
     ```console
     git clone git@gitlab.com:flarenetwork/fasset-bots.git
+    cd fasset-bots
     ```
 
 3. Switch to `private_beta`:
