@@ -239,24 +239,16 @@ Minted: 13.60 FtestXRP  (1.36 lots)
 2. List system info with basic agent's info.
 
 ```console
-$ yarn user-bot info --agents -f FtestXRP
+$ yarn user-bot agents -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
-FAsset: F-TestXRP (FtestXRP) at 0xA86379bC8644Ce1919cc750844E819c0a2cD28dB
-Asset manager: 0x78c5b6289642Af6f47526E3D845395c9a53b3E6B
-Minted: 13.60 FtestXRP  (1.36 lots)
 -------------- Agents --------------
-Vault address                               Owner address                                Minted lots     Free lots  Public
-0x7c15f97B4B36112A8A18Aa7271af59a01d5182b4  0x88278079a62db08fEb125f270102651BbE8F9984          0.00             0  no
-0x97204bd339e5e33acc7675dea5593f254BD8476C  0xb4d9dcE36bf7fBb4c3cdc63f18b96344c0181eD2          1.32             9  YES
-0xe7548D6180007be8e6c2FF87Cad4B592d7E7EBFb  0x56597Fa74890E002Aa4F36E90beEb4E69c7Bae7D          0.04             0  no
-0x4A023968C5c634F5067c4F08f60cBA5dcd3aaA45  0xb4d9dcE36bf7fBb4c3cdc63f18b96344c0181eD2          0.00             8  YES
-0xf37E8F1ad5BC9C5Bb8bf387902DE82294889d2A3  0xb4d9dcE36bf7fBb4c3cdc63f18b96344c0181eD2          0.00             8  YES
-0xac8067BC2FbFD8b8cfD68B6855dE6470B7DbEEb5  0xb4d9dcE36bf7fBb4c3cdc63f18b96344c0181eD2          0.00             8  YES
-0xbE274f477Ab23bC7CBC867afC0247CbeA5d454AB  0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073          0.00             0  no
-0x644E797A8e84469401FC615D6F470B4A1F55E1FF  0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073          0.00             0  no
-0xA236c3c4A60F52B3aBF06Cd60750EabA333228c1  0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073          0.00             0  no
-0x5bc0886D3117507C779BD8c6240eb1C396385223  0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073          0.00             1  YES
+ADDRESS                                     MAX_LOTS     FEE
+0x30CEBa10940F5740Cf37Adc6aEc6F7BB56dd929a       101   0.25%
+0x766217949bba9cB2c5E1A6E06820d38A62A47Ac7        49   0.25%
+0xF22B3597aAFa3c541a3CC93320362F27A48AE7ba        99   0.25%
+0x3fcb18cC86FA876C51FB1630a6b0C344E32fF105        29   0.25%
+0x736FFcCF2aE9C64C321598c298D44068263c8C82        10   0.25%
 ```
 
 ## How to list agent info?
@@ -272,7 +264,7 @@ $ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 ### Agent command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223  -f FtestXRP
+$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FtestXRP
 ```
 
 ### Result
