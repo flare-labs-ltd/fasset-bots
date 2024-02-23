@@ -62,7 +62,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 4. In `secrets.json` the `owner.native.address` field is the Flare account that funds the agent vaults and pays gas fees for any agent-related smart contract calls. Provide this address to the developer relations team, so they can fund it with CFLR.
 
-5. Developer relations team needs to whitelist your native address. Please provide the value of `owner.management.address` from the `secrets.json` file.
+5. The developer relations team needs to whitelist your native address. Please provide the value of `owner.management.address` from the `secrets.json` file and your agent name, description, and icon URL.
 
 ### Set up your native address
 
