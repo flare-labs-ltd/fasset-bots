@@ -169,6 +169,12 @@ We also provide the `systemd` services for running the bot as a daemon. For this
     MINTING EXECUTED: Minting 18455 executed for 0x97204bd339e5e33acc7675dea5593f254BD8476C.
     ```
 
+4. If minting fails, you can execute the verification again, providing the payment identifier that you got when minting. In this example, it is `18455`.
+
+   ```console
+   yarn user-bot mintExecute PAYMENT_ID -f FtestXRP -s secrets.json
+   ```
+
 ## Redeeming
 
 1. Fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/). Please keep in mind that a redemption fee is paid out to agents to cover their underlying transaction fees.
