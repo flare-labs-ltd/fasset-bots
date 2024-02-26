@@ -27,8 +27,10 @@ export const WEEKS = 7 * DAYS;
 
 export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
 export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
-export const STABLE_COIN_LOW_BALANCE = 1000; // in USDC/USDT
-export const NATIVE_LOW_BALANCE = 1000; // in NAT (not Wei)
+// factors of locked collaterals that a healthy agent owner would need to own as their reserves
+// (seperate for each agent vault)
+export const VAULT_COLLATERAL_RESERVE_FACTOR = 0.1;
+export const POOL_COLLATERAL_RESERVE_FACTOR = 0.1;
 
 export const QUERY_WINDOW_SECONDS = 86400;
 

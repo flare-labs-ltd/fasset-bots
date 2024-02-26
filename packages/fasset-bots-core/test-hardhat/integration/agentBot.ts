@@ -5,8 +5,8 @@ import { ORM } from "../../src/config/orm";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { BN_ZERO, checkedCast, MAX_BIPS, NATIVE_LOW_BALANCE, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN, requireNotNull } from "../../src/utils/helpers";
-import { artifacts, contractSettings, web3 } from "../../src/utils/web3";
+import { BN_ZERO, checkedCast, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN, requireNotNull } from "../../src/utils/helpers";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
@@ -666,8 +666,7 @@ describe("Agent bot tests", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgent(context, ownerAddress);
-        const deposit = ownerBalance.sub(toBNExp(NATIVE_LOW_BALANCE, 18));
-        await agentB.buyCollateralPoolTokens(deposit);
+        // calculate minuimum amount of native currency to hold by agent owner
         const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
         const minter = await createTestMinter(context, minterAddress, chain);
@@ -678,6 +677,13 @@ describe("Agent bot tests", async () => {
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
         // mock price changes and run
         await context.ftsoManager.mockFinalizePriceEpoch();
+        // make an agent hold less than minimum amount of NAT reserves
+        const agentInfo = await agentBot.agent.getAgentInfo()
+        const minNative = toBN(agentInfo.totalPoolCollateralNATWei)
+            .sub(toBN(agentInfo.freePoolCollateralNATWei))
+            .muln(POOL_COLLATERAL_RESERVE_FACTOR)
+        const deposit = ownerBalance.sub(minNative)
+        await agentB.buyCollateralPoolTokens(deposit);
         // send notifications: top up failed and low balance on ownerAddress
         await agentBot.runStep(orm.em);
         expect(spyTopUpFailed).to.have.been.called.twice;

@@ -15,15 +15,15 @@ import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecod
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
-import { formatArgs, squashSpace } from "../utils/formatting";
+import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
 import {
     BN_ZERO,
     CCB_LIQUIDATION_PREVENTION_FACTOR,
     DAYS,
     MAX_BIPS,
-    NATIVE_LOW_BALANCE,
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
-    STABLE_COIN_LOW_BALANCE,
+    POOL_COLLATERAL_RESERVE_FACTOR,
+    VAULT_COLLATERAL_RESERVE_FACTOR,
     XRP_ACTIVATE_BALANCE,
     findOneSubstring,
     toBN,
@@ -1740,25 +1740,25 @@ export class AgentBot {
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
         const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.owner.workAddress);
-        const stableCoinLowBalance = toBNExp(STABLE_COIN_LOW_BALANCE, Number(vaultCollateralPrice.collateral.decimals));
-        if (ownerBalanceVaultCollateral.lte(stableCoinLowBalance)) {
+        const vaultCollateralLowBalance = this.ownerVaultCollateralLowBalance(agentInfo)
+        if (ownerBalanceVaultCollateral.lte(vaultCollateralLowBalance)) {
             await this.notifier.sendLowBalanceOnOwnersAddress(
                 this.agent.vaultAddress,
                 this.agent.owner.workAddress,
-                ownerBalanceVaultCollateral.toString(),
+                formatFixed(ownerBalanceVaultCollateral, Number(vaultCollateralPrice.collateral.decimals)),
                 vaultCollateralPrice.collateral.tokenFtsoSymbol
             );
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance
                 ${ownerBalanceVaultCollateral.toString()} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`);
         }
         const ownerBalance = toBN(await web3.eth.getBalance(this.agent.owner.workAddress));
-        const nativeLowBlance = toBNExp(NATIVE_LOW_BALANCE, 18);
-        if (ownerBalance.lte(nativeLowBlance)) {
+        const nativeLowBalance = this.ownerNativeLowBalance(agentInfo)
+        if (ownerBalance.lte(nativeLowBalance)) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             await this.notifier.sendLowBalanceOnOwnersAddress(
                 this.agent.vaultAddress,
                 this.agent.owner.workAddress,
-                ownerBalance.toString(),
+                formatFixed(ownerBalance, 18),
                 poolCollateralPrice.collateral.tokenFtsoSymbol
             );
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance
@@ -1783,5 +1783,15 @@ export class AgentBot {
         const backingVaultCollateralWei = cp.convertUBAToTokenWei(totalUBA);
         const requiredCollateral = backingVaultCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
         return requiredCollateral.sub(balance);
+    }
+
+    private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
+        const lockedPoolCollateral = toBN(agentInfo.totalPoolCollateralNATWei).sub(toBN(agentInfo.freePoolCollateralNATWei))
+        return lockedPoolCollateral.muln(POOL_COLLATERAL_RESERVE_FACTOR)
+    }
+
+    private ownerVaultCollateralLowBalance(agentInfo: AgentInfo): BN {
+        const lockedVaultCollateral = toBN(agentInfo.totalVaultCollateralWei).sub(toBN(agentInfo.freeVaultCollateralWei))
+        return lockedVaultCollateral.muln(VAULT_COLLATERAL_RESERVE_FACTOR)
     }
 }

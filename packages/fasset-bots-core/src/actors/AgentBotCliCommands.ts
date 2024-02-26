@@ -192,7 +192,7 @@ export class BotCliCommands {
     }
 
     /**
-     * Announces agent's withdrawal of class 1. It marks in persistent state that withdrawal of class 1
+     * Announces agent's withdrawal of vault collateral. It marks in persistent state that withdrawal of vault collateral
      * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
      * @param agentVault agent's vault address
      * @param amount amount to be withdrawn
