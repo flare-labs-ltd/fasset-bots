@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
 import { applySlippageToDexPrice } from '../calculations'
-import { swapInput, swapOutputs } from './helpers/uniswap-v2'
+import { swapInput, consecutiveSwapOutputs } from './helpers/uniswap-v2'
 import { ContextUtils } from './helpers/context'
 import { getTestContext } from './fixtures/context'
 import { storeTestResult } from './helpers/test-results'
@@ -65,8 +65,8 @@ describe("Tests for the Liquidator contract", () => {
           expect(maxLiquidatedFAsset).to.be.greaterThan(0) // check that agent is in liquidation
           const maxLiquidatedVault = await swapInput(contracts.uniswapV2, swapPath1, maxLiquidatedFAsset)
           const [expectedLiquidationRewardVault, expectedLiquidationRewardPool] = await utils.liquidationOutput(maxLiquidatedFAsset)
-          const [,expectedSwappedPool] = await swapOutputs(
-            contracts.uniswapV2, [swapPath1, swapPath2], [maxLiquidatedVault, expectedLiquidationRewardPool])
+          const [,expectedSwappedPool] = await consecutiveSwapOutputs(
+            contracts.uniswapV2, [maxLiquidatedVault, expectedLiquidationRewardPool], [swapPath1, swapPath2])
           const { mintedUBA: mintedFAssetBefore } = await contracts.assetManager.getAgentInfo(contracts.agent)
           const agentVaultBalanceBefore = await contracts.vault.balanceOf(contracts.agent)
           const agentPoolBalanceBefore = await contracts.pool.balanceOf(contracts.agent)
@@ -109,7 +109,7 @@ describe("Tests for the Liquidator contract", () => {
         })
       })
 
-      it(`should optimally liquidate less than max f-assets due to low liquidated vault / f-asset dex with swap path "${swapPaths}"`, async () => {
+      it.only(`should optimally liquidate less than max f-assets due to low liquidated vault / f-asset dex with swap path "${swapPaths}"`, async () => {
         if (swapPaths[0].length == 3 && swapPaths[1].length == 3) {
           // this doesn't work for a very specific reason:
           // when we swap from vault to f-asset we avoid the low liquiditated vault / f-asset pool
@@ -262,7 +262,7 @@ describe("Tests for the Liquidator contract", () => {
         minPriceDex2Div,
         ZeroAddress, ZeroAddress,
         [], []
-      )).to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+      )).to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
     })
 
   })

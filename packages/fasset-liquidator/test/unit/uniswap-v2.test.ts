@@ -8,14 +8,14 @@ import {
 } from './helpers/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
-import { XRP, USDT, WFLR } from './fixtures/assets'
+import { XRP, USDT, ETH, WFLR } from './fixtures/assets'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type { IUniswapV2Router, IUniswapV2Pair, ERC20Mock } from '../../types'
 
 
 const ASSET_A = USDT
 const ASSET_B = XRP
-const ASSET_C = WFLR
+const ASSET_C = ETH
 
 const RESERVE_CHANGE_FIXTURE = [
     {
@@ -31,7 +31,6 @@ const RESERVE_CHANGE_FIXTURE = [
         newB: BigInt(132) * BigInt(10) ** ASSET_B.decimals
     }
 ]
-
 
 describe("Tests for the UniswapV2 implementation", () => {
     // default "real" token prices
@@ -74,8 +73,8 @@ describe("Tests for the UniswapV2 implementation", () => {
         uniswapV2 = await deployUniswapV2(wNat, accounts[0])
         // set tokens
         tokenA = await factories.vault.deploy(ASSET_A.name, ASSET_A.symbol, ASSET_A.decimals)
-        tokenB = await factories.fAsset.deploy(XRP.name, XRP.symbol, XRP.decimals)
-        tokenC = await factories.pool.deploy(WFLR.name, WFLR.symbol, WFLR.decimals)
+        tokenB = await factories.fAsset.deploy(ASSET_B.name, ASSET_B.symbol, ASSET_B.decimals)
+        tokenC = await factories.pool.deploy(ASSET_C.name, ASSET_C.symbol, ASSET_C.decimals)
     })
 
     describe("base functionality", () => {
@@ -113,7 +112,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             await addInitialLiquidity()
             const [liquidityABefore, liquidityBBefore] = await uniswapV2.getReserves(tokenA, tokenB)
             await tokenA.mint(signer, swapInA)
-            await swap(uniswapV2, [tokenA, tokenB], swapInA, signer)
+            await swap(uniswapV2, swapInA, [tokenA, tokenB], signer)
             const [liquidityAAfter, liquidityBAfter] = await uniswapV2.getReserves(tokenA, tokenB)
             // check liquidity
             expect(liquidityAAfter - liquidityABefore).to.equal(swapInA)
@@ -125,14 +124,15 @@ describe("Tests for the UniswapV2 implementation", () => {
         })
 
         it("should swap with a non-default path", async () => {
+            const swapAmount = BigInt(1000)
             // add initial default liquidity
             await addInitialLiquidity()
             // amount of token A to swap ($0.01)
-            const swapInA = calc.convertUsd5ToToken(BigInt(100), ASSET_A.decimals, priceTokenAUsd5)
+            const swapInA = calc.convertUsd5ToToken(swapAmount, ASSET_A.decimals, priceTokenAUsd5)
             // swap from tokenA to tokenC via tokenB
             const swapCOut = await swapOutput(uniswapV2, [tokenA, tokenB, tokenC], swapInA)
             await tokenA.connect(signer).mint(signer, swapInA)
-            await swap(uniswapV2, [tokenA, tokenB, tokenC], swapInA, signer)
+            await swap(uniswapV2, swapInA, [tokenA, tokenB, tokenC], signer)
             // check that the minter got the right amount of tokenC
             const balanceTokenC = await tokenC.balanceOf(signer)
             expect(balanceTokenC).to.equal(swapCOut)
@@ -152,21 +152,21 @@ describe("Tests for the UniswapV2 implementation", () => {
             await tokenA.mint(signer, amountA)
             // can't swap our amount at zero slippage
             ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(0, reserveA, reserveB)
-            await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
             // can't swap at too low slippage of 0.1%
             ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(10, reserveA, reserveB)
-            await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
             // can't swap at slippage a little below max
             const slippage = calc.slippageBipsFromSwapAmountIn(amountA, reserveA, reserveB)
             ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) - 1, reserveA, reserveB)
-            await expect(swap(uniswapV2, [tokenA, tokenB], amountA, signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("BlazeSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT")
+            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
             // can swap at slippage a little above max
             ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) + 1, reserveA, reserveB)
             const amountB = await swapOutput(uniswapV2, [tokenA, tokenB], amountA)
-            await swap(uniswapV2, [tokenA, tokenB], amountA, signer, amountA * minPriceMul / minPriceDiv)
+            await swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv)
             const balanceB = await tokenB.balanceOf(signer)
             expect(balanceB).to.equal(amountB)
         })
@@ -192,7 +192,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             // execute test
             await addInitialLiquidity(valueUsd5)
             await tokenA.mint(signer, swappedTokenA)
-            await swap(uniswapV2, [tokenA, tokenB], swappedTokenA, signer) // ruin the dex price
+            await swap(uniswapV2, swappedTokenA, [tokenA, tokenB], signer) // ruin the dex price
             await swapToPrice(uniswapV2, tokenA, tokenB, priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals, signer)
             // check that reserves produce the right price
             const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
@@ -218,7 +218,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             })
         })
 
-        it.only("should produce produce a specified slippage rate on the dex", async () => {
+        it("should produce a specified slippage rate on the dex", async () => {
             // params
             const slippageVolume = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
             const slippageBips = 50 // .5%
@@ -233,7 +233,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             expect(theoreticalSlippageBips).to.be.approximately(slippageBips, 10)
             // check that the slippage was correct
             await tokenA.mint(signer, slippageVolume)
-            await swap(uniswapV2, [tokenA, tokenB], slippageVolume, signer)
+            await swap(uniswapV2, slippageVolume, [tokenA, tokenB], signer)
             const obtainedTokenB = await tokenB.balanceOf(signer)
             const practicalSlippageBips = calc.slippageBipsFromSwapAmountOut(obtainedTokenB, newReserveA, newReserveB)
             expect(practicalSlippageBips).to.be.approximately(slippageBips, 10)

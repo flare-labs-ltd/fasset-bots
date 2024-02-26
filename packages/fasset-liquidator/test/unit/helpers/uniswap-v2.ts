@@ -75,8 +75,8 @@ export async function swapInput(
 
 export async function swap(
     router: IUniswapV2Router,
-    tokenPath: ERC20Mock[],
     amountA: bigint,
+    tokenPath: ERC20Mock[],
     swapper: Signer,
     amountOutMin: bigint = BigInt(0)
 ): Promise<void> {
@@ -86,20 +86,20 @@ export async function swap(
 }
 
 // needed if a swap affects the reserves of a pair used in a subsequent swap
-export async function swapOutputs(
+export async function consecutiveSwapOutputs(
     router: IUniswapV2Router,
-    paths: ERC20[][],
-    amountsA: bigint[]
+    amountsA: bigint[],
+    paths: ERC20[][]
 ): Promise<bigint[]> {
     // store reserves
     const reserves = []
     for (let i = 0; i < paths.length; i++) {
         const reserve = []
         for (let j = 1; j < paths[i].length; j++) {
-            reserve.push(await router.getReserves(
-                paths[i][j - 1],
-                paths[i][j]
-            ))
+            const [reserveA, reserveB] = await router.getReserves(
+                paths[i][j - 1], paths[i][j]
+            )
+            reserve.push([reserveA, reserveB] as [bigint, bigint])
         }
         reserves.push(reserve)
     }
@@ -144,10 +144,10 @@ export async function multiswap(
 ): Promise<void> {
     if (swapA > 0) {
         await tokenA.mint(signer, swapA)
-        await swap(router, [tokenA, tokenB], swapA, signer)
+        await swap(router, swapA, [tokenA, tokenB], signer)
     } else if (swapB > 0) {
         await tokenB.mint(signer, swapB)
-        await swap(router, [tokenB, tokenA], swapB, signer)
+        await swap(router, swapB, [tokenB, tokenA], signer)
     }
 }
 

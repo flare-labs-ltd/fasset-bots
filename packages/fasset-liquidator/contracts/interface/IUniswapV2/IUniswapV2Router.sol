@@ -4,7 +4,6 @@ pragma abicoder v2;
 
 
 interface IUniswapV2Router {
-    function factory() external view returns (address);
 
     function wNat() external view returns (address);
 

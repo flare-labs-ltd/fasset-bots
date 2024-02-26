@@ -3,7 +3,6 @@ import "solidity-coverage"
 import type { HardhatUserConfig } from "hardhat/config"
 
 const config: HardhatUserConfig = {
-  // do not change, otherwise blazeswap will not work
   solidity: {
     version: '0.8.20',
     settings: {

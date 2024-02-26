@@ -3,7 +3,7 @@ import type { Signer } from "ethers"
 import type { ERC20, IUniswapV2Router } from "../../../types"
 
 
-export default async function deployBlazeSwap(
+export async function deployBlazeSwap(
   wNat: ERC20,
   deployer: Signer
 ): Promise<IUniswapV2Router> {
@@ -13,5 +13,13 @@ export default async function deployBlazeSwap(
   const blazeSwapManager = await blazeSwapManagerFactory.deploy(deployer)
   const blazeSwapFactory = await blazeSwapFactoryFactory.deploy(blazeSwapManager)
   await blazeSwapManager.setFactory(blazeSwapFactory)
-  return blazeSwapRouterFactory.deploy(blazeSwapFactory, wNat, false)
+  return blazeSwapRouterFactory.connect(deployer).deploy(blazeSwapFactory, wNat, false)
+}
+
+export default async function deployUniswapV2Mock(
+    wNat: ERC20,
+    deployer: Signer
+): Promise<IUniswapV2Router> {
+    const uniswapV2MockRouterFactory = await ethers.getContractFactory("UniswapV2RouterMock")
+    return uniswapV2MockRouterFactory.connect(deployer).deploy(wNat)
 }

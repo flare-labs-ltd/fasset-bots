@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IIAgentVault, IIAssetManager, IAssetManager } from "fasset/contracts/fasset/interface/IIAgentVault.sol";
-import { BalanceDecreasingTransaction } from "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
-import { IChallenger } from "./interface/IChallenger.sol";
-import { Liquidator } from "./Liquidator.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IIAgentVault, IIAssetManager, IAssetManager} from "fasset/contracts/fasset/interface/IIAgentVault.sol";
+import {BalanceDecreasingTransaction} from "fasset/contracts/stateConnector/interface/ISCProofVerifier.sol";
+import {IChallenger} from "./interface/IChallenger.sol";
+import {Liquidator} from "./Liquidator.sol";
 
 /**
  * @title Challenger
