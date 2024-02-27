@@ -4,12 +4,10 @@ pragma solidity 0.8.20;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {UniswapV2Lib} from "./UniswapV2Lib.sol";
 import {IUniswapV2Router} from "../../interface/IUniswapV2/IUniswapV2Router.sol";
 import {IUniswapV2Pair} from "../../interface/IUniswapV2/IUniswapV2Pair.sol";
 import {UniswapV2PairMock} from "./UniswapV2PairMock.sol";
 
-import "hardhat/console.sol";
 
 contract UniswapV2RouterMock is IUniswapV2Router, Ownable {
 
@@ -150,12 +148,12 @@ contract UniswapV2RouterMock is IUniswapV2Router, Ownable {
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
-            uint256 amountBOptimal = UniswapV2Lib.optimalAddedLiquidity(amountADesired, reserveA, reserveB);
+            uint256 amountBOptimal = optimalAddedLiquidity(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
                 require(amountBOptimal >= amountBMin, 'UniswapV2: INSUFFICIENT_B_AMOUNT');
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
-                uint256 amountAOptimal = UniswapV2Lib.optimalAddedLiquidity(amountBDesired, reserveB, reserveA);
+                uint256 amountAOptimal = optimalAddedLiquidity(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
                 require(amountAOptimal >= amountAMin, 'UniswapV2: INSUFFICIENT_A_AMOUNT');
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
@@ -185,7 +183,7 @@ contract UniswapV2RouterMock is IUniswapV2Router, Ownable {
                     ? (reserve0, reserve1)
                     : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
-                amountOutput = UniswapV2Lib.getAmountOut(amountInput, reserveInput, reserveOutput);
+                amountOutput = getAmountOut(amountInput, reserveInput, reserveOutput);
             }
             (uint256 amount0Out, uint256 amount1Out) = input == token0
                 ? (uint256(0), amountOutput)
@@ -235,5 +233,42 @@ contract UniswapV2RouterMock is IUniswapV2Router, Ownable {
         returns (bool)
     {
         return _tokenA < _tokenB;
+    }
+
+    //////////////////////////// Uniswap V2 Math ////////////////////////////
+
+    function optimalAddedLiquidity(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) internal pure returns (uint256) {
+        require(amountA > 0, 'UniswapV2: INSUFFICIENT_AMOUNT');
+        require(reserveA > 0 && reserveB > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+        return (amountA * reserveB) / reserveA;
+    }
+
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountOut) {
+        require(amountIn > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+        uint256 amountInWithFee = amountIn * 997;
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 1000 + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountIn) {
+        require(amountOut > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+        uint256 numerator = reserveIn * amountOut * 1000;
+        uint256 denominator = (reserveOut - amountOut) * 997;
+        amountIn = numerator / denominator + 1;
     }
 }

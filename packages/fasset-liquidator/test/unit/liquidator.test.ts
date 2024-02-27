@@ -109,7 +109,7 @@ describe("Tests for the Liquidator contract", () => {
         })
       })
 
-      it.only(`should optimally liquidate less than max f-assets due to low liquidated vault / f-asset dex with swap path "${swapPaths}"`, async () => {
+      it(`should optimally liquidate less than max f-assets due to low liquidated vault / f-asset dex with swap path "${swapPaths}"`, async () => {
         if (swapPaths[0].length == 3 && swapPaths[1].length == 3) {
           // this doesn't work for a very specific reason:
           // when we swap from vault to f-asset we avoid the low liquiditated vault / f-asset pool
