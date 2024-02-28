@@ -24,6 +24,8 @@ export function getBaseContracts(network: string, provider: ethers.JsonRpcProvid
   return {
     wNat: new ethers.Contract(address.wNat, wNatAbi, provider) as any,
     usdc: new ethers.Contract(address.usdc, fakeERC20Abi, provider) as any,
+    usdt: new ethers.Contract(address.usdt, fakeERC20Abi, provider) as any,
+    eth: new ethers.Contract(address.eth, fakeERC20Abi, provider) as any,
     uniswapV2: new ethers.Contract(address.uniswapV2, uniswapV2RouterAbi, provider) as any,
     flashLender: new ethers.Contract(address.flashLender, flashLenderAbi, provider) as any
   }

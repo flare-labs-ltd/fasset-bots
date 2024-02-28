@@ -4,7 +4,7 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { BN_TEN, BNish, artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -43,7 +43,7 @@ program
     .description("mint fake tokens (fake versions of USDC or USDT on test networks)")
     .argument("symbol", "fake token symbol, e.g. testUSDC or testUSDT")
     .argument("address", "recipient's address")
-    .argument("amount", "amount in WEI")
+    .argument("amount", "amount (token)")
     .action(async (symbol: string, address: string, amount: string) => {
         const options: { config: string } = program.opts();
         await mintFakeTokens(options.config, symbol, address, amount);

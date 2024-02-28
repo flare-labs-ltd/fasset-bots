@@ -1,11 +1,18 @@
 import { Command, OptionValues } from "commander"
 import { JsonRpcProvider, Wallet } from "ethers"
-import { deployLiquidator, deployChallenger } from "./deploy"
-import { getDexVsFtsoPrices, setUpDex, fixDex, removeDexLiquidity } from "./dex"
-import { getBaseContracts, getContracts } from "../test/integration/helpers/contracts"
+import { storeLatestDeploy } from "./utils"
+import { deployLiquidator, deployChallenger, deployUniswapV2, deployFlashLender } from "./deploy"
+import { getDexVsFtsoPrices, setUpDexPools, fixDex, removeDexLiquidity } from "./dex"
+import { getContracts } from "../test/integration/helpers/contracts"
+import type { NetworkAddressesJson } from "../test/integration/helpers/interface"
+import type { Signer } from "ethers"
 
 
 export async function cli(program: Command) {
+    // vars set at hook
+    let addresses: NetworkAddressesJson
+    let provider: JsonRpcProvider
+    let signer: Signer | undefined
     // global configurations
     program
         .option("-n, --network <network>", "network to deploy to", "flare")
@@ -14,21 +21,29 @@ export async function cli(program: Command) {
             const opts = cmd.opts()
             if (opts.envPath === undefined) {
                 require("dotenv").config({ path: opts.envPath })
-                opts.provider = new JsonRpcProvider(process.env.RPC!)
-                opts.signer = new Wallet(process.env.PRIVATE_KEY!, opts.provider)
+                provider = new JsonRpcProvider(process.env.RPC!)
+                signer = new Wallet(process.env.PRIVATE_KEY!, provider)
             }
+            addresses = require("../addresses.json")[opts.network]
         })
+    // commands
     program
         .command("deploy").description("deploy contract")
-        .argument("<liquidator|challenger", "contract to deploy")
-        .action(async (contract: string, opts: OptionValues) => {
+        .argument("<liquidator|challenger|uniswap-v2|flash-lender>", "contract to deploy")
+        .action(async (contract: string) => {
+            let address: string
             if (contract === "liquidator") {
-                await deployLiquidator(opts.network, opts.provider, opts.signer)
+                address = await deployLiquidator(addresses.flashLender, addresses.uniswapV2, signer!)
             } else if (contract === "challenger") {
-                await deployChallenger(opts.network, opts.provider, opts.signer)
+                address = await deployChallenger(addresses.flashLender, addresses.uniswapV2, signer!)
+            } else if (contract == "uniswap-v2") {
+                address = await deployUniswapV2(addresses.wNat, signer!)
+            } else if (contract == "flash-lender") {
+                address = await deployFlashLender(signer!)
             } else {
                 throw new Error("invalid contract")
             }
+            storeLatestDeploy(contract, address, program.opts().network)
         })
     program
         .command("dex").description("methods regarding used dex")
@@ -39,7 +54,7 @@ export async function cli(program: Command) {
             if (action === "prices") {
                 await getDexVsFtsoPrices(contracts)
             } else if (action === "setup") {
-                await setUpDex(assetManager, opts.network, opts.provider, opts.signer)
+                await setUpDexPools(assetManager, opts.network, provider, signer!)
             } else if (action === "fix") {
                 await fixDex(assetManager, opts.network, opts.provider, opts.signer)
             } else if (action === "remove-liquidity") {

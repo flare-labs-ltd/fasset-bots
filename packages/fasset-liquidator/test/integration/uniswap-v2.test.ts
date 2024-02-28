@@ -6,7 +6,7 @@
 import "dotenv/config"
 import { ethers } from 'ethers'
 import { assert } from 'chai'
-import { waitFinalize, syncDexReservesWithFtsoPrices, removeLiquidity, swap, swapDexPairToPrice } from './helpers/utils'
+import { waitFinalize, setOrUpdateDexes, removeLiquidity, swap, swapDexPairToPrice } from './helpers/utils'
 import { getContracts } from './helpers/contracts'
 import type { Contracts } from './helpers/interface'
 
@@ -68,7 +68,7 @@ describe("Uniswap V2 manipulation", () => {
   })
 
   // this test should be run before setting up the dex ecosystem. Needed when testing F-Asset system on Coston
-  // it is basically testing the `syncDeXReservesWithFtsoPrices` function
+  // it is basically testing the `setOrUpdateDexes` function
   it("should use one or two accounts' funds to liquidate dexes to match the ftso price", async () => {
     let initialReservesDex1 = [BigInt(0), BigInt(0)]
     let initialReservesDex2 = [BigInt(0), BigInt(0)]
@@ -83,7 +83,7 @@ describe("Uniswap V2 manipulation", () => {
     const [dex1ExpectedPriceBips, dex2ExpectedPriceBips] = await getFtsoPrices()
     // add liquidity from the primary source if they have funds
     console.log("syncing dex reserves with ftso prices from funded account 1")
-    await syncDexReservesWithFtsoPrices(contracts, funded1, provider, false)
+    await setOrUpdateDexes(contracts, funded1, provider, false)
     // check that dex reserves are aligned with ftso prices
     const [dex1Price, dex2Price] = await getDexPrices()
     assert.equal(dex1Price, dex1ExpectedPriceBips)
@@ -91,7 +91,7 @@ describe("Uniswap V2 manipulation", () => {
     // add liquidity from the secondary source if they have funds (depends on the test)
     if (fAsset2Before > BigInt(0) && usdc2Before > BigInt(0) && wNat2Before > BigInt(0)) {
       console.log("syncing dex reserves with ftso prices from funded account 2")
-      await syncDexReservesWithFtsoPrices(contracts, funded2, provider, false)
+      await setOrUpdateDexes(contracts, funded2, provider, false)
       // check that dex reserves are aligned with ftso prices
       const [dex1Price, dex2Price] = await getDexPrices()
       assert.equal(dex1Price, dex1ExpectedPriceBips)

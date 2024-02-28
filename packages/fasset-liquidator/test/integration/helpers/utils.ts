@@ -1,7 +1,7 @@
 import { WeiPerEther, MaxUint256 } from "ethers"
 import { priceBasedAddedDexReserves, swapToDexPrice, assetPriceForAgentCr } from "../../calculations"
 import type { AddressLike, Signer, JsonRpcProvider, ContractTransactionResponse, ContractTransactionReceipt } from "ethers"
-import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair } from "../../../types"
+import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair, ERC20, IWNat, IERC20 } from "../../../types"
 import type { Contracts } from "./interface"
 
 /////////////////////////////////////////////////////////////////////////
@@ -46,24 +46,16 @@ export async function getCollateralPriceForAgentCr(
     contracts: Contracts,
     agentAddress: AddressLike,
     crBips: number,
+    collateralToken: IERC20Metadata,
+    collateralSymbol: string,
+    fAssetSymbol: string,
     collateralKind: "vault" | "pool",
 ): Promise<bigint> {
     const agentInfo = await contracts.assetManager.getAgentInfo(agentAddress)
     const totalMintedUBA = agentInfo.mintedUBA + agentInfo.redeemingUBA + agentInfo.reservedUBA
-    let collateralWei
-    let collateralToken
-    let tokenSymbol
-    if (collateralKind === "vault") {
-        collateralWei = agentInfo.totalVaultCollateralWei
-        collateralToken = contracts.usdc
-        tokenSymbol = "testUSDC"
-    } else {
-        collateralWei = agentInfo.totalPoolCollateralNATWei
-        collateralToken = contracts.wNat
-        tokenSymbol = "CFLR"
-    }
-    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await contracts.priceReader.getPrice(tokenSymbol)
-    const { 2: fAssetFtsoDecimals } = await contracts.priceReader.getPrice("testXRP")
+    const collateralWei = collateralKind === "vault" ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei
+    const { 0: collateralFtsoPrice, 2: collateralFtsoDecimals } = await contracts.priceReader.getPrice(collateralSymbol)
+    const { 2: fAssetFtsoDecimals } = await contracts.priceReader.getPrice(fAssetSymbol)
     return assetPriceForAgentCr(
         BigInt(crBips),
         totalMintedUBA,
@@ -104,7 +96,7 @@ export async function dexVsFtsoPrices(contracts: Contracts): Promise<{
   * A high level function to set up the dex ecosystem
   * for both USDC/F-Asset and WNAT/USDC pairs.
   */
-export async function syncDexReservesWithFtsoPrices(
+export async function setOrUpdateDexes(
     contracts: Contracts,
     signer: Signer,
     provider: JsonRpcProvider,
@@ -120,54 +112,64 @@ export async function syncDexReservesWithFtsoPrices(
             await waitFinalize(provider, signer, ccall)
         }
     }
-    // we have only those F-Assets and CFLR available
+    // we have only those F-Assets and CFLRs available
     const availableFAsset = await contracts.fAsset.balanceOf(signer)
-    const availableUsdc = await contracts.usdc.balanceOf(signer)
     const availableWNat = await contracts.wNat.balanceOf(signer)
-    // get ftso prices of all relevant symbols
-    const { 0: usdcPrice } = await contracts.priceReader.getPrice("testUSDC")
-    const { 0: wNatPrice } = await contracts.priceReader.getPrice("CFLR")
-    const { 0: assetPrice } = await contracts.priceReader.getPrice("testXRP")
-    // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances
-    // do this in two ways - with swap and with add liquidity
-    const address = await signer.getAddress()
-    try {
-        await swapDexPairToPrice(
-            contracts, contracts.fAsset, contracts.usdc,
-            assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
-            signer, provider
+    // align prices on all the needed dex pairs
+    const collaterals: [IERC20Metadata, string][] = [
+        [contracts.usdc, "testUSDC"],
+        [contracts.usdt, "testUSDT"],
+        [contracts.eth, "testETH"]
+    ]
+    const ncollaterals = collaterals.length
+    for (let [collateralToken, collateralSymbol] of collaterals) {
+        const availableCollateralToken = await collateralToken.balanceOf(signer)
+        await syncDexReservesWithFtsoPrices(
+            contracts, contracts.usdc, contracts.fAsset, collateralSymbol, "CFLR",
+            availableCollateralToken / BigInt(2), availableFAsset / BigInt(ncollaterals),
+            signer, provider, true
         )
-    } catch {
-        console.error(`swap of ${address} for USDC/FAsset pair failed`)
-    }
-    try {
-        await addLiquidityToDexPairPrice(
-            contracts.uniswapV2, contracts.fAsset, contracts.usdc,
-            assetPrice, usdcPrice, availableFAsset, availableUsdc / BigInt(2),
-            signer, provider)
-    } catch {
-        console.error(`add liquidity of ${address} for USDC/FAsset pair failed`)
-    }
-    try {
-        await swapDexPairToPrice(
-            contracts, contracts.wNat, contracts.usdc,
-            wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
-            signer, provider
+        await syncDexReservesWithFtsoPrices(
+            contracts, contracts.usdc, contracts.wNat, collateralSymbol, "CFLR",
+            availableCollateralToken / BigInt(2), availableWNat / BigInt(ncollaterals),
+            signer, provider, true
         )
-    } catch {
-        console.error(`swap of ${address} for WNAT/USDC pair failed`)
-    }
-    try {
-        await addLiquidityToDexPairPrice(
-            contracts.uniswapV2, contracts.wNat, contracts.usdc,
-            wNatPrice, usdcPrice, availableWNat, availableUsdc / BigInt(2),
-            signer, provider)
-    } catch {
-        console.error(`add liquidity of ${address} for WNAT/USDC pair failed`)
     }
 }
 
-// (TODO: do not assume that ftso decimals are 5)
+export async function syncDexReservesWithFtsoPrices(
+    contracts: Contracts,
+    tokenA: IERC20Metadata,
+    tokenB: IERC20Metadata,
+    symbolA: string,
+    symbolB: string,
+    maxAddedA: bigint,
+    maxAddedB: bigint,
+    signer: Signer,
+    provider: JsonRpcProvider,
+    addInitialLiquidity?: boolean
+): Promise<void> {
+    // get ftso prices of all relevant symbols
+    const { 0: priceA } = await contracts.priceReader.getPrice(symbolA)
+    const { 0: priceB } = await contracts.priceReader.getPrice(symbolB)
+    // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances
+    // by swapping
+    const { 0: reserveA, 1: reserveB } = await contracts.uniswapV2.getReserves(tokenA, tokenB)
+    if ((reserveA == BigInt(0) || reserveB == BigInt(0)) && addInitialLiquidity) {
+        // if there are no reserves add liquidity first (also no need to swap)
+        await addLiquidityToDexPairPrice(
+            contracts.uniswapV2, tokenA, tokenB, priceA, priceB,
+            maxAddedA, maxAddedB, signer, provider
+        )
+    } else if (reserveA > BigInt(0) && reserveB > BigInt(0)) {
+        // if there are reserves swap first, then add liquidity
+        await swapDexPairToPrice(contracts, tokenA, tokenB, priceA, priceB, maxAddedA, maxAddedB, signer, provider)
+    } else {
+        console.error('sync dex reserves failure: no reserves to sync')
+    }
+}
+
+// (TODO: do not assume that 5 ftso decimals)
 // set dex price of tokenA in tokenB by adding liquidity.
 // both prices in the same currency, e.g. FLR/$, XRP/$
 async function addLiquidityToDexPairPrice(
