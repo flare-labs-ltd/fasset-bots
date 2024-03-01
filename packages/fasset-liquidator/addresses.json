@@ -1,10 +1,22 @@
 {
     "coston": {
-        "wNat": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
-        "usdc": "0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d",
-        "eth": "0xC63b4A26A80d54AbC679eb3c50bcb79dbCaaCfCa",
-        "usdt": "0x179ACDe40EEb06702b7C37F7BbcaB663D7048AEf",
+        "collaterals": {
+            "USDC": "0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d",
+            "USDT": "0x179ACDe40EEb06702b7C37F7BbcaB663D7048AEf",
+            "WETH": "0xC63b4A26A80d54AbC679eb3c50bcb79dbCaaCfCa"
+        },
+        "WNAT": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
         "uniswapV2": "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4",
-        "flashLender": "0x729A282e9d15beD1cd046D80406d35849457AA23"
+        "flashLender": "0x8D8F6E6A2593170E043523c5A52bd292b2CFdEB0"
+    },
+    "flare": {
+        "collaterals": {
+            "USDC": "",
+            "USDT": "",
+            "WETH": ""
+        },
+        "WNAT": "0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d",
+        "uniswapV2": "0x088EeCB467B3968Da36c71F05023A1d3133B2B83",
+        "flashLender": ""
     }
 }

@@ -1,4 +1,4 @@
-import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../helpers/utils"
+import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../utils/bigint"
 import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations"
 import type { AssetConfig, EcosystemConfig } from "./interface"
 

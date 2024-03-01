@@ -12,10 +12,10 @@ export function storeLatestDeploy(contract: string, address: string, network: st
     if (!existsSync('deploys.json')) {
         writeFileSync('deploys.json', JSON.stringify({}))
     }
-    const addresses = JSON.parse(readFileSync('deploy.log', 'utf8'))
+    const addresses = JSON.parse(readFileSync('deploys.json', 'utf8'))
     if (!addresses[network]) {
         addresses[network] = NETWORK_ADDRESS_TEMPLATE
     }
     addresses[network][contract] = address
-    writeFileSync('deploy.json', JSON.stringify(addresses))
+    writeFileSync('deploys.json', JSON.stringify(addresses, null, 2))
 }

@@ -1,5 +1,5 @@
 import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS } from "./constants"
-import { isqrt } from "./unit/helpers/utils"
+import { isqrt } from "./unit/utils/bigint"
 
 ////////////////////////////////////////////////////////////////////////////
 // conversions
@@ -108,6 +108,14 @@ export function consecutiveSwapOutputs(
         }
     }
     return amountsOut
+}
+
+export function liquidityOut(
+    liquidity: bigint,
+    totalLiquidity: bigint,
+    reserve: bigint
+): bigint {
+    return liquidity * reserve / totalLiquidity
 }
 
 // exact liquidity to be deposited

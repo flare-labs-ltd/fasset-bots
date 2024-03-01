@@ -1,11 +1,11 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { isqrt } from './helpers/utils'
+import { isqrt } from './utils/bigint'
 import * as calc from '../calculations'
 import {
     addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,
     changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves, swapInput
-} from './helpers/uniswap-v2'
+} from './utils/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
 import { XRP, USDT, ETH, WFLR } from './fixtures/assets'

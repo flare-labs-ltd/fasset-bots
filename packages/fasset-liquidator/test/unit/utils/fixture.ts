@@ -3,7 +3,7 @@ import {
     amgToTokenPrice, liquidationOutput,
     currentLiquidationFactorBIPS, maxLiquidationAmountAmg
 } from "../../calculations"
-import { amgToUba, ubaToAmg } from "./utils"
+import { amgToUba, ubaToAmg } from "./assets"
 import type { EcosystemConfig, AssetConfig, UnderlyingAsset, CollateralAsset } from "../fixtures/interface"
 
 export class FixtureUtils {

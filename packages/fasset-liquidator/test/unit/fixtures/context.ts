@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { AssetConfig } from './interface'
-import { lotSizeAmg } from '../helpers/utils'
+import { lotSizeAmg } from '../utils/assets'
 import deployUniswapV2 from './dexes'
 import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
 
@@ -62,7 +62,7 @@ export async function getContracts(
   // set up uniswap-v2 implementation
   contracts.uniswapV2 = await deployUniswapV2(contracts.pool, signers.deployer)
   // set up flash loans
-  contracts.flashLender = await factories.flashLender.deploy(contracts.vault)
+  contracts.flashLender = await factories.flashLender.deploy()
   await contracts.vault.mint(contracts.flashLender, ethers.MaxUint256 / BigInt(100))
   // set liquidator and challenger
   contracts.liquidator = await factories.liquidator.connect(signers.liquidator).deploy(contracts.flashLender, contracts.uniswapV2)

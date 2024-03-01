@@ -12,7 +12,9 @@ export async function deployBlazeSwap(
   const blazeSwapManagerFactory = await ethers.getContractFactory("BlazeSwapManager")
   const blazeSwapManager = await blazeSwapManagerFactory.deploy(deployer)
   const blazeSwapFactory = await blazeSwapFactoryFactory.deploy(blazeSwapManager)
+  // @ts-ignore
   await blazeSwapManager.setFactory(blazeSwapFactory)
+  // @ts-ignore
   return blazeSwapRouterFactory.connect(deployer).deploy(blazeSwapFactory, wNat, false)
 }
 

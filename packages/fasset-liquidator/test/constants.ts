@@ -6,6 +6,16 @@ export const AMG_TOKEN_WEI_PRICE_SCALE_EXP = BigInt(9)
 export const AMG_TOKEN_WEI_PRICE_SCALE = BigInt(10) ** AMG_TOKEN_WEI_PRICE_SCALE_EXP
 export const FASSET_MAX_BIPS = BigInt(10_000)
 
+// token ftso symbols
+export const FTSO_SYMBOLS = {
+    "coston": {
+        USDC: "testUSDC",
+        USDT: "testUSDT",
+        WETH: "testWETH",
+        WNAT: "CFLR"
+    }
+}
+
 // uniswap-v2 constants
 export const DEX_FEE_BIPS = BigInt(3)
 export const DEX_MAX_BIPS = BigInt(1000)

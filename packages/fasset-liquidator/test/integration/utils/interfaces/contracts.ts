@@ -1,0 +1,31 @@
+import type {
+    IWNat, FlashLender, IUniswapV2Router, IUniswapV2Pair,
+    IIAssetManager, IERC20Metadata, FakePriceReader, FakeERC20
+} from '../../../../types'
+
+/**
+ * All integration tests are based on the coston network,
+ * because of the need for fake price provider.
+ * Except uniswap-v2 tests, which will be needed to
+ * test the compatibility of the chosen uniswap-v2-based router.
+ */
+
+export interface BaseContracts {
+    collaterals: {
+        usdc: FakeERC20
+        usdt: FakeERC20
+        weth: FakeERC20
+    }
+    wNat: IWNat & IERC20Metadata
+    uniswapV2: IUniswapV2Router
+    flashLender: FlashLender
+}
+
+export interface FAssetContracts {
+    assetManager: IIAssetManager
+    fAsset: IERC20Metadata
+    priceReader: FakePriceReader
+}
+
+// all relevant contracts to the system or testing
+export interface Contracts extends BaseContracts, FAssetContracts {}

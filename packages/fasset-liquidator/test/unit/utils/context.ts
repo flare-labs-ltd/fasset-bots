@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { liquidationOutput, amgToTokenPrice, applySlippageToDexPrice } from '../../calculations'
-import { ubaToAmg } from './utils'
+import { ubaToAmg } from './assets'
 import { addLiquidity, swapOutput, consecutiveSwapOutputs, swapInput } from './uniswap-v2'
 import type { EcosystemConfig, AssetConfig, TestContext } from '../fixtures/interface'
 import type { ERC20 } from '../../../types'

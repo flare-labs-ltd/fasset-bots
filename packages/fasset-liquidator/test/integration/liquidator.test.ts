@@ -7,10 +7,12 @@ import chalk from 'chalk'
 import { formatUnits } from "ethers"
 import { JsonRpcProvider, Wallet, WeiPerEther, ZeroAddress } from 'ethers'
 import { assert } from 'chai'
-import { waitFinalize, setOrUpdateDexes, getCollateralPriceForAgentCr } from './helpers/utils'
-import { getAgentsAssetManager, deployLiquidator, getContracts } from './helpers/contracts'
+import { waitFinalize } from './utils/finalization'
+import { getCollateralPriceForAgentCr } from "./utils/fasset"
+import { setOrUpdateDexes } from "./utils/coston-beta/coston"
+import { getAssetManagerFromAgent, deployLiquidator, getContracts } from './utils/contracts'
 import type { JsonRpcSigner } from 'ethers'
-import type { Contracts } from './helpers/interface'
+import type { Contracts } from './utils/interfaces/contracts'
 import type { FakeERC20, Liquidator } from "../../types"
 
 // usdc balance of governance (should basically be infinite)
@@ -33,11 +35,11 @@ describe("Liquidator", () => {
     governance = new Wallet(GOVERNANCE_PVK, provider)
     signer = await provider.getSigner(1)
     // get contracts
-    contracts = await getContracts(await getAgentsAssetManager(AGENT_ADDRESS, provider), "coston", provider)
+    contracts = await getContracts(await getAssetManagerFromAgent(AGENT_ADDRESS, provider), "coston", provider)
     liquidator = await deployLiquidator(contracts.flashLender, contracts.uniswapV2, signer, provider)
     // mint USDC to governance and wrap their CFLR (they will provide liquidity to dexes)
     console.log(chalk.cyan("minting USDC to governance and wrapping CFLR..."))
-    const fakeUsdc = contracts.usdc.connect(governance) as FakeERC20
+    const fakeUsdc = contracts.collaterals.usdc.connect(governance) as FakeERC20
     await waitFinalize(provider, governance, fakeUsdc.mintAmount(governance, USDC_BALANCE))
     const availableWNat = await provider.getBalance(governance) - WeiPerEther
     await waitFinalize(provider, governance, contracts.wNat.connect(governance).deposit({ value: availableWNat })) // wrap CFLR
@@ -64,7 +66,7 @@ describe("Liquidator", () => {
     const { status: statusAfter, mintedUBA: mintedUbaAfter } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
     assert.equal(statusAfter, BigInt(0))
     // check that liquidator made a profit
-    const liquidatorUsdcBalance = await contracts.usdc.balanceOf(signer)
+    const liquidatorUsdcBalance = await contracts.collaterals.usdc.balanceOf(signer)
     assert.notEqual(liquidatorUsdcBalance, BigInt(0))
     console.log(chalk.greenBright("profit:"), formatUnits(liquidatorUsdcBalance, 18), "USDC")
     console.log(chalk.greenBright("liquidated:"), formatUnits(mintedUbaBefore - mintedUbaAfter, 6), "FXRP")
