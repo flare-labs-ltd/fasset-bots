@@ -2,8 +2,10 @@
 import "dotenv/config"
 import { Wallet, MaxUint256, type JsonRpcProvider, type Signer } from "ethers"
 import { getContracts, getBaseContracts } from "../test/integration/utils/contracts"
-import { setOrUpdateDexes, dexVsFtsoPrices, removeLiquidity, swapDexPairToPrice } from "../test/integration/utils/finalization"
-import type { Contracts } from "../test/integration/utils/interfaces/addresses"
+import { removeLiquidity } from "../test/integration/utils/uniswap-v2/wrappers"
+import { swapDexPairToPrice } from "../test/integration/utils/uniswap-v2/price-sync"
+import { dexVsFtsoPrices, setOrUpdateDexes } from "../test/integration/utils/uniswap-v2/coston-beta"
+import type { Contracts } from "../test/integration/utils/interfaces/contracts"
 
 
 export async function getDexVsFtsoPrices(
@@ -36,7 +38,7 @@ export async function fixDex(
     const { 0: priceUsdc } = await contracts.priceReader.getPrice("testUSDC")
     await swapDexPairToPrice(
         contracts,
-        contracts.fAsset, contracts.usdc,
+        contracts.fAsset, contracts.collaterals.usdc,
         priceXrp, priceUsdc,
         MaxUint256,
         MaxUint256,
@@ -53,9 +55,9 @@ export async function removeDexLiquidity(
 ): Promise<void> {
     const contracts = await getContracts(assetManagerAddress, network, provider)
     console.log('Removing liquidity from FASSET / USDC pool')
-    await removeLiquidity(contracts.uniswapV2, contracts.dex1Token, contracts.fAsset, contracts.usdc, supplier, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.fAsset, contracts.collaterals.usdc, supplier, provider)
     console.log('Removing liquidity from USDC / WNAT pool')
-    await removeLiquidity(contracts.uniswapV2, contracts.dex2Token, contracts.usdc, contracts.wNat, supplier, provider)
+    await removeLiquidity(contracts.uniswapV2, contracts.collaterals.usdc, contracts.wNat, supplier, provider)
     const wrappedNat = await contracts.wNat.balanceOf(supplier.address)
     console.log(`Unwrapping ${wrappedNat} wNat`)
     await contracts.wNat.connect(supplier).withdraw(wrappedNat)
@@ -67,6 +69,6 @@ export async function setUpFlashLender(
     supplier: Wallet
 ): Promise<void> {
     const contracts = getBaseContracts(network, provider)
-    const balance = await contracts.usdc.balanceOf(supplier.address)
-    await contracts.usdc.connect(supplier).transfer(contracts.flashLender, balance)
+    const balance = await contracts.collaterals.usdc.balanceOf(supplier.address)
+    await contracts.collaterals.usdc.connect(supplier).transfer(contracts.flashLender, balance)
 }

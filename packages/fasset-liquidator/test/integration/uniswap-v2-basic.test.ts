@@ -10,7 +10,7 @@ import { JsonRpcProvider, Wallet, WeiPerEther } from 'ethers'
 import { optimalAddedLiquidity, swapOutput, liquidityOut } from "../calculations"
 import { getBaseContracts } from './utils/contracts'
 import { waitFinalize } from './utils/finalization'
-import { addLiquidity, getPairFor, removeLiquidity, swap } from "./utils/uniswap-v2/wrappers"
+import { addLiquidity, getPairFor, removeLiquidity, safelyGetReserves, swap } from "./utils/uniswap-v2/wrappers"
 import type { IERC20Metadata } from "../../types"
 import type { BaseContracts } from './utils/interfaces/contracts'
 
@@ -45,11 +45,13 @@ describe("Uniswap V2 manipulation", () => {
     const maxInvestedA = oldBalanceA / BigInt(2)
     const maxInvestedB = oldBalanceB / BigInt(2)
     // add liquidity
-    const { 0: oldReserveA, 1: oldReserveB } = await contracts.uniswapV2.getReserves(tokenA, tokenB)
+    const [oldReserveA, oldReserveB] = await safelyGetReserves(contracts.uniswapV2, tokenA, tokenB)
     await addLiquidity(contracts.uniswapV2, tokenA, tokenB, maxInvestedA, maxInvestedB, signer, provider)
     const { 0: newReserveA, 1: newReserveB } = await contracts.uniswapV2.getReserves(tokenA, tokenB)
     // check that everything went well
-    const [investedA, investedB] = optimalAddedLiquidity(oldReserveA, oldReserveB, maxInvestedA, maxInvestedB)
+    const [investedA, investedB] = (oldReserveA > BigInt(0) && oldReserveB > BigInt(0))
+        ? optimalAddedLiquidity(oldReserveA, oldReserveB, maxInvestedA, maxInvestedB)
+        : [maxInvestedA, maxInvestedB]
     expect(newReserveA - oldReserveA).to.equal(investedA)
     expect(newReserveB - oldReserveB).to.equal(investedB)
     const newBalanceA = await tokenA.balanceOf(signer)

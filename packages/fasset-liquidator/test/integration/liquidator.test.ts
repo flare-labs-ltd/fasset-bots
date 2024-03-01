@@ -1,4 +1,5 @@
 /**
+ * Deprecated for now
  * yarn hardhat node --fork https://coston-api.flare.network/ext/C/rpc --fork-block-number 10556413
  */
 
@@ -9,7 +10,7 @@ import { JsonRpcProvider, Wallet, WeiPerEther, ZeroAddress } from 'ethers'
 import { assert } from 'chai'
 import { waitFinalize } from './utils/finalization'
 import { getCollateralPriceForAgentCr } from "./utils/fasset"
-import { setOrUpdateDexes } from "./utils/coston-beta/coston"
+import { setOrUpdateDexes } from "./utils/uniswap-v2/coston-beta"
 import { getAssetManagerFromAgent, deployLiquidator, getContracts } from './utils/contracts'
 import type { JsonRpcSigner } from 'ethers'
 import type { Contracts } from './utils/interfaces/contracts'

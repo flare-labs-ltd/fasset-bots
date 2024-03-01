@@ -196,7 +196,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             await swapToPrice(uniswapV2, tokenA, tokenB, priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals, signer)
             // check that reserves produce the right price
             const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-            const [wPriceA, wPriceB] = calc.priceAB(priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals)
+            const [wPriceA, wPriceB] = calc.relativePriceAB(priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals)
             const priceMultiplier = BigInt(10) ** BigInt(priceDecimals)
             const realPrice = priceMultiplier * wPriceA / wPriceB
             const dexPrice = priceMultiplier * reserveB / reserveA

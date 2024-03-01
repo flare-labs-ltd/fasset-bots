@@ -20,7 +20,7 @@ export function roundUpWithPrecision(
     return (aux == BigInt(0)) ? amount : amount + precision - aux
 }
 
-export function priceAB(
+export function relativePriceAB(
     priceA: bigint,
     priceB: bigint,
     decimalsA: bigint,
@@ -233,7 +233,7 @@ export function priceBasedAddedDexReserves(
     maxAddedA: bigint,
     maxAddedB: bigint
 ): [bigint, bigint] {
-    const [ratioB, ratioA] = priceAB(priceA, priceB, decimalsA, decimalsB)
+    const [ratioB, ratioA] = relativePriceAB(priceA, priceB, decimalsA, decimalsB)
     const factorA = FASSET_MAX_BIPS * (maxAddedA + initialReserveA) / ratioA
     const factorB = FASSET_MAX_BIPS * (maxAddedB + initialReserveB) / ratioB
     const factor = (factorA < factorB) ? factorA : factorB
@@ -250,7 +250,7 @@ export function swapToDexPrice(
     decimalsA: bigint,
     decimalsB: bigint
 ): bigint {
-    const [priceABMul, priceABDiv] = priceAB(priceA, priceB, decimalsA, decimalsB)
+    const [priceABMul, priceABDiv] = relativePriceAB(priceA, priceB, decimalsA, decimalsB)
     return swapToDexRatio(initialReserveA, initialReserveB, priceABDiv, priceABMul)
 }
 

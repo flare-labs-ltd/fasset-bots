@@ -7,7 +7,7 @@ import { getTestContext } from './fixtures/context'
 import { storeTestResult } from './utils/graph'
 import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
-import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interface'
+import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interfaces'
 import type { ERC20 } from '../../types'
 
 type SwapPathsFixture = [string[], string[]]

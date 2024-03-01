@@ -11,8 +11,9 @@ export const FTSO_SYMBOLS = {
     "coston": {
         USDC: "testUSDC",
         USDT: "testUSDT",
-        WETH: "testWETH",
-        WNAT: "CFLR"
+        WETH: "testETH",
+        WNAT: "CFLR",
+        TEST_XRP: "testXRP"
     }
 }
 

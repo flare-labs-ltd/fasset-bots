@@ -1,4 +1,4 @@
-import type { CollateralAsset, UnderlyingAsset } from './interface'
+import type { CollateralAsset, UnderlyingAsset } from './interfaces'
 
 
 /**

@@ -4,7 +4,7 @@ import {
     currentLiquidationFactorBIPS, maxLiquidationAmountAmg
 } from "../../calculations"
 import { amgToUba, ubaToAmg } from "./assets"
-import type { EcosystemConfig, AssetConfig, UnderlyingAsset, CollateralAsset } from "../fixtures/interface"
+import type { EcosystemConfig, AssetConfig, UnderlyingAsset, CollateralAsset } from "../fixtures/interfaces"
 
 export class FixtureUtils {
 

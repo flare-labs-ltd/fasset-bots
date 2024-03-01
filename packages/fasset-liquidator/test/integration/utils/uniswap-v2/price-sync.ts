@@ -1,5 +1,5 @@
 import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations"
-import { addLiquidity, swap } from "./wrappers"
+import { addLiquidity, swap, safelyGetReserves } from "./wrappers"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IUniswapV2Router } from "../../../../types"
 import type { Contracts } from "../interfaces/contracts"
@@ -18,11 +18,11 @@ export async function syncDexReservesWithFtsoPrices(
     addInitialLiquidity = true
 ): Promise<void> {
     // get ftso prices of all relevant symbols
-    const { 0: priceA } = await contracts.priceReader.getPrice(symbolA)
-    const { 0: priceB } = await contracts.priceReader.getPrice(symbolB)
-    // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances
-    // by swapping
-    const { 0: reserveA, 1: reserveB } = await contracts.uniswapV2.getReserves(tokenA, tokenB)
+    const { 0: priceA, 2: decimalsA } = await contracts.priceReader.getPrice(symbolA)
+    const { 0: priceB, 2: decimalsB } = await contracts.priceReader.getPrice(symbolB)
+    if (decimalsA != BigInt(5) || decimalsB != BigInt(5)) throw Error("Tokens have non-5 decimals")
+    // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances by swapping
+    const [reserveA, reserveB] = await safelyGetReserves(contracts.uniswapV2, tokenA, tokenB)
     if ((reserveA == BigInt(0) || reserveB == BigInt(0)) && addInitialLiquidity) {
         // if there are no reserves add liquidity first (also no need to swap)
         await addLiquidityToDexPairPrice(
@@ -33,7 +33,7 @@ export async function syncDexReservesWithFtsoPrices(
         // if there are reserves swap first, then add liquidity
         await swapDexPairToPrice(contracts, tokenA, tokenB, priceA, priceB, maxAddedA, maxAddedB, signer, provider)
     } else {
-        console.error('sync dex reserves failure: no reserves to sync')
+        console.error('sync dex reserves: no reserves to sync')
     }
 }
 
@@ -53,19 +53,13 @@ async function addLiquidityToDexPairPrice(
 ): Promise<void> {
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
-    let reserveA = BigInt(0)
-    let reserveB = BigInt(0)
-    try {
-        [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-    } catch {
-        // means there's no reserves for the dex pair
-    }
+    const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
     let [addedA, addedB] = priceBasedAddedDexReserves(
         reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxAddedA, maxAddedB)
-    if (addedA < 0) addedA = BigInt(0) // ideally we would need to remove liquidity
-    if (addedB < 0) addedB = BigInt(0) // but user may not have any, so we leave it
-    if (addedA == BigInt(0) && addedB == BigInt(0)) {
-        console.error('add liquidity failure: no reserves can be added')
+    if (addedA < 0 || addedB < 0) {
+        console.log('add liquidity to dex price failure: liquidity needs to be taken away')
+    } else if (addedA == BigInt(0) && addedB == BigInt(0)) {
+        console.error('add liquidity to dex price: no reserves need to be added')
     } else {
         await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
     }
@@ -95,5 +89,7 @@ export async function swapDexPairToPrice(
         await swap(contracts.uniswapV2, tokenA, tokenB, swapA, signer, provider)
     } else if (swapB > 0) {
         await swap(contracts.uniswapV2, tokenB, tokenA, swapB, signer, provider)
+    } else {
+        console.error('swap to sync price: dex already synced')
     }
 }

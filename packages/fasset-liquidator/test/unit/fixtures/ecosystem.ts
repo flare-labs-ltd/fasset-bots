@@ -1,6 +1,7 @@
-import { lotSizeUba, randBigInt, randBigIntInRelRadius } from "../utils/bigint"
+import { randBigInt, randBigIntInRelRadius } from "../utils/bigint"
+import { lotSizeUba } from "../utils/assets"
 import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations"
-import type { AssetConfig, EcosystemConfig } from "./interface"
+import type { AssetConfig, EcosystemConfig } from "./interfaces"
 
 
 export class EcosystemFactory {

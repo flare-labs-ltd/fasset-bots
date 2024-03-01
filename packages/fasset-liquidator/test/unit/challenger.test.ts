@@ -5,7 +5,7 @@ import { getTestContext } from './fixtures/context'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import { balanceDecreasingTxProof } from './fixtures/attestations'
 import { XRP, WFLR, USDT } from './fixtures/assets'
-import type { AssetConfig, TestContext } from './fixtures/interface'
+import type { AssetConfig, TestContext } from './fixtures/interfaces'
 import type { Challenger, AgentMock } from '../../types'
 
 

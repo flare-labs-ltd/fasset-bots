@@ -5,6 +5,17 @@ import type { Signer, JsonRpcProvider, AddressLike } from "ethers"
 import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair } from "../../../../types"
 
 
+export async function safelyGetReserves(
+    uniswapV2: IUniswapV2Router,
+    tokenA: IERC20Metadata,
+    tokenB: IERC20Metadata
+): Promise<[bigint, bigint]> {
+    let reserveA = BigInt(0)
+    let reserveB = BigInt(0)
+    try {({ 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB))} catch (e) {}
+    return [reserveA, reserveB]
+}
+
 export async function getPairFor(
     uniswapV2: IUniswapV2Router,
     tokenA: AddressLike,

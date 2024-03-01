@@ -1,4 +1,4 @@
-import type { UnderlyingAsset } from '../fixtures/interface'
+import type { UnderlyingAsset } from '../fixtures/interfaces'
 
 export function lotSizeUba(fAsset: UnderlyingAsset): bigint {
     return BigInt(fAsset.lotSize) * BigInt(10) ** BigInt(fAsset.decimals)

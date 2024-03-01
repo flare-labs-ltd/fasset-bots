@@ -2,7 +2,7 @@ import path from 'path'
 import { GRAPH_POINTS } from '../../constants'
 import { writeFileSync, mkdirSync } from 'fs'
 import { FixtureUtils } from './fixture'
-import type { AssetConfig, EcosystemConfig } from "../fixtures/interface"
+import type { AssetConfig, EcosystemConfig } from "../fixtures/interfaces"
 
 
 const DATA_DIR_PATH = path.join(__dirname, '../../../data')

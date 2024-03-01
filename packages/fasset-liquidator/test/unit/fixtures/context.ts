@@ -1,8 +1,8 @@
 import { ethers } from 'hardhat'
-import { AssetConfig } from './interface'
+import { AssetConfig } from './interfaces'
 import { lotSizeAmg } from '../utils/assets'
 import deployUniswapV2 from './dexes'
-import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interface'
+import type { ContractFactories, TestContracts, TestContext, TestSigners } from './interfaces'
 
 
 export async function getFactories(): Promise<ContractFactories> {
