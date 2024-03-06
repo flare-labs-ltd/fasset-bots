@@ -1,35 +1,44 @@
-import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS } from "./constants"
-import { isqrt } from "./unit/utils/bigint"
+import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS, PRICE_PRECISION } from "./constants"
+import { isqrt } from "./bigint"
 
 ////////////////////////////////////////////////////////////////////////////
 // conversions
 
-export function convertUsd5ToToken(
-    amountUsd5: bigint,
-    tokenDecimals: bigint,
-    tokenPriceUsd5: bigint
-): bigint {
+export function convertUsd5ToToken(amountUsd5: bigint, tokenDecimals: bigint, tokenPriceUsd5: bigint): bigint {
     return amountUsd5 * BigInt(10) ** tokenDecimals / tokenPriceUsd5
 }
 
-export function roundUpWithPrecision(
-    amount: bigint,
-    precision: bigint
-): bigint {
+export function roundUpWithPrecision(amount: bigint, precision: bigint): bigint {
     const aux = amount % precision
     return (aux == BigInt(0)) ? amount : amount + precision - aux
 }
 
-export function relativePriceAB(
-    priceA: bigint,
-    priceB: bigint,
+// relative price of tokenA in tokenB given their prices in same target currency,
+// but with different number of decimals
+export function relativeFormalPriceMulDiv(
+    tokenPriceA: bigint,
+    tokenPriceB: bigint,
     decimalsA: bigint,
     decimalsB: bigint
 ): [bigint, bigint] {
     return [
-        priceA * BigInt(10) ** decimalsB,
-        priceB * BigInt(10) ** decimalsA
+        tokenPriceA * BigInt(10) ** decimalsB,
+        tokenPriceB * BigInt(10) ** decimalsA
     ]
+}
+
+export function relativeTokenDexPrice(reserveA: bigint, reserveB: bigint, decimalsA: bigint, decimalsB: bigint, precision = PRICE_PRECISION): bigint {
+    return relativeFormalPrice(reserveB, reserveA, decimalsB, decimalsA, precision)
+}
+
+export function relativeFormalPrice(tokenPriceA: bigint, tokenPriceB: bigint, decimalsA: bigint, decimalsB: bigint, precision = PRICE_PRECISION): bigint {
+    const [mul, div] = relativeFormalPriceMulDiv(tokenPriceA, tokenPriceB, decimalsA, decimalsB)
+    return relativeTokenPrice(mul, div, precision)
+}
+
+// relative price of tokenA in tokenB given their prices in the same source division and target currency
+export function relativeTokenPrice(tokenPriceA: bigint, tokenPriceB: bigint, precision = PRICE_PRECISION): bigint {
+    return precision * tokenPriceA / tokenPriceB
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -122,15 +131,18 @@ export function liquidityOut(
 export function optimalAddedLiquidity(
     reserveA: bigint,
     reserveB: bigint,
-    addedA: bigint,
-    addedB: bigint
+    maxAddedA: bigint,
+    maxAddedB: bigint
 ): [bigint, bigint] {
-    const exactAddedA = addedB * reserveA / reserveB
-    if (exactAddedA <= addedA) {
-        return [exactAddedA, addedB]
+    const exactAddedA = maxAddedB * reserveA / reserveB
+    if (exactAddedA <= maxAddedA) {
+        return [exactAddedA, maxAddedB]
     } else {
-        const exactAddedB = addedA * reserveB / reserveA
-        return [addedA, exactAddedB]
+        const exactAddedB = maxAddedA * reserveB / reserveA
+        if (exactAddedB <= maxAddedB) {
+            return [BigInt(0), BigInt(0)]
+        }
+        return [maxAddedA, exactAddedB]
     }
 }
 
@@ -233,13 +245,17 @@ export function priceBasedAddedDexReserves(
     maxAddedA: bigint,
     maxAddedB: bigint
 ): [bigint, bigint] {
-    const [ratioB, ratioA] = relativePriceAB(priceA, priceB, decimalsA, decimalsB)
-    const factorA = FASSET_MAX_BIPS * (maxAddedA + initialReserveA) / ratioA
-    const factorB = FASSET_MAX_BIPS * (maxAddedB + initialReserveB) / ratioB
-    const factor = (factorA < factorB) ? factorA : factorB
-    const addedA = factor * ratioA / FASSET_MAX_BIPS - initialReserveA
-    const addedB = factor * ratioB / FASSET_MAX_BIPS - initialReserveB
-    return [addedA, addedB]
+    const [ratioB, ratioA] = relativeFormalPriceMulDiv(priceA, priceB, decimalsA, decimalsB)
+    let optimalAddedA = maxAddedA
+    let optimalAddedB = (initialReserveA + optimalAddedA) * ratioB / ratioA - initialReserveB
+    if (optimalAddedB > maxAddedB) {
+        optimalAddedB = maxAddedB
+        optimalAddedA = (initialReserveB + optimalAddedB) * ratioA / ratioB - initialReserveA
+        if (optimalAddedA > maxAddedA) {
+            return [BigInt(0), BigInt(0)]
+        }
+    }
+    return [optimalAddedA, optimalAddedB]
 }
 
 export function swapToDexPrice(
@@ -250,7 +266,7 @@ export function swapToDexPrice(
     decimalsA: bigint,
     decimalsB: bigint
 ): bigint {
-    const [priceABMul, priceABDiv] = relativePriceAB(priceA, priceB, decimalsA, decimalsB)
+    const [priceABMul, priceABDiv] = relativeFormalPriceMulDiv(priceA, priceB, decimalsA, decimalsB)
     return swapToDexRatio(initialReserveA, initialReserveB, priceABDiv, priceABMul)
 }
 
@@ -263,7 +279,6 @@ export function swapToDexRatio(
     const aux1 = BigInt(4) * initialReserveB * desiredRatioA * DEX_FACTOR_BIPS / DEX_MAX_BIPS
     const aux2 = initialReserveA * desiredRatioB * (DEX_FACTOR_BIPS - DEX_MAX_BIPS) ** BigInt(2) / DEX_MAX_BIPS ** BigInt(2)
     const aux3 = isqrt(initialReserveA * (aux1 + aux2) / desiredRatioB)
-
     const aux4 = initialReserveA * (DEX_FACTOR_BIPS + DEX_MAX_BIPS) / DEX_MAX_BIPS
     return (aux3 - aux4) * DEX_MAX_BIPS / (BigInt(2) * DEX_FACTOR_BIPS)
 }

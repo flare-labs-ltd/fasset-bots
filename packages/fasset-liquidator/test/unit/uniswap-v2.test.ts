@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { isqrt } from './utils/bigint'
+import { isqrt } from '../bigint'
 import * as calc from '../calculations'
 import {
     addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,
@@ -185,7 +185,7 @@ describe("Tests for the UniswapV2 implementation", () => {
 
         it("should swap on dex to achieve given price", async () => {
             // params
-            const priceDecimals = 18
+            const priceDecimals = BigInt(18)
             const precision = BigInt(1e1)
             const valueUsd5 = BigInt(51513534)
             const swappedTokenA = BigInt(1e3) * BigInt(10) ** ASSET_A.decimals
@@ -196,8 +196,8 @@ describe("Tests for the UniswapV2 implementation", () => {
             await swapToPrice(uniswapV2, tokenA, tokenB, priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals, signer)
             // check that reserves produce the right price
             const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-            const [wPriceA, wPriceB] = calc.relativePriceAB(priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals)
-            const priceMultiplier = BigInt(10) ** BigInt(priceDecimals)
+            const [wPriceA, wPriceB] = calc.relativeFormalPriceMulDiv(priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals)
+            const priceMultiplier = BigInt(10) ** priceDecimals
             const realPrice = priceMultiplier * wPriceA / wPriceB
             const dexPrice = priceMultiplier * reserveB / reserveA
             expect(dexPrice).to.be.approximately(realPrice, precision)

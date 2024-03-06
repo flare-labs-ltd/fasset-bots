@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { Contract, ContractFactory } from 'ethers'
 import { waitFinalize } from './finalization'
 import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
 import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
@@ -9,6 +9,7 @@ import { abi as flashLenderAbi } from '../../../artifacts/@openzeppelin/contract
 import { abi as uniswapV2RouterAbi } from '../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Router.sol/IUniswapV2Router.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
+import type { JsonRpcProvider, Signer } from 'ethers'
 import type { NetworkAddressesJson, AddressesJson } from './interfaces/addresses'
 import type { BaseContracts, FAssetContracts, Contracts } from './interfaces/contracts'
 import type { IUniswapV2Router, IERC3156FlashLender, IIAgentVault, Liquidator } from '../../../types'
@@ -19,35 +20,35 @@ export function getAddresses(network: string): NetworkAddressesJson {
     return addresses[network]
 }
 
-export function getBaseContracts(network: string, provider: ethers.JsonRpcProvider): BaseContracts {
+export function getBaseContracts(network: string, provider: JsonRpcProvider): BaseContracts {
     const addresses = getAddresses(network)
     return {
         collaterals: {
-            usdc: new ethers.Contract(addresses.collaterals.USDC, fakeERC20Abi, provider) as any,
-            usdt: new ethers.Contract(addresses.collaterals.USDT, fakeERC20Abi, provider) as any,
-            weth: new ethers.Contract(addresses.collaterals.WETH, fakeERC20Abi, provider) as any
+            usdc: new Contract(addresses.collaterals.USDC, fakeERC20Abi, provider) as any,
+            usdt: new Contract(addresses.collaterals.USDT, fakeERC20Abi, provider) as any,
+            weth: new Contract(addresses.collaterals.WETH, fakeERC20Abi, provider) as any
         },
-        wNat: new ethers.Contract(addresses.WNAT, wNatAbi, provider) as any,
-        uniswapV2: new ethers.Contract(addresses.uniswapV2, uniswapV2RouterAbi, provider) as any,
-        flashLender: new ethers.Contract(addresses.flashLender, flashLenderAbi, provider) as any
+        wNat: new Contract(addresses.WNAT, wNatAbi, provider) as any,
+        uniswapV2: new Contract(addresses.uniswapV2, uniswapV2RouterAbi, provider) as any,
+        flashLender: new Contract(addresses.flashLender, flashLenderAbi, provider) as any
     }
 }
 
 export async function getFAssetContracts(
     assetManagerAddress: string,
-    provider: ethers.JsonRpcProvider
+    provider: JsonRpcProvider
 ): Promise<FAssetContracts> {
-    const assetManager = new ethers.Contract(assetManagerAddress, assetManagerAbi, provider) as any
+    const assetManager = new Contract(assetManagerAddress, assetManagerAbi, provider) as any
     const settings = await assetManager.getSettings()
-    const fAsset = new ethers.Contract(settings.fAsset, erc20MetadataAbi, provider) as any
-    const priceReader = new ethers.Contract(settings.priceReader, fakePriceReaderAbi, provider) as any
+    const fAsset = new Contract(settings.fAsset, erc20MetadataAbi, provider) as any
+    const priceReader = new Contract(settings.priceReader, fakePriceReaderAbi, provider) as any
     return { assetManager, fAsset, priceReader }
 }
 
 export async function getContracts(
     assetManagerAddress: string,
     network: string,
-    provider: ethers.JsonRpcProvider
+    provider: JsonRpcProvider
 ): Promise<Contracts> {
     const baseContracts = getBaseContracts(network, provider)
     const fAssetContracts = await getFAssetContracts(assetManagerAddress, provider)
@@ -56,19 +57,19 @@ export async function getContracts(
 
 export async function getAssetManagerFromAgent(
     agentAddress: string,
-    provider: ethers.JsonRpcProvider
+    provider: JsonRpcProvider
 ): Promise<string> {
-    const agent: IIAgentVault = new ethers.Contract(agentAddress, agentAbi, provider) as any
+    const agent: IIAgentVault = new Contract(agentAddress, agentAbi, provider) as any
     return agent.assetManager()
 }
 
 export async function deployLiquidator(
     flashLender: IERC3156FlashLender,
     uniswapV2: IUniswapV2Router,
-    signer: ethers.Signer,
-    provider: ethers.JsonRpcProvider
+    signer: Signer,
+    provider: JsonRpcProvider
 ): Promise<Liquidator> {
-    const factory = new ethers.ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
+    const factory = new ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
     // @ts-ignore deploy not returning a transaction response
     return waitFinalize(provider, signer, factory.connect(signer).deploy(flashLender, uniswapV2)) as any
 }

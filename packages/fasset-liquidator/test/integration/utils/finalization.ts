@@ -21,10 +21,10 @@ export async function waitFinalize(
         response = ((await prms).wait())
     } catch {
         response = await prms
-        await sleep(5_000)
     }
     while ((await provider.getTransactionCount(signerAddress)) === nonce) {
-        await sleep(100)
+        await sleep(300)
     }
+    await sleep(5_000)
     return response as any
 }

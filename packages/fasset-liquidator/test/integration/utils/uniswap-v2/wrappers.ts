@@ -67,7 +67,9 @@ export async function removeLiquidity(
             MaxUint256
         ))
     } else {
-        console.log('remove liquidity failure: no liquidity to remove')
+        const symbolA = await tokenA.symbol()
+        const symbolB = await tokenB.symbol()
+        console.log(`No liquidity to remove from (${symbolA}, ${symbolB}) pool`)
     }
 }
 

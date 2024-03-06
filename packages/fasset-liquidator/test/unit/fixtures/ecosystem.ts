@@ -1,4 +1,4 @@
-import { randBigInt, randBigIntInRelRadius } from "../utils/bigint"
+import { randBigInt, randBigIntInRelRadius } from "../../bigint"
 import { lotSizeUba } from "../utils/assets"
 import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations"
 import type { AssetConfig, EcosystemConfig } from "./interfaces"
@@ -13,7 +13,7 @@ export class EcosystemFactory {
   // cached ecosystem
   private _baseEcosystem: EcosystemConfig
 
-  constructor(public config: AssetConfig) {
+  constructor(public readonly config: AssetConfig) {
     // customly configured reserves and minted f-assets (by their value in usd5)
     const defaultDex1LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
     const defaultDex2LiquidityUsd5 = BigInt(10) ** BigInt(5 + 9) // billion$
