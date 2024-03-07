@@ -2,6 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import fs from "fs";
+import chalk from 'chalk'
 import { toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
 import { programWithCommonOptions } from "../utils/program";
@@ -356,5 +357,16 @@ program
     });
 
 toplevelRun(async () => {
-    await program.parseAsync();
+    try {
+        await program.parseAsync();
+    } catch (error: any) {
+        if (error.message.includes('invalid agent vault address')) {
+            const fAsset = program.opts().fasset
+            console.log(chalk.red(
+                'Invalid agent vault address: specified agent vault address has to be one of the ' +
+                `agent vaults created by you. To see them run \`yarn agent-bot listAgents -f ${fAsset}\`.`
+            ))
+        }
+        console.log(error)
+    }
 });

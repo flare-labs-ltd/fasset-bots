@@ -25,6 +25,7 @@ import {
     NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR,
     STABLE_COIN_LOW_BALANCE,
     XRP_ACTIVATE_BALANCE,
+    ZERO_ADDRESS,
     findOneSubstring,
     toBN,
     toBNExp,
@@ -151,6 +152,18 @@ export class AgentBot {
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // get work address
         const owner = await Agent.getOwnerAddressPair(context, agentEntity.ownerAddress);
+        // ensure that work address is defined and matches the one from secrets.json
+        const secretWorkAddress = requireSecret("owner.native.address")
+        if (owner.workAddress !== secretWorkAddress) {
+            if (owner.workAddress === ZERO_ADDRESS) {
+                throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+            } else {
+                throw new Error(
+                    `Work address ${owner.workAddress} registered by management address ${owner.managementAddress} ` +
+                    `does not match the owner.native address ${secretWorkAddress} from your secrets file.`
+                );
+            }
+        }
         // agent
         const agent = new Agent(context, owner, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
@@ -382,9 +395,9 @@ export class AgentBot {
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
+        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         return events;
     }
 

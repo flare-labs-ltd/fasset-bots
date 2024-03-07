@@ -104,9 +104,13 @@ export class BotCliCommands {
 
     /**
      * Creates instance of Agent.
-     * @param poolTokenSuffix
+     * @param agentSettings
      */
     async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent | null> {
+        if (!await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix)) {
+            console.log(chalk.red(`Collateral pool token suffix ${agentSettings.poolTokenSuffix} is invalid.`));
+            return null;
+        }
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
@@ -619,5 +623,16 @@ export class BotCliCommands {
     async upgradeWNatContract(agentVault: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.upgradeWNatContract();
+    }
+
+    // TODO: at fasset-v2 we should also check whether the suffix is already used
+    private async validateCollateralPoolTokenSuffix(suffix: string): Promise<boolean> {
+        for (let i = 0; i < suffix.length; i++) {
+            const char = suffix[i];
+            if (!((char >= "A" && char <= "Z" || char >= "0" && char <= "9") || i > 0 && i < suffix.length - 1 && char == "-")) {
+                return false;
+            }
+        }
+        return true;
     }
 }
