@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { isqrt } from '../bigint'
+import { isqrt } from '../utils'
 import * as calc from '../calculations'
 import {
     addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,

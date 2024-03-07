@@ -1,6 +1,6 @@
 import { WeiPerEther, Wallet, JsonRpcProvider, type Signer } from "ethers"
 import { relativeTokenPrice, relativeTokenDexPrice } from "../../../calculations"
-import { mulFactor } from "../../../bigint"
+import { mulFactor } from "../../../utils"
 import { waitFinalize } from "../finalization"
 import { getContracts } from '../../utils/contracts'
 import { removeLiquidity, safelyGetReserves } from "./wrappers"
@@ -10,8 +10,8 @@ import type { IERC20Metadata } from "../../../../types"
 import type { Contracts } from "../interfaces/contracts"
 
 
-type FundingPercentConfig = {[symbol: string]: number | undefined}
-type FundingConfig = {[symbol: string]: bigint}
+type RelativeSpendings = {[symbol: string]: number | undefined}
+type AbsoluteSpendings = {[symbol: string]: bigint}
 
 export interface TokenInfo {
     contract: IERC20Metadata
@@ -48,14 +48,14 @@ export class DexManipulator {
         ]
     }
 
-    public async initDexes(config: FundingPercentConfig = {}): Promise<void> {
-        const dexSupplyConfig = await this.determineMaxSpentTokens(config, false)
-        await this.syncOrInitDexes(true, dexSupplyConfig)
+    public async initDexes(relativeSpendings: RelativeSpendings = {}): Promise<void> {
+        const spendings = await this.getAbsoluteSpendings(relativeSpendings, false)
+        await this.syncOrInitDexes(true, spendings)
     }
 
-    public async syncDexes(config: FundingPercentConfig = {}): Promise<void> {
-        const dexSupplyConfig = await this.determineMaxSpentTokens(config, true)
-        await this.syncOrInitDexes(false, dexSupplyConfig)
+    public async syncDexes(relativeSpendings: RelativeSpendings = {}): Promise<void> {
+        const spendings = await this.getAbsoluteSpendings(relativeSpendings, true)
+        await this.syncOrInitDexes(false, spendings)
     }
 
     public async removeAllLiquidity(): Promise<void> {
@@ -101,7 +101,7 @@ export class DexManipulator {
         }
     }
 
-    protected async syncOrInitDexes(init: boolean, maxSpent: FundingConfig): Promise<void> {
+    protected async syncOrInitDexes(init: boolean, maxSpent: AbsoluteSpendings): Promise<void> {
         for (const [tokenA, tokenB] of this.tokenPairs) {
             console.log(`syncing dex reserves with ftso prices on (${tokenA.symbol}, ${tokenB.symbol}) pool`)
             await syncDexReservesWithFtsoPrices(
@@ -126,8 +126,8 @@ export class DexManipulator {
 
     // determine amounts of max tokens to be spent for each token from user's specified balance percentages
     // greedy determines whether to spend all tokens on a single pair or distribute them across all pairs
-    private async determineMaxSpentTokens(config: FundingPercentConfig, greedy: boolean): Promise<FundingConfig> {
-        const maxSpent: FundingConfig = {}
+    private async getAbsoluteSpendings(config: RelativeSpendings, greedy: boolean): Promise<AbsoluteSpendings> {
+        const maxSpent: AbsoluteSpendings = {}
         for (const pairs of this.tokenPairs) {
             for (const token of pairs) {
                 if (maxSpent[token.symbol] === undefined) {

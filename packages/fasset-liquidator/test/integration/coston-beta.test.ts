@@ -28,8 +28,7 @@ describe("Uniswap V2 Price Synchronization", () => {
         const balances = [
             await manipulator.provider.getBalance(manipulator.signer)
             + await manipulator.contracts.wNat.balanceOf(manipulator.signer),
-            await manipulator.contracts.fAsset.balanceOf(manipulator.signer),
-            await manipulator.contracts.wNat.balanceOf(manipulator.signer)
+            await manipulator.contracts.fAsset.balanceOf(manipulator.signer)
         ]
         for (const collateralToken of manipulator.supportedCollaterals) {
             balances.push(await collateralToken.contract.balanceOf(manipulator.signer))
@@ -57,7 +56,7 @@ describe("Uniswap V2 Price Synchronization", () => {
     it("should add liquidity to dexes to match ftso prices", async () => {
         await manipulator.displayDexReserves()
         // add liquidity from the primary source if they have funds
-        await manipulator.initDexes({ [manipulator.symbols.USDC]: 0.8, [manipulator.symbols.WNAT]: 0.8 })
+        await manipulator.initDexes({ [manipulator.symbols.USDC]: 0.5, [manipulator.symbols.WNAT]: 0.5 })
         // check that reserves are aligned with ftso prices on all relevant dex pools
         await checkFtsoSyncedDexPrices()
     })
@@ -69,19 +68,26 @@ describe("Uniswap V2 Price Synchronization", () => {
         const swapAmount = usdcReserve / BigInt(100) // 1% of the reserve
         // swap to disrupt the price
         console.log(`swapping ${swapAmount} USDC for CFLR to disrupt the dex price`)
-        await swap(
-            manipulator.contracts.uniswapV2, manipulator.contracts.collaterals.usdc, manipulator.contracts.wNat,
-            swapAmount, manipulator.signer, manipulator.provider)
+        await swap(manipulator.contracts.uniswapV2, manipulator.contracts.collaterals.usdc,
+            manipulator.contracts.wNat, swapAmount, manipulator.signer, manipulator.provider)
         // sort out the price discrepancy (spend at most 50% of all USDC balance, for the next test)
         await manipulator.syncDexes()
         // check that reserves are aligned with ftso prices on all relevant dex pools
         await checkFtsoSyncedDexPrices()
     })
 
+    it("should adjust dex liquidity so they have a specified slippage", async () => {
+        // adjust liquidity to have 1% slippage on all dexes
+        const balanceUsdc = await manipulator.contracts.collaterals.usdc.balanceOf(manipulator.signer)
+        const slippage = [
+            { symbolA: manipulator.symbols.USDC, symbolB: manipulator.symbols.WNAT, amount: balanceUsdc / BigInt(100), bips: BigInt(100) }
+        ]
+    })
+
     it("should remove liquidity from dexes", async () => {
         // remove signer's liquidity from all dexes
         await manipulator.removeAllLiquidity()
-        // TODO: check that signer had funds returned (minus locked initial liquidity + nat gas costs)
+        // check that signer had funds returned (minus accounting for some locked liquidity)
         const signerBalanceAfter = await signerBalances()
         for (let i = 0; i < signerBalanceAfter.length; i++) {
             if (signerBalanceBefore[i] == BigInt(0)) continue

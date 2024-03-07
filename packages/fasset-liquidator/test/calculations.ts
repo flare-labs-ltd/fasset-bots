@@ -1,5 +1,5 @@
 import { AMG_TOKEN_WEI_PRICE_SCALE, AMG_TOKEN_WEI_PRICE_SCALE_EXP, DEX_FACTOR_BIPS, DEX_MAX_BIPS, FASSET_MAX_BIPS, PRICE_PRECISION } from "./constants"
-import { isqrt } from "./bigint"
+import { isqrt } from "./utils"
 
 ////////////////////////////////////////////////////////////////////////////
 // conversions
