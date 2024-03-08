@@ -104,6 +104,10 @@ export class AgentBot {
         notifier: Notifier
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
+        // ensure that work address is defined
+        if (owner.workAddress === ZERO_ADDRESS) {
+            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+        }
         // create agent
         const lastBlock = await web3.eth.getBlockNumber();
         const agent = await Agent.create(context, owner, addressValidityProof, agentSettingsConfig);
@@ -158,17 +162,9 @@ export class AgentBot {
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // get work address
         const owner = await Agent.getOwnerAddressPair(context, agentEntity.ownerAddress);
-        // ensure that work address is defined and matches the one from secrets.json
-        const secretWorkAddress = requireSecret("owner.native.address")
-        if (owner.workAddress !== secretWorkAddress) {
-            if (owner.workAddress === ZERO_ADDRESS) {
-                throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
-            } else {
-                throw new Error(
-                    `Work address ${owner.workAddress} registered by management address ${owner.managementAddress} ` +
-                    `does not match the owner.native address ${secretWorkAddress} from your secrets file.`
-                );
-            }
+        // ensure that work address is defined
+        if (owner.workAddress === ZERO_ADDRESS) {
+            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
         }
         // agent
         const agent = new Agent(context, owner, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);

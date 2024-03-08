@@ -8,7 +8,7 @@ import { createAssetContext } from "../config/create-asset-context";
 import { BotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { BN_ZERO, CommandLineError, toBN } from "../utils/helpers";
+import { BN_ZERO, CommandLineError, ZERO_ADDRESS, toBN } from "../utils/helpers";
 import { requireSecret } from "../config/secrets";
 import chalk from "chalk";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
@@ -75,12 +75,25 @@ export class BotCliCommands {
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
+        // verify keys
+        this.verifyWorkAddress(this.owner);
         // create underlying wallet key
         const underlyingAddress = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.address`);
         const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.private_key`);
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
+    }
+
+    async verifyWorkAddress(owner: OwnerAddressPair) {
+        // get work address
+        const chainWorkAddress = await Agent.getOwnerWorkAddress(this.context, owner.managementAddress);
+        // ensure that work address is defined and matches the one from secrets.json
+        if (chainWorkAddress === ZERO_ADDRESS) {
+            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+        } else if (chainWorkAddress !== owner.workAddress) {
+            throw new Error(`Work address ${chainWorkAddress} registered by management address ${owner.managementAddress} does not match the owner.native address ${owner.workAddress} from your secrets file.`);
+        }
     }
 
     async prepareCreateAgentSettings(): Promise<Schema_AgentSettingsConfig> {

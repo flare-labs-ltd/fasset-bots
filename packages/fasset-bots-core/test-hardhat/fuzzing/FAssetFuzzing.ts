@@ -1,5 +1,5 @@
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentBAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { artifacts, web3 } from "../../src/utils/web3";
@@ -110,7 +110,7 @@ describe("Fuzzing tests", async () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifier, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
             botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
@@ -365,7 +365,7 @@ describe("Fuzzing tests", async () => {
     }
 
     async function transferFassetsToLiquidator(liquidatorAddress: string): Promise<void> {
-        const agentB = await createTestAgentBAndMakeAvailable(context, accounts[1000]);
+        const agentB = await createTestAgentAndMakeAvailable(context, accounts[1000]);
         eventFormatter.addAddress(`MINTER_BOT`, agentB.vaultAddress);
         const minter = await createTestMinter(context, accounts[999], chain);
         const lots = 3;
