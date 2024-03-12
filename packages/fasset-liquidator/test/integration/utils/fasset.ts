@@ -1,4 +1,4 @@
-import { assetPriceForAgentCr } from "../../calculations"
+import { assetPriceForAgentCr } from "../../calculations/calculations"
 import type { AddressLike } from "ethers"
 import type { IERC20Metadata } from "../../../types"
 import type { Contracts } from "./interfaces/contracts"

@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import * as calc from '../../calculations'
+import * as calc from '../../calculations/calculations'
 import type { Signer } from 'ethers'
 import type { ERC20, ERC20Mock, IUniswapV2Pair, IUniswapV2Router } from '../../../types'
 
@@ -208,7 +208,7 @@ export async function changeLiquidityToProduceSlippage(
     signer: Signer
 ): Promise<void> {
     const [oldReserveA, oldReserveB] = await router.getReserves(tokenA, tokenB)
-    const [addedLiquidityA, addedLiquidityB] = calc.addedliquidityFromSlippage(
+    const [addedLiquidityA, addedLiquidityB] = calc.addedLiquidityFromSlippage(
         slippageVolume, slippageBips, oldReserveA, oldReserveB)
     await changeLiquidity(router, pair, tokenA, tokenB, addedLiquidityA, addedLiquidityB, signer)
 }

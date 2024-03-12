@@ -22,16 +22,16 @@ export function getAddresses(network: string): NetworkAddressesJson {
 
 export function getBaseContracts(network: string, provider: JsonRpcProvider): BaseContracts {
     const addresses = getAddresses(network)
-    return {
-        collaterals: {
-            usdc: new Contract(addresses.collaterals.USDC, fakeERC20Abi, provider) as any,
-            usdt: new Contract(addresses.collaterals.USDT, fakeERC20Abi, provider) as any,
-            weth: new Contract(addresses.collaterals.WETH, fakeERC20Abi, provider) as any
-        },
+    const contracts: BaseContracts = {
+        collaterals: {},
         wNat: new Contract(addresses.WNAT, wNatAbi, provider) as any,
         uniswapV2: new Contract(addresses.uniswapV2, uniswapV2RouterAbi, provider) as any,
         flashLender: new Contract(addresses.flashLender, flashLenderAbi, provider) as any
     }
+    for (const tokenName of Object.keys(addresses.collaterals)) {
+        contracts.collaterals[tokenName] = new Contract(addresses.collaterals[tokenName], fakeERC20Abi, provider) as any
+    }
+    return contracts
 }
 
 export async function getFAssetContracts(

@@ -2,6 +2,10 @@ import * as crypto from 'crypto'
 import { FASSET_MAX_BIPS } from './constants'
 
 
+export function abs(x: bigint): bigint {
+    return x < 0 ? -x : x
+}
+
 export function mulFactor(x: bigint, factor: number): bigint {
   return x * BigInt(Math.floor(Number(FASSET_MAX_BIPS) * factor)) / FASSET_MAX_BIPS
 }

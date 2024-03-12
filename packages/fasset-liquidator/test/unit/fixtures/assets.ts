@@ -20,7 +20,7 @@ export const XRP: UnderlyingAsset = {
 export const USDT: CollateralAsset = {
   name: "Tether USD",
   symbol: "USDT",
-  decimals: BigInt(18),
+  decimals: BigInt(6),
   ftsoSymbol: "ftsoUSDT",
   ftsoDecimals: BigInt(5),
   defaultPriceUsd5: BigInt(100_000),
@@ -39,7 +39,7 @@ export const WFLR: CollateralAsset = {
   kind: "pool"
 }
 
-export const ETH: CollateralAsset = {
+export const WETH: CollateralAsset = {
   name: "Ether",
   symbol: "ETH",
   decimals: BigInt(18),

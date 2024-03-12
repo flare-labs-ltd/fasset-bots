@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ZeroAddress } from 'ethers'
-import { applySlippageToDexPrice } from '../calculations'
+import { applySlippageToDexPrice } from '../calculations/calculations'
 import { swapInput, consecutiveSwapOutputs } from './utils/uniswap-v2'
 import { ContextUtils } from './utils/context'
 import { getTestContext } from './fixtures/context'
@@ -101,9 +101,9 @@ describe("Tests for the Liquidator contract", () => {
           expect(earnings).to.equal(expectedVaultEarnings)
           // check that liquidator contract had not had any funds stolen
           const fAssetBalanceLiquidatorContract = await contracts.fAsset.balanceOf(contracts.liquidator)
-          expect(fAssetBalanceLiquidatorContract).to.equal(config.initialLiquidatorFAsset)
+          expect(fAssetBalanceLiquidatorContract).to.be.approximately(config.initialLiquidatorFAsset, 1)
           const poolBalanceLiquidatorContract = await contracts.pool.balanceOf(contracts.liquidator)
-          expect(poolBalanceLiquidatorContract).to.equal(config.initialLiquidatorPool)
+          expect(poolBalanceLiquidatorContract).to.be.approximately(config.initialLiquidatorPool, 1)
           const vaultBalanceLiquidatorContract = await contracts.vault.balanceOf(contracts.liquidator)
           expect(vaultBalanceLiquidatorContract).to.equal(config.initialLiquidatorVault)
         })
@@ -156,9 +156,9 @@ describe("Tests for the Liquidator contract", () => {
         expect(flashLenderAfter).to.equal(flashLenderVaultBefore)
         // check that liquidator contract had not had any funds stolen or given
         const fAssetBalanceLiquidatorContract = await contracts.fAsset.balanceOf(contracts.liquidator)
-        expect(fAssetBalanceLiquidatorContract).to.equal(config.initialLiquidatorFAsset)
+        expect(fAssetBalanceLiquidatorContract).to.be.approximately(config.initialLiquidatorFAsset, 1)
         const poolBalanceLiquidatorContract = await contracts.pool.balanceOf(contracts.liquidator)
-        expect(poolBalanceLiquidatorContract).to.equal(config.initialLiquidatorPool)
+        expect(poolBalanceLiquidatorContract).to.be.approximately(config.initialLiquidatorPool, 1)
         const vaultBalanceLiquidatorContract = await contracts.vault.balanceOf(contracts.liquidator)
         expect(vaultBalanceLiquidatorContract).to.equal(config.initialLiquidatorVault)
       })

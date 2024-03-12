@@ -2,10 +2,19 @@ import { Command, OptionValues } from "commander"
 import { JsonRpcProvider, Wallet } from "ethers"
 import { storeLatestDeploy } from "./utils"
 import { deployLiquidator, deployChallenger, deployUniswapV2, deployFlashLender } from "./deploy"
-import { getDexVsFtsoPrices, setUpDexPools, fixDex, removeDexLiquidity } from "./dex"
-import { getContracts } from "../test/integration/utils/contracts"
+import { Config, DexManipulator } from "../test/integration/utils/uniswap-v2/dex-manipulator"
+import { FTSO_SYMBOLS } from "../test/constants"
 import type { Signer } from "ethers"
 import type { NetworkAddressesJson } from "../test/integration/utils/interfaces/addresses"
+
+const COSTON_FTSO_SYMBOLS = FTSO_SYMBOLS["coston"]
+// target swapping to test xrp (or fake xrp later)
+const DEX_POOLS = [
+    [COSTON_FTSO_SYMBOLS.TEST_XRP, COSTON_FTSO_SYMBOLS.USDC],
+    [COSTON_FTSO_SYMBOLS.TEST_XRP, COSTON_FTSO_SYMBOLS.USDT],
+    [COSTON_FTSO_SYMBOLS.TEST_XRP, COSTON_FTSO_SYMBOLS.WETH],
+    [COSTON_FTSO_SYMBOLS.TEST_XRP, COSTON_FTSO_SYMBOLS.WNAT]
+]
 
 const program = new Command("Liquidator and dex CLI")
 
@@ -45,21 +54,35 @@ program
         storeLatestDeploy(contract, address, program.opts().network)
     })
 program
-    .command("dex").description("methods regarding used dex")
-    .argument("<prices|setup|fix|remove-liquidity>", "action to perform")
+    .command("coston-beta").description("methods regarding used dex")
+    .argument("action <adjust-dex|remove-liquidity>", "action to perform")
     .argument("asset-manager", "address of the asset manager")
-    .action(async (action: string, assetManager: string, opts: OptionValues) => {
-        const contracts = await getContracts(assetManager, opts.network, opts.provider)
-        if (action === "prices") {
-            await getDexVsFtsoPrices(contracts)
-        } else if (action === "setup") {
-            await setUpDexPools(assetManager, opts.network, provider, signer!)
-        } else if (action === "fix") {
-            await fixDex(assetManager, opts.network, opts.provider, opts.signer)
+    .option("-m, --max-spend-ratio <number>", "maximum ratio of the balance willing to spend in this tx")
+    .option("-s, --slippage <bips>", "slippage applied to all of the registered pools (in bips)")
+    .option("-v, --volume <bigint>", "amount of token whose swap produces the given slippage")
+    .option("--greedy <boolean>", "whether to not distribute spendings evenly across pools (if balance runs out, not all pools will be affected by your action)")
+    .action(async (action: string, assetManager: string, _opts: OptionValues) => {
+        const opts = { ..._opts, ...program.opts() }
+        if (Number(opts.slippage === undefined + opts.volume === undefined) == 1) {
+            throw Error("slippage and volume are not well-defined without each other")
+        }
+        const manipulator = await DexManipulator.create(opts.network, process.env.RPC_URL!, assetManager, process.env.DEX_SIGNER_PRIVATE_KEY!)
+        if (action === "adjust-dex") {
+            const config: Config = {
+                maxRelativeSpendings: opts.maxSpendRatio,
+                pools: DEX_POOLS.map(([symbolA, symbolB]) => ({
+                    symbolA, symbolB, sync: true, slippage: (opts.slippage !== undefined) ? {
+                        amountA: opts.volume, bips: opts.slippage
+                    } : undefined
+                }))
+            }
+            await manipulator.adjustDex(config, true)
         } else if (action === "remove-liquidity") {
-            await removeDexLiquidity(assetManager, opts.network, opts.provider, opts.signer)
-        } else {
-            throw new Error("invalid action")
+            await manipulator.removeAllLiquidity({ pools: DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB }))})
+        } else if (action === "wrap-wnat") {
+            await manipulator.wrapWNat()
+        } else if (action === "unwrap-wnat") {
+            await manipulator.unwrapWNat()
         }
     })
 

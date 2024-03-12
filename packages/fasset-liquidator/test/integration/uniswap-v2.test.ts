@@ -7,7 +7,7 @@
 import "dotenv/config"
 import { expect } from "chai"
 import { JsonRpcProvider, Wallet, WeiPerEther } from 'ethers'
-import { optimalAddedLiquidity, swapOutput, liquidityOut } from "../calculations"
+import { optimalAddedLiquidity, swapOutput, liquidityOut } from "../calculations/calculations"
 import { getBaseContracts } from './utils/contracts'
 import { waitFinalize } from './utils/finalization'
 import { addLiquidity, getPairFor, removeLiquidity, safelyGetReserves, swap } from "./utils/uniswap-v2/wrappers"
@@ -31,7 +31,7 @@ describe("Uniswap V2 manipulation", () => {
     signer = new Wallet(SIGNER_PRIVATE_KEY, provider)
     // get contracts
     contracts = getBaseContracts("coston", provider)
-    tokenA = contracts.collaterals.usdc
+    tokenA = contracts.collaterals.USDC
     tokenB = contracts.wNat
     // if tokenA != wNat then comment this out
     const availableWNat1 = await provider.getBalance(signer) - WeiPerEther

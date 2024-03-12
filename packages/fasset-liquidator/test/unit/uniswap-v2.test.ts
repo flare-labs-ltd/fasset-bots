@@ -1,21 +1,26 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { isqrt } from '../utils'
-import * as calc from '../calculations'
+import { isqrt, randBigInt } from '../utils'
+import * as calc from '../calculations/calculations'
+import { reservesFromPriceAndSlippage, reserveFromSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
 import {
     addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,
-    changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves, swapInput
+    changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves
 } from './utils/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
-import { XRP, USDT, ETH, WFLR } from './fixtures/assets'
+import { FASSET_MAX_BIPS, PRICE_PRECISION } from '../constants'
+import { XRP, USDT, WETH, WFLR } from './fixtures/assets'
 import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import type { IUniswapV2Router, IUniswapV2Pair, ERC20Mock } from '../../types'
 
 
+const PRICE_MAX_ERROR = PRICE_PRECISION / BigInt(1e5) // price is accurate to the point of FTSO error of 5 decimals
+const SLIPPAGE_MAX_ERROR = 10
+
 const ASSET_A = USDT
 const ASSET_B = XRP
-const ASSET_C = ETH
+const ASSET_C = WETH
 
 const RESERVE_CHANGE_FIXTURE = [
     {
@@ -34,9 +39,6 @@ const RESERVE_CHANGE_FIXTURE = [
 
 describe("Tests for the UniswapV2 implementation", () => {
     // default "real" token prices
-    const priceTokenAUsd5 = BigInt(100_000) // price of USDT in USD5
-    const priceTokenBUsd5 = BigInt(50_000) // price of XRP in USD5
-    const priceTokenCUsd5 = BigInt(420) // price of FLR in USD5
     // set before each
     let accounts: HardhatEthersSigner[]
     let signer: HardhatEthersSigner
@@ -47,14 +49,14 @@ describe("Tests for the UniswapV2 implementation", () => {
     let tokenC: ERC20Mock
 
     async function addInitialLiquidity(valueUsd5 = BigInt(1_000_000_00000)): Promise<void> {
-        const tokenALiquidityDex1 = calc.convertUsd5ToToken(valueUsd5, ASSET_A.decimals, priceTokenAUsd5)
-        const tokenBLiquidityDex1 = calc.convertUsd5ToToken(valueUsd5, ASSET_B.decimals, priceTokenBUsd5)
+        const tokenALiquidityDex1 = calc.convertUsd5ToToken(valueUsd5, ASSET_A.decimals, ASSET_A.defaultPriceUsd5)
+        const tokenBLiquidityDex1 = calc.convertUsd5ToToken(valueUsd5, ASSET_B.decimals, ASSET_B.defaultPriceUsd5)
         await addLiquidity(uniswapV2, tokenA, tokenB, tokenALiquidityDex1, tokenBLiquidityDex1, signer)
-        const tokenBLiquidityDex2 = calc.convertUsd5ToToken(valueUsd5, ASSET_B.decimals, priceTokenBUsd5)
-        const tokenCLiquidityDex2 = calc.convertUsd5ToToken(valueUsd5, ASSET_C.decimals, priceTokenCUsd5)
+        const tokenBLiquidityDex2 = calc.convertUsd5ToToken(valueUsd5, ASSET_B.decimals, ASSET_B.defaultPriceUsd5)
+        const tokenCLiquidityDex2 = calc.convertUsd5ToToken(valueUsd5, ASSET_C.decimals, ASSET_C.defaultPriceUsd5)
         await addLiquidity(uniswapV2, tokenB, tokenC, tokenBLiquidityDex2, tokenCLiquidityDex2, signer)
-        const tokenALiquidityDex3 = calc.convertUsd5ToToken(valueUsd5, ASSET_A.decimals, priceTokenAUsd5)
-        const tokenCLiquidityDex3 = calc.convertUsd5ToToken(valueUsd5, ASSET_C.decimals, priceTokenCUsd5)
+        const tokenALiquidityDex3 = calc.convertUsd5ToToken(valueUsd5, ASSET_A.decimals, ASSET_A.defaultPriceUsd5)
+        const tokenCLiquidityDex3 = calc.convertUsd5ToToken(valueUsd5, ASSET_C.decimals, ASSET_C.defaultPriceUsd5)
         await addLiquidity(uniswapV2, tokenA, tokenC, tokenALiquidityDex3, tokenCLiquidityDex3, signer)
     }
 
@@ -128,7 +130,7 @@ describe("Tests for the UniswapV2 implementation", () => {
             // add initial default liquidity
             await addInitialLiquidity()
             // amount of token A to swap ($0.01)
-            const swapInA = calc.convertUsd5ToToken(swapAmount, ASSET_A.decimals, priceTokenAUsd5)
+            const swapInA = calc.convertUsd5ToToken(swapAmount, ASSET_A.decimals, ASSET_A.defaultPriceUsd5)
             // swap from tokenA to tokenC via tokenB
             const swapCOut = await swapOutput(uniswapV2, [tokenA, tokenB, tokenC], swapInA)
             await tokenA.connect(signer).mint(signer, swapInA)
@@ -140,36 +142,6 @@ describe("Tests for the UniswapV2 implementation", () => {
     })
 
     describe("implicit dex property setters", () => {
-
-        it("should restrict swap output if slippage is too high", async () => {
-            // declare vars for multiple tests
-            let minPriceMul: bigint
-            let minPriceDiv: bigint
-            // setup
-            await addInitialLiquidity()
-            const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-            const amountA = reserveA / BigInt(2)
-            await tokenA.mint(signer, amountA)
-            // can't swap our amount at zero slippage
-            ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(0, reserveA, reserveB)
-            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
-            // can't swap at too low slippage of 0.1%
-            ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(10, reserveA, reserveB)
-            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
-            // can't swap at slippage a little below max
-            const slippage = calc.slippageBipsFromSwapAmountIn(amountA, reserveA, reserveB)
-            ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) - 1, reserveA, reserveB)
-            await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
-                .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
-            // can swap at slippage a little above max
-            ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) + 1, reserveA, reserveB)
-            const amountB = await swapOutput(uniswapV2, [tokenA, tokenB], amountA)
-            await swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv)
-            const balanceB = await tokenB.balanceOf(signer)
-            expect(balanceB).to.equal(amountB)
-        })
 
         it("should swap on dex to achieve a given reserve ratio", async () => {
             // params
@@ -185,22 +157,17 @@ describe("Tests for the UniswapV2 implementation", () => {
 
         it("should swap on dex to achieve given price", async () => {
             // params
-            const priceDecimals = BigInt(18)
-            const precision = BigInt(1e1)
             const valueUsd5 = BigInt(51513534)
             const swappedTokenA = BigInt(1e3) * BigInt(10) ** ASSET_A.decimals
             // execute test
             await addInitialLiquidity(valueUsd5)
             await tokenA.mint(signer, swappedTokenA)
             await swap(uniswapV2, swappedTokenA, [tokenA, tokenB], signer) // ruin the dex price
-            await swapToPrice(uniswapV2, tokenA, tokenB, priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals, signer)
+            await swapToPrice(uniswapV2, tokenA, tokenB, ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5, ASSET_A.decimals, ASSET_B.decimals, signer)
             // check that reserves produce the right price
             const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-            const [wPriceA, wPriceB] = calc.relativeFormalPriceMulDiv(priceTokenAUsd5, priceTokenBUsd5, ASSET_A.decimals, ASSET_B.decimals)
-            const priceMultiplier = BigInt(10) ** priceDecimals
-            const realPrice = priceMultiplier * wPriceA / wPriceB
-            const dexPrice = priceMultiplier * reserveB / reserveA
-            expect(dexPrice).to.be.approximately(realPrice, precision)
+            expect(calc.relativeTokenPrice(ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5)).to.be.approximately(
+                calc.relativeTokenDexPrice(reserveA, reserveB, ASSET_A.decimals, ASSET_B.decimals), PRICE_MAX_ERROR)
         })
 
         RESERVE_CHANGE_FIXTURE.forEach(reserve => {
@@ -218,25 +185,141 @@ describe("Tests for the UniswapV2 implementation", () => {
             })
         })
 
-        it("should produce a specified slippage rate on the dex", async () => {
-            // params
-            const slippageVolume = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
-            const slippageBips = 50 // .5%
-            // add initial liquidity
-            await addInitialLiquidity()
-            // add liquidity to reflect the slippage at given volume
-            const pair = await getPair(tokenA, tokenB)
-            await changeLiquidityToProduceSlippage(uniswapV2, pair, tokenA, tokenB, slippageBips, slippageVolume, signer)
-            // theoretically check that the slippage was correct
-            const [newReserveA, newReserveB] = await uniswapV2.getReserves(tokenA, tokenB)
-            const theoreticalSlippageBips = calc.slippageBipsFromSwapAmountIn(slippageVolume, newReserveA, newReserveB)
-            expect(theoreticalSlippageBips).to.be.approximately(slippageBips, 10)
-            // check that the slippage was correct
-            await tokenA.mint(signer, slippageVolume)
-            await swap(uniswapV2, slippageVolume, [tokenA, tokenB], signer)
-            const obtainedTokenB = await tokenB.balanceOf(signer)
-            const practicalSlippageBips = calc.slippageBipsFromSwapAmountOut(obtainedTokenB, newReserveA, newReserveB)
-            expect(practicalSlippageBips).to.be.approximately(slippageBips, 10)
+        describe("slippage", () => {
+            it("should restrict swap output if slippage is too high", async () => {
+                // declare vars for multiple tests
+                let minPriceMul: bigint
+                let minPriceDiv: bigint
+                // setup
+                await addInitialLiquidity()
+                const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
+                const amountA = reserveA / BigInt(2)
+                await tokenA.mint(signer, amountA)
+                // can't swap our amount at zero slippage
+                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(0, reserveA, reserveB)
+                await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                    .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
+                // can't swap at too low slippage of 0.1%
+                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(10, reserveA, reserveB)
+                await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                    .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
+                // can't swap at slippage a little below max
+                const slippage = calc.slippageBipsFromSwapAmountIn(amountA, reserveA)
+                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) - 1, reserveA, reserveB)
+                await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
+                    .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
+                // can swap at slippage a little above max
+                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) + 1, reserveA, reserveB)
+                const amountB = await swapOutput(uniswapV2, [tokenA, tokenB], amountA)
+                await swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv)
+                const balanceB = await tokenB.balanceOf(signer)
+                expect(balanceB).to.equal(amountB)
+            })
+
+            it("should produce a specified slippage rate on the dex while keeping price the same", async () => {
+                // params
+                const slippageVolume = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
+                const slippageBips = 40 // .5%
+                // add initial liquidity
+                await addInitialLiquidity()
+                // add liquidity to reflect the slippage at given volume
+                const pair = await getPair(tokenA, tokenB)
+                await changeLiquidityToProduceSlippage(uniswapV2, pair, tokenA, tokenB, slippageBips, slippageVolume, signer)
+                // theoretically check that the slippage was correct
+                const [newReserveA,] = await uniswapV2.getReserves(tokenA, tokenB)
+                const theoreticalSlippageBips = calc.slippageBipsFromSwapAmountIn(slippageVolume, newReserveA)
+                expect(theoreticalSlippageBips).to.be.approximately(slippageBips, SLIPPAGE_MAX_ERROR)
+            })
+
+            it("should produce a specified slippage rate on a newly liquidated dex", async () => {
+                // params
+                const slippageVolume = BigInt(232411241) * BigInt(10) ** ASSET_A.decimals
+                const slippageBips = 1000 // 10%
+                // add liquidity
+                const [reserveA, reserveB] = reservesFromPriceAndSlippage(
+                    slippageVolume, slippageBips, ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5, ASSET_A.decimals, ASSET_B.decimals)
+                await addLiquidity(uniswapV2, tokenA, tokenB, reserveA, reserveB, signer)
+                const [realReserveA, realReserveB] = await uniswapV2.getReserves(tokenA, tokenB)
+                expect(calc.relativeTokenPrice(ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5)).to.be.approximately(
+                    calc.relativeTokenDexPrice(realReserveA, realReserveB, ASSET_A.decimals, ASSET_B.decimals), PRICE_MAX_ERROR)
+                const theoreticalSlippageBips = calc.slippageBipsFromSwapAmountIn(slippageVolume, reserveA)
+                expect(theoreticalSlippageBips).to.be.approximately(slippageBips, SLIPPAGE_MAX_ERROR)
+            })
+        })
+
+        describe("calculations", () => {
+            const ntests = 1000
+
+            it("should correctly calculate capped reserves from price and desired slippage", () => {
+                const balanceA = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
+                const balanceB = BigInt(1e6) * BigInt(10) ** ASSET_B.decimals
+                for (let i = 0; i < ntests; i++) {
+                    const amountA = randBigInt(BigInt(10) ** ASSET_A.decimals, balanceA / BigInt(100))
+                    const slippageBips = randBigInt(FASSET_MAX_BIPS / BigInt(100), FASSET_MAX_BIPS / BigInt(2))
+                    const [reserveA, reserveB] = cappedReservesFromPriceAndSlippage(
+                        amountA,
+                        Number(slippageBips),
+                        balanceA,
+                        balanceB,
+                        ASSET_A.defaultPriceUsd5,
+                        ASSET_B.defaultPriceUsd5,
+                        ASSET_A.decimals,
+                        ASSET_B.decimals
+                    )
+                    const calcSlippage = calc.slippageBipsFromSwapAmountIn(amountA, reserveA)
+                    expect(reserveA).to.be.lessThanOrEqual(balanceA)
+                    expect(reserveB).to.be.lessThanOrEqual(balanceB)
+                    expect(calc.relativeTokenDexPrice(reserveA, reserveB, ASSET_A.decimals, ASSET_B.decimals)).to.be.approximately(
+                        calc.relativeTokenPrice(ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5), PRICE_MAX_ERROR)
+                    if (reserveA == balanceA || reserveB == balanceB) {
+                        // if calculation capped reserves, then we expect slippage to be higher,
+                        // because higher slippage corresponds to less reserves
+                        expect(calcSlippage).to.be.greaterThanOrEqual(slippageBips)
+                    } else {
+                        expect(calcSlippage).to.be.approximately(slippageBips, SLIPPAGE_MAX_ERROR)
+                    }
+                }
+            })
+
+            it("should correctly calculate added liquidity from reserves and slippage", () => {
+                const balanceA = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
+                const balanceB = BigInt(1e6) * BigInt(10) ** ASSET_B.decimals
+                const reserveA = BigInt(1e2) * BigInt(10) ** ASSET_A.decimals
+                for (let i = 0; i < ntests; i++) {
+                    const amountA = randBigInt(BigInt(10) ** ASSET_A.decimals, balanceA / BigInt(100))
+                    const slippageBips = randBigInt(FASSET_MAX_BIPS / BigInt(100), FASSET_MAX_BIPS / BigInt(2))
+                    const reserveB = calc.priceBasedInitialDexReserve(
+                        ASSET_A.defaultPriceUsd5,
+                        ASSET_B.defaultPriceUsd5,
+                        ASSET_A.decimals,
+                        ASSET_B.decimals,
+                        reserveA
+                    )
+                    const [addedA, addedB] = cappedAddedLiquidityFromSlippage(
+                        amountA,
+                        Number(slippageBips),
+                        balanceA - reserveA,
+                        balanceB - reserveB,
+                        reserveA,
+                        reserveB
+                    )
+                    const newReserveA = reserveA + addedA
+                    const newReserveB = reserveB + addedB
+                    const calcSlippage = calc.slippageBipsFromSwapAmountIn(amountA, newReserveA)
+                    expect(addedA).to.be.lessThanOrEqual(balanceA - reserveA)
+                    expect(reserveB).to.be.lessThanOrEqual(balanceB - reserveB)
+                    expect(calc.relativeTokenDexPrice(newReserveA, newReserveB, ASSET_A.decimals, ASSET_B.decimals)).to.be.approximately(
+                        calc.relativeTokenPrice(ASSET_A.defaultPriceUsd5, ASSET_B.defaultPriceUsd5), PRICE_MAX_ERROR)
+                    if (addedA == balanceA - reserveA || addedB == balanceB - reserveB) {
+                        // if calculation capped reserves, then we expect slippage to be higher,
+                        // because higher slippage corresponds to less reserves
+                        expect(calcSlippage).to.be.greaterThanOrEqual(slippageBips)
+                    } else {
+                        expect(calcSlippage).to.be.approximately(slippageBips, SLIPPAGE_MAX_ERROR)
+                    }
+                }
+            })
+
         })
     })
 })

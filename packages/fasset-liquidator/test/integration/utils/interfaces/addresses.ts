@@ -3,11 +3,7 @@ export interface AddressesJson {
 }
 
 export interface NetworkAddressesJson {
-    collaterals: {
-        USDC: string
-        USDT: string
-        WETH: string
-    },
+    collaterals: { [name: string]: string }
     WNAT: string
     uniswapV2: string
     flashLender: string

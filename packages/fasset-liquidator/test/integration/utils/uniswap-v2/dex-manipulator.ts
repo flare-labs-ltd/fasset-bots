@@ -1,0 +1,169 @@
+import { WeiPerEther, Wallet, JsonRpcProvider, type Signer } from "ethers"
+import { relativeTokenPrice, relativeTokenDexPrice } from "../../../calculations/calculations"
+import { mulFactor } from "../../../utils"
+import { waitFinalize } from "../finalization"
+import { getContracts } from '../contracts'
+import { removeLiquidity, safelyGetReserves } from "./wrappers"
+import { adjustLiquidityForSlippage, syncDexReservesWithFtsoPrices } from "./pool-sync"
+import { FTSO_SYMBOLS } from "../../../constants"
+import type { IERC20, IERC20Metadata } from "../../../../types"
+import type { Contracts } from "../interfaces/contracts"
+
+
+type MaxRelativeSpendings = { [symbol: string]: number | undefined } | number
+type MaxAbsoluteSpendings = { [symbol: string]: bigint }
+
+export interface PoolConfig {
+    symbolA: string
+    symbolB: string
+    slippage?: {
+        amountA: bigint
+        bips: number
+    }
+    sync?: boolean
+}
+
+export type Config = {
+    maxRelativeSpendings?: MaxRelativeSpendings
+    maxAbsoluteSpendings?: MaxAbsoluteSpendings
+    pools: PoolConfig[]
+}
+
+export class DexManipulator {
+    public readonly symbols: { [symbol: string]: string }
+    public readonly symbolToToken: Map<string, IERC20Metadata>
+
+    constructor(
+        public network: "coston",
+        public provider: JsonRpcProvider,
+        public signer: Signer,
+        public contracts: Contracts
+    ) {
+        this.symbols = FTSO_SYMBOLS[network]
+        this.symbolToToken = DexManipulator.supportedTokens(this.symbols, contracts)
+    }
+
+    public static async create(network: "coston", rpcUrl: string, assetManager: string, signerPrivateKey: string): Promise<DexManipulator> {
+        const provider = new JsonRpcProvider(rpcUrl)
+        const signer = new Wallet(signerPrivateKey, provider)
+        const contracts = await getContracts(assetManager, network, provider)
+        return new DexManipulator(network, provider, signer, contracts)
+    }
+
+    // adjust for new / different tokens (according to network)
+    public static supportedTokens(symbols: { [symbol: string]: string }, contracts: Contracts): Map<string, IERC20Metadata> {
+        return new Map([
+            [symbols.USDC, contracts.collaterals.USDC],
+            [symbols.USDT, contracts.collaterals.USDT],
+            [symbols.WETH, contracts.collaterals.WETH],
+            [symbols.TEST_XRP, contracts.fAsset],
+            [symbols.WNAT, contracts.wNat]
+        ])
+    }
+
+    public async adjustDex(config: Config, greedySpend: boolean): Promise<void> {
+        if (config.maxAbsoluteSpendings === undefined) {
+            config.maxAbsoluteSpendings = await this.distributeSpendings(config, greedySpend)
+        }
+        for (const pool of config.pools) {
+            const tokenA = this.symbolToToken.get(pool.symbolA)!
+            const tokenB = this.symbolToToken.get(pool.symbolB)!
+            // sync pool with the ftso price
+            if (pool.sync === true) {
+                await syncDexReservesWithFtsoPrices(
+                    this.contracts.uniswapV2, this.contracts.priceReader,
+                    tokenA, tokenB, pool.symbolA, pool.symbolB,
+                    config.maxAbsoluteSpendings[pool.symbolA],
+                    config.maxAbsoluteSpendings[pool.symbolB],
+                    this.signer, this.provider, true
+                )
+            }
+            // adjust liquidity for slippage
+            if (pool.slippage !== undefined) {
+                await adjustLiquidityForSlippage(
+                    this.contracts.uniswapV2, this.contracts.priceReader,
+                    tokenA, tokenB, pool.symbolA, pool.symbolB,
+                    config.maxAbsoluteSpendings[pool.symbolA],
+                    config.maxAbsoluteSpendings[pool.symbolB],
+                    pool.slippage.amountA, pool.slippage.bips,
+                    this.signer, this.provider
+                )
+            }
+        }
+    }
+
+    public async removeAllLiquidity(config: Config): Promise<void> {
+        for (let { symbolA, symbolB } of config.pools) {
+            console.log(`removing liquidity from (${symbolA}, ${symbolB}) pool`)
+            const tokenA = this.symbolToToken.get(symbolA)!
+            const tokenB = this.symbolToToken.get(symbolB)!
+            await removeLiquidity(this.contracts.uniswapV2, tokenA, tokenB, this.signer, this.provider)
+        }
+        await this.unwrapWNat()
+    }
+
+    public async wrapWNat(): Promise<void> {
+        const leftoverNat = BigInt(10) * WeiPerEther // leave 10 NAT for gas
+        const balanceNat = await this.provider.getBalance(this.signer)
+        if (balanceNat > leftoverNat) {
+            await waitFinalize(this.provider, this.signer, this.contracts.wNat.connect(this.signer).deposit({ value: balanceNat - leftoverNat }))
+        }
+    }
+
+    public async unwrapWNat(): Promise<void> {
+        const balanceWNat = await this.contracts.wNat.balanceOf(this.signer)
+        if (balanceWNat > BigInt(0)) {
+            await waitFinalize(this.provider, this.signer, this.contracts.wNat.connect(this.signer).withdraw(balanceWNat))
+        }
+    }
+
+    public async getReserves(tokenA: IERC20, tokenB: IERC20): Promise<[bigint, bigint]> {
+        return safelyGetReserves(this.contracts.uniswapV2, tokenA, tokenB)
+    }
+
+    public async getFtsoPriceForPair(symbolA: string, symbolB: string): Promise<bigint> {
+        const { 0: priceA } = await this.contracts.priceReader.getPrice(symbolA)
+        const { 0: priceB } = await this.contracts.priceReader.getPrice(symbolB)
+        return relativeTokenPrice(priceA, priceB)
+    }
+
+    public async getDexPriceForPair(tokenA: IERC20Metadata, tokenB: IERC20Metadata): Promise<bigint> {
+        const decimalsA = await tokenA.decimals()
+        const decimalsB = await tokenB.decimals()
+        const [reserveA, reserveB] = await safelyGetReserves(this.contracts.uniswapV2, tokenA, tokenB)
+        return relativeTokenDexPrice(reserveA, reserveB, decimalsA, decimalsB)
+    }
+
+    // determine amounts of max tokens to be spent for each token from user's specified balance percentages
+    // greedy determines whether to spend all tokens on a single pair or distribute them across all pairs
+    private async distributeSpendings(config: Config, greedy: boolean): Promise<MaxAbsoluteSpendings> {
+        const maxSpent: MaxAbsoluteSpendings = {}
+        for (const pairs of config.pools) {
+            for (const symbol of [pairs.symbolA, pairs.symbolB]) {
+                const token = this.symbolToToken.get(symbol)!
+                if (maxSpent[symbol] === undefined) {
+                    let maxSpentToken = await token.balanceOf(this.signer)
+                    const factor = (typeof config.maxRelativeSpendings === "number")
+                        ? config.maxRelativeSpendings
+                        : config.maxRelativeSpendings?.[symbol]
+                    if (factor !== undefined) {
+                        maxSpentToken = mulFactor(maxSpentToken, factor)
+                    }
+                    if (!greedy) {
+                        maxSpentToken /= BigInt(this.numberOfPairsWithToken(symbol, config.pools))
+                    }
+                    maxSpent[symbol] = maxSpentToken
+                }
+            }
+        }
+        return maxSpent
+    }
+
+    private numberOfPairsWithToken(symbol: string, pools: PoolConfig[]): number {
+        let counter = 0
+        for (const { symbolA, symbolB } of pools) {
+            if (symbol === symbolA || symbol === symbolB) counter++
+        }
+        return counter
+    }
+}

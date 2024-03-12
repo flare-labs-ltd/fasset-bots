@@ -1,6 +1,6 @@
 import { randBigInt, randBigIntInRelRadius } from "../../utils"
 import { lotSizeUba } from "../utils/assets"
-import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations"
+import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations/calculations"
 import type { AssetConfig, EcosystemConfig } from "./interfaces"
 
 

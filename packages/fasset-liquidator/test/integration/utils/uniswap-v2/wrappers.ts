@@ -2,13 +2,13 @@ import { Contract, MaxUint256 } from "ethers"
 import { waitFinalize } from "../finalization"
 import { abi as uniswapV2PairAbi } from '../../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import type { Signer, JsonRpcProvider, AddressLike } from "ethers"
-import type { IUniswapV2Router, IERC20Metadata, IUniswapV2Pair } from "../../../../types"
+import type { IERC20, IERC20Metadata, IUniswapV2Router, IUniswapV2Pair } from "../../../../types"
 
 
 export async function safelyGetReserves(
     uniswapV2: IUniswapV2Router,
-    tokenA: IERC20Metadata,
-    tokenB: IERC20Metadata
+    tokenA: IERC20,
+    tokenB: IERC20
 ): Promise<[bigint, bigint]> {
     let reserveA = BigInt(0)
     let reserveB = BigInt(0)
@@ -47,17 +47,18 @@ export async function addLiquidity(
     ))
 }
 
-// remove liquidity with wait finalize
 export async function removeLiquidity(
     uniswapV2: IUniswapV2Router,
     tokenA: IERC20Metadata,
     tokenB: IERC20Metadata,
     signer: Signer,
     provider: JsonRpcProvider
-): Promise<void> {
+): Promise<[bigint, bigint]> {
     const pair = await getPairFor(uniswapV2, tokenA, tokenB, provider)
     const dexTokens = await pair.balanceOf(signer)
     if (dexTokens > BigInt(0)) {
+        const oldBalanceA = await tokenA.balanceOf(signer.getAddress())
+        const oldBalanceB = await tokenB.balanceOf(signer.getAddress())
         await waitFinalize(provider, signer, pair.connect(signer).approve(uniswapV2, dexTokens))
         await waitFinalize(provider, signer, uniswapV2.connect(signer).removeLiquidity(
             tokenA, tokenB,
@@ -66,10 +67,14 @@ export async function removeLiquidity(
             signer,
             MaxUint256
         ))
+        const newBalanceA = await tokenA.balanceOf(signer.getAddress())
+        const newBalanceB = await tokenB.balanceOf(signer.getAddress())
+        return [newBalanceA - oldBalanceA, newBalanceB - oldBalanceB]
     } else {
         const symbolA = await tokenA.symbol()
         const symbolB = await tokenB.symbol()
         console.log(`No liquidity to remove from (${symbolA}, ${symbolB}) pool`)
+        return [BigInt(0), BigInt(0)]
     }
 }
 

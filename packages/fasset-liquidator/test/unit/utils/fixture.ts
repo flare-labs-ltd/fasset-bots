@@ -2,7 +2,7 @@ import {
     consecutiveSwapOutputs, swapInputs,
     amgToTokenPrice, liquidationOutput,
     currentLiquidationFactorBIPS, maxLiquidationAmountAmg
-} from "../../calculations"
+} from "../../calculations/calculations"
 import { amgToUba, ubaToAmg } from "./assets"
 import type { EcosystemConfig, AssetConfig, UnderlyingAsset, CollateralAsset } from "../fixtures/interfaces"
 

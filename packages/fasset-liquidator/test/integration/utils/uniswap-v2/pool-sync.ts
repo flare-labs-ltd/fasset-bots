@@ -1,43 +1,58 @@
-import { priceBasedAddedDexReserves, swapToDexPrice, addedliquidityFromSlippage } from "../../../calculations"
+import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations/calculations"
+import { cappedAddedLiquidityFromSlippage, cappedReservesFromPriceAndSlippage } from '../../../calculations/slippage'
 import { addLiquidity, swap, safelyGetReserves, removeLiquidity } from "./wrappers"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
 
-export async function addLiquidityForSlippage(
+export async function adjustLiquidityForSlippage(
     uniswapV2: IUniswapV2Router,
+    priceReader: IPriceReader,
     tokenA: IERC20Metadata,
     tokenB: IERC20Metadata,
     symbolA: string,
     symbolB: string,
-    amountA: bigint,
-    slippageBips: number,
     maxA: bigint,
     maxB: bigint,
+    amountA: bigint,
+    slippageBips: number,
     signer: Signer,
     provider: JsonRpcProvider,
     recursiveCall = false
 ): Promise<void> {
     let [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    let [addedA, addedB] = addedliquidityFromSlippage(amountA, slippageBips, reserveA, reserveB)
+    let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
+    if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
+        const { 0: priceA, 2: ftsoDecimalsA } = await priceReader.getPrice(symbolA)
+        const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
+        if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
+            throw Error("Token price has non-5 ftso decimals")
+        const decimalsA = await tokenA.decimals()
+        const decimalsB = await tokenB.decimals()
+        ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
+    } else {
+        [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
+    }
     if (addedA > 0 && addedA <= maxA && addedB > 0 && addedB <= maxB) {
-        console.log(`adding liquidity to pool (${symbolA}, ${symbolB}) to produce slippage`)
+        console.log(`adding ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`
+        )
         await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
     } else if (addedA == BigInt(0) && addedB == BigInt(0)) {
-        console.log(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)
-    } else if (!recursiveCall) {
+        console.log(`pool (${symbolA}, ${symbolB}) already has the required slippage`)
+    } else if (reserveA > BigInt(0) && reserveB > BigInt(0) && !recursiveCall) {
         // if anything goes wrong remove all liquidity and try again
-        const oldBalanceA = await tokenA.balanceOf(signer.getAddress())
-        const oldBalanceB = await tokenB.balanceOf(signer.getAddress())
-        await removeLiquidity(uniswapV2, tokenA, tokenB, signer, provider)
-        const newBalanceA = await tokenA.balanceOf(signer.getAddress())
-        const newBalanceB = await tokenB.balanceOf(signer.getAddress())
-        maxA += newBalanceA - oldBalanceA
-        maxB += newBalanceB - oldBalanceB
+        const [removedA, removedB] = await removeLiquidity(uniswapV2, tokenA, tokenB, signer, provider)
+        if (removedA == BigInt(0) && removedB == BigInt(0)) {
+            return console.error(`unable to add ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`)
+        }
+        console.log("Trying again by removing all of the liquidity")
         // try again with reserves changed
-        await addLiquidityForSlippage(uniswapV2, tokenA, tokenB, symbolA, symbolB, amountA, slippageBips, maxA, maxB, signer, provider, true)
+        await adjustLiquidityForSlippage(
+            uniswapV2, priceReader, tokenA, tokenB, symbolA, symbolB,
+            maxA + removedA, maxB + removedB, amountA, slippageBips,
+            signer, provider, true)
     } else {
-        console.error(`unable to add liquidity to pool (${symbolA}, ${symbolB}) for specified slippage`)
+        console.error(`unable to add ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`)
     }
 }
 
@@ -60,7 +75,7 @@ export async function syncDexReservesWithFtsoPrices(
     if (decimalsA != BigInt(5) || decimalsB != BigInt(5)) throw Error("Token price has non-5 ftso decimals")
     // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances by swapping
     const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    if ((reserveA == BigInt(0) || reserveB == BigInt(0)) && addInitialLiquidity) {
+    if ((reserveA == BigInt(0) && reserveB == BigInt(0)) && addInitialLiquidity) {
         // if there are no reserves add liquidity first (also no need to swap)
         await addLiquidityToDexPairPrice(
             uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB,

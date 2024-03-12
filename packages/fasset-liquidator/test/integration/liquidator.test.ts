@@ -10,7 +10,7 @@ import { JsonRpcProvider, Wallet, WeiPerEther, ZeroAddress } from 'ethers'
 import { assert } from 'chai'
 import { waitFinalize } from './utils/finalization'
 import { getCollateralPriceForAgentCr } from "./utils/fasset"
-import { setOrUpdateDexes } from "./utils/uniswap-v2/coston-beta"
+import { setOrUpdateDexes } from "./utils/uniswap-v2/dex-manipulator"
 import { getAssetManagerFromAgent, deployLiquidator, getContracts } from './utils/contracts'
 import type { JsonRpcSigner } from 'ethers'
 import type { Contracts } from './utils/interfaces/contracts'

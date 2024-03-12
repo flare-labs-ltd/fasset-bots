@@ -11,11 +11,7 @@ import type {
  */
 
 export interface BaseContracts {
-    collaterals: {
-        usdc: FakeERC20
-        usdt: FakeERC20
-        weth: FakeERC20
-    }
+    collaterals: { [name: string]: FakeERC20 }
     wNat: IWNat & IERC20Metadata
     uniswapV2: IUniswapV2Router
     flashLender: FlashLender
