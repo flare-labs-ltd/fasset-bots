@@ -25,6 +25,7 @@ import {
     POOL_COLLATERAL_RESERVE_FACTOR,
     VAULT_COLLATERAL_RESERVE_FACTOR,
     XRP_ACTIVATE_BALANCE,
+    ZERO_ADDRESS,
     findOneSubstring,
     toBN,
     toBNExp,
@@ -44,6 +45,10 @@ const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20 = artifacts.require("IERC20");
 
+export interface IRunner {
+    stopRequested: boolean;
+}
+
 enum ClaimType {
     POOL = "POOL",
     VAULT = "VAULT",
@@ -60,6 +65,8 @@ export class AgentBot {
     context = this.agent.context;
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
     latestProof: ConfirmedBlockHeightExists.Proof | null = null;
+    runner?: IRunner;
+    maxHandleEventBlocks = 100;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentBotContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
@@ -97,6 +104,10 @@ export class AgentBot {
         notifier: Notifier
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
+        // ensure that work address is defined
+        if (owner.workAddress === ZERO_ADDRESS) {
+            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+        }
         // create agent
         const lastBlock = await web3.eth.getBlockNumber();
         const agent = await Agent.create(context, owner, addressValidityProof, agentSettingsConfig);
@@ -151,6 +162,10 @@ export class AgentBot {
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
         // get work address
         const owner = await Agent.getOwnerAddressPair(context, agentEntity.ownerAddress);
+        // ensure that work address is defined
+        if (owner.workAddress === ZERO_ADDRESS) {
+            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+        }
         // agent
         const agent = new Agent(context, owner, agentVault, collateralPool, collateralPoolToken, agentEntity.underlyingAddress);
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
@@ -182,6 +197,10 @@ export class AgentBot {
         }
     }
 
+    stopRequested() {
+        return this.runner?.stopRequested ?? false;
+    }
+
     /**
      * This is the main method, where "automatic" logic is gathered. In every step it firstly collects unhandled events and runs through them and handles them appropriately.
      * Secondly it checks if there are any redemptions in persistent storage, that needs to be handled.
@@ -202,6 +221,7 @@ export class AgentBot {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             await agentEnt.events.init();
             for (const event of agentEnt.unhandledEvents().sort(eventOrder)) {
+                if (this.stopRequested()) return;
                 await rootEm
                     .transactional(async (em) => {
                         const fullEvent = await this.getEventFromEntity(event)!;
@@ -253,15 +273,17 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleEvents(rootEm: EM): Promise<void> {
+        if (this.stopRequested()) return;
         try {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             await agentEnt.events.init();
             const lastEventRead = agentEnt.lastEventRead();
-            let events = await this.readNewEvents(rootEm);
+            let events = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
             if (lastEventRead !== undefined) {
                 events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
             }
             for (const event of events) {
+                if (this.stopRequested()) return;
                 await rootEm
                     .transactional(async (em) => {
                         // log event is handled here! Transaction committing should be done at the last possible step!
@@ -358,15 +380,17 @@ export class AgentBot {
      * @param em entity manager
      * @returns list of EvmEvents
      */
-    async readNewEvents(em: EM): Promise<EvmEvent[]> {
+    async readNewEvents(em: EM, maximumBlocks: number): Promise<EvmEvent[]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         logger.info(`Agent ${this.agent.vaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
-        const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
+        const lastChainBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
+        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, lastChainBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
         for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
+            if (this.stopRequested()) break;
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.agent.assetManager.address,
                 fromBlock: lastBlockRead,
@@ -382,9 +406,9 @@ export class AgentBot {
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         }
+        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         return events;
     }
 
@@ -393,6 +417,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
+        if (this.stopRequested()) return;
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const latestBlock = await latestUnderlyingBlock(this.context.blockchainIndexer);
         /* istanbul ignore else */
@@ -565,6 +590,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+        if (this.stopRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
             const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -899,7 +925,7 @@ export class AgentBot {
      * @returns true if settings was updated or valid time expired
      */
     async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
-        const desiredSettingsUpdateErrorIncludes = "update not valid anymore";
+        const updateNotValidMsg = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
         // agent waiting for setting update
         if (toBN(settingValidAt).lte(latestTimestamp)) {
@@ -910,7 +936,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} updated agent setting ${settingsName}.`);
                 return true;
             } catch (error) {
-                if (error instanceof Error && error.message.includes(desiredSettingsUpdateErrorIncludes)) {
+                if (error instanceof Error && error.message.includes(updateNotValidMsg)) {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(this.agent.vaultAddress, settingsName);
                     return true;
                 }
@@ -1306,6 +1332,7 @@ export class AgentBot {
         const openRedemptions = await this.openRedemptions(rootEm, true);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
         for (const rd of openRedemptions) {
+            if (this.stopRequested()) return;
             await this.nextRedemptionStep(rootEm, rd.id);
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);

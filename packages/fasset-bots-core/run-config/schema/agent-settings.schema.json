@@ -37,7 +37,7 @@
         },
         "poolTokenSuffix": {
             "description": "Token suffix for the new collateral pool's token.\nMust be unique within this fasset type.",
-            "pattern": "^[\\w\\-]+$",
+            "pattern": "^[A-Z0-9]+(-[A-Z0-9]+)*$",
             "type": "string"
         },
         "poolTopupCollateralRatio": {
@@ -70,4 +70,3 @@
     ],
     "type": "object"
 }
-

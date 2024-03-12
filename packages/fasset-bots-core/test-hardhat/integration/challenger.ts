@@ -15,7 +15,6 @@ import {
     createTestMinter,
     createTestRedeemer,
     getAgentStatus,
-    createTestAgentBot,
 } from "../test-utils/helpers";
 import { TrackedState } from "../../src/state/TrackedState";
 import { TransactionOptionsWithFee, UTXO, SpentReceivedObject, IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockChainWallet";

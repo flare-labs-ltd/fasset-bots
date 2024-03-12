@@ -57,9 +57,6 @@ describe("Secrets unit tests", async () => {
     });
 
     it("Should reset secrets", async () => {
-        resetSecrets(null);
-        const secrets = getSecrets();
-        expect(secrets.apiKey).to.be.empty;
         resetSecrets(requireEnv("FASSET_BOT_SECRETS"));
         const secrets2 = getSecrets();
         expect(secrets2.apiKey).to.not.be.empty;

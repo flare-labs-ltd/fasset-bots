@@ -11,7 +11,7 @@ import {
     UnderlyingWithdrawalConfirmed,
 } from "../../typechain-truffle/AssetManager";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, ZERO_ADDRESS, toBN } from "../utils/helpers";
+import { BNish, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -124,8 +124,7 @@ export class Agent {
     }
 
     static async getOwnerWorkAddress(ctx: IAssetAgentBotContext, ownerManagementAddress: string) {
-        const ownerWorkAddress = await ctx.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
-        return ownerWorkAddress !== ZERO_ADDRESS ? ownerWorkAddress : ownerManagementAddress;
+        return await ctx.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
     }
 
     static async getOwnerAddressPair(ctx: IAssetAgentBotContext, ownerManagementAddress: string): Promise<OwnerAddressPair> {
