@@ -48,9 +48,13 @@ export async function createTestAgentBot(
     orm: ORM,
     ownerManagementAddress: string,
     ownerUnderlyingAddress?: string,
-    notifier: MockNotifier = new MockNotifier(),
-    options?: AgentBotDefaultSettings
+    autoSetWorkAddress: boolean = true,
+    notifier?: MockNotifier,
+    options?: AgentBotDefaultSettings,
 ): Promise<AgentBot> {
+    if (autoSetWorkAddress) {
+        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
+    }
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
@@ -58,7 +62,7 @@ export async function createTestAgentBot(
     const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
     const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
+    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier ?? new MockNotifier());
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
@@ -81,8 +85,12 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
 export async function createTestAgent(
     context: TestAssetBotContext,
     ownerManagementAddress: string,
-    underlyingAddress: string = agentUnderlyingAddress
+    underlyingAddress: string = agentUnderlyingAddress,
+    autoSetWorkAddress: boolean = true,
 ): Promise<Agent> {
+    if (autoSetWorkAddress) {
+        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
+    }
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
@@ -110,8 +118,13 @@ export async function createTestRedeemer(context: IAssetAgentBotContext, redeeme
     return redeemer;
 }
 
-export async function createTestAgentAndMakeAvailable(context: TestAssetBotContext, ownerAddress: string, underlyingAddress: string): Promise<Agent> {
-    const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
+export async function createTestAgentAndMakeAvailable(
+    context: TestAssetBotContext,
+    ownerAddress: string,
+    underlyingAddress: string = agentUnderlyingAddress,
+    autoSetWorkAddress: boolean = true,
+): Promise<Agent> {
+    const agent = await createTestAgent(context, ownerAddress, underlyingAddress, autoSetWorkAddress);
     await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
     await agent.depositVaultCollateral(depositUSDC);
     await agent.buyCollateralPoolTokens(depositNat);
@@ -119,28 +132,16 @@ export async function createTestAgentAndMakeAvailable(context: TestAssetBotConte
     return agent;
 }
 
-export async function createTestAgentBAndMakeAvailable(
-    context: TestAssetBotContext,
-    ownerAddress: string,
-    underlyingAddress: string = agentUnderlyingAddress
-): Promise<Agent> {
-    const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
-    await mintAndDepositVaultCollateralToOwner(context, agentB, depositUSDC, ownerAddress);
-    await agentB.depositVaultCollateral(depositUSDC);
-    await agentB.buyCollateralPoolTokens(depositNat);
-    await agentB.makeAvailable();
-    return agentB;
-}
-
 export async function createTestAgentBotAndMakeAvailable(
     context: TestAssetBotContext,
     orm: ORM,
     ownerAddress: string,
     ownerUnderlyingAddress?: string,
-    notifier: MockNotifier = new MockNotifier(),
-    options?: AgentBotDefaultSettings
+    autoSetWorkAddress: boolean = true,
+    notifier?: MockNotifier,
+    options?: AgentBotDefaultSettings,
 ) {
-    const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, notifier, options);
+    const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress);
     await agentBot.agent.depositVaultCollateral(depositUSDC);
     await agentBot.agent.buyCollateralPoolTokens(depositNat);

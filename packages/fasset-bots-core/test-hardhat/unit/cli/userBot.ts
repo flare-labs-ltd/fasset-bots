@@ -148,7 +148,7 @@ describe("UserBot cli commands unit tests", async () => {
         const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        await userBot.mint(agentBot.agent.vaultAddress, 5);
+        await userBot.mint(agentBot.agent.vaultAddress, 5, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
@@ -166,7 +166,7 @@ describe("UserBot cli commands unit tests", async () => {
         const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        await userBot.mint(agentBot.agent.vaultAddress, 2);
+        await userBot.mint(agentBot.agent.vaultAddress, 2, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
@@ -209,7 +209,7 @@ describe("UserBot cli commands unit tests", async () => {
         const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        await userBot.mint(agentBot.agent.vaultAddress, 1);
+        await userBot.mint(agentBot.agent.vaultAddress, 1, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
@@ -374,7 +374,7 @@ describe("UserBot cli commands unit tests", async () => {
         const deposit = toBNExp(1_000_000, 6);
         chain.mint(userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        await userBot.mint(agentBot.agent.vaultAddress, 1);
+        await userBot.mint(agentBot.agent.vaultAddress, 1, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));

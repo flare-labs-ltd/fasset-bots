@@ -19,7 +19,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
 import {
     createTestAgent,
-    createTestAgentBAndMakeAvailable,
+    createTestAgentAndMakeAvailable,
     createCRAndPerformMinting,
     createTestMinter,
     mintAndDepositVaultCollateralToOwner,
@@ -267,7 +267,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'CollateralReserved'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await minter.reserveCollateral(agentB.vaultAddress, 2);
         const agentBefore = Object.assign({}, trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentB)));
@@ -277,7 +277,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'MintingExecuted'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMinting(minter, agentB.vaultAddress, 2, chain);
         const agentBefore = Object.assign({}, trackedState.createAgent(await fromAgentInfoToInitialAgentData(agentB)));
@@ -293,7 +293,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'MintingPaymentDefault'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const lots = 2;
@@ -318,7 +318,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'RedemptionRequested' from collateral pool self close exit", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minter = await createTestMinter(context, minterAddress, chain);
         // minter enters pool
@@ -347,7 +347,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'RedeemedInCollateral' from collateral pool self close exit", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minter = await createTestMinter(context, minterAddress, chain);
         // minter enters pool
@@ -375,7 +375,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'RedemptionPerformed'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await trackedState.readUnhandledEvents();
         const lots = 2;
@@ -393,7 +393,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'CollateralReservationDeleted'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const lots = 2;
@@ -453,7 +453,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'DustChanged'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const lots = 3;
@@ -465,7 +465,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'LiquidationPerformed'", async () => {
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
         const minted = await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain);
@@ -621,7 +621,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle events 'CollateralTypeAdded', 'CollateralTypeDeprecated' and 'AgentCollateralTypeChanged", async () => {
         const collateralsBefore = trackedState.collaterals.list.length;
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
         newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
@@ -654,7 +654,7 @@ describe("Tracked state tests", async () => {
 
     it("Should handle event 'AgentCollateralTypeChanged'", async () => {
         await createContextAndInitializeTrackedState(assetManagerControllerAddress);
-        const agentB = await createTestAgentBAndMakeAvailable(context, ownerAddress);
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
         const newWnat = await await ERC20Mock.new("Wrapped NAT", "WNAT");

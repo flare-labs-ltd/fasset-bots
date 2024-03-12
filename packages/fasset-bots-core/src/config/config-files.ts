@@ -64,7 +64,7 @@ export interface AgentSettingsConfig {
     /**
      * Token suffix for the new collateral pool's token.
      * Must be unique within this fasset type.
-     * @pattern ^[\w\-]+$
+     * @pattern ^[A-Z0-9]+(-[A-Z0-9]+)*$
      */
     poolTokenSuffix: string;
 

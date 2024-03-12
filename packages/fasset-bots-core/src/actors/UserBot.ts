@@ -192,8 +192,17 @@ export class UserBot {
      * @param executorAddress optional address of the executor
      * @param executorFeeNatWei optional executor fee (required if executor is used)
      */
-    async mint(agentVault: string, lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+    async mint(agentVault: string, lots: BNish, noWait: boolean, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
         const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
+        if (noWait) {
+            console.log(`The minting started and must be executed later by running "user-bot mintExecute ${requestId}".`);
+            if (executorAddress !== ZERO_ADDRESS) {
+                console.log("The minting can also be executed by the executor. Please pass the executor the state file:");
+                console.log("    " + this.stateFilePath("mint", requestId));
+            }
+            logger.info(`User ${this.nativeAddress} didn't wait for minting with agent ${agentVault}.`);
+            return;
+        }
         if (executorAddress !== ZERO_ADDRESS) {
             console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
             console.log("    " + this.stateFilePath("mint", requestId));

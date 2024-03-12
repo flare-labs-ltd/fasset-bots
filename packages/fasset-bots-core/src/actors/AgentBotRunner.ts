@@ -19,12 +19,13 @@ export class AgentBotRunner {
         public notifier: Notifier
     ) {}
 
-    private stopRequested = false;
+    public stopRequested = false;
 
     async run(): Promise<void> {
         this.stopRequested = false;
         while (!this.stopRequested) {
             await this.runStep();
+            if (this.stopRequested) break;
             await sleep(this.loopDelay);
         }
     }
@@ -42,6 +43,7 @@ export class AgentBotRunner {
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
+            if (this.stopRequested) break;
             try {
                 const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
@@ -50,6 +52,7 @@ export class AgentBotRunner {
                     continue;
                 }
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
+                agentBot.runner = this;
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);

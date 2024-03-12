@@ -34,17 +34,13 @@ export interface DatabaseAccount {
 
 export function getSecrets(): Secrets {
     if (loadedSecrets == undefined) {
-        loadedSecrets = loadSecrets(requireEnv("FASSET_BOT_SECRETS"));
+        loadedSecrets = loadSecrets(defaultSecretsPath());
     }
     return loadedSecrets;
 }
 
-export function resetSecrets(secretsPath: string | null) {
-    if (secretsPath != null) {
-        loadedSecrets = loadSecrets(secretsPath);
-    } else {
-        loadedSecrets = { apiKey: {} };
-    }
+export function resetSecrets(secretsPath: string) {
+    loadedSecrets = loadSecrets(secretsPath);
 }
 
 let loadedSecrets: Secrets | undefined;
@@ -53,6 +49,10 @@ function loadSecrets(secretsPath: string): Secrets {
     checkFilePermissions(secretsPath);
     const secrets = JSON.parse(readFileSync(secretsPath).toString());
     return secrets;
+}
+
+function defaultSecretsPath(): string {
+    return requireEnv("FASSET_BOT_SECRETS");
 }
 
 export function requireEncryptionPassword(name: string, secrets?: Secrets): string {
