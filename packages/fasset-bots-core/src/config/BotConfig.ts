@@ -118,6 +118,12 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     if (config.contractsJsonFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
     }
+    // namespace SQLite db by asset manager controller address (only needed for beta testing)
+    if (config.ormOptions?.type === 'sqlite' && config.contractsJsonFile) {
+        const contracts = loadContracts(config.contractsJsonFile);
+        const controllerAddress = contracts.AssetManagerController.address.slice(2, 10);
+        config.ormOptions.dbName = config.ormOptions.dbName!.replace(/CONTROLLER/g, controllerAddress);
+    }
 }
 
 export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };

@@ -37,7 +37,7 @@
     ],
     "ormOptions": {
         "type": "sqlite",
-        "dbName": "fasset-bots-coston.db",
+        "dbName": "fasset-bots-coston.CONTROLLER.db",
         "allowGlobalContext": true
     },
     "liquidationStrategy": {
