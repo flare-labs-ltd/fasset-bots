@@ -222,6 +222,7 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext, us
         blockchainIndexer: context.blockchainIndexer,
         attestationProvider: context.attestationProvider,
         assetManager: context.assetManager,
+        assetManagerController: context.assetManagerController,
         ftsoManager: context.ftsoManager,
         fAsset: context.fAsset,
         wNat: context.wNat,

@@ -26,7 +26,6 @@ export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaul
     gasMultiplier: 1.5,
     defaultAccount: web3.eth.defaultAccount,
     waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 },
-    // waitFor: { what: 'receipt', timeoutMS: 10_000 },
     nonceLockTimeoutMS: 60_000,
     resubmitTransaction: [
         { afterMS: 10_000, priceFactor: 1.2 },

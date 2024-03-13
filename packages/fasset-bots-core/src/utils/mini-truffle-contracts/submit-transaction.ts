@@ -69,15 +69,7 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
         const promiEvent = settings.web3.eth.sendTransaction(cfg);
         promiEvent.catch(ignore);
         const finalizationCancelToken = new CancelToken();
-        const finalizationPromise = waitForFinalization(
-            transactionId,
-            settings.web3,
-            settings.waitFor,
-            nonce,
-            fromAddress,
-            promiEvent,
-            finalizationCancelToken
-        );
+        const finalizationPromise = waitForFinalization(transactionId, settings.web3, settings.waitFor, nonce, fromAddress, promiEvent, finalizationCancelToken);
         finalizationPromise.catch(ignore);
         try {
             const receipt = await waitForReceipt(promiEvent, cancelToken).finally(() => {

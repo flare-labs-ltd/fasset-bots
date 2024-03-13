@@ -79,24 +79,24 @@ export async function createNativeContext(config: BotConfig | BotConfigFile, cha
     const priceChangeEmitterName = chainConfig.priceChangeEmitter ?? "FtsoManager";
     if (config.contractsJsonFile) {
         const contracts: ChainContracts = loadContracts(config.contractsJsonFile);
-        const [assetManager] = await getAssetManagerAndController(chainConfig, null, contracts);
+        const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, null, contracts);
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const priceChangeEmitter = await IPriceChangeEmitter.at(contracts[priceChangeEmitterName]!.address);
         const wNat = await WNat.at(contracts.WNat.address);
         const addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
         const fAsset = await FAsset.at(await assetManager.fAsset());
         const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
-        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
+        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, assetManagerController, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
     } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const addressUpdater = await AddressUpdater.at(config.addressUpdater!);
-        const [assetManager] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
+        const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
         const settings = await assetManager.getSettings();
         const priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));
         const wNat = await WNat.at(await addressUpdater.getContractAddress("WNat"));
         const fAsset = await FAsset.at(await assetManager.fAsset());
         const agentOwnerRegistry = await AgentOwnerRegistry.at(settings.agentOwnerRegistry);
-        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
+        return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, assetManagerController, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
     }
 }
 

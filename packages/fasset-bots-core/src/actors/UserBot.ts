@@ -21,6 +21,7 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBot } from "./InfoBot";
 import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
 import { latestBlockTimestamp } from "../utils/web3helpers";
+import { loadContracts } from "../config";
 
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
@@ -419,16 +420,21 @@ export class UserBot {
         return requiredEventArgs(res, "Exited");
     }
 
+    stateFileDir(type: StateData["type"]) {
+        const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
+        return path.resolve(UserBot.userDataDir, `${controllerAddress}-${this.fassetConfig.fAssetSymbol}-${type}`);
+    }
+
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {
         if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
-            return path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}/${requestIdOrPath}.json`);
+            return path.resolve(this.stateFileDir(type), `${requestIdOrPath}.json`);
         } else {
             return path.resolve(requestIdOrPath); // full path passed
         }
     }
 
     writeState(data: StateData): void {
-        const dir = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${data.type}`);
+        const dir = this.stateFileDir(data.type);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const fname = path.resolve(dir, `${data.requestId}.json`);
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
@@ -441,7 +447,7 @@ export class UserBot {
     }
 
     readStateList<T extends StateData["type"]>(type: T): Extract<StateData, { type: T }>[] {
-        const dir = path.resolve(UserBot.userDataDir, `${this.fassetConfig.fAssetSymbol}-${type}`);
+        const dir = this.stateFileDir(type);
         if (!fs.existsSync(dir)) {
             return [];
         }

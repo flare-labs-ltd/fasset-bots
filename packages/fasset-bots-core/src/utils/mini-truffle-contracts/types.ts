@@ -7,7 +7,7 @@ import { AbiItem } from "web3-utils";
  */
 export type TransactionWaitFor =
     | { what: "receipt"; timeoutMS?: number }
-    | { what: "nonceIncrease"; pollMS: number; timeoutMS?: number }
+    | { what: "nonceIncrease"; pollMS: number; timeoutMS?: number, extra?: { blocks: number, timeMS: number } }
     | { what: "confirmations"; confirmations: number; timeoutMS?: number };
 
 export type ResubmitTransaction = { afterMS: number; priceFactor: number };
