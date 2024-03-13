@@ -637,7 +637,7 @@ describe("mini truffle and artifacts tests", async () => {
                 "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4"];
             const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), {
                 waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } },
-                nonceLockTimeoutMS: 120_000,
+                nonceLockTimeoutMS: 3600_000,
                 resubmitTransaction: [
                     { afterMS: 30_000, priceFactor: 1.2 },
                     { afterMS: 60_000, priceFactor: 2.0 },
@@ -647,12 +647,14 @@ describe("mini truffle and artifacts tests", async () => {
             for (const addr of fprAddresses) {
                 fprs.push(await FakePriceReader.at(addr));
             }
-            for (let i = 0; i < 30; i++) {
+            const promises: Promise<unknown>[] = [];
+            for (let i = 0; i < 100; i++) {
                 const fpr = fprs[i % fprs.length];
                 const symbol = "ABC" + new Date().getTime() + i;
-                console.log("nonce =", await web3.eth.getTransactionCount(accounts[0]), "fpr =", fpr.address);
-                await fpr.setDecimals(symbol, 6);
+                // console.log("nonce =", await web3.eth.getTransactionCount(accounts[0]), "fpr =", fpr.address);
+                promises.push(fpr.setDecimals(symbol, 6));
             }
+            await Promise.all(promises);
         });
     });
 
