@@ -51,6 +51,14 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     const defaultAccountAddress = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
     web3.eth.defaultAccount = defaultAccountAddress;
     contractSettings.defaultAccount = defaultAccountAddress;
+    // for real network, wait 2 extra blocks after nonce increase
+    contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } };
+    contractSettings.nonceLockTimeoutMS = 120_000;
+    contractSettings.resubmitTransaction = [
+        { afterMS: 30_000, priceFactor: 1.2 },
+        { afterMS: 60_000, priceFactor: 2.0 },
+    ];
+    //
     return accounts;
 }
 

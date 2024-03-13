@@ -32,7 +32,7 @@ export async function waitForFinalization(
             transactionLogger.info("SUCCESS (confirmations)", { transactionId });
         } /* waitFor.what === 'nonceIncrease' */ else {
             const { nonce, extraBlocks, extraTime } = await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, waitFor.extra, cancelToken);
-            transactionLogger.info(`SUCCESS (nonce increase from ${initialNonce} to ${nonce})`, { transactionId, nonce });
+            transactionLogger.info(`SUCCESS (nonce increase from ${initialNonce} to ${nonce})`, { transactionId, nonce, extraBlocks, extraTime });
         }
     }
     async function waitForTimeout(timeoutMS: number) {
