@@ -275,7 +275,7 @@ describe("mini truffle and artifacts tests", async () => {
             const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
             const promiEvent = fpr.sendTransaction({ data: calldata, from: accounts[0] });
             const cancelToken = new CancelToken();
-            const waitNonce = waitForNonceIncrease(web3, accounts[0], nonce, 500, cancelToken);
+            const waitNonce = waitForNonceIncrease(web3, accounts[0], nonce, 500, undefined, cancelToken);
             const receipt = await waitForReceipt(promiEvent, cancelToken);
             await waitNonce; // should work
             const { 2: decimals } = await fpr.getPrice("XRP");
@@ -634,8 +634,15 @@ describe("mini truffle and artifacts tests", async () => {
 
         it.only("parallel transactions should work 2", async () => {
             const fprAddresses = ["0x35c1419Da7cf0Ff885B8Ef8EA9242FEF6800c99b", "0xE55aA921A1001f0a19241264a50063683D2e1179", "0xf89AA2f1397e9A0622c8Fc99aB1947E28b5EF876",
-                "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4",]
-            const FakePriceReader = artifacts.require("FakePriceReader");
+                "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4"];
+            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), {
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } },
+                nonceLockTimeoutMS: 120_000,
+                resubmitTransaction: [
+                    { afterMS: 30_000, priceFactor: 1.2 },
+                    { afterMS: 60_000, priceFactor: 2.0 },
+                ],
+            });
             const fprs: FakePriceReaderInstance[] = [];
             for (const addr of fprAddresses) {
                 fprs.push(await FakePriceReader.at(addr));

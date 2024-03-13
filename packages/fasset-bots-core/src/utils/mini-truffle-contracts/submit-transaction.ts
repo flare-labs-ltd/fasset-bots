@@ -46,7 +46,7 @@ async function releaseAddress(address: string) {
 
 async function performSubmits(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
     const fromAddress = config.from as string;
-    console.log(`Starting transaction submit (read nonce): address=${fromAddress} time=${new Date().toISOString()}`);
+    // console.log(`Starting transaction submit (read nonce): address=${fromAddress} time=${new Date().toISOString()}`);
     const nonce = await settings.web3.eth.getTransactionCount(fromAddress, "latest");
     console.log(`Starting transaction submit: address=${fromAddress} nonce=${nonce} time=${new Date().toISOString()}`);
     transactionLogger.info("SUBMIT", { transactionId, waitFor: settings.waitFor, nonce });
@@ -71,15 +71,7 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
         const promiEvent = settings.web3.eth.sendTransaction(cfg);
         promiEvent.catch(ignore);
         const finalizationCancelToken = new CancelToken();
-        const finalizationPromise = waitForFinalization(
-            transactionId,
-            settings.web3,
-            settings.waitFor,
-            nonce,
-            fromAddress,
-            promiEvent,
-            finalizationCancelToken
-        );
+        const finalizationPromise = waitForFinalization(transactionId, settings.web3, settings.waitFor, nonce, fromAddress, promiEvent, finalizationCancelToken);
         finalizationPromise.catch(ignore);
         try {
             const receipt = await waitForReceipt(promiEvent, cancelToken).finally(() => {
