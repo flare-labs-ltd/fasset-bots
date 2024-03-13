@@ -10,6 +10,7 @@ import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
 import path from "path";
 import { TransactionReceipt } from "web3-core";
+import { FakePriceReaderInstance } from "../../../typechain-truffle";
 
 describe("mini truffle and artifacts tests", async () => {
     let accounts: string[];
@@ -610,6 +611,41 @@ describe("mini truffle and artifacts tests", async () => {
                 failed?.status === "rejected" && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
                 `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message || "No exception"}'`
             );
+        });
+
+        it.skip("parallel transactions should work", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fprs: FakePriceReaderInstance[] = [];
+            for (let i = 0; i < 5; i++) {
+                console.log("nonce before new", await web3.eth.getTransactionCount(accounts[0]));
+                fprs.push(await FakePriceReader.new(accounts[0]));
+                console.log("nonce after new", await web3.eth.getTransactionCount(accounts[0]), "address:", fprs[i].address);
+                await fprs[i].setDecimals("XRP", 5);
+                console.log("nonce after setDecimals", await web3.eth.getTransactionCount(accounts[0]));
+            }
+            const promises: Promise<unknown>[] = [];
+            for (let i = 0; i < 30; i++) {
+                const fpr = fprs[i % fprs.length];
+                const price = Math.floor(1e5 * (Math.random() + 0.5));
+                promises.push(fpr.setPrice("XRP", price));
+            }
+            await Promise.all(promises);
+        });
+
+        it.only("parallel transactions should work 2", async () => {
+            const fprAddresses = ["0x35c1419Da7cf0Ff885B8Ef8EA9242FEF6800c99b", "0xE55aA921A1001f0a19241264a50063683D2e1179", "0xf89AA2f1397e9A0622c8Fc99aB1947E28b5EF876",
+                "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4",]
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fprs: FakePriceReaderInstance[] = [];
+            for (const addr of fprAddresses) {
+                fprs.push(await FakePriceReader.at(addr));
+            }
+            for (let i = 0; i < 30; i++) {
+                const fpr = fprs[i % fprs.length];
+                const symbol = "ABC" + new Date().getTime() + i;
+                console.log("nonce =", await web3.eth.getTransactionCount(accounts[0]), "fpr =", fpr.address);
+                await fpr.setDecimals(symbol, 6);
+            }
         });
     });
 

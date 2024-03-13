@@ -31,8 +31,8 @@ export async function waitForFinalization(
             await waitForConfirmations(promiEvent, waitFor.confirmations, cancelToken);
             transactionLogger.info("SUCCESS (confirmations)", { transactionId });
         } /* waitFor.what === 'nonceIncrease' */ else {
-            await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
-            transactionLogger.info("SUCCESS (nonce increase)", { transactionId });
+            const nonce = await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, cancelToken);
+            transactionLogger.info(`SUCCESS (nonce increase from ${initialNonce} to ${nonce})`, { transactionId, nonce });
         }
     }
     async function waitForTimeout(timeoutMS: number) {
@@ -103,11 +103,15 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
  * @param pollMS Number of milliseconds between each nonce check.
  * @param cancelToken The token that allows for cancelling the wait.
  */
-export async function waitForNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number, cancelToken: CancelToken): Promise<void> {
+export async function waitForNonceIncrease(web3: Web3, address: string, initialNonce: number, pollMS: number, cancelToken: CancelToken): Promise<number> {
     for (let i = 0; ; i++) {
+        console.log(`Waiting nonce increase (read nonce): address=${address} time=${new Date().toISOString()}`);
         const nonce = await web3.eth.getTransactionCount(address, "latest");
+        console.log(`Waiting nonce increase (from ${initialNonce}): address=${address} nonce=${nonce} time=${new Date().toISOString()}`);
         cancelToken.check(); // prevent returning value if cancelled
-        if (nonce > initialNonce) break;
+        if (nonce > initialNonce) {
+            return nonce;
+        };
         await cancelableSleep(pollMS, cancelToken);
     }
 }

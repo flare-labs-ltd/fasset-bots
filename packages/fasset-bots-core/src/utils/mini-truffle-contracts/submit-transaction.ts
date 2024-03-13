@@ -46,7 +46,9 @@ async function releaseAddress(address: string) {
 
 async function performSubmits(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
     const fromAddress = config.from as string;
+    console.log(`Starting transaction submit (read nonce): address=${fromAddress} time=${new Date().toISOString()}`);
     const nonce = await settings.web3.eth.getTransactionCount(fromAddress, "latest");
+    console.log(`Starting transaction submit: address=${fromAddress} nonce=${nonce} time=${new Date().toISOString()}`);
     transactionLogger.info("SUBMIT", { transactionId, waitFor: settings.waitFor, nonce });
     // resubmit transaction item with afterMS=0 is optional in settings - it can be added if you want the initial price factor to be different from 1
     let resubmitTransaction = settings.resubmitTransaction;
