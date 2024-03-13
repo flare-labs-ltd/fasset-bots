@@ -281,6 +281,49 @@ describe("mini truffle and artifacts tests", async () => {
             const { 2: decimals } = await fpr.getPrice("XRP");
             expect(Number(decimals)).to.equal(8);
         });
+
+        it("should wait for nonce and for two blocks extra", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const timer = setInterval(
+                preventReentrancy(() => time.advanceBlock()),
+                200
+            );
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 3000 } } };
+            await withSettings(fpr, settings).setDecimals("XRP", 5);
+            await withSettings(fpr, settings).setPrice("XRP", 800);
+            clearInterval(timer);
+            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+            expect(Number(price)).to.equal(800);
+            expect(Number(decimals)).to.equal(5);
+        });
+
+        it("should wait for nonce and for two blocks extra - extra time expires", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 2000 } } };
+            await withSettings(fpr, settings).setDecimals("XRP", 5);
+            await withSettings(fpr, settings).setPrice("XRP", 800);
+            const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
+            expect(Number(price)).to.equal(800);
+            expect(Number(decimals)).to.equal(5);
+        });
+
+        it("should wait for nonce and for two blocks extra - nonce decrease while waiting", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const settings: ContractSettings = { ...contractSettings,
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 5000, extra: { blocks: 2, timeMS: 3000 } },
+                resubmitTransaction: [] };
+            // simulate network reorg with snapshot/revert
+            const snapshotId = await network.provider.send("evm_snapshot", []);
+            const promise = withSettings(fpr, settings).setDecimals("XRP", 5);
+            await sleep(500);
+            await time.advanceBlock();
+            await sleep(1000);
+            await network.provider.send("evm_revert", [snapshotId]);
+            await expectRevert(promise, "Timeout waiting for finalization");
+        });
     });
 
     describe("contract linking", () => {
@@ -612,9 +655,20 @@ describe("mini truffle and artifacts tests", async () => {
                 `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message || "No exception"}'`
             );
         });
+    });
 
-        it.skip("parallel transactions should work", async () => {
-            const FakePriceReader = artifacts.require("FakePriceReader");
+    describe.skip("Coston nonce wait tests", () => {
+        const costonFinalizationSettings: Partial<ContractSettings> = {
+            waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } },
+            nonceLockTimeoutMS: 120_000,
+            resubmitTransaction: [
+                { afterMS: 30_000, priceFactor: 1.2 },
+                { afterMS: 60_000, priceFactor: 2.0 },
+            ],
+        };
+
+        it("fast serial transactions should work (with new)", async () => {
+            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), costonFinalizationSettings);
             const fprs: FakePriceReaderInstance[] = [];
             for (let i = 0; i < 5; i++) {
                 console.log("nonce before new", await web3.eth.getTransactionCount(accounts[0]));
@@ -623,26 +677,33 @@ describe("mini truffle and artifacts tests", async () => {
                 await fprs[i].setDecimals("XRP", 5);
                 console.log("nonce after setDecimals", await web3.eth.getTransactionCount(accounts[0]));
             }
-            const promises: Promise<unknown>[] = [];
             for (let i = 0; i < 30; i++) {
                 const fpr = fprs[i % fprs.length];
                 const price = Math.floor(1e5 * (Math.random() + 0.5));
-                promises.push(fpr.setPrice("XRP", price));
+                await fpr.setPrice("XRP", price);
             }
-            await Promise.all(promises);
         });
 
-        it.only("parallel transactions should work 2", async () => {
+        it("fast serial transactions should work", async () => {
             const fprAddresses = ["0x35c1419Da7cf0Ff885B8Ef8EA9242FEF6800c99b", "0xE55aA921A1001f0a19241264a50063683D2e1179", "0xf89AA2f1397e9A0622c8Fc99aB1947E28b5EF876",
                 "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4"];
-            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), {
-                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } },
-                nonceLockTimeoutMS: 3600_000,
-                resubmitTransaction: [
-                    { afterMS: 30_000, priceFactor: 1.2 },
-                    { afterMS: 60_000, priceFactor: 2.0 },
-                ],
-            });
+            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), costonFinalizationSettings);
+            const fprs: FakePriceReaderInstance[] = [];
+            for (const addr of fprAddresses) {
+                fprs.push(await FakePriceReader.at(addr));
+            }
+            for (let i = 0; i < 30; i++) {
+                const fpr = fprs[i % fprs.length];
+                const symbol = "ABC" + new Date().getTime() + i;
+                console.log("nonce =", await web3.eth.getTransactionCount(accounts[0]), "fpr =", fpr.address);
+                await fpr.setDecimals(symbol, 6);
+            }
+        });
+
+        it("parallel transactions should work", async () => {
+            const fprAddresses = ["0x35c1419Da7cf0Ff885B8Ef8EA9242FEF6800c99b", "0xE55aA921A1001f0a19241264a50063683D2e1179", "0xf89AA2f1397e9A0622c8Fc99aB1947E28b5EF876",
+                "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4"];
+            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), { ...costonFinalizationSettings, nonceLockTimeoutMS: 3600_000 });
             const fprs: FakePriceReaderInstance[] = [];
             for (const addr of fprAddresses) {
                 fprs.push(await FakePriceReader.at(addr));

@@ -31,7 +31,7 @@ export async function waitForFinalization(
             await waitForConfirmations(promiEvent, waitFor.confirmations, cancelToken);
             transactionLogger.info("SUCCESS (confirmations)", { transactionId });
         } /* waitFor.what === 'nonceIncrease' */ else {
-            const nonce = await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, waitFor.extra, cancelToken);
+            const { nonce, extraBlocks, extraTime } = await waitForNonceIncrease(web3, from, initialNonce, waitFor.pollMS, waitFor.extra, cancelToken);
             transactionLogger.info(`SUCCESS (nonce increase from ${initialNonce} to ${nonce})`, { transactionId, nonce });
         }
     }
@@ -79,7 +79,6 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
     return new Promise<TransactionReceipt>((resolve, reject) => {
         promiEvent
             .on("confirmation", (confirmations, receipt) => {
-                // console.log("Confirmation", confirmations);
                 if (confirmations >= confirmationsRequired) {
                     resolve(receipt);
                 }
@@ -105,17 +104,15 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
  */
 export async function waitForNonceIncrease(
     web3: Web3, address: string, initialNonce: number, pollMS: number, extra: { blocks: number, timeMS: number } | undefined, cancelToken: CancelToken
-): Promise<number> {
+): Promise<{ nonce: number, extraBlocks: number, extraTime: number }> {
     let startBlock = -1;
     let startTime = -1;
     for (let i = 0; ; i++) {
-        // console.log(`Waiting nonce increase (read nonce): address=${address} time=${new Date().toISOString()}`);
         const nonce = await web3.eth.getTransactionCount(address, "latest");
-        console.log(`Waiting nonce increase (from ${initialNonce}): address=${address} nonce=${nonce} time=${new Date().toISOString()}`);
         if (nonce > initialNonce) {
             if (extra == null) {
                 cancelToken.check(); // prevent returning value if cancelled
-                return nonce;
+                return { nonce, extraBlocks: 0, extraTime: 0 };
             } else if (startBlock < 0) {
                 // start waiting for block increase or extra time to pass
                 startBlock = await web3.eth.getBlockNumber();
@@ -123,15 +120,18 @@ export async function waitForNonceIncrease(
             } else {
                 const block = await web3.eth.getBlockNumber();
                 const time = new Date().getTime();
-                console.log(`    extra_blocks=${block - startBlock} extra_time=${time - startTime}`);
                 if (block >= startBlock + extra.blocks || time >= startTime + extra.timeMS) {
                     cancelToken.check(); // prevent returning value if cancelled
-                    return nonce;
+                    return { nonce, extraBlocks: block - startBlock, extraTime: time - startTime };
                 }
             }
         } else if (startBlock >= 0) {
+            // nonce decreased while waiting - possibly a network reorg
+            const block = await web3.eth.getBlockNumber();
+            const time = new Date().getTime();
+            transactionLogger.warn(`NONCE DECREASE - restarting extra block count (initial=${initialNonce} >= current=${nonce}, extra blocks=${block - startBlock}, extra time=${time - startTime})`,
+                { initialNonce, nonce, extraBlocks: block - startBlock, extraTime: time - startTime });
             // if nonce fell back during wait for extra blocks, require full wait again
-            console.log(`    nonce fell, restarting extra block count`);
             startBlock = -1;
             startTime = -1;
         }
