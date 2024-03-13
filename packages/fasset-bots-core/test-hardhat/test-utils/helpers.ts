@@ -59,7 +59,7 @@ export async function createTestAgentBot(
     ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
-    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
+    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
     const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier ?? new MockNotifier());

@@ -72,7 +72,7 @@ export class AgentBot {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
     }
 
-    static async inititalizeUnderlyingAddress(context: IAssetAgentBotContext, owner: OwnerAddressPair, underlyingAddress: string) {
+    static async initializeUnderlyingAddress(context: IAssetAgentBotContext, owner: OwnerAddressPair, underlyingAddress: string) {
         // on XRP chain, send 10 XRP from owners account to activate agent's account
         await this.activateUnderlyingAccount(context, owner, underlyingAddress);
         // validate address

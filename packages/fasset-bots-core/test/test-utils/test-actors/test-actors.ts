@@ -37,7 +37,7 @@ export async function createTestAgentBot(
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     console.log(`Validating new underlying address ${underlyingAddress}...`);
-    const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(context, owner, underlyingAddress);
+    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
     console.log(`Creating agent bot...`);
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();

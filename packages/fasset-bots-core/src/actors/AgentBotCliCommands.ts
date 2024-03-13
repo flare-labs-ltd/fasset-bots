@@ -18,7 +18,7 @@ import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
-import { getAgentSettings, printAgentInfo } from "../utils/fasset-helpers";
+import { getAgentSettings, printAgentInfo, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import BN from "bn.js";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
@@ -128,7 +128,11 @@ export class BotCliCommands {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
-            const addressValidityProof = await AgentBot.inititalizeUnderlyingAddress(this.context, this.owner, underlyingAddress);
+            // const addressValidityProof = await AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress);
+            const [addressValidityProof, _] = await Promise.all([
+                AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress),
+                proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
+            ]);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.botConfig.notifier!);
