@@ -3,7 +3,7 @@ import { initWeb3 } from "../../../src/utils/web3";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
 import { UserBot } from "../../../src/actors/UserBot";
-import { requireEnv } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, requireEnv } from "../../../src/utils/helpers";
 import chaiAsPromised from "chai-as-promised";
 use(chaiAsPromised);
 
@@ -37,6 +37,6 @@ describe("UserBot cli commands unit tests", async () => {
     it("Should get infoBot", async () => {
         const userBot = await UserBot.create(FASSET_BOT_CONFIG, "FtestXRP", false);
         const infoBot = userBot.infoBot();
-        expect(infoBot.fassetInfo.symbol).to.eq("testXRP")
+        expect(await infoBot.context.fAsset.symbol()).to.eq("FtestXRP");
     });
 });

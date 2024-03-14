@@ -136,8 +136,7 @@ export class UserBot {
     }
 
     infoBot(): InfoBot {
-        const fassetInfo = requireNotNull(this.configFile.fAssetInfos.find((cc) => cc.fAssetSymbol === this.fassetConfig.fAssetSymbol));
-        return new InfoBot(this.context, this.configFile, fassetInfo);
+        return new InfoBot(this.context);
     }
 
     /**

@@ -61,7 +61,7 @@ describe("InfoBot cli commands unit tests", async () => {
             addressUpdater: "",
             alertsUrl: "",
         };
-        infoBot = new InfoBot(context, config, config.fAssetInfos[0]);
+        infoBot = new InfoBot(context);
     });
 
     afterEach(function () {

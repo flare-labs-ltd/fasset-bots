@@ -1,28 +1,25 @@
+import BN from "bn.js";
 import chalk from "chalk";
 import { loadConfigFile } from "../config/BotConfig";
-import { BotConfigFile, BotFAssetInfo } from "../config/config-files";
 import { createNativeContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
-import { printAgentInfo } from "../utils/fasset-helpers";
+import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { CommandLineError, MAX_BIPS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import BN from "bn.js";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
 
 const CollateralPool = artifacts.require("CollateralPool");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 export class InfoBot {
     constructor(
         public context: IAssetNativeChainContext,
-        public config: BotConfigFile,
-        public fassetInfo: BotFAssetInfo
-    ) {}
+    ) { }
 
     /**
      * Creates instance of InfoBot.
@@ -46,7 +43,7 @@ export class InfoBot {
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
         console.error(chalk.cyan("Environment successfully initialized."));
-        return new InfoBot(context, config, chainConfig);
+        return new InfoBot(context);
     }
 
     /**
@@ -228,7 +225,49 @@ export class InfoBot {
     }
 
     async printAgentInfo(vaultAddress: string) {
-        await printAgentInfo(vaultAddress, this.context);
+        const fAsset = this.context.fAsset;
+        const assetManager = this.context.assetManager;
+        const settings = await assetManager.getSettings();
+        const lotSizeUBA = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+        const symbol = await fAsset.symbol();
+        const info = await assetManager.getAgentInfo(vaultAddress);
+        const vaultCollateral = await IERC20Metadata.at(info.vaultCollateralToken);
+        const [vcSymbol, vcDec] = [await vaultCollateral.symbol(), await vaultCollateral.decimals()];
+        const pool = await CollateralPool.at(info.collateralPool);
+        const poolToken = await CollateralPoolToken.at(await pool.poolToken());
+        const poolTokenSymbol = await poolToken.symbol();
+        console.log(`collateralPoolToken: ${poolTokenSymbol}  (${poolToken.address})`);
+        for (const [key, value] of Object.entries(info)) {
+            if (typeof key === "number" || /^\d+$/.test(key)) continue;
+            if (key === "status") {
+                /* istanbul ignore next */
+                console.log(`${key}: ${AgentStatus[Number(value)] ?? value}`);
+            } else if (/UBA$/i.test(key)) {
+                const amount = Number(value) / Number(settings.assetUnitUBA);
+                const lots = Number(value) / lotSizeUBA;
+                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}  (${lots.toFixed(2)} lots)`);
+            } else if (/RatioBIPS$/i.test(key)) {
+                const amount = Number(value) / 10000;
+                console.log(`${key.slice(0, key.length - 4)}: ${amount.toFixed(3)}`);
+            } else if (/BIPS$/i.test(key)) {
+                const percent = Number(value) / 100;
+                console.log(`${key.slice(0, key.length - 4)}: ${percent.toFixed(2)}%`);
+            } else if (/NATWei$/i.test(key)) {
+                const amount = Number(value) / 1e18;
+                console.log(`${key.slice(0, key.length - 6)}: ${amount.toFixed(2)} NAT`);
+            } else if (/Wei$/i.test(key)) {
+                const [symbol, decimals] = /VaultCollateral/i.test(key)
+                    ? [vcSymbol, Number(vcDec)]
+                    : /PoolTokens/i.test(key)
+                        ? ["FCPT", 18]
+                        : /* istanbul ignore next */
+                        ["???", 18];
+                const amount = Number(value) / 10 ** decimals;
+                console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
     }
 }
 

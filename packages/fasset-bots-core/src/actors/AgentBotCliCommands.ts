@@ -18,11 +18,12 @@ import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { getSecrets } from "../config/secrets";
-import { getAgentSettings, printAgentInfo, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import BN from "bn.js";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
 import { resolveInFassetBotsCore } from "../utils";
+import { InfoBot } from "..";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -515,7 +516,8 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      */
     async printAgentInfo(agentVault: string): Promise<void> {
-        await printAgentInfo(agentVault, this.context);
+        const infoBot = new InfoBot(this.context);
+        await infoBot.printAgentInfo(agentVault);
     }
 
     /**
