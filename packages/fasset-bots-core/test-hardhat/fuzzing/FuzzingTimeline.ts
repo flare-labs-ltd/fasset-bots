@@ -38,10 +38,6 @@ export class FuzzingTimeline {
             this.chain.skipTimeTo(startUnderlyingTime);
         }
         this.runner.comment(`***** SKIPPED TIME  flare=${newFlareTime - startFlareTime}  chain=${this.chain.currentTimestamp() - startUnderlyingTime}`);
-        this.runner.comment(
-            `***** BLOCKS  flare=${
-                (await web3.eth.getBlock("latest")).number
-            }, ${await latestBlockTimestamp()}  chain=${await this.chain.getBlockHeight()}, ${this.chain.lastBlockTimestamp()}`
-        );
+        this.runner.comment(`***** BLOCKS  flare=${(await web3.eth.getBlock("latest")).number}, ${await latestBlockTimestamp()}  chain=${await this.chain.getBlockHeight()}, ${this.chain.lastBlockTimestamp()}`);
     }
 }

@@ -7,25 +7,12 @@ import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp, ZE
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
-import {
-    createTestAssetContext,
-    getTestAssetTrackedStateContext,
-    TestAssetBotContext,
-    TestAssetTrackedStateContext,
-} from "../../test-utils/create-test-asset-context";
+import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { lotSize } from "../../../src/fasset/Conversions";
 import spies from "chai-spies";
 import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import {
-    createTestAgent,
-    createTestAgentAndMakeAvailable,
-    createCRAndPerformMinting,
-    createTestMinter,
-    mintAndDepositVaultCollateralToOwner,
-    createTestRedeemer,
-    fromAgentInfoToInitialAgentData,
-} from "../../test-utils/helpers";
+import { createTestAgent, createTestAgentAndMakeAvailable, createCRAndPerformMinting, createTestMinter, mintAndDepositVaultCollateralToOwner, createTestRedeemer, fromAgentInfoToInitialAgentData } from "../../test-utils/helpers";
 import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";

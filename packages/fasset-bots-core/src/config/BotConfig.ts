@@ -60,7 +60,7 @@ export interface BotFAssetConfig {
     chainInfo: ChainInfo;
     blockchainIndexerClient?: BlockchainIndexerHelper; // only for agent bot and challenger
     stateConnector?: IStateConnectorClient; // only for agent bot, challenger and timeKeeper
-    verificationClient?: IVerificationApiClient, // only for agent bot and user bot
+    verificationClient?: IVerificationApiClient; // only for agent bot and user bot
     // either one must be set
     assetManager?: string;
     fAssetSymbol?: string;
@@ -119,7 +119,7 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
     }
     // namespace SQLite db by asset manager controller address (only needed for beta testing)
-    if (config.ormOptions?.type === 'sqlite' && config.contractsJsonFile) {
+    if (config.ormOptions?.type === "sqlite" && config.contractsJsonFile) {
         const contracts = loadContracts(config.contractsJsonFile);
         const controllerAddress = contracts.AssetManagerController.address.slice(2, 10);
         config.ormOptions.dbName = config.ormOptions.dbName!.replace(/CONTROLLER/g, controllerAddress);
@@ -175,28 +175,21 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
         chainInfo.chainId = encodedChainId(chainInfo.chainId);
-        fAssets.push(
-            await createBotFAssetConfig(
-                chainInfo,
-                orm ? orm.em : undefined,
-                runConfig.attestationProviderUrls,
-                runConfig.stateConnectorProofVerifierAddress
-                    ? runConfig.stateConnectorProofVerifierAddress
-                    : (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).pfAddress,
-                runConfig.stateConnectorAddress
-                    ? runConfig.stateConnectorAddress
-                    : (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).scAddress,
-                ownerAddress,
-                runConfig.walletOptions
-            )
-        );
+        const proofVerifierAddress = runConfig.stateConnectorProofVerifierAddress
+            ? runConfig.stateConnectorProofVerifierAddress :
+            (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).pfAddress;
+        const stateConnectorAddress = runConfig.stateConnectorAddress
+            ? runConfig.stateConnectorAddress :
+            (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).scAddress;
+        fAssets.push(await createBotFAssetConfig(chainInfo, orm?.em, runConfig.attestationProviderUrls,
+            proofVerifierAddress, stateConnectorAddress, ownerAddress, runConfig.walletOptions));
     }
     return {
         rpcUrl: runConfig.rpcUrl,
         loopDelay: runConfig.loopDelay,
         fAssets: fAssets,
         nativeChainInfo: runConfig.nativeChainInfo,
-        orm: orm ? orm : undefined,
+        orm: orm,
         notifier: new Notifier(runConfig.alertsUrl),
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
@@ -208,7 +201,6 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
 export function encodedChainId(chainId: string) {
     return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
 }
-
 
 export function decodedChainId(chainId: string) {
     return chainId.startsWith("0x") ? decodeAttestationName(chainId) : chainId;
@@ -340,7 +332,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testBTC ? true : false,
             apiTokenKey: getSecrets().apiKey.btc_rpc,
-            stuckTransactionOptions: sOptions
+            stuckTransactionOptions: sOptions,
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
         return new WALLET.DOGE({
@@ -349,7 +341,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testDOGE ? true : false,
             apiTokenKey: getSecrets().apiKey.doge_rpc,
-            stuckTransactionOptions: sOptions
+            stuckTransactionOptions: sOptions,
         }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
@@ -358,7 +350,7 @@ export function createWalletClient(
             password: "",
             apiTokenKey: getSecrets().apiKey.xrp_rpc,
             inTestnet: sourceId === SourceId.testXRP ? true : false,
-            stuckTransactionOptions: sOptions
+            stuckTransactionOptions: sOptions,
         }); // XrpMccCreate
     }
 }
@@ -440,9 +432,7 @@ export async function createStateConnectorClient(
     return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
 }
 
-export async function createVerificationApiClient(
-    indexerWebServerUrl: string,
-): Promise<VerificationPrivateApiClient> {
+export async function createVerificationApiClient(indexerWebServerUrl: string): Promise<VerificationPrivateApiClient> {
     const apiKey = requireSecret("apiKey.indexer");
     return new VerificationPrivateApiClient(indexerWebServerUrl, apiKey);
 }

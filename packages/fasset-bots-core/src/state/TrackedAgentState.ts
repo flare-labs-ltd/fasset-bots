@@ -3,25 +3,7 @@ import { AgentInfo, AgentStatus, CollateralType, CollateralClass } from "../fass
 import { BN_ONE, BN_ZERO, BNish, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
 import { TrackedState } from "./TrackedState";
 import { EventArgs } from "../utils/events/common";
-import {
-    AgentAvailable,
-    AgentCollateralTypeChanged,
-    CollateralReservationDeleted,
-    CollateralReserved,
-    DustChanged,
-    LiquidationPerformed,
-    MintingExecuted,
-    MintingPaymentDefault,
-    RedemptionDefault,
-    RedemptionPaymentBlocked,
-    RedemptionPaymentFailed,
-    RedemptionPerformed,
-    RedemptionRequested,
-    SelfClose,
-    UnderlyingBalanceToppedUp,
-    UnderlyingWithdrawalAnnounced,
-    UnderlyingWithdrawalConfirmed,
-} from "../../typechain-truffle/AssetManagerController";
+import { AgentAvailable, AgentCollateralTypeChanged, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
 import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";

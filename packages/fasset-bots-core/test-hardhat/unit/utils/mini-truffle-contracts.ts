@@ -23,18 +23,19 @@ describe("mini truffle and artifacts tests", async () => {
     describe("artifacts", () => {
         it("require should work", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
-            expect((FakePriceReader as MiniTruffleContract)._contractJson?.sourceName === "contracts/mock/FakePriceReader.sol");
+            expect((FakePriceReader as MiniTruffleContract)._contractJson?.sourceName)
+                .to.equal("contracts/mock/FakePriceReader.sol");
         });
 
         it("require with directory should work", async () => {
             const GovernanceSettings = artifacts.require("flattened/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings");
-            expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName === "flattened/FlareSmartContracts.sol");
+            expect((GovernanceSettings as MiniTruffleContract)._contractJson?.sourceName)
+                .to.equal("flattened/FlareSmartContracts.sol");
         });
 
         it("require with wrong directory should fail", async () => {
-            expect(() => artifacts.require("flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings")).to.throw(
-                "Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings"
-            );
+            expect(() => artifacts.require("flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings" as "GovernanceSettings"))
+                .to.throw("Unknown artifact flare-smart-contracts/FlareSmartContracts.sol:GovernanceSettings");
         });
     });
 
@@ -289,7 +290,9 @@ describe("mini truffle and artifacts tests", async () => {
                 preventReentrancy(() => time.advanceBlock()),
                 200
             );
-            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 3000 } } };
+            const settings: ContractSettings = { ...contractSettings,
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 3000 } }
+            };
             await withSettings(fpr, settings).setDecimals("XRP", 5);
             await withSettings(fpr, settings).setPrice("XRP", 800);
             clearInterval(timer);
@@ -301,7 +304,9 @@ describe("mini truffle and artifacts tests", async () => {
         it("should wait for nonce and for two blocks extra - extra time expires", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const settings: ContractSettings = { ...contractSettings, waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 2000 } } };
+            const settings: ContractSettings = { ...contractSettings,
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 2000 } }
+            };
             await withSettings(fpr, settings).setDecimals("XRP", 5);
             await withSettings(fpr, settings).setPrice("XRP", 800);
             const { 0: price, 2: decimals } = await fpr.getPrice("XRP");
@@ -314,7 +319,8 @@ describe("mini truffle and artifacts tests", async () => {
             const fpr = await FakePriceReader.new(accounts[0]);
             const settings: ContractSettings = { ...contractSettings,
                 waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 5000, extra: { blocks: 2, timeMS: 3000 } },
-                resubmitTransaction: [] };
+                resubmitTransaction: []
+            };
             // simulate network reorg with snapshot/revert
             const snapshotId = await network.provider.send("evm_snapshot", []);
             const promise = withSettings(fpr, settings).setDecimals("XRP", 5);
@@ -332,10 +338,10 @@ describe("mini truffle and artifacts tests", async () => {
             const collateralTypes = await CollateralTypes.new();
             const SettingsUpdater = artifacts.require("SettingsUpdater");
             // both link variants in typechain don't work
-            expect(() => SettingsUpdater.link(CollateralTypes)).to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
-            expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address)).to.throw(
-                "Only supported variant is 'SettingsUpdater.link(instance)'"
-            );
+            expect(() => SettingsUpdater.link(CollateralTypes))
+                .to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
+            expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address))
+                .to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
             // typechain info is wrong on hardhat, so we have to cast to any
             SettingsUpdater.link(collateralTypes as any);
             const settingsUpdater = await SettingsUpdater.new();
@@ -345,7 +351,8 @@ describe("mini truffle and artifacts tests", async () => {
             const CollateralTypes = artifacts.require("CollateralTypes");
             const collateralTypes = await CollateralTypes.new();
             const IFtsoRegistry = artifacts.require("IFtsoRegistry");
-            expect(() => IFtsoRegistry.link(collateralTypes as any)).to.throw("Contract IFtsoRegistry is abstract; cannot link");
+            expect(() => IFtsoRegistry.link(collateralTypes as any))
+                .to.throw("Contract IFtsoRegistry is abstract; cannot link");
         });
 
         it("should not link if contract has no link references or wrong library is linked", async () => {

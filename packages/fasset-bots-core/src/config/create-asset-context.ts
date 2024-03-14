@@ -40,7 +40,7 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         wallet: chainConfig.wallet,
         attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
-        verificationClient: chainConfig.verificationClient
+        verificationClient: chainConfig.verificationClient,
     };
 }
 
@@ -59,14 +59,14 @@ export async function createActorAssetContext(
         throw new Error("Missing state connector configuration");
     }
     const nativeContext = await createNativeContext(trackedStateConfig, chainConfig);
+    const attestationProvider = actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER
+        ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId)
+        : undefined;
     return {
         ...nativeContext,
         nativeChainInfo: trackedStateConfig.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
-        attestationProvider:
-            actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER
-                ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId)
-                : undefined,
+        attestationProvider: attestationProvider,
         liquidationStrategy: trackedStateConfig.liquidationStrategy,
         challengeStrategy: trackedStateConfig.challengeStrategy,
     };
@@ -114,11 +114,9 @@ async function getAssetManagerAndController(
     } else if (chainConfig.fAssetSymbol) {
         /* istanbul ignore next */ //TODO until AssetManagerController gets verified in explorer
         const controllerAddress =
-            addressUpdater != null
-                ? await addressUpdater.getContractAddress("AssetManagerController")
-                : contracts != null
-                ? contracts.AssetManagerController.address
-                : fail("Either addressUpdater or contracts must be defined");
+            addressUpdater != null ? await addressUpdater.getContractAddress("AssetManagerController")
+            : contracts != null ? contracts.AssetManagerController.address
+            : fail("Either addressUpdater or contracts must be defined");
         const assetManagerController = await AssetManagerController.at(controllerAddress);
         const assetManager = await findAssetManager(assetManagerController, chainConfig.fAssetSymbol);
         return [assetManager, assetManagerController] as const;

@@ -4,14 +4,7 @@ import { initWeb3 } from "../../../src/utils/web3";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import {
-    ATTESTATION_PROVIDER_URLS,
-    COSTON_RPC,
-    OWNER_ADDRESS,
-    STATE_CONNECTOR_ADDRESS,
-    STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-    createTestOrmOptions,
-} from "../../test-utils/test-bot-config";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, createTestOrmOptions } from "../../test-utils/test-bot-config";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";

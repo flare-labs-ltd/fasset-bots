@@ -13,7 +13,7 @@ export type Secrets = {
     };
     user?: {
         [key: string]: ChainAccount;
-    }
+    };
     challenger?: ChainAccount;
     liquidator?: ChainAccount;
     timeKeeper?: ChainAccount;
@@ -69,7 +69,7 @@ function checkFilePermissions(fpath: string) {
         if (process.env.ALLOW_SECRETS_ON_WINDOWS === "true") return;
         throw new CommandLineError(
             "Cannot reliably check secrets file permissions on Windows.\n" +
-                "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true."
+            "To allow reading secrets file anyway, set environment variable ALLOW_SECRETS_ON_WINDOWS=true."
         );
     }
     // file must only be accessible by the process user

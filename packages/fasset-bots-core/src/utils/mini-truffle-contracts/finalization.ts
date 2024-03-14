@@ -103,8 +103,13 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
  * @param cancelToken The token that allows for cancelling the wait.
  */
 export async function waitForNonceIncrease(
-    web3: Web3, address: string, initialNonce: number, pollMS: number, extra: { blocks: number, timeMS: number } | undefined, cancelToken: CancelToken
-): Promise<{ nonce: number, extraBlocks: number, extraTime: number }> {
+    web3: Web3,
+    address: string,
+    initialNonce: number,
+    pollMS: number,
+    extra: { blocks: number; timeMS: number } | undefined,
+    cancelToken: CancelToken
+): Promise<{ nonce: number; extraBlocks: number; extraTime: number }> {
     let startBlock = -1;
     let startTime = -1;
     for (let i = 0; ; i++) {

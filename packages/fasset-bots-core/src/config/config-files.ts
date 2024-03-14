@@ -23,7 +23,7 @@ export interface BotConfigFile {
         blockOffset?: number; // How many block to wait for transaction to be validated
         retries?: number; // How many times should transaction retry to successfully submit
         feeIncrease?: number; // Factor to increase fee in resubmitting process
-    }, // optional wallet options, only for agent
+    }; // optional wallet options, only for agent
     fAssetInfos: BotFAssetInfo[];
     // notifierFile: string;
     loopDelay: number;

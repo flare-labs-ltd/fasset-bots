@@ -10,17 +10,7 @@ import { artifacts, web3 } from "../../src/utils/web3";
 import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
-import {
-    convertFromUSD5,
-    createCRAndPerformMinting,
-    createCRAndPerformMintingAndRunSteps,
-    createTestAgent,
-    createTestAgentBotAndMakeAvailable,
-    createTestMinter,
-    createTestRedeemer,
-    getAgentStatus,
-    mintVaultCollateralToOwner,
-} from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
 import { FilterQuery } from "@mikro-orm/core";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
@@ -594,9 +584,7 @@ describe("Agent bot tests", async () => {
             await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
         }
         // withdraw vault collateral and pool tokens
-        await time.increaseTo(
-            maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp))
-        );
+        await time.increaseTo(maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp)));
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
             await time.advanceBlock();

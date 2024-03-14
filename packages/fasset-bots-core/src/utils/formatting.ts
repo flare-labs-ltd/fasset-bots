@@ -6,7 +6,7 @@ import BN from "bn.js";
  * To be used as tag.
  */
 export function squashSpace(strings: TemplateStringsArray, ...args: any[]) {
-    const normStrings = strings.map(s => s.replace(/\s+/g, ' '));
+    const normStrings = strings.map(s => s.replace(/\s+/g, " "));
     return String.raw({ raw: normStrings }, ...args);
 }
 

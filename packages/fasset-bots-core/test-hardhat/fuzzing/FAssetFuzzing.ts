@@ -5,17 +5,7 @@ import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
-import {
-    InclusionIterable,
-    currentRealTime,
-    getEnv,
-    mulDecimal,
-    randomChoice,
-    randomInt,
-    randomNum,
-    toWei,
-    weightedRandomChoice,
-} from "../test-utils/fuzzing-utils";
+import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { Challenger } from "../../src/actors/Challenger";
 import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { assert } from "chai";

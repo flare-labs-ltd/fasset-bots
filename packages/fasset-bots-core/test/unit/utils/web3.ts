@@ -27,7 +27,7 @@ describe("web3 unit tests", async () => {
     it("Should create wallet accounts", async () => {
         const envPrivateKeys = getNativeAccountsFromEnv();
         const accounts = await initWeb3(COSTON_RPC, envPrivateKeys, 0);
-        const uniqueEnvAccounts = new Set(envPrivateKeys)
+        const uniqueEnvAccounts = new Set(envPrivateKeys);
         expect(accounts.length).to.eq(uniqueEnvAccounts.size);
         expect(web3.eth.defaultAccount).to.eq(accounts[0]);
         web3.eth.accounts.wallet.clear();

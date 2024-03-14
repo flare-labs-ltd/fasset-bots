@@ -256,12 +256,10 @@ export class InfoBot {
                 const amount = Number(value) / 1e18;
                 console.log(`${key.slice(0, key.length - 6)}: ${amount.toFixed(2)} NAT`);
             } else if (/Wei$/i.test(key)) {
-                const [symbol, decimals] = /VaultCollateral/i.test(key)
-                    ? [vcSymbol, Number(vcDec)]
-                    : /PoolTokens/i.test(key)
-                        ? ["FCPT", 18]
-                        : /* istanbul ignore next */
-                        ["???", 18];
+                const [symbol, decimals] =
+                    /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)]
+                    : /PoolTokens/i.test(key) ? ["FCPT", 18]
+                    : /* istanbul ignore next */ ["???", 18];
                 const amount = Number(value) / 10 ** decimals;
                 console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
             } else {

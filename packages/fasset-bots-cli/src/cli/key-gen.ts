@@ -14,8 +14,7 @@ program.name("key-gen").description("Command line commands for generating keys a
 program
     .command("generateSecrets")
     .description("generate new secrets file")
-    .option("-c, --config <configFile>",
-        "Config file path. If omitted, env var FASSET_BOT_CONFIG or FASSET_USER_CONFIG is used. If this is undefined, use embedded config.")
+    .option("-c, --config <configFile>", "Config file path. If omitted, env var FASSET_BOT_CONFIG or FASSET_USER_CONFIG is used. If this is undefined, use embedded config.")
     .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
     .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
     .option("--user", "generate secrets for user")

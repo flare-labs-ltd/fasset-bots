@@ -242,9 +242,7 @@ describe("UserBot cli commands unit tests", async () => {
         const startBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         const amount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
         // redemption default - invalid payment reference
-        await expect(
-            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
-        )
+        await expect(userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp))
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
@@ -337,7 +335,7 @@ describe("UserBot cli commands unit tests", async () => {
         chain.mint(userBot.underlyingAddress, deposit);
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
-        const  resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
+        const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
         const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));
@@ -346,7 +344,7 @@ describe("UserBot cli commands unit tests", async () => {
         const state = userBot.readState("mint", resId);
         expect(state.executorAddress).to.eq(ZERO_ADDRESS);
         userBot.deleteState(state);
-});
+    });
 
     it("Should reserve collateral with executor", async () => {
         const executor = accounts[101];
@@ -409,9 +407,7 @@ describe("UserBot cli commands unit tests", async () => {
         const state = userBot.readState("redeem", rdReq.requestId);
         expect(state.executorAddress).to.eq(executor);
         // redemption default - invalid payment reference
-        await expect(
-            userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp)
-        )
+        await expect(userBot.redemptionDefault(amount, userBot.nativeAddress, rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp))
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
@@ -421,5 +417,4 @@ describe("UserBot cli commands unit tests", async () => {
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
         expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
     });
-
 });

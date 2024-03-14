@@ -451,14 +451,12 @@ describe("other blockchain tests via indexer", async () => {
 
     it("Should not handle inputs and outputs - not supported chain id", async () => {
         const rewiredBTCIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdBTC, "");
-        expect((await rewiredBTCIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true))[0][0]).to.eq(
-            ""
-        );
+        const resultBTC = await rewiredBTCIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true);
+        expect(resultBTC[0][0]).to.eq("");
 
         const rewiredDOGEIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdDOGE, "");
-        expect((await rewiredDOGEIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true))[0][0]).to.eq(
-            ""
-        );
+        const resultDOGE = await rewiredDOGEIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true);
+        expect(resultDOGE[0][0]).to.eq("");
 
         const data = {
             isNativePayment: true,
@@ -475,9 +473,7 @@ describe("other blockchain tests via indexer", async () => {
             },
         };
         const rewiredXRPIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdXRP, "");
-        expect((await rewiredXRPIndexerClient.handleInputsOutputs(data, true))[0][0]).to.eq(
-            data.response.result.Account
-        );
+        const resultXRP = await rewiredXRPIndexerClient.handleInputsOutputs(data, true);
+        expect(resultXRP[0][0]).to.eq(data.response.result.Account);
     });
-
-    });
+});

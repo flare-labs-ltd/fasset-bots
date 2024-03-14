@@ -30,12 +30,8 @@ export class FuzzingStateAgent extends TrackedAgentState {
         problems += checker.checkEquality(`${agentName}.underlyingFreeBalanceUBA`, agentInfo.freeUnderlyingBalanceUBA, this.freeUnderlyingBalanceUBA);
         // minimum underlying backing (unless in full liquidation)
         if (this.status !== AgentStatus.FULL_LIQUIDATION) {
-            problems += checker.checkNumericDifference(
-                `${agentName}.underlyingBalanceUBA`,
-                agentInfo.underlyingBalanceUBA,
-                "gte",
-                this.mintedUBA.add(this.freeUnderlyingBalanceUBA)
-            );
+            const expectedBalanceUBA = this.mintedUBA.add(this.freeUnderlyingBalanceUBA);
+            problems += checker.checkNumericDifference(`${agentName}.underlyingBalanceUBA`, agentInfo.underlyingBalanceUBA, "gte", expectedBalanceUBA);
         }
         // dust
         problems += checker.checkEquality(`${agentName}.dustUBA`, this.dustUBA, agentInfo.dustUBA);

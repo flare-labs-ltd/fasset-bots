@@ -1,15 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import {
-    ARBase,
-    ARESBase,
-    AddressValidity,
-    AttestationDefinitionStore,
-    BalanceDecreasingTransaction,
-    ConfirmedBlockHeightExists,
-    Payment,
-    ReferencedPaymentNonexistence,
-    decodeAttestationName,
-} from "@flarenetwork/state-connector-protocol";
+import { ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { ISCProofVerifierInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
@@ -18,13 +8,7 @@ import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { attestationProved } from "./AttestationHelper";
-import {
-    AttestationNotProved,
-    AttestationProof,
-    AttestationRequestId,
-    IStateConnectorClient,
-    OptionalAttestationProof,
-} from "./interfaces/IStateConnectorClient";
+import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
 
 export class StateConnectorError extends Error {
     constructor(message: string) {
@@ -133,10 +117,9 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         const response = await this.verifier
             .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
             .catch((e: AxiosError) => {
-                logger.error(`State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
-                throw new StateConnectorError(
-                    `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`
-                );
+                const message = `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
+                logger.error(message);
+                throw new StateConnectorError(message);
             });
         const data = response.data.abiEncodedRequest;
         const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });

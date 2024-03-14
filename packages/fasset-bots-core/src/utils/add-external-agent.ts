@@ -5,6 +5,7 @@ import { createBotConfig } from "../config/BotConfig";
 import { loadConfigFile } from "../config/BotConfig";
 import { AgentEntity, DailyProofState } from "../entities/agent";
 import { getSecrets } from "../config/secrets";
+import { ZERO_ADDRESS } from "./helpers";
 
 /**
  * To migrate an agent from another database, you need to copy-paste the agent's
@@ -32,12 +33,13 @@ export async function addExternalAgentVault(
     // check if agent exists
     const agent = await botConfig.orm!.em.findOne(AgentEntity, { vaultAddress: agentVaultAddress });
     if (agent) {
-        return console.log('agent already in the database');
+        return console.log("agent already in the database");
     }
     // get the owner address
     let ownerAddress = agentInfo.ownerWorkAddress;
-    if (ownerAddress === '0x0000000000000000000000000000000000000000')
+    if (ownerAddress === ZERO_ADDRESS) {
         ownerAddress = agentInfo.ownerManagementAddress;
+    }
     // create new agent
     await botConfig.orm!.em.transactional(async (em) => {
         const lastBlock = await web3.eth.getBlockNumber();
@@ -52,5 +54,5 @@ export async function addExternalAgentVault(
         newAgent.currentEventBlock = fromBlock ?? lastBlock + 1;
         newAgent.dailyProofState = DailyProofState.OBTAINED_PROOF;
         em.persist(newAgent);
-    })
+    });
 }

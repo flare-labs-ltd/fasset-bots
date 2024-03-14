@@ -42,11 +42,8 @@ export class TokenPriceReader {
 
     getRawPrice(symbol: string, trusted: boolean) {
         return getOrCreateAsync(this.priceCache, `${symbol}::trusted=${trusted}`, async () => {
-            const {
-                0: price,
-                1: timestamp,
-                2: decimals,
-            } = trusted ? await this.priceReader.getPrice(symbol) : await this.priceReader.getPriceFromTrustedProviders(symbol);
+            const { 0: price, 1: timestamp, 2: decimals } =
+                trusted ? await this.priceReader.getPrice(symbol) : await this.priceReader.getPriceFromTrustedProviders(symbol);
             return new TokenPrice(toBN(price), toBN(timestamp), toBN(decimals));
         });
     }

@@ -54,7 +54,7 @@ describe("InfoBot cli commands unit tests", async () => {
                     decimals: 6,
                     amgDecimals: 0,
                     requireEOAProof: false,
-                    walletUrl: "walletUrl"
+                    walletUrl: "walletUrl",
                 },
             ],
             nativeChainInfo: testNativeChainInfo,

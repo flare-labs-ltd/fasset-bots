@@ -98,7 +98,7 @@ describe("AgentBot", () => {
 
         it("should increase retry count", async () => {
             const agent = createAgent();
-            const event = new Event(agent, { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent, false)
+            const event = new Event(agent, { blockNumber: 0, logIndex: 1, transactionIndex: 2 } as EvmEvent, false);
             agent.addNewEvent(event);
             expect(event.retries).to.equal(0);
             event.retries += 1;

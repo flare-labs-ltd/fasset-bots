@@ -12,7 +12,7 @@ export function encryptText(password: string, text: string, useScrypt: boolean):
 }
 
 export function decryptText(password: string, encText: string): string {
-    const encIvBuf = Buffer.from(encText.replace(/^@/, ''), "base64");
+    const encIvBuf = Buffer.from(encText.replace(/^@/, ""), "base64");
     const initVector = encIvBuf.subarray(0, 16);
     const encBuf = encIvBuf.subarray(16);
     const useScrypt = encText.startsWith("@");  // '@' marks password hashing with scrypt

@@ -5,7 +5,7 @@ import { DEFAULT_TIMEOUT } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { IVerificationApiClient } from "./interfaces/IVerificationApiClient";
 
-export class VerificationApiError extends Error {};
+export class VerificationApiError extends Error {}
 
 interface PreparedResponseRes<T> {
     status: "VALID" | "INVALID";
@@ -43,8 +43,9 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
         const response = await this.verifier
             .post<PreparedResponseRes<T>>(`/${encodeURIComponent(attestationName)}/prepareResponse`, request)
             .catch((e: AxiosError) => {
-                logger.error(`Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
-                throw new VerificationApiError(`Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+                const message = `Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
+                logger.error(message);
+                throw new VerificationApiError(message);
             });
         return response.data;
     }

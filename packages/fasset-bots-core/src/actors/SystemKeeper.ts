@@ -82,18 +82,10 @@ export class SystemKeeper extends ActorBase {
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus > agent.status) {
             await this.state.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
-            logger.info(
-                `SystemKeeper ${this.address} started liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${
-                    AgentStatus[agent.status]
-                } to ${AgentStatus[newStatus]}.`
-            );
+            logger.info(`SystemKeeper ${this.address} started liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${AgentStatus[newStatus]}.`);
         } else if (newStatus < agent.status) {
             await this.state.context.assetManager.endLiquidation(agent.vaultAddress, { from: this.address });
-            logger.info(
-                `SystemKeeper ${this.address} ended liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${
-                    AgentStatus[newStatus]
-                }.`
-            );
+            logger.info(`SystemKeeper ${this.address} ended liquidation for agent ${agent.vaultAddress}. Agent's status changed from ${AgentStatus[agent.status]} to ${AgentStatus[newStatus]}.`);
         }
         logger.info(`SystemKeeper ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
     }

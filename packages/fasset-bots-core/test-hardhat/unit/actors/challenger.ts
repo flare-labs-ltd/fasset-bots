@@ -5,12 +5,7 @@ import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { assertWeb3DeepEqual, createTestAgent, createTestChallenger } from "../../test-utils/helpers";
-import {
-    createTestAssetContext,
-    getTestAssetTrackedStateContext,
-    TestAssetBotContext,
-    TestAssetTrackedStateContext,
-} from "../../test-utils/create-test-asset-context";
+import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import spies from "chai-spies";
 import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 use(spies);

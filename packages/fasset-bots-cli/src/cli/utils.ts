@@ -7,7 +7,6 @@ import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import chalk from "chalk";
 import { programWithCommonOptions } from "../utils/program";
 
-
 const program = programWithCommonOptions("bot", "single_fasset");
 
 program.name("utils").description("Command line blockchain helpers");

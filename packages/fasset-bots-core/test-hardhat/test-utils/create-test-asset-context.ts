@@ -142,12 +142,7 @@ export async function createTestAssetContext(
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(
-        stateConnector,
-        { [chainInfo.chainId]: chain },
-        "auto",
-        useAlwaysFailsProver ? useAlwaysFailsProver : false
-    );
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, "auto", useAlwaysFailsProver ? useAlwaysFailsProver : false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
@@ -164,26 +159,11 @@ export async function createTestAssetContext(
     // create asset manager
     const parameterFilename = `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    const settings = createTestAssetManagerSettings(
-        contracts,
-        customParameters ? customParameters : parameters,
-        liquidationStrategy,
-        chainInfo,
-        requireEOAAddressProof
-    );
+    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo, requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
-    const [assetManager, fAsset] = await newAssetManager(
-        governance,
-        assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
-        chainInfo.name,
-        chainInfo.symbol,
-        chainInfo.name,
-        chainInfo.symbol,
-        chainInfo.decimals,
-        web3DeepNormalize(settings),
-        collaterals,
-        createEncodedTestLiquidationSettings()
-    );
+    const [assetManager, fAsset] = await newAssetManager(governance, assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
+        chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals,
+        web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     //

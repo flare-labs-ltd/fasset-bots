@@ -4,7 +4,7 @@ import { FormatSettings, formatFixed } from "./formatting";
 import { BNish, toBN, toBNExp } from "./helpers";
 import { artifacts } from "./web3";
 
-export type AgentTokenType = 'vault' | 'pool' | 'fasset';
+export type AgentTokenType = "vault" | "pool" | "fasset";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -12,11 +12,11 @@ export class AgentTokenConverter {
     constructor(
         public context: IAssetAgentBotContext,
         public agentVaultAddress: string,
-        public type: AgentTokenType,
-    ) { }
+        public type: AgentTokenType
+    ) {}
 
     async tokenDecimals(): Promise<number> {
-        if (this.type === 'fasset') {
+        if (this.type === "fasset") {
             return Number(await this.context.fAsset.decimals());
         } else {
             const collateral = await this.getCollateral();
@@ -25,7 +25,7 @@ export class AgentTokenConverter {
     }
 
     async tokenSymbol(): Promise<string> {
-        if (this.type === 'fasset') {
+        if (this.type === "fasset") {
             return await this.context.fAsset.symbol();
         } else {
             const collateral = await this.getCollateral();
@@ -36,7 +36,7 @@ export class AgentTokenConverter {
 
     async getCollateral(): Promise<CollateralType> {
         if (this._collateral == null) {
-            if (this.type === 'fasset') throw new Error("Invalid collateral type");
+            if (this.type === "fasset") throw new Error("Invalid collateral type");
             this._collateral = await this._getCollateral(this.type);
         }
         return this._collateral;
@@ -44,8 +44,8 @@ export class AgentTokenConverter {
 
     private _collateral?: CollateralType;
 
-    private async _getCollateral(type: 'vault' | 'pool'): Promise<CollateralType> {
-        if (type === 'vault') {
+    private async _getCollateral(type: "vault" | "pool"): Promise<CollateralType> {
+        if (type === "vault") {
             const agentInfo = await this.context.assetManager.getAgentInfo(this.agentVaultAddress);
             return await this.context.assetManager.getCollateralType(CollateralClass.VAULT, agentInfo.vaultCollateralToken);
         } else {

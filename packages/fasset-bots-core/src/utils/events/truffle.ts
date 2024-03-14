@@ -13,19 +13,11 @@ export type EventNamesFor<T> = T extends ContractWithEvents<infer _C, infer E> ?
 export type EventForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer _C, infer E> ? ExtractEvent<E, N> : never;
 export type EventArgsForName<T, N extends EventNamesFor<T>> = T extends ContractWithEvents<infer _C, infer E> ? ExtractedEventArgs<E, N> : never;
 
-export type EventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> = C[M] extends (
-    ...args: any
-) => Promise<Truffle.TransactionResponse<infer E>>
-    ? E
-    : never;
+export type EventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> = C[M] extends (...args: any) => Promise<Truffle.TransactionResponse<infer E>> ? E : never;
 
 export type ContractWithEventsForMethod<C extends Truffle.ContractInstance, M extends keyof C> = ContractWithEvents<C, EventsForMethod<C, M>>;
 
-export function eventIs<C extends Truffle.ContractInstance, E extends EventSelector, N extends E["name"]>(
-    event: BaseEvent,
-    source: ContractWithEvents<C, E>,
-    eventName: N
-): event is TruffleExtractEvent<E, N> {
+export function eventIs<C extends Truffle.ContractInstance, E extends EventSelector, N extends E["name"]>(event: BaseEvent, source: ContractWithEvents<C, E>, eventName: N): event is TruffleExtractEvent<E, N> {
     return event.address === source.address && event.event === eventName;
 }
 
@@ -33,10 +25,7 @@ export function filterEvents<E extends EventSelector, N extends E["name"]>(respo
     return response.logs.filter((e) => e.event === name) as any;
 }
 
-export function findEvent<E extends EventSelector, N extends E["name"]>(
-    response: Truffle.TransactionResponse<E>,
-    name: N
-): TruffleExtractEvent<E, N> | undefined {
+export function findEvent<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): TruffleExtractEvent<E, N> | undefined {
     return response.logs.find((e) => e.event === name) as any;
 }
 

@@ -101,7 +101,7 @@ export class Liquidator extends ActorBase {
      */
     private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
         logger.info(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
-        console.log(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`)
+        console.log(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
         const timestamp = await latestBlockTimestampBN();
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         console.log(`Agent ${agent.vaultAddress} has status ${newStatus}.`);
@@ -109,7 +109,7 @@ export class Liquidator extends ActorBase {
             await this.liquidateAgent(agent);
         }
         logger.info(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
-        console.log(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`)
+        console.log(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
     }
 
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {

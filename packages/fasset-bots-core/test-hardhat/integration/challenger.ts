@@ -8,14 +8,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { AgentRedemptionState } from "../../src/entities/agent";
-import {
-    createTestAgentBotAndMakeAvailable,
-    createCRAndPerformMintingAndRunSteps,
-    createTestChallenger,
-    createTestMinter,
-    createTestRedeemer,
-    getAgentStatus,
-} from "../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createCRAndPerformMintingAndRunSteps, createTestChallenger, createTestMinter, createTestRedeemer, getAgentStatus } from "../test-utils/helpers";
 import { TrackedState } from "../../src/state/TrackedState";
 import { TransactionOptionsWithFee, UTXO, SpentReceivedObject, IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
@@ -269,11 +262,7 @@ describe("Challenger tests", async () => {
         const agentInfo = await agentBot.agent.getAgentInfo();
         // announce underlying withdrawal
         const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-        const txHash = await agentBot.agent.performPayment(
-            agentInfo.underlyingAddressString,
-            toBN(agentInfo.freeUnderlyingBalanceUBA).divn(2),
-            announce.paymentReference
-        );
+        const txHash = await agentBot.agent.performPayment(agentInfo.underlyingAddressString, toBN(agentInfo.freeUnderlyingBalanceUBA).divn(2), announce.paymentReference);
         chain.mine(chain.finalizationBlocks + 1);
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);

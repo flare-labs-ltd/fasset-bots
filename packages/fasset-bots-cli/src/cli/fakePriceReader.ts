@@ -22,7 +22,7 @@ program
     .argument("[decimals]", "decimals - required only when price not yet initialized")
     .action(async (symbol: string, price: string, decimals: string | null) => {
         await initEnvironment(true);
-        const priceReader = await getPriceReader(true) as FakePriceReaderInstance;
+        const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
         const deployerAddress = requireSecret("deployer.address");
         if (decimals) await priceReader.setDecimals(symbol, decimals, { from: deployerAddress });
         await priceReader.setPrice(symbol, price, { from: deployerAddress });
@@ -34,7 +34,7 @@ program
     .description("send 'PriceEcpochFinalized' event for FakePriceReader")
     .action(async () => {
         await initEnvironment(true);
-        const priceReader = await getPriceReader(true) as FakePriceReaderInstance;
+        const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
         const deployerAddress = requireSecret("deployer.address");
         await priceReader.finalizePrices({ from: deployerAddress });
     });
@@ -64,7 +64,7 @@ program
     .action(async (symbol: string, option) => {
         await initEnvironment(false);
         const priceReader = await getPriceReader(false);
-        if(option.trusted) {
+        if (option.trusted) {
             const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPriceFromTrustedProviders(symbol);
             console.log(`Price: ${price}, Timestamp: ${timestamp}, Decimals: ${decimals}`);
         } else {

@@ -21,7 +21,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
             result[chainId] = {
                 address: underlyingAccount.address,
                 private_key: underlyingAccount.privateKey,
-            }
+            };
         }
         return result;
     }

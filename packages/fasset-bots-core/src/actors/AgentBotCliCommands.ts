@@ -385,10 +385,7 @@ export class BotCliCommands {
             agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
             await this.botConfig.orm!.em.persistAndFlush(agentEnt);
             await this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
-            logger.info(
-                `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${announce.paymentReference
-                }.`
-            );
+            logger.info(`Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${announce.paymentReference}.`);
             return announce.paymentReference;
         } catch (error) {
             console.error(error);
@@ -410,9 +407,7 @@ export class BotCliCommands {
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
         await this.botConfig.orm!.em.persistAndFlush(agentEnt);
         await this.botConfig.notifier!.sendUnderlyingWithdrawalPerformed(agentVault, txHash);
-        logger.info(
-            `Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`
-        );
+        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
         return txHash;
     }
 
@@ -436,16 +431,8 @@ export class BotCliCommands {
                 await this.botConfig.orm!.em.persistAndFlush(agentEnt);
                 await this.botConfig.notifier!.sendConfirmWithdrawUnderlying(agentVault);
             } else {
-                logger.info(
-                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                        .add(announcedUnderlyingConfirmationMinSeconds)
-                        .toString()}. Current ${latestTimestamp.toString()}.`
-                );
-                console.log(
-                    `Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                        .add(announcedUnderlyingConfirmationMinSeconds)
-                        .toString()}. Current ${latestTimestamp.toString()}.`
-                );
+                logger.info(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                console.log(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             await this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
@@ -473,16 +460,8 @@ export class BotCliCommands {
             } else {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 await this.botConfig.orm!.em.persistAndFlush(agentEnt);
-                logger.info(
-                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                        .add(announcedUnderlyingConfirmationMinSeconds)
-                        .toString()}. Current ${latestTimestamp.toString()}.`
-                );
-                console.log(
-                    `Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)
-                        .add(announcedUnderlyingConfirmationMinSeconds)
-                        .toString()}. Current ${latestTimestamp.toString()}.`
-                );
+                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             await this.botConfig.notifier!.sendNoActiveWithdrawal(agentVault);
@@ -497,11 +476,7 @@ export class BotCliCommands {
         const query = this.botConfig.orm!.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
-            console.log(
-                `Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(
-                    agent.chainId
-                )}, ChainSymbol: ${agent.chainSymbol}, Current event block: ${agent.currentEventBlock} `
-            );
+            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, ChainSymbol: ${agent.chainSymbol}, Current event block: ${agent.currentEventBlock} `);
         }
     }
 
@@ -647,9 +622,9 @@ export class BotCliCommands {
                 requestBody: { addressStr: ZERO_ADDRESS },
                 responseBody: { isValid: false, standardAddress: ZERO_ADDRESS, standardAddressHash: ZERO_BYTES32 },
                 sourceId: "0x7465737458525000000000000000000000000000000000000000000000000000",
-                votingRound: "0"
+                votingRound: "0",
             },
-            merkleProof: []
+            merkleProof: [],
         };
         const fakeSettings: AgentSettings = {
             poolTokenSuffix: suffix,

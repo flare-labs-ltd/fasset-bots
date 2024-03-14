@@ -53,7 +53,7 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .option("--noWait", "only reserve and pay for the minting, don't wait for payment finalization and proof; you have to execute the minting later")
-    .action(async (amountLots: string, cmdOptions: { agent?: string; updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
+    .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
@@ -111,7 +111,7 @@ program
             throw new CommandLineError("Missing executorAddress");
         }
         if (cmdOptions.executorAddress && cmdOptions.executorFee) {
-            await redeemerBot.redeem(amountLots, cmdOptions.executorAddress, cmdOptions.executorFee)
+            await redeemerBot.redeem(amountLots, cmdOptions.executorAddress, cmdOptions.executorFee);
         } else {
             await redeemerBot.redeem(amountLots);
         }

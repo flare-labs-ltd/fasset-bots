@@ -14,5 +14,4 @@ describe("Key gen cli commands unit tests", async () => {
         const user = generateSecrets(FASSET_BOT_CONFIG, ["user"]);
         expect(user).to.not.be.empty;
     });
-
 });

@@ -1,7 +1,7 @@
 import { MockNotifier } from "../../src/mock/MockNotifier";
 import { EventFormatter } from "../test-utils/EventFormatter";
 
-export class FuzzingNotifier extends MockNotifier{
+export class FuzzingNotifier extends MockNotifier {
     constructor(
         public notifier: MockNotifier,
         public eventFormatter: EventFormatter
@@ -32,13 +32,7 @@ export class FuzzingNotifier extends MockNotifier{
         this.notifier.sendRedemptionCornerCase(this.eventFormatter.formatAddress(agentVault), requestId);
     }
     async sendRedemptionFailedOrBlocked(requestId: string, txHash: string, redeemer: string, agentVault: string, failureReason?: string | undefined): Promise<void> {
-        this.notifier.sendRedemptionFailedOrBlocked(
-            requestId,
-            txHash,
-            this.eventFormatter.formatAddress(redeemer),
-            this.eventFormatter.formatAddress(agentVault),
-            failureReason
-        );
+        this.notifier.sendRedemptionFailedOrBlocked(requestId, txHash, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault), failureReason);
     }
     async sendRedemptionDefaulted(requestId: string, redeemer: string, agentVault: string): Promise<void> {
         this.notifier.sendRedemptionDefaulted(requestId, this.eventFormatter.formatAddress(redeemer), this.eventFormatter.formatAddress(agentVault));

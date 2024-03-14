@@ -12,12 +12,7 @@ export class Prices {
         return this.collateralPrices.get(token);
     }
 
-    static async getFtsoPrices(
-        priceReader: TokenPriceReader,
-        settings: AssetManagerSettings,
-        collaterals: Iterable<CollateralType>,
-        trusted: boolean
-    ): Promise<Prices> {
+    static async getFtsoPrices(priceReader: TokenPriceReader, settings: AssetManagerSettings, collaterals: Iterable<CollateralType>, trusted: boolean): Promise<Prices> {
         const collateralPrices = new CollateralIndexedList<CollateralPrice>();
         for (const collateral of collaterals) {
             const collateralPrice = await CollateralPrice.forCollateral(priceReader, settings, collateral, trusted);

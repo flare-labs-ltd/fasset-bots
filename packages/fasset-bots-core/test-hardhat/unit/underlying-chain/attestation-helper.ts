@@ -56,9 +56,7 @@ describe("Attestation client unit tests", async () => {
     it("Should prove confirmed block height existence", async () => {
         await useContext();
         chain.mine(chain.finalizationBlocks + 1);
-        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(
-            await attestationWindowSeconds(context.assetManager)
-        );
+        const requestConfirmedBlockHeight = await context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager));
         expect(requestConfirmedBlockHeight).to.not.be.null;
     });
 
@@ -113,9 +111,7 @@ describe("Attestation client unit tests", async () => {
         const blockNumber = await context.blockchainIndexer.getBlockHeight();
         const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
         const endBlock = blockNumber + 10;
-        await expect(
-            context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!)
-        )
+        await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!))
             .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`)
             .and.be.an.instanceOf(Error);
     });

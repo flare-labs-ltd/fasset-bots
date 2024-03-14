@@ -8,12 +8,7 @@ import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import {
-    TestAssetBotContext,
-    TestAssetTrackedStateContext,
-    createTestAssetContext,
-    getTestAssetTrackedStateContext,
-} from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 

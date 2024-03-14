@@ -3,6 +3,7 @@ import { LiquidatorInstance } from "../../../typechain-truffle";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
 import { artifacts } from "../../utils/web3";
+import { ZERO_ADDRESS } from "../../utils";
 
 const Liquidator = artifacts.require("Liquidator");
 
@@ -22,24 +23,15 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy {
 }
 
 export class DexLiquidationStrategy extends LiquidationStrategy {
-
     protected async dexMinPriceOracle(challenger: LiquidatorInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
         const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
-            await challenger.maxSlippageToMinPrices(1000, 2000, agent.vaultAddress, { from: this.address })
-        return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2]
+            await challenger.maxSlippageToMinPrices(1000, 2000, agent.vaultAddress, { from: this.address });
+        return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2];
     }
 
     public async liquidate(agent: TrackedAgentState): Promise<void> {
         const liquidator = await Liquidator.at(this.state.context.liquidationStrategy!.config.address);
-        await liquidator.runArbitrage(
-            agent.vaultAddress,
-            this.address,
-            ...await this.dexMinPriceOracle(liquidator, agent),
-            "0x0000000000000000000000000000000000000000",
-            "0x0000000000000000000000000000000000000000",
-            [],
-            [],
-            { from: this.address }
-        );
+        const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
+        await liquidator.runArbitrage(agent.vaultAddress, this.address, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address });
     }
 }

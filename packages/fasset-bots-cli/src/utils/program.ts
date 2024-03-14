@@ -5,12 +5,12 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-export function programWithCommonOptions(user: 'bot' | 'user', fassets: 'single_fasset' | 'all_fassets') {
+export function programWithCommonOptions(user: "bot" | "user", fassets: "single_fasset" | "all_fassets") {
     const program = new Command();
 
-    const configEnvVar = user === 'user' ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
-    const secretsEnvVar = user === 'user' ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
-    const allowDefaultSecrets = user === 'user';
+    const configEnvVar = user === "user" ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
+    const secretsEnvVar = user === "user" ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
+    const allowDefaultSecrets = user === "user";
 
     program.addOption(
         program
@@ -32,9 +32,10 @@ export function programWithCommonOptions(user: 'bot' | 'user', fassets: 'single_
             .env(secretsEnvVar)
             .makeOptionMandatory()
     );
-    if (fassets === 'single_fasset') {
+    if (fassets === "single_fasset") {
         program.addOption(
-            program.createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+            program
+                .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
                 .makeOptionMandatory()
         );
     }

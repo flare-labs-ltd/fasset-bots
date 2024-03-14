@@ -6,9 +6,9 @@ import MockAdapter from "axios-mock-adapter";
 export class FaultyNotifier extends Notifier {
     mock: MockAdapter | undefined;
     constructor() {
-        super("FaultyNotifier")
-        if(this.mock && this.client){
-            this.mock.onPost('/api/0/bot_alert').reply(500, 'Internal Server Error');
+        super("FaultyNotifier");
+        if (this.mock && this.client) {
+            this.mock.onPost("/api/0/bot_alert").reply(500, "Internal Server Error");
         }
     }
 
@@ -75,10 +75,10 @@ export class FaultyNotifier extends Notifier {
     async sendWithdrawVaultCollateralAnnouncement(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string): Promise<void>  {
+    async sendRedeemCollateralPoolTokensAnnouncement(agentVault: string, amount: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    async sendAgentSettingsUpdate(agentVault: string, settingName: string): Promise<void>  {
+    async sendAgentSettingsUpdate(agentVault: string, settingName: string): Promise<void> {
         throw new Error("Method not implemented.");
     }
     async sendAgentAnnouncedExitAvailable(agentVault: string): Promise<void> {

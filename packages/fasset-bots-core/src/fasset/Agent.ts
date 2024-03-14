@@ -1,15 +1,5 @@
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import {
-    AgentAvailable,
-    AgentDestroyed,
-    AllEvents,
-    AssetManagerInstance,
-    AvailableAgentExited,
-    SelfClose,
-    UnderlyingWithdrawalAnnounced,
-    UnderlyingWithdrawalCancelled,
-    UnderlyingWithdrawalConfirmed,
-} from "../../typechain-truffle/AssetManager";
+import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, toBN } from "../utils/helpers";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -167,7 +157,7 @@ export class Agent {
     async announceExitAvailable(): Promise<BN> {
         const res = await this.assetManager.announceExitAvailableAgentList(this.vaultAddress, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AvailableAgentExitAnnounced");
-        return args.exitAllowedAt;
+        return toBN(args.exitAllowedAt);
     }
 
     /**
@@ -187,7 +177,7 @@ export class Agent {
     async announceVaultCollateralWithdrawal(amountWei: BNish): Promise<BN> {
         const res = await this.assetManager.announceVaultCollateralWithdrawal(this.vaultAddress, amountWei, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "VaultCollateralWithdrawalAnnounced");
-        return args.withdrawalAllowedAt;
+        return toBN(args.withdrawalAllowedAt);
     }
 
     /**
@@ -225,7 +215,7 @@ export class Agent {
     async announceDestroy(): Promise<BN> {
         const res = await this.assetManager.announceDestroyAgent(this.vaultAddress, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AgentDestroyAnnounced");
-        return args.destroyAllowedAt;
+        return toBN(args.destroyAllowedAt);
     }
 
     /**
@@ -315,12 +305,7 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction hash
      */
-    async performPayment(
-        paymentAddress: string,
-        paymentAmount: BNish,
-        paymentReference: string | null = null,
-        options?: TransactionOptionsWithFee
-    ): Promise<string> {
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee) {
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
     }
 
@@ -330,10 +315,10 @@ export class Agent {
      * @param settingValue
      * @returns timestamp when setting update is allowed
      */
-    async announceAgentSettingUpdate(settingName: string, settingValue: BNish): Promise<BN> {
+    async announceAgentSettingUpdate(settingName: string, settingValue: BNish) {
         const res = await this.assetManager.announceAgentSettingUpdate(this.vaultAddress, settingName, settingValue, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "AgentSettingChangeAnnounced");
-        return args.validAt;
+        return toBN(args.validAt);
     }
 
     /**
@@ -352,7 +337,7 @@ export class Agent {
     async announcePoolTokenRedemption(amountWei: BNish) {
         const res = await this.assetManager.announceAgentPoolTokenRedemption(this.vaultAddress, amountWei, { from: this.owner.workAddress });
         const args = requiredEventArgs(res, "PoolTokenRedemptionAnnounced");
-        return args.withdrawalAllowedAt;
+        return toBN(args.withdrawalAllowedAt);
     }
 
     /**

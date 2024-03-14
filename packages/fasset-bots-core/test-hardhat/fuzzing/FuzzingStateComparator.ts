@@ -37,11 +37,7 @@ export class FuzzingStateComparator {
             const actualCmp = diff.eq(BN_ZERO) ? "==" : diff.lt(BN_ZERO) ? "<" : ">";
             const okMsg = comparison === "eq" ? "equal" : comparison === "lte" ? "ok (<=)" : "ok (>=)";
             const problemMsg = comparison === "eq" ? "different" : comparison === "lte" ? "problem (too large)" : "problem (too small)";
-            console.log(
-                `    ${problem ? problemMsg : okMsg}  ${description}:  actual=${formatBN(actualValue)} ${actualCmp} tracked=${formatBN(
-                    trackedValue
-                )},  difference=${formatBN(diff)}`
-            );
+            console.log(`    ${problem ? problemMsg : okMsg}  ${description}:  actual=${formatBN(actualValue)} ${actualCmp} tracked=${formatBN(trackedValue)},  difference=${formatBN(diff)}`);
         }
         this.problems += problem ? 1 : 0;
         return problem ? 1 : 0;

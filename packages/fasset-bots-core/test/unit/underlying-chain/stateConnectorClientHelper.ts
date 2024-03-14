@@ -8,13 +8,7 @@ import { initWeb3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 use(chaiAsPromised);
 import { testChainInfo } from "../../test-utils/TestChainInfo";
-import {
-    ATTESTATION_PROVIDER_URLS,
-    COSTON_RPC,
-    INDEXER_URL_XRP,
-    STATE_CONNECTOR_ADDRESS,
-    STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-} from "../../test-utils/test-bot-config";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");

@@ -10,6 +10,7 @@ fasset-config/
 fasset-deployment/
 typechain-truffle/
 **/mock/
+**/node_modules/
 tsconfig.json
 .nycrc.json
 hardhat.config.ts

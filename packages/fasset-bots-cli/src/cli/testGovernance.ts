@@ -117,7 +117,7 @@ async function addCollateralToken(configFileName: string, paramFile: string) {
         collateralClass: CollateralClass.VAULT,
         token: addressFromParameter(contracts, parameters.token),
         decimals: parameters.decimals,
-        validUntil: 0,  // not deprecated
+        validUntil: 0, // not deprecated
         directPricePair: parameters.directPricePair,
         assetFtsoSymbol: parameters.assetFtsoSymbol,
         tokenFtsoSymbol: parameters.tokenFtsoSymbol,
@@ -131,7 +131,7 @@ async function addCollateralToken(configFileName: string, paramFile: string) {
 }
 
 function addressFromParameter(contracts: ChainContracts, addressOrName: string) {
-    if (addressOrName.startsWith('0x')) return addressOrName;
+    if (addressOrName.startsWith("0x")) return addressOrName;
     const contract = contracts[addressOrName];
     if (contract != null) return contract.address;
     throw new Error(`Missing contract ${addressOrName}`);

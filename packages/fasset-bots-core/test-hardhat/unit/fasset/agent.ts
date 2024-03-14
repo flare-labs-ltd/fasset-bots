@@ -7,13 +7,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { time } from "@openzeppelin/test-helpers";
 import spies from "chai-spies";
 import { expect, spy, use } from "chai";
-import {
-    createCRAndPerformMinting,
-    createTestAgent,
-    createTestAgentAndMakeAvailable,
-    createTestMinter,
-    mintAndDepositVaultCollateralToOwner,
-} from "../../test-utils/helpers";
+import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";

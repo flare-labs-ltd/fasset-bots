@@ -5,13 +5,7 @@ import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
 import { SourceId } from "./SourceId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
-import {
-    AttestationNotProved,
-    AttestationProof,
-    AttestationRequestId,
-    IStateConnectorClient,
-    OptionalAttestationProof,
-} from "./interfaces/IStateConnectorClient";
+import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
 import BN from "bn.js";
 
 export class AttestationHelperError extends Error {
@@ -51,9 +45,7 @@ export class AttestationHelper {
     }
 
     async requestPaymentProof(transactionHash: string, sourceAddress: string | null, receivingAddress: string | null): Promise<AttestationRequestId | null> {
-        logger.info(
-            `Attestation helper: requesting payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`
-        );
+        logger.info(`Attestation helper: requesting payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`);
         const transaction = await this.chain.getTransaction(transactionHash);
         const block = await this.chain.getTransactionBlock(transactionHash);
         if (transaction == null || block == null) {
@@ -74,9 +66,7 @@ export class AttestationHelper {
     }
 
     async requestBalanceDecreasingTransactionProof(transactionHash: string, sourceAddress: string): Promise<AttestationRequestId | null> {
-        logger.info(
-            `Attestation helper: requesting balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`
-        );
+        logger.info(`Attestation helper: requesting balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`);
         const transaction = await this.chain.getTransaction(transactionHash);
         const block = await this.chain.getTransactionBlock(transactionHash);
         if (transaction == null || block == null) {
@@ -103,22 +93,15 @@ export class AttestationHelper {
         endBlock: number,
         endTimestamp: number
     ): Promise<AttestationRequestId | null> {
-        logger.info(
-            `Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`
-        );
+        logger.info(`Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`);
         let overflowBlock = await this.chain.getBlockAt(endBlock + 1);
         while (overflowBlock != null && overflowBlock.timestamp <= endTimestamp) {
             overflowBlock = await this.chain.getBlockAt(overflowBlock.number + 1);
         }
         if (overflowBlock == null) {
-            logger.error(
-                `Attestation helper error: overflow block not found (overflowBlock ${
-                    endBlock + 1
-                }, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`
-            );
-            throw new AttestationHelperError(
-                `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`
-            );
+            const info = `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`;
+            logger.error(`Attestation helper error: ${info}`);
+            throw new AttestationHelperError(info);
         }
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
@@ -195,9 +178,7 @@ export class AttestationHelper {
     }
 
     async provePayment(transactionHash: string, sourceAddress: string | null, receivingAddress: string | null): Promise<Payment.Proof> {
-        logger.info(
-            `Attestation helper: proving payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`
-        );
+        logger.info(`Attestation helper: proving payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`);
         const request = await this.requestPaymentProof(transactionHash, sourceAddress, receivingAddress);
         if (request == null) {
             logger.error(`Attestation helper error: payment not proved`);
@@ -214,9 +195,7 @@ export class AttestationHelper {
     }
 
     async proveBalanceDecreasingTransaction(transactionHash: string, sourceAddress: string): Promise<BalanceDecreasingTransaction.Proof> {
-        logger.info(
-            `Attestation helper: proving balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`
-        );
+        logger.info(`Attestation helper: proving balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`);
         const request = await this.requestBalanceDecreasingTransactionProof(transactionHash, sourceAddress);
         if (request == null) {
             logger.error(`Attestation helper error: balanceDecreasingTransaction not proved`);
@@ -240,9 +219,7 @@ export class AttestationHelper {
         endBlock: number,
         endTimestamp: number
     ): Promise<ReferencedPaymentNonexistence.Proof> {
-        logger.info(
-            `Attestation helper: proving referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`
-        );
+        logger.info(`Attestation helper: proving referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`);
         const request = await this.requestReferencedPaymentNonexistenceProof(destinationAddress, paymentReference, amount, startBlock, endBlock, endTimestamp);
         if (request == null) {
             logger.error(`Attestation helper error: referencedPaymentNonexistence not proved`);
@@ -278,12 +255,12 @@ export class AttestationHelper {
     async proveAddressValidity(underlyingAddress: string): Promise<AddressValidity.Proof> {
         const request = await this.requestAddressValidityProof(underlyingAddress);
         if (request == null) {
-            throw new AttestationHelperError("addressValidity: not proved")
+            throw new AttestationHelperError("addressValidity: not proved");
         }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainAddressValidityProof(request.round, request.data);
         if (!attestationProved(result)) {
-            throw new AttestationHelperError("addressValidity: not proved")
+            throw new AttestationHelperError("addressValidity: not proved");
         }
         return result;
     }
