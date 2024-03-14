@@ -3,6 +3,7 @@ import util from "util";
 import Web3 from "web3";
 import { logger } from "./logger";
 import crypto from "crypto";
+import chalk from "chalk";
 
 export type BNish = BN | number | string;
 
@@ -205,7 +206,7 @@ export function toplevelRun(main: () => Promise<void>) {
     main()
         .catch((error) => {
             if (error instanceof CommandLineError) {
-                console.error(`Error: ${error.message}`);
+                console.error(chalk.red("Error:"), error.message);
             } else {
                 console.error(error);
             }

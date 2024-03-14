@@ -1,29 +1,28 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import "dotenv/config";
 
+import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentBot } from "./AgentBot";
-import { AgentEntity } from "../entities/agent";
-import { createAssetContext } from "../config/create-asset-context";
-import { BotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { BN_ZERO, CommandLineError, ZERO_ADDRESS, toBN } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
+import BN from "bn.js";
 import chalk from "chalk";
-import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { InfoBot } from "..";
+import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
+import { BotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
+import { createAssetContext } from "../config/create-asset-context";
+import { getSecrets, requireSecret } from "../config/secrets";
+import { AgentEntity } from "../entities/agent";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
-import { logger } from "../utils/logger";
+import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
-import { getSecrets } from "../config/secrets";
-import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
-import BN from "bn.js";
-import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
 import { resolveInFassetBotsCore } from "../utils";
-import { InfoBot } from "..";
+import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { BN_ZERO, CommandLineError, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { AgentBot } from "./AgentBot";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -121,10 +120,7 @@ export class BotCliCommands {
      * @param agentSettings
      */
     async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent | null> {
-        if (!await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix)) {
-            console.log(chalk.red(`Collateral pool token suffix ${agentSettings.poolTokenSuffix} is invalid.`));
-            return null;
-        }
+        await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
@@ -142,10 +138,9 @@ export class BotCliCommands {
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
             return agentBot.agent;
         } catch (error) {
-            console.log(`Owner ${this.owner} couldn't create agent.`);
             logger.error(`Owner ${this.owner} couldn't create agent: ${error}`);
+            throw error;
         }
-        return null;
     }
 
     /**
@@ -391,8 +386,7 @@ export class BotCliCommands {
             await this.botConfig.orm!.em.persistAndFlush(agentEnt);
             await this.botConfig.notifier!.sendAnnounceUnderlyingWithdrawal(agentVault, announce.paymentReference);
             logger.info(
-                `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${
-                    announce.paymentReference
+                `Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${announce.paymentReference
                 }.`
             );
             return announce.paymentReference;
@@ -644,14 +638,39 @@ export class BotCliCommands {
         await agentBot.agent.upgradeWNatContract();
     }
 
-    // TODO: at fasset-v2 we should also check whether the suffix is already used
-    private async validateCollateralPoolTokenSuffix(suffix: string): Promise<boolean> {
-        for (let i = 0; i < suffix.length; i++) {
-            const char = suffix[i];
-            if (!((char >= "A" && char <= "Z" || char >= "0" && char <= "9") || i > 0 && i < suffix.length - 1 && char == "-")) {
-                return false;
+    // HACK - until fasset-v2 support pool token validity check, exploit the fact that token validation is the first thing in createAgentVault call
+    private async validateCollateralPoolTokenSuffix(suffix: string) {
+        const fakeAddressProof: AddressValidity.Proof = {
+            data: {
+                attestationType: "0x4164647265737356616c69646974790000000000000000000000000000000000",
+                lowestUsedTimestamp: "0xffffffffffffffff",
+                requestBody: { addressStr: ZERO_ADDRESS },
+                responseBody: { isValid: false, standardAddress: ZERO_ADDRESS, standardAddressHash: ZERO_BYTES32 },
+                sourceId: "0x7465737458525000000000000000000000000000000000000000000000000000",
+                votingRound: "0"
+            },
+            merkleProof: []
+        };
+        const fakeSettings: AgentSettings = {
+            poolTokenSuffix: suffix,
+            vaultCollateralToken: ZERO_ADDRESS,
+            feeBIPS: "0",
+            poolFeeShareBIPS: "0",
+            buyFAssetByAgentFactorBIPS: "0",
+            mintingPoolCollateralRatioBIPS: "0",
+            mintingVaultCollateralRatioBIPS: "0",
+            poolExitCollateralRatioBIPS: "0",
+            poolTopupCollateralRatioBIPS: "0",
+            poolTopupTokenPriceFactorBIPS: "0",
+        };
+        try {
+            await this.context.assetManager.createAgentVault.call(fakeAddressProof, fakeSettings);
+        } catch (e: unknown) {
+            if (errorIncluded(e, ["suffix already reserved"])) {
+                throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
+            } else if (errorIncluded(e, ["invalid character in suffix"])) {
+                throw new CommandLineError(`Collateral pool token suffix "${suffix}" contains invalid characters.`);
             }
         }
-        return true;
     }
 }
