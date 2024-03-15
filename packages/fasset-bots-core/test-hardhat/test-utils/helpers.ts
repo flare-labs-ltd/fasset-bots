@@ -189,7 +189,7 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
     return Number(agentInfo.status) as AgentStatus;
 }
 
-export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
+export async function convertFromUSD5(amount: BNish, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
     const priceReader = await TokenPriceReader.create(settings);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, false);
     // 5 is for 5 decimals of USD5

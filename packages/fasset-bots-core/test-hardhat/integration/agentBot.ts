@@ -18,10 +18,11 @@ import spies from "chai-spies";
 import { expect, spy, use } from "chai";
 use(spies);
 import BN from "bn.js";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -33,7 +34,7 @@ describe("Agent bot tests", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    let settings: any;
+    let settings: AssetManagerSettings;
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
@@ -58,8 +59,7 @@ describe("Agent bot tests", async () => {
         redeemerAddress = accounts[5];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
@@ -71,6 +71,12 @@ describe("Agent bot tests", async () => {
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        return { context, chain, settings, agentBot, minter, redeemer };
+    }
+
+    beforeEach(async () => {
+        orm.em.clear();
+        ({ context, chain, settings, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
     });
 
     it("Management address should not work for sending from server", async () => {
@@ -534,7 +540,7 @@ describe("Agent bot tests", async () => {
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
-        await time.increase(settings.withdrawalWaitMinSeconds * 2);
+        await time.increase(Number(settings.withdrawalWaitMinSeconds) * 2);
         // agent destruction
         await agentBot.agent.destroy();
         // handle destruction
