@@ -61,14 +61,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
             return {
                 hash: data.transactionId,
@@ -95,14 +90,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
             return {
                 hash: data.blockHash,
@@ -131,14 +121,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
             return {
                 hash: data.blockHash,
@@ -165,14 +150,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
             return {
                 hash: data.blockHash,
@@ -201,14 +181,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         if (status === "OK" && data) {
             return data;
         } else {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         }
     }
 
@@ -228,15 +203,10 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const txs: ITransaction[] = [];
         if (status != "OK") {
             /* istanbul ignore next */
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve transaction by reference ${reference}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
+            const info = `Cannot retrieve transaction by reference ${reference}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
             /* istanbul ignore next */
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve transaction by reference ${reference}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 txs.push({
@@ -267,16 +237,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve transactions between block ${from} and ${to}: ${status}: ${
-                    errorMessage ? errorMessage : ""
-                }, ${errorDetails ? errorDetails : ""}`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve transactions between block ${from} and ${to}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
+            const info = `Cannot retrieve transactions between block ${from} and ${to}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
             for (const tx of dataArray) {
                 /* istanbul ignore else */
@@ -321,14 +284,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            logger.error(
-                `Block chain indexer helper error: cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${
-                    errorDetails ? errorDetails : ""
-                }`
-            );
-            throw new BlockChainIndexerHelperError(
-                `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`
-            );
+            const info = `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
         } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
             dataArray.map((item: any) => {
                 transactionIds.push(item.transactionId);

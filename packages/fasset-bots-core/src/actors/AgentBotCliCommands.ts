@@ -138,7 +138,7 @@ export class BotCliCommands {
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
             return agentBot.agent;
         } catch (error) {
-            logger.error(`Owner ${this.owner} couldn't create agent: ${error}`);
+            logger.error(`Owner ${this.owner} couldn't create agent:`, error);
             throw error;
         }
     }

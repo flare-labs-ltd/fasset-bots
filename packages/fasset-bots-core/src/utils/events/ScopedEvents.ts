@@ -12,10 +12,10 @@ export class EventScope {
     exitOnExpectedError(error: any, expectedErrors: ErrorFilter[], kind: ActorBaseKind | "AGENT" | "USER", address: string): never {
         const actor = kind === "AGENT" || kind === "USER" ? kind : ActorBaseKind[kind];
         if (errorIncluded(error, expectedErrors)) {
-            logger.error(`${actor} ${address} exited on expected error: ${error}`);
+            logger.error(`${actor} ${address} exited on expected error:`, error);
             throw new ExitScope(this);
         }
-        logger.error(`${actor} ${address} exited on UNexpected error: ${error}`);
+        logger.error(`${actor} ${address} exited on UNexpected error:`, error);
         throw error; // unexpected error
     }
 }

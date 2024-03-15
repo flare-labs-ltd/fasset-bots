@@ -60,7 +60,7 @@ export class Liquidator extends ActorBase {
             }
         } catch (error) {
             console.error(`Error handling events for liquidator ${this.address}: ${error}`);
-            logger.error(`Liquidator ${this.address} run into error while handling events: ${error}`);
+            logger.error(`Liquidator ${this.address} run into error while handling events:`, error);
         }
     }
 
@@ -90,7 +90,7 @@ export class Liquidator extends ActorBase {
                 await this.checkAgentForLiquidation(agent);
             } catch (error) {
                 console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
-                logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}: ${error}`);
+                logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}:`, error);
             }
         }
     }

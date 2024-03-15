@@ -58,7 +58,7 @@ export class AgentBotRunner {
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
-                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}:`, error);
             }
         }
     }

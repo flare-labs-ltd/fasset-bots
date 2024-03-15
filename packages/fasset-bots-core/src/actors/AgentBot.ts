@@ -179,7 +179,7 @@ export class AgentBot {
             }
             logger.info(`Owner ${owner} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
-            logger.error(`Owner ${owner} couldn't activate underlying address ${agentUnderlyingAddress}: ${error}`);
+            logger.error(`Owner ${owner} couldn't activate underlying address ${agentUnderlyingAddress}:`, error);
             throw new Error(`Could not activate or verify new XRP account ${agentUnderlyingAddress}`);
         }
     }
@@ -222,12 +222,12 @@ export class AgentBot {
                         }
                         await rootEm.persist(agentEnt).flush();
                         console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
                     });
             }
         } catch (error) {
             console.error(`Error troubleshooting events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while troubleshooting events: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while troubleshooting events:`, error);
         }
     }
 
@@ -283,12 +283,12 @@ export class AgentBot {
                         agentEnt.addNewEvent(new Event(agentEnt, event, false));
                         await rootEm.persist(agentEnt).flush();
                         console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event: ${error}`);
+                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
                     });
             }
         } catch (error) {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events:`, error);
         }
     }
 
@@ -496,7 +496,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
         } catch (error) {
             console.error(`Error handling FTSO rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}:`, error);
         }
     }
 
@@ -522,7 +522,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} finished checking for airdrop distribution.`);
         } catch (error) {
             console.error(`Error handling airdrop distribution for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution for ${type}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution for ${type}:`, error);
         }
     }
 
@@ -538,7 +538,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
         } catch (error) {
             console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases:`, error);
         }
     }
 
@@ -824,7 +824,7 @@ export class AgentBot {
                     await this.notifier.sendAgentCannotWithdrawCollateral(this.agent.vaultAddress, withdrawAmount.toString(), type);
                     return true;
                 }
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing ${type} collateral: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing ${type} collateral:`, error);
             }
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot withdraw ${type} collateral. Allowed at ${withdrawValidAt.toString()}. Current ${latestTimestamp.toString()}.`);
@@ -855,7 +855,7 @@ export class AgentBot {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(this.agent.vaultAddress, settingsName);
                     return true;
                 }
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}:`, error);
             }
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${settingsName}. Allowed at ${settingValidAt.toString()}. Current ${latestTimestamp.toString()}.`);
@@ -987,7 +987,7 @@ export class AgentBot {
             })
             .catch((error) => {
                 console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
             });
     }
 
@@ -1276,7 +1276,7 @@ export class AgentBot {
             })
             .catch((error) => {
                 console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}:`, error);
             });
     }
 
@@ -1550,7 +1550,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${ownerUnderlyingAddress} with txHash ${txHash}.`);
         } catch (error) {
             await this.notifier.sendLowUnderlyingAgentBalanceFailed(agentVault, freeUnderlyingBalance.toString());
-            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${ownerUnderlyingAddress}.`);
+            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${ownerUnderlyingAddress}:`, error);
         }
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
@@ -1595,7 +1595,7 @@ export class AgentBot {
             } catch (err) {
                 await this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpVaultCollateral.toString());
                 logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral
-                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
+                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}:`, err);
             }
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
@@ -1609,7 +1609,7 @@ export class AgentBot {
             } catch (err) {
                 await this.notifier.sendCollateralTopUpFailedAlert(this.agent.vaultAddress, requiredTopUpPool.toString(), true);
                 logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens
-                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
+                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}:`, err);
             }
         }
         const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
