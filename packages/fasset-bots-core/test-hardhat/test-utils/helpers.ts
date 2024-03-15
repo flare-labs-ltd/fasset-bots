@@ -101,10 +101,11 @@ export async function createTestAgent(
 export function createTestAgentBotRunner(
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
+    ownerAddress: string,
     loopDelay: number,
     notifier: MockNotifier = new MockNotifier()
 ): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, loopDelay, notifier);
+    return new AgentBotRunner(contexts, orm, ownerAddress, loopDelay, notifier);
 }
 
 export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {

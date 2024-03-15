@@ -92,7 +92,7 @@ describe("Actor tests - coston", async () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(contexts, orm, 5, new MockNotifier());
+        const agentBotRunner = new AgentBotRunner(contexts, orm, ownerAddress, 5, new MockNotifier());
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
