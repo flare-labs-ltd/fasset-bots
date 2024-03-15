@@ -265,7 +265,7 @@ export class AgentBot {
             const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             await agentEnt.events.init();
             const lastEventRead = agentEnt.lastEventRead();
-            let events = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
+            let [events, lastBlock] = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
             if (lastEventRead !== undefined) {
                 events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
             }
@@ -286,6 +286,8 @@ export class AgentBot {
                         logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
                     });
             }
+            agentEnt.currentEventBlock = lastBlock + 1;
+            await rootEm.persist(agentEnt).flush();
         } catch (error) {
             console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events:`, error);
@@ -356,7 +358,7 @@ export class AgentBot {
      * @param em entity manager
      * @returns list of EvmEvents
      */
-    async readNewEvents(em: EM, maximumBlocks: number): Promise<EvmEvent[]> {
+    async readNewEvents(em: EM, maximumBlocks: number): Promise<[EvmEvent[], number]> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         logger.info(`Agent ${this.agent.vaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
         // get all logs for this agent
@@ -385,7 +387,7 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
-        return events;
+        return [events, lastBlock];
     }
 
     /**
