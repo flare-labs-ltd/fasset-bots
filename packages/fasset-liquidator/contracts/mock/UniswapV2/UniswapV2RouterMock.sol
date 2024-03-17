@@ -2,14 +2,13 @@
 pragma solidity 0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IUniswapV2Router} from "../../interface/IUniswapV2/IUniswapV2Router.sol";
 import {IUniswapV2Pair} from "../../interface/IUniswapV2/IUniswapV2Pair.sol";
 import {UniswapV2PairMock} from "./UniswapV2PairMock.sol";
 
 
-contract UniswapV2RouterMock is IUniswapV2Router, Ownable {
+contract UniswapV2RouterMock is IUniswapV2Router {
 
     address public immutable wNat;
     mapping(address => mapping(address => address)) private _poolFromPair;
