@@ -3,17 +3,16 @@ import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { InfoBot } from "../../../src/actors/InfoBot";
+import { BotConfigFile } from "../../../src/config/config-files";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
 import { MockChain } from "../../../src/mock/MockChain";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgent, createTestAgentAndMakeAvailable } from "../../test-utils/helpers";
-import { BotConfigFile } from "../../../src/config/config-files";
 use(chaiAsPromised);
 use(spies);
 
@@ -29,7 +28,7 @@ describe("InfoBot cli commands unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         // accounts
         ownerAddress = accounts[3];
     });

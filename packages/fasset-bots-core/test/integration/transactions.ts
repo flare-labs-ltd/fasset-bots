@@ -1,13 +1,12 @@
 import { expect } from "chai";
 import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
-import { createTestOrmOptions } from "../test-utils/test-bot-config";
-import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
+import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../src/underlying-chain/SourceId";
 import { prefix0x } from "../../src/utils/helpers";
+import { createTestOrm } from "../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;
@@ -25,7 +24,7 @@ describe("XRP transaction integration tests", async () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });

@@ -1,15 +1,14 @@
-import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { web3 } from "../../../src/utils/web3";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-import { AgentEntity } from "../../../src/entities/agent";
 import { FilterQuery } from "@mikro-orm/core";
+import { expect, spy, use } from "chai";
+import spies from "chai-spies";
+import { ORM } from "../../../src/config/orm";
+import { AgentEntity } from "../../../src/entities/agent";
+import { web3 } from "../../../src/utils/web3";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { FaultyNotifier } from "../../test-utils/FaultyNotifier";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
 use(spies);
 
 const loopDelay: number = 2;
@@ -23,7 +22,7 @@ describe("Agent bot runner tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
     });
 
     beforeEach(async () => {

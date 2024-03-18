@@ -1,16 +1,15 @@
 import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
-import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
 const agentCreated = {
     owner: "0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2",
@@ -42,7 +41,7 @@ describe("Tracked agent state tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         orm.em.clear();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);

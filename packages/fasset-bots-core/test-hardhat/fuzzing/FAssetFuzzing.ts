@@ -1,38 +1,37 @@
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import { artifacts, web3 } from "../../src/utils/web3";
-import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
-import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
-import { Challenger } from "../../src/actors/Challenger";
-import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { assert } from "chai";
-import { FuzzingRunner } from "./FuzzingRunner";
-import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
-import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
-import { FuzzingCustomer } from "./FuzzingCustomer";
-import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { time } from "@openzeppelin/test-helpers";
-import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { FtsoMockInstance } from "../../typechain-truffle";
-import { FuzzingAgentBot } from "./FuzzingAgentBot";
+import { assert } from "chai";
 import { network } from "hardhat";
-import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
-import { EventFormatter } from "../test-utils/EventFormatter";
 import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
-import { MockIndexer } from "../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
+import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
-import { FuzzingNotifier } from "./FuzzingNotifier";
-import { MockNotifier } from "../../src/mock/MockNotifier";
-import { FuzzingTimeline } from "./FuzzingTimeline";
-import { FuzzingStateComparator } from "./FuzzingStateComparator";
-import { FuzzingState } from "./FuzzingState";
-import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
+import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
+import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
+import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
+import { MockIndexer } from "../../src/mock/MockIndexer";
+import { MockNotifier } from "../../src/mock/MockNotifier";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
+import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
+import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
+import { artifacts, web3 } from "../../src/utils/web3";
+import { latestBlockTimestamp } from "../../src/utils/web3helpers";
+import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { FtsoMockInstance } from "../../typechain-truffle";
+import { EventFormatter } from "../test-utils/EventFormatter";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
+import { FuzzingAgentBot } from "./FuzzingAgentBot";
+import { FuzzingCustomer } from "./FuzzingCustomer";
+import { FuzzingNotifier } from "./FuzzingNotifier";
+import { FuzzingRunner } from "./FuzzingRunner";
+import { FuzzingState } from "./FuzzingState";
+import { FuzzingStateComparator } from "./FuzzingStateComparator";
+import { FuzzingTimeline } from "./FuzzingTimeline";
 
 export type MiningMode = "auto" | "manual";
 
@@ -93,7 +92,7 @@ describe("Fuzzing tests", async () => {
 
     it("f-asset fuzzing test", async () => {
         // create bots
-        const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", dbName: "fasset-bots-test_fuzzing.db", type: "sqlite" }));
+        const orm = await createTestOrm({ dbName: "fasset-bots-test_fuzzing.db" });
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];

@@ -1,29 +1,28 @@
-import { AgentBot } from "../../../src/actors/AgentBot";
-import { ORM } from "../../../src/config/orm";
-import { MockChain } from "../../../src/mock/MockChain";
-import { ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
-import { requireSecret } from "../../../src/config/secrets";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import spies from "chai-spies";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
+import spies from "chai-spies";
+import { AgentBot } from "../../../src/actors/AgentBot";
+import { decodedChainId } from "../../../src/config/BotConfig";
+import { ORM } from "../../../src/config/orm";
+import { requireSecret } from "../../../src/config/secrets";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
-import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
-import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
+import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { MockChain } from "../../../src/mock/MockChain";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
-import { MockAgentBot } from "../../../src/mock/MockAgentBot";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
-import { decodedChainId } from "../../../src/config/BotConfig";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
+import { artifacts, web3 } from "../../../src/utils/web3";
+import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { getLotSize } from "../../test-utils/fuzzing-utils";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -38,7 +37,7 @@ describe("Agent bot unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
     });
 
     beforeEach(async () => {

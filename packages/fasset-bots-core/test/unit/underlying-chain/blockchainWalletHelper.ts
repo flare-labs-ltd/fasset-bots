@@ -1,13 +1,12 @@
+import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import { createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { createTestOrmOptions } from "../../test-utils/test-bot-config";
-import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
-import chaiAsPromised from "chai-as-promised";
-import { expect, use } from "chai";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { createTestOrm } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
 let orm: ORM;
@@ -25,7 +24,7 @@ describe("testXRP wallet tests", async () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl, { retries: 2 });
     });
@@ -84,7 +83,7 @@ describe("testBTC wallet tests", async () => {
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });
@@ -117,7 +116,7 @@ describe("testDOGE wallet tests", async () => {
     const amountToSendSatoshies = 100000000;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         dbWallet = new DBWalletKeys(orm.em);
         walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
     });

@@ -1,32 +1,30 @@
+import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
+import fs, { existsSync } from "fs";
+import path from "path";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { UserBot } from "../../../src/actors/UserBot";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { AgentRedemptionState } from "../../../src/entities/agent";
+import { Minter } from "../../../src/mock/Minter";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { Redeemer } from "../../../src/mock/Redeemer";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { ZERO_ADDRESS, checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
+import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
-import { time } from "@openzeppelin/test-helpers";
-import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
-import { Minter } from "../../../src/mock/Minter";
-import { existsSync } from "fs";
-import { AgentBot } from "../../../src/actors/AgentBot";
-import { AgentRedemptionState } from "../../../src/entities/agent";
-import { Redeemer } from "../../../src/mock/Redeemer";
 use(chaiAsPromised);
 use(spies);
-import fs from "fs";
-import path from "path";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -68,7 +66,7 @@ describe("UserBot cli commands unit tests", async () => {
     before(async () => {
         UserBot.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         // accounts
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
