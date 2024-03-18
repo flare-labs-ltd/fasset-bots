@@ -2,9 +2,13 @@ export interface DeepCopyable {
     deepCopyThis(copiedObjectsMap: Map<any, any>): this;
 }
 
-type DeepCopyFunction<T = any> = (object: T, copiedObjectsMap?: Map<any, any>) => T;
+type Constructor<T = any> = { new(...args: any[]): T; };
+
+type DeepCopyFunction<T = any> = (object: T, copiedObjectsMap: Map<any, any>) => T;
 
 type DeepCopyCondition<T = any> = (object: T) => boolean;
+
+const deepCopyForClasses: Map<Constructor, DeepCopyFunction> = new Map();
 
 const deepCopySpecialCases: Array<{ name: string, condition: DeepCopyCondition, copy: DeepCopyFunction }> = [];
 
@@ -16,7 +20,11 @@ function isDeepCopyable(object: {}): object is DeepCopyable {
     return typeof (object as any).deepCopyThis === 'function';
 }
 
-export function setDeepCopyForClass<C extends { new(...args: any): any }>(classConstructor: C, copy: DeepCopyFunction<InstanceType<C>>) {
+export function setDeepCopyForClass<C extends Constructor>(classConstructor: C, copy: DeepCopyFunction<InstanceType<C>>) {
+    deepCopyForClasses.set(classConstructor, copy);
+}
+
+export function setDeepCopyForSubclasses<C extends Constructor>(classConstructor: C, copy: DeepCopyFunction<InstanceType<C>>) {
     setDeepCopyForCondition(classConstructor.name, isInstance(classConstructor), copy);
 }
 
@@ -33,45 +41,31 @@ export function deepCopy<T>(object: T, copiedObjectsMap?: Map<any, any>): T {
         // this also solves cirular object problem
         return copiedObjectsMap.get(object);
     }
-    if (typeof object === "object") {
+    if (typeof object === "object" && object != null) {
+        // one of predefined special cases (based on condition)?
         const specialCase = deepCopySpecialCases.find(sc => sc.condition(object));
         if (specialCase != null) {
-            // object is one of predefined special cases, use the special copy function
-            return specialCase.copy(object);
-        } else if (object == null) {
-            return object;
-        } else if (object.constructor === Object) {
-            const res: any = {};
-            copiedObjectsMap.set(object, res);
-            for (const [key, value] of Object.entries(object)) {
-                res[key] = deepCopy(value, copiedObjectsMap);
-            }
-            return res;
-        } else if (object.constructor === Array) {
-            const res: any[] = [];
-            copiedObjectsMap.set(object, res);
-            for (const elt of object as any[]) {
-                res.push(deepCopy(elt, copiedObjectsMap));
-            }
-            // copy named properties
-            for (const [key, value] of Object.entries(object)) {
-                if (typeof key === 'string' && !/^\d+$/.test(key)) {
-                    (res as any)[key] = deepCopy(value, copiedObjectsMap);
-                }
-            }
-            return res as T;
-        } else if ((object.constructor as any).deepCopyWithObjectCreate) {
+            return specialCase.copy(object, copiedObjectsMap);
+        }
+        // registered class?
+        const deepCopy = deepCopyForClasses.get(object.constructor as Constructor);
+        if (deepCopy != null) {
+            return deepCopy(object, copiedObjectsMap);
+        }
+        // classes with static `deepCopyWithObjectCreate` get copied by deep creating same class object with deep copied properties
+        if ((object.constructor as any).deepCopyWithObjectCreate) {
             // class object can be copied with deepCopyWithObjectCreate
             return deepCopyWithObjectCreate(object, copiedObjectsMap);
-        } else if (isDeepCopyable(object)) {
+        }
+        // classes with `deepCopyThis` method use that method for copying
+        if (isDeepCopyable(object)) {
             // object has own `deepCopyThis` method
             return object.deepCopyThis(copiedObjectsMap);
-        } else {
-            // do not copy classes if there is no special case method
-            return object;
         }
+        // all other class object are not copied
+        return object;
     } else {
-        // atomic object (number, string, function, etc.) - return without copying
+        // atomic object (number, string, function, null, etc.) - return without copying
         return object;
     }
 }
@@ -86,3 +80,51 @@ export function deepCopyWithObjectCreate<T extends {}>(object: T, copiedObjectsM
     }
     return res;
 }
+
+// register known classes
+
+setDeepCopyForClass(Object, (object, copiedObjectsMap) => {
+    const result: any = {};
+    copiedObjectsMap.set(object, result);
+    for (const [key, value] of Object.entries(object)) {
+        result[key] = deepCopy(value, copiedObjectsMap);
+    }
+    return result;
+});
+
+setDeepCopyForClass(Array, (array, copiedObjectsMap) => {
+    const result: any[] = [];
+    copiedObjectsMap.set(array, result);
+    // copy array items
+    for (const elt of array as any[]) {
+        result.push(deepCopy(elt, copiedObjectsMap));
+    }
+    // copy named properties
+    for (const [key, value] of Object.entries(array)) {
+        if (typeof key === 'string' && !/^\d+$/.test(key)) {
+            (result as any)[key] = deepCopy(value, copiedObjectsMap);
+        }
+    }
+    return result;
+});
+
+setDeepCopyForClass(Map, (map, copiedObjectsMap) => {
+    const result: Map<any, any> = new Map();
+    copiedObjectsMap.set(map, result);
+    for (const [key, value] of map.entries()) {
+        const keyCopy = deepCopy(key, copiedObjectsMap);
+        const valueCopy = deepCopy(value, copiedObjectsMap);
+        result.set(keyCopy, valueCopy);
+    }
+    return result;
+});
+
+setDeepCopyForClass(Set, (set, copiedObjectsMap) => {
+    const result: Set<any> = new Set();
+    copiedObjectsMap.set(set, result);
+    for (const value of set.values()) {
+        const valueCopy = deepCopy(value, copiedObjectsMap);
+        result.add(valueCopy);
+    }
+    return result;
+});
