@@ -18,6 +18,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/test-bot-config";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus } from "../test-utils/helpers";
 use(spies);
 
@@ -47,16 +48,20 @@ describe("Challenger tests", async () => {
         challengerAddress = accounts[6];
         liquidatorAddress = accounts[7];
         minter2Address = accounts[8];
-        orm = await createTestOrm();
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
         chain = context.blockchainIndexer.chain;
+        return { orm, context, state, chain };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, state } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should challenge illegal payment", async () => {

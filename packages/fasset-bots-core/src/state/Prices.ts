@@ -6,7 +6,9 @@ import { TokenPrice, TokenPriceReader } from "./TokenPrice";
 export type StablecoinPrices = { [tokenAddress: string]: TokenPrice };
 
 export class Prices {
-    constructor(public collateralPrices: CollateralIndexedList<CollateralPrice>) {}
+    constructor(
+        public readonly collateralPrices: CollateralIndexedList<CollateralPrice>
+    ) {}
 
     get(token: CollateralTypeId) {
         return this.collateralPrices.get(token);
