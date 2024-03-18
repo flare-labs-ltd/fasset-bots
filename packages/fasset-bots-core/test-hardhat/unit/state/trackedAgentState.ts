@@ -9,6 +9,7 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 
 const agentCreated = {
@@ -41,13 +42,13 @@ describe("Tracked agent state tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
-        orm = await createTestOrm();
-        orm.em.clear();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        trackedStateContext = getTestAssetTrackedStateContext(context);
     });
 
-    beforeEach(async () => {
+    async function initialize() {
+        orm = await createTestOrm();
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
+        // create agent bot
         agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentVaultCollateralToken = await agentBot.agent.getVaultCollateral();
         await mintVaultCollateralToOwner(amount, agentVaultCollateralToken.token, ownerAddress);
@@ -57,6 +58,11 @@ describe("Tracked agent state tests", async () => {
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentCreated);
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());
+        return { orm, context, trackedStateContext, agentBot, trackedState, trackedAgentState };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, trackedStateContext, agentBot, trackedState, trackedAgentState } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should return agent status", async () => {

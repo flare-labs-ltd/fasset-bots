@@ -22,6 +22,7 @@ import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
@@ -66,14 +67,13 @@ describe("UserBot cli commands unit tests", async () => {
     before(async () => {
         UserBot.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm();
         // accounts
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
@@ -113,6 +113,11 @@ describe("UserBot cli commands unit tests", async () => {
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
         redeemer = await createTestRedeemer(context, minterAddress, userUnderlyingAddress);
+        return { orm, context, chain, userBot, agentBot, minter, redeemer };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, userBot, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -319,7 +324,7 @@ describe("UserBot cli commands unit tests", async () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBot.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `./${UserBot.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();

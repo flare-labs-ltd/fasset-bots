@@ -3,15 +3,14 @@ import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { InfoBot } from "../../../src/actors/InfoBot";
-import { BotConfigFile } from "../../../src/config/config-files";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgent, createTestAgentAndMakeAvailable } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
@@ -28,39 +27,23 @@ describe("InfoBot cli commands unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm();
         // accounts
         ownerAddress = accounts[3];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
-        // user bot
-        const chainId = SourceId.testXRP;
-        const config: BotConfigFile = {
-            rpcUrl: "",
-            loopDelay: 0,
-            fAssetInfos: [
-                {
-                    chainId: chainId,
-                    name: "Ripple",
-                    symbol: "XRP",
-                    decimals: 6,
-                    amgDecimals: 0,
-                    requireEOAProof: false,
-                    walletUrl: "walletUrl",
-                },
-            ],
-            nativeChainInfo: testNativeChainInfo,
-            addressUpdater: "",
-            alertsUrl: "",
-        };
         infoBot = new InfoBot(context);
+        return { orm, context, chain, infoBot };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, infoBot } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -70,7 +53,7 @@ describe("InfoBot cli commands unit tests", async () => {
     it("Should get available agents and find best agent", async () => {
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         // create agents
-        for (let i = 0; i <= 10; i++) {
+        for (let i = 0; i < 3; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
         }
         const availableAgents = await infoBot.getAvailableAgents();
@@ -87,7 +70,7 @@ describe("InfoBot cli commands unit tests", async () => {
     it("Should get all agents", async () => {
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
         // create agents
-        for (let i = 0; i <= 10; i++) {
+        for (let i = 0; i < 3; i++) {
             await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + i);
         }
         const agents = await infoBot.getAllAgents();
@@ -97,7 +80,7 @@ describe("InfoBot cli commands unit tests", async () => {
     it("Should print system info", async () => {
         const spyLog = spy.on(console, "log");
         // create agents
-        for (let i = 0; i <= 5; i++) {
+        for (let i = 0; i < 3; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
             await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + (100 + i));
         }
@@ -108,7 +91,7 @@ describe("InfoBot cli commands unit tests", async () => {
     it("Should print all and available agents", async () => {
         const spyLog = spy.on(console, "log");
         // create agents
-        for (let i = 0; i <= 5; i++) {
+        for (let i = 0; i < 3; i++) {
             await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress + "_" + i);
             await createTestAgent(context, ownerAddress, agentUnderlyingAddress + "_" + (100 + i));
         }

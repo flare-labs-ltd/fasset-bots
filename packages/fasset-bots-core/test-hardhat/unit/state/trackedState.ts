@@ -21,6 +21,7 @@ import { performRedemptionPayment } from "../../../test/test-utils/test-helpers"
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -97,11 +98,16 @@ describe("Tracked state tests", async () => {
         assetManagerControllerAddress = accounts[301];
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         await createContextAndInitializeTrackedState();
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        return { context, trackedStateContext, chain, trackedState };
+    }
+
+    beforeEach(async () => {
+        ({ context, trackedStateContext, chain, trackedState } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(async () => {
@@ -658,6 +664,7 @@ describe("Tracked state tests", async () => {
     });
 
     it("Should handle event 'CollateralRatiosChanged'", async () => {
+        console.log()
         const collateral = trackedState.collaterals.list[0];
         const newMinCollateralRatioBIPS = "23000";
         const newCcbMinCollateralRatioBIPS = "18000";

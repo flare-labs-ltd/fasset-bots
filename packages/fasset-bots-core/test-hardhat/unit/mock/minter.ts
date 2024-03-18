@@ -3,8 +3,9 @@ import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 
 describe("Minter unit tests", async () => {
     let accounts: string[];
@@ -15,12 +16,17 @@ describe("Minter unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
+        minterAddress = accounts[4];
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
-        minterAddress = accounts[4];
+        return { context, chain };
+    }
+
+    beforeEach(async () => {
+        ({ context, chain } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should create minter", async () => {

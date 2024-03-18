@@ -22,6 +22,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
@@ -37,11 +38,10 @@ describe("Agent bot unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm();
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
@@ -51,6 +51,11 @@ describe("Agent bot unit tests", async () => {
         ownerAddress = accounts[3];
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(chainId)}.address`);
+        return { orm, context, chain, ownerAddress, ownerUnderlyingAddress };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, ownerAddress, ownerUnderlyingAddress } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -85,7 +90,7 @@ describe("Agent bot unit tests", async () => {
 
     it("Should run readUnhandledEvents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const events = await agentBot.readNewEvents(orm.em, 10);
+        const [events, lastBlock] = await agentBot.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
 

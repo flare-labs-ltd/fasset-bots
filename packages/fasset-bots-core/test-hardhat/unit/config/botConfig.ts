@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX } from "../../test-utils/helpers";
+import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { readFileSync } from "fs";
 import { createAgentBotDefaultSettings, loadAgentSettings, loadConfigFile } from "../../../src/config/BotConfig";
 import { AgentSettingsConfig } from "../../../src/config/config-files";
-import { web3 } from "../../../src/utils/web3";
-import { readFileSync } from "fs";
-import chaiAsPromised from "chai-as-promised";
-import { expect, use } from "chai";
 import { toBIPS } from "../../../src/utils";
+import { web3 } from "../../../src/utils/web3";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT } from "../../test-utils/helpers";
 use(chaiAsPromised);
 
 describe("Config unit tests", async () => {
@@ -19,8 +20,13 @@ describe("Config unit tests", async () => {
         accounts = await web3.eth.getAccounts();
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        return { context };
+    }
+
+    beforeEach(async () => {
+        ({ context } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should create tracked state config", async () => {

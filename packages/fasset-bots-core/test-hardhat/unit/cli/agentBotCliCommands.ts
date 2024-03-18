@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { FilterQuery } from "@mikro-orm/core";
-import { time } from "@openzeppelin/test-helpers";
+import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
@@ -20,6 +20,7 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
@@ -49,15 +50,14 @@ describe("AgentBot cli commands unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm();
         // accounts
         governance = accounts[0];
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
@@ -90,6 +90,11 @@ describe("AgentBot cli commands unit tests", async () => {
             notifier: new MockNotifier(),
             addressUpdater: "",
         };
+        return { orm, context, chain, botCliCommands };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, botCliCommands } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -472,9 +477,9 @@ describe("AgentBot cli commands unit tests", async () => {
     });
 
     it("Should not create agent bot via bot cli commands", async () => {
-        const localContext = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
-        const agent = await botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
-        expect(agent).to.be.null;
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
+        await expectRevert(botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT)),
+            "Could not activate or verify new XRP account");
         //change context back
         botCliCommands.context = context;
     });
