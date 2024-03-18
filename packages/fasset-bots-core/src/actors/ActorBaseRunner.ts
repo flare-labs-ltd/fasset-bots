@@ -11,6 +11,8 @@ import { createActorAssetContext } from "../config/create-asset-context";
 import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
 
 export class ActorBaseRunner {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public loopDelay: number,
         public actor: ActorBase

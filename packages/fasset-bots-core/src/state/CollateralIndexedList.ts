@@ -8,6 +8,8 @@ export interface CollateralTypeId {
 }
 
 export class CollateralIndexedList<T> implements Iterable<T> {
+    static deepCopyWithObjectCreate = true;
+
     list: T[] = [];
     index: Map<string, number> = new Map();
 

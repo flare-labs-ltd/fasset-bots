@@ -11,6 +11,8 @@ import { logger } from "../utils/logger";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 
 export class SystemKeeper extends ActorBase {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public runner: ScopedRunner,
         public address: string,

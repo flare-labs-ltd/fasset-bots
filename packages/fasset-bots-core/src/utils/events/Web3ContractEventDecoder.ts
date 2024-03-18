@@ -8,6 +8,8 @@ interface Web3EventDecoderOptions {
 }
 
 export class Web3ContractEventDecoder extends Web3EventDecoder {
+    static deepCopyWithObjectCreate = true;
+
     public contractNames = new Map<string, string>(); // address => name
     public requireKnownAddress: boolean;
 
