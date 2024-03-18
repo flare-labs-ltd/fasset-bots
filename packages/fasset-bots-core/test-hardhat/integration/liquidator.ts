@@ -1,19 +1,18 @@
+import { time } from "@openzeppelin/test-helpers";
+import { assert, expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { MockChain } from "../../src/mock/MockChain";
+import { MockTrackedState } from "../../src/mock/MockTrackedState";
+import { TrackedState } from "../../src/state/TrackedState";
 import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createCRAndPerformMintingAndRunSteps, createTestLiquidator, createTestMinter, getAgentStatus, createTestAgentBotAndMakeAvailable, createCRAndPerformMinting, createTestAgentBot, createTestChallenger } from "../test-utils/helpers";
-import { assert } from "chai";
-import { TrackedState } from "../../src/state/TrackedState";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
-import { MockTrackedState } from "../../src/mock/MockTrackedState";
-import { time } from "@openzeppelin/test-helpers";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+import { createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, getAgentStatus } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -36,17 +35,21 @@ describe("Liquidator tests", async () => {
         minterAddress = accounts[4];
         challengerAddress = accounts[5];
         liquidatorAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context, true);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
+        return { orm, context, trackedStateContext, chain, state };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, trackedStateContext, chain, state } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

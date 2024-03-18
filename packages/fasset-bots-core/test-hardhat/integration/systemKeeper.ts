@@ -1,19 +1,18 @@
+import { time } from "@openzeppelin/test-helpers";
+import { assert, expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { MockChain } from "../../src/mock/MockChain";
+import { MockTrackedState } from "../../src/mock/MockTrackedState";
+import { TrackedState } from "../../src/state/TrackedState";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createCRAndPerformMinting, createTestMinter, createTestSystemKeeper, getAgentStatus, createTestAgentBotAndMakeAvailable, createTestAgentBot } from "../test-utils/helpers";
-import { assert } from "chai";
-import { TrackedState } from "../../src/state/TrackedState";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-import { time } from "@openzeppelin/test-helpers";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
-import { MockTrackedState } from "../../src/mock/MockTrackedState";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+import { createCRAndPerformMinting, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestSystemKeeper, getAgentStatus } from "../test-utils/helpers";
 use(spies);
 
 describe("System keeper tests", async () => {
@@ -32,17 +31,22 @@ describe("System keeper tests", async () => {
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         systemKeeperAddress = accounts[6];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
+        return { orm, context, trackedStateContext, chain, state };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, trackedStateContext, chain, state } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

@@ -1,12 +1,13 @@
 import { expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import spies from "chai-spies";
-import { MockTrackedState } from "../../../src/mock/MockTrackedState";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
 describe("System keeper unit tests", async () => {
@@ -18,15 +19,20 @@ describe("System keeper unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
+        systemKeeperAddress = accounts[10];
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         trackedStateContext = getTestAssetTrackedStateContext(await createTestAssetContext(accounts[0], testChainInfo.xrp));
-        systemKeeperAddress = accounts[10];
         runner = new ScopedRunner();
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
+        return { trackedStateContext, runner, state };
+    }
+
+    beforeEach(async () => {
+        ({ trackedStateContext, runner, state } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

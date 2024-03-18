@@ -6,9 +6,9 @@ import { TokenPrice, TokenPriceReader } from "./TokenPrice";
 
 export class AMGPrice {
     constructor(
-        public amgToTokenWei: BN,
-        public assetMintingDecimals: BN,
-        public assetMintingGranularityUBA: BN
+        public readonly amgToTokenWei: BN,
+        public readonly assetMintingDecimals: BN,
+        public readonly assetMintingGranularityUBA: BN
     ) {}
 
     convertUBAToTokenWei(valueUBA: BNish) {
@@ -33,10 +33,10 @@ export abstract class AMGPriceConverter {
 
 export class CollateralPrice extends AMGPriceConverter {
     constructor(
-        public collateral: CollateralType,
-        public assetPrice: TokenPrice,
-        public tokenPrice: TokenPrice | undefined,
-        public amgPrice: AMGPrice
+        public readonly collateral: CollateralType,
+        public readonly assetPrice: TokenPrice,
+        public readonly tokenPrice: TokenPrice | undefined,
+        public readonly amgPrice: AMGPrice
     ) {
         super();
     }

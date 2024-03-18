@@ -11,6 +11,8 @@ import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { LiquidationStrategy, DefaultLiquidationStrategy } from "./plugins/LiquidationStrategy";
 
 export class Liquidator extends ActorBase {
+    static deepCopyWithObjectCreate = true;
+
     liquidationStrategy: LiquidationStrategy;
 
     constructor(

@@ -1,12 +1,13 @@
+import { time } from "@openzeppelin/test-helpers";
+import { expect, spy, use } from "chai";
+import spies from "chai-spies";
+import { Agent } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBNExp } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { Agent } from "../../../src/fasset/Agent";
-import { time } from "@openzeppelin/test-helpers";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
@@ -24,16 +25,21 @@ describe("Agent unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-    });
-
-    beforeEach(async () => {
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
+    });
+
+    async function initialize() {
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        return { context, chain };
+    }
+
+    beforeEach(async () => {
+        ({ context, chain } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

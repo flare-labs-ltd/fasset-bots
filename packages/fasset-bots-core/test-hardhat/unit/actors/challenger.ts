@@ -1,13 +1,14 @@
 import { expect, spy, use } from "chai";
+import spies from "chai-spies";
+import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ITransaction } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { assertWeb3DeepEqual, createTestAgent, createTestChallenger } from "../../test-utils/helpers";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import spies from "chai-spies";
-import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 use(spies);
 
 const underlyingAddress: string = "AGENT_UNDERLYING_ADDRESS";
@@ -36,16 +37,21 @@ describe("Challenger unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
+        challengerAddress = accounts[10];
+        ownerAddress = accounts[11];
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
-        challengerAddress = accounts[10];
-        ownerAddress = accounts[11];
+        return { context, trackedStateContext, state };
+    }
+
+    beforeEach(async () => {
+        ({ context, trackedStateContext, state } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

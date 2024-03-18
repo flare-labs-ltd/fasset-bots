@@ -1314,6 +1314,7 @@ __metadata:
     "@mikro-orm/mysql": 5.8.4
     "@mikro-orm/postgresql": 5.8.4
     "@mikro-orm/sqlite": 5.8.4
+    "@nomicfoundation/hardhat-network-helpers": 1.0.10
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": 0.5.16
     "@typechain/truffle-v5": 7.0.0
@@ -2495,7 +2496,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomicfoundation/hardhat-network-helpers@npm:^1.0.9":
+"@nomicfoundation/hardhat-network-helpers@npm:1.0.10, @nomicfoundation/hardhat-network-helpers@npm:^1.0.9":
   version: 1.0.10
   resolution: "@nomicfoundation/hardhat-network-helpers@npm:1.0.10"
   dependencies:

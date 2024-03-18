@@ -17,6 +17,8 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 export class InfoBot {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public context: IAssetNativeChainContext,
     ) { }

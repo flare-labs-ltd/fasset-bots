@@ -102,6 +102,8 @@ interface PostAlert {
 }
 
 export class Notifier {
+    static deepCopyWithObjectCreate = true;
+
     client: AxiosInstance | undefined;
 
     constructor(public alertsUrl: string | undefined) {

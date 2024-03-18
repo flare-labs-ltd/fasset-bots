@@ -1,9 +1,10 @@
 import { expect, spy, use } from "chai";
+import spies from "chai-spies";
+import { TimeKeeper } from "../../../src/actors/TimeKeeper";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
-import { TimeKeeper } from "../../../src/actors/TimeKeeper";
-import spies from "chai-spies";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
 describe("Time keeper unit tests", async () => {
@@ -13,9 +14,17 @@ describe("Time keeper unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
+        timeKeeperAddress = accounts[10];
+    });
+
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         context.blockchainIndexer.chain.finalizationBlocks = 0;
-        timeKeeperAddress = accounts[10];
+        return { context };
+    }
+
+    beforeEach(async () => {
+        ({ context } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

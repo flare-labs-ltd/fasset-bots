@@ -1,32 +1,31 @@
+import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
+import fs, { existsSync } from "fs";
+import path from "path";
+import { AgentBot } from "../../../src/actors/AgentBot";
 import { UserBot } from "../../../src/actors/UserBot";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { AgentRedemptionState } from "../../../src/entities/agent";
+import { Minter } from "../../../src/mock/Minter";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { ZERO_ADDRESS, checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
-import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
-import { time } from "@openzeppelin/test-helpers";
-import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
-import { Minter } from "../../../src/mock/Minter";
-import { existsSync } from "fs";
-import { AgentBot } from "../../../src/actors/AgentBot";
-import { AgentRedemptionState } from "../../../src/entities/agent";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 import { Redeemer } from "../../../src/mock/Redeemer";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { artifacts, web3 } from "../../../src/utils/web3";
+import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
+import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
-import fs from "fs";
-import path from "path";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -68,14 +67,13 @@ describe("UserBot cli commands unit tests", async () => {
     before(async () => {
         UserBot.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
@@ -115,6 +113,11 @@ describe("UserBot cli commands unit tests", async () => {
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
         redeemer = await createTestRedeemer(context, minterAddress, userUnderlyingAddress);
+        return { orm, context, chain, userBot, agentBot, minter, redeemer };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, userBot, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -321,7 +324,7 @@ describe("UserBot cli commands unit tests", async () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBot.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `./${UserBot.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();

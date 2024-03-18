@@ -1,15 +1,16 @@
 import { expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { Liquidator } from "../../../src/actors/Liquidator";
+import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
+import { sleep } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import { MockTrackedState } from "../../../src/mock/MockTrackedState";
-import spies from "chai-spies";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgent } from "../../test-utils/helpers";
-import { sleep } from "../../../src/utils/helpers";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
 use(spies);
 
 describe("Liquidator unit tests", async () => {
@@ -27,12 +28,20 @@ describe("Liquidator unit tests", async () => {
         liquidatorAddress = accounts[10];
         ownerAddress = accounts[12];
         governance = accounts[0];
+    });
+
+    async function initialize() {
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
         runner = new ScopedRunner();
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
+        return { context, trackedStateContext, runner, state };
+    }
+
+    beforeEach(async () => {
+        ({ context, trackedStateContext, runner, state } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {

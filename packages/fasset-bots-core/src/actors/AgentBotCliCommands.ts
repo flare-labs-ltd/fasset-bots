@@ -28,6 +28,8 @@ const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
 
 export class BotCliCommands {
+    static deepCopyWithObjectCreate = true;
+
     context!: IAssetAgentBotContext;
     owner!: OwnerAddressPair;
     botConfig!: BotConfig;

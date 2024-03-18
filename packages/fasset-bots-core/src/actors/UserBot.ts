@@ -64,6 +64,8 @@ enum MintingStatus {
 }
 
 export class UserBot {
+    static deepCopyWithObjectCreate = true;
+
     context!: IAssetAgentBotContext;
     configFile!: BotConfigFile;
     botConfig!: BotConfig;

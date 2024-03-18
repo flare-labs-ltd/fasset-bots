@@ -29,6 +29,8 @@ export interface MockChainBlock {
  * (these are handled in attestation system and are not really visible in fasset system).
  */
 export class MockChain implements IBlockChain {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         currentTime?: BN
     ) {
@@ -196,6 +198,8 @@ export class MockChain implements IBlockChain {
 
 // UTXO implementation
 export class MockChainWallet implements IBlockChainWallet {
+    static deepCopyWithObjectCreate = true;
+
     constructor(public chain: MockChain) { }
 
     async getBalance(address: string): Promise<BN> {

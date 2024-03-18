@@ -1,27 +1,26 @@
+import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { assert } from "chai";
+import BN from "bn.js";
+import { assert, expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
+import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
+import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
-import { BN_ZERO, checkedCast, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, toBN, toBNExp, maxBN, requireNotNull } from "../../src/utils/helpers";
-import { artifacts, web3 } from "../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
-import { FilterQuery } from "@mikro-orm/core";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-use(spies);
-import BN from "bn.js";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
-import { FaultyNotifier } from "../test-utils/FaultyNotifier";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
+import { BN_ZERO, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, checkedCast, maxBN, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { artifacts, web3 } from "../../src/utils/web3";
+import { testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
 import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
+import { FaultyNotifier } from "../test-utils/FaultyNotifier";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
+use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 
@@ -33,7 +32,7 @@ describe("Agent bot tests", async () => {
     let minterAddress: string;
     let redeemerAddress: string;
     let chain: MockChain;
-    let settings: any;
+    let settings: AssetManagerSettings;
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
@@ -52,14 +51,13 @@ describe("Agent bot tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
@@ -71,6 +69,11 @@ describe("Agent bot tests", async () => {
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        return { orm, context, chain, settings, agentBot, minter, redeemer };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, settings, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
     });
 
     it("Management address should not work for sending from server", async () => {
@@ -534,7 +537,7 @@ describe("Agent bot tests", async () => {
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.DESTROYING);
         // increase time
-        await time.increase(settings.withdrawalWaitMinSeconds * 2);
+        await time.increase(Number(settings.withdrawalWaitMinSeconds) * 2);
         // agent destruction
         await agentBot.agent.destroy();
         // handle destruction

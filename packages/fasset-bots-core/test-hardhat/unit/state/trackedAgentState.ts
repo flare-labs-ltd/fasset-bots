@@ -1,16 +1,16 @@
 import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
+import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
-import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
 const agentCreated = {
     owner: "0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2",
@@ -42,13 +42,13 @@ describe("Tracked agent state tests", async () => {
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[3];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
-        orm.em.clear();
-        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
-        trackedStateContext = getTestAssetTrackedStateContext(context);
     });
 
-    beforeEach(async () => {
+    async function initialize() {
+        orm = await createTestOrm();
+        context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        trackedStateContext = getTestAssetTrackedStateContext(context);
+        // create agent bot
         agentBot = await createTestAgentBot(context, orm, ownerAddress);
         const agentVaultCollateralToken = await agentBot.agent.getVaultCollateral();
         await mintVaultCollateralToOwner(amount, agentVaultCollateralToken.token, ownerAddress);
@@ -58,6 +58,11 @@ describe("Tracked agent state tests", async () => {
         await trackedState.initialize();
         trackedAgentState = new TrackedAgentState(trackedState, agentCreated);
         trackedAgentState.initialize(await agentBot.agent.getAgentInfo());
+        return { orm, context, trackedStateContext, agentBot, trackedState, trackedAgentState };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, trackedStateContext, agentBot, trackedState, trackedAgentState } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should return agent status", async () => {

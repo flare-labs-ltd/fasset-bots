@@ -1,13 +1,14 @@
+import { expect, spy, use } from "chai";
+import spies from "chai-spies";
+import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
+import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
+import { TrackedState } from "../../../src/state/TrackedState";
+import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-import { ActorBase, ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
-import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { TrackedState } from "../../../src/state/TrackedState";
-import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
 const loopDelay: number = 2;
@@ -21,8 +22,13 @@ describe("Actor base runner tests", async () => {
         ownerAddress = accounts[1];
     });
 
-    beforeEach(async () => {
+    async function initialize() {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        return { context };
+    }
+
+    beforeEach(async () => {
+        ({ context } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should run actor base runner until its stopped", async () => {

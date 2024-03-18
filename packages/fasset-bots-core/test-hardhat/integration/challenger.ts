@@ -1,27 +1,25 @@
 import { time } from "@openzeppelin/test-helpers";
-import { assert } from "chai";
+import { assert, expect, spy, use } from "chai";
+import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
+import { AgentRedemptionState } from "../../src/entities/agent";
+import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
+import { MockIndexer } from "../../src/mock/MockIndexer";
+import { TrackedState } from "../../src/state/TrackedState";
+import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
+import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
+import { IBlockChainWallet, SpentReceivedObject, TransactionOptionsWithFee, UTXO } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 import { fail, sleep, toBN } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { PaymentReference } from "../../src/fasset/PaymentReference";
-import { AgentRedemptionState } from "../../src/entities/agent";
-import { createTestAgentBotAndMakeAvailable, createCRAndPerformMintingAndRunSteps, createTestChallenger, createTestMinter, createTestRedeemer, getAgentStatus } from "../test-utils/helpers";
-import { TrackedState } from "../../src/state/TrackedState";
-import { TransactionOptionsWithFee, UTXO, SpentReceivedObject, IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
-import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import spies from "chai-spies";
-import { expect, spy, use } from "chai";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
-import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
-import { createTestLiquidator } from "../test-utils/helpers";
-import { MockIndexer } from "../../src/mock/MockIndexer";
-import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus } from "../test-utils/helpers";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -50,16 +48,20 @@ describe("Challenger tests", async () => {
         challengerAddress = accounts[6];
         liquidatorAddress = accounts[7];
         minter2Address = accounts[8];
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(context, lastBlock);
         await state.initialize();
         chain = context.blockchainIndexer.chain;
+        return { orm, context, state, chain };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, state } = await loadFixtureCopyVars(initialize));
     });
 
     it("Should challenge illegal payment", async () => {
