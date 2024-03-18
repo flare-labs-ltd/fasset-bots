@@ -28,6 +28,8 @@ interface ActiveRedemption {
 }
 
 export class Challenger extends ActorBase {
+    static deepCopyWithObjectCreate = true;
+
     challengeStrategy: ChallengeStrategy;
 
     constructor(

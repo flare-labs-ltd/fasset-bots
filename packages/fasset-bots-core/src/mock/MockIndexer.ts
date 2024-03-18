@@ -6,6 +6,7 @@ import { SourceId } from "../underlying-chain/SourceId";
 import BN from "bn.js";
 
 export class MockIndexer extends BlockchainIndexerHelper {
+    static deepCopyWithObjectCreate = true;
 
     client: AxiosInstance;
     constructor(

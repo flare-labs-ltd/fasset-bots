@@ -12,6 +12,8 @@ import { logger } from "../utils/logger";
 import { squashSpace } from "../utils/formatting";
 
 export class AgentBotRunner {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public contexts: Map<string, IAssetAgentBotContext>,
         public orm: ORM,

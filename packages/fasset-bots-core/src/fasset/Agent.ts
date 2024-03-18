@@ -33,6 +33,8 @@ export class OwnerAddressPair {
 }
 
 export class Agent {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public context: IAssetAgentBotContext,
         public owner: OwnerAddressPair,

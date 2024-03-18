@@ -44,6 +44,8 @@ enum ClaimType {
 const MAX_EVENT_RETRY = 5;
 
 export class AgentBot {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public agent: Agent,
         public notifier: Notifier

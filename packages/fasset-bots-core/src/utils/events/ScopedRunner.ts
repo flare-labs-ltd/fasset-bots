@@ -2,6 +2,8 @@ import { reportError } from "../helpers";
 import { EventScope, ExitScope } from "./ScopedEvents";
 
 export class ScopedRunner {
+    static deepCopyWithObjectCreate = true;
+
     logError: (e: any) => void = reportError;
 
     scopes = new Set<EventScope>();
