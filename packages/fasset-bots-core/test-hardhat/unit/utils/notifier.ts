@@ -18,6 +18,7 @@ describe("Notifier tests", async () => {
 
     afterEach(function () {
         spy.restore(notifier);
+        spy.restore(console);
     });
 
     it("Should send custom message", async () => {
@@ -301,8 +302,10 @@ describe("Notifier tests", async () => {
     });
 
     it("Should be unable to send request", async () => {
-        let Faultynotifier = new FaultyNotifier();
-        await expect(Faultynotifier.sendToServer(BotType.AGENT, "test", BotLevel.INFO, "test", "test")).to.eventually.be.rejectedWith(Error);
+        let faultyNotifier = new FaultyNotifier();
+        const spyConsole = spy.on(console, "error");
+        await faultyNotifier.sendToServer(BotType.AGENT, "test", BotLevel.INFO, "test", "test");
+        expect(spyConsole).to.have.been.called.once;
     });
 
     it("Should send illegal transaction challenge", async () => {
