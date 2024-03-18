@@ -1,18 +1,15 @@
 import { MikroORM, Options } from "@mikro-orm/core";
-import { AbstractSqlDriver } from "@mikro-orm/knex";
-import * as postgres from "@mikro-orm/postgresql";
-import * as mysql from "@mikro-orm/mysql";
-import * as sqlite from "@mikro-orm/sqlite";
+import { AbstractSqlDriver, SqlEntityManager } from "@mikro-orm/knex";
 
-export type EM = postgres.SqlEntityManager | mysql.SqlEntityManager | sqlite.SqlEntityManager;
+export type EM = SqlEntityManager;
 
-export type ORM = MikroORM<AbstractSqlDriver | postgres.PostgreSqlDriver>;
+export type ORM = MikroORM<AbstractSqlDriver>;
 
 export type SchemaUpdate = "safe" | "full" | "recreate";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
-export type CreateOrmOptions = Options<AbstractSqlDriver | postgres.PostgreSqlDriver> & {
+export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     schemaUpdate?: SchemaUpdate;
     dbName?: string;
     type: DatabaseType;
