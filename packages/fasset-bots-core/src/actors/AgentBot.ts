@@ -1288,7 +1288,6 @@ export class AgentBot {
      * @param redemption AgentRedemption entity
      */
     async checkBeforeRedemptionPayment(redemption: AgentRedemption): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         /* istanbul ignore else */
@@ -1310,6 +1309,7 @@ export class AgentBot {
     }
 
     async payForRedemption(redemption: AgentRedemption) {
+        logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
         const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
         // !!! TODO: what if there are too little funds on underlying address to pay for fee?
         const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
