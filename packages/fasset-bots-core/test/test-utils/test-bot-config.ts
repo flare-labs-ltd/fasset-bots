@@ -1,4 +1,5 @@
-import { CreateOrmOptions } from "../../src/config/orm";
+import { copyFile } from "fs/promises";
+import { CreateOrmOptions, ORM } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, Event } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
@@ -35,6 +36,32 @@ export function createTestOrmOptions(testOptionsOverride: Partial<CreateOrmOptio
     return { ...testOptions, ...testOptionsOverride };
 }
 
-export function createTestOrm(testOptionsOverride: Partial<CreateOrmOptions> = {}) {
-    return overrideAndCreateOrm(createTestOrmOptions(testOptionsOverride));
+export async function createTestOrm(testOptionsOverride: Partial<CreateOrmOptions> = {}) {
+    const options = createTestOrmOptions(testOptionsOverride);
+    const orm = await overrideAndCreateOrm(options);
+    ormInitOptions.set(orm, options);
+    return orm;
+}
+
+const ormInitOptions: WeakMap<ORM, CreateOrmOptions> = new WeakMap();
+const ormCopies: WeakMap<ORM, ORM> = new WeakMap();
+
+export function isRegisteredORM(value: unknown): value is ORM {
+    return ormInitOptions.has(value as ORM);
+}
+
+export async function copyORM(orm: ORM) {
+    const options = ormInitOptions.get(orm)!;
+    if (options.type !== 'sqlite' || options.dbName == null) {
+        throw new Error("Only for SQLite");
+    }
+    // clear and close old (on first run, before any copy is made, close the original)
+    const ormToClose = ormCopies.get(orm) ?? orm;
+    await ormToClose.em.flush();
+    ormToClose.em.clear();
+    await ormToClose.close();
+    // copy sqlite db file
+    const dbName = options.dbName.replace(/\.db$/, `.copy.db`);
+    await copyFile(options.dbName, dbName);
+    return await overrideAndCreateOrm({ ...options, dbName, schemaUpdate: "none" });
 }

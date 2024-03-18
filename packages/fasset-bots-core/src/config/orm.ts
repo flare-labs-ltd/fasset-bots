@@ -5,7 +5,7 @@ export type EM = SqlEntityManager;
 
 export type ORM = MikroORM<AbstractSqlDriver>;
 
-export type SchemaUpdate = "safe" | "full" | "recreate";
+export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
@@ -25,7 +25,8 @@ export async function createOrm(options: CreateOrmOptions): Promise<ORM> {
     return orm;
 }
 
-export async function updateSchema(orm: ORM, update?: SchemaUpdate): Promise<void> {
+export async function updateSchema(orm: ORM, update: SchemaUpdate = "full"): Promise<void> {
+    if (update === "none") return;
     const generator = orm.getSchemaGenerator();
     if (update && update == "recreate") {
         await generator.dropSchema();

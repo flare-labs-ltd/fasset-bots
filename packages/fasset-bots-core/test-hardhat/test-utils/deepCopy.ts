@@ -43,10 +43,8 @@ export function deepCopy<T>(object: T, copiedObjectsMap?: Map<any, any>): T {
         } else if (object.constructor === Object) {
             const res: any = {};
             copiedObjectsMap.set(object, res);
-            for (const key in object) {
-                if (object.hasOwnProperty(key)) {
-                    res[key] = deepCopy(object[key], copiedObjectsMap);
-                }
+            for (const [key, value] of Object.entries(object)) {
+                res[key] = deepCopy(value, copiedObjectsMap);
             }
             return res;
         } else if (object.constructor === Array) {
@@ -54,6 +52,12 @@ export function deepCopy<T>(object: T, copiedObjectsMap?: Map<any, any>): T {
             copiedObjectsMap.set(object, res);
             for (const elt of object as any[]) {
                 res.push(deepCopy(elt, copiedObjectsMap));
+            }
+            // copy named properties
+            for (const [key, value] of Object.entries(object)) {
+                if (typeof key === 'string' && !/^\d+$/.test(key)) {
+                    (res as any)[key] = deepCopy(value, copiedObjectsMap);
+                }
             }
             return res as T;
         } else if ((object.constructor as any).deepCopyWithObjectCreate) {
@@ -77,10 +81,8 @@ export function deepCopyWithObjectCreate<T extends {}>(object: T, copiedObjectsM
         constructor: { value: object.constructor, enumerable: false, writable: true, configurable: true },
     });
     copiedObjectsMap.set(object, res);
-    for (const key in object) {
-        if (object.hasOwnProperty(key)) {
-            res[key] = deepCopy(object[key], copiedObjectsMap);
-        }
+    for (const [key, value] of Object.entries(object)) {
+        res[key] = deepCopy(value, copiedObjectsMap);
     }
     return res;
 }

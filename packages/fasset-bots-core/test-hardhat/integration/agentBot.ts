@@ -51,13 +51,13 @@ describe("Agent bot tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await createTestOrm();
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
         redeemerAddress = accounts[5];
     });
 
     async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
@@ -69,12 +69,11 @@ describe("Agent bot tests", async () => {
         minter = await createTestMinter(context, minterAddress, chain);
         redeemer = await createTestRedeemer(context, redeemerAddress);
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
-        return { context, chain, settings, agentBot, minter, redeemer };
+        return { orm, context, chain, settings, agentBot, minter, redeemer };
     }
 
     beforeEach(async () => {
-        orm.em.clear();
-        ({ context, chain, settings, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
+        ({ orm, context, chain, settings, agentBot, minter, redeemer } = await loadFixtureCopyVars(initialize));
     });
 
     it("Management address should not work for sending from server", async () => {
