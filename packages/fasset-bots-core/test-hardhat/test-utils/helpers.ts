@@ -8,7 +8,7 @@ import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, ZERO_ADDRESS, toBN, toBNExp } from "../../src/utils/helpers";
 import { requireSecret } from "../../src/config/secrets";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { IERC20Instance } from "../../typechain-truffle";
@@ -52,9 +52,7 @@ export async function createTestAgentBot(
     notifier?: MockNotifier,
     options?: AgentBotDefaultSettings,
 ): Promise<AgentBot> {
-    if (autoSetWorkAddress) {
-        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
-    }
+    await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
     await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
@@ -88,9 +86,7 @@ export async function createTestAgent(
     underlyingAddress: string = agentUnderlyingAddress,
     autoSetWorkAddress: boolean = true,
 ): Promise<Agent> {
-    if (autoSetWorkAddress) {
-        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
-    }
+    await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
@@ -98,14 +94,23 @@ export async function createTestAgent(
     return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
 }
 
+async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSetWorkAddress: boolean, ownerManagementAddress: string) {
+    if (autoSetWorkAddress) {
+        const workAddress = await context.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
+        if (workAddress === ZERO_ADDRESS) {
+            await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
+        }
+    }
+}
+
 export function createTestAgentBotRunner(
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
-    ownerAddress: string,
+    ownerManagementAddress: string,
     loopDelay: number,
     notifier: MockNotifier = new MockNotifier()
 ): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, ownerAddress, loopDelay, notifier);
+    return new AgentBotRunner(contexts, orm, ownerManagementAddress, loopDelay, notifier);
 }
 
 export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {

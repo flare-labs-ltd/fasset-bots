@@ -212,16 +212,8 @@ export function getTestAssetTrackedStateContext(context: TestAssetBotContext, us
         collaterals: context.collaterals,
         stablecoins: context.stablecoins,
         agentOwnerRegistry: context.agentOwnerRegistry,
-        liquidationStrategy: useCustomStrategy
-            ? {
-                  className: "DefaultLiquidationStrategy",
-              }
-            : undefined,
-        challengeStrategy: useCustomStrategy
-            ? {
-                  className: "DefaultChallengeStrategy",
-              }
-            : undefined,
+        liquidationStrategy: useCustomStrategy ? { className: "DefaultLiquidationStrategy" } : undefined,
+        challengeStrategy: useCustomStrategy ? { className: "DefaultChallengeStrategy" } : undefined,
     };
 }
 
