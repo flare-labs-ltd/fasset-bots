@@ -49,7 +49,7 @@ export class TimeKeeper {
             logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
         } catch (err) {
             console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
-            logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
+            logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}:`, err);
         }
     }
 
@@ -66,7 +66,7 @@ export class TimeKeeper {
             }, this.intervalInMs);
         } catch (err) {
             console.error(`Error running timeKeeper for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
-            logger.error(`Error running timeKeeper for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
+            logger.error(`Error running timeKeeper for asset manager ${this.context.assetManager.address} with user ${this.address}:`, err);
         }
     }
 

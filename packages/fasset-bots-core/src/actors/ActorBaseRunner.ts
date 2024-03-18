@@ -45,7 +45,7 @@ export class ActorBaseRunner {
             logger.info(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner finished running steps ${this.actor.address}.`);
         } catch (error) {
             console.error(`Error with ${ActorBaseKind[kind]} ${this.actor.address}: ${error}`);
-            logger.error(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner run into error: ${error}`);
+            logger.error(`${ActorBaseKind[kind]}'s ${this.actor.address} ActorBaseRunner run into error:`, error);
         }
     }
 

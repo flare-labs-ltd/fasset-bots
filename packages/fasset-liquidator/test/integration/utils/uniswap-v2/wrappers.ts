@@ -3,6 +3,7 @@ import { waitFinalize } from "../finalization"
 import { abi as uniswapV2PairAbi } from '../../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import type { Signer, JsonRpcProvider, AddressLike } from "ethers"
 import type { IERC20, IERC20Metadata, IUniswapV2Router, IUniswapV2Pair } from "../../../../types"
+import { logRemovedLiquidity } from "./log-format"
 
 
 export async function safelyGetReserves(

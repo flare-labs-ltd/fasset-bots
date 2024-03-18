@@ -1,11 +1,12 @@
 import { WeiPerEther, Wallet, JsonRpcProvider, type Signer } from "ethers"
 import { relativeTokenPrice, relativeTokenDexPrice } from "../../../calculations/calculations"
 import { mulFactor } from "../../../utils"
+import { logRemovedLiquidity } from "./log-format"
 import { waitFinalize } from "../finalization"
 import { getContracts } from '../contracts'
 import { removeLiquidity, safelyGetReserves } from "./wrappers"
 import { adjustLiquidityForSlippage, syncDexReservesWithFtsoPrices } from "./pool-sync"
-import { FTSO_SYMBOLS } from "../../../constants"
+import { FTSO_SYMBOLS } from "../../../config"
 import type { IERC20, IERC20Metadata } from "../../../../types"
 import type { Contracts } from "../interfaces/contracts"
 
@@ -97,7 +98,8 @@ export class DexManipulator {
             console.log(`removing liquidity from (${symbolA}, ${symbolB}) pool`)
             const tokenA = this.symbolToToken.get(symbolA)!
             const tokenB = this.symbolToToken.get(symbolB)!
-            await removeLiquidity(this.contracts.uniswapV2, tokenA, tokenB, this.signer, this.provider)
+            const [removedA, removedB] = await removeLiquidity(this.contracts.uniswapV2, tokenA, tokenB, this.signer, this.provider)
+            logRemovedLiquidity(removedA, removedB, symbolA, symbolB, await tokenA.decimals(), await tokenB.decimals())
         }
         await this.unwrapWNat()
     }

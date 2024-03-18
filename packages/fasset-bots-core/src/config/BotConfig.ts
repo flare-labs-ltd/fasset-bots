@@ -90,10 +90,8 @@ export function loadConfigFile(fPath: string, configInfo?: string, validate: boo
             getSecrets();
         }
         return config;
-    } catch (e) {
-        /* istanbul ignore next */
-        logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
-        /* istanbul ignore next */
+    } /* istanbul ignore next */ catch (e) {
+        logger.error(configInfo ?? "", e);
         throw e;
     }
 }
@@ -143,10 +141,8 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
         // check secrets.json file permission
         getSecrets();
         return config as AgentBotConfigFile;
-    } catch (e) {
-        /* istanbul ignore next */
-        logger.error(configInfo ? `${configInfo}: ${e}` : `${e}`);
-        /* istanbul ignore next */
+    } /* istanbul ignore next */ catch (e) {
+        logger.error(configInfo ?? "", e);
         throw e;
     }
 }

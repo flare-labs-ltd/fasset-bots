@@ -16,7 +16,9 @@
     "test:integration": "yarn mocha test test/integration/uniswap-v2.test.ts --timeout 1000000",
     "coverage": "yarn hardhat coverage --testfiles \"test/unit/**/*.test.ts\"",
     "------------ build ---------------": "----------------- build -----------------",
-    "build": "tsc --allowJs && cp addresses.json dist"
+    "build": "tsc --allowJs && cp addresses.json dist",
+    "------------ cli ---------------": "----------------- cli -----------------",
+    "cli": "yarn ts-node src/cli.ts"
   },
   "license": "MIT",
   "devDependencies": {

@@ -32,13 +32,13 @@ describe("Agent bot runner tests", async () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay);
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay);
         const spyStep = spy.on(agentBotRunner, "runStep");
         agentBotRunner.requestStop();
         void agentBotRunner.run();
@@ -55,7 +55,7 @@ describe("Agent bot runner tests", async () => {
         await createTestAgentBot(otherContext, orm, ownerAddress, "UNDERLYING");
         await createTestAgentBot(context, orm, ownerAddress);
         // create runner
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, loopDelay, new FaultyNotifier());
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay, new FaultyNotifier());
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);

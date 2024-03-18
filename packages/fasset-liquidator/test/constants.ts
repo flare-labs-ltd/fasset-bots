@@ -11,17 +11,6 @@ export const DEX_FEE_BIPS = BigInt(3)
 export const DEX_MAX_BIPS = BigInt(1000)
 export const DEX_FACTOR_BIPS = DEX_MAX_BIPS - DEX_FEE_BIPS
 
-// graphics
-export const GRAPH_POINTS = 200
-
-// idk
+// tests
 export const PRICE_PRECISION = BigInt(1e18)
-export const FTSO_SYMBOLS = {
-    "coston": {
-        USDC: "testUSDC",
-        USDT: "testUSDT",
-        WETH: "testETH",
-        WNAT: "CFLR",
-        TEST_XRP: "testXRP"
-    }
-}
+export const GRAPH_POINTS = 200 // visualising liquidation optimability

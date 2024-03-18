@@ -178,7 +178,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             response = await client.post<ApiWrapper<VotingRoundResult<ARESBase>>>(`/api/proof/get-specific-proof`, request);
         } catch (e: any) {
             /* istanbul ignore next */
-            logger.error(e.response?.data?.errorMessage ?? String(e));
+            logger.error(`State connector error: ${e.response?.data?.errorMessage ?? String(e)}`);
             /* istanbul ignore next */
             return null; // network error, client probably down - skip it
         }
@@ -189,7 +189,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
         // no proof from this client, probably disproved
         if (status !== "OK") {
-            logger.error(response.data.errorMessage);
+            logger.error(`State connector error: ${response.data.errorMessage}`);
             return AttestationNotProved.DISPROVED;
         }
         // obtained valid proof

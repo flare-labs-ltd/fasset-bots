@@ -1,6 +1,7 @@
 import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations/calculations"
 import { cappedAddedLiquidityFromSlippage, cappedReservesFromPriceAndSlippage } from '../../../calculations/slippage'
 import { addLiquidity, swap, safelyGetReserves, removeLiquidity } from "./wrappers"
+import { logAddedLiquidityForSlippage, logSlippageUnnecessary, logRemovingLiquidityBeforeRetrying, logUnableToProduceSlippage, logCappingDesiredSwapAmount, logSwapping } from "./log-format"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
@@ -20,6 +21,8 @@ export async function adjustLiquidityForSlippage(
     provider: JsonRpcProvider,
     recursiveCall = false
 ): Promise<void> {
+    const decimalsA = await tokenA.decimals()
+    const decimalsB = await tokenB.decimals()
     let [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
     let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
     if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
@@ -27,32 +30,29 @@ export async function adjustLiquidityForSlippage(
         const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
         if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
             throw Error("Token price has non-5 ftso decimals")
-        const decimalsA = await tokenA.decimals()
-        const decimalsB = await tokenB.decimals()
         ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
     } else {
         [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
     }
     if (addedA > 0 && addedA <= maxA && addedB > 0 && addedB <= maxB) {
-        console.log(`adding ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`
-        )
+        logAddedLiquidityForSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
         await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
     } else if (addedA == BigInt(0) && addedB == BigInt(0)) {
-        console.log(`pool (${symbolA}, ${symbolB}) already has the required slippage`)
+        logSlippageUnnecessary(slippageBips, amountA, maxA, maxB, symbolA, symbolB, decimalsA, decimalsB)
     } else if (reserveA > BigInt(0) && reserveB > BigInt(0) && !recursiveCall) {
         // if anything goes wrong remove all liquidity and try again
+        logRemovingLiquidityBeforeRetrying(symbolA, symbolB)
         const [removedA, removedB] = await removeLiquidity(uniswapV2, tokenA, tokenB, signer, provider)
         if (removedA == BigInt(0) && removedB == BigInt(0)) {
-            return console.error(`unable to add ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`)
+            return logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
         }
-        console.log("Trying again by removing all of the liquidity")
         // try again with reserves changed
         await adjustLiquidityForSlippage(
             uniswapV2, priceReader, tokenA, tokenB, symbolA, symbolB,
             maxA + removedA, maxB + removedB, amountA, slippageBips,
             signer, provider, true)
     } else {
-        console.error(`unable to add ${addedA} ${symbolA} and ${addedB} ${symbolB} to pool to produce slippage ${slippageBips} bips at trade volume ${amountA} ${symbolA}`)
+        logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
     }
 }
 
@@ -141,18 +141,18 @@ export async function swapDexPairToPrice(
     let swapA = swapToDexPrice(reserveA, reserveB, priceA, priceB, decimalsA, decimalsB)
     let swapB = swapToDexPrice(reserveB, reserveA, priceB, priceA, decimalsB, decimalsA)
     if (swapA > maxSwapA) {
-        console.log(`capping desired swap of ${swapA} ${symbolA} to ${maxSwapA}`)
+        logCappingDesiredSwapAmount(swapA, maxSwapA, symbolA, decimalsA)
         swapA = maxSwapA
     }
     if (swapB > maxSwapB) {
-        console.log(`capping desired swap of ${swapB} ${symbolB} to ${maxSwapB}`)
+        logCappingDesiredSwapAmount(swapB, maxSwapB, symbolB, decimalsB)
         swapB = maxSwapB
     }
     if (swapA > 0) {
-        console.log(`swapping ${swapA} ${symbolA} for ${symbolB}`)
+        logSwapping(swapA, symbolA, symbolB, decimalsA)
         await swap(uniswapV2, tokenA, tokenB, swapA, signer, provider)
     } else if (swapB > 0) {
-        console.log(`swapping ${swapB} ${symbolB} for ${symbolA}`)
+        logSwapping(swapB, symbolB, symbolA, decimalsB)
         await swap(uniswapV2, tokenB, tokenA, swapB, signer, provider)
     } else {
         console.error(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)

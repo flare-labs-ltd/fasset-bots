@@ -15,6 +15,7 @@ export class AgentBotRunner {
     constructor(
         public contexts: Map<string, IAssetAgentBotContext>,
         public orm: ORM,
+        public ownerManagementAddress: string,
         public loopDelay: number,
         public notifier: Notifier
     ) {}
@@ -58,7 +59,7 @@ export class AgentBotRunner {
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
-                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}:`, error);
             }
         }
     }
@@ -83,6 +84,6 @@ export class AgentBotRunner {
             logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing notifier or orm in config.`);
             throw new Error(`Missing notifier or orm in config for owner ${ownerAddress}.`);
         }
-        return new AgentBotRunner(contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifier);
+        return new AgentBotRunner(contexts, botConfig.orm, ownerAddress, botConfig.loopDelay, botConfig.notifier);
     }
 }
