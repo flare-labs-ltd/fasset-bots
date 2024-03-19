@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IUniswapV2Pair} from "../../interface/IUniswapV2/IUniswapV2Pair.sol";
+import {IUniswapV2Pair} from "../../interfaces/IUniswapV2/IUniswapV2Pair.sol";
 import {Babylonian} from "../../lib/Babylonian.sol";
 
 

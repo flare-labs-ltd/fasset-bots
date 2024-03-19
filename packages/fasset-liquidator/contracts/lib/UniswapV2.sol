@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { IUniswapV2Router } from "../interface/IUniswapV2/IUniswapV2Router.sol";
+import { IUniswapV2Router } from "../interfaces/IUniswapV2/IUniswapV2Router.sol";
 
 
 // the two functions that differ from the blazeswap's uniswapV2Router
