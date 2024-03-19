@@ -172,6 +172,13 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     }
 
     async obtainProofFromStateConnectorForClient(client: AxiosInstance, roundId: number, requestBytes: string): Promise<OptionalAttestationProof | null> {
+        // check if round has been finalized
+        // (it can happen that API returns proof finalized, but it is not finalized in state connector yet)
+        const lastFinalizedRound = await this.stateConnector.lastFinalizedRoundId();
+        if (Number(lastFinalizedRound) < roundId) {
+            return AttestationNotProved.NOT_FINALIZED;
+        }
+        // get the response from api
         const request: ProofRequest = { roundId, requestBytes };
         let response: AxiosResponse<ApiWrapper<VotingRoundResult<ARESBase>>>;
         try {

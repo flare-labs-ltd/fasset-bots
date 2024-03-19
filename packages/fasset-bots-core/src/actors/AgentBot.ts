@@ -429,12 +429,8 @@ export class AgentBot {
             } else {
                 // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
                 logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    agentEnt.dailyProofRequestRound!,
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    agentEnt.dailyProofRequestData!
-                );
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
                 if (proof === AttestationNotProved.NOT_FINALIZED) {
                     logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
                     return;
@@ -509,6 +505,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);
             const IDistributionToDelegators = artifacts.require("IDistributionToDelegators");
             const distributionToDelegatorsAddress = await this.context.addressUpdater.getContractAddress("DistributionToDelegators");
+            if (distributionToDelegatorsAddress === ZERO_ADDRESS) return;   // DistributionToDelegators does not exist on Songbird/Coston
             const distributionToDelegators = await IDistributionToDelegators.at(distributionToDelegatorsAddress);
             const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
             const { 1: endMonth } = await distributionToDelegators.getClaimableMonths({ from: addressToClaim });
@@ -516,9 +513,7 @@ export class AgentBot {
             if (toBN(claimable).gtn(0)) {
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for ${addressToClaim} for month ${endMonth}.`);
                 if (type === ClaimType.VAULT) {
-                    await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, addressToClaim, {
-                        from: this.agent.owner.workAddress,
-                    });
+                    await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, addressToClaim, { from: this.agent.owner.workAddress });
                 } else {
                     await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonth, { from: this.agent.owner.workAddress });
                 }
