@@ -1,7 +1,7 @@
 #!/bin/bash
 
 scriptdir=$(dirname $(readlink -f "$0"))
-logfile=$(ls -t *.log | head -n 1)
+logfile=$(ls -t *.log.json | head -n 1)
 
 if [ -n "$1" ]; then linesarg="-n $1"; fi
 

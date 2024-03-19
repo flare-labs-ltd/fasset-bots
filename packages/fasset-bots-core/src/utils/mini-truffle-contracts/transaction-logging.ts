@@ -1,6 +1,6 @@
 import { createCustomizedLogger } from "../logger";
 
-export const transactionLogger = createCustomizedLogger("log/transactions/transactions-%DATE%.log");
+export const transactionLogger = createCustomizedLogger({ json: "log/transactions/transactions-%DATE%.log.json" });
 
 export function captureStackTrace(skipFrames: number = 0) {
     const error = new Error("just for stack");
