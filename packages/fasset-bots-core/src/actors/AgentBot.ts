@@ -55,7 +55,7 @@ export class AgentBot {
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
     latestProof: ConfirmedBlockHeightExists.Proof | null = null;
     runner?: IRunner;
-    maxHandleEventBlocks = 100;
+    maxHandleEventBlocks = 1000;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentBotContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
