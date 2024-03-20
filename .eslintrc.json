@@ -16,10 +16,7 @@
         "@typescript-eslint/no-misused-promises": "error",
         "@typescript-eslint/no-for-in-array": "error",
         "guard-for-in": "warn",
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
+        "linebreak-style": ["error", "unix"],
         "no-console": "off",
         "@typescript-eslint/prefer-namespace-keyword": "off",
         "@typescript-eslint/no-namespace": "off",
@@ -27,7 +24,7 @@
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": ["error", {
             "varsIgnorePattern": "^_",
-            "argsIgnorePattern": "^_"
+            "argsIgnorePattern": "."
         }],
         "node/no-extraneous-import": "error",
         "node/no-extraneous-require": "error"
@@ -36,7 +33,7 @@
         "ecmaVersion": 2020,
         "tsconfigRootDir": ".",
         "project": [
-            "./packages/*/tsconfig.json"
+            "./tsconfig.json"
         ]
     }
 }
