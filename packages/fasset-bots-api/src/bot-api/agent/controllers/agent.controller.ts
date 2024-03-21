@@ -81,12 +81,12 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentInfo(fAssetSymbol));
     }
 
-    @Get("info/status/:fAssetSymbol")
+    @Get("info/vaults/:fAssetSymbol")
     @HttpCode(200)
     public async getAgentStatus(
         @Param("fAssetSymbol") fAssetSymbol: string
     ): Promise<ApiResponseWrapper<AgentVaultStatus[]>> {
-        return handleApiResponse(this.agentService.getAgentStatus(fAssetSymbol));
+        return handleApiResponse(this.agentService.getAgentVaultsInfo(fAssetSymbol));
     }
 
     @Get("info/vault/:fAssetSymbol/:agentVaultAddress")

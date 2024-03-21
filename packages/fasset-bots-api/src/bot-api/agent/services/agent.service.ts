@@ -203,7 +203,7 @@ export class AgentService {
         return { collaterals, whitelisted };
     }
 
-    async getAgentStatus(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
+    async getAgentVaultsInfo(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
         const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
         // get agent infos
         const query = cli.botConfig.orm!.em.createQueryBuilder(AgentEntity);
