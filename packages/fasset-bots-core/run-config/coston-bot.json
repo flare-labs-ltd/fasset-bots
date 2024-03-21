@@ -52,5 +52,5 @@
             "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
         }
     },
-    "alertsUrl": "http://localhost:3000/"
+    "alertsUrl": "http://localhost:1234/"
 }

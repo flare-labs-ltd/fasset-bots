@@ -1,15 +1,16 @@
-import { BotCliCommands } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { artifacts, requireEnv } from "@flarelabs/fasset-bots-core/utils";
 import { Inject, Injectable } from "@nestjs/common";
-import { AgentBalance, AgentCreateResponse, AgentSettings, AgentUnderlying } from "../../common/AgentResponse";
-import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { BotCliCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
+import { AgentSettingsConfig, decodedChainId, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { Cache } from "cache-manager";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
+
 
 @Injectable()
 export class AgentService {
@@ -183,6 +184,68 @@ export class AgentService {
     async upgradeWNat(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
         const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.upgradeWNatContract(agentVaultAddress);
+    }
+
+    async getAgentInfo(fAssetSymbol: string): Promise<AgentData>  {
+        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        // get collateral data
+        const collateralTypes = await cli.context.assetManager.getCollateralTypes();
+        const collaterals = [];
+        for (const collateralType of collateralTypes) {
+            const token = await IERC20.at(collateralType.token);
+            const balance = await token.balanceOf(cli.owner.workAddress);
+            collaterals.push({ symbol: collateralType.tokenFtsoSymbol, balance: balance.toString() });
+        }
+        const natBalance = await web3.eth.getBalance(cli.owner.workAddress);
+        collaterals.push({ symbol: "NAT", balance: natBalance.toString() });
+        // get is whitelisted
+        const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
+        return { collaterals, whitelisted };
+    }
+
+    async getAgentStatus(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
+        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        // get agent infos
+        const query = cli.botConfig.orm!.em.createQueryBuilder(AgentEntity);
+        const agentVaults = await query.where({ active: true }).getResultList();
+        const agentInfos: AgentVaultStatus[] = [];
+        for (const agent of agentVaults) {
+            const agentInfo = await cli.context.assetManager.getAgentInfo(agent.vaultAddress);
+            agentInfos.push({
+                vaultAddress: agent.vaultAddress,
+                poolCollateralRatioBIPS: agentInfo.poolCollateralRatioBIPS.toString(),
+                vaultCollateralRatioBIPS: agentInfo.vaultCollateralRatioBIPS.toString(),
+                agentSettingUpdateValidAtFeeBIPS: agent.agentSettingUpdateValidAtFeeBIPS.toString(),
+                agentSettingUpdateValidAtPoolFeeShareBIPS: agent.agentSettingUpdateValidAtPoolFeeShareBIPS.toString(),
+                agentSettingUpdateValidAtMintingVaultCrBIPS: agent.agentSettingUpdateValidAtMintingVaultCrBIPS.toString(),
+                agentSettingUpdateValidAtMintingPoolCrBIPS: agent.agentSettingUpdateValidAtMintingPoolCrBIPS.toString(),
+                agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: agent.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS.toString(),
+                agentSettingUpdateValidAtPoolExitCrBIPS: agent.agentSettingUpdateValidAtPoolExitCrBIPS.toString(),
+                agentSettingUpdateValidAtPoolTopupCrBIPS: agent.agentSettingUpdateValidAtPoolTopupCrBIPS.toString(),
+                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: agent.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.toString()
+            })
+        }
+        return agentInfos
+    }
+
+    async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentVaultInfo> {
+        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const agentVaultInfo: any = {};
+        for (const key of Object.keys(info)) {
+            if (!isNaN(parseInt(key))) continue;
+            const value = info[key as keyof typeof info];
+            const modified = (typeof value === "boolean") ? value : value.toString();
+            agentVaultInfo[key as keyof typeof info] = modified;
+        }
+        return agentVaultInfo as any;
+    }
+
+    async getAgentUnderlyingBalance(fAssetSymbol: string): Promise<AgentBalance> {
+        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(cli.context.chainInfo.chainId)}.address`);
+        const balance = await cli.context.wallet.getBalance(ownerUnderlyingAddress);
+        return { balance: balance.toString() };
     }
 
     async saveNotification(notification: PostAlert): Promise<void> {
