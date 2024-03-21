@@ -204,20 +204,28 @@ export class CommandLineError extends Error {
 /* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {
     const script = require.main?.filename ?? "UNKNOWN";
-    logger.info(`Program ${script} starting...`);
+    logger.info(`***** ${script} starting...`);
     main()
         .then(() => {
-            logger.info(`Program ${script} ended successfully.`);
+            logger.info(`***** ${script} ended successfully.`);
         })
         .catch((error) => {
             if (error instanceof CommandLineError) {
-                logger.error(`Program ${script} ended with user error: ${error}`);
+                logger.error(`***** ${script} ended with user error: ${error}`);
                 console.error(chalk.red("Error:"), error.message);
+                process.exitCode = 1;
             } else {
-                logger.error(`Program ${script} ended with unexpected error:`, error);
+                logger.error(`***** ${script} ended with unexpected error:`, error);
                 console.error(error);
+                process.exitCode = 2;
             }
-            process.exitCode = 1;
+        })
+        .finally(() => {
+            const timeoutMS = 5000;
+            setTimeout(() => {
+                logger.warn(`***** ${script} didn't exit after ${timeoutMS / 1000}s, terminating.`);
+                setTimeout(() => { process.exit(process.exitCode ?? 0); }, 200);    // wait for logger to finish
+            }, timeoutMS).unref();
         });
 }
 
