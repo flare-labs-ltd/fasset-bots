@@ -6,9 +6,10 @@ import { AgentVaultController } from "./controllers/vault.controller";
 import { PoolController } from "./controllers/pool.controller";
 import { UnderlyingController } from "./controllers/underlying.controller";
 import { AuthModule } from "./auth/auth.module";
+import { CacheModule } from "@nestjs/cache-manager";
 
 @Module({
-    imports: [ConfigModule.forRoot(), AuthModule],
+    imports: [ConfigModule.forRoot(), AuthModule, CacheModule.register()],
     controllers: [AgentController, AgentVaultController, PoolController, UnderlyingController],
     providers: [AgentService],
 })

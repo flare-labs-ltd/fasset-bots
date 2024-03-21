@@ -33,7 +33,7 @@ export class LoggerNotifierTransport implements NotifierTransport {
     }
 }
 
-interface PostAlert {
+export interface PostAlert {
     bot_type: string; // agent, liquidator, challenger
     address: string;
     level: string; // info, danger, critical
@@ -47,10 +47,12 @@ export class ApiNotifierTransport implements NotifierTransport {
     client: AxiosInstance;
 
     constructor(public alertsUrl: string) {
+        const apiKey = process.env.AGENT_BOT_API_HASH;
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: alertsUrl,
             timeout: DEFAULT_TIMEOUT,
             headers: {
+                "X-API-KEY": apiKey,
                 "Content-Type": "application/json",
             },
             validateStatus: function (status: number) {
@@ -70,7 +72,7 @@ export class ApiNotifierTransport implements NotifierTransport {
             title: title,
             description: message,
         };
-        await this.client.post(`/api/0/bot_alert`, request)
+        await this.client.post(`/api/agent/botAlert`, request)
             .catch((e: AxiosError) => {
                 logger.error(`Notifier error: cannot send notification ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
                 console.error(`${chalk.red("Notifier error:")} cannot send notification (${request.level} to ${request.bot_type}) "${request.title}: ${request.description}"`)

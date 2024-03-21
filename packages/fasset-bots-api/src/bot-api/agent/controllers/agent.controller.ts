@@ -5,6 +5,7 @@ import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentCreateResponse, AgentSettings } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
+import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 
 @ApiTags("Agent")
 @Controller("api/agent")
@@ -70,5 +71,27 @@ export class AgentController {
         @Param("settingValue") settingValue: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.updateAgentSetting(fAssetSymbol, agentVaultAddress, settingName, settingValue));
+    }
+
+    @Post("botAlert")
+    @HttpCode(200)
+    public async sendNotification(
+        @Body() notification: PostAlert
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.saveNotification(notification));
+    }
+
+    @Get("botAlert")
+    @HttpCode(200)
+    public async getNotifications(
+    ): Promise<ApiResponseWrapper<PostAlert[]>> {
+        return handleApiResponse(this.agentService.getNotifications());
+    }
+
+    @Get("workAddress")
+    @HttpCode(200)
+    public async getAgentWorkAddress(
+    ): Promise<ApiResponseWrapper<string>> {
+        return handleApiResponse(this.agentService.getAgentWorkAddress());
     }
 }

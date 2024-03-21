@@ -21,6 +21,6 @@ export async function runAgentServer() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup("api-doc", app, document);
 
-    const port = 3306;
+    const port = 3000;
     await app.listen(port);
 }
