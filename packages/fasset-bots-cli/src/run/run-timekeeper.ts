@@ -26,7 +26,7 @@ program.action(async () => {
             resolve();
         });
     });
-    TimeKeeper.stopTimekeepers(timekeepers);
+    await TimeKeeper.stopTimekeepers(timekeepers);
     console.log("Timekeeper bot stopped");
 });
 

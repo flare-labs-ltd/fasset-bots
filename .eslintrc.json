@@ -34,6 +34,7 @@
         "tsconfigRootDir": ".",
         "project": [
             "./tsconfig.json"
-        ]
+        ],
+        "EXPERIMENTAL_useProjectService": true
     }
 }

@@ -1,6 +1,6 @@
 import { createLogger, format } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
-import * as Transport from 'winston-transport';
+import * as Transport from "winston-transport";
 
 export type LoggerPaths = { text?: string, json?: string };
 
@@ -41,7 +41,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
 
 // use different
 const mainFileName = (require.main?.filename ?? "").replace(/\\/g, "/");
-const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^\/]+)\.(cjs|mjs|js|ts)$/);
+const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^/]+)\.(cjs|mjs|js|ts)$/);
 const loggerName = fnMatch ? `${fnMatch[1] === "cli" ? "cli-" : ""}${fnMatch[2]}` : "log";
 
-export let logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });
+export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });
