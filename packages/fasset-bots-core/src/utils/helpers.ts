@@ -203,17 +203,21 @@ export class CommandLineError extends Error {
 // toplevel async function runner for node.js
 /* istanbul ignore next */
 export function toplevelRun(main: () => Promise<void>) {
+    const script = require.main?.filename ?? "UNKNOWN";
+    logger.info(`Program ${script} starting...`);
     main()
+        .then(() => {
+            logger.info(`Program ${script} ended successfully.`);
+        })
         .catch((error) => {
             if (error instanceof CommandLineError) {
+                logger.error(`Program ${script} ended with user error: ${error}`);
                 console.error(chalk.red("Error:"), error.message);
             } else {
+                logger.error(`Program ${script} ended with unexpected error:`, error);
                 console.error(error);
             }
-            process.exit(1);
-        })
-        .finally(() => {
-            process.exit(0);
+            process.exitCode = 1;
         });
 }
 
