@@ -76,7 +76,7 @@ export class BotCliCommands {
         this.BotFAssetInfo = chainConfig.chainInfo;
         this.context = await createAssetContext(this.botConfig, chainConfig);
         // verify keys
-        this.verifyWorkAddress(this.owner);
+        await this.verifyWorkAddress(this.owner);
         // create underlying wallet key
         const underlyingAddress = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.address`);
         const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.private_key`);

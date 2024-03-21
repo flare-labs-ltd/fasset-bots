@@ -3,7 +3,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentCreateResponse, AgentSettings } from "../../common/AgentResponse";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 
 @ApiTags("Agent")
@@ -70,5 +70,38 @@ export class AgentController {
         @Param("settingValue") settingValue: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.updateAgentSetting(fAssetSymbol, agentVaultAddress, settingName, settingValue));
+    }
+
+    @Get("info/data/:fAssetSymbol")
+    @HttpCode(200)
+    public async getAgentData(
+        @Param("fAssetSymbol") fAssetSymbol: string
+    ): Promise<ApiResponseWrapper<AgentData>> {
+        return handleApiResponse(this.agentService.getAgentInfo(fAssetSymbol));
+    }
+
+    @Get("info/status/:fAssetSymbol")
+    @HttpCode(200)
+    public async getAgentStatus(
+        @Param("fAssetSymbol") fAssetSymbol: string
+    ): Promise<ApiResponseWrapper<AgentVaultStatus[]>> {
+        return handleApiResponse(this.agentService.getAgentStatus(fAssetSymbol));
+    }
+
+    @Get("info/vault/:fAssetSymbol/:agentVaultAddress")
+    @HttpCode(200)
+    public async getAgentVaultInfo(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentVaultInfo>> {
+        return handleApiResponse(this.agentService.getAgentVaultInfo(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Get("info/underlying/balance/:fAssetSymbol")
+    @HttpCode(200)
+    public async getAgentUnderlyingBalance(
+        @Param("fAssetSymbol") fAssetSymbol: string
+    ): Promise<ApiResponseWrapper<AgentBalance>> {
+        return handleApiResponse(this.agentService.getAgentUnderlyingBalance(fAssetSymbol));
     }
 }
