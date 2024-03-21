@@ -1,9 +1,8 @@
 import { expect } from "chai";
 import { ORM } from "../../src/config/orm";
-import { EvmEvent } from "../../src/utils/events/common";
 import { AgentEntity, DailyProofState, Event } from "../../src/entities/agent";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "./test-bot-config";
+import { EvmEvent } from "../../src/utils/events/common";
+import { createTestOrm } from "./test-bot-config";
 
 describe("AgentBot", () => {
     let orm: ORM;
@@ -23,7 +22,7 @@ describe("AgentBot", () => {
     }
 
     beforeEach(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
     });
 
     describe("event handling", () => {

@@ -19,6 +19,8 @@ export const MAX_EVENT_HANDLE_RETRY = 10;
 export const SLEEP_MS_BEFORE_RETRY = 1000;
 
 export class TrackedState {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public context: IAssetActorContext,
         private currentEventBlock: number

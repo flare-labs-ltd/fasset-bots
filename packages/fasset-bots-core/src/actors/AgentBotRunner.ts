@@ -2,22 +2,24 @@ import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
 import { BotConfig } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
+import { requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { sleep } from "../utils/helpers";
-import { requireSecret } from "../config/secrets";
-import { Notifier } from "../utils/Notifier";
-import { AgentBot } from "./AgentBot";
-import { logger } from "../utils/logger";
 import { squashSpace } from "../utils/formatting";
+import { sleep } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { AgentBot } from "./AgentBot";
 
 export class AgentBotRunner {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public contexts: Map<string, IAssetAgentBotContext>,
         public orm: ORM,
         public ownerManagementAddress: string,
         public loopDelay: number,
-        public notifier: Notifier
+        public notifierTransports: NotifierTransport[]
     ) {}
 
     public stopRequested = false;
@@ -52,7 +54,7 @@ export class AgentBotRunner {
                     logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
                 }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifier);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifierTransports);
                 agentBot.runner = this;
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
@@ -80,10 +82,10 @@ export class AgentBotRunner {
                 with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        if (!botConfig.orm || !botConfig.notifier) {
-            logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing notifier or orm in config.`);
-            throw new Error(`Missing notifier or orm in config for owner ${ownerAddress}.`);
+        if (!botConfig.orm) {
+            logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing orm in config.`);
+            throw new Error(`Missing orm in config for owner ${ownerAddress}.`);
         }
-        return new AgentBotRunner(contexts, botConfig.orm, ownerAddress, botConfig.loopDelay, botConfig.notifier);
+        return new AgentBotRunner(contexts, botConfig.orm, ownerAddress, botConfig.loopDelay, botConfig.notifiers);
     }
 }

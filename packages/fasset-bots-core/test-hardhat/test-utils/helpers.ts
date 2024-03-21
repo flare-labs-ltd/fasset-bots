@@ -1,31 +1,32 @@
+import BN from "bn.js";
+import { assert } from "chai";
+import fs from "fs";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
+import { Liquidator } from "../../src/actors/Liquidator";
+import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { createAgentBotDefaultSettings, decodedChainId, loadAgentSettings } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
+import { requireSecret } from "../../src/config/secrets";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
-import { TrackedState } from "../../src/state/TrackedState";
-import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, toBN, toBNExp } from "../../src/utils/helpers";
-import { requireSecret } from "../../src/config/secrets";
-import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { IERC20Instance } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import fs from "fs";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
-import { Liquidator } from "../../src/actors/Liquidator";
-import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
+import { TrackedState } from "../../src/state/TrackedState";
+import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
+import { BNish, ZERO_ADDRESS, toBN, toBNExp } from "../../src/utils/helpers";
+import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts } from "../../src/utils/web3";
-import { MockNotifier } from "../../src/mock/MockNotifier";
-import { assert } from "chai";
-import BN from "bn.js";
+import { web3DeepNormalize } from "../../src/utils/web3normalize";
+import { testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
+import { IERC20Instance } from "../../typechain-truffle";
+import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -49,20 +50,18 @@ export async function createTestAgentBot(
     ownerManagementAddress: string,
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
-    notifier?: MockNotifier,
+    notifiers: NotifierTransport[] = testNotifierTransports,
     options?: AgentBotDefaultSettings,
 ): Promise<AgentBot> {
-    if (autoSetWorkAddress) {
-        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
-    }
+    await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
-    await context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
+    context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
     const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier ?? new MockNotifier());
+    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
@@ -71,11 +70,11 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), new MockNotifier());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), testNotifierTransports);
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state, new MockNotifier());
+    return new Liquidator(new ScopedRunner(), address, state, testNotifierTransports);
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
@@ -88,9 +87,7 @@ export async function createTestAgent(
     underlyingAddress: string = agentUnderlyingAddress,
     autoSetWorkAddress: boolean = true,
 ): Promise<Agent> {
-    if (autoSetWorkAddress) {
-        await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
-    }
+    await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
@@ -98,14 +95,23 @@ export async function createTestAgent(
     return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
 }
 
+async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSetWorkAddress: boolean, ownerManagementAddress: string) {
+    if (autoSetWorkAddress) {
+        const workAddress = await context.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
+        if (workAddress === ZERO_ADDRESS) {
+            await context.agentOwnerRegistry.setWorkAddress(ownerManagementAddress, { from: ownerManagementAddress });
+        }
+    }
+}
+
 export function createTestAgentBotRunner(
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
-    ownerAddress: string,
+    ownerManagementAddress: string,
     loopDelay: number,
-    notifier: MockNotifier = new MockNotifier()
+    notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, ownerAddress, loopDelay, notifier);
+    return new AgentBotRunner(contexts, orm, ownerManagementAddress, loopDelay, notifiers);
 }
 
 export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
@@ -139,7 +145,7 @@ export async function createTestAgentBotAndMakeAvailable(
     ownerAddress: string,
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
-    notifier?: MockNotifier,
+    notifier: NotifierTransport[] = [],
     options?: AgentBotDefaultSettings,
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
@@ -190,7 +196,7 @@ export async function getAgentStatus(agentBot: AgentBot): Promise<number> {
     return Number(agentInfo.status) as AgentStatus;
 }
 
-export async function convertFromUSD5(amount: BN, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
+export async function convertFromUSD5(amount: BNish, collateralToken: CollateralType, settings: AssetManagerSettings): Promise<BN> {
     const priceReader = await TokenPriceReader.create(settings);
     const stablecoinUSD = await priceReader.getRawPrice(collateralToken.tokenFtsoSymbol, false);
     // 5 is for 5 decimals of USD5

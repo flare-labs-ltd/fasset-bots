@@ -1,44 +1,43 @@
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
-import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../test/test-utils/test-bot-config";
-import { artifacts, web3 } from "../../src/utils/web3";
-import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
-import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
-import { Challenger } from "../../src/actors/Challenger";
-import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { assert } from "chai";
-import { FuzzingRunner } from "./FuzzingRunner";
-import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
-import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
-import { FuzzingCustomer } from "./FuzzingCustomer";
-import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { time } from "@openzeppelin/test-helpers";
-import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { FtsoMockInstance } from "../../typechain-truffle";
-import { FuzzingAgentBot } from "./FuzzingAgentBot";
+import { assert } from "chai";
 import { network } from "hardhat";
-import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
-import { EventFormatter } from "../test-utils/EventFormatter";
 import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
+import { Challenger } from "../../src/actors/Challenger";
+import { Liquidator } from "../../src/actors/Liquidator";
+import { SystemKeeper } from "../../src/actors/SystemKeeper";
+import { TimeKeeper } from "../../src/actors/TimeKeeper";
+import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { OwnerAddressPair } from "../../src/fasset/Agent";
+import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
+import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
-import { Liquidator } from "../../src/actors/Liquidator";
-import { TimeKeeper } from "../../src/actors/TimeKeeper";
-import { FuzzingNotifier } from "./FuzzingNotifier";
-import { MockNotifier } from "../../src/mock/MockNotifier";
-import { FuzzingTimeline } from "./FuzzingTimeline";
-import { FuzzingStateComparator } from "./FuzzingStateComparator";
-import { FuzzingState } from "./FuzzingState";
 import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
-import { OwnerAddressPair } from "../../src/fasset/Agent";
+import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
+import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
+import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
+import { artifacts, web3 } from "../../src/utils/web3";
+import { latestBlockTimestamp } from "../../src/utils/web3helpers";
+import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { FtsoMockInstance } from "../../typechain-truffle";
+import { EventFormatter } from "../test-utils/EventFormatter";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
+import { FuzzingAgentBot } from "./FuzzingAgentBot";
+import { FuzzingCustomer } from "./FuzzingCustomer";
+import { FuzzingNotifierTransport } from "./FuzzingNotifierTransport";
+import { FuzzingRunner } from "./FuzzingRunner";
+import { FuzzingState } from "./FuzzingState";
+import { FuzzingStateComparator } from "./FuzzingStateComparator";
+import { FuzzingTimeline } from "./FuzzingTimeline";
 
 export type MiningMode = "auto" | "manual";
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
-describe("Fuzzing tests", async () => {
+describe("Fuzzing tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let governance: string;
@@ -69,7 +68,7 @@ describe("Fuzzing tests", async () => {
     let chain: MockChain;
     let eventFormatter: EventFormatter;
     let runner: FuzzingRunner;
-    let notifier: MockNotifier;
+    let notifiers: NotifierTransport[];
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -80,7 +79,7 @@ describe("Fuzzing tests", async () => {
         chain = context.blockchainIndexer.chain as MockChain;
         // create interceptor
         eventFormatter = new EventFormatter();
-        notifier = new FuzzingNotifier(new MockNotifier(), eventFormatter);
+        notifiers = [new FuzzingNotifierTransport(eventFormatter)];
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
         commonTrackedState = new FuzzingState(context, lastBlock, new MockChainWallet(chain));
@@ -93,14 +92,14 @@ describe("Fuzzing tests", async () => {
 
     it("f-asset fuzzing test", async () => {
         // create bots
-        const orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", dbName: "fasset-bots-test_fuzzing.db", type: "sqlite" }));
+        const orm = await createTestOrm({ dbName: "fasset-bots-test_fuzzing.db" });
         const firstAgentAddress = 10;
         for (let i = 0; i < N_AGENTS; i++) {
             const ownerAddress = accounts[firstAgentAddress + i];
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifier, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
             botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
@@ -120,7 +119,7 @@ describe("Fuzzing tests", async () => {
                 ],
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
-                notifier: notifier,
+                notifiers: notifiers,
                 addressUpdater: "",
             };
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
@@ -146,7 +145,7 @@ describe("Fuzzing tests", async () => {
         // create liquidators
         const firstLiquidatorAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS;
         for (let i = 0; i < N_LIQUIDATORS; i++) {
-            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, new MockNotifier());
+            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
             liquidators.push(liquidator);
             // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
@@ -154,7 +153,7 @@ describe("Fuzzing tests", async () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), new MockNotifier());
+        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];

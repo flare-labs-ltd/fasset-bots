@@ -1,29 +1,29 @@
-import { AgentBot } from "../../../src/actors/AgentBot";
-import { ORM } from "../../../src/config/orm";
-import { MockChain } from "../../../src/mock/MockChain";
-import { ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
-import { requireSecret } from "../../../src/config/secrets";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { FilterQuery } from "@mikro-orm/core";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import spies from "chai-spies";
 import { assert, expect, spy, use } from "chai";
-import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
+import spies from "chai-spies";
+import { AgentBot } from "../../../src/actors/AgentBot";
+import { decodedChainId } from "../../../src/config/BotConfig";
+import { ORM } from "../../../src/config/orm";
+import { requireSecret } from "../../../src/config/secrets";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
-import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
-import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
+import { MockAgentBot } from "../../../src/mock/MockAgentBot";
+import { MockChain } from "../../../src/mock/MockChain";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
-import { MockAgentBot } from "../../../src/mock/MockAgentBot";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
-import { decodedChainId } from "../../../src/config/BotConfig";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
+import { artifacts, web3 } from "../../../src/utils/web3";
+import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { getLotSize } from "../../test-utils/fuzzing-utils";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -38,11 +38,10 @@ describe("Agent bot unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
@@ -52,6 +51,11 @@ describe("Agent bot unit tests", async () => {
         ownerAddress = accounts[3];
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(chainId)}.address`);
+        return { orm, context, chain, ownerAddress, ownerUnderlyingAddress };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, ownerAddress, ownerUnderlyingAddress } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -72,7 +76,7 @@ describe("Agent bot unit tests", async () => {
     it("Should read agent bot from entity", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
+        const agentBot = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
     });
@@ -81,12 +85,12 @@ describe("Agent bot unit tests", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         await context.agentOwnerRegistry.setWorkAddress(ZERO_ADDRESS, { from: ownerAddress });
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await expectRevert(AgentBot.fromEntity(context, agentEnt, new MockNotifier()), `Management address ${ownerAddress} has no registered work address.`);
+        await expectRevert(AgentBot.fromEntity(context, agentEnt, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
     });
 
     it("Should run readUnhandledEvents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const events = await agentBot.readNewEvents(orm.em, 10);
+        const [events, lastBlock] = await agentBot.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
 
@@ -692,7 +696,7 @@ describe("Agent bot unit tests", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         await agentBot.checkForClaims();
-        expect(spyError).to.be.called.exactly(4);
+        expect(spyError).to.be.called.exactly(2);
     });
 
     it("Should handle claims", async () => {

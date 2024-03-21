@@ -24,7 +24,7 @@ describe("mini truffle and artifacts tests", async () => {
         it("require should work", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             expect((FakePriceReader as MiniTruffleContract)._contractJson?.sourceName)
-                .to.equal("contracts/mock/FakePriceReader.sol");
+                .to.equal("contracts/fasset/mock/FakePriceReader.sol");
         });
 
         it("require with directory should work", async () => {

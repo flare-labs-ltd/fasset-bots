@@ -1,28 +1,27 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { FilterQuery } from "@mikro-orm/core";
+import { expectRevert, time } from "@openzeppelin/test-helpers";
+import { expect, spy, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import spies from "chai-spies";
+import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
+import { loadAgentSettings } from "../../../src/config";
 import { ORM } from "../../../src/config/orm";
+import { AgentEntity } from "../../../src/entities/agent";
+import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
+import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
+import { MockIndexer } from "../../../src/mock/MockIndexer";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { createTestOrmOptions } from "../../../test/test-utils/test-bot-config";
-import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { AgentEntity } from "../../../src/entities/agent";
-import { FilterQuery } from "@mikro-orm/core";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockIndexer } from "../../../src/mock/MockIndexer";
-import spies from "chai-spies";
-import chaiAsPromised from "chai-as-promised";
-import { expect, spy, use } from "chai";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, DEFAULT_POOL_TOKEN_SUFFIX, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
-import { time } from "@openzeppelin/test-helpers";
-import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
-import { createTestAgentBot } from "../../test-utils/helpers";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
-import { loadAgentSettings } from "../../../src/config";
+import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -51,15 +50,14 @@ describe("AgentBot cli commands unit tests", async () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
         // accounts
         governance = accounts[0];
         ownerAddress = accounts[3];
         minterAddress = accounts[4];
     });
 
-    beforeEach(async () => {
-        orm.em.clear();
+    async function initialize() {
+        orm = await createTestOrm();
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
@@ -89,9 +87,14 @@ describe("AgentBot cli commands unit tests", async () => {
             ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new MockNotifier(),
+            notifiers: testNotifierTransports,
             addressUpdater: "",
         };
+        return { orm, context, chain, botCliCommands };
+    }
+
+    beforeEach(async () => {
+        ({ orm, context, chain, botCliCommands } = await loadFixtureCopyVars(initialize));
     });
 
     afterEach(function () {
@@ -331,7 +334,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'performUnderlyingWithdrawal'", async () => {
@@ -377,7 +380,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, "txHash");
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'listActiveAgents'", async () => {
@@ -474,9 +477,9 @@ describe("AgentBot cli commands unit tests", async () => {
     });
 
     it("Should not create agent bot via bot cli commands", async () => {
-        const localContext = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
-        const agent = await botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
-        expect(agent).to.be.null;
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
+        await expectRevert(botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT)),
+            "Could not activate or verify new XRP account");
         //change context back
         botCliCommands.context = context;
     });
@@ -485,13 +488,13 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelWithdrawFromVaultAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'cancelCollateralPoolTokensAnnouncement'", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelCollateralPoolTokensAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 });

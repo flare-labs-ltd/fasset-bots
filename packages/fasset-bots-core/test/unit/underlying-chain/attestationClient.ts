@@ -1,19 +1,18 @@
-import { toBN } from "../../../src/utils/helpers";
-import { requireSecret } from "../../../src/config/secrets";
-import { initWeb3 } from "../../../src/utils/web3";
-import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { overrideAndCreateOrm } from "../../../src/mikro-orm.config";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, createTestOrmOptions } from "../../test-utils/test-bot-config";
-import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
+import chaiAsPromised from "chai-as-promised";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
-import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
-import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 import { ORM } from "../../../src/config/orm";
-import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
+import { requireSecret } from "../../../src/config/secrets";
+import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
+import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
+import { toBN } from "../../../src/utils/helpers";
+import { initWeb3 } from "../../../src/utils/web3";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, createTestOrm } from "../../test-utils/test-bot-config";
+import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 use(chaiAsPromised);
 
 const accountPrivateKey = requireSecret("owner.native.private_key");
@@ -33,7 +32,7 @@ describe("Attestation client unit tests", async () => {
     let dbWallet: DBWalletKeys;
 
     before(async () => {
-        orm = await overrideAndCreateOrm(createTestOrmOptions({ schemaUpdate: "recreate", type: "sqlite" }));
+        orm = await createTestOrm();
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             sourceId,

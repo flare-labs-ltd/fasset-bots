@@ -2,24 +2,29 @@ import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { Notifier } from "../utils/Notifier";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { LiquidatorNotifier } from "../utils/notifier/LiquidatorNotifier";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { LiquidationStrategy, DefaultLiquidationStrategy } from "./plugins/LiquidationStrategy";
+import { DefaultLiquidationStrategy, LiquidationStrategy } from "./plugins/LiquidationStrategy";
 
 export class Liquidator extends ActorBase {
+    static deepCopyWithObjectCreate = true;
+
+    notifier: LiquidatorNotifier;
     liquidationStrategy: LiquidationStrategy;
 
     constructor(
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
-        public notifier: Notifier | undefined
+        notifierTransports: NotifierTransport[]
     ) {
         super(runner, address, state);
+        this.notifier = new LiquidatorNotifier(this.address, notifierTransports);
         if (state.context.liquidationStrategy === undefined) {
             this.liquidationStrategy = new DefaultLiquidationStrategy(state, address);
         } else {
@@ -115,7 +120,7 @@ export class Liquidator extends ActorBase {
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
         await this.liquidationStrategy.liquidate(agent);
         logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
-        await this.notifier?.sendAgentLiquidated(this.address, agent.vaultAddress);
+        await this.notifier.sendAgentLiquidated(agent.vaultAddress);
         console.log(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
     }
 }

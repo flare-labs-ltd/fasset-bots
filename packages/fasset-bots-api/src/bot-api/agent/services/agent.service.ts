@@ -1,8 +1,11 @@
+import { Inject, Injectable } from "@nestjs/common";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { BotCliCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, decodedChainId, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
-import { Injectable } from "@nestjs/common";
 import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
+import { Cache } from "cache-manager";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -11,6 +14,10 @@ const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 
 @Injectable()
 export class AgentService {
+    constructor(
+        @Inject(CACHE_MANAGER) private cacheManager: Cache
+    ) {}
+
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
         const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
         const agent = await cli.createAgentVault(agentSettings);
@@ -239,5 +246,29 @@ export class AgentService {
         const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(cli.context.chainInfo.chainId)}.address`);
         const balance = await cli.context.wallet.getBalance(ownerUnderlyingAddress);
         return { balance: balance.toString() };
+    }
+
+    async saveNotification(notification: PostAlert): Promise<void> {
+        let notifications: PostAlert[] | undefined  = await this.cacheManager.get<PostAlert[]>("notifications");
+        if (notifications == undefined) {
+            notifications = [];
+        }
+        notifications.push(notification);
+
+        let expirationTime: number | undefined = await this.cacheManager.get<number>("notifications_ttl");
+        if (expirationTime == undefined || expirationTime < Date.now()) {
+            expirationTime = Date.now() + 3600000;
+            await this.cacheManager.set("notifications_ttl", expirationTime, 0);
+            await this.cacheManager.set("notifications", notifications, 3600000);
+        }
+    }
+
+    async getNotifications(): Promise<PostAlert[]> {
+        const notifications: PostAlert[]  = (await this.cacheManager.get<PostAlert[]>("notifications")) ?? [];
+        return notifications;
+    }
+
+    async getAgentWorkAddress(): Promise<string> {
+        return requireSecret("owner.native.address");
     }
 }

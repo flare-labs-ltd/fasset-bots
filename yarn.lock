@@ -1243,6 +1243,7 @@ __metadata:
   resolution: "@flarelabs/fasset-bots-api@workspace:packages/fasset-bots-api"
   dependencies:
     "@flarelabs/fasset-bots-core": "workspace:*"
+    "@nestjs/cache-manager": ^2.2.1
     "@nestjs/cli": ^10.1.18
     "@nestjs/common": ^10.2.6
     "@nestjs/config": ^3.1.1
@@ -1265,6 +1266,7 @@ __metadata:
     "@types/passport-http": ^0.3.9
     "@types/passport-strategy": ^0.2.36
     axios: 1.5.1
+    cache-manager: ^5.4.0
     class-transformer: ^0.5.1
     class-validator: ^0.14.0
     dotenv: 16.3.1
@@ -1314,6 +1316,7 @@ __metadata:
     "@mikro-orm/mysql": 5.8.4
     "@mikro-orm/postgresql": 5.8.4
     "@mikro-orm/sqlite": 5.8.4
+    "@nomicfoundation/hardhat-network-helpers": 1.0.10
     "@nomiclabs/hardhat-web3": 2.0.0
     "@openzeppelin/test-helpers": 0.5.16
     "@typechain/truffle-v5": 7.0.0
@@ -1812,6 +1815,18 @@ __metadata:
     "@mikro-orm/seeder":
       optional: true
   checksum: 0c19b674a228d0ef21458cf3d2d842b37f9022d1422f3f94795a5d089066047be51863e27335a9ea6af405a9ae313e8bf3df0b5277bff5dad445d0924a646f74
+  languageName: node
+  linkType: hard
+
+"@nestjs/cache-manager@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "@nestjs/cache-manager@npm:2.2.1"
+  peerDependencies:
+    "@nestjs/common": ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^9.0.0 || ^10.0.0
+    cache-manager: <=5
+    rxjs: ^7.0.0
+  checksum: 871dfe83115dcfd39f76d30d2e9b12ebc5e485007abc24e72414c5505a71e0cfdcb7a5c20fc58fe82302259a3b346eee884332a07418437d42e82ff704049433
   languageName: node
   linkType: hard
 
@@ -2495,7 +2510,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomicfoundation/hardhat-network-helpers@npm:^1.0.9":
+"@nomicfoundation/hardhat-network-helpers@npm:1.0.10, @nomicfoundation/hardhat-network-helpers@npm:^1.0.9":
   version: 1.0.10
   resolution: "@nomicfoundation/hardhat-network-helpers@npm:1.0.10"
   dependencies:
@@ -5666,6 +5681,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cache-manager@npm:^5.4.0":
+  version: 5.4.0
+  resolution: "cache-manager@npm:5.4.0"
+  dependencies:
+    lodash.clonedeep: ^4.5.0
+    lru-cache: ^10.1.0
+    promise-coalesce: ^1.1.2
+  checksum: ede2fd29ecb17cc73e3201bead73a2f2e3bea4b0a358576854ed3d8669b6c06de63acaef444c2c0cf4107966ab824a68719c5b4c9e7c3de395e832450b449849
+  languageName: node
+  linkType: hard
+
 "cacheable-lookup@npm:^5.0.3":
   version: 5.0.4
   resolution: "cacheable-lookup@npm:5.0.4"
@@ -8606,7 +8632,7 @@ __metadata:
     cross-env: ^7.0.3
     dotenv: ^16.3.1
     ethers: ^6.7.1
-    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#private_beta"
+    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.5"
     hardhat: 2.20.1
     hardhat-gas-reporter: ^1.0.9
     mocha: ^10.3.0
@@ -8619,14 +8645,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset@git+https://github.com/flare-labs-ltd/fassets.git#private_beta":
-  version: 0.0.1
-  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=ee841fd09cf0996e0afcd441e7664489a145bf18"
+"fasset@git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.5":
+  version: 1.0.0-beta.5
+  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=24b8e9c1de03385004103000515a744f691cd0ca"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
     "@openzeppelin/contracts": 4.9.2
     flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
-  checksum: ab626c0b01e37ef08e1bb2cb6651673b9306c8fc950a522216dae962a81b49e2239db2653fecea62eaa280fd72d0a861cbdcd41d1d30135324c32eed309c3a9d
+  checksum: 3e198dc1c2697a78abc1313d1e4ca3d144e60541988cfd5359b49f325d26ba69cdf4e134bb1651b6d81997bf61ad0138d0412cac1281680ccdfc65fb80b4a5b7
   languageName: node
   linkType: hard
 
@@ -11959,7 +11985,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^10.0.0":
+"lru-cache@npm:^10.0.0, lru-cache@npm:^10.1.0":
   version: 10.2.0
   resolution: "lru-cache@npm:10.2.0"
   checksum: eee7ddda4a7475deac51ac81d7dd78709095c6fa46e8350dc2d22462559a1faa3b81ed931d5464b13d48cbd7e08b46100b6f768c76833912bc444b99c37e25db
@@ -14213,6 +14239,13 @@ __metadata:
   version: 2.0.3
   resolution: "progress@npm:2.0.3"
   checksum: f67403fe7b34912148d9252cb7481266a354bd99ce82c835f79070643bb3c6583d10dbcfda4d41e04bbc1d8437e9af0fb1e1f2135727878f5308682a579429b7
+  languageName: node
+  linkType: hard
+
+"promise-coalesce@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "promise-coalesce@npm:1.1.2"
+  checksum: 6f951b5db40ca78d09ad0f72adea0a2e9c5bdb0fc5b3ef218c611e2191c6ce2e9f752f815630fd07875dd1c9f04cc7327d6bada04b662dce986ce86ab88c2d5e
   languageName: node
   linkType: hard
 

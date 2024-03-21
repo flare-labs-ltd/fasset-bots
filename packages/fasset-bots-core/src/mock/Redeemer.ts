@@ -10,6 +10,8 @@ import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-pro
 import BN from "bn.js";
 
 export class Redeemer {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public context: IAssetAgentBotContext,
         public address: string,

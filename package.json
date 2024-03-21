@@ -10,7 +10,7 @@
     },
     "scripts": {
         "---------BUILD---SCRIPTS": "",
-        "clean": "rimraf -g dist \"packages/*/dist\"",
+        "clean": "rimraf -g dist \"packages/*/{dist,coverage,.nyc_output}\" \"packages/fasset-liquidator/{artifacts,cache,types}\"",
         "clean-nm": "rimraf -g node_modules \"packages/*/node_modules\"",
         "build": "tsc --build",
         "watch": "tsc --build --watch --incremental",

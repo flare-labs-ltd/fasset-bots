@@ -14,6 +14,8 @@ import { formatArgs } from "../utils/formatting";
 export type InitialAgentData = EventArgs<AgentVaultCreated>;
 
 export class TrackedAgentState {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public parent: TrackedState,
         data: InitialAgentData

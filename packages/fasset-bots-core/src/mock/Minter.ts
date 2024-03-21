@@ -11,6 +11,8 @@ import { MockIndexer } from "./MockIndexer";
 import BN from "bn.js";
 
 export class Minter {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public context: IAssetAgentBotContext,
         public address: string,

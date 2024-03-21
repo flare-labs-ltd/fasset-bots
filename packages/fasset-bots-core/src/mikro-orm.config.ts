@@ -1,14 +1,13 @@
 import { Options } from "@mikro-orm/core";
 import { AbstractSqlDriver } from "@mikro-orm/knex";
-import { AgentEntity, AgentMinting, AgentRedemption } from "./entities/agent";
-import { WalletAddress } from "./entities/wallet";
-import { createOrm, CreateOrmOptions, ORM } from "./config/orm";
-import { PostgreSqlDriver } from "@mikro-orm/postgresql";
+import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
 import { Secrets, getSecrets } from "./config/secrets";
+import { AgentEntity, AgentMinting, AgentRedemption, Event } from "./entities/agent";
+import { WalletAddress } from "./entities/wallet";
 
 /* istanbul ignore next */
-const options: Options<AbstractSqlDriver | PostgreSqlDriver> = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption],
+const options: Options<AbstractSqlDriver> = {
+    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, Event],
     dbName: "fasset-bots.db",
     debug: false
 };

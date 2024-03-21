@@ -7,6 +7,8 @@ import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { logger } from "../utils/logger";
 
 export class TimeKeeper {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public address: string,
         public context: IAssetActorContext,
