@@ -25,7 +25,8 @@ export enum AgentNotificationKey {
     MINTING_STARTED = "MINTING STARTED",
     // redemption
     REDEMPTION_CORNER_CASE = "REDEMPTION",
-    REDEMPTION_FAILED_BLOCKED = "REDEMPTION FAILED OR BLOCKED",
+    REDEMPTION_FAILED = "REDEMPTION FAILED",
+    REDEMPTION_BLOCKED = "REDEMPTION BLOCKED",
     REDEMPTION_DEFAULTED = "REDEMPTION DEFAULTED",
     REDEMPTION_PERFORMED = "REDEMPTION WAS PERFORMED",
     REDEMPTION_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR REDEMPTION",
@@ -104,44 +105,46 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.LIQUIDATION_WAS_PERFORMED, `Liquidation was performed for agent ${this.address} with value of ${value}`);
     }
 
-    async sendMintingCornerCase(requestId: BNish, indexerExpired: boolean, paymentProof: boolean) {
-        if (indexerExpired) {
-            await this.info(
-                AgentNotificationKey.MINTING_CORNER_CASE,
-                `Minting ${requestId} expired in indexer. Unstick minting was executed for agent ${this.address}.`
-            );
-        } else if (paymentProof) {
-            await this.info(
-                AgentNotificationKey.MINTING_CORNER_CASE,
-                `Agent ${this.address} requested payment proof for minting ${requestId}.`
-            );
-        } else {
-            await this.info(
-                AgentNotificationKey.MINTING_CORNER_CASE,
-                `Agent ${this.address} requested non payment proof for minting ${requestId}.`
-            );
-        }
+    async sendMintingIndexerExpired(requestId: BNish) {
+        await this.danger(
+            AgentNotificationKey.MINTING_CORNER_CASE,
+            `Minting ${requestId} expired in indexer. Unstick minting was executed for agent ${this.address}.`
+        );
     }
 
-    async sendRedemptionCornerCase(requestId: BNish) {
+    async sendMintingPaymentProofRequested(requestId: BNish) {
+        await this.info(
+            AgentNotificationKey.MINTING_CORNER_CASE,
+            `Agent ${this.address} requested payment proof for minting ${requestId}.`
+        );
+    }
+
+    async sendMintingNonPaymentProofRequested(requestId: BNish) {
+        await this.info(
+            AgentNotificationKey.MINTING_CORNER_CASE,
+            `Agent ${this.address} requested non payment proof for minting ${requestId}.`
+        );
+    }
+
+    async sendRedemptionExpiredInIndexer(requestId: BNish) {
         await this.info(
             AgentNotificationKey.REDEMPTION_CORNER_CASE,
             `Redemption ${requestId} expired in indexer. Redemption will finish without payment for agent ${this.address}.`
         );
     }
 
-    async sendRedemptionFailedOrBlocked(requestId: BNish, txHash: string, redeemer: string, failureReason?: string) {
-        if (failureReason) {
-            await this.danger(
-                AgentNotificationKey.REDEMPTION_FAILED_BLOCKED,
-                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${this.address}.`
-            );
-        } else {
-            await this.info(
-                AgentNotificationKey.REDEMPTION_FAILED_BLOCKED,
-                `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${this.address}.`
-            );
-        }
+    async sendRedemptionFailed(requestId: BNish, txHash: string, redeemer: string, failureReason: string) {
+        await this.danger(
+            AgentNotificationKey.REDEMPTION_FAILED,
+            `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} failed due to ${failureReason} for agent ${this.address}.`
+        );
+    }
+
+    async sendRedemptionBlocked(requestId: BNish, txHash: string, redeemer: string) {
+        await this.info(
+            AgentNotificationKey.REDEMPTION_BLOCKED,
+            `Redemption ${requestId} for redeemer ${redeemer} with payment transactionHash ${txHash} was blocked for agent ${this.address}.`
+        );
     }
 
     async sendRedemptionDefaulted(requestId: BNish, redeemer: string) {
@@ -158,32 +161,32 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendCollateralTopUpAlert(value: BNish, pool: boolean = false) {
-        if (pool) {
-            await this.info(
-                AgentNotificationKey.POOL_COLLATERAL_TOP_UP,
-                `Agent ${this.address} POOL was automatically topped up with collateral ${value} due to price changes.`
-            );
-        } else {
-            await this.info(
-                AgentNotificationKey.AGENT_COLLATERAL_TOP_UP,
-                `Agent ${this.address} was automatically topped up with collateral ${value} due to price changes.`
-            );
-        }
+    async sendVaultCollateralTopUpAlert(value: BNish) {
+        await this.info(
+            AgentNotificationKey.AGENT_COLLATERAL_TOP_UP,
+            `Agent ${this.address} was automatically topped up with collateral ${value} due to price changes.`
+        );
     }
 
-    async sendCollateralTopUpFailedAlert(value: BNish, pool: boolean = false) {
-        if (pool) {
-            await this.danger(
-                AgentNotificationKey.POOL_COLLATERAL_TOP_UP_FAILED,
-                `Agent ${this.address} POOL could not be automatically topped up with collateral ${value} due to price changes.`
-            );
-        } else {
-            await this.danger(
-                AgentNotificationKey.AGENT_COLLATERAL_TOP_UP_FAILED,
-                `Agent ${this.address} could not be automatically topped up with collateral ${value} due to price changes.`
-            );
-        }
+    async sendPoolCollateralTopUpAlert(value: BNish) {
+        await this.info(
+            AgentNotificationKey.POOL_COLLATERAL_TOP_UP,
+            `Agent ${this.address} POOL was automatically topped up with collateral ${value} due to price changes.`
+        );
+    }
+
+    async sendVaultCollateralTopUpFailedAlert(value: BNish) {
+        await this.danger(
+            AgentNotificationKey.AGENT_COLLATERAL_TOP_UP_FAILED,
+            `Agent ${this.address} could not be automatically topped up with collateral ${value} due to price changes.`
+        );
+    }
+
+    async sendPoolCollateralTopUpFailedAlert(value: BNish) {
+        await this.danger(
+            AgentNotificationKey.POOL_COLLATERAL_TOP_UP_FAILED,
+            `Agent ${this.address} POOL could not be automatically topped up with collateral ${value} due to price changes.`
+        );
     }
 
     async sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalanceUBA: BNish) {
@@ -225,25 +228,25 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendNoProofObtained(requestId: BNish | null, roundId: number, requestData: string, redemption?: boolean) {
-        if (!requestId) {
-            await this.danger(
-                AgentNotificationKey.DAILY_TASK_NO_PROOF_OBTAINED,
-                `Agent ${this.address} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
-            );
-        } else {
-            if (redemption) {
-                await this.danger(
-                    AgentNotificationKey.REDEMPTION_NO_PROOF_OBTAINED,
-                    `Agent ${this.address} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
-                );
-            } else {
-                await this.danger(
-                    AgentNotificationKey.MINTING_NO_PROOF_OBTAINED,
-                    `Agent ${this.address} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
-                );
-            }
-        }
+    async sendMintingNoProofObtained(requestId: BNish | null, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.MINTING_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+        );
+    }
+
+    async sendRedemptionNoProofObtained(requestId: BNish | null, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.REDEMPTION_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof for redemption ${requestId} in round ${roundId} with requested data ${requestData}.`
+        );
+    }
+
+    async sendDailyTaskNoProofObtained(roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.DAILY_TASK_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
+        );
     }
 
     async sendAgentDestroyed() {

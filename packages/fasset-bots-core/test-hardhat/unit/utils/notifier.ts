@@ -59,23 +59,23 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send minting corner case alert", async () => {
-        const spySend = spy.on(notifier, "sendMintingCornerCase");
-        notifier.sendMintingCornerCase("id", true, false);
-        notifier.sendMintingCornerCase("id", false, true);
-        notifier.sendMintingCornerCase("id", false, false);
+        const spySend = spy.on(transport, "send");
+        notifier.sendMintingIndexerExpired("id");
+        notifier.sendMintingPaymentProofRequested("id");
+        notifier.sendMintingNonPaymentProofRequested("id");
         expect(spySend).to.have.been.called.exactly(3);
     });
 
     it("Should send redemption corner case alert", async () => {
-        const spySend = spy.on(notifier, "sendRedemptionCornerCase");
-        notifier.sendRedemptionCornerCase("id");
+        const spySend = spy.on(notifier, "sendRedemptionExpiredInIndexer");
+        notifier.sendRedemptionExpiredInIndexer("id");
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send redemption failed or blocked alert", async () => {
-        const spySend = spy.on(notifier, "sendRedemptionFailedOrBlocked");
-        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer", "reason");
-        notifier.sendRedemptionFailedOrBlocked("reqId", "txHash", "redeemer");
+        const spySend = spy.on(transport, "send");
+        notifier.sendRedemptionFailed("reqId", "txHash", "redeemer", "reason");
+        notifier.sendRedemptionBlocked("reqId", "txHash", "redeemer");
         expect(spySend).to.have.been.called.twice;
     });
 
@@ -92,16 +92,16 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send top up collateral alert", async () => {
-        const spySend = spy.on(notifier, "sendCollateralTopUpAlert");
-        notifier.sendCollateralTopUpAlert("1");
-        notifier.sendCollateralTopUpAlert("1", true);
+        const spySend = spy.on(transport, "send");
+        notifier.sendVaultCollateralTopUpAlert("1");
+        notifier.sendPoolCollateralTopUpAlert("1");
         expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send top up collateral failed alert", async () => {
-        const spySend = spy.on(notifier, "sendCollateralTopUpFailedAlert");
-        notifier.sendCollateralTopUpFailedAlert("1");
-        notifier.sendCollateralTopUpFailedAlert("1", true);
+        const spySend = spy.on(transport, "send");
+        notifier.sendVaultCollateralTopUpFailedAlert("1");
+        notifier.sendPoolCollateralTopUpFailedAlert("1");
         expect(spySend).to.have.been.called.twice;
     });
 
@@ -130,10 +130,10 @@ describe("Notifier tests", async () => {
     });
 
     it("Should send no proof obtained  alert", async () => {
-        const spySend = spy.on(notifier, "sendNoProofObtained");
-        notifier.sendNoProofObtained("reqId", 1, "data", true);
-        notifier.sendNoProofObtained("reqId", 1, "data");
-        notifier.sendNoProofObtained(null, 1, "data");
+        const spySend = spy.on(transport, "send");
+        notifier.sendRedemptionNoProofObtained("reqId", 1, "data");
+        notifier.sendMintingNoProofObtained("reqId", 1, "data");
+        notifier.sendDailyTaskNoProofObtained(1, "data");
         expect(spySend).to.have.been.called.exactly(3);
     });
 

@@ -327,11 +327,11 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
             await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
-            await this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
+            await this.notifier.sendRedemptionFailed(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
             await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
-            await this.notifier.sendRedemptionFailedOrBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.agentVault);
+            await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
             await this.handleAgentDestruction(em, event.args.agentVault);
@@ -449,7 +449,7 @@ export class AgentBot {
                     agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
                     await rootEm.persistAndFlush(agentEnt);
                 } else {
-                    await this.notifier.sendNoProofObtained(null, agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
+                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
                     // request new block height proof
                     agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
                     await rootEm.persistAndFlush(agentEnt);
@@ -1011,7 +1011,7 @@ export class AgentBot {
                 value: burnNats,
             });
             minting.state = AgentMintingState.DONE;
-            await this.notifier.sendMintingCornerCase(minting.requestId, true, false);
+            await this.notifier.sendMintingIndexerExpired(minting.requestId);
             logger.info(`Agent ${this.agent.vaultAddress} unstuck minting ${minting.requestId}.`);
         } else {
             // proof did not expire
@@ -1053,7 +1053,7 @@ export class AgentBot {
             minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
             minting.proofRequestRound = request.round;
             minting.proofRequestData = request.data;
-            await this.notifier.sendMintingCornerCase(minting.requestId, false, true);
+            await this.notifier.sendMintingPaymentProofRequested(minting.requestId);
             logger.info(`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${txHash} and minting ${minting.requestId}; source underlying address ${sourceAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
         } else {
             // else cannot prove request yet
@@ -1079,7 +1079,7 @@ export class AgentBot {
             minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
             minting.proofRequestRound = request.round;
             minting.proofRequestData = request.data;
-            await this.notifier.sendMintingCornerCase(minting.requestId, false, false);
+            await this.notifier.sendMintingNonPaymentProofRequested(minting.requestId);
             logger.info(`Agent ${this.agent.vaultAddress} requested non payment proof for minting ${minting.requestId}; reference ${minting.paymentReference}, target underlying address ${minting.agentUnderlyingAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
         } else {
             // else cannot prove request yet
@@ -1110,7 +1110,7 @@ export class AgentBot {
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -1136,7 +1136,7 @@ export class AgentBot {
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
         }
     }
 
@@ -1215,7 +1215,7 @@ export class AgentBot {
                 // corner case - agent did not pay
                 await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
                 rd.state = AgentRedemptionState.DONE;
-                await this.notifier.sendRedemptionCornerCase(rd.requestId);
+                await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
                 await rootEm.persistAndFlush(rd);
                 logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
             }
@@ -1453,7 +1453,7 @@ export class AgentBot {
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendNoProofObtained(redemption.requestId, redemption.proofRequestRound!, redemption.proofRequestData!, true);
+            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound!, redemption.proofRequestData!);
         }
     }
 
@@ -1563,11 +1563,11 @@ export class AgentBot {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up vault collateral
                     ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
                 await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
-                await this.notifier.sendCollateralTopUpAlert(requiredTopUpVaultCollateral);
+                await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpVaultCollateral);
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} topped up vault collateral
                     ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
             } catch (err) {
-                await this.notifier.sendCollateralTopUpFailedAlert(requiredTopUpVaultCollateral);
+                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpVaultCollateral);
                 logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral
                     ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}:`, err);
             }
@@ -1577,11 +1577,11 @@ export class AgentBot {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens
                     ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
                 await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
-                await this.notifier.sendCollateralTopUpAlert(requiredTopUpPool, true);
+                await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpPool);
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} bought collateral pool tokens
                     ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
             } catch (err) {
-                await this.notifier.sendCollateralTopUpFailedAlert(requiredTopUpPool, true);
+                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpPool);
                 logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens
                     ${requiredTopUpPool.toString()} from owner ${this.agent.owner}:`, err);
             }
