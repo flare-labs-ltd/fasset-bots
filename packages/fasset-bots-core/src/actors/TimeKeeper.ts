@@ -2,8 +2,8 @@ import { BotConfig } from "../config/BotConfig";
 import { createActorAssetContext } from "../config/create-asset-context";
 import { ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
-import { sleep } from "../utils";
-import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { attestationProved } from "../underlying-chain/AttestationHelper";
+import { requireNotNull, sleep, web3DeepNormalize } from "../utils";
 import { logger } from "../utils/logger";
 
 export class TimeKeeper {
@@ -15,6 +15,12 @@ export class TimeKeeper {
         public intervalInMs: number
     ) { }
 
+    queryWindow = 7200;
+    loopDelay: number = 5000;
+
+    stopRequested: boolean = false;
+    updateRunning: boolean = false;
+
     interval?: NodeJS.Timeout;
 
     static async startTimekeepers(config: BotConfig, timekeeperAddress: string, interval: number) {
@@ -22,10 +28,9 @@ export class TimeKeeper {
         for (const chain of config.fAssets) {
             const assetContext = await createActorAssetContext(config, chain, ActorBaseKind.TIME_KEEPER);
             const timekeeper = new TimeKeeper(timekeeperAddress, assetContext, interval);
+            timekeeper.loopDelay = config.loopDelay;
             timekeepers.push(timekeeper);
             timekeeper.run();
-            // to avoid 'nonce too low' and 'replacement transaction underpriced'
-            await sleep(config.loopDelay);
         }
         return timekeepers;
     }
@@ -33,6 +38,9 @@ export class TimeKeeper {
     static async stopTimekeepers(timekeepers: TimeKeeper[]) {
         for (const timekeeper of timekeepers) {
             timekeeper.clear();
+        }
+        for (const timekeeper of timekeepers) {
+            await timekeeper.waitStop();
         }
     }
 
@@ -44,15 +52,39 @@ export class TimeKeeper {
      * minting or redemption payment.
      */
     async updateUnderlyingBlock() {
+        this.updateRunning = true;
         try {
-            logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
-            await proveAndUpdateUnderlyingBlock(this.context.attestationProvider!, this.context.assetManager, this.address);
+            const proof = await this.proveConfirmedBlockHeightExists(this.queryWindow);
+            if (proof === "STOP REQUESTED") return;
+            await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
             const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
             logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
-        } catch (err) {
-            console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${err}`);
-            logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}:`, err);
+        } catch (error) {
+            console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${error}`);
+            logger.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}:`, error);
+        } finally {
+            this.updateRunning = false;
         }
+    }
+
+    // like AttestationHelper.proveConfirmedBlockHeightExists, but allows stopping while waiting for proof
+    private async proveConfirmedBlockHeightExists(queryWindow: number) {
+        const attestationProvider = requireNotNull(this.context.attestationProvider, "missing attestation provider");
+        logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
+        const request = await attestationProvider.requestConfirmedBlockHeightExistsProof(queryWindow);
+        if (request == null) {
+            throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
+        }
+        while (!(await attestationProvider.stateConnector.roundFinalized(request.round))) {
+            if (this.stopRequested) return "STOP REQUESTED";
+            await sleep(this.loopDelay);
+        }
+        logger.info(`Obtained underlying block proof for asset manager ${this.context.assetManager.address}, updating with user ${this.address}...`);
+        const proof = await attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
+        if (!attestationProved(proof)) {
+            throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
+        }
+        return proof;
     }
 
     /**
@@ -78,5 +110,12 @@ export class TimeKeeper {
     /* istanbul ignore next */
     clear() {
         clearInterval(this.interval);
+        this.stopRequested = true;
+    }
+
+    async waitStop() {
+        while (this.updateRunning) {
+            await sleep(500);
+        }
     }
 }
