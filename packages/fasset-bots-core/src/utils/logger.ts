@@ -39,4 +39,9 @@ export function createCustomizedLogger(paths: LoggerPaths) {
     return createLogger({ transports });
 }
 
-export const logger = createCustomizedLogger({ json: "log/json/log-%DATE%.log.json", text: "log/text/log-%DATE%.log" });
+// use different
+const mainFileName = (require.main?.filename ?? "").replace(/\\/g, "/");
+const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^\/]+)\.(cjs|mjs|js|ts)$/);
+const loggerName = fnMatch ? `${fnMatch[1] === "cli" ? "cli-" : ""}${fnMatch[2]}` : "log";
+
+export let logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });
