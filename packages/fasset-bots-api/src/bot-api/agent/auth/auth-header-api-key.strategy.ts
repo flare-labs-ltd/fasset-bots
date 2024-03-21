@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ConfigService } from "@nestjs/config";
 import Strategy from "passport-headerapikey";
-import { createSha256Hash } from "@flarelabs/fasset-bots-core/utils";
+import { requireSecret } from "@flarelabs/fasset-bots-core/config";
 
 @Injectable()
 export class HeaderApiKeyStrategy extends PassportStrategy(Strategy, "api-key") {
@@ -13,7 +13,7 @@ export class HeaderApiKeyStrategy extends PassportStrategy(Strategy, "api-key") 
     }
 
     public validate = (apiKey: string, done: (error: Error | null, data: any) => object) => {
-        const apiKeyHash = createSha256Hash(this.configService.get<string>("AGENT_BOT_API_KEY")!);
+        const apiKeyHash = requireSecret("apiKey.agent_bot")
         if (apiKeyHash === apiKey) {
             done(null, true);
         }
