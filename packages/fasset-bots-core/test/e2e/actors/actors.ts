@@ -1,29 +1,29 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, createBotConfig, createAgentBotDefaultSettings, loadConfigFile, loadAgentSettings } from "../../../src/config/BotConfig";
+import { BotConfig, createAgentBotDefaultSettings, createBotConfig, loadAgentSettings, loadConfigFile } from "../../../src/config/BotConfig";
 import { BotConfigFile } from "../../../src/config/config-files";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
+import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { requireSecret } from "../../../src/config/secrets";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import chaiAsPromised from "chai-as-promised";
-import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
-import { getSecrets } from "../../../src/config/secrets";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
 use(chaiAsPromised);
+
 const fAssetSymbol = "FtestXRP";
 
 describe("Actor tests - coston", async () => {
@@ -81,7 +81,7 @@ describe("Actor tests - coston", async () => {
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
+        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up
@@ -92,7 +92,7 @@ describe("Actor tests - coston", async () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(contexts, orm, ownerAddress, 5, new MockNotifier());
+        const agentBotRunner = new AgentBotRunner(contexts, orm, ownerAddress, 5, testNotifierTransports);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
@@ -106,13 +106,8 @@ describe("Actor tests - coston", async () => {
     it("Should not create agent bot runner - missing arguments", async () => {
         const config1 = Object.assign({}, botConfig);
         config1.orm = undefined;
-        const config2 = Object.assign({}, botConfig);
-        config2.notifier = undefined;
         await expect(AgentBotRunner.create(config1))
-            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerManagementAddress}.`)
-            .and.be.an.instanceOf(Error);
-        await expect(AgentBotRunner.create(config2))
-            .to.eventually.be.rejectedWith(`Missing notifier or orm in config for owner ${ownerManagementAddress}.`)
+            .to.eventually.be.rejectedWith(`Missing orm in config for owner ${ownerManagementAddress}.`)
             .and.be.an.instanceOf(Error);
     });
 

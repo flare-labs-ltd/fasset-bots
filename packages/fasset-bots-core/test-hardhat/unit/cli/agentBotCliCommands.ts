@@ -11,7 +11,6 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
@@ -19,6 +18,7 @@ import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/help
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
@@ -87,7 +87,7 @@ describe("AgentBot cli commands unit tests", async () => {
             ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new MockNotifier(),
+            notifiers: testNotifierTransports,
             addressUpdater: "",
         };
         return { orm, context, chain, botCliCommands };
@@ -334,7 +334,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'performUnderlyingWithdrawal'", async () => {
@@ -380,7 +380,7 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, "txHash");
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'listActiveAgents'", async () => {
@@ -488,13 +488,13 @@ describe("AgentBot cli commands unit tests", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelWithdrawFromVaultAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'cancelCollateralPoolTokensAnnouncement'", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelCollateralPoolTokensAnnouncement(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 });

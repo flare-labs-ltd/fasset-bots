@@ -1,20 +1,21 @@
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { Minter } from "../../../src/mock/Minter";
-import { BNish, fail } from "../../../src/utils/helpers";
-import { Redeemer } from "../../../src/mock/Redeemer";
-import { ORM } from "../../../src/config/orm";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { createAgentBotDefaultSettings, loadAgentSettings } from "../../../src/config/BotConfig";
-import { TrackedState } from "../../../src/state/TrackedState";
 import { Challenger } from "../../../src/actors/Challenger";
-import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { cleanUp } from "../test-helpers";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
+import { createAgentBotDefaultSettings, loadAgentSettings } from "../../../src/config/BotConfig";
+import { ORM } from "../../../src/config/orm";
+import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../../src/fasset/Agent";
+import { Minter } from "../../../src/mock/Minter";
+import { Redeemer } from "../../../src/mock/Redeemer";
+import { TrackedState } from "../../../src/state/TrackedState";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
+import { fail } from "../../../src/utils/helpers";
+import { NotifierTransport } from "../../../src/utils/notifier/BaseNotifier";
+import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
+import { cleanUp } from "../test-helpers";
+import { testNotifierTransports } from "../testNotifierTransports";
 
 export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
@@ -32,7 +33,7 @@ export async function createTestAgentBot(
     orm: ORM,
     ownerManagementAddress: string,
     defaultAgentConfigPath: string,
-    notifier: MockNotifier = new MockNotifier()
+    notifiers: NotifierTransport[] = testNotifierTransports
 ): Promise<AgentBot> {
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
@@ -42,15 +43,15 @@ export async function createTestAgentBot(
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, settings);
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifier);
+    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
 }
 
 export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), new MockNotifier());
+    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), testNotifierTransports);
 }
 
 export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state, new MockNotifier());
+    return new Liquidator(new ScopedRunner(), address, state, testNotifierTransports);
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {

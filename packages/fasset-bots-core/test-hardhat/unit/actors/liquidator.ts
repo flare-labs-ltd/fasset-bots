@@ -1,13 +1,13 @@
 import { expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { Liquidator } from "../../../src/actors/Liquidator";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { sleep } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgent } from "../../test-utils/helpers";
@@ -49,7 +49,7 @@ describe("Liquidator unit tests", async () => {
     });
 
     it("Should create liquidator", async () => {
-        const liquidator = new Liquidator(runner, liquidatorAddress, state, new MockNotifier());
+        const liquidator = new Liquidator(runner, liquidatorAddress, state, testNotifierTransports);
         expect(liquidator.address).to.eq(liquidatorAddress);
     });
 
@@ -58,7 +58,7 @@ describe("Liquidator unit tests", async () => {
         const lastBlock = await web3.eth.getBlockNumber();
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
         await mockState.initialize();
-        const liquidator = new Liquidator(runner, liquidatorAddress, mockState, new MockNotifier());
+        const liquidator = new Liquidator(runner, liquidatorAddress, mockState, testNotifierTransports);
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.runStep();
         expect(spyConsole).to.be.called.once;
@@ -67,7 +67,7 @@ describe("Liquidator unit tests", async () => {
     it("Should not handle full liquidation - error", async () => {
         const spyConsole = spy.on(console, "error");
         const agent = await createTestAgent(context, ownerAddress);
-        const liquidator = new Liquidator(runner, liquidatorAddress, state, new MockNotifier());
+        const liquidator = new Liquidator(runner, liquidatorAddress, state, testNotifierTransports);
         // change address to invoke error later
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.handleFullLiquidationStarted(agent.vaultAddress);

@@ -11,7 +11,6 @@ import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockAgentBot } from "../../../src/mock/MockAgentBot";
 import { MockChain } from "../../../src/mock/MockChain";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
@@ -20,6 +19,7 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
@@ -76,7 +76,7 @@ describe("Agent bot unit tests", async () => {
     it("Should read agent bot from entity", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, new MockNotifier());
+        const agentBot = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
     });
@@ -85,7 +85,7 @@ describe("Agent bot unit tests", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         await context.agentOwnerRegistry.setWorkAddress(ZERO_ADDRESS, { from: ownerAddress });
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await expectRevert(AgentBot.fromEntity(context, agentEnt, new MockNotifier()), `Management address ${ownerAddress} has no registered work address.`);
+        await expectRevert(AgentBot.fromEntity(context, agentEnt, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
     });
 
     it("Should run readUnhandledEvents", async () => {
@@ -696,7 +696,7 @@ describe("Agent bot unit tests", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         await agentBot.checkForClaims();
-        expect(spyError).to.be.called.exactly(4);
+        expect(spyError).to.be.called.exactly(2);
     });
 
     it("Should handle claims", async () => {

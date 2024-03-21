@@ -1,7 +1,9 @@
 import "dotenv/config";
 
-import { EntityManager } from "@mikro-orm/core";
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
+import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { EntityManager } from "@mikro-orm/core";
+import path from "path";
 import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
@@ -9,32 +11,30 @@ import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
+import { SourceId } from "../underlying-chain/SourceId";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
+import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
+import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { Notifier } from "../utils/Notifier";
-import { CommandLineError, requireNotNull, toBIPS, toBN } from "../utils/helpers";
-import { resolveInFassetBotsCore } from "../utils/package-paths";
-import { requireSecret } from "./secrets";
-import { CreateOrmOptions, EM, ORM } from "./orm";
-import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
-import { IJsonLoader, JsonLoader } from "./json-loader";
-import { logger } from "../utils/logger";
-import { SourceId } from "../underlying-chain/SourceId";
-import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
-import { getSecrets } from "./secrets";
-import { loadContracts } from "./contracts";
-import { artifacts } from "../utils/web3";
-import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
-import path from "path";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
+import { CommandLineError, requireNotNull, toBIPS, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
+import { resolveInFassetBotsCore } from "../utils/package-paths";
+import { artifacts } from "../utils/web3";
+import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
+import { loadContracts } from "./contracts";
+import { IJsonLoader, JsonLoader } from "./json-loader";
+import { CreateOrmOptions, EM, ORM } from "./orm";
+import { getSecrets, requireSecret } from "./secrets";
 
 const AddressUpdater = artifacts.require("AddressUpdater");
 
 export interface BotConfig {
     orm?: ORM; // only for agent bot
-    notifier?: Notifier; // only for agent bot
+    notifiers: NotifierTransport[];
     loopDelay: number;
     rpcUrl: string;
     fAssets: BotFAssetConfig[];
@@ -186,7 +186,7 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         fAssets: fAssets,
         nativeChainInfo: runConfig.nativeChainInfo,
         orm: orm,
-        notifier: new Notifier(runConfig.alertsUrl),
+        notifiers: standardNotifierTransports(runConfig.alertsUrl),
         addressUpdater: runConfig.addressUpdater,
         contractsJsonFile: runConfig.contractsJsonFile,
         liquidationStrategy: runConfig.liquidationStrategy,

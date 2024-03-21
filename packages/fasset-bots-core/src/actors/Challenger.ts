@@ -7,14 +7,15 @@ import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { AttestationHelperError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { EventArgs } from "../utils/events/common";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
+import { EventArgs } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { compareHexValues, getOrCreate, sleep, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { Notifier } from "../utils/Notifier";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { ChallengerNotifier } from "../utils/notifier/ChallengerNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { ChallengeStrategy, DefaultChallengeStrategy } from "./plugins/ChallengeStrategy";
 
@@ -30,6 +31,7 @@ interface ActiveRedemption {
 export class Challenger extends ActorBase {
     static deepCopyWithObjectCreate = true;
 
+    notifier: ChallengerNotifier;
     challengeStrategy: ChallengeStrategy;
 
     constructor(
@@ -37,9 +39,10 @@ export class Challenger extends ActorBase {
         public address: string,
         public state: TrackedState,
         public lastEventUnderlyingBlockHandled: number,
-        public notifier: Notifier | undefined
+        notifierTransports: NotifierTransport[]
     ) {
         super(runner, address, state);
+        this.notifier = new ChallengerNotifier(this.address, notifierTransports);
         if (state.context.challengeStrategy === undefined) {
             this.challengeStrategy = new DefaultChallengeStrategy(state, address);
         } else {
@@ -198,7 +201,7 @@ export class Challenger extends ActorBase {
             const proof = await this.waitForDecreasingBalanceProof(scope, transaction.hash, agent.underlyingAddress);
             await this.challengeStrategy.illegalTransactionChallenge(scope, agent, web3DeepNormalize(proof));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
-            await this.notifier?.sendIllegalTransactionChallenge(this.address, agent.vaultAddress, transaction.hash);
+            await this.notifier.sendIllegalTransactionChallenge(agent.vaultAddress, transaction.hash);
         });
     }
 
@@ -236,7 +239,7 @@ export class Challenger extends ActorBase {
             ]);
             await this.challengeStrategy.doublePaymentChallenge(scope, agent, web3DeepNormalize(proof1), web3DeepNormalize(proof2));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for double payments for ${tx1hash} and ${tx2hash}.`);
-            await this.notifier?.sendDoublePaymentChallenge(this.address, agent.vaultAddress, tx1hash, tx2hash);
+            await this.notifier.sendDoublePaymentChallenge(agent.vaultAddress, tx1hash, tx2hash);
         });
     }
 
@@ -297,7 +300,7 @@ export class Challenger extends ActorBase {
             const proofs = await Promise.all(transactionHashes.map((txHash) => this.waitForDecreasingBalanceProof(scope, txHash, agent.underlyingAddress)));
             await this.challengeStrategy.freeBalanceNegativeChallenge(scope, agent, web3DeepNormalize(proofs));
             logger.info(`Challenger ${this.address} successfully challenged agent ${agent.vaultAddress} for free negative balance.`);
-            await this.notifier?.sendFreeBalanceNegative(this.address, agent.vaultAddress);
+            await this.notifier.sendFreeBalanceNegative(agent.vaultAddress);
         });
     }
 

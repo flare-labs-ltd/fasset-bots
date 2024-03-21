@@ -6,7 +6,7 @@ import { AgentEntity } from "../../../src/entities/agent";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
-import { FaultyNotifier } from "../../test-utils/FaultyNotifier";
+import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
@@ -61,7 +61,7 @@ describe("Agent bot runner tests", async () => {
         await createTestAgentBot(otherContext, orm, ownerAddress, "UNDERLYING");
         await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         // create runner
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay, new FaultyNotifier());
+        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay, [new FaultyNotifierTransport()]);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);

@@ -11,11 +11,11 @@ import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
-import { MockNotifier } from "../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
+import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
 import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
@@ -27,7 +27,7 @@ import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, r
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { FuzzingCustomer } from "./FuzzingCustomer";
-import { FuzzingNotifier } from "./FuzzingNotifier";
+import { FuzzingNotifierTransport } from "./FuzzingNotifierTransport";
 import { FuzzingRunner } from "./FuzzingRunner";
 import { FuzzingState } from "./FuzzingState";
 import { FuzzingStateComparator } from "./FuzzingStateComparator";
@@ -37,7 +37,7 @@ export type MiningMode = "auto" | "manual";
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
-describe("Fuzzing tests", async () => {
+describe("Fuzzing tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let governance: string;
@@ -68,7 +68,7 @@ describe("Fuzzing tests", async () => {
     let chain: MockChain;
     let eventFormatter: EventFormatter;
     let runner: FuzzingRunner;
-    let notifier: MockNotifier;
+    let notifiers: NotifierTransport[];
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -79,7 +79,7 @@ describe("Fuzzing tests", async () => {
         chain = context.blockchainIndexer.chain as MockChain;
         // create interceptor
         eventFormatter = new EventFormatter();
-        notifier = new FuzzingNotifier(new MockNotifier(), eventFormatter);
+        notifiers = [new FuzzingNotifierTransport(eventFormatter)];
         // state checker
         const lastBlock = await web3.eth.getBlockNumber();
         commonTrackedState = new FuzzingState(context, lastBlock, new MockChainWallet(chain));
@@ -99,7 +99,7 @@ describe("Fuzzing tests", async () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifier, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
             const botCliCommands = new BotCliCommands();
             botCliCommands.context = context;
             botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
@@ -119,7 +119,7 @@ describe("Fuzzing tests", async () => {
                 ],
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
-                notifier: notifier,
+                notifiers: notifiers,
                 addressUpdater: "",
             };
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
@@ -145,7 +145,7 @@ describe("Fuzzing tests", async () => {
         // create liquidators
         const firstLiquidatorAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS;
         for (let i = 0; i < N_LIQUIDATORS; i++) {
-            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, new MockNotifier());
+            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
             liquidators.push(liquidator);
             // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
@@ -153,7 +153,7 @@ describe("Fuzzing tests", async () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), new MockNotifier());
+        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];

@@ -11,7 +11,6 @@ import { AgentRedemptionState } from "../../../src/entities/agent";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockNotifier } from "../../../src/mock/MockNotifier";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -21,6 +20,7 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
 import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
@@ -107,7 +107,7 @@ describe("UserBot cli commands unit tests", async () => {
             fAssets: [userBot.fassetConfig],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
-            notifier: new MockNotifier(),
+            notifiers: testNotifierTransports,
             addressUpdater: "",
         };
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);

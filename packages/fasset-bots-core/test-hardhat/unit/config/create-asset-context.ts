@@ -1,17 +1,18 @@
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import rewire from "rewire";
-import { CollateralClass, CollateralType } from "../../../src/fasset/AssetManagerTypes";
-import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockChain } from "../../../src/mock/MockChain";
-import { BotFAssetConfig, BotConfig } from "../../../src/config/BotConfig";
+import chaiAsPromised from "chai-as-promised";
+import rewire from "rewire";
+import { BotConfig, BotFAssetConfig } from "../../../src/config/BotConfig";
 import { createActorAssetContext } from "../../../src/config/create-asset-context";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { CollateralType } from "../../../src/fasset/AssetManagerTypes";
+import { MockChain } from "../../../src/mock/MockChain";
+import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { artifacts, web3 } from "../../../src/utils/web3";
+import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
@@ -77,6 +78,7 @@ describe("Create asset context unit tests", async () => {
             rpcUrl: "rpcUrl",
             fAssets: [fAssetConfig],
             nativeChainInfo: testNativeChainInfo,
+            notifiers: testNotifierTransports,
         };
         await expect(createActorAssetContext(config, fAssetConfig, ActorBaseKind.CHALLENGER))
             .to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`)

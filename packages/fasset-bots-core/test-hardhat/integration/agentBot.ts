@@ -16,7 +16,7 @@ import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/test-bot-config";
 import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
-import { FaultyNotifier } from "../test-utils/FaultyNotifier";
+import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
@@ -24,7 +24,7 @@ use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 
-describe("Agent bot tests", async () => {
+describe("Agent bot tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
@@ -605,7 +605,7 @@ describe("Agent bot tests", async () => {
     });
 
     it("Should fail to send notification - faulty notifier", async () => {
-        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress, undefined, false, new FaultyNotifier());
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress, undefined, false, [new FaultyNotifierTransport()]);
         const spyConsole = spy.on(console, "error");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
@@ -623,7 +623,7 @@ describe("Agent bot tests", async () => {
         assert.equal(status2, AgentStatus.CCB);
         // run bot
         await agentBot.handleEvents(orm.em);
-        expect(spyConsole).to.have.been.called.exactly(4);
+        expect(spyConsole).to.have.been.called.exactly(5);
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {

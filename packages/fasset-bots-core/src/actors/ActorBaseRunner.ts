@@ -1,14 +1,14 @@
-import { sleep } from "../utils/helpers";
+import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
+import { createActorAssetContext } from "../config/create-asset-context";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { TrackedState } from "../state/TrackedState";
+import { ScopedRunner } from "../utils/events/ScopedRunner";
+import { sleep } from "../utils/helpers";
+import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
 import { Challenger } from "./Challenger";
-import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { Liquidator } from "./Liquidator";
 import { SystemKeeper } from "./SystemKeeper";
-import { logger } from "../utils/logger";
-import { createActorAssetContext } from "../config/create-asset-context";
-import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
 
 export class ActorBaseRunner {
     static deepCopyWithObjectCreate = true;
@@ -69,9 +69,9 @@ export class ActorBaseRunner {
         let actor: ActorBase;
         if (kind === ActorBaseKind.CHALLENGER) {
             const blockHeight = await assetContext.blockchainIndexer!.getBlockHeight();
-            actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight, config.notifier);
+            actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight, config.notifiers);
         } else if (kind === ActorBaseKind.LIQUIDATOR) {
-            actor = new Liquidator(new ScopedRunner(), address, trackedState, config.notifier);
+            actor = new Liquidator(new ScopedRunner(), address, trackedState, config.notifiers);
         } else {
             actor = new SystemKeeper(new ScopedRunner(), address, trackedState);
         }
