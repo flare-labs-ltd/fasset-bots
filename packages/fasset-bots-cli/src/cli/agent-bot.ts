@@ -79,8 +79,8 @@ program
     });
 
 program
-    .command("announceExit")
-    .description("announce exit available agent's list")
+    .command("exit")
+    .description("begin the process of exiting from available agent's list; exit will later be executed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; fasset: string } = program.opts();
@@ -90,8 +90,8 @@ program
     });
 
 program
-    .command("exit")
-    .description("exit available agent's list")
+    .command("executeExit")
+    .description("execute previously announced exit from available agent's list (only needed in special cases, since running bot does it automatically)")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; fasset: string } = program.opts();
@@ -136,8 +136,8 @@ program
     });
 
 program
-    .command("announceVaultCollateralWithdrawal")
-    .description("announce vault collateral withdrawal from agent's to owner’s address")
+    .command("withdrawVaultCollateral")
+    .description("begin vault collateral withdrawal process from agent's to owner’s address; withdrawal will later be executed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
@@ -150,7 +150,7 @@ program
 
 program
     .command("cancelVaultCollateralWithdrawal")
-    .description("cancel vault collateral withdrawal announcement")
+    .description("cancel vault collateral withdrawal process")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; fasset: string } = program.opts();
@@ -160,8 +160,8 @@ program
     });
 
 program
-    .command("announceCollateralPoolTokenRedemption")
-    .description("announce collateral pool tokens redemption from agent's to owner’s address")
+    .command("redeemCollateralPoolTokens")
+    .description("begin collateral pool tokens redemption process from agent's to owner’s address; redemption will later be executed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
@@ -174,7 +174,7 @@ program
 
 program
     .command("cancelCollateralPoolTokenRedemption")
-    .description("cancel collateral pool tokens redemption announcement")
+    .description("cancel collateral pool tokens redemption process")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; fasset: string } = program.opts();
@@ -222,7 +222,7 @@ program
 
 program
     .command("close")
-    .description("close agent vault")
+    .description("begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; fasset: string } = program.opts();

@@ -14,19 +14,19 @@ Available commands:
 -   `depositVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - deposit vault collateral to agent vault from owner's address";
 -   `buyPoolCollateral <agentVault> <amount> -f [fAssetSymbol]` - add pool collateral and agent pool tokens
 -   `enter <agentVault> -f [fAssetSymbol]` - enter available agent's list
--   `announceExit <agentVault> -f [fAssetSymbol]` - announce exit available agent's list
--   `exit <agentVault> -f [fAssetSymbol]` - exit available agent's list
+-   `exit <agentVault> -f [fAssetSymbol]` - begin the process of exiting from available agent's list; exit will later be executed automatically by running agent bot
+-   `executExit <agentVault> -f [fAssetSymbol]` - execute previously announced exit from available agent's list (only needed in special cases, since running bot does it automatically)
 -   `info <agentVault> -f [fAssetSymbol]` - print agent info
 -   `getAgentSettings <agentVault> -f [fAssetSymbol]` - print agent's settings
 -   `updateAgentSetting <agentVault> <agentSettingName> <agentSettingValue> -f [fAssetSymbol]` - set agent's settings
--   `announceVaultCollateralWithdrawal <agentVault> <amount> -f [fAssetSymbol]` - announce vault collateral withdrawal from agent's to owner’s address
--   `cancelVaultCollateralWithdrawal`- cancel vault collateral withdrawal announcement
--   `announceCollateralPoolTokenRedemption <agentVault> <amount> -f [fAssetSymbol]` - announce collateral pool tokens redemption from agent's to owner’s address
--   `cancelCollateralPoolTokenRedemption`- cancel pool tokens redemption announcement
+-   `withdrawVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - begin vault collateral withdrawal process from agent's to owner’s address; withdrawal will later be executed automatically by running agent bot
+-   `cancelVaultCollateralWithdrawal`- cancel vault collateral withdrawal process
+-   `redeemCollateralPoolTokens <agentVault> <amount> -f [fAssetSymbol]` - begin collateral pool tokens redemption process from agent's to owner’s address; redemption will later be executed automatically by running agent bot
+-   `cancelCollateralPoolTokenRedemption`- cancel pool tokens redemption process
 -   `withdrawPoolFees <agentVault> <amount> -f [fAssetSymbol]` - withdraw pool fees from pool to owner's address
 -   `poolFeesBalance <agentVault> -f [fAssetSymbol]` - pool fees balance of agent
 -   `selfClose <agentVault> <amountUBA> -f [fAssetSymbol]` - self close agent vault with amountUBA of FAssets
--   `close <agentVault>` - close agent vault
+-   `close <agentVault>` - begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot
 -   `announceUnderlyingWithdrawal <agentVault> -f [fAssetSymbol]` - announce underlying withdrawal and get needed payment reference
 -   `performUnderlyingWithdrawal <agentVault> <amount> <destinationAddress> <paymentReference> -f [fAssetSymbol]` - perform underlying withdrawal and get needed transaction hash
 -   `confirmUnderlyingWithdrawal <agentVault> <transactionHash> -f [fAssetSymbol]` - confirm underlying withdrawal with transaction hash
