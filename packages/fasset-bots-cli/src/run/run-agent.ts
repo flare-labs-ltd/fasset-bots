@@ -47,6 +47,7 @@ program.action(async () => {
             console.log("Agent bot restarting...");
             continue;
         }
+        break;
     }
     console.log("Agent bot stopped");
 });
