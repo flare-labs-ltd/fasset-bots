@@ -464,8 +464,8 @@ describe("Challenger tests",  () => {
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        let spenderAddr = agentBot.agent.underlyingAddress;
-        let agentUnderlyingAddr = underlyingAddress;
+        const spenderAddr = agentBot.agent.underlyingAddress;
+        const agentUnderlyingAddr = underlyingAddress;
         const fistUTXOAmt = toBN(underlyingBalanceUBA).div(toBN(1000));
         const spentUTXOs: UTXO[] = [
             { value: fistUTXOAmt }, // UTXO 1

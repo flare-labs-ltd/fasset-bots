@@ -220,7 +220,7 @@ describe("mini truffle and artifacts tests",  () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             const timer = setInterval(
-                preventReentrancy(() => time.advanceBlock()),
+                preventReentrancy(() => time.advanceBlock()) as (() => void),
                 200
             );
             const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 3, timeoutMS: 5000 } };
@@ -236,7 +236,7 @@ describe("mini truffle and artifacts tests",  () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             const timer = setInterval(
-                preventReentrancy(() => time.advanceBlock()),
+                preventReentrancy(() => time.advanceBlock()) as (() => void),
                 200
             );
             const settings: ContractSettings = { ...contractSettings, waitFor: { what: "confirmations", confirmations: 2, timeoutMS: 5000 } };
@@ -287,7 +287,7 @@ describe("mini truffle and artifacts tests",  () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
             const timer = setInterval(
-                preventReentrancy(() => time.advanceBlock()),
+                preventReentrancy(() => time.advanceBlock()) as (() => void),
                 200
             );
             const settings: ContractSettings = { ...contractSettings,
@@ -431,7 +431,7 @@ describe("mini truffle and artifacts tests",  () => {
                     testRegistration.unregister();
                     clearInterval(testTimer);
                 });
-                testCancelable.catch(); // prevent uncought promise rejection
+                void testCancelable.catch(); // prevent uncought promise rejection
                 // check should work
                 cancelToken.check();
                 // wait 0.5 sec
@@ -533,8 +533,8 @@ describe("mini truffle and artifacts tests",  () => {
             await network.provider.send("evm_setIntervalMining", [type === "interval" ? timeMS : 0]);
         }
 
-        afterEach(() => {
-            setMining("auto");
+        afterEach(async () => {
+            await setMining("auto");
         });
 
         it("resubmit should work", async () => {
@@ -553,7 +553,7 @@ describe("mini truffle and artifacts tests",  () => {
             const res2 = await fpr.setDecimals("XRP", 11);
             // console.log(res2.receipt.effectiveGasPrice);
             // set to timed mining
-            setMining("interval", 2000);
+            await setMining("interval", 2000);
             // test send
             const res3 = await fpr.setDecimals("XRP", 12);
             // console.log(res3.receipt.effectiveGasPrice);
@@ -589,7 +589,7 @@ describe("mini truffle and artifacts tests",  () => {
             // console.log(res2.receipt.effectiveGasPrice);
             assert.equal(res2.receipt.effectiveGasPrice, 2.25e9);
             // set to timed mining
-            setMining("interval", 2000);
+            await setMining("interval", 2000);
             // try 3
             const res3 = await withSettings(fpr, settings2).setDecimals("XRP", 12, { gasPrice: 1.5e9 });
             assert.equal(res3.receipt.effectiveGasPrice, 3.0e9);
@@ -625,7 +625,7 @@ describe("mini truffle and artifacts tests",  () => {
             };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
-            setMining("interval", 2000);
+            await setMining("interval", 2000);
             await Promise.all([
                 withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
                 delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.5e9 })),
@@ -648,7 +648,7 @@ describe("mini truffle and artifacts tests",  () => {
             };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
-            setMining("interval", 2000);
+            await setMining("interval", 2000);
             const results = await Promise.allSettled([
                 withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
                 delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.6e9 })),

@@ -23,7 +23,7 @@ export async function adjustLiquidityForSlippage(
 ): Promise<void> {
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
-    let [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
+    const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
     let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
     if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
         const { 0: priceA, 2: ftsoDecimalsA } = await priceReader.getPrice(symbolA)
@@ -108,7 +108,7 @@ async function addLiquidityToDexPairPrice(
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
     const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    let [addedA, addedB] = priceBasedAddedDexReserves(
+    const [addedA, addedB] = priceBasedAddedDexReserves(
         reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxAddedA, maxAddedB)
     if (addedA < 0 || addedB < 0) {
         console.log(`cannot add liquidity to pool (${symbolA}, ${symbolB}) to match ftso prices, swapping required`)

@@ -1,10 +1,10 @@
 import { expect, use } from "chai";
-import { initWeb3 } from "../../../src/utils/web3";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { COSTON_RPC } from "../../test-utils/test-bot-config";
-import { UserBot } from "../../../src/actors/UserBot";
-import { ZERO_ADDRESS, requireEnv } from "../../../src/utils/helpers";
 import chaiAsPromised from "chai-as-promised";
+import { UserBot } from "../../../src/actors/UserBot";
+import { requireEnv } from "../../../src/utils/helpers";
+import { initWeb3 } from "../../../src/utils/web3";
+import { COSTON_RPC } from "../../test-utils/test-bot-config";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
 const FASSET_BOT_CONFIG = requireEnv("FASSET_BOT_CONFIG");

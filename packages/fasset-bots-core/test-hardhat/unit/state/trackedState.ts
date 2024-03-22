@@ -650,7 +650,7 @@ describe("Tracked state tests",  () => {
         const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
-        const newWnat = await await ERC20Mock.new("Wrapped NAT", "WNAT");
+        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         await context.assetManager.updateSettings(

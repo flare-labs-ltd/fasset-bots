@@ -41,7 +41,7 @@ export function isqrt(value: bigint) {
 	if (value < BigInt(4503599627370496)){//1n<<52n
 		x1 = BigInt(Math.sqrt(Number(value))|0) - BigInt(3);
 	} else {
-		let vlen = value.toString().length;
+		const vlen = value.toString().length;
 		if (!(vlen&1)) {
 			x1 = BigInt(10) ** (BigInt(vlen/2));
 		} else {

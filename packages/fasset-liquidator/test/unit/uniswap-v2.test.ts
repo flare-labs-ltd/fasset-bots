@@ -2,11 +2,8 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { isqrt, randBigInt } from '../utils'
 import * as calc from '../calculations/calculations'
-import { reservesFromPriceAndSlippage, reserveFromSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
-import {
-    addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,
-    changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves
-} from './utils/uniswap-v2'
+import { reservesFromPriceAndSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
+import { addLiquidity, swap, swapOutput, swapToRatio, swapToPrice, changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves } from './utils/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from '../constants'

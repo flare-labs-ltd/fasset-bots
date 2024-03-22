@@ -231,7 +231,7 @@ export class EcosystemFactory {
       this.healthyEcosystemWithZeroPoolCollateral
     ]
     for (let i = 0; i < count - 4; i++) {
-      let config = configs[i % 4]
+      const config = configs[i % 4]
       configs.push(this.randomizeEcosystem(config, `randomized ecosystem ${config.name}`))
     }
     return configs.slice(0, count)
