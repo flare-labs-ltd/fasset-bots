@@ -1293,11 +1293,11 @@ __metadata:
     typescript: 5.2.2
     web3: 1.10.2
   bin:
-    agent-bot: dist/src/cli/agent.js
-    fake-price-reader: dist/src/cli/fakePriceReader.js
+    agent-bot: dist/src/cli/agent-bot.js
+    fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
-    test-governance: dist/src/cli/testGovernance
-    user-bot: dist/src/cli/user.js
+    test-governance: dist/src/cli/test-governance.js
+    user-bot: dist/src/cli/user-bot.js
     utils: dist/src/cli/utils.js
   languageName: unknown
   linkType: soft
