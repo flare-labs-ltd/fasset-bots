@@ -3,7 +3,7 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { BotConfig, BotFAssetConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, BotFAssetConfig, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
 import { BotConfigFile } from "../config/config-files";
 import { createAssetContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
@@ -15,7 +15,8 @@ import { Redeemer } from "../mock/Redeemer";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { BNish, CommandLineError, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
+import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
+import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
@@ -123,6 +124,10 @@ export class UserBot {
         }
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
+    }
+
+    async finalize() {
+        await closeBotConfig(this.botConfig);
     }
 
     // User must make sure that underlying address is valid and normalized.

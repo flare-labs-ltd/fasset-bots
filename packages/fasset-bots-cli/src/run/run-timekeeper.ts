@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { TimeKeeper } from "@flarelabs/fasset-bots-core";
-import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -19,14 +19,18 @@ program.action(async () => {
     const config = await createBotConfig(runConfig, timekeeperAddress);
     const timekeepers = await TimeKeeper.startTimekeepers(config, timekeeperAddress, INTERVAL);
     // run
-    console.log("Timekeeper bot started, press CTRL+C to end");
-    await new Promise<void>((resolve) => {
-        process.on("SIGINT", () => {
-            console.log("Timekeeper bot stopping...");
-            resolve();
+    try {
+        console.log("Timekeeper bot started, press CTRL+C to end");
+        await new Promise<void>((resolve) => {
+            process.on("SIGINT", () => {
+                console.log("Timekeeper bot stopping...");
+                resolve();
+            });
         });
-    });
-    await TimeKeeper.stopTimekeepers(timekeepers);
+    } finally {
+        await TimeKeeper.stopTimekeepers(timekeepers);
+        await closeBotConfig(config);
+    }
     console.log("Timekeeper bot stopped");
 });
 

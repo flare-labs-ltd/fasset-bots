@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBot, UserBot } from "@flarelabs/fasset-bots-core";
 import { requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, minBN, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, minBN, registerToplevelFinalizer, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -56,6 +56,7 @@ program
     .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
+        registerToplevelFinalizer(() => minterBot.finalize());
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
         if (agentVault == null) {
             throw new CommandLineError("No agent with enough free lots available");
@@ -83,6 +84,7 @@ program
     .action(async (requestId: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, true);
+        registerToplevelFinalizer(() => minterBot.finalize());
         await minterBot.proveAndExecuteSavedMinting(requestId);
     });
 
@@ -92,6 +94,7 @@ program
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
         const minterBot = await UserBot.create(options.config, options.fasset, false);
+        registerToplevelFinalizer(() => minterBot.finalize());
         await minterBot.listMintings();
     });
 
@@ -104,6 +107,7 @@ program
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
+        registerToplevelFinalizer(() => redeemerBot.finalize());
         if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
             throw new CommandLineError("Missing executorFee");
         }
@@ -124,6 +128,7 @@ program
     .action(async (requestId: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
+        registerToplevelFinalizer(() => redeemerBot.finalize());
         await redeemerBot.savedRedemptionDefault(requestId);
     });
 
@@ -133,6 +138,7 @@ program
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
         const redeemerBot = await UserBot.create(options.config, options.fasset, true);
+        registerToplevelFinalizer(() => redeemerBot.finalize());
         await redeemerBot.listRedemptions();
     });
 
@@ -163,6 +169,7 @@ program
     .action(async (poolAddressOrTokenSymbol: string, collateralAmount: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
+        registerToplevelFinalizer(() => bot.finalize());
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const collateralAmountWei = toBNExp(collateralAmount, 18);
         const entered = await bot.enterPool(poolAddress, collateralAmountWei);
@@ -178,6 +185,7 @@ program
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
         const options: { config: string; fasset: string } = program.opts();
         const bot = await UserBot.create(options.config, options.fasset, false);
+        registerToplevelFinalizer(() => bot.finalize());
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const balance = await bot.infoBot().getPoolTokenBalance(poolAddress, bot.nativeAddress);
         const tokenAmountWei = tokenAmountOrAll === "all" ? balance : minBN(toBNExp(tokenAmountOrAll, 18), balance);

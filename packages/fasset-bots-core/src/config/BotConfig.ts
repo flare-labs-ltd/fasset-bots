@@ -18,7 +18,8 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { CommandLineError, requireNotNull, toBIPS, toBN } from "../utils/helpers";
+import { requireNotNull, toBIPS, toBN } from "../utils/helpers";
+import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
@@ -462,4 +463,12 @@ async function getStateConnectorAndProofVerifierAddress(
         };
     }
     throw new Error("Either contractsJsonFile or addressUpdater must be defined");
+}
+
+/**
+ * At the shutdown of the program, you should close the bot config.
+ * This closed DB connections etc.
+ */
+export async function closeBotConfig(config: BotConfig) {
+    await config.orm?.close();
 }

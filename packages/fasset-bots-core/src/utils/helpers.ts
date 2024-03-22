@@ -1,9 +1,8 @@
 import BN from "bn.js";
+import crypto from "crypto";
 import util from "util";
 import Web3 from "web3";
 import { logger } from "./logger";
-import crypto from "crypto";
-import chalk from "chalk";
 
 export type BNish = BN | number | string;
 
@@ -194,43 +193,6 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
-export class CommandLineError extends Error {
-    static wrap(error: any) {
-        return error?.message ? new CommandLineError(error.message) : error;
-    }
-}
-
-// toplevel async function runner for node.js
-/* istanbul ignore next */
-export function toplevelRun(main: () => Promise<void>) {
-    const scriptInfo = `${require.main?.filename ?? "UNKNOWN"} [pid=${process.pid}]`;
-    logger.info(`***** ${scriptInfo} starting...`);
-    main()
-        .then(() => {
-            logger.info(`***** ${scriptInfo} ended successfully.`);
-        })
-        .catch((error) => {
-            if (error instanceof CommandLineError) {
-                logger.error(`***** ${scriptInfo} ended with user error: ${error}`);
-                console.error(chalk.red("Error:"), error.message);
-                process.exitCode = 1;
-            } else {
-                logger.error(`***** ${scriptInfo} ended with unexpected error:`, error);
-                console.error(error);
-                process.exitCode = 2;
-            }
-        })
-        .finally(() => {
-            const timeoutMS = 5000;
-            setTimeout(() => {
-                logger.warn(`***** ${scriptInfo} didn't exit after ${timeoutMS / 1000}s, terminating.`);
-                setTimeout(() => { process.exit(process.exitCode ?? 0); }, 200);    // wait for logger to finish
-            }, timeoutMS).unref();
-        });
-}
-
-// Error handling
-
 export function fail(messageOrError: string | Error): never {
     if (typeof messageOrError === "string") {
         throw new Error(messageOrError);
@@ -250,6 +212,8 @@ export function autoReadEnvVar(text: string) {
     const m = text.match(/^\s*\$\{(\w+)\}\s*$/);
     return m ? requireEnv(m[1]) : text;
 }
+
+// Error handling
 
 export function filterStackTrace(error: any) {
     const stack = String(error.stack || error);

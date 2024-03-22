@@ -7,7 +7,7 @@ import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBot } from "..";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
-import { BotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, closeBotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
 import { createAssetContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
@@ -18,7 +18,8 @@ import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { resolveInFassetBotsCore } from "../utils";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, CommandLineError, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
+import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
+import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
@@ -86,6 +87,10 @@ export class BotCliCommands {
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
+    }
+
+    async finalize() {
+        await closeBotConfig(this.botConfig);
     }
 
     notifierFor(agentVault: string) {

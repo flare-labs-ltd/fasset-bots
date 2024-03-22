@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeper } from "@flarelabs/fasset-bots-core";
-import { createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { closeBotConfig, createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -28,14 +28,18 @@ program.action(async () => {
     }
     // create timekeepers
     const timekeepers = await TimeKeeper.startTimekeepers(botConfig, ownerAddress, TIMEKEEPER_INTERVAL);
-    // run
-    console.log("Agent bot started, press CTRL+C to end");
-    process.on("SIGINT", () => {
-        console.log("Stopping agent bot...");
-        runner.requestStop();
-    });
-    await runner.run();
-    await TimeKeeper.stopTimekeepers(timekeepers);
+    try {
+        // run
+        console.log("Agent bot started, press CTRL+C to end");
+        process.on("SIGINT", () => {
+            console.log("Stopping agent bot...");
+            runner.requestStop();
+        });
+        await runner.run();
+    } finally {
+        await TimeKeeper.stopTimekeepers(timekeepers);
+        await closeBotConfig(botConfig);
+    }
     console.log("Agent bot stopped");
 });
 
