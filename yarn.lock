@@ -1319,6 +1319,9 @@ __metadata:
     "@openzeppelin/test-helpers": 0.5.16
     "@typechain/truffle-v5": 7.0.0
     "@types/bn.js": 5.1.5
+    "@types/chai": 4.3.6
+    "@types/chai-as-promised": 7.1.6
+    "@types/chai-spies": 1.0.4
     "@types/glob": 8.1.0
     "@types/mocha": 10.0.1
     "@types/node": 20.7.0
@@ -1326,6 +1329,9 @@ __metadata:
     axios: 1.5.1
     axios-mock-adapter: 1.22.0
     bn.js: 5.2.1
+    chai: 4.3.8
+    chai-as-promised: 7.1.1
+    chai-spies: 1.0.0
     chalk: 4.1.2
     commander: 11.0.0
     dotenv: 16.3.1
@@ -1354,6 +1360,8 @@ __metadata:
     "@types/bitcore-lib": ^0.15.3
     "@types/bn.js": 5.1.5
     "@types/bs58check": ^2.1.0
+    "@types/chai": 4.3.6
+    "@types/chai-as-promised": 7.1.6
     "@types/elliptic": ^6.4.14
     "@types/node": 20.7.0
     "@types/tiny-secp256k1": ^2.0.1
@@ -1368,6 +1376,8 @@ __metadata:
     bitcore-lib-ltc: ^8.25.36
     bn.js: 5.2.1
     bs58check: ^3.0.1
+    chai: 4.3.8
+    chai-as-promised: 7.1.1
     dotenv: 16.3.1
     elliptic: ^6.5.4
     fast-safe-stringify: ^2.1.1
@@ -14992,16 +15002,10 @@ __metadata:
   dependencies:
     "@goldstack/utils-typescript-references": 0.3.9
     "@istanbuljs/nyc-config-typescript": 1.0.2
-    "@types/chai": 4.3.6
-    "@types/chai-as-promised": 7.1.6
-    "@types/chai-spies": 1.0.4
     "@types/mocha": 10.0.6
     "@types/rewire": 2.5.30
     "@typescript-eslint/eslint-plugin": 6.7.3
     "@typescript-eslint/parser": 6.7.3
-    chai: 4.3.8
-    chai-as-promised: 7.1.1
-    chai-spies: 1.0.0
     dotenv: 16.3.1
     eslint: 8.50.0
     eslint-plugin-node: 11.1.0
