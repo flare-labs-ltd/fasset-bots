@@ -55,8 +55,7 @@ program
     .option("--noWait", "only reserve and pay for the minting, don't wait for payment finalization and proof; you have to execute the minting later")
     .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
         const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true);
-        registerToplevelFinalizer(() => minterBot.finalize());
+        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
         if (agentVault == null) {
             throw new CommandLineError("No agent with enough free lots available");
@@ -83,8 +82,7 @@ program
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
         const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true);
-        registerToplevelFinalizer(() => minterBot.finalize());
+        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         await minterBot.proveAndExecuteSavedMinting(requestId);
     });
 
@@ -93,8 +91,7 @@ program
     .description("List all open mintings")
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, false);
-        registerToplevelFinalizer(() => minterBot.finalize());
+        const minterBot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
         await minterBot.listMintings();
     });
 
@@ -106,8 +103,7 @@ program
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
         const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true);
-        registerToplevelFinalizer(() => redeemerBot.finalize());
+        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
             throw new CommandLineError("Missing executorFee");
         }
@@ -127,8 +123,7 @@ program
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
         const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true);
-        registerToplevelFinalizer(() => redeemerBot.finalize());
+        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         await redeemerBot.savedRedemptionDefault(requestId);
     });
 
@@ -137,8 +132,7 @@ program
     .description("List all open redemptions")
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true);
-        registerToplevelFinalizer(() => redeemerBot.finalize());
+        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         await redeemerBot.listRedemptions();
     });
 
@@ -168,8 +162,7 @@ program
     .argument("<collateralAmount>", "amount of collateral (FLR or SGB) to add to the pool")
     .action(async (poolAddressOrTokenSymbol: string, collateralAmount: string) => {
         const options: { config: string; fasset: string } = program.opts();
-        const bot = await UserBot.create(options.config, options.fasset, false);
-        registerToplevelFinalizer(() => bot.finalize());
+        const bot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const collateralAmountWei = toBNExp(collateralAmount, 18);
         const entered = await bot.enterPool(poolAddress, collateralAmountWei);
@@ -184,8 +177,7 @@ program
     .argument("<amount>", 'the amount of tokens to burn, can be a number or "all"')
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
         const options: { config: string; fasset: string } = program.opts();
-        const bot = await UserBot.create(options.config, options.fasset, false);
-        registerToplevelFinalizer(() => bot.finalize());
+        const bot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const balance = await bot.infoBot().getPoolTokenBalance(poolAddress, bot.nativeAddress);
         const tokenAmountWei = tokenAmountOrAll === "all" ? balance : minBN(toBNExp(tokenAmountOrAll, 18), balance);
