@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { findRequiredEvent, eventArgs } from "../../../../src/utils/events/truffle";
 
-describe("Truffle unit tests", async () => {
+describe("Truffle unit tests",  () => {
     const response = {
         tx: "0xae28bac67c4e9d96228c7d5076007d9b3184f9645023b48b5a196cb1c2bd5dd0",
         receipt: {

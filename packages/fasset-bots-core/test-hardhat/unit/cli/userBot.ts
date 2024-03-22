@@ -52,7 +52,7 @@ interface RedeemData {
     createdAt: string;
 }
 
-describe("UserBot cli commands unit tests", async () => {
+describe("UserBot cli commands unit tests",  () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

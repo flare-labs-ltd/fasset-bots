@@ -66,7 +66,7 @@ const agentCreatedArgs = {
 const depositUSDC = toBNExp(1_000_000, 6);
 const depositWei = toBNExp(1_000_000, 18);
 
-describe("Tracked state tests", async () => {
+describe("Tracked state tests",  () => {
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;
     let accounts: string[];

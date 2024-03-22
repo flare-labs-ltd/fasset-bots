@@ -7,7 +7,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 
-describe("Minter unit tests", async () => {
+describe("Minter unit tests",  () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let minterAddress: string;

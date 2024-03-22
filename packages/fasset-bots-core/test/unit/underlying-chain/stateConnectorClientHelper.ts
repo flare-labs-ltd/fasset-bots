@@ -19,7 +19,7 @@ const accountPrivateKey = requireSecret("user.native.private_key");
 const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 
-describe("testXRP attestation/state connector tests", async () => {
+describe("testXRP attestation/state connector tests",  () => {
     const roundId = 571512;
     let account: string;
 
@@ -76,7 +76,7 @@ describe("testXRP attestation/state connector tests", async () => {
     });
 });
 
-describe("State connector tests - decoding", async () => {
+describe("State connector tests - decoding",  () => {
     const invalidAttestationType = encodeAttestationName("invalid");
     let rewiredStateConnectorHelper: typeof rewiredStateConnectorClientHelperClass;
     const merkleProof = ["0xa2a603a9acad0bca95be28b9cea549b9b1cbe32519ff1389156b6d3c439535d4"];

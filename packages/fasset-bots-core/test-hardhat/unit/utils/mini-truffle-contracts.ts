@@ -12,7 +12,7 @@ import path from "path";
 import { TransactionReceipt } from "web3-core";
 import { FakePriceReaderInstance } from "../../../typechain-truffle";
 
-describe("mini truffle and artifacts tests", async () => {
+describe("mini truffle and artifacts tests",  () => {
     let accounts: string[];
 
     before(async () => {

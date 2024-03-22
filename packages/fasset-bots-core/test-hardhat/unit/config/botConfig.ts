@@ -12,7 +12,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT } from "../../test-utils/helpers";
 use(chaiAsPromised);
 
-describe("Config unit tests", async () => {
+describe("Config unit tests",  () => {
     let accounts: string[];
     let context: TestAssetBotContext;
 

@@ -26,7 +26,7 @@ use(chaiAsPromised);
 
 const fAssetSymbol = "FtestXRP";
 
-describe("Actor tests - coston", async () => {
+describe("Actor tests - coston",  () => {
     let accounts: string[];
     // for agent
     let botConfig: BotConfig;

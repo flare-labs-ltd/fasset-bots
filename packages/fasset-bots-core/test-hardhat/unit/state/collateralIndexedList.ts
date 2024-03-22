@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { CollateralIndexedList, CollateralTypeId } from "../../../src/state/CollateralIndexedList";
 import { CollateralClass } from "../../../src/fasset/AssetManagerTypes";
 
-describe("Collateral indexed list unit tests", async () => {
+describe("Collateral indexed list unit tests",  () => {
     const elt0 = { collateralClass: CollateralClass.POOL, token: "token0" };
     const elt1 = { collateralClass: CollateralClass.VAULT, token: "token1" };
     const elt2 = { collateralClass: CollateralClass.VAULT, token: "token2" };

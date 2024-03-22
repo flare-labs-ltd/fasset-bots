@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 
-describe("web3 unit tests", async () => {
+describe("web3 unit tests",  () => {
     it("Should use global web3", async () => {
         expect(usingGlobalWeb3()).to.be.true;
     });

@@ -17,7 +17,7 @@ use(spies);
 
 const agentUnderlyingAddress = "agentUnderlyingAddress";
 
-describe("InfoBot cli commands unit tests", async () => {
+describe("InfoBot cli commands unit tests",  () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

@@ -31,7 +31,7 @@ const poolCollateral: CollateralType = {
     safetyMinCollateralRatioBIPS: toBIPS(2.3),
 };
 
-describe("Prices tests", async () => {
+describe("Prices tests",  () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let settings: AssetManagerSettings;

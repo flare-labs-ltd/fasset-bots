@@ -12,7 +12,7 @@ use(spies);
 
 const message = "MESSAGE";
 
-describe("Notifier tests", async () => {
+describe("Notifier tests",  () => {
     let transport: MockNotifierTransport;
     let notifier: AgentNotifier;
 

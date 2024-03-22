@@ -203,7 +203,7 @@ describe("Tests for the Liquidator contract", () => {
 
   })
 
-  describe("Generic arbitrage failures", async () => {
+  describe("Generic arbitrage failures",  () => {
 
     it("should fail liquidation if flash loan can offer 0 fees", async () => {
       const { contracts, signers } = context

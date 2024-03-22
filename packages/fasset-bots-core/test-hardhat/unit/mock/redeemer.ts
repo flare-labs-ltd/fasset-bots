@@ -6,7 +6,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 
-describe("Redeemer unit tests", async () => {
+describe("Redeemer unit tests",  () => {
     let accounts: string[];
     let context: IAssetAgentBotContext;
     let redeemerAddress: string;

@@ -4,7 +4,7 @@ import { existsSync, rm } from "fs";
 
 const filename = "./fasset-deployment/coston.json";
 const newFilename = "./test-hardhat/unit/config/savedContracts.json";
-describe("Contracts config tests", async () => {
+describe("Contracts config tests",  () => {
     it("Should load contracts", async () => {
         const contracts = loadContracts(filename);
         expect(contracts.WNat.name).to.eq("WNat");
