@@ -5,7 +5,8 @@ import { createNativeContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
-import { CommandLineError, MAX_BIPS, toBN } from "../utils/helpers";
+import { MAX_BIPS, toBN } from "../utils/helpers";
+import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 

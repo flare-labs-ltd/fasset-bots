@@ -1345,6 +1345,7 @@ __metadata:
     web3-utils: 1.10.2
     winston: 3.10.0
     winston-daily-rotate-file: 4.7.1
+    winston-transport: 4.5.0
   languageName: unknown
   linkType: soft
 
@@ -18584,7 +18585,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"winston-transport@npm:^4.4.0, winston-transport@npm:^4.5.0":
+"winston-transport@npm:4.5.0, winston-transport@npm:^4.4.0, winston-transport@npm:^4.5.0":
   version: 4.5.0
   resolution: "winston-transport@npm:4.5.0"
   dependencies:

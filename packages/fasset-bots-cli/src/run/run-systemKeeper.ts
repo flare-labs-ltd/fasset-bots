@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
-import { createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 
@@ -19,14 +19,18 @@ program.action(async () => {
         (chainConfig) => ActorBaseRunner.create(config, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, chainConfig)
     ));
     // run
-    console.log("System keeper bot started, press CTRL+C to end");
-    process.on("SIGINT", () => {
-        console.log("System keeper bot stopping...");
-        runners.forEach(runner => runner.requestStop());
-    });
-    await Promise.allSettled(runners.map(
-        runner => runner.run(ActorBaseKind.SYSTEM_KEEPER))
-    );
+    try {
+        console.log("System keeper bot started, press CTRL+C to end");
+        process.on("SIGINT", () => {
+            console.log("System keeper bot stopping...");
+            runners.forEach(runner => runner.requestStop());
+        });
+        await Promise.allSettled(runners.map(
+            runner => runner.run(ActorBaseKind.SYSTEM_KEEPER))
+        );
+    } finally {
+        await closeBotConfig(config);
+    }
     console.log("System keeper bot stopped");
 });
 

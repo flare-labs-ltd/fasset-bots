@@ -4,7 +4,7 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 

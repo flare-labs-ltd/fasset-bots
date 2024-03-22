@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from "fs";
-import { CommandLineError, ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
+import { CommandLineError } from "../utils/toplevel";
 
 export type Secrets = {
     wallet?: {
