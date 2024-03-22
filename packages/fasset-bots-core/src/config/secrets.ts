@@ -33,8 +33,8 @@ export interface DatabaseAccount {
     password: string;
 }
 
-export function getSecrets(): Secrets {
-    if (loadedSecrets == undefined) {
+export function getSecrets(reload = false): Secrets {
+    if (loadedSecrets == undefined || reload) {
         loadedSecrets = loadSecrets(defaultSecretsPath());
     }
     return loadedSecrets;
@@ -81,8 +81,8 @@ function checkFilePermissions(fpath: string) {
     }
 }
 
-export function requireSecret(name: string, secrets?: Secrets): string {
-    const value = valueForKeyPath(secrets ?? getSecrets(), name);
+export function requireSecret(name: string, secrets?: Secrets, reload = false): string {
+    const value = valueForKeyPath(secrets ?? getSecrets(reload), name);
     if (typeof value === "string") return value;
     throw new Error(`Secret variable ${name} not defined or not typeof string`);
 }

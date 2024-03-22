@@ -10,6 +10,8 @@ import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot } from "./AgentBot";
+import { web3 } from "../utils";
+
 
 export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
@@ -23,18 +25,28 @@ export class AgentBotRunner {
     ) {}
 
     public stopRequested = false;
+    public restartRequested = false;
 
     async run(): Promise<void> {
         this.stopRequested = false;
-        while (!this.stopRequested) {
+        this.restartRequested = false;
+        while (!this.stopLoop()) {
             await this.runStep();
-            if (this.stopRequested) break;
+            if (this.stopLoop()) break;
             await sleep(this.loopDelay);
         }
     }
 
+    stopLoop(): boolean {
+        return this.stopRequested || this.restartRequested;
+    }
+
     requestStop(): void {
         this.stopRequested = true;
+    }
+
+    requestRestart(): void {
+        this.restartRequested = true;
     }
 
     /**
@@ -46,13 +58,19 @@ export class AgentBotRunner {
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
-            if (this.stopRequested) break;
+            if (this.stopLoop()) break;
             try {
                 const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
                     logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
+                } else if (web3.eth.defaultAccount !== requireSecret(`owner.native.address`, undefined, true)) {
+                    const ownerAddress = requireSecret(`owner.native.address`);
+                    this.requestRestart();
+                    console.warn(`Owner's native address from secrets file, does not match their used account`);
+                    logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
+                    break;
                 }
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifierTransports);
                 agentBot.runner = this;
