@@ -1381,6 +1381,7 @@ __metadata:
     dotenv: 16.3.1
     elliptic: ^6.5.4
     fast-safe-stringify: ^2.1.1
+    rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2
     ripple-keypairs: ^1.1.5
@@ -14171,15 +14172,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.0.3":
-  version: 3.0.3
-  resolution: "prettier@npm:3.0.3"
-  bin:
-    prettier: bin/prettier.cjs
-  checksum: e10b9af02b281f6c617362ebd2571b1d7fc9fb8a3bd17e371754428cda992e5e8d8b7a046e8f7d3e2da1dcd21aa001e2e3c797402ebb6111b5cd19609dd228e0
-  languageName: node
-  linkType: hard
-
 "prettier@npm:^1.14.3":
   version: 1.19.1
   resolution: "prettier@npm:1.19.1"
@@ -15011,8 +15003,6 @@ __metadata:
     eslint-plugin-node: 11.1.0
     mocha: 10.2.0
     nyc: 15.1.0
-    prettier: 3.0.3
-    rewire: 7.0.0
     rimraf: 5.0.5
     source-map-support: 0.5.21
     ts-node: 10.9.1
