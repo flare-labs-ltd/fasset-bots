@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { toBN, toHex } from "../../../src/utils/helpers";
 
-describe("Payment reference unit tests", async () => {
+describe("Payment reference unit tests", () => {
     const id = 5;
     const address = "";
 

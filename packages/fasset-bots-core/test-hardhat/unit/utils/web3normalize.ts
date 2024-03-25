@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { toBN, toBNExp } from "../../../src/utils/helpers";
 import { web3DeepNormalize, web3Normalize } from "../../../src/utils/web3normalize";
 
-describe("web3 normalize unit tests", async () => {
+describe("web3 normalize unit tests", () => {
     it("Should normalize null to null", async () => {
         const res = web3Normalize(null);
         expect(res).to.be.null;

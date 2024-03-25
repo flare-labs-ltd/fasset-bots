@@ -15,7 +15,7 @@ import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMinting, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestSystemKeeper, getAgentStatus } from "../test-utils/helpers";
 use(spies);
 
-describe("System keeper tests", async () => {
+describe("System keeper tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;

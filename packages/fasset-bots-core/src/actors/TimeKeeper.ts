@@ -13,7 +13,7 @@ export class TimeKeeper {
         public address: string,
         public context: IAssetActorContext,
         public intervalInMs: number
-    ) { }
+    ) {}
 
     queryWindow = 7200;
     loopDelay: number = 5000;

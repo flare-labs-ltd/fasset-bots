@@ -25,7 +25,7 @@ export class OwnerAddressPair {
     constructor(
         public managementAddress: string,
         public workAddress: string,
-    ) { }
+    ) {}
 
     toString() {
         return `${this.managementAddress} with work address ${this.workAddress}`;

@@ -16,7 +16,7 @@ const depositUSDC = toBNExp(1_000_000, 6);
 const depositWei = toBNExp(1_000_000, 18);
 const withdrawUSDC = toBNExp(1, 6);
 
-describe("Agent unit tests", async () => {
+describe("Agent unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let ownerAddress: string;

@@ -38,14 +38,14 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
         // due to async nature of challenging there may be some false challenges which will be rejected
         await this.state.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"],
-            ActorBaseKind.CHALLENGER, this.address));
+                ActorBaseKind.CHALLENGER, this.address));
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]) {
         // due to async nature of challenging there may be some false challenges which will be rejected
         await this.state.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],
-            ActorBaseKind.CHALLENGER, this.address));
+                ActorBaseKind.CHALLENGER, this.address));
     }
 }
 
@@ -79,6 +79,6 @@ export class DexChallengeStrategy extends ChallengeStrategy {
         const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
         await challenger.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],
-            ActorBaseKind.CHALLENGER, this.address));
+                ActorBaseKind.CHALLENGER, this.address));
     }
 }

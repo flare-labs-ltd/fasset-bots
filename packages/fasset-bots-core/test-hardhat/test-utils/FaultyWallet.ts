@@ -1,4 +1,3 @@
-import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {

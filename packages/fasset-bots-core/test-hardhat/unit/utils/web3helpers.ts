@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 
-describe("web3 helper unit tests", async () => {
+describe("web3 helper unit tests", () => {
     it("Should return latest block timestamp as number", async () => {
         const timestamp = await latestBlockTimestamp();
         expect(typeof timestamp === "number").to.be.true;

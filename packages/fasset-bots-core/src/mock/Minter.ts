@@ -1,14 +1,14 @@
 import { Payment } from "@flarenetwork/state-connector-protocol";
+import BN from "bn.js";
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BN_ZERO, BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
-import BN from "bn.js";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;

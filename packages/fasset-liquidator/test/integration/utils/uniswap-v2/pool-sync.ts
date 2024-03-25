@@ -23,14 +23,14 @@ export async function adjustLiquidityForSlippage(
 ): Promise<void> {
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
-    let [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
+    const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
     let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
     if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
         const { 0: priceA, 2: ftsoDecimalsA } = await priceReader.getPrice(symbolA)
         const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
         if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
             throw Error("Token price has non-5 ftso decimals")
-        ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
+            ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
     } else {
         [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
     }
@@ -108,7 +108,7 @@ async function addLiquidityToDexPairPrice(
     const decimalsA = await tokenA.decimals()
     const decimalsB = await tokenB.decimals()
     const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    let [addedA, addedB] = priceBasedAddedDexReserves(
+    const [addedA, addedB] = priceBasedAddedDexReserves(
         reserveA, reserveB, priceA, priceB, decimalsA, decimalsB, maxAddedA, maxAddedB)
     if (addedA < 0 || addedB < 0) {
         console.log(`cannot add liquidity to pool (${symbolA}, ${symbolB}) to match ftso prices, swapping required`)

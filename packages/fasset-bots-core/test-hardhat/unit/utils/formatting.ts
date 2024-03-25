@@ -2,7 +2,7 @@ import { expect } from "chai";
 import * as formattingMethods from "../../../src/utils/formatting";
 import { toBN } from "../../../src/utils/helpers";
 
-describe("Formatting unit tests", async () => {
+describe("Formatting unit tests", () => {
     it("Should format values from array", async () => {
         const array = [toBN(0), toBN(1), null];
         const obj = { second: array };

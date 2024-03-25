@@ -18,7 +18,7 @@ async function fetchData() {
     throw new Error();
 }
 
-describe("Helpers unit tests", async () => {
+describe("Helpers unit tests", () => {
     it("Should sleep for x seconds", async () => {
         await helperMethods.sleep(1000);
         await expect(helperMethods.sleep(1000)).to.eventually.be.fulfilled;

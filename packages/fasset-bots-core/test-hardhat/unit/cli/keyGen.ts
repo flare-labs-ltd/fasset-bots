@@ -5,7 +5,7 @@ import { requireEnv } from "../../../src/utils";
 
 const FASSET_BOT_CONFIG = requireEnv("FASSET_BOT_CONFIG");
 
-describe("Key gen cli commands unit tests", async () => {
+describe("Key gen cli commands unit tests", () => {
     it("Should generate secrets", async () => {
         const agent = generateSecrets(FASSET_BOT_CONFIG, ["agent"], "0xAE576509E05F1CBDe1aDD5C1165fc2F10Be750B9");
         expect(agent).to.not.be.empty;

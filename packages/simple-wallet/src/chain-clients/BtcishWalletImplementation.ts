@@ -42,9 +42,9 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
          auth:
             createConfig.username && createConfig.password
                ? {
-                    username: createConfig.username,
-                    password: createConfig.password,
-                 }
+                  username: createConfig.username,
+                  password: createConfig.password,
+               }
                : undefined,
          timeout: createConfig.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs,
          validateStatus: function (status: number) {

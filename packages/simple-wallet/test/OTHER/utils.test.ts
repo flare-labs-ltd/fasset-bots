@@ -156,9 +156,9 @@ describe("Util tests", () => {
       };
       expect(fn1).to.throw(Error);
       const fn2 = () => {
-        return stuckTransactionConstants("invalid" as ChainType);
-     };
-     expect(fn2).to.throw(Error);
+         return stuckTransactionConstants("invalid" as ChainType);
+      };
+      expect(fn2).to.throw(Error);
    });
 
    it("Should get stuck transactions constants", async function () {

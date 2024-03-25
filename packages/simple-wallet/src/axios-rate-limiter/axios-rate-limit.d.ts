@@ -7,7 +7,7 @@ export interface RateLimitedAxiosInstance extends AxiosInstance {
     getMaxRPS(): number;
     setMaxRPS(rps: number): void;
     setRateLimitOptions(options: RateLimitOptions): void;
- }
+}
 
 /**
  * Apply rate limit to axios instance.

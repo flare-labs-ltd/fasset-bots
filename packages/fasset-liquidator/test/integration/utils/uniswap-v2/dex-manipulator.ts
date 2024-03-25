@@ -94,7 +94,7 @@ export class DexManipulator {
     }
 
     public async removeAllLiquidity(config: Config): Promise<void> {
-        for (let { symbolA, symbolB } of config.pools) {
+        for (const { symbolA, symbolB } of config.pools) {
             console.log(`removing liquidity from (${symbolA}, ${symbolB}) pool`)
             const tokenA = this.symbolToToken.get(symbolA)!
             const tokenB = this.symbolToToken.get(symbolB)!

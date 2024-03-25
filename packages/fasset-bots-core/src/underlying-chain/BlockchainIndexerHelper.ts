@@ -403,7 +403,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     // Values are copied from attestation configs https://gitlab.com/flarenetwork/state-connector-protocol/-/blob/main/specs/attestations/configs.md?ref_type=heads
     finalizationBlocksByChain(): number {
-        switch(this.sourceId){
+        switch (this.sourceId) {
             case SourceId.XRP:
             case SourceId.testXRP:
                 return 3;
@@ -420,7 +420,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     // From simple-wallet https://gitlab.com/flarenetwork/simple-wallet/-/blob/main/src/utils/constants.ts?ref_type=heads
     secondsPerBlockByChain(): number {
-        switch(this.sourceId){
+        switch (this.sourceId) {
             case SourceId.XRP:
             case SourceId.testXRP:
                 return 4;

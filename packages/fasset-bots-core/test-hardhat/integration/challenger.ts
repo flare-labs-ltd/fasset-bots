@@ -27,7 +27,7 @@ type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: numb
 const IERC20 = artifacts.require("IERC20");
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
 
-describe("Challenger tests", async () => {
+describe("Challenger tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;
@@ -464,8 +464,8 @@ describe("Challenger tests", async () => {
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        let spenderAddr = agentBot.agent.underlyingAddress;
-        let agentUnderlyingAddr = underlyingAddress;
+        const spenderAddr = agentBot.agent.underlyingAddress;
+        const agentUnderlyingAddr = underlyingAddress;
         const fistUTXOAmt = toBN(underlyingBalanceUBA).div(toBN(1000));
         const spentUTXOs: UTXO[] = [
             { value: fistUTXOAmt }, // UTXO 1

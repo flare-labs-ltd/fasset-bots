@@ -200,7 +200,7 @@ export class MockChain implements IBlockChain {
 export class MockChainWallet implements IBlockChainWallet {
     static deepCopyWithObjectCreate = true;
 
-    constructor(public chain: MockChain) { }
+    constructor(public chain: MockChain) {}
 
     async getBalance(address: string): Promise<BN> {
         return this.chain.balances[address] ?? BN_ZERO;

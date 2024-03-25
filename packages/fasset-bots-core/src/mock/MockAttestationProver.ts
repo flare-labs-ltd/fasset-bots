@@ -32,7 +32,7 @@ export class MockAttestationProver {
     constructor(
         public chain: MockChain,
         public queryWindowSeconds: number,
-    ) { }
+    ) {}
 
     payment(transactionHash: string, inUtxo: number, utxo: number): Payment.ResponseBody {
         const { transaction, block } = this.findTransaction('payment', transactionHash);

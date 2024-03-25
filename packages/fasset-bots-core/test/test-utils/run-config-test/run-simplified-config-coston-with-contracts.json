@@ -1,7 +1,10 @@
 {
     "loopDelay": 10000,
     "contractsJsonFile": "../../../fasset-deployment/coston.json",
-    "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
     "fAssetInfos": [
         {
             "chainId": "testXRP",
@@ -26,5 +29,7 @@
         }
     ],
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ]
 }

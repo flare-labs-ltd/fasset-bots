@@ -66,7 +66,7 @@ const agentCreatedArgs = {
 const depositUSDC = toBNExp(1_000_000, 6);
 const depositWei = toBNExp(1_000_000, 18);
 
-describe("Tracked state tests", async () => {
+describe("Tracked state tests", () => {
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;
     let accounts: string[];
@@ -650,7 +650,7 @@ describe("Tracked state tests", async () => {
         const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         await trackedState.readUnhandledEvents();
         const spyCollateralChanged = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleAgentCollateralTypeChanged");
-        const newWnat = await await ERC20Mock.new("Wrapped NAT", "WNAT");
+        const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         await context.assetManager.updateSettings(

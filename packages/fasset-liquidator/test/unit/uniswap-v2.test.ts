@@ -2,11 +2,8 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { isqrt, randBigInt } from '../utils'
 import * as calc from '../calculations/calculations'
-import { reservesFromPriceAndSlippage, reserveFromSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
-import {
-    addLiquidity, swap, swapOutput, swapToRatio, swapToPrice,
-    changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves
-} from './utils/uniswap-v2'
+import { reservesFromPriceAndSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
+import { addLiquidity, swap, swapOutput, swapToRatio, swapToPrice, changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves } from './utils/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from '../constants'
@@ -195,21 +192,21 @@ describe("Tests for the UniswapV2 implementation", () => {
                 const [reserveA, reserveB] = await uniswapV2.getReserves(tokenA, tokenB)
                 const amountA = reserveA / BigInt(2)
                 await tokenA.mint(signer, amountA)
-                // can't swap our amount at zero slippage
-                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(0, reserveA, reserveB)
+                    // can't swap our amount at zero slippage
+                    ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(0, reserveA, reserveB)
                 await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
                     .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
-                // can't swap at too low slippage of 0.1%
-                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(10, reserveA, reserveB)
+                    // can't swap at too low slippage of 0.1%
+                    ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(10, reserveA, reserveB)
                 await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
                     .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
                 // can't swap at slippage a little below max
                 const slippage = calc.slippageBipsFromSwapAmountIn(amountA, reserveA)
-                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) - 1, reserveA, reserveB)
+                    ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) - 1, reserveA, reserveB)
                 await expect(swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv))
                     .to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
-                // can swap at slippage a little above max
-                ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) + 1, reserveA, reserveB)
+                    // can swap at slippage a little above max
+                    ;[minPriceMul, minPriceDiv] = calc.applySlippageToDexPrice(Number(slippage) + 1, reserveA, reserveB)
                 const amountB = await swapOutput(uniswapV2, [tokenA, tokenB], amountA)
                 await swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv)
                 const balanceB = await tokenB.balanceOf(signer)

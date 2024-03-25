@@ -24,7 +24,7 @@ const finalizationBlocks: number = 6;
 
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
-describe("Attestation client unit tests", async () => {
+describe("Attestation client unit tests", () => {
     let attestationHelper: AttestationHelper;
     let walletHelper: BlockchainWalletHelper;
     let orm: ORM;

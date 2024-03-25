@@ -46,7 +46,7 @@ describe("Litecoin wallet tests", () => {
    it("Should submit transaction", async () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const fee = await wClient.getCurrentTransactionFee();
-      const submitted =  await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
+      const submitted = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
       expect(typeof submitted).to.equal("object");
    });
 

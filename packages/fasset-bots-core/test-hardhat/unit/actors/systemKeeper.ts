@@ -10,7 +10,7 @@ import { TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrack
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
-describe("System keeper unit tests", async () => {
+describe("System keeper unit tests", () => {
     let accounts: string[];
     let trackedStateContext: TestAssetTrackedStateContext;
     let systemKeeperAddress: string;

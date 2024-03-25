@@ -16,7 +16,7 @@ import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { resolveInFassetBotsCore } from "../utils";
+import { resolveInFassetBotsCore, squashSpace } from "../utils";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
 import { CommandLineError } from "../utils/toplevel";
@@ -28,6 +28,8 @@ import { AgentBot } from "./AgentBot";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
+
+type CleanupRegistration = (handler: () => Promise<void>) => void;
 
 export class BotCliCommands {
     static deepCopyWithObjectCreate = true;
@@ -44,9 +46,9 @@ export class BotCliCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(runConfigFile: string, fAssetSymbol: string) {
+    static async create(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
         const bot = new BotCliCommands();
-        await bot.initEnvironment(runConfigFile, fAssetSymbol);
+        await bot.initEnvironment(runConfigFile, fAssetSymbol, registerCleanup);
         return bot;
     }
 
@@ -55,7 +57,7 @@ export class BotCliCommands {
      * @param runConfigFile path to configuration file
      * @param fAssetSymbol symbol for the fasset
      */
-    async initEnvironment(runConfigFile: string, fAssetSymbol: string): Promise<void> {
+    async initEnvironment(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration): Promise<void> {
         const ownerWorkAddress = requireSecret("owner.native.address", undefined, true); // force secrets.json reload
         this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), ownerWorkAddress);
         // load config
@@ -72,6 +74,7 @@ export class BotCliCommands {
         }
         // create config
         this.botConfig = await createBotConfig(runConfig, this.owner.workAddress);
+        registerCleanup?.(() => closeBotConfig(this.botConfig));
         // create context
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
@@ -90,10 +93,6 @@ export class BotCliCommands {
         logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
     }
 
-    async finalize() {
-        await closeBotConfig(this.botConfig);
-    }
-
     notifierFor(agentVault: string) {
         return new AgentNotifier(agentVault, this.botConfig.notifiers);
     }
@@ -103,9 +102,10 @@ export class BotCliCommands {
         const chainWorkAddress = await Agent.getOwnerWorkAddress(this.context, owner.managementAddress);
         // ensure that work address is defined and matches the one from secrets.json
         if (chainWorkAddress === ZERO_ADDRESS) {
-            throw new Error(`Management address ${owner.managementAddress} has no registered work address.`);
+            throw new CommandLineError(`Management address ${owner.managementAddress} has no registered work address.`);
         } else if (chainWorkAddress !== owner.workAddress) {
-            throw new Error(`Work address ${chainWorkAddress} registered by management address ${owner.managementAddress} does not match the owner.native address ${owner.workAddress} from your secrets file.`);
+            throw new CommandLineError(squashSpace`Work address ${chainWorkAddress} registered by management address ${owner.managementAddress}
+                does not match the owner.native address ${owner.workAddress} from your secrets file.`);
         }
     }
 

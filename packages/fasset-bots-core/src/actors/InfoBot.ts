@@ -22,7 +22,7 @@ export class InfoBot {
 
     constructor(
         public context: IAssetNativeChainContext,
-    ) { }
+    ) {}
 
     /**
      * Creates instance of InfoBot.
@@ -261,8 +261,8 @@ export class InfoBot {
             } else if (/Wei$/i.test(key)) {
                 const [symbol, decimals] =
                     /VaultCollateral/i.test(key) ? [vcSymbol, Number(vcDec)]
-                    : /PoolTokens/i.test(key) ? ["FCPT", 18]
-                    : /* istanbul ignore next */ ["???", 18];
+                        : /PoolTokens/i.test(key) ? ["FCPT", 18]
+                            : /* istanbul ignore next */["???", 18];
                 const amount = Number(value) / 10 ** decimals;
                 console.log(`${key.slice(0, key.length - 3)}: ${amount.toFixed(2)} ${symbol}`);
             } else {

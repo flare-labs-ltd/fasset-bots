@@ -1,7 +1,10 @@
 {
     "loopDelay": 0,
     "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
-    "nativeChainInfo": { "finalizationBlocks": 6, "readLogsChunkSize": 10 },
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
     "fAssetInfos": [
         {
             "chainId": "testXRP",
@@ -22,6 +25,8 @@
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ],
     "stateConnectorProofVerifierAddress": "0x6356470e9aF457d1900Ad4Ed45D115192506BF51"
 }

@@ -28,7 +28,7 @@ const agentCreated = {
     poolTopupTokenPriceFactorBIPS: toBN(8000),
 };
 
-describe("Tracked agent state tests", async () => {
+describe("Tracked agent state tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;

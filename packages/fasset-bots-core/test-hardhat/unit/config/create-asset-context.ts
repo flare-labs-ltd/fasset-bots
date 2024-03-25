@@ -20,7 +20,7 @@ const getAssetManagerAndController = createAssetContextInternal.__get__("getAsse
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
-describe("Create asset context unit tests", async () => {
+describe("Create asset context unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let collateralTypes: CollateralType[];

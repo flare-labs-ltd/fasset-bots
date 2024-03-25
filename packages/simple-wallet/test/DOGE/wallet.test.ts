@@ -66,7 +66,7 @@ describe("Dogecoin wallet tests", () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const balanceBefore = await wClient.getAccountBalance(targetAddress);
       const balanceBefore1 = await wClient.getAccountBalance(fundedWallet.address);
-      await  wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, lowFee, note);
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, lowFee, note);
       const balanceAfter = await wClient.getAccountBalance(targetAddress);
       const balanceAfter1 = await wClient.getAccountBalance(fundedWallet.address);
       expect(balanceBefore.lt(balanceAfter)).to.be.true;

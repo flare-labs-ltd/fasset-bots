@@ -135,7 +135,7 @@ export function getAvgBlockTime(chainType: ChainType): number {
          return DOGE_LEDGER_CLOSE_TIME_MS;
       case ChainType.LTC:
       case ChainType.testLTC:
-            return LTC_LEDGER_CLOSE_TIME_MS;
+         return LTC_LEDGER_CLOSE_TIME_MS;
       case ChainType.XRP:
       case ChainType.testXRP:
          return XRP_LEDGER_CLOSE_TIME_MS;

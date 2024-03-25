@@ -63,6 +63,8 @@ enum MintingStatus {
     PENDING = "PENDING",
 }
 
+type CleanupRegistration = (handler: () => Promise<void>) => void;
+
 export class UserBot {
     static deepCopyWithObjectCreate = true;
 
@@ -81,9 +83,9 @@ export class UserBot {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean): Promise<UserBot> {
+    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBot> {
         const bot = new UserBot();
-        await bot.initialize(configFile, fAssetSymbol, requireWallet);
+        await bot.initialize(configFile, fAssetSymbol, requireWallet, registerCleanup);
         return bot;
     }
 
@@ -92,7 +94,7 @@ export class UserBot {
      * @param configFile path to configuration file
      * @param fAssetSymbol symbol for the fasset
      */
-    async initialize(configFile: string, fAssetSymbol: string, requireWallet: boolean): Promise<void> {
+    async initialize(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<void> {
         this.nativeAddress = requireSecret("user.native.address");
         logger.info(`User ${this.nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
@@ -107,6 +109,8 @@ export class UserBot {
         }
         // create config
         this.botConfig = await createBotConfig(this.configFile, this.nativeAddress);
+        registerCleanup?.(() => closeBotConfig(this.botConfig));
+        // verify fasset config
         const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         if (chainConfig == null) {
             logger.error(`User ${this.nativeAddress} has invalid FAsset symbol.`);
@@ -124,10 +128,6 @@ export class UserBot {
         }
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
-    }
-
-    async finalize() {
-        await closeBotConfig(this.botConfig);
     }
 
     // User must make sure that underlying address is valid and normalized.

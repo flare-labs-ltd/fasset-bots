@@ -1295,11 +1295,11 @@ __metadata:
     typescript: 5.2.2
     web3: 1.10.2
   bin:
-    agent-bot: dist/src/cli/agent.js
-    fake-price-reader: dist/src/cli/fakePriceReader.js
+    agent-bot: dist/src/cli/agent-bot.js
+    fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
-    test-governance: dist/src/cli/testGovernance
-    user-bot: dist/src/cli/user.js
+    test-governance: dist/src/cli/test-governance.js
+    user-bot: dist/src/cli/user-bot.js
     utils: dist/src/cli/utils.js
   languageName: unknown
   linkType: soft
@@ -1321,6 +1321,9 @@ __metadata:
     "@openzeppelin/test-helpers": 0.5.16
     "@typechain/truffle-v5": 7.0.0
     "@types/bn.js": 5.1.5
+    "@types/chai": 4.3.6
+    "@types/chai-as-promised": 7.1.6
+    "@types/chai-spies": 1.0.4
     "@types/glob": 8.1.0
     "@types/mocha": 10.0.1
     "@types/node": 20.7.0
@@ -1328,6 +1331,9 @@ __metadata:
     axios: 1.5.1
     axios-mock-adapter: 1.22.0
     bn.js: 5.2.1
+    chai: 4.3.8
+    chai-as-promised: 7.1.1
+    chai-spies: 1.0.0
     chalk: 4.1.2
     commander: 11.0.0
     dotenv: 16.3.1
@@ -1356,6 +1362,8 @@ __metadata:
     "@types/bitcore-lib": ^0.15.3
     "@types/bn.js": 5.1.5
     "@types/bs58check": ^2.1.0
+    "@types/chai": 4.3.6
+    "@types/chai-as-promised": 7.1.6
     "@types/elliptic": ^6.4.14
     "@types/node": 20.7.0
     "@types/tiny-secp256k1": ^2.0.1
@@ -1370,9 +1378,12 @@ __metadata:
     bitcore-lib-ltc: ^8.25.36
     bn.js: 5.2.1
     bs58check: ^3.0.1
+    chai: 4.3.8
+    chai-as-promised: 7.1.1
     dotenv: 16.3.1
     elliptic: ^6.5.4
     fast-safe-stringify: ^2.1.1
+    rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2
     ripple-keypairs: ^1.1.5
@@ -14186,15 +14197,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.0.3":
-  version: 3.0.3
-  resolution: "prettier@npm:3.0.3"
-  bin:
-    prettier: bin/prettier.cjs
-  checksum: e10b9af02b281f6c617362ebd2571b1d7fc9fb8a3bd17e371754428cda992e5e8d8b7a046e8f7d3e2da1dcd21aa001e2e3c797402ebb6111b5cd19609dd228e0
-  languageName: node
-  linkType: hard
-
 "prettier@npm:^1.14.3":
   version: 1.19.1
   resolution: "prettier@npm:1.19.1"
@@ -15024,23 +15026,15 @@ __metadata:
   dependencies:
     "@goldstack/utils-typescript-references": 0.3.9
     "@istanbuljs/nyc-config-typescript": 1.0.2
-    "@types/chai": 4.3.6
-    "@types/chai-as-promised": 7.1.6
-    "@types/chai-spies": 1.0.4
     "@types/mocha": 10.0.6
     "@types/rewire": 2.5.30
     "@typescript-eslint/eslint-plugin": 6.7.3
     "@typescript-eslint/parser": 6.7.3
-    chai: 4.3.8
-    chai-as-promised: 7.1.1
-    chai-spies: 1.0.0
     dotenv: 16.3.1
     eslint: 8.50.0
     eslint-plugin-node: 11.1.0
     mocha: 10.2.0
     nyc: 15.1.0
-    prettier: 3.0.3
-    rewire: 7.0.0
     rimraf: 5.0.5
     source-map-support: 0.5.21
     ts-node: 10.9.1

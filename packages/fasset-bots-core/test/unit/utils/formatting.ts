@@ -2,7 +2,7 @@ import { assert } from "chai";
 import { toBN } from "../../../src/utils";
 import { formatFixed } from "../../../src/utils/formatting";
 
-describe("formatting unit tests", async () => {
+describe("formatting unit tests", () => {
     it("formatFixed should work properly - 18 decimals", () => {
         const value = toBN("12345678912345678000000000");
         // default decimals

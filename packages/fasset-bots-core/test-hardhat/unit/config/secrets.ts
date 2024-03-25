@@ -4,7 +4,7 @@ import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/h
 import { decodedChainId } from "../../../src/config/BotConfig";
 
 const chainId = "testXRP";
-describe("Secrets unit tests", async () => {
+describe("Secrets unit tests", () => {
     it("Should not return secret", async () => {
         const secretName = "wallet";
         const fn = () => {
