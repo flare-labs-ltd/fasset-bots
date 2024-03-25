@@ -269,6 +269,6 @@ export class AgentService {
     }
 
     async getAgentWorkAddress(): Promise<string> {
-        return requireSecret("owner.native.address");
+        return requireSecret("owner.native.address", undefined, true);
     }
 }
