@@ -1,12 +1,12 @@
 import { Contract, ContractFactory } from 'ethers'
 import { waitFinalize } from './finalization'
 import { abi as fakeERC20Abi } from '../../../artifacts/fasset/contracts/fasset/mock/FakeERC20.sol/FakeERC20.json'
-import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IWNat.sol/IWNat.json'
-import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAgentVault.sol/IIAgentVault.json'
-import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interface/IIAssetManager.sol/IIAssetManager.json'
+import { abi as wNatAbi } from '../../../artifacts/fasset/contracts/fasset/interfaces/IWNat.sol/IWNat.json'
+import { abi as agentAbi } from '../../../artifacts/fasset/contracts/fasset/interfaces/IIAgentVault.sol/IIAgentVault.json'
+import { abi as assetManagerAbi } from '../../../artifacts/fasset/contracts/fasset/interfaces/IIAssetManager.sol/IIAssetManager.json'
 import { abi as erc20MetadataAbi } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json'
 import { abi as flashLenderAbi } from '../../../artifacts/@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol/IERC3156FlashLender.json'
-import { abi as uniswapV2RouterAbi } from '../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Router.sol/IUniswapV2Router.json'
+import { abi as uniswapV2RouterAbi } from '../../../artifacts/contracts/interfaces/IUniswapV2/IUniswapV2Router.sol/IUniswapV2Router.json'
 import { abi as fakePriceReaderAbi } from '../../../artifacts/fasset/contracts/fasset/mock/FakePriceReader.sol/FakePriceReader.json'
 import { abi as liquidatorAbi, bytecode as liquidatorBytecode } from '../../../artifacts/contracts/Liquidator.sol/Liquidator.json'
 import type { JsonRpcProvider, Signer } from 'ethers'
@@ -16,6 +16,7 @@ import type { IUniswapV2Router, IERC3156FlashLender, IIAgentVault, Liquidator } 
 
 
 export function getAddresses(network: string): NetworkAddressesJson {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const addresses = require(`../../../addresses.json`) as AddressesJson
     return addresses[network]
 }
@@ -70,6 +71,6 @@ export async function deployLiquidator(
     provider: JsonRpcProvider
 ): Promise<Liquidator> {
     const factory = new ContractFactory(liquidatorAbi, liquidatorBytecode, signer)
-    // @ts-ignore deploy not returning a transaction response
+    // @ts-expect-error deploy not returning a transaction response
     return waitFinalize(provider, signer, factory.connect(signer).deploy(flashLender, uniswapV2)) as any
 }

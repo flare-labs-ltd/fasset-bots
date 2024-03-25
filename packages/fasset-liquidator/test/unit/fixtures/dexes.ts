@@ -12,9 +12,9 @@ export async function deployBlazeSwap(
   const blazeSwapManagerFactory = await ethers.getContractFactory("BlazeSwapManager")
   const blazeSwapManager = await blazeSwapManagerFactory.deploy(deployer)
   const blazeSwapFactory = await blazeSwapFactoryFactory.deploy(blazeSwapManager)
-  // @ts-ignore
+  // @ts-expect-error blazeSwapManager doesn't include setFactory
   await blazeSwapManager.setFactory(blazeSwapFactory)
-  // @ts-ignore
+  // @ts-expect-error blazeSwapRouter renames some liquidity related stuff we don't need here
   return blazeSwapRouterFactory.connect(deployer).deploy(blazeSwapFactory, wNat, false)
 }
 

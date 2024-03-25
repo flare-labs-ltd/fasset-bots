@@ -23,7 +23,9 @@ program
     .option("-e, --env-path <env-path>", "path to the file with private key and rpc url", ".env")
     .hook("preAction", (cmd) => {
         const opts = cmd.opts()
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         addresses = require("../addresses.json")[opts.network]
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         require("dotenv").config({ path: opts.envPath })
         provider = new JsonRpcProvider(process.env.RPC_URL!)
         signer = new Wallet(process.env.PRIVATE_KEY!, provider)
@@ -86,7 +88,10 @@ program
         }
     })
 
-program.parseAsync(process.argv)
+program.parseAsync(process.argv).catch((error) => {
+    console.error("Uncaught error in liquidator", error);
+    process.exit(1);
+});
 
 function getAssetManagerAddress(network: string, fAsset: string): string {
     const networkAssetManager = ASSET_MANAGER_ADDRESSES[network as keyof typeof ASSET_MANAGER_ADDRESSES]

@@ -1,6 +1,6 @@
 import { Contract, MaxUint256 } from "ethers"
 import { waitFinalize } from "../finalization"
-import { abi as uniswapV2PairAbi } from '../../../../artifacts/contracts/interface/IUniswapV2/IUniswapV2Pair.sol/IUniswapV2Pair.json'
+import { abi as uniswapV2PairAbi } from '../../../../artifacts/contracts/interfaces/IUniswapV2/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import type { Signer, JsonRpcProvider, AddressLike } from "ethers"
 import type { IERC20, IERC20Metadata, IUniswapV2Router, IUniswapV2Pair } from "../../../../types"
 
@@ -12,6 +12,7 @@ export async function safelyGetReserves(
 ): Promise<[bigint, bigint]> {
     let reserveA = BigInt(0)
     let reserveB = BigInt(0)
+    // eslint-disable-next-line no-empty
     try {({ 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB))} catch (e) {}
     return [reserveA, reserveB]
 }
