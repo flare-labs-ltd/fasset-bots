@@ -76,7 +76,7 @@ describe("Algo wallet tests", () => {
       expect(fee).not.to.be.null;
    });
 
-   it("Should return 'Method not implemented'",async () => {
+   it("Should return 'Method not implemented'", async () => {
       await expect(wClient.executeLockedSignedTransactionAndWait()).to.eventually.be.rejectedWith('Method not implemented.');
    });
 });

@@ -131,7 +131,7 @@ const UTXOResponseData = {
     weight: 1922,
 };
 
-describe("testXRP blockchain tests via indexer",  () => {
+describe("testXRP blockchain tests via indexer", () => {
     const sourceId: SourceId = SourceId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
@@ -322,7 +322,7 @@ describe("testXRP blockchain tests via indexer",  () => {
     });
 });
 
-describe("testDOGE blockchain tests via indexer",  () => {
+describe("testDOGE blockchain tests via indexer", () => {
     const sourceId: SourceId = SourceId.testDOGE;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
@@ -375,7 +375,7 @@ describe("testDOGE blockchain tests via indexer",  () => {
     });
 });
 
-describe("testBTC blockchain tests via indexer",  () => {
+describe("testBTC blockchain tests via indexer", () => {
     const sourceId: SourceId = SourceId.testBTC;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
@@ -444,7 +444,7 @@ describe("testBTC blockchain tests via indexer",  () => {
     });
 });
 
-describe("other blockchain tests via indexer",  () => {
+describe("other blockchain tests via indexer", () => {
     const sourceIdBTC: SourceId = SourceId.BTC;
     const sourceIdDOGE: SourceId = SourceId.DOGE;
     const sourceIdXRP: SourceId = SourceId.XRP;

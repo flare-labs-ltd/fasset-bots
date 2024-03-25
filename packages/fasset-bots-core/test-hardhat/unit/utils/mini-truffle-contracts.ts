@@ -12,7 +12,7 @@ import path from "path";
 import { TransactionReceipt } from "web3-core";
 import { FakePriceReaderInstance } from "../../../typechain-truffle";
 
-describe("mini truffle and artifacts tests",  () => {
+describe("mini truffle and artifacts tests", () => {
     let accounts: string[];
 
     before(async () => {
@@ -290,7 +290,8 @@ describe("mini truffle and artifacts tests",  () => {
                 preventReentrancy(() => time.advanceBlock()) as (() => void),
                 200
             );
-            const settings: ContractSettings = { ...contractSettings,
+            const settings: ContractSettings = {
+                ...contractSettings,
                 waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 3000 } }
             };
             await withSettings(fpr, settings).setDecimals("XRP", 5);
@@ -304,7 +305,8 @@ describe("mini truffle and artifacts tests",  () => {
         it("should wait for nonce and for two blocks extra - extra time expires", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const settings: ContractSettings = { ...contractSettings,
+            const settings: ContractSettings = {
+                ...contractSettings,
                 waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 2000 } }
             };
             await withSettings(fpr, settings).setDecimals("XRP", 5);
@@ -317,7 +319,8 @@ describe("mini truffle and artifacts tests",  () => {
         it("should wait for nonce and for two blocks extra - nonce decrease while waiting", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
             const fpr = await FakePriceReader.new(accounts[0]);
-            const settings: ContractSettings = { ...contractSettings,
+            const settings: ContractSettings = {
+                ...contractSettings,
                 waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 5000, extra: { blocks: 2, timeMS: 3000 } },
                 resubmitTransaction: []
             };

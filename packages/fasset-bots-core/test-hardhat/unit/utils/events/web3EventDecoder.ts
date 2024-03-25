@@ -5,7 +5,7 @@ import { web3 } from "../../../../src/utils/web3";
 import { Web3ContractEventDecoder } from "../../../../src/utils/events/Web3ContractEventDecoder";
 import { AbiItem } from "web3-utils";
 
-describe("Web3 event decoder unit tests",  () => {
+describe("Web3 event decoder unit tests", () => {
     let context: TestAssetBotContext;
     let accounts: string[];
 

@@ -9,7 +9,7 @@ use(chaiAsPromised);
 
 const FASSET_BOT_CONFIG = requireEnv("FASSET_BOT_CONFIG");
 
-describe("UserBot cli commands unit tests",  () => {
+describe("UserBot cli commands unit tests", () => {
     let accounts: string[];
     let userAddress: string;
 

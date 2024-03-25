@@ -28,10 +28,12 @@ describe("Dogecoin network helper tests", () => {
    });
 
    it("Should create config with predefined 'stuckTransactionConstants'", () => {
-      const DOGEMccConnectionTest = { url: process.env.DOGE_URL ?? "",
-      username: "",
-      password: "",
-      inTestnet: true, stuckTransactionOptions: { blockOffset: 10, retries: 5, feeIncrease: 4 } };
+      const DOGEMccConnectionTest = {
+         url: process.env.DOGE_URL ?? "",
+         username: "",
+         password: "",
+         inTestnet: true, stuckTransactionOptions: { blockOffset: 10, retries: 5, feeIncrease: 4 }
+      };
       const wClient = new WALLET.DOGE(DOGEMccConnectionTest);
       expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
       expect(wClient.blockOffset).to.eq(DOGEMccConnectionTest.stuckTransactionOptions.blockOffset);

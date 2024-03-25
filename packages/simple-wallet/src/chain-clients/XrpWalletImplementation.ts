@@ -42,9 +42,9 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
          auth:
             createConfig.username && createConfig.password
                ? {
-                    username: createConfig.username,
-                    password: createConfig.password,
-                 }
+                  username: createConfig.username,
+                  password: createConfig.password,
+               }
                : undefined,
          timeout: createConfig.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs,
          validateStatus: function (status: number) {

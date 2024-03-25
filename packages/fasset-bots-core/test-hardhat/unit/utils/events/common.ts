@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { eventOrder } from "../../../../src/utils/events/common";
 
-describe("Common unit tests",  () => {
+describe("Common unit tests", () => {
     const event1 = {
         blockNumber: 1,
         transactionIndex: 1,

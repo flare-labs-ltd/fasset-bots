@@ -13,7 +13,7 @@ use(chaiAsPromised);
 const underlying1 = "UNDERLYING1";
 const underlying2 = "UNDERLYING2";
 
-describe("Attestation client unit tests",  () => {
+describe("Attestation client unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let chain: MockChain;

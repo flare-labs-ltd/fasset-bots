@@ -24,5 +24,7 @@
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ]
 }

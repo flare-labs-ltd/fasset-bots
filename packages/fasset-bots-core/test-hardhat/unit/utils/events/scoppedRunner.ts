@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ScopedRunner } from "../../../../src/utils/events/ScopedRunner";
 import { EventScope } from "../../../../src/utils/events/ScopedEvents";
 
-describe("Scoped runner unit tests",  () => {
+describe("Scoped runner unit tests", () => {
     const errorMessage = "Not implemented.";
 
     async function notImplemented(scope: EventScope): Promise<void> {

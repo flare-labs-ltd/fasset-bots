@@ -250,8 +250,8 @@ export async function createChainConfig(
         ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl)
         : undefined;
     const stateConnector = stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls && chainInfo.indexerUrl
-            ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
-            : undefined;
+        ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
+        : undefined;
     const verificationClient = chainInfo.indexerUrl ? await createVerificationApiClient(chainInfo.indexerUrl) : undefined;
     return {
         chainInfo: chainInfo,

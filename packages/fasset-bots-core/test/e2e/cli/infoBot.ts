@@ -6,7 +6,7 @@ use(chaiAsPromised);
 
 const FASSET_BOT_CONFIG = requireEnv("FASSET_BOT_CONFIG");
 
-describe("InfoBot cli commands unit tests",  () => {
+describe("InfoBot cli commands unit tests", () => {
 
     it("Should create InfoBot", async () => {
         const infoBot1 = await InfoBot.create(FASSET_BOT_CONFIG, "FfakeXRP");

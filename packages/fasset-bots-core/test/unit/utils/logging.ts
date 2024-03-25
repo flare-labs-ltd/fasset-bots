@@ -1,6 +1,6 @@
 import { logger } from "../../../src/utils";
 
-describe("logging unit tests",  () => {
+describe("logging unit tests", () => {
     it("logger should work", () => {
         logger.info("This is a log line");
         logger.warn("This is a warning line");

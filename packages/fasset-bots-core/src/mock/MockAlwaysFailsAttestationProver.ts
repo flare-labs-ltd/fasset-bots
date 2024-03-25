@@ -7,7 +7,7 @@ export class MockAlwaysFailsAttestationProver {
     constructor(
         public chain: MockChain,
         public queryWindowSeconds: number,
-    ) { }
+    ) {}
 
     payment(transactionHash: string, inUtxo: number, utxo: number): Payment.ResponseBody {
         throw new MockAttestationProverError(`AttestationProver.payment: failed`);

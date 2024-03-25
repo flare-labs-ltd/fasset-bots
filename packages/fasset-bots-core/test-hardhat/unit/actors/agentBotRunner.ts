@@ -13,7 +13,7 @@ import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/h
 use(spies);
 
 const loopDelay: number = 2;
-describe("Agent bot runner tests",  () => {
+describe("Agent bot runner tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

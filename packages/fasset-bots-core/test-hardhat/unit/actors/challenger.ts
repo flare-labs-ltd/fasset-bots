@@ -27,7 +27,7 @@ const transaction2 = {
     status: 1,
 } as ITransaction;
 
-describe("Challenger unit tests",  () => {
+describe("Challenger unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;

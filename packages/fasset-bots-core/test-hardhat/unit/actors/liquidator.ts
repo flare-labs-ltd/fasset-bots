@@ -13,7 +13,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgent } from "../../test-utils/helpers";
 use(spies);
 
-describe("Liquidator unit tests",  () => {
+describe("Liquidator unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;

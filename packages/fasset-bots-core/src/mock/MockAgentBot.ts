@@ -8,7 +8,7 @@ export class MockAgentBot extends AgentBot {
         public notifier: AgentNotifier
     ) {
         super(agent, notifier);
-     }
+    }
 
     override async handleOpenRedemptionsForCornerCase(): Promise<void> {
         throw new Error("Mock AgentBot.");

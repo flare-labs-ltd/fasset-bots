@@ -7,7 +7,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/cr
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
-describe("Time keeper unit tests",  () => {
+describe("Time keeper unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let timeKeeperAddress: string;

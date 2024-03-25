@@ -12,7 +12,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 use(spies);
 
 const loopDelay: number = 2;
-describe("Actor base runner tests",  () => {
+describe("Actor base runner tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let ownerAddress: string;

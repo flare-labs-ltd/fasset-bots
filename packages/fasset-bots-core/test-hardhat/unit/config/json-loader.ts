@@ -17,7 +17,7 @@ const schema: JSONSchemaType<MyData> = {
     additionalProperties: false,
 };
 
-describe("Json loader unit tests",  () => {
+describe("Json loader unit tests", () => {
     it("Should create tracked state config", async () => {
         const botConfigLoader = new JsonLoader<MyData>(schema);
         expect(botConfigLoader.formatName).to.eq("JSON");

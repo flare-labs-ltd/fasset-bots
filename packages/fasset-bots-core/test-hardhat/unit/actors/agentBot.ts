@@ -28,7 +28,7 @@ use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 const chainId = "testXRP";
-describe("Agent bot unit tests",  () => {
+describe("Agent bot unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

@@ -9,7 +9,7 @@ const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
 import { HttpProvider } from "web3-core";
 
-describe("web3 unit tests",  () => {
+describe("web3 unit tests", () => {
     it("Should create provider", async () => {
         expect(createProvider(null)).to.be.null;
         expect(createProvider("local").host).to.eq("http://127.0.0.1:8545");

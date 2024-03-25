@@ -30,7 +30,7 @@ function simpleLoadConfigFile(fpath: string) {
     return config;
 }
 
-describe("Bot config tests",  () => {
+describe("Bot config tests", () => {
     let runConfig: BotConfigFile;
     let actorRunConfig: BotConfigFile;
     let accounts: string[];

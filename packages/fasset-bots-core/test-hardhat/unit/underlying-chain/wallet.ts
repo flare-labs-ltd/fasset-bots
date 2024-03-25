@@ -14,7 +14,7 @@ const privateKey1 = "0058C2435FB3951ACC29F4D7396632713063F9DB3C49B320167F193CDA0
 const address2 = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const privateKey2 = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3F4A3744B676092AAF04187";
 
-describe("DBWallet keys tests",  () => {
+describe("DBWallet keys tests", () => {
     before(async () => {
         orm = await createTestOrm({ dbName: "fasset-bots-wallet-keys-test.db" });
         dbWallet = new DBWalletKeys(orm.em);
@@ -42,7 +42,7 @@ describe("DBWallet keys tests",  () => {
     });
 });
 
-describe("Memory wallet keys tests",  () => {
+describe("Memory wallet keys tests", () => {
     before(async () => {
         memory = new MemoryWalletKeys();
     });

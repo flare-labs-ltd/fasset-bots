@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import { decryptText, encryptText } from "../../../src/utils/encryption";
 
-describe("encryption unit tests",  () => {
+describe("encryption unit tests", () => {
     const plaintext = "this is plain text";
     const password = "this is password";
 

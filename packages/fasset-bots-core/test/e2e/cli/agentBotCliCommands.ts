@@ -15,7 +15,7 @@ use(spies);
 const fassetBotConfig: string = requireEnv("FASSET_BOT_CONFIG");
 const fAssetSymbol = "FtestXRP";
 
-describe("AgentBot cli commands unit tests",  () => {
+describe("AgentBot cli commands unit tests", () => {
     let botCliCommands: BotCliCommands;
     let accounts: string[];
     let ownerAddress: string;

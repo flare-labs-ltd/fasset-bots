@@ -17,7 +17,7 @@ use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 
-describe("Liquidator tests",  () => {
+describe("Liquidator tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let trackedStateContext: TestAssetTrackedStateContext;

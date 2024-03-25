@@ -30,14 +30,14 @@ const poolCollateral: CollateralType = {
     safetyMinCollateralRatioBIPS: toBIPS(2.3),
 };
 
-describe("AMG price unit tests",  () => {
+describe("AMG price unit tests", () => {
     it("Should create AMGPrice", async () => {
         const amgPrice = new AMGPrice(AMG_TO_TOKEN_WEI, toBN(amgSettings.assetMintingDecimals), toBN(amgSettings.assetMintingGranularityUBA));
         expect(amgPrice.amgToTokenWei.eq(AMG_TO_TOKEN_WEI)).to.be.true;
     });
 });
 
-describe("Collateral price unit tests",  () => {
+describe("Collateral price unit tests", () => {
     let settings: AssetManagerSettings;
     let priceReader: TokenPriceReader;
     let assetPrice: TokenPrice;

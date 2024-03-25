@@ -22,7 +22,7 @@ function simpleLoadConfigFile(fpath: string) {
     return config;
 }
 
-describe("Create asset context tests",  () => {
+describe("Create asset context tests", () => {
     let runConfig: BotConfigFile;
     let botConfig: BotConfig;
     let actorRunConfig: BotConfigFile;

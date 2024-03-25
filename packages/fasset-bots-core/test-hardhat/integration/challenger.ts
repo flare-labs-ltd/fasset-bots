@@ -27,7 +27,7 @@ type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: numb
 const IERC20 = artifacts.require("IERC20");
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
 
-describe("Challenger tests",  () => {
+describe("Challenger tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
     let orm: ORM;

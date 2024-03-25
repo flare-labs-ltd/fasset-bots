@@ -13,7 +13,7 @@ const dbOptionsSqlite: CreateOrmOptions = { dbName: dbNameSqlite, type: "sqlite"
 const dbOptionsMySql: CreateOrmOptions = { dbName: dbNameMySql, type: "mysql", entities: [WalletAddress] };
 const dbOptionsPostgres: CreateOrmOptions = { dbName: dbNamePostgres, type: "postgresql", entities: [WalletAddress] };
 
-describe("Orm config tests",  () => {
+describe("Orm config tests", () => {
     it("Should create database", async () => {
         await createOrm(dbOptionsSqlite);
         const exist1 = existsSync(dbNameSqlite);

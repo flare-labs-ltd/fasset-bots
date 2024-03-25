@@ -8,7 +8,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 
-describe("Token price unit tests",  () => {
+describe("Token price unit tests", () => {
     it("Should create TokenPrice", async () => {
         const price = toBN(123456);
         const timestamp = toBN(123);
@@ -18,7 +18,7 @@ describe("Token price unit tests",  () => {
     });
 });
 
-describe("Token price reader unit tests",  () => {
+describe("Token price reader unit tests", () => {
     let settings: AssetManagerSettings;
 
     before(async () => {
