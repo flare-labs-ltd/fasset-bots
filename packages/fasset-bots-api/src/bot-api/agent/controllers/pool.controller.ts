@@ -12,7 +12,7 @@ import { AgentBalance } from "../../common/AgentResponse";
 export class PoolController {
     constructor(private readonly agentService: AgentService) {}
 
-    @Post("collateral/buy:fAssetSymbol/:agentVaultAddress/:amount")
+    @Post("collateral/buy/:fAssetSymbol/:agentVaultAddress/:amount")
     @HttpCode(200)
     public async buyPoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,

@@ -6,20 +6,26 @@ import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse"
 import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
+import { AgentSettingsService } from "../services/agentSettings.service";
+import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
 
 @ApiTags("Agent")
 @Controller("api/agent")
 @UseGuards(AuthGuard("api-key"))
 @ApiSecurity("X-API-KEY")
 export class AgentController {
-    constructor(private readonly agentService: AgentService) {}
+    constructor(
+        private readonly agentService: AgentService,
+        private agentSettingsService: AgentSettingsService
+    ) {}
 
     @Post("create/:fAssetSymbol")
     public async create(
         @Param("fAssetSymbol") fAssetSymbol: string,
-        @Body() agentSettings: AgentSettingsConfig
+        @Body() agentSettings: AgentSettingsConfigDTO
     ): Promise<ApiResponseWrapper<AgentCreateResponse | null>> {
-        return handleApiResponse(this.agentService.createAgent(fAssetSymbol, agentSettings));
+        const settings: AgentSettingsConfig = this.agentSettingsService.mapDtoToInterface(agentSettings);
+        return handleApiResponse(this.agentService.createAgent(fAssetSymbol, settings));
     }
 
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
