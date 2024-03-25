@@ -56,7 +56,8 @@ export class BotCliCommands {
      * @param fAssetSymbol symbol for the fasset
      */
     async initEnvironment(runConfigFile: string, fAssetSymbol: string): Promise<void> {
-        this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), requireSecret("owner.native.address"));
+        const ownerWorkAddress = requireSecret("owner.native.address", undefined, true); // force secrets.json reload
+        this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), ownerWorkAddress);
         // load config
         logger.info(`Owner ${this.owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));

@@ -197,7 +197,7 @@ export class AgentService {
             collaterals.push({ symbol: collateralType.tokenFtsoSymbol, balance: balance.toString() });
         }
         const natBalance = await web3.eth.getBalance(cli.owner.workAddress);
-        collaterals.push({ symbol: "NAT", balance: natBalance.toString() });
+        collaterals.push({ symbol: "NAT (non-wrapped)", balance: natBalance.toString() });
         // get is whitelisted
         const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
         return { collaterals, whitelisted };
@@ -238,7 +238,7 @@ export class AgentService {
             const modified = (typeof value === "boolean") ? value : value.toString();
             agentVaultInfo[key as keyof typeof info] = modified;
         }
-        return agentVaultInfo as any;
+        return agentVaultInfo;
     }
 
     async getAgentUnderlyingBalance(fAssetSymbol: string): Promise<AgentBalance> {

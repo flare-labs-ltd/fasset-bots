@@ -24,23 +24,20 @@ export class AgentController {
 
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
     @HttpCode(200)
-    public async enter(@Param("fAssetSymbol") fAssetSymbol: string, @Param("agentVaultAddress") agentVaultAddress: string): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.enterAvailable(fAssetSymbol, agentVaultAddress));
-    }
-
-    @Post("available/announceExit/:fAssetSymbol/:agentVaultAddress")
-    @HttpCode(200)
-    public async announceExit(
+    public async enter(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.announceExitAvailable(fAssetSymbol, agentVaultAddress));
+        return handleApiResponse(this.agentService.enterAvailable(fAssetSymbol, agentVaultAddress));
     }
 
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
     @HttpCode(200)
-    public async exit(@Param("fAssetSymbol") fAssetSymbol: string, @Param("agentVaultAddress") agentVaultAddress: string): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.exitAvailable(fAssetSymbol, agentVaultAddress));
+    public async exit(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.announceExitAvailable(fAssetSymbol, agentVaultAddress));
     }
 
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
