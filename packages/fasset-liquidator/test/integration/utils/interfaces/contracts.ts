@@ -24,4 +24,4 @@ export interface FAssetContracts {
 }
 
 // all relevant contracts to the system or testing
-export interface Contracts extends BaseContracts, FAssetContracts {}
+export interface Contracts extends BaseContracts, FAssetContracts { }

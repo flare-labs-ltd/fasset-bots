@@ -13,7 +13,7 @@ export async function safelyGetReserves(
     let reserveA = BigInt(0)
     let reserveB = BigInt(0)
     // eslint-disable-next-line no-empty
-    try {({ 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB))} catch (e) {}
+    try { ({ 0: reserveA, 1: reserveB } = await uniswapV2.getReserves(tokenA, tokenB)) } catch (e) { }
     return [reserveA, reserveB]
 }
 

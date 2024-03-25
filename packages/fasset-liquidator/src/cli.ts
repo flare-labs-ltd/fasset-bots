@@ -80,7 +80,7 @@ program
             }
             await manipulator.adjustDex(config, opts.greedy)
         } else if (action === "remove-liquidity") {
-            await manipulator.removeAllLiquidity({ pools: liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB }))})
+            await manipulator.removeAllLiquidity({ pools: liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB })) })
         } else if (action === "wrap-wnat") {
             await manipulator.wrapWNat()
         } else if (action === "unwrap-wnat") {

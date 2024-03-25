@@ -49,7 +49,7 @@ describe("Uniswap V2 Price Synchronization", () => {
     let signerBalanceBefore: Map<string, bigint>
 
     async function getSignerBalances(): Promise<Map<string, bigint>> {
-        const balances = new Map<string,bigint>()
+        const balances = new Map<string, bigint>()
         for (const symbol of Object.values(manipulator.symbols)) {
             const token = manipulator.symbolToToken.get(symbol)!
             balances.set(symbol, await token.balanceOf(manipulator.signer))

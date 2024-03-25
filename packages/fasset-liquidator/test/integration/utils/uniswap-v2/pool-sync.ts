@@ -30,7 +30,7 @@ export async function adjustLiquidityForSlippage(
         const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
         if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
             throw Error("Token price has non-5 ftso decimals")
-        ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
+            ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
     } else {
         [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
     }
