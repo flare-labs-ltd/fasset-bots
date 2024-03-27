@@ -25,7 +25,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentBot } from "./AgentBot";
+import { AgentBot } from "../actors/AgentBot";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 
 const CollateralPool = artifacts.require("CollateralPool");
@@ -33,7 +33,7 @@ const IERC20 = artifacts.require("IERC20Metadata");
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
-export class BotCliCommands {
+export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
     context!: IAssetAgentBotContext;
@@ -49,7 +49,7 @@ export class BotCliCommands {
      * @returns instance of BotCliCommands class
      */
     static async create(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
-        const bot = new BotCliCommands();
+        const bot = new AgentBotCommands();
         await bot.initEnvironment(runConfigFile, fAssetSymbol, registerCleanup);
         return bot;
     }

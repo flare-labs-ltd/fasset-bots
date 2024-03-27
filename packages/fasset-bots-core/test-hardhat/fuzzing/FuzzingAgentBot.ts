@@ -1,5 +1,5 @@
 import { AgentBot } from "../../src/actors/AgentBot";
-import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
+import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { EM } from "../../src/config/orm";
 import { AgentRedemption, AgentRedemptionState } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
@@ -17,7 +17,7 @@ export class FuzzingAgentBot {
         public runner: FuzzingRunner,
         public rootEm: EM,
         public ownerUnderlyingAddress: string,
-        public botCliCommands: BotCliCommands
+        public botCliCommands: AgentBotCommands
     ) {}
 
     async selfMint(scope: EventScope, chain: MockChain) {

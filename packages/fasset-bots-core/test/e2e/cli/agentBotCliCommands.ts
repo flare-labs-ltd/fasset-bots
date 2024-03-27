@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
+import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { requireEnv } from "../../../src/utils";
@@ -16,7 +16,7 @@ const fassetBotConfig: string = requireEnv("FASSET_BOT_CONFIG");
 const fAssetSymbol = "FtestXRP";
 
 describe("AgentBot cli commands unit tests", () => {
-    let botCliCommands: BotCliCommands;
+    let botCliCommands: AgentBotCommands;
     let accounts: string[];
     let ownerAddress: string;
 
@@ -26,13 +26,13 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should create commands", async () => {
-        const commands = await BotCliCommands.create(fassetBotConfig, fAssetSymbol);
+        const commands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
         const chainConfig = commands.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
         expect(chainConfig!.chainInfo.chainId).to.eq(SourceId.testXRP);
     });
 
     it("Should initialize bot cli commands", async () => {
-        botCliCommands = new BotCliCommands();
+        botCliCommands = new AgentBotCommands();
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
         expect(botCliCommands.owner).to.be.undefined;
@@ -43,7 +43,7 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should create agent bot via bot cli commands", async () => {
-        botCliCommands = new BotCliCommands();
+        botCliCommands = new AgentBotCommands();
         await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
         const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
         agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
@@ -55,6 +55,6 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should not create  bot cli commands - invalid 'fAssetSymbol'", async () => {
-        await expect(BotCliCommands.create(fassetBotConfig, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
+        await expect(AgentBotCommands.create(fassetBotConfig, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
     });
 });

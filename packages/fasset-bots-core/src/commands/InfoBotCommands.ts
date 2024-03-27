@@ -17,7 +17,7 @@ const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
-export class InfoBot {
+export class InfoBotCommands {
     static deepCopyWithObjectCreate = true;
 
     constructor(
@@ -30,7 +30,7 @@ export class InfoBot {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of InfoBot
      */
-    static async create(configFile: string, fAssetSymbol?: string): Promise<InfoBot> {
+    static async create(configFile: string, fAssetSymbol?: string): Promise<InfoBotCommands> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         const config = loadConfigFile(configFile, `InfoBot`);
@@ -46,7 +46,7 @@ export class InfoBot {
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
         console.error(chalk.cyan("Environment successfully initialized."));
-        return new InfoBot(context);
+        return new InfoBotCommands(context);
     }
 
     /**

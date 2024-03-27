@@ -1,7 +1,7 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { network } from "hardhat";
-import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
+import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
@@ -100,7 +100,7 @@ describe("Fuzzing tests", () => {
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
-            const botCliCommands = new BotCliCommands();
+            const botCliCommands = new AgentBotCommands();
             botCliCommands.context = context;
             botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
             const chainId = chainInfo.chainId;

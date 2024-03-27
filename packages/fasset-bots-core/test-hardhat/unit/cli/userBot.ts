@@ -5,7 +5,7 @@ import spies from "chai-spies";
 import fs, { existsSync } from "fs";
 import path from "path";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { UserBot } from "../../../src/actors/UserBot";
+import { UserBotCommands } from "../../../src/commands/UserBotCommands";
 import { ORM } from "../../../src/config/orm";
 import { AgentRedemptionState } from "../../../src/entities/agent";
 import { Minter } from "../../../src/mock/Minter";
@@ -58,14 +58,14 @@ describe("UserBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let userBot: UserBot;
+    let userBot: UserBotCommands;
     let chain: MockChain;
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
 
     before(async () => {
-        UserBot.userDataDir = "./test-data";
+        UserBotCommands.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
         // accounts
         ownerAddress = accounts[3];
@@ -80,7 +80,7 @@ describe("UserBot cli commands unit tests", () => {
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
         // user bot
-        userBot = new UserBot();
+        userBot = new UserBotCommands();
         userBot.context = context;
         userBot.nativeAddress = minterAddress;
         userBot.underlyingAddress = userUnderlyingAddress;
@@ -127,7 +127,7 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `./${UserBot.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-redeem/`;
+        const dir = `./${UserBotCommands.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-redeem/`;
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -324,7 +324,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBot.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `./${UserBotCommands.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();

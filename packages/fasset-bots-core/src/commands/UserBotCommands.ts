@@ -21,7 +21,7 @@ import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { InfoBot } from "./InfoBot";
+import { InfoBotCommands } from "./InfoBotCommands";
 
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
@@ -65,7 +65,7 @@ enum MintingStatus {
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
-export class UserBot {
+export class UserBotCommands {
     static deepCopyWithObjectCreate = true;
 
     context!: IAssetAgentBotContext;
@@ -83,8 +83,8 @@ export class UserBot {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBot> {
-        const bot = new UserBot();
+    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBotCommands> {
+        const bot = new UserBotCommands();
         await bot.initialize(configFile, fAssetSymbol, requireWallet, registerCleanup);
         return bot;
     }
@@ -141,8 +141,8 @@ export class UserBot {
         return res.standardAddress;
     }
 
-    infoBot(): InfoBot {
-        return new InfoBot(this.context);
+    infoBot(): InfoBotCommands {
+        return new InfoBotCommands(this.context);
     }
 
     /**
@@ -390,7 +390,7 @@ export class UserBot {
 
     stateFileDir(type: StateData["type"]) {
         const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
-        return path.resolve(UserBot.userDataDir, `${controllerAddress}-${this.fassetConfig.fAssetSymbol}-${type}`);
+        return path.resolve(UserBotCommands.userDataDir, `${controllerAddress}-${this.fassetConfig.fAssetSymbol}-${type}`);
     }
 
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {

@@ -2,7 +2,7 @@
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { InfoBot } from "../../../src/actors/InfoBot";
+import { InfoBotCommands } from "../../../src/commands/InfoBotCommands";
 import { ORM } from "../../../src/config/orm";
 import { MockChain } from "../../../src/mock/MockChain";
 import { checkedCast, toBN } from "../../../src/utils/helpers";
@@ -22,7 +22,7 @@ describe("InfoBot cli commands unit tests", () => {
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
-    let infoBot: InfoBot;
+    let infoBot: InfoBotCommands;
     let chain: MockChain;
 
     before(async () => {
@@ -38,7 +38,7 @@ describe("InfoBot cli commands unit tests", () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
-        infoBot = new InfoBot(context);
+        infoBot = new InfoBotCommands(context);
         return { orm, context, chain, infoBot };
     }
 

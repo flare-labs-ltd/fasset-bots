@@ -4,7 +4,7 @@ import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
+import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
@@ -39,7 +39,7 @@ describe("AgentBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let botCliCommands: BotCliCommands;
+    let botCliCommands: AgentBotCommands;
     let chain: MockChain;
     let governance: string;
 
@@ -61,7 +61,7 @@ describe("AgentBot cli commands unit tests", () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
-        botCliCommands = new BotCliCommands();
+        botCliCommands = new AgentBotCommands();
         botCliCommands.context = context;
         botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
         const chainId = SourceId.testXRP;
