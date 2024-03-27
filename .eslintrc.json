@@ -5,30 +5,6 @@
         "@typescript-eslint",
         "node"
     ],
-    "extends": [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/eslint-recommended"
-    ],
-    "rules": {
-        "@typescript-eslint/await-thenable": "warn",
-        "@typescript-eslint/no-floating-promises": "error",
-        "@typescript-eslint/no-misused-promises": "error",
-        "@typescript-eslint/no-for-in-array": "error",
-        "guard-for-in": "warn",
-        "linebreak-style": ["error", "unix"],
-        "no-console": "off",
-        "@typescript-eslint/prefer-namespace-keyword": "off",
-        "@typescript-eslint/no-namespace": "off",
-        "@typescript-eslint/no-inferrable-types": "off",
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-unused-vars": ["warn", {
-            "varsIgnorePattern": "^_",
-            "argsIgnorePattern": "."
-        }],
-        "node/no-extraneous-import": "error",
-        "node/no-extraneous-require": "error"
-    },
     "parserOptions": {
         "ecmaVersion": 2020,
         "tsconfigRootDir": ".",
@@ -36,5 +12,41 @@
             "./tsconfig.json"
         ],
         "EXPERIMENTAL_useProjectService": true
-    }
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
+    "rules": {
+        "guard-for-in": "warn",
+        "linebreak-style": ["error", "unix"],
+        "no-console": "off",
+        "@typescript-eslint/await-thenable": "warn",
+        "@typescript-eslint/no-floating-promises": "error",
+        "@typescript-eslint/no-misused-promises": "error",
+        "@typescript-eslint/no-for-in-array": "error",
+        "@typescript-eslint/prefer-namespace-keyword": "off",
+        "@typescript-eslint/no-namespace": "off",
+        "@typescript-eslint/no-inferrable-types": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "warn",
+        "@typescript-eslint/no-unused-vars": ["warn", {
+            "varsIgnorePattern": "^_",
+            "argsIgnorePattern": "."
+        }],
+        "node/no-extraneous-import": "error",
+        "node/no-extraneous-require": "error"
+    },
+    "overrides": [
+        {
+            "files": [
+                "packages/*/{test,test-hardhat}/**/*.ts"
+            ],
+            "rules": {
+                "@typescript-eslint/no-non-null-assertion": "off",
+                "@typescript-eslint/no-unused-vars": "off"
+            }
+        }
+    ]
 }
