@@ -15,11 +15,11 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { requireNotNull } from "../utils/helpers";
+import { assertNotNull, requireNotNull } from "../utils/helpers";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
 import { artifacts } from "../utils/web3";
-import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
+import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
 import { EM, ORM } from "./orm";
 import { getSecrets, requireSecret } from "./secrets";
@@ -36,17 +36,8 @@ export interface BotConfig {
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
-    // liquidator / challenger
-    liquidationStrategy?: {
-        // only for liquidator
-        className: string;
-        config?: any;
-    };
-    challengeStrategy?: {
-        // only for challenger
-        className: string;
-        config?: any;
-    };
+    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
+    challengeStrategy?: BotStrategyDefinition; // only for challenger
 }
 
 export interface BotFAssetConfig {
@@ -73,14 +64,11 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
     const fAssets: BotFAssetConfig[] = [];
     for (const chainInfo of runConfig.fAssetInfos) {
         chainInfo.chainId = encodedChainId(chainInfo.chainId);
-        const proofVerifierAddress = runConfig.stateConnectorProofVerifierAddress
-            ? runConfig.stateConnectorProofVerifierAddress :
-            (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).pfAddress;
-        const stateConnectorAddress = runConfig.stateConnectorAddress
-            ? runConfig.stateConnectorAddress :
-            (await getStateConnectorAndProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater)).scAddress;
-        fAssets.push(await createBotFAssetConfig(chainInfo, orm?.em, runConfig.attestationProviderUrls,
-            proofVerifierAddress, stateConnectorAddress, ownerAddress, runConfig.walletOptions));
+        const proofVerifierAddress = await getProofVerifierAddress(runConfig.contractsJsonFile, runConfig.addressUpdater);
+        const stateConnectorAddress = await getStateConnectorAddress(runConfig.contractsJsonFile, runConfig.addressUpdater);
+        const fassetConfig = await createBotFAssetConfig(chainInfo, orm?.em, runConfig.attestationProviderUrls,
+            proofVerifierAddress, stateConnectorAddress, ownerAddress, runConfig.walletOptions);
+        fAssets.push(fassetConfig);
     }
     return {
         rpcUrl: runConfig.rpcUrl,
@@ -94,14 +82,6 @@ export async function createBotConfig(runConfig: BotConfigFile, ownerAddress: st
         liquidationStrategy: runConfig.liquidationStrategy,
         challengeStrategy: runConfig.challengeStrategy,
     };
-}
-
-export function encodedChainId(chainId: string) {
-    return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
-}
-
-export function decodedChainId(chainId: string) {
-    return chainId.startsWith("0x") ? decodeAttestationName(chainId) : chainId;
 }
 
 /**
@@ -199,7 +179,9 @@ export function createWalletClient(
  * @returns instance of BlockchainIndexerHelper
  */
 export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string): BlockchainIndexerHelper {
-    if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
+    if (!supportedSourceId(sourceId)) {
+        throw new Error(`SourceId ${sourceId} not supported.`);
+    }
     const apiKey = requireSecret("apiKey.indexer");
     return new BlockchainIndexerHelper(indexerUrl, sourceId, apiKey);
 }
@@ -244,7 +226,9 @@ export async function createAttestationHelper(
     owner: string,
     indexerUrl: string,
 ): Promise<AttestationHelper> {
-    if (!supportedSourceId(sourceId)) throw new Error(`SourceId ${sourceId} not supported.`);
+    if (!supportedSourceId(sourceId)) {
+        throw new Error(`SourceId ${sourceId} not supported.`);
+    }
     const stateConnector = await createStateConnectorClient(indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
     return new AttestationHelper(stateConnector, createBlockchainIndexerHelper(sourceId, indexerUrl), sourceId);
 }
@@ -255,7 +239,7 @@ export async function createAttestationHelper(
  * @param attestationProviderUrls list of attestation provider's urls
  * @param scProofVerifierAddress SCProofVerifier's contract address
  * @param stateConnectorAddress StateConnector's contract address
- * @param owner native owner address
+ * @param requestSubmitterAddress native address of the account that will call requestAttestations
  * @returns instance of StateConnectorClientHelper
  */
 export async function createStateConnectorClient(
@@ -263,10 +247,10 @@ export async function createStateConnectorClient(
     attestationProviderUrls: string[],
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
-    owner: string
+    requestSubmitterAddress: string
 ): Promise<StateConnectorClientHelper> {
     const apiKey = requireSecret("apiKey.indexer");
-    return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, owner);
+    return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, apiKey, requestSubmitterAddress);
 }
 
 export async function createVerificationApiClient(indexerWebServerUrl: string): Promise<VerificationPrivateApiClient> {
@@ -280,29 +264,36 @@ function supportedSourceId(sourceId: SourceId) {
     return supportedSourceIds.includes(sourceId);
 }
 
-async function getStateConnectorAndProofVerifierAddress(
-    contractsJsonFile?: string,
-    addressUpdaterAddress?: string
-): Promise<{ pfAddress: string; scAddress: string }> {
+export function encodedChainId(chainId: string) {
+    return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
+}
+
+export function decodedChainId(chainId: string) {
+    return chainId.startsWith("0x") ? decodeAttestationName(chainId) : chainId;
+}
+
+async function getStateConnectorAddress(contractsJsonFile?: string, addressUpdaterAddress?: string) {
     /* istanbul ignore else */ // until 'SCProofVerifier' is defined in explorer
     if (contractsJsonFile) {
         const contracts = loadContracts(contractsJsonFile);
-        const pfAddress = requireNotNull(contracts["SCProofVerifier"]?.address, `Cannot find address for SCProofVerifier`);
-        const scAddress = requireNotNull(contracts["StateConnector"]?.address, `Cannot find address for StateConnector`);
-        return {
-            pfAddress,
-            scAddress,
-        };
-    } else if (addressUpdaterAddress) {
+        return requireNotNull(contracts["StateConnector"]?.address, `Cannot find address for StateConnector`);
+    } else {
+        assertNotNull(addressUpdaterAddress, "Either contractsJsonFile or addressUpdater must be defined");
         const addressUpdater = await AddressUpdater.at(addressUpdaterAddress);
-        const pfAddress = await addressUpdater.getContractAddress("SCProofVerifier");
-        const scAddress = await addressUpdater.getContractAddress("StateConnector");
-        return {
-            pfAddress,
-            scAddress,
-        };
+        return await addressUpdater.getContractAddress("SCProofVerifier");
     }
-    throw new Error("Either contractsJsonFile or addressUpdater must be defined");
+}
+
+async function getProofVerifierAddress(contractsJsonFile?: string, addressUpdaterAddress?: string) {
+    /* istanbul ignore else */ // until 'SCProofVerifier' is defined in explorer
+    if (contractsJsonFile) {
+        const contracts = loadContracts(contractsJsonFile);
+        return requireNotNull(contracts["SCProofVerifier"]?.address, `Cannot find address for SCProofVerifier`);
+    } else {
+        assertNotNull(addressUpdaterAddress, "Either contractsJsonFile or addressUpdater must be defined");
+        const addressUpdater = await AddressUpdater.at(addressUpdaterAddress);
+        return await addressUpdater.getContractAddress("SCProofVerifier");
+    }
 }
 
 /**

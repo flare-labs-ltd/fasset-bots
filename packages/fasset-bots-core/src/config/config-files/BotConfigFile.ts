@@ -28,6 +28,11 @@ export interface BotFAssetInfo extends ChainInfo {
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
 }
 
+export interface BotStrategyDefinition {
+    className: string;
+    config?: any;
+}
+
 export interface BotConfigFile {
     ormOptions?: OrmConfigOptions; // only for agent bot
     walletOptions?: {
@@ -42,22 +47,11 @@ export interface BotConfigFile {
     rpcUrl: string;
     alertsUrl?: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
-    stateConnectorAddress?: string; // only for agent bot, challenger and timeKeeper, default is "StateConnector" in contracts json
-    stateConnectorProofVerifierAddress?: string; // only for agent bot, challenger and timeKeeper, default is "SCProofVerifier" in contracts json
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
-    // liquidation / challenger strategies
-    liquidationStrategy?: {
-        // only for liquidator
-        className: string;
-        config?: any;
-    };
-    challengeStrategy?: {
-        // only for challenger
-        className: string;
-        config?: any;
-    };
+    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
+    challengeStrategy?: BotStrategyDefinition; // only for challenger
 }
 
 export type Schema_BotConfigFile = BotConfigFile & { $schema?: string };
