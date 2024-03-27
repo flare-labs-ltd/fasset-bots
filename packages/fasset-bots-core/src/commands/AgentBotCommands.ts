@@ -6,9 +6,10 @@ import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBot } from "..";
-import { BotConfig, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, closeBotConfig, createBotConfig, decodedChainId } from "../config/BotConfig";
+import { loadAgentConfigFile } from "../config/config-file-loader";
 import { createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { createAssetContext } from "../config/create-asset-context";
+import { createAgentBotContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
@@ -83,7 +84,7 @@ export class AgentBotCommands {
             throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
         }
         this.BotFAssetInfo = chainConfig.chainInfo;
-        this.context = await createAssetContext(this.botConfig, chainConfig);
+        this.context = await createAgentBotContext(this.botConfig, chainConfig);
         // verify keys
         await this.verifyWorkAddress(this.owner);
         // create underlying wallet key

@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import chalk from "chalk";
-import { loadConfigFile } from "../config/BotConfig";
+import { loadConfigFile } from "../config/config-file-loader";
 import { createNativeContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";

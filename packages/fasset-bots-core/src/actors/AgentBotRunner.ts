@@ -1,6 +1,6 @@
 import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
 import { BotConfig } from "../config/BotConfig";
-import { createAssetContext } from "../config/create-asset-context";
+import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
@@ -76,7 +76,7 @@ export class AgentBotRunner {
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentBotContext> = new Map();
         for (const chainConfig of botConfig.fAssets) {
-            const assetContext = await createAssetContext(botConfig, chainConfig);
+            const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
                 with symbol ${chainConfig.chainInfo.symbol}.`);

@@ -3,9 +3,10 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { BotConfig, BotFAssetConfig, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
+import { BotConfig, BotFAssetConfig, closeBotConfig, createBotConfig, decodedChainId } from "../config/BotConfig";
+import { loadAgentConfigFile } from "../config/config-file-loader";
 import { BotConfigFile } from "../config/config-files/BotConfigFile";
-import { createAssetContext } from "../config/create-asset-context";
+import { createAgentBotContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
@@ -116,7 +117,7 @@ export class UserBotCommands {
             logger.error(`User ${this.nativeAddress} has invalid FAsset symbol.`);
             throw new CommandLineError("Invalid FAsset symbol");
         }
-        this.context = await createAssetContext(this.botConfig, chainConfig);
+        this.context = await createAgentBotContext(this.botConfig, chainConfig);
         this.fassetConfig = chainConfig;
         // create underlying wallet key
         if (requireWallet) {

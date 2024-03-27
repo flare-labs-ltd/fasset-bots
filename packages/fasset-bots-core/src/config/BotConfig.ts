@@ -3,7 +3,6 @@ import "dotenv/config";
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { EntityManager } from "@mikro-orm/core";
-import path from "path";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
@@ -17,15 +16,12 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { requireNotNull } from "../utils/helpers";
-import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
-import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { artifacts } from "../utils/web3";
 import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
-import { IJsonLoader, JsonLoader } from "./json-loader";
-import { CreateOrmOptions, EM, ORM } from "./orm";
+import { EM, ORM } from "./orm";
 import { getSecrets, requireSecret } from "./secrets";
 
 const AddressUpdater = artifacts.require("AddressUpdater");
@@ -64,95 +60,6 @@ export interface BotFAssetConfig {
     fAssetSymbol?: string;
     // optional settings
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
-}
-
-export const botConfigLoader: IJsonLoader<BotConfigFile> =
-    new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
-
-/**
- * Loads configuration file and checks it.
- * @param fPath configuration file path
- * @param configInfo
- * @returns instance BotConfigFile
- */
-export function loadConfigFile(fPath: string, configInfo?: string, validate: boolean = true): BotConfigFile {
-    try {
-        const config = botConfigLoader.load(fPath);
-        updateConfigFilePaths(fPath, config);
-        if (validate) {
-            validateConfigFile(config);
-            // check secrets.json file permission
-            getSecrets();
-        }
-        return config;
-    } /* istanbul ignore next */ catch (e) {
-        logger.error(configInfo ?? "", e);
-        throw e;
-    }
-}
-
-/**
- * Validates configuration.
- * @param config instance of interface BotConfigFile
- */
-function validateConfigFile(config: BotConfigFile): void {
-    if (config.addressUpdater == null && config.contractsJsonFile == null) {
-        throw new Error("Missing either contractsJsonFile or addressUpdater in config");
-    }
-    for (const fc of config.fAssetInfos) {
-        if (fc.assetManager == null && fc.fAssetSymbol == null) {
-            throw new Error(`Missing either assetManager or fAssetSymbol in FAsset type ${fc.fAssetSymbol}`);
-        }
-    }
-}
-
-export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
-    const cfDir = path.dirname(cfPath);
-    if (config.contractsJsonFile) {
-        config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
-    }
-    // namespace SQLite db by asset manager controller address (only needed for beta testing)
-    if (config.ormOptions?.type === "sqlite" && config.contractsJsonFile) {
-        const contracts = loadContracts(config.contractsJsonFile);
-        const controllerAddress = contracts.AssetManagerController.address.slice(2, 10);
-        config.ormOptions.dbName = config.ormOptions.dbName!.replace(/CONTROLLER/g, controllerAddress);
-    }
-}
-
-export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string };
-export type AgentBotConfigFile = BotConfigFile & { ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[] };
-
-/**
- * Loads agent configuration file and checks it.
- * @param fPath configuration file path
- * @param configInfo
- * @returns instance AgentBotConfigFile
- */
-export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBotConfigFile {
-    try {
-        const config = botConfigLoader.load(fPath);
-        updateConfigFilePaths(fPath, config);
-        validateAgentConfigFile(config);
-        // check secrets.json file permission
-        getSecrets();
-        return config as AgentBotConfigFile;
-    } /* istanbul ignore next */ catch (e) {
-        logger.error(configInfo ?? "", e);
-        throw e;
-    }
-}
-
-/**
- * Validates agent configuration.
- * @param config instance BotConfigFile
- */
-function validateAgentConfigFile(config: BotConfigFile): void {
-    validateConfigFile(config);
-    for (const fc of config.fAssetInfos) {
-        if (fc.walletUrl == null) {
-            throw new Error(`Missing walletUrl in FAsset type ${fc.fAssetSymbol}`);
-        }
-    }
 }
 
 /**
@@ -216,39 +123,21 @@ export async function createBotFAssetConfig(
     ownerAddress: string,
     walletOptions?: StuckTransaction
 ): Promise<BotFAssetConfig> {
-    const wallet = chainInfo.walletUrl ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, walletOptions) : undefined;
-    const config = await createChainConfig(chainInfo, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress);
-    return {
-        ...config,
-        wallet: wallet,
-    };
-}
-
-/**
- * Helper for BotFAssetConfig configuration from chain info.
- * @param chainInfo instance of BotFAssetInfo
- * @param attestationProviderUrls list of attestation provider's urls
- * @param scProofVerifierAddress SCProofVerifier's contract address
- * @param stateConnectorAddress  StateConnector's contract address
- * @param ownerAddress native owner address
- * @returns instance of BotFAssetConfig
- */
-export async function createChainConfig(
-    chainInfo: BotFAssetInfo,
-    attestationProviderUrls: string[] | undefined,
-    scProofVerifierAddress: string | undefined,
-    stateConnectorAddress: string | undefined,
-    ownerAddress: string
-): Promise<BotFAssetConfig> {
+    const wallet = chainInfo.walletUrl
+        ? createBlockchainWalletHelper(chainInfo.chainId, em, chainInfo.walletUrl, walletOptions)
+        : undefined;
     const blockchainIndexerClient = chainInfo.indexerUrl
         ? createBlockchainIndexerHelper(chainInfo.chainId, chainInfo.indexerUrl)
         : undefined;
     const stateConnector = stateConnectorAddress && scProofVerifierAddress && attestationProviderUrls && chainInfo.indexerUrl
         ? await createStateConnectorClient(chainInfo.indexerUrl, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, ownerAddress)
         : undefined;
-    const verificationClient = chainInfo.indexerUrl ? await createVerificationApiClient(chainInfo.indexerUrl) : undefined;
+    const verificationClient = chainInfo.indexerUrl
+        ? await createVerificationApiClient(chainInfo.indexerUrl)
+        : undefined;
     return {
         chainInfo: chainInfo,
+        wallet: wallet,
         blockchainIndexerClient: blockchainIndexerClient,
         stateConnector: stateConnector,
         verificationClient: verificationClient,
@@ -268,12 +157,11 @@ export async function createChainConfig(
 export function createWalletClient(
     sourceId: SourceId,
     walletUrl: string,
-    options?: StuckTransaction
+    options: StuckTransaction = {}
 ): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
     }
-    const sOptions = options ? options : {};
     if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
         return new WALLET.BTC({
             url: walletUrl,
@@ -281,7 +169,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testBTC ? true : false,
             apiTokenKey: getSecrets().apiKey.btc_rpc,
-            stuckTransactionOptions: sOptions,
+            stuckTransactionOptions: options,
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
         return new WALLET.DOGE({
@@ -290,7 +178,7 @@ export function createWalletClient(
             password: "",
             inTestnet: sourceId === SourceId.testDOGE ? true : false,
             apiTokenKey: getSecrets().apiKey.doge_rpc,
-            stuckTransactionOptions: sOptions,
+            stuckTransactionOptions: options,
         }); // UtxoMccCreate
     } else {
         return new WALLET.XRP({
@@ -299,7 +187,7 @@ export function createWalletClient(
             password: "",
             apiTokenKey: getSecrets().apiKey.xrp_rpc,
             inTestnet: sourceId === SourceId.testXRP ? true : false,
-            stuckTransactionOptions: sOptions,
+            stuckTransactionOptions: options,
         }); // XrpMccCreate
     }
 }

@@ -2,7 +2,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
-import { loadConfigFile } from "../../../src/config/BotConfig";
+import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { AgentSettingsConfig } from "../../../src/config/config-files/AgentSettingsConfig";

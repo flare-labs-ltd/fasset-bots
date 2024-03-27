@@ -7,11 +7,12 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, BotFAssetConfig, createBotConfig, loadConfigFile } from "../../../src/config/BotConfig";
+import { BotConfig, BotFAssetConfig, createBotConfig } from "../../../src/config/BotConfig";
+import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createAssetContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
+import { createAgentBotContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
@@ -67,7 +68,7 @@ describe("Actor tests - coston", () => {
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
         chainConfig1 = requireNotNull(botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
-        context = await createAssetContext(botConfig, chainConfig1!);
+        context = await createAgentBotContext(botConfig, chainConfig1!);
         chainConfig2 = requireNotNull(actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();

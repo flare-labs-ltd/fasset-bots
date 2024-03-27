@@ -1,4 +1,5 @@
 export * from "./BotConfig";
+export * from "./config-file-loader";
 export * from "./config-files/BotConfigFile";
 export * from "./config-files/AgentSettingsConfig";
 export * from "./AgentVaultInitSettings";

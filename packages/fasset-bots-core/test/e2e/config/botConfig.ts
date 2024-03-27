@@ -1,4 +1,6 @@
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createChainConfig, createStateConnectorClient, createWalletClient, loadConfigFile, updateConfigFilePaths } from "../../../src/config/BotConfig";
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createStateConnectorClient, createWalletClient } from "../../../src/config/BotConfig";
+import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
+import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_CONTRACTS_MISSING_VERIFIER, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
@@ -154,18 +156,6 @@ describe("Bot config tests", () => {
             OWNER_ADDRESS
         );
         expect(stateConnector.account).to.eq(OWNER_ADDRESS);
-    });
-
-    it("Should create tracked state config chain", async () => {
-        const chainInfo = actorRunConfig.fAssetInfos[0];
-        const trackedStateConfigChain = await createChainConfig(
-            chainInfo,
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS
-        );
-        expect(trackedStateConfigChain.stateConnector).not.be.null;
     });
 
     it("Should create agent bot config chain", async () => {

@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import Web3 from "web3";
 import { SourceId } from "../underlying-chain/SourceId";
 import { ChainAccount, Secrets } from "./secrets";
-import { loadConfigFile } from ".";
+import { loadConfigFile } from "./config-file-loader";
 import { requireNotNull } from "../utils";
 
 export type SecretsUser = "user" | "agent" | "other";

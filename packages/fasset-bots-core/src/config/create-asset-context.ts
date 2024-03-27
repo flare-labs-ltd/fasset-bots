@@ -18,7 +18,7 @@ const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 /**
  * Creates asset context needed for AgentBot.
  */
-export async function createAssetContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentBotContext> {
+export async function createAgentBotContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentBotContext> {
     assertNotNull(chainConfig.wallet, "Missing wallet configuration");
     assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
     assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
@@ -42,6 +42,7 @@ export async function createTimekeeperContext(config: BotConfig, chainConfig: Bo
     assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
     assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
     const nativeContext = await createNativeContext(config, chainConfig);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const attestationProvider = new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId);
     return {
         ...nativeContext,

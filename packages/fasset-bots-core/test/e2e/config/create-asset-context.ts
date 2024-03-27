@@ -2,9 +2,10 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
 import rewire from "rewire";
-import { BotConfig, createBotConfig, updateConfigFilePaths } from "../../../src/config/BotConfig";
+import { BotConfig, createBotConfig } from "../../../src/config/BotConfig";
+import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createAssetContext, createChallengerContext, createLiquidatorContext, createTimekeeperContext } from "../../../src/config/create-asset-context";
+import { createAgentBotContext, createChallengerContext, createLiquidatorContext, createTimekeeperContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
@@ -35,7 +36,7 @@ describe("Create asset context tests", () => {
     it("Should create asset context from contracts", async () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
-        const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.fAssets[0]);
+        const context: IAssetAgentBotContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
         expect(context).is.not.null;
         expect(context.chainInfo.chainId).to.eq(botConfig.fAssets[0].chainInfo.chainId);
     });
@@ -44,7 +45,7 @@ describe("Create asset context tests", () => {
     it("Should create asset context from address updater", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
-        const context: IAssetAgentBotContext = await createAssetContext(botConfig, botConfig.fAssets[0]);
+        const context: IAssetAgentBotContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
         expect(context).is.not.null;
         expect(context.chainInfo.chainId).to.eq(botConfig.fAssets[0].chainInfo.chainId);
     });
@@ -53,7 +54,7 @@ describe("Create asset context tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].wallet = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("Missing wallet configuration")
             .and.be.an.instanceOf(Error);
     });
@@ -62,7 +63,7 @@ describe("Create asset context tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].stateConnector = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("Missing state connector configuration")
             .and.be.an.instanceOf(Error);
     });
@@ -71,7 +72,7 @@ describe("Create asset context tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].blockchainIndexerClient = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("Missing blockchain indexer configuration")
             .and.be.an.instanceOf(Error);
     });
@@ -116,7 +117,7 @@ describe("Create asset context tests", () => {
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].assetManager = undefined;
         botConfig.fAssets[0].fAssetSymbol = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("assetManager or fAssetSymbol required in chain config")
             .and.be.an.instanceOf(Error);
     });
@@ -126,7 +127,7 @@ describe("Create asset context tests", () => {
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].assetManager = undefined;
         botConfig.fAssets[0].fAssetSymbol = "RandomAsset";
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith(`FAsset symbol ${botConfig.fAssets[0].fAssetSymbol} not found`)
             .and.be.an.instanceOf(Error);
     });
@@ -168,7 +169,7 @@ describe("Create asset context tests", () => {
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.addressUpdater = undefined;
         botConfig.contractsJsonFile = undefined;
-        await expect(createAssetContext(botConfig, botConfig.fAssets[0]))
+        await expect(createAgentBotContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
             .and.be.an.instanceOf(Error);
     });
